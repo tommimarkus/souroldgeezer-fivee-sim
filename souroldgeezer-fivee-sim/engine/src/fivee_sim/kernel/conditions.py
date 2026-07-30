@@ -25,6 +25,9 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
+from .dice import Advantage, resolve_advantage
+from .rules import Ability
+
 
 class UnknownCondition(KeyError):
     """A condition was referenced that the active table does not define."""
@@ -56,7 +59,10 @@ class ConditionEffect:
     #: Attack rolls against the afflicted creature.
     attacked_with_advantage: bool = False
     attacked_with_disadvantage: bool = False
-    #: Prone is directional: advantage in melee, disadvantage at range.
+    #: Prone is directional, and scoped by **distance, not by weapon**: advantage
+    #: from within 5 ft, disadvantage from beyond it, whatever the attack. Both
+    #: names are historical and pack-facing, so they stay — see
+    #: ``melee_hits_are_critical`` below, which kept its name for the same reason.
     attacked_with_advantage_in_melee: bool = False
     attacked_with_disadvantage_at_range: bool = False
     #: The afflicted creature's own attack rolls.
@@ -64,6 +70,13 @@ class ConditionEffect:
     own_attacks_have_disadvantage: bool = False
     auto_fail_strength_saves: bool = False
     auto_fail_dexterity_saves: bool = False
+    #: Weighting a Dexterity save rather than deciding it. Restrained is the SRD
+    #: condition that needs this, and the distinction is the whole point: a
+    #: Restrained creature still rolls, and can still succeed. Only Dexterity has
+    #: these flags because no condition in the table bears on any other ability's
+    #: save; the Advantage half exists for the Dodge action and for packs.
+    advantage_on_dexterity_saves: bool = False
+    disadvantage_on_dexterity_saves: bool = False
     #: Paralyzed and Unconscious turn melee hits into critical hits.
     melee_hits_are_critical: bool = False
     resists_all_damage: bool = False
@@ -125,15 +138,20 @@ EFFECTS: dict[str, ConditionEffect] = {
         attacked_with_advantage_in_melee=True,
         attacked_with_disadvantage_at_range=True,
     ),
+    # Restrained weights the Dexterity save; it does not decide it. Automatic
+    # failure of Strength and Dexterity saves belongs to the four conditions that
+    # state it — Paralyzed, Petrified, Stunned, Unconscious — and to no others.
     Condition.RESTRAINED: ConditionEffect(
         speed_zero=True,
         attacked_with_advantage=True,
         own_attacks_have_disadvantage=True,
-        auto_fail_dexterity_saves=True,
+        disadvantage_on_dexterity_saves=True,
     ),
+    # Stunned carries no Speed 0 clause, and neither does the Incapacitated
+    # condition it confers. The three neighbouring conditions here each state Speed
+    # 0 outright, which is what makes its absence a rule rather than an oversight.
     Condition.STUNNED: ConditionEffect(
         incapacitated=True,
-        speed_zero=True,
         attacked_with_advantage=True,
         auto_fail_strength_saves=True,
         auto_fail_dexterity_saves=True,
@@ -178,3 +196,46 @@ def is_incapacitated(conditions: Iterable[str], table: ConditionTable = EFFECTS)
 
 def speed_is_zero(conditions: Iterable[str], table: ConditionTable = EFFECTS) -> bool:
     return any(effect.speed_zero for effect in effects_of(conditions, table))
+
+
+def compute_save_advantage(
+    *,
+    conditions: Iterable[str],
+    ability: Ability,
+    extra_advantage: int = 0,
+    extra_disadvantage: int = 0,
+    condition_effects: ConditionTable = EFFECTS,
+) -> Advantage:
+    """Collect every source of Advantage and Disadvantage on one saving throw.
+
+    The counterpart of
+    :func:`~fivee_sim.kernel.actions.compute_attack_advantage`, and counting rather
+    than short-circuiting for the same reason: any Advantage plus any Disadvantage
+    yields neither, so both tallies have to be complete before deciding.
+
+    ``extra_advantage`` is how the Dodge action reaches a saving throw — the model
+    layer knows who is Dodging, this module knows only conditions.
+
+    This is deliberately independent of whether the save auto-fails. A forced
+    failure still rolls its dice, and Disadvantage still costs two of them; deciding
+    Advantage only for saves that could succeed would make the size of the RNG draw
+    depend on the conditions a creature holds, and desynchronise the analytics
+    replay from live play.
+
+    Every condition is resolved through :func:`effect_of` whatever the ability, so a
+    name the table does not define is reported rather than silently skipped.
+    """
+    advantage_sources = extra_advantage
+    disadvantage_sources = extra_disadvantage
+    for condition in conditions:
+        effect = effect_of(condition, condition_effects)
+        if ability is not Ability.DEXTERITY:
+            continue
+        if effect.advantage_on_dexterity_saves:
+            advantage_sources += 1
+        if effect.disadvantage_on_dexterity_saves:
+            disadvantage_sources += 1
+    return resolve_advantage(
+        advantage_sources=advantage_sources,
+        disadvantage_sources=disadvantage_sources,
+    )

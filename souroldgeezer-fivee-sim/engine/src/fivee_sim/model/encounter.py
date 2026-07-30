@@ -31,7 +31,9 @@ from ..kernel.conditions import (
     EFFECTS,
     Condition,
     ConditionTable,
+    compute_save_advantage,
     effect_of,
+    is_incapacitated,
     speed_is_zero,
 )
 from ..kernel.dice import Advantage, roll_d20
@@ -112,7 +114,7 @@ class Action:
 #: by test, not a constraint the model enforces.
 EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
-    "disengage", "dodge", "down", "heal", "interact", "move",
+    "disengage", "dodge", "down", "effect_end", "heal", "interact", "move",
     "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
     "turn_start", "use_item",
 })
@@ -203,6 +205,37 @@ class TurnState:
     interaction_used: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class OngoingEffect:
+    """One condition that one spell or item is currently imposing on one creature.
+
+    A condition on a creature is a bare string in a set; it carries no memory of
+    what put it there. That is fine until something has to *end* — SRD 5.2, Rules
+    Glossary, "Concentration": "If the effect's creator loses Concentration, the
+    effect ends." Answering that needs the link back to the caster, and answering
+    it *safely* needs to know whether anything else is imposing the same condition
+    on the same creature, so a lapsing spell does not free a creature another spell
+    is still holding.
+
+    ``id`` exists so two otherwise identical grants — the same caster, spell,
+    target and condition — remain distinct entries rather than collapsing under
+    equality when one of them is removed.
+    """
+
+    id: int
+    #: Name of the creature sustaining the effect.
+    source: str
+    #: Name of the spell or item, matched against ``Creature.concentrating_on``.
+    name: str
+    target: str
+    condition: str
+    concentration: bool
+    #: True when the target already had this condition from something outside this
+    #: ledger — a stat block that starts with it, or the stepper's own Unconscious.
+    #: Such a condition is not ours to lift, so releasing this effect leaves it.
+    stacked: bool
+
+
 class Encounter:
     """A fight in progress."""
 
@@ -254,6 +287,11 @@ class Encounter:
         self.round = 1
         self.log: list[Event] = []
         self.actions: list[ActionRecord] = []
+        # A list, not a set or a dict: effects are released by iterating it, and an
+        # unordered container would let the order of releases — and so the order of
+        # log entries — vary between a live fight and its analytics replay.
+        self._effects: list[OngoingEffect] = []
+        self._next_effect_id = 0
         self._dodging: dict[str, bool] = {name: False for name in names}
         self._disengaged: dict[str, bool] = {name: False for name in names}
         self._reaction_available: dict[str, bool] = {name: True for name in names}
@@ -565,6 +603,9 @@ class Encounter:
         )
         if creature.dying:
             self._death_save(creature, rng)
+        # A death save can kill, and :meth:`_death_save` marks the creature dead
+        # without going through ``take_damage``, so nothing else would notice.
+        self._reconcile_concentration()
 
     def _death_save(self, creature: Creature, rng: Random) -> None:
         roll = roll_d20(rng)
@@ -603,6 +644,15 @@ class Encounter:
             self._emit("death", creature.name, detail="three failed death saves")
         elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
             creature.stable = True
+            # SRD 5.2, Death Saving Throws: "The number of both is reset to zero when
+            # you regain any Hit Points or become Stable." ``Creature.heal`` already
+            # covers the first clause; this is the second. Leaving the counters
+            # standing let a creature that was stabilised, then knocked down again,
+            # re-stabilise on its very next roll — even a *failed* one, since the
+            # failure landed short of three while the stale successes still tripped
+            # this branch.
+            creature.death_save_successes = 0
+            creature.death_save_failures = 0
             self._emit("stabilised", creature.name, detail="three successful death saves")
 
     def advance(self, rng: Random) -> list[Event]:
@@ -671,6 +721,15 @@ class Encounter:
                 self._dodging[actor.name] = True
                 self._emit("dodge", actor.name,
                            detail="attacks against this creature have disadvantage")
+        # The fourth route: an action can land an incapacitating condition on a
+        # creature that is concentrating, and ``Creature.add_condition`` clears the
+        # field from inside the model, where no release could be issued. A spell or
+        # item that imposes one without dealing damage reaches nothing else.
+        #
+        # This runs before the action is recorded so that any release it emits falls
+        # inside that record's event span; recording first would leave the events
+        # orphaned between one action and the next.
+        self._reconcile_concentration()
         self.actions.append(ActionRecord(
             index=len(self.actions), round=self.round, actor=actor.name, action=action,
             first_event=before, event_count=len(self.log) - before,
@@ -689,6 +748,29 @@ class Encounter:
             raise EncounterError(f"no combatant named {name!r}")
         return target
 
+    @staticmethod
+    def _require_targetable(target: Creature) -> None:
+        """Refuse a corpse, and nothing else.
+
+        A creature at 0 hit points is a legal target and the SRD says so twice
+        over. Rules Glossary, "Unconscious [Condition]": "Attacks Affected. Attack
+        rolls against you have Advantage" and "Automatic Critical Hits. Any attack
+        roll that hits you is a Critical Hit if the attacker is within 5 feet of
+        you." Neither clause can ever apply to a creature the stepper refuses to
+        aim at, and refusing was exactly what it used to do — so a dying creature
+        could only die by failing three death saves, never by a finishing blow.
+
+        What a landed hit then costs is "Damage at 0 Hit Points": one death saving
+        throw failure, two from a critical hit, and instant death if the damage
+        equals or exceeds the hit point maximum. :meth:`Creature.take_damage` owns
+        all three; this only has to let the damage through.
+
+        ``dead`` is the one refusal that survives, because a corpse is not a
+        creature a spell or an attack can target.
+        """
+        if target.dead:
+            raise EncounterError(f"{target.name} is dead and cannot be targeted")
+
     def _pick_attack(self, actor: Creature, wanted: str | None) -> AttackOption:
         if not actor.attacks:
             raise EncounterError(f"{actor.name} has no attacks")
@@ -702,8 +784,7 @@ class Encounter:
 
     def _do_attack(self, actor: Creature, action: Action, rng: Random) -> None:
         target = self._resolve_target(action.target)
-        if not target.conscious:
-            raise EncounterError(f"{target.name} is already down")
+        self._require_targetable(target)
         if self._turn.attacks_left <= 0:
             raise EncounterError(f"{actor.name} has no attacks left this turn")
         if self._turn.action_used and self._turn.attacks_left == actor.attacks_per_action:
@@ -740,7 +821,7 @@ class Encounter:
             target_ac=target.ac + cover_bonus,
             damage=option.damage,
             advantage=self.attack_advantage(actor, target, option),
-            forced_critical=self.attack_forced_critical(actor, target, option),
+            forced_critical=self.attack_forced_critical(actor, target),
             resisted=target.resists(option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
@@ -760,7 +841,9 @@ class Encounter:
                    damage=resolution.damage_dealt,
                    cover=int(grade))
         if resolution.hit:
-            self._apply_damage(target, resolution.damage_dealt, rng)
+            self._apply_damage(
+                target, resolution.damage_dealt, rng, critical=resolution.critical
+            )
 
     def attack_advantage(
         self, actor: Creature, target: Creature, option: AttackOption
@@ -775,21 +858,53 @@ class Encounter:
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
-            kind=option.kind,
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
-            extra_disadvantage=1 if self._dodging[target.name] else 0,
+            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
 
-    def attack_forced_critical(
-        self, actor: Creature, target: Creature, option: AttackOption
-    ) -> bool:
-        """Whether a landed hit would be upgraded to a critical one. See above."""
+    def attack_forced_critical(self, actor: Creature, target: Creature) -> bool:
+        """Whether a landed hit would be upgraded to a critical one. See above.
+
+        **One function serves the swing path and the cast path**, and takes no
+        :class:`AttackOption`, because the rule reads nothing about the attack: SRD
+        5.2 scopes it on the target's condition and the attacker's distance alone —
+        "Any attack roll that hits you is a Critical Hit if the attacker is within 5
+        feet of you." A second copy taking a weapon would be a copy that could
+        disagree with this one.
+        """
         return melee_hit_is_critical(
             target_conditions=target.conditions,
-            kind=option.kind,
             distance=actor.distance_to(target, self.movement_rule),
+            condition_effects=self.condition_effects,
+        )
+
+    def spell_attack_advantage(self, actor: Creature, target: Creature) -> Advantage:
+        """Advantage a spell attack against ``target`` would resolve under.
+
+        The cast path's counterpart to :meth:`attack_advantage`, and deliberately
+        the same call underneath rather than a second derivation: SRD 5.2 defines
+        an attack roll as "a D20 Test that represents making an attack with a
+        weapon, an Unarmed Strike, or a spell", and no source of Advantage
+        distinguishes them. A Blinded caster, a Dodging target and a Restrained one
+        have to read the same either way, which they cannot if two functions decide
+        it.
+
+        **There is nothing left to classify.** A spell has a ``range_feet``, not a
+        melee/ranged kind, and inventing one would be a data field every pack author
+        had to set. It is not needed:
+        :func:`~fivee_sim.kernel.actions.compute_attack_advantage` now reads only
+        the distance, so this passes the same arguments the swing path does and the
+        question of what kind of attack a spell is never arises.
+        ``TestSpellAttackAdvantage`` pins both halves of the Prone clause so the
+        point survives editing.
+        """
+        return compute_attack_advantage(
+            attacker_conditions=actor.conditions,
+            target_conditions=target.conditions,
+            distance=actor.distance_to(target),
+            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
 
@@ -828,8 +943,7 @@ class Encounter:
                     f"{target.name} is {distance} ft away; an item can only be used on "
                     f"another creature within {MELEE_THRESHOLD} ft"
                 )
-        if target.dead:
-            raise EncounterError(f"{target.name} is dead and cannot be affected")
+        self._require_targetable(target)
 
         self._turn.action_used = True
         actor.items[name] -= 1
@@ -844,6 +958,7 @@ class Encounter:
                 if effect.save_ability is not None else 0
             ),
             auto_fail_save=self.auto_fails_save(target, effect.save_ability),
+            save_advantage=self.save_advantage(target, effect.save_ability),
             resisted=(
                 target.resists(effect.damage_type) if effect.damage_type is not None else False
             ),
@@ -871,7 +986,14 @@ class Encounter:
         if resolution.damage_dealt:
             self._apply_damage(target, resolution.damage_dealt, rng)
         if resolution.condition_applied is not None and target.conscious:
-            target.add_condition(resolution.condition_applied)
+            # An item's condition has no Concentration behind it, so nothing ever
+            # releases it. It is recorded anyway, because it *holds* the condition:
+            # without the entry, an unrelated spell lapsing on the same creature
+            # would lift a condition the item is still imposing.
+            self._apply_condition(
+                actor, target, resolution.condition_applied,
+                effect_name=name, concentration=False,
+            )
 
     def _do_cast(self, actor: Creature, action: Action, rng: Random) -> None:
         self._require_action(actor)
@@ -883,6 +1005,17 @@ class Encounter:
         if spell is None:
             raise EncounterError(f"unknown spell {action.spell!r}")
         slot_level = action.slot_level if action.slot_level is not None else spell.level
+        # Every reason to refuse is gathered before a single thing is spent. The
+        # slot-level check in particular used to live only inside ``resolve_spell``,
+        # which runs after the action is marked used and the slot decremented — so a
+        # refusal cost the caster both, and arrived as a bare ``ValueError`` the MCP
+        # adapter does not catch. Validate here, in the layer that owns the state and
+        # speaks ``EncounterError``.
+        if slot_level < spell.level:
+            raise EncounterError(
+                f"{spell.name} is level {spell.level} and cannot be cast with a "
+                f"level {slot_level} slot"
+            )
         if spell.level > 0:
             available = actor.spell_slots.get(slot_level, 0)
             if available <= 0:
@@ -929,6 +1062,14 @@ class Encounter:
                     ac=c.ac,
                     save_modifier=save_modifier(c),
                     auto_fail_save=self.auto_fails_save(c, spell.save_ability),
+                    save_advantage=self.save_advantage(c, spell.save_ability),
+                    # Filled for every target rather than only for attack-roll
+                    # spells, the way the save fields are filled for every target
+                    # of an attack-roll one. Both are cheap, neither consumes
+                    # randomness, and ``resolve_spell`` reads each pair only on the
+                    # branch it belongs to.
+                    attack_advantage=self.spell_attack_advantage(actor, c),
+                    forced_critical=self.attack_forced_critical(actor, c),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
                     ),
@@ -954,6 +1095,11 @@ class Encounter:
                    targets=[c.name for c in chosen])
 
         if spell.concentration:
+            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
+            # moment you start casting a spell that requires Concentration." An
+            # unconditional release covers recasting the *same* spell on a new
+            # target, which comparing names could not see.
+            self._end_concentration(actor)
             actor.concentrating_on = spell.name
             self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}",
                        spell=spell.name, held=True, started=True)
@@ -972,9 +1118,21 @@ class Encounter:
                        condition=result.condition_applied,
                        **shielding)
             if result.damage_dealt:
-                self._apply_damage(target, result.damage_dealt, rng)
+                # A spell attack carries a critical exactly as a weapon swing does,
+                # and it matters for the same reason: two death save failures rather
+                # than one against a creature already at 0. A save-based spell has no
+                # attack roll and so never crits.
+                self._apply_damage(
+                    target,
+                    result.damage_dealt,
+                    rng,
+                    critical=result.attack is not None and result.attack.critical,
+                )
             if result.condition_applied is not None and target.conscious:
-                target.add_condition(result.condition_applied)
+                self._apply_condition(
+                    actor, target, result.condition_applied,
+                    effect_name=spell.name, concentration=spell.concentration,
+                )
 
     def auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
         """Whether a condition forces this creature to fail the save outright.
@@ -1021,7 +1179,7 @@ class Encounter:
         direction: Point | None = None,
         toward: str | Point | None = None,
     ) -> list[Creature]:
-        """Every conscious creature one placement of an area spell catches.
+        """Every living creature one placement of an area spell catches.
 
         The single membership authority: the stepper resolves a cast through it
         and the auto-play policy values candidate placements through it, so the
@@ -1048,7 +1206,7 @@ class Encounter:
                 if self.battle_map is None:
                     return [
                         c for c in self.creatures.values()
-                        if c.conscious
+                        if not c.dead
                         and distance_feet(
                             as_point(c.position), centre, self.movement_rule
                         ) <= spell.radius
@@ -1090,7 +1248,7 @@ class Encounter:
                 raise EncounterError(f"{spell.name} is not an area spell")
         caught = [
             c for c in self.creatures.values()
-            if c.conscious and to_square(as_point(c.position)) in squares
+            if not c.dead and to_square(as_point(c.position)) in squares
         ]
         if self.battle_map is None:
             return caught
@@ -1098,6 +1256,41 @@ class Encounter:
             c for c in caught
             if self._cover_from_square(origin_square, c.name) is not CoverGrade.TOTAL
         ]
+    def save_advantage(self, creature: Creature, ability: Ability | None) -> Advantage:
+        """Advantage this creature's saving throw resolves under.
+
+        Separate from :meth:`auto_fails_save` rather than folded into it, because a
+        forced failure still rolls: the two answers are independent and both are
+        needed at the same call sites.
+        """
+        if ability is None:
+            return Advantage.NONE
+        return compute_save_advantage(
+            conditions=creature.conditions,
+            ability=ability,
+            extra_advantage=(
+                1
+                if ability is Ability.DEXTERITY and self._dodge_benefits(creature)
+                else 0
+            ),
+            condition_effects=self.condition_effects,
+        )
+
+    def _dodge_benefits(self, creature: Creature) -> bool:
+        """Whether a Dodge taken this round is still doing anything.
+
+        Taking the action is not the same as keeping it: the benefits are lost while
+        the creature is Incapacitated or its Speed is 0. Restrained makes that
+        reachable — a Restrained creature may still Dodge, and gains nothing by it,
+        so its Dexterity save stays at Disadvantage instead of cancelling to a
+        straight roll.
+        """
+        if not self._dodging[creature.name]:
+            return False
+        return not (
+            is_incapacitated(creature.conditions, self.condition_effects)
+            or speed_is_zero(creature.conditions, self.condition_effects)
+        )
 
     def _spell_targets(
         self, actor: Creature, spell: Spell, action: Action
@@ -1116,11 +1309,22 @@ class Encounter:
         because one creature at the far edge of the blast sits past the range would
         be wrong — and on a battle map the origin must also be visible. A cone or
         line pours out of the caster, so there is nothing to range-check at all.
+
+        **Consciousness is not a filter.** SRD 5.2, "Spells" -> Targets -> Areas of
+        Effect: "The area determines what the spell targets." A creature at 0 hit
+        points is inside the blast or it is not, and the Unconscious condition's own
+        clause — "You automatically fail Strength and Dexterity saving throws" —
+        exists precisely for the roll a Fireball then makes it attempt. Filtering
+        here meant a blast centred on a dying creature's exact square dealt it
+        nothing while burning everyone around it. Corpses are still excluded; the
+        named branches refuse one outright rather than dropping it silently, so a
+        caller who aims at a body is told, not ignored.
         """
         area_origin: Square | None = None
         if action.targets:
             chosen = [self._resolve_target(name) for name in action.targets]
             for creature in chosen:
+                self._require_targetable(creature)
                 self._require_in_range(actor, spell, creature.position, creature.name)
         elif spell.is_area and (
             action.center is not None
@@ -1153,6 +1357,7 @@ class Encounter:
             )
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
+            self._require_targetable(chosen[0])
             self._require_in_range(actor, spell, chosen[0].position, chosen[0].name)
         else:
             raise EncounterError(
@@ -1160,20 +1365,19 @@ class Encounter:
                 f"'center' for a sphere or cube, 'direction' for a cone, "
                 f"'toward' for a line"
             )
-        landed = [c for c in chosen if c.conscious]
         if spell.is_area:
             # An area is bounded by its template, not by a head count. Every
             # bundled area spell leaves max_targets at its default of 1, so
             # applying the cap here would quietly shrink a Fireball to a single
             # creature.
-            return landed, area_origin
-        if len(landed) > spell.max_targets:
+            return chosen, area_origin
+        if len(chosen) > spell.max_targets:
             creatures = "creature" if spell.max_targets == 1 else "creatures"
             raise EncounterError(
                 f"{spell.name} affects at most {spell.max_targets} {creatures}; "
-                f"{len(landed)} were named"
+                f"{len(chosen)} were named"
             )
-        return landed, area_origin
+        return chosen, area_origin
 
     def _require_in_range(
         self, actor: Creature, spell: Spell, position: Point | int, what: str
@@ -1387,9 +1591,8 @@ class Encounter:
         advantage = compute_attack_advantage(
             attacker_conditions=attacker.conditions,
             target_conditions=mover.conditions,
-            kind=melee.kind,
             distance=MELEE_THRESHOLD,
-            extra_disadvantage=1 if self._dodging[mover.name] else 0,
+            extra_disadvantage=1 if self._dodge_benefits(mover) else 0,
             condition_effects=self.condition_effects,
         )
         resolution = resolve_attack(
@@ -1412,15 +1615,143 @@ class Encounter:
                    advantage=resolution.advantage.value,
                    damage=resolution.damage_dealt)
         if resolution.hit:
-            self._apply_damage(mover, resolution.damage_dealt, rng)
+            # A mover cannot currently be at 0 hit points — a dying creature has
+            # Speed 0 — so the flag changes nothing today. It is passed anyway: two
+            # call sites resolving the same kind of attack and only one carrying the
+            # critical is the asymmetry that becomes a bug when reactions grow.
+            self._apply_damage(
+                mover, resolution.damage_dealt, rng, critical=resolution.critical
+            )
+
+    # --- ongoing effects --------------------------------------------------
+    def _apply_condition(
+        self,
+        source: Creature,
+        target: Creature,
+        condition: str,
+        *,
+        effect_name: str,
+        concentration: bool,
+    ) -> None:
+        """Impose ``condition`` and record what is imposing it.
+
+        Registration happens *after* ``add_condition`` so a name the active table
+        does not define is refused before anything is written down, and the
+        ``stacked`` reading is taken *before*, because it is a statement about the
+        creature as it was.
+        """
+        held_by_ledger = self._holders(target.name, condition)
+        already_held = condition in target.conditions
+        target.add_condition(condition)
+        self._next_effect_id += 1
+        self._effects.append(
+            OngoingEffect(
+                id=self._next_effect_id,
+                source=source.name,
+                name=effect_name,
+                target=target.name,
+                condition=condition,
+                concentration=concentration,
+                stacked=already_held and not held_by_ledger,
+            )
+        )
+
+    def _holders(self, target: str, condition: str) -> list[OngoingEffect]:
+        return [
+            effect for effect in self._effects
+            if effect.target == target and effect.condition == condition
+        ]
+
+    def _release_effect(self, effect: OngoingEffect) -> None:
+        """End one ongoing effect, lifting its condition only if nothing else holds it.
+
+        The two reasons a condition survives its own effect ending are the reason
+        this is a ledger rather than a ``remove_condition`` paired with each
+        ``add_condition``: a second caster may be imposing the same condition on the
+        same creature, and the creature may have been carrying it before either of
+        them arrived.
+        """
+        self._effects.remove(effect)
+        target = self.creatures.get(effect.target)
+        if target is None:  # pragma: no cover - names cannot leave the roster
+            return
+        remaining = self._holders(effect.target, effect.condition)
+        if remaining or effect.stacked:
+            reason = (
+                "another effect still holds it" if remaining
+                else "it was already held"
+            )
+            self._emit(
+                "effect_end", effect.source, effect.target,
+                f"{effect.name} ends; {effect.condition} persists ({reason})",
+            )
+            return
+        target.remove_condition(effect.condition)
+        self._emit(
+            "effect_end", effect.source, effect.target,
+            f"{effect.name} ends; {effect.condition} lifts",
+        )
+
+    def _end_concentration(self, actor: Creature) -> None:
+        """Drop whatever ``actor`` is concentrating on, and everything it sustains."""
+        for effect in list(self._effects):
+            if effect.concentration and effect.source == actor.name:
+                self._release_effect(effect)
+        actor.concentrating_on = None
+
+    def _reconcile_concentration(self) -> None:
+        """Enforce the one invariant that makes concentration effects end.
+
+        **An ongoing concentration effect exists exactly while its source is still
+        sustaining it.** Checking that, rather than releasing at each place
+        concentration can lapse, is deliberate: SRD 5.2 ends Concentration on a
+        failed Constitution save, on the Incapacitated condition, on death, and on
+        starting another Concentration effect — and two of those are enforced inside
+        :class:`~fivee_sim.model.creature.Creature`, which cannot reach this ledger.
+        A design with one release call per exit point is a design where the next
+        exit point added leaks silently.
+
+        ``dead`` and ``active`` are consulted alongside ``concentrating_on`` rather
+        than trusting it alone, because they are what SRD 5.2 actually says
+        ("Your Concentration ends if you have the Incapacitated condition or you
+        die") and because not every route to death clears the field: a creature
+        killed by its third failed death save is marked dead by
+        :meth:`_death_save`, which never touches it.
+
+        This consumes no randomness, so a batch's RNG stream is unaffected.
+        """
+        for effect in list(self._effects):
+            if not effect.concentration:
+                continue
+            source = self.creatures.get(effect.source)
+            if source is None:  # pragma: no cover - names cannot leave the roster
+                self._release_effect(effect)
+                continue
+            spent = source.dead or not source.active
+            if spent or source.concentrating_on != effect.name:
+                self._release_effect(effect)
+            # Cleared only when the creature genuinely cannot concentrate, never
+            # merely because a stale entry did not match: clearing on a mismatch
+            # would cancel a *new* concentration the caster had just begun.
+            if spent:
+                source.concentrating_on = None
 
     # --- damage and concentration ----------------------------------------
-    def _apply_damage(self, target: Creature, amount: int, rng: Random) -> None:
+    def _apply_damage(
+        self, target: Creature, amount: int, rng: Random, *, critical: bool = False
+    ) -> None:
         if amount <= 0:
             return
         was_conscious = target.conscious
+        was_dead = target.dead
+        # Which rule killed the creature is not recoverable afterwards, so the
+        # failure count is read here: the massive-damage rule is the only route to
+        # death that accrues none.
+        failures_before = target.death_save_failures
         concentrating = target.concentrating_on
-        target.take_damage(amount)
+        # ``critical`` only matters for a target already at 0 hit points, where a
+        # critical hit costs two death save failures instead of one.
+        target.take_damage(amount, critical=critical)
         self._emit("damage", target=target.name,
                    detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left",
                    amount=amount, hp=target.hp, max_hp=target.max_hp)
@@ -1440,11 +1771,22 @@ class Encounter:
                 self._emit("concentration", target.name,
                            detail=f"loses {concentrating} ({save.describe()})",
                            spell=concentrating, held=False)
-        if was_conscious and not target.conscious:
-            if target.dead:
-                self._emit("death", target.name, detail="damage exceeded maximum hit points")
-            else:
-                self._emit("down", target.name, detail="falls unconscious and is dying")
+        # Death is announced from ``dead`` rather than from a loss of consciousness.
+        # Keying it on the latter meant a creature already at 0 — killed by its third
+        # failure, or by damage matching its maximum — died with the state correct
+        # and the log silent, which is the one event a narrator cannot do without.
+        if target.dead and not was_dead:
+            self._emit("death", target.name, detail=(
+                "a third failed death save"
+                if target.death_save_failures > failures_before
+                else "damage exceeded maximum hit points"
+            ))
+        elif was_conscious and not target.conscious:
+            self._emit("down", target.name, detail="falls unconscious and is dying")
+        # Three of the four ways concentration ends pass through here — the failed
+        # save above, being knocked out, and dying — so the release is reported next
+        # to the loss rather than at the end of the action that caused it.
+        self._reconcile_concentration()
 
     def _emit(
         self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any

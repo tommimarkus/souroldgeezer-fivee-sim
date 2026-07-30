@@ -131,7 +131,33 @@ consequences the rules engine already knows how to apply:
 `attacked_with_disadvantage`, `attacked_with_advantage_in_melee`,
 `attacked_with_disadvantage_at_range`, `own_attacks_have_advantage`,
 `own_attacks_have_disadvantage`, `auto_fail_strength_saves`,
-`auto_fail_dexterity_saves`, `melee_hits_are_critical`, `resists_all_damage`.
+`auto_fail_dexterity_saves`, `advantage_on_dexterity_saves`,
+`disadvantage_on_dexterity_saves`, `melee_hits_are_critical`,
+`resists_all_damage`.
+
+Failing a save and being bad at one are different flags on purpose.
+`auto_fail_dexterity_saves` decides the outcome; `disadvantage_on_dexterity_saves`
+only weights it, and the creature can still succeed. Setting both leaves the
+automatic failure in charge.
+
+`melee_hits_are_critical` is scoped by **distance, not by weapon**, and the name is
+historical. It upgrades any attack roll that lands from within 5 ft — a swing, a
+shot, or a spell attack — which is how SRD 5.2 words the clause on Paralyzed and
+Unconscious. Beyond 5 ft it does nothing.
+
+`attacked_with_advantage_in_melee` and `attacked_with_disadvantage_at_range` are the
+directional pair, and they are scoped the same way — **distance, not weapon**. Their
+names are historical too, and kept so packs that set them keep working.
+`attacked_with_advantage_in_melee` applies to any attack made from within 5 ft;
+`attacked_with_disadvantage_at_range` applies to any attack made from beyond it. Set
+both together for the Prone shape SRD 5.2 states: "An attack roll against you has
+Advantage if the attacker is within 5 feet of you. Otherwise, that attack roll has
+Disadvantage." A bow drawn point-blank on such a creature therefore gets Advantage,
+and a reach weapon swung from 10 ft gets Disadvantage.
+
+The three flags that read on attack rolls — `attacked_with_advantage`,
+`own_attacks_have_disadvantage`, and their siblings — apply to spell attack rolls
+as well as weapon ones, because the rules treat both as the same D20 Test.
 
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.

@@ -396,7 +396,10 @@
     {
       "name": "ledger-quickened",
       "description": "Everything is very fast and very clear and will not last.",
-      "effects": { "own_attacks_have_advantage": true },
+      "effects": {
+        "own_attacks_have_advantage": true,
+        "advantage_on_dexterity_saves": true
+      },
       "provenance": "Original content — The Alchemist's Ledger"
     },
     {

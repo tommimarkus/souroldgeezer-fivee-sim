@@ -33,7 +33,7 @@ from fivee_sim.content import (
     validate,
 )
 from fivee_sim.data import make_creature
-from fivee_sim.kernel.actions import AttackKind, compute_attack_advantage
+from fivee_sim.kernel.actions import compute_attack_advantage
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.mcp_server import server as api
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
@@ -508,6 +508,92 @@ class TestDiagnostics:
         assert not validate(include_environment=False)
 
 
+class TestAreaDeclaration:
+    """``shape`` and ``radius`` are one declaration, and they have to agree.
+
+    Only ``radius`` is load-bearing — ``model.encounter`` and ``analytics.montecarlo``
+    both decide "is this an area?" from it alone, and nothing anywhere reads ``shape``.
+    A pack author has no way to know that: ``shape`` is the field that *looks* like the
+    one declaring an area, and the docs tell them to set both. So a record giving one
+    without the other is a mistake the loader has to name, or the spell quietly does
+    something other than what the record says.
+    """
+
+    def check(self, tmp_path: Path, spell: dict[str, Any]) -> list[Any]:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test", "spells": [spell],
+        })
+        return validate([path], include_environment=False)
+
+    def blast(self, **overrides: Any) -> dict[str, Any]:
+        spell: dict[str, Any] = {
+            "name": "Vale Blast", "level": 3, "save_ability": "dexterity",
+            "damage": "6d6", "damage_type": "fire", "range_feet": 120,
+            "provenance": "test",
+        }
+        spell.update(overrides)
+        return spell
+
+    def test_an_area_shape_without_a_radius_is_refused(self, tmp_path: Path) -> None:
+        # The defect this class exists for. The author declared a sphere and got a
+        # spell that hits exactly one creature, with nothing said about it.
+        found = problems(self.check(tmp_path, self.blast(shape="sphere")))
+        assert any("radius" in p for p in found), found
+        assert any("sphere" in p for p in found), found
+
+    def test_declaring_single_target_alongside_a_radius_is_refused(
+        self, tmp_path: Path
+    ) -> None:
+        # The mirror image, and silent the other way round: the radius wins, so the
+        # spell sweeps an area while the record claims one target. Matched on wording
+        # unique to this branch — "radius" and "single" both appear in the sphere
+        # message too, so a looser assertion would not pin which branch fired, and
+        # branch fallthrough in this block is a mistake already made once.
+        found = problems(self.check(tmp_path, self.blast(shape="single", radius=20)))
+        assert any("decides who is caught" in p for p in found), found
+        assert any("drop the radius" in p for p in found), found
+
+    def test_a_radius_without_a_shape_warns_and_still_loads(self, tmp_path: Path) -> None:
+        # Incomplete, not wrong: radius alone already resolves as an area. So this
+        # stays a warning, and the message must not claim a consequence that does not
+        # happen — the old one said "it will be treated as single-target", which was
+        # simply false.
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [self.blast(radius=20)],
+        })
+        diagnostics = validate([path], include_environment=False)
+        assert not problems(diagnostics), "an area that works must not fail to load"
+        warned = problems(diagnostics, Severity.WARNING)
+        assert any("shape" in p for p in warned), warned
+        assert not any("single-target" in p for p in warned), warned
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Blast"].radius == 20
+
+    def test_a_shape_and_radius_that_agree_load_clean(self, tmp_path: Path) -> None:
+        # The regression guard: the check must not cost a correct pack anything.
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [self.blast(shape="sphere", radius=20)],
+        })
+        assert not validate([path], include_environment=False)
+        assert load_packs([path], include_environment=False).spells["Vale Blast"].radius == 20
+
+    def test_a_single_target_spell_declaring_neither_is_clean(self, tmp_path: Path) -> None:
+        assert not self.check(tmp_path, self.blast())
+
+    def test_an_unparseable_shape_is_reported_once_and_not_second_guessed(
+        self, tmp_path: Path
+    ) -> None:
+        # "ring" is not a shape this engine knows. That is the enum's error to report;
+        # the agreement check must not also announce what the record "declares",
+        # because it does not know.
+        found = problems(self.check(tmp_path, self.blast(shape="ring", radius=20)))
+        assert found == [
+            "'ring' is not valid; must be one of: single, sphere, cone, line, cube"
+        ], found
+
+
 class TestPathSafety:
     def test_a_missing_path_is_reported(self, tmp_path: Path) -> None:
         found = problems(validate([tmp_path / "nope.json"], include_environment=False))
@@ -610,7 +696,6 @@ class TestCustomConditions:
         assert compute_attack_advantage(
             attacker_conditions=["vale-cursed"],
             target_conditions=[],
-            kind=AttackKind.MELEE,
             distance=5,
             condition_effects=registry.condition_effects,
         ) is Advantage.DISADVANTAGE
@@ -625,7 +710,6 @@ class TestCustomConditions:
             compute_attack_advantage(
                 attacker_conditions=["vale-blessed"],
                 target_conditions=[],
-                kind=AttackKind.MELEE,
                 distance=5,
                 condition_effects=registry.condition_effects,
             )
@@ -672,6 +756,61 @@ class TestCustomConditions:
         hero = make_creature("Goblin Warrior", registry=registry, label="A", team="a")
         hero.add_condition("vale-frozen")
         assert hero.active is False
+
+    def test_a_pack_concentration_spell_releases_its_own_condition(
+        self, tmp_path: Path
+    ) -> None:
+        """The release mechanism is driven by pack data, not by the SRD spell list.
+
+        Nothing here is an SRD name: the spell, the condition and the caster are the
+        pack's. If the release were special-cased on Hold Person or on the
+        ``Condition`` enum, this is the test that would fail.
+        """
+        payload = {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "vale-frozen", "provenance": "test",
+                "effects": {"incapacitated": True, "speed_zero": True},
+            }],
+            "spells": [{
+                "name": "Vale Binding", "level": 1, "provenance": "test",
+                "save_ability": "wisdom", "condition": "vale-frozen",
+                "concentration": True, "range_feet": 60,
+            }],
+        }
+        path = write_pack(tmp_path, "binding.json", payload)
+        registry = load_packs([path], include_environment=False)
+        binder = make_creature("Goblin Warrior", registry=registry, label="A", team="a")
+        binder.spells = ("Vale Binding",)
+        binder.spell_slots = {1: 1}
+        binder.spell_save_dc = 20
+        victim = make_creature("Goblin Warrior", registry=registry, label="B", team="b")
+        victim.position = 10
+        # A third combatant keeps the fight running once the binder goes down, so
+        # the encounter still takes turns and the release is observable.
+        ally = make_creature("Goblin Warrior", registry=registry, label="C", team="a")
+        ally.position = 5
+        rng = Random(5)
+        encounter = Encounter(
+            [binder, victim, ally], rng,
+            spellbook=registry.spells,
+            items=registry.items,
+            condition_effects=registry.condition_effects,
+        )
+        for _ in range(4):
+            if encounter.current_name == "A":
+                break
+            encounter.advance(rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Vale Binding", target="B"), Random(3)
+        )
+        assert "vale-frozen" in victim.conditions
+        assert binder.concentrating_on == "Vale Binding"
+
+        binder.take_damage(binder.hp)
+        encounter.advance(rng)
+        assert binder.concentrating_on is None
+        assert "vale-frozen" not in victim.conditions
 
 
 class TestCustomTerrain:

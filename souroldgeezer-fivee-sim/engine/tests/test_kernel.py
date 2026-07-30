@@ -7,16 +7,26 @@ Resistance rounding — rather than restating what the code obviously does.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from inspect import signature
 from random import Random
 
 import pytest
 
 from fivee_sim.kernel.actions import (
-    AttackKind,
+    MELEE_THRESHOLD,
     compute_attack_advantage,
     melee_hit_is_critical,
 )
-from fivee_sim.kernel.conditions import Condition, is_incapacitated, speed_is_zero
+from fivee_sim.kernel.conditions import (
+    EFFECTS,
+    Condition,
+    UnknownCondition,
+    compute_save_advantage,
+    effect_of,
+    is_incapacitated,
+    speed_is_zero,
+)
 from fivee_sim.kernel.dice import (
     Advantage,
     Dice,
@@ -26,10 +36,12 @@ from fivee_sim.kernel.dice import (
     roll_dice,
 )
 from fivee_sim.kernel.rules import (
+    Ability,
     AttackRoll,
     ability_modifier,
     concentration_dc,
     effective_damage,
+    make_d20_test,
     proficiency_bonus,
     resolve_attack_roll,
 )
@@ -49,6 +61,24 @@ class FixedRandom(Random):
 
     def randint(self, a: int, b: int) -> int:
         return min(self._natural, b)
+
+
+class ScriptedRandom(Random):
+    """A generator that plays a written sequence of faces, then falls back to the max.
+
+    :class:`FixedRandom` cannot express a sequence where the rolls must differ — an
+    attack that *hits* and then a Constitution save that *fails* need a high face
+    and a low one out of the same call. Each face is clamped into the die's own
+    range, so a script written for d20s stays sane when a damage die is drawn.
+    """
+
+    def __init__(self, script: Sequence[int]) -> None:
+        super().__init__(0)
+        self._script = list(script)
+
+    def randint(self, a: int, b: int) -> int:
+        face = self._script.pop(0) if self._script else b
+        return max(a, min(face, b))
 
 
 class TestDiceParsing:
@@ -190,28 +220,49 @@ class TestDerivedNumbers:
 
 
 class TestConditionInteractions:
-    def test_prone_gives_melee_advantage_and_ranged_disadvantage(self) -> None:
-        melee = compute_attack_advantage(
+    def test_prone_advantage_is_scoped_by_distance_not_by_weapon(self) -> None:
+        # SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "You have Disadvantage
+        # on attack rolls. An attack roll against you has Advantage if the attacker
+        # is within 5 feet of you. Otherwise, that attack roll has Disadvantage."
+        # The same shape as the Paralyzed/Unconscious automatic critical: it names a
+        # distance and no weapon kind, which is why this function takes no
+        # AttackKind. The boundary is what the old melee gate got wrong — a shot
+        # fired from inside 5 feet is still made by an attacker "within 5 feet".
+        assert compute_attack_advantage(
             attacker_conditions=(),
             target_conditions=(Condition.PRONE,),
-            kind=AttackKind.MELEE,
-            distance=5,
-        )
-        ranged = compute_attack_advantage(
+            distance=MELEE_THRESHOLD,
+        ) is Advantage.ADVANTAGE
+        assert compute_attack_advantage(
             attacker_conditions=(),
             target_conditions=(Condition.PRONE,),
-            kind=AttackKind.RANGED,
+            distance=MELEE_THRESHOLD + 5,
+        ) is Advantage.DISADVANTAGE
+        assert compute_attack_advantage(
+            attacker_conditions=(),
+            target_conditions=(Condition.PRONE,),
             distance=60,
+        ) is Advantage.DISADVANTAGE
+
+    def test_compute_attack_advantage_does_not_consult_the_weapon(self) -> None:
+        # The guard against reintroducing the gate: no source of Advantage in the
+        # table is scoped by melee/ranged, so the function has nothing to read an
+        # AttackKind for. ``long_range_penalty`` is the caller's job precisely
+        # because it is the one thing that *is* weapon-shaped.
+        parameters = signature(compute_attack_advantage).parameters
+        assert "kind" not in parameters
+        # ``from __future__ import annotations`` makes these strings, so match on the
+        # name rather than the class.
+        assert not any(
+            "AttackKind" in str(parameter.annotation)
+            for parameter in parameters.values()
         )
-        assert melee is Advantage.ADVANTAGE
-        assert ranged is Advantage.DISADVANTAGE
 
     def test_restrained_target_and_poisoned_attacker_cancel_out(self) -> None:
         assert (
             compute_attack_advantage(
                 attacker_conditions=(Condition.POISONED,),
                 target_conditions=(Condition.RESTRAINED,),
-                kind=AttackKind.MELEE,
                 distance=5,
             )
             is Advantage.NONE
@@ -222,7 +273,6 @@ class TestConditionInteractions:
             compute_attack_advantage(
                 attacker_conditions=(),
                 target_conditions=(),
-                kind=AttackKind.RANGED,
                 distance=200,
                 long_range_penalty=True,
             )
@@ -231,14 +281,112 @@ class TestConditionInteractions:
 
     def test_paralyzed_makes_melee_hits_critical_only_within_reach(self) -> None:
         assert melee_hit_is_critical(
-            target_conditions=(Condition.PARALYZED,), kind=AttackKind.MELEE, distance=5
+            target_conditions=(Condition.PARALYZED,), distance=5
         )
         assert not melee_hit_is_critical(
-            target_conditions=(Condition.PARALYZED,), kind=AttackKind.RANGED, distance=30
+            target_conditions=(Condition.PARALYZED,), distance=30
         )
+
+    def test_the_automatic_critical_is_scoped_by_distance_not_by_weapon(self) -> None:
+        # SRD 5.2 Rules Glossary, Paralyzed and Unconscious, both verbatim: "Any
+        # attack roll that hits you is a Critical Hit if the attacker is within 5
+        # feet of you." The clause names a distance and no weapon kind, which is
+        # why the function takes no AttackKind: an attack that is not melee still
+        # qualifies when it is made from inside 5 feet, and one that is melee does
+        # not qualify from outside it.
+        for condition in (Condition.PARALYZED, Condition.UNCONSCIOUS):
+            assert melee_hit_is_critical(
+                target_conditions=(condition,), distance=MELEE_THRESHOLD
+            )
+            assert not melee_hit_is_critical(
+                target_conditions=(condition,), distance=MELEE_THRESHOLD + 5
+            )
 
     def test_incapacitating_and_speed_zero_conditions(self) -> None:
         assert is_incapacitated((Condition.STUNNED,))
         assert not is_incapacitated((Condition.PRONE,))
         assert speed_is_zero((Condition.GRAPPLED,))
         assert not speed_is_zero((Condition.PRONE,))
+
+    def test_stunned_does_not_zero_speed(self) -> None:
+        # SRD 5.2 Stunned is Incapacitated, auto-failed Strength and Dexterity
+        # saves, and Advantage on attacks against you. There is no Speed 0 clause —
+        # that was the 2014 wording ("can't move"), and Incapacitated does not carry
+        # one either. Paralyzed, Petrified, and Unconscious each state Speed 0
+        # explicitly, which is what makes its absence here deliberate.
+        assert not speed_is_zero((Condition.STUNNED,))
+
+
+class TestSavingThrowConditions:
+    """Which conditions touch a saving throw, and how.
+
+    SRD 5.2 divides them two ways, and the difference is not cosmetic. Paralyzed,
+    Petrified, Stunned, and Unconscious make Strength and Dexterity saving throws
+    fail outright. Restrained only imposes Disadvantage on Dexterity saving throws
+    — the creature still rolls, and can still succeed.
+    """
+
+    def test_restrained_imposes_disadvantage_rather_than_automatic_failure(self) -> None:
+        effect = effect_of(Condition.RESTRAINED)
+        assert not effect.auto_fail_dexterity_saves
+        assert effect.disadvantage_on_dexterity_saves
+
+    def test_only_the_four_incapacitating_conditions_auto_fail_saves(self) -> None:
+        auto_failing = {
+            name
+            for name, effect in EFFECTS.items()
+            if effect.auto_fail_strength_saves or effect.auto_fail_dexterity_saves
+        }
+        assert auto_failing == {
+            Condition.PARALYZED,
+            Condition.PETRIFIED,
+            Condition.STUNNED,
+            Condition.UNCONSCIOUS,
+        }
+
+    def test_a_restrained_creature_rolls_dexterity_saves_with_disadvantage(self) -> None:
+        assert (
+            compute_save_advantage(
+                conditions=(Condition.RESTRAINED,), ability=Ability.DEXTERITY
+            )
+            is Advantage.DISADVANTAGE
+        )
+
+    def test_restrained_leaves_every_other_ability_alone(self) -> None:
+        for ability in (Ability.STRENGTH, Ability.CONSTITUTION, Ability.WISDOM):
+            assert (
+                compute_save_advantage(
+                    conditions=(Condition.RESTRAINED,), ability=ability
+                )
+                is Advantage.NONE
+            )
+
+    def test_advantage_from_elsewhere_cancels_the_disadvantage(self) -> None:
+        # Dodge is the caller that supplies it. The cancel rule is the one attack
+        # rolls already use: any Advantage plus any Disadvantage yields neither.
+        assert (
+            compute_save_advantage(
+                conditions=(Condition.RESTRAINED,),
+                ability=Ability.DEXTERITY,
+                extra_advantage=1,
+            )
+            is Advantage.NONE
+        )
+
+    def test_a_condition_the_table_does_not_define_is_reported(self) -> None:
+        with pytest.raises(UnknownCondition):
+            compute_save_advantage(conditions=("smitten",), ability=Ability.STRENGTH)
+
+    def test_an_auto_failed_save_still_rolls_its_dice(self) -> None:
+        # Paralyzed and Restrained together: the save fails whatever the dice say,
+        # but Disadvantage still costs two rolls. Skipping them when the outcome is
+        # forced would desynchronise the analytics replay from live play.
+        test = make_d20_test(
+            Random(1),
+            modifier=3,
+            dc=15,
+            advantage=Advantage.DISADVANTAGE,
+            auto_fail=True,
+        )
+        assert not test.success
+        assert len(test.roll.rolls) == 2

@@ -169,7 +169,7 @@ def _attack_options(
                 target_ac=target.ac + cover_ac_bonus(grade),
                 damage=option.damage,
                 advantage=encounter.attack_advantage(actor, target, option),
-                forced_critical=encounter.attack_forced_critical(actor, target, option),
+                forced_critical=encounter.attack_forced_critical(actor, target),
                 resisted=target.resists(option.damage_type),
                 vulnerable=option.damage_type in target.vulnerabilities,
                 immune=option.damage_type in target.immunities,
@@ -221,10 +221,16 @@ def _spell_options(
                 ):
                     continue
                 if spell.requires_attack_roll:
+                    # Read off the encounter, never re-derived: the stepper will
+                    # roll this attack under exactly these two values, and a policy
+                    # that guessed them would value a Guiding Bolt at a helpless
+                    # target as a flat d20 and pass over the best action it had.
                     expected = attack_damage_expectation(
                         attack_bonus=actor.spell_attack_bonus,
                         target_ac=target.ac,
                         damage=dice,
+                        advantage=encounter.spell_attack_advantage(actor, target),
+                        forced_critical=encounter.attack_forced_critical(actor, target),
                         resisted=_resists(target, spell),
                         vulnerable=_vulnerable(target, spell),
                         immune=_immune(target, spell),
@@ -257,9 +263,14 @@ def _area_value(
 
     Each share is capped at the creature's remaining hit points, so overkill is
     not value; allies caught in the area, the caster included, subtract theirs.
+    A downed creature is caught by the template and burned by the cast — that is
+    the stepper's business — but it is worth nothing here: it threatens nobody,
+    so the policy spends its placements on the standing.
     """
     value = 0.0
     for creature in caught:
+        if not creature.conscious:
+            continue
         expected = _save_expectation(encounter, actor, spell, dice, creature)
         share = min(expected, float(creature.hp))
         value += -share if creature.team == actor.team else share
@@ -747,10 +758,22 @@ def simulate_dpr(
             items=items,
             condition_effects=condition_effects,
         )
+        # ``__init__`` has already begun a turn for whoever won Initiative, so the
+        # budget in hand is theirs. Read that before the order is rewritten below,
+        # which does not rebuild it.
+        began_for = encounter.current_name
         # Force the attacker to act first: initiative is irrelevant to a damage
         # measurement, and a passive dummy would otherwise waste a turn.
         encounter.order = [attacker.name, dummy.name]
         encounter.turn_index = 0
+        if began_for != attacker.name:
+            # Begin the attacker's turn through the stepper's own setup — the same
+            # call ``advance`` makes — rather than restating what a turn grants.
+            # Without this, round 1 ran on the dummy's budget: no movement, and a
+            # single swing however many the Attack action allows. Guarded because
+            # ``_begin_turn`` is not idempotent — it rolls a death save for a dying
+            # creature, and a turn is worth one of those, not two.
+            encounter._begin_turn(rng)
         for _ in range(rounds):
             for _ in range(MAX_ACTIONS_PER_TURN):
                 action = auto_action(encounter)

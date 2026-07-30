@@ -72,10 +72,48 @@ NOT_SUPPORTED = (
         "through space), and climbing or swimming as movement modes.",
     ),
     (
+        "Timed durations",
+        "Concentration is tracked, and ending it lifts the condition the spell "
+        "imposed. Elapsed time is not: the 'up to 1 minute' cap on a concentration "
+        "spell never expires it, a spell's repeat saving throw at the end of the "
+        "target's turn is not rolled, and a condition applied by an item or set "
+        "directly on a stat block lasts until something removes it. A condition that "
+        "should wear off on its own does not.",
+    ),
+    (
         "Reactions other than opportunity attacks",
         "Readied actions, Shield and similar reaction spells, Parry, and legendary or "
         "lair actions. Each combatant has one reaction per round and only ever spends "
         "it on an opportunity attack.",
+    ),
+    (
+        "A fight that carries on over the dying",
+        "An encounter ends as soon as one side has nobody conscious left, so a side "
+        "reduced to dying creatures counts as beaten. Their death saves stop with the "
+        "fight: a downed creature can never roll the natural 20 that would put it back "
+        "on its feet, and a mutual knockout is reported as a draw rather than decided "
+        "by whichever side recovers first. Damage to a creature at 0 hit points is "
+        "fully modelled — an attack, an area spell, and an item all reach one — but "
+        "this is about when the fight stops being simulated. Measured on the bundled "
+        "stat blocks, counting the dying as still in the fight would lengthen a "
+        "reported fight by 58% to 131%, and 30% to 46% of every round reported would "
+        "be one in which nobody acts at all — more still once a caster is involved. "
+        "Nothing in the auto-play policy that drives a batch finishes a downed "
+        "creature off or takes the Help action to stabilise one, so those rounds are "
+        "an empty room rather than a fight.",
+    ),
+    (
+        "Monster instant death",
+        "SRD 5.2 has a monster die the instant it drops to 0 hit points, where a "
+        "character instead falls unconscious and makes death saving throws. Every "
+        "combatant here is treated as a character, so any creature that drops begins "
+        "the dying state.",
+    ),
+    (
+        "Conditions imposed on a creature that is already down",
+        "A spell or item that imposes a condition applies it only to a conscious "
+        "target. Damage from the same effect still lands on a dying creature, and "
+        "still costs it a death saving throw failure; the condition does not follow.",
     ),
 )
 
@@ -267,7 +305,16 @@ def render_markdown() -> str:
     add("Also resolved: death saving throws, stabilising, instant death when damage "
         "past 0 hit points equals maximum hit points, damage resistance, vulnerability "
         "and immunity, and concentration checks when a concentrating creature is "
-        "damaged.")
+        "damaged. A condition a concentration spell imposed is lifted when that "
+        "concentration ends — by a failed check, by the caster being incapacitated or "
+        "killed, or by the caster beginning another concentration spell — unless "
+        "another effect is still imposing it.")
+    add("")
+    add("A creature at 0 hit points is a legal target, not an untouchable one: an "
+        "attack, an area effect it stands inside, and a usable item all reach it. Each "
+        "costs it one death saving throw failure, two if the damage came from a "
+        "critical hit — and an attack from within 5 feet of an Unconscious creature is "
+        "always a critical hit. Only a dead creature is refused as a target.")
     add("")
 
     add("## Damage types")

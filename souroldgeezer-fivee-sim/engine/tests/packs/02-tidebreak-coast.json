@@ -219,7 +219,7 @@
       "effects": {
         "speed_zero": true,
         "attacked_with_advantage": true,
-        "auto_fail_dexterity_saves": true
+        "disadvantage_on_dexterity_saves": true
       },
       "provenance": "Original content — Tidebreak Coast"
     }

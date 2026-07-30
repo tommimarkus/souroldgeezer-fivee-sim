@@ -33,7 +33,6 @@ def compute_attack_advantage(
     *,
     attacker_conditions: Iterable[str],
     target_conditions: Iterable[str],
-    kind: AttackKind,
     distance: int,
     long_range_penalty: bool = False,
     extra_advantage: int = 0,
@@ -45,6 +44,24 @@ def compute_attack_advantage(
     Sources are counted rather than short-circuited because the 2024 rule is that
     any Advantage plus any Disadvantage yields neither — so both tallies have to be
     known before deciding.
+
+    **The directional pair is scoped by distance, not by weapon**, and takes no
+    :class:`AttackKind` for the same reason :func:`melee_hit_is_critical` does not.
+    Prone words it exactly as Paralyzed and Unconscious word the automatic
+    critical: "An attack roll against you has Advantage if the attacker is within 5
+    feet of you. Otherwise, that attack roll has Disadvantage." That names a
+    distance and no melee/ranged qualifier, so a crossbow shot — or a spell attack
+    — from inside 5 feet takes the Advantage half, and a reach weapon swung from
+    beyond it takes the Disadvantage half. An argument the rule does not consult is
+    an invitation to reintroduce a check the rule never had.
+
+    The engine models no offsetting penalty for shooting at close quarters. SRD
+    5.2, "Ranged Attacks in Close Combat", gives Disadvantage to a ranged attack
+    made "within 5 feet of an enemy who can see you and doesn't have the
+    Incapacitated condition" — a rule this engine does not represent, because it
+    turns on visibility and on who counts as an enemy of whom. It is unmodelled
+    either way; gating Prone on the weapon was not an approximation of it, since it
+    fired against Prone allies and never against a non-Prone target.
 
     Frightened is treated as always applying. The rule conditions it on the source
     of fear being in line of sight, which a one-dimensional battlefield with no
@@ -60,16 +77,19 @@ def compute_attack_advantage(
         if effect.own_attacks_have_disadvantage:
             disadvantage_sources += 1
 
-    in_melee_range = kind is AttackKind.MELEE and distance <= MELEE_THRESHOLD
+    within_5_feet = distance <= MELEE_THRESHOLD
     for condition in target_conditions:
         effect = effect_of(condition, condition_effects)
         if effect.attacked_with_advantage:
             advantage_sources += 1
         if effect.attacked_with_disadvantage:
             disadvantage_sources += 1
-        if effect.attacked_with_advantage_in_melee and in_melee_range:
+        # Flag names kept: they are pack-facing, and every pack that sets them would
+        # break for no change in behaviour. See ``melee_hits_are_critical`` below,
+        # where the identical call was made for the identical reason.
+        if effect.attacked_with_advantage_in_melee and within_5_feet:
             advantage_sources += 1
-        if effect.attacked_with_disadvantage_at_range and not in_melee_range:
+        if effect.attacked_with_disadvantage_at_range and not within_5_feet:
             disadvantage_sources += 1
 
     if long_range_penalty:
@@ -84,12 +104,24 @@ def compute_attack_advantage(
 def melee_hit_is_critical(
     *,
     target_conditions: Iterable[str],
-    kind: AttackKind,
     distance: int,
     condition_effects: ConditionTable = EFFECTS,
 ) -> bool:
-    """Whether a landed hit is upgraded to a critical by the target's condition."""
-    if kind is not AttackKind.MELEE or distance > MELEE_THRESHOLD:
+    """Whether a landed hit is upgraded to a critical by the target's condition.
+
+    **The rule is scoped by distance, not by weapon.** Paralyzed and Unconscious
+    both word it identically in SRD 5.2: "Any attack roll that hits you is a
+    Critical Hit if the attacker is within 5 feet of you." That names a distance
+    and no melee/ranged qualifier, so a ranged attack — or a spell attack — made
+    from inside 5 feet qualifies exactly as a sword swing does. This function
+    therefore takes no :class:`AttackKind`; an argument the rule does not consult
+    is an invitation to reintroduce a check the rule never had.
+
+    The flag it reads is still called ``melee_hits_are_critical``. That name is
+    historical and pack-facing, so it stays: renaming it would break every content
+    pack that sets it, for no change in behaviour.
+    """
+    if distance > MELEE_THRESHOLD:
         return False
     return any(
         effect_of(condition, condition_effects).melee_hits_are_critical

@@ -10,10 +10,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from random import Random
+from typing import Any
 
 import pytest
 
+from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.analytics.montecarlo import (
+    MAX_ACTIONS_PER_TURN,
+    _spell_options,
     auto_action,
     run_encounter,
     simulate_dpr,
@@ -22,14 +26,15 @@ from fivee_sim.analytics.montecarlo import (
 )
 from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.battlemap import BattleMap
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import ActionKind, Encounter
 
-from .test_encounter import advance_to, fighter, shaped_spellbook, shaper
+from .test_encounter import advance_to, caster, fighter, shaped_spellbook, shaper
 
 SEED = 20260730
 
@@ -148,6 +153,174 @@ class TestSimulateDpr:
         assert twice["damage"]["mean"] > once["damage"]["mean"] * 1.5
 
 
+def sword_and_spell(name: str = "Thora") -> Creature:
+    """A three-attack build that also knows a spell.
+
+    The weapon is deliberately worth more per swing than the spell (about 14.7
+    against AC 15, against the bolt's 9.8), so the policy attacks first. That
+    ordering is what exposes a turn budget the attacker never had: an Attack
+    action it has already spent must not leave a second action in hand.
+    """
+    return Creature(
+        name=name,
+        team="party",
+        ac=16,
+        max_hp=60,
+        speed=30,
+        abilities={Ability.STRENGTH: 16, Ability.DEXTERITY: 14},
+        attacks=(
+            AttackOption(
+                name="Greatsword",
+                attack_bonus=9,
+                damage=Dice(2, 8, 10),
+                damage_type=DamageType.SLASHING,
+                kind=AttackKind.MELEE,
+                provenance="synthetic test fixture, not SRD content",
+            ),
+        ),
+        attacks_per_action=3,
+        spells=("Guiding Bolt",),
+        spell_slots={1: 4},
+        spell_save_dc=15,
+        spell_attack_bonus=7,
+        position=0,
+        provenance="synthetic test fixture, not SRD content",
+    )
+
+
+class TestSimulateDprSpendsTheAttackersOwnTurnBudget:
+    """Round 1 must run on the attacker's budget, not the initiative winner's.
+
+    ``Encounter.__init__`` begins a turn for whoever won Initiative, and
+    ``simulate_dpr`` then rewrites the order to put the attacker first. While the
+    turn state was left as ``__init__`` built it, round 1 ran on the *dummy's*
+    budget — ``movement_left=0``, ``attacks_left=1`` — in the 153/400 of seeds
+    where the dummy won the roll, which cost swings, forfeited the round for a
+    build starting out of reach, and left a spent action looking unspent.
+
+    SRD 5.2 is explicit on both halves: "On your turn, you can move a distance up
+    to your Speed and take one action" (Combat, "Your Turn"), and Extra Attack is
+    "You can attack twice instead of once whenever you take the Attack action on
+    your turn" — more swings inside one action, never a second action.
+    """
+
+    ROUNDS = 3
+    TARGET_AC = 14
+
+    @pytest.mark.parametrize("attacks_per_action", [1, 2, 3])
+    def test_every_round_lands_the_full_legal_swing_count(
+        self, attacks_per_action: int
+    ) -> None:
+        # Zero variance by construction: the dummy has 10,000 hit points so it
+        # never drops, neither creature moves, and nothing else is on offer. The
+        # count is therefore exactly the legal one or the budget was wrong.
+        iterations = 200
+        result = simulate_dpr(
+            lambda: fighter("Thora", attacks_per_action=attacks_per_action),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+        )
+        legal = attacks_per_action * self.ROUNDS * iterations
+        swings = result["actions"].get("attack:Longsword", 0)
+        # An Attack action grants attacks_per_action swings and no more.
+        assert swings <= legal
+        # And every one of them is taken.
+        assert result["actions"] == {"attack:Longsword": legal}
+
+    @pytest.mark.parametrize("attacks_per_action", [1, 2, 3])
+    def test_damage_per_round_matches_the_closed_form(
+        self, attacks_per_action: int
+    ) -> None:
+        # The oracle is the engine's own exact arithmetic, read off the same
+        # fixture the run uses so the two cannot drift apart.
+        option = fighter("Thora").attacks[0]
+        expected = attacks_per_action * attack_damage_expectation(
+            attack_bonus=option.attack_bonus,
+            target_ac=self.TARGET_AC,
+            damage=option.damage,
+        )
+        result = simulate_dpr(
+            lambda: fighter("Thora", attacks_per_action=attacks_per_action),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=6_000,
+            seed=SEED,
+        )
+        # 3% sits above four standard errors at this sample size and well below
+        # the 6-8% the stale budget cost, so it discriminates rather than merely
+        # passing.
+        assert result["damage_per_round"] == pytest.approx(expected, rel=0.03)
+
+    def test_a_build_starting_out_of_reach_still_closes_in_round_one(self) -> None:
+        # The other half of the budget. A stale movement_left of 0 made
+        # _closing_move return None, so a melee build measured at range simply
+        # forfeited its first round.
+        iterations = 200
+        result = simulate_dpr(
+            lambda: fighter("Thora"),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+            distance=20,
+        )
+        assert result["actions"]["attack:Longsword"] == self.ROUNDS * iterations
+
+    def test_a_spent_attack_action_does_not_also_buy_a_spell(self) -> None:
+        # The rules defect rather than the measurement one. _do_attack marks the
+        # action used only when attacks_left falls to attacks_per_action - 1, so
+        # a stale attacks_left of 1 on a three-attack build decremented to 0
+        # without ever setting it — and the policy was then offered a Magic
+        # action on top of the Attack action already taken.
+        iterations = 200
+        result = simulate_dpr(
+            sword_and_spell,
+            target_ac=15,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+            spellbook=spellbook(),
+        )
+        assert result["actions"] == {"attack:Greatsword": 3 * self.ROUNDS * iterations}
+
+
+class TestSimulateDprStaysReproducible:
+    def test_the_same_seed_reproduces_the_same_result(self) -> None:
+        def run(seed: int) -> dict[str, object]:
+            return simulate_dpr(
+                lambda: fighter("Thora", attacks_per_action=3),
+                target_ac=14,
+                rounds=3,
+                iterations=120,
+                seed=seed,
+            )
+
+        assert run(SEED) == run(SEED)
+        assert run(SEED) != run(SEED + 1)
+
+    def test_iteration_i_still_uses_seed_plus_i(self) -> None:
+        def run(*, iterations: int, seed: int) -> dict[str, Any]:
+            return simulate_dpr(
+                lambda: fighter("Thora", attacks_per_action=3),
+                target_ac=14,
+                rounds=3,
+                iterations=iterations,
+                seed=seed,
+            )
+
+        batch = run(iterations=6, seed=SEED)
+        singles = [
+            run(iterations=1, seed=SEED + index)["damage"]["mean"] for index in range(6)
+        ]
+        assert batch["damage"]["min"] == min(singles)
+        assert batch["damage"]["max"] == max(singles)
+        # ``Stats.as_dict`` reports the mean rounded to three decimals, so this
+        # agrees to within that rounding rather than exactly.
+        assert batch["damage"]["mean"] == pytest.approx(sum(singles) / 6, abs=1e-3)
+
+
 class TestSummarise:
     def test_empty_input_is_all_zeroes(self) -> None:
         stats = summarise([])
@@ -252,6 +425,81 @@ class TestPolicyChoosesByExpectedDamage:
         )
         assert result["actions"] == {"attack:Dagger": 600}
         assert result["damage"]["mean"] > 0
+
+
+class TestPolicyValuesSpellAttacks:
+    """The policy weighs a spell attack under the state it will actually roll under.
+
+    The weapon branch already asked the encounter for both Advantage and forced
+    criticals; the attack-roll spell branch asked for neither, so a Guiding Bolt
+    at a helpless target was valued as a flat d20 while the stepper would roll it
+    with Advantage and turn every hit into a critical. CLAUDE.md: analytics
+    replays the stepper, it does not keep a second copy of the rules.
+    """
+
+    def bolt_caster(self) -> Creature:
+        wren = caster(position=0)
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 4}
+        wren.spell_attack_bonus = 5
+        return wren
+
+    def valued(self, *, conditions: Sequence[str], distance: int) -> float:
+        wren = self.bolt_caster()
+        mark = Creature(
+            name="Mark",
+            team="foes",
+            ac=15,
+            max_hp=200,
+            speed=30,
+            position=distance,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        for condition in conditions:
+            mark.add_condition(condition)
+        encounter = Encounter([wren, mark], Random(SEED), spellbook=spellbook())
+        options = _spell_options(encounter, wren, [mark])
+        return next(
+            option.value
+            for option in options
+            if option.tiebreak == "cast:Guiding Bolt:1:Mark"
+        )
+
+    def test_a_helpless_adjacent_target_is_valued_with_advantage_and_the_critical(
+        self,
+    ) -> None:
+        # The oracle is the engine's own exact arithmetic under the state the
+        # stepper will roll under, so the two cannot drift.
+        expected = attack_damage_expectation(
+            attack_bonus=5,
+            target_ac=15,
+            damage=Dice(4, 6),
+            advantage=Advantage.ADVANTAGE,
+            forced_critical=True,
+        )
+        assert self.valued(
+            conditions=(Condition.PARALYZED,), distance=5
+        ) == pytest.approx(expected)
+
+    def test_the_same_target_out_of_reach_keeps_the_advantage_and_loses_the_critical(
+        self,
+    ) -> None:
+        expected = attack_damage_expectation(
+            attack_bonus=5,
+            target_ac=15,
+            damage=Dice(4, 6),
+            advantage=Advantage.ADVANTAGE,
+            forced_critical=False,
+        )
+        assert self.valued(
+            conditions=(Condition.PARALYZED,), distance=30
+        ) == pytest.approx(expected)
+
+    def test_an_unhindered_target_is_still_valued_as_a_flat_roll(self) -> None:
+        expected = attack_damage_expectation(
+            attack_bonus=5, target_ac=15, damage=Dice(4, 6)
+        )
+        assert self.valued(conditions=(), distance=30) == pytest.approx(expected)
 
 
 class TestPolicyPlacesAreaSpells:
@@ -473,3 +721,110 @@ class TestRoundsReported:
         result = simulate_rounds(stalemate, iterations=3, seed=SEED, max_rounds=5)
         assert result["timed_out"] == 3
         assert result["rounds"]["max"] == 5.0
+
+
+class TestPolicyLeavesDownedCreaturesAlone:
+    """The stepper now permits a finishing blow; the policy still declines to take one.
+
+    That split is deliberate. Whether a downed creature *can* be hit is a rules
+    question and the answer is yes. Whether an auto-played combatant *should* spend
+    its action doing so is a tactical one the SRD does not answer, and a greedy
+    one-turn policy is not the place to decide it: a downed creature threatens
+    nobody, so finishing it costs a turn that a batch's win-rate arithmetic would
+    have spent on a standing enemy.
+
+    These tests pin the policy against the stepper's new permission. They are the
+    reason the batch numbers this engine already published stay comparable.
+    """
+
+    @staticmethod
+    def _brawl_with_one_enemy_down() -> tuple[Encounter, Creature]:
+        """Thora against two goblins, one of them dropped on the spot.
+
+        The goblin is dropped *after* the encounter reaches Thora's turn, so no
+        death save is rolled in between — one natural 20 would put it back on its
+        feet and quietly empty the test.
+        """
+        rng = Random(SEED)
+        thora = fighter("Thora", position=0)
+        downed = make_monster("Goblin Warrior", label="Downed", team="foes", position=5)
+        upright = make_monster(
+            "Goblin Warrior", label="Upright", team="foes", position=10
+        )
+        encounter = Encounter([thora, downed, upright], rng, spellbook=spellbook())
+        advance_to(encounter, "Thora", rng)
+        downed.take_damage(downed.hp)
+        assert downed.dying
+        return encounter, downed
+
+    def test_a_downed_enemy_is_never_named_by_a_chosen_action(self) -> None:
+        encounter, downed = self._brawl_with_one_enemy_down()
+        assert downed.name not in [c.name for c in encounter.enemies_of("Thora")]
+        for _ in range(MAX_ACTIONS_PER_TURN):
+            action = auto_action(encounter)
+            if action is None:
+                break
+            assert action.target != downed.name
+            assert downed.name not in action.targets
+            encounter.act(action, Random(2))
+
+    def test_a_side_that_is_only_dying_draws_no_action_at_all(self) -> None:
+        # Not merely "no attack on the downed one": with nothing conscious left to
+        # hit, the policy stops rather than falling through to a finishing blow.
+        rng = Random(SEED)
+        thora = fighter("Thora", position=0)
+        ally = fighter("Bern", position=5)  # keeps ``over`` from firing on the team
+        foe = make_monster("Goblin Warrior", label="Goblin", team="foes", position=10)
+        encounter = Encounter([thora, ally, foe], rng, spellbook=spellbook())
+        advance_to(encounter, "Thora", rng)
+        foe.take_damage(foe.hp)
+        assert foe.dying
+        assert auto_action(encounter) is None
+
+    def test_an_area_spell_is_placed_on_the_standing_enemy_not_the_downed_one(
+        self,
+    ) -> None:
+        # The placement search enumerates candidate origins from conscious creatures
+        # only, so the downed goblin at the wizard's feet never becomes a point of
+        # origin even though the stepper would now resolve a blast there.
+        rng = Random(SEED)
+        wizard = blaster(position=50)
+        downed = make_monster("Goblin Warrior", label="Downed", team="foes", position=5)
+        upright = make_monster(
+            "Goblin Warrior", label="Upright", team="foes", position=100
+        )
+        encounter = Encounter([wizard, downed, upright], rng, spellbook=spellbook())
+        advance_to(encounter, "Ilva", rng)
+        downed.take_damage(downed.hp)
+
+        action = auto_action(encounter)
+        assert action is not None
+        assert action.kind is ActionKind.CAST
+        assert action.center is not None
+        assert distance_feet(as_point(action.center), as_point(upright.position)) <= 20
+        assert distance_feet(as_point(action.center), as_point(downed.position)) > 20
+
+    def test_the_policy_still_declines_over_a_whole_batch(self) -> None:
+        # The end-to-end guard: across many auto-played fights, no attack or spell
+        # effect is ever logged against a creature that was down when it landed. A
+        # per-turn assertion cannot see a Multiattack's later swings.
+        #
+        # ``down``, ``death`` and ``death_save`` all carry the creature in ``actor``;
+        # ``attack`` and ``spell_effect`` carry it in ``target``. A natural 20 on a
+        # death save puts the creature back up, so it leaves the down set again —
+        # without that, a legitimate later attack would read as a violation.
+        for index in range(40):
+            rng = Random(SEED + index)
+            encounter = Encounter(list(melee_brawl()), rng, spellbook=spellbook())
+            run_encounter(encounter, rng, max_rounds=20)
+            down: set[str] = set()
+            for event in encounter.log:
+                if event.kind == "down":
+                    down.add(event.actor)
+                elif event.kind == "death_save" and "regains" in event.detail:
+                    down.discard(event.actor)
+                elif event.kind in {"attack", "opportunity_attack", "spell_effect"}:
+                    assert event.target not in down, (
+                        f"iteration {index}: {event.kind} on {event.target} "
+                        f"while it was down ({event.detail})"
+                    )

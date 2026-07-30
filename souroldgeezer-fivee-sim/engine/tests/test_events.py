@@ -110,7 +110,7 @@ class TestEventIndexing:
                 current = None
 
     def test_every_emitted_kind_is_a_declared_kind(self) -> None:
-        assert len(EVENT_KINDS) == 20
+        assert len(EVENT_KINDS) == 21
         encounter, _ = played_out()
         seen = {event.kind for event in encounter.log}
         assert seen <= EVENT_KINDS, f"undeclared kinds: {sorted(seen - EVENT_KINDS)}"
@@ -120,6 +120,42 @@ class TestEventIndexing:
             "attack", "cast", "concentration", "damage", "dash", "move",
             "round", "spell_effect", "turn_end", "turn_start", "use_item", "heal",
         } <= seen
+
+    def test_releasing_an_effect_emits_a_declared_kind(self) -> None:
+        """``effect_end`` is checked here rather than in ``played_out``.
+
+        That fight holds its Concentration to the end, so it never reaches the
+        release path — the subset check above passed for ``effect_end`` only
+        because the kind was never emitted. A kind that no fixture emits is a kind
+        the declaration test cannot police, which is exactly how an undeclared one
+        gets in.
+        """
+        caster_ = caster("Wren", position=0)
+        ogre = make_monster("Ogre", label="Ogre", position=5)
+        bystander = make_monster("Goblin Warrior", label="Goblin", position=100)
+        # A seed the Ogre fails its Wisdom save on; SEED itself makes the save.
+        encounter, rng = build_encounter(
+            [caster_, ogre, bystander], seed=SEED + 2, spellbook=spellbook()
+        )
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", slot_level=2,
+                   target="Ogre"),
+            rng,
+        )
+        assert "paralyzed" in ogre.conditions, "the hold has to land for this to test"
+
+        # Dropping Concentration costs no action, so the release surfaces at the
+        # next reconcile rather than inside an action of its own.
+        caster_.concentrating_on = None
+        events = encounter.advance(rng)
+
+        released = [event for event in events if event.kind == "effect_end"]
+        assert released, "dropping concentration must announce the effect ending"
+        assert "paralyzed" not in ogre.conditions
+        seen = {event.kind for event in encounter.log}
+        assert seen <= EVENT_KINDS, f"undeclared kinds: {sorted(seen - EVENT_KINDS)}"
+        assert "effect_end" in seen
 
 
 class TestStructuredPayloads:
