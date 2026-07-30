@@ -1,0 +1,240 @@
+{
+  "pack": "saltglass-desert",
+  "version": "1.0",
+  "provenance": "Original content — Saltglass Desert, © 2026 Example Campaign",
+  "note": "A salt flat fused to glass by something long ago. Four creatures, four spells, two conditions, three items. Fire resistance is common and cold is the desert's weakness, inverting the usual arrangement.",
+  "creatures": [
+    {
+      "name": "Saltglass Skitter",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 10,
+      "hit_dice": "3d6-1",
+      "speed": 35,
+      "abilities": { "strength": 7, "dexterity": 17, "constitution": 10 },
+      "resistances": ["fire"],
+      "vulnerabilities": ["cold"],
+      "attacks": [
+        {
+          "name": "Glass Leg",
+          "attack_bonus": 5,
+          "damage": "1d4+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": ["Runs across glass without cracking it; nothing heavier can"]
+    },
+    {
+      "name": "Saltglass Mirage-Walker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 31,
+      "hit_dice": "6d8+5",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 16,
+        "constitution": 13,
+        "intelligence": 11,
+        "wisdom": 15,
+        "charisma": 16
+      },
+      "save_bonuses": { "charisma": 5 },
+      "resistances": ["fire"],
+      "vulnerabilities": ["cold"],
+      "spells": ["Saltglass Mirage", "Glare of the Flats"],
+      "spell_slots": { "1": 3, "2": 2 },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "attacks": [
+        {
+          "name": "Shimmering Blade",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Saltglass Water Skin": 2 },
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": ["Appears to be standing somewhere it is not, always"]
+    },
+    {
+      "name": "Saltglass Salt-Hulk",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 58,
+      "hit_dice": "8d10+14",
+      "speed": 25,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 8,
+        "constitution": 15,
+        "intelligence": 4,
+        "wisdom": 10,
+        "charisma": 5
+      },
+      "immunities": ["poison"],
+      "resistances": ["fire", "piercing"],
+      "vulnerabilities": ["cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Crusted Fist",
+          "attack_bonus": 7,
+          "damage": "1d10+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": ["Reforms from the flats overnight unless its core salt is dissolved"]
+    },
+    {
+      "name": "Saltglass Glass-Sultan",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 81,
+      "hit_dice": "12d10+20",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 17,
+        "constitution": 15,
+        "intelligence": 16,
+        "wisdom": 16,
+        "charisma": 19
+      },
+      "save_bonuses": { "charisma": 9, "dexterity": 7, "wisdom": 7 },
+      "immunities": ["fire"],
+      "vulnerabilities": ["cold"],
+      "spells": ["Saltglass Mirage", "Glare of the Flats", "Sultan's Thirst", "Vitrify"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 2 },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Glass Scimitar",
+          "attack_bonus": 7,
+          "damage": "1d8+4",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Saltglass Water Skin": 3, "Sultan's Frost Phial": 1 },
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": [
+        "Legendary resistance twice per day",
+        "Keeps the only real water in the desert and will trade for it"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Saltglass Mirage",
+      "level": 1,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "saltglass-mirage-taken",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — Saltglass Desert"
+    },
+    {
+      "name": "Glare of the Flats",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 60,
+      "condition": "saltglass-mirage-taken",
+      "provenance": "Original content — Saltglass Desert"
+    },
+    {
+      "name": "Sultan's Thirst",
+      "level": 3,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "4d8",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 45,
+      "condition": "saltglass-salt-parched",
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": ["Draws every drop of water the target is carrying, including in skins"]
+    },
+    {
+      "name": "Vitrify",
+      "level": 4,
+      "school": "Transmutation",
+      "save_ability": "dexterity",
+      "damage": "5d10",
+      "damage_type": "fire",
+      "half_on_save": false,
+      "upcast_damage": "1d10",
+      "range_feet": 60,
+      "provenance": "Original content — Saltglass Desert",
+      "unmodelled": ["The ground it strikes becomes another patch of the flats, permanently"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "saltglass-mirage-taken",
+      "description": "The creature is certain of where things are and it is wrong.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_disadvantage": true
+      },
+      "provenance": "Original content — Saltglass Desert"
+    },
+    {
+      "name": "saltglass-salt-parched",
+      "description": "Salt in the throat and none of the water that should follow it.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — Saltglass Desert"
+    }
+  ],
+  "items": [
+    {
+      "name": "Saltglass Water Skin",
+      "description": "Real water in a glass-lined skin. In the flats it is worth a horse.",
+      "use": { "heal": "2d6+3" },
+      "provenance": "Original content — Saltglass Desert"
+    },
+    {
+      "name": "Sultan's Frost Phial",
+      "description": "Cold, in the one place cold cannot be found. The sultan has three.",
+      "use": {
+        "damage": "3d8",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 16,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Saltglass Desert"
+    },
+    {
+      "name": "Handful of Flats Salt",
+      "description": "Thrown into the mouth. Cruel and very effective out here.",
+      "use": { "condition": "saltglass-salt-parched" },
+      "provenance": "Original content — Saltglass Desert"
+    }
+  ]
+}

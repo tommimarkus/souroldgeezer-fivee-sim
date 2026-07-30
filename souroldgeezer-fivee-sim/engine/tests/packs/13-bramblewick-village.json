@@ -1,0 +1,39 @@
+{
+  "pack": "bramblewick-village",
+  "version": "1.0",
+  "provenance": "Original content — Bramblewick, © 2026 Example Campaign",
+  "note": "Three things a village can actually sell a party. No monsters: Bramblewick does not have any, which is the point of the place.",
+  "items": [
+    {
+      "name": "Bramblewick Honey Poultice",
+      "description": "The beekeeper's own. Sticky, warm, and better than it has any right to be.",
+      "use": {
+        "heal": "2d4+2"
+      },
+      "provenance": "Original content — Bramblewick"
+    },
+    {
+      "name": "Widow Aster's Cordial",
+      "description": "Four kinds of berry and one kind of spirit. She will not say which.",
+      "use": {
+        "heal": "1d10+1"
+      },
+      "provenance": "Original content — Bramblewick",
+      "unmodelled": [
+        "A second cordial in one day leaves the drinker asleep by evening"
+      ]
+    },
+    {
+      "name": "Bramblewick Wasp Jar",
+      "description": "Sold to keep foxes off the hens. It works on people who deserve it.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "poison",
+        "save_ability": "constitution",
+        "save_dc": 11,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Bramblewick"
+    }
+  ]
+}

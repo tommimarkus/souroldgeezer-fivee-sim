@@ -1,0 +1,582 @@
+{
+  "pack": "gilded-scriptorium",
+  "version": "3.0",
+  "provenance": "Original content — The Gilded Scriptorium, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "A spell library rather than a bestiary: twenty-eight spells from cantrip to ninth level, the six conditions they impose, four items, and the four things that live among the shelves. 'Scribe's Restoration' deliberately carries no mechanics — spells have no heal field in this engine, and the record says so rather than pretending otherwise.",
+  "spells": [
+    {
+      "name": "Gilded Spark",
+      "level": 0,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "1d10",
+      "damage_type": "force",
+      "range_feet": 120,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["A cantrip: its damage scales with caster level, not with a slot"]
+    },
+    {
+      "name": "Scribe's Sting",
+      "level": 0,
+      "school": "Conjuration",
+      "requires_attack_roll": true,
+      "damage": "1d6",
+      "damage_type": "piercing",
+      "range_feet": 30,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["A cantrip: its damage scales with caster level, not with a slot"]
+    },
+    {
+      "name": "Inkblot",
+      "level": 0,
+      "school": "Conjuration",
+      "save_ability": "dexterity",
+      "damage": "1d6",
+      "damage_type": "acid",
+      "half_on_save": false,
+      "range_feet": 30,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Ruins one page of whatever the target is reading"]
+    },
+    {
+      "name": "Vermilion Sigil",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "2d6",
+      "damage_type": "fire",
+      "upcast_damage": "1d6",
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Azure Sigil",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "2d6",
+      "damage_type": "cold",
+      "upcast_damage": "1d6",
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Sable Sigil",
+      "level": 1,
+      "school": "Necromancy",
+      "requires_attack_roll": true,
+      "damage": "2d6",
+      "damage_type": "necrotic",
+      "upcast_damage": "1d6",
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Quill Bolt",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "3d4",
+      "damage_type": "piercing",
+      "upcast_damage": "1d4",
+      "range_feet": 90,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Marginal Flame",
+      "level": 1,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "2d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Will not ignite anything the caster owns"]
+    },
+    {
+      "name": "Vellum Ward",
+      "level": 1,
+      "school": "Abjuration",
+      "condition": "scriptorium-warded",
+      "concentration": true,
+      "range_feet": 15,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Scribe's Restoration",
+      "level": 1,
+      "school": "Abjuration",
+      "range_feet": 5,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": [
+        "Restores 1d8+3 hit points. Spells in this engine have no heal field, so run it as a healing item or apply the total by hand",
+        "Also mends one torn page, which is what it was written for"
+      ]
+    },
+    {
+      "name": "Illuminated Glare",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "wisdom",
+      "condition": "scriptorium-dazzled",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Folio Burst",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "3d6",
+      "damage_type": "force",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Loose paper in the area is destroyed, which has ended arguments"]
+    },
+    {
+      "name": "Binding Clause",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "condition": "scriptorium-clause-bound",
+      "concentration": true,
+      "range_feet": 30,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["The clause must be spoken aloud and is legally binding in three cities"]
+    },
+    {
+      "name": "Ledger of Debts",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "damage": "2d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 30,
+      "condition": "scriptorium-clause-bound",
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Foliomancer's Shield",
+      "level": 2,
+      "school": "Abjuration",
+      "condition": "scriptorium-warded",
+      "concentration": true,
+      "range_feet": 10,
+      "max_targets": 2,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Palimpsest Erasure",
+      "level": 3,
+      "school": "Transmutation",
+      "save_ability": "intelligence",
+      "damage": "5d6",
+      "damage_type": "psychic",
+      "half_on_save": false,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "condition": "scriptorium-erased",
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["The target forgets the last hour, which is usually the point"]
+    },
+    {
+      "name": "Gilded Nova",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "6d6",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 120,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Scriptorium Silence",
+      "level": 3,
+      "school": "Illusion",
+      "save_ability": "constitution",
+      "condition": "scriptorium-hushed",
+      "concentration": true,
+      "range_feet": 90,
+      "max_targets": 3,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Blocks verbal spell components, which the engine does not track"]
+    },
+    {
+      "name": "Cipher Lock",
+      "level": 3,
+      "school": "Abjuration",
+      "save_ability": "intelligence",
+      "condition": "scriptorium-hushed",
+      "range_feet": 30,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Seals a book, a door, or a mouth; the engine models the last one"]
+    },
+    {
+      "name": "Marginal Correction",
+      "level": 4,
+      "school": "Transmutation",
+      "save_ability": "wisdom",
+      "damage": "4d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Ninth Marginalia",
+      "level": 4,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "damage": "5d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 90,
+      "max_targets": 2,
+      "condition": "scriptorium-dazzled",
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Vellum Prison",
+      "level": 4,
+      "school": "Conjuration",
+      "save_ability": "strength",
+      "condition": "scriptorium-vellum-bound",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["The vellum can be cut from outside with a slashing weapon"]
+    },
+    {
+      "name": "Codex Wrath",
+      "level": 5,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "8d6",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 25,
+      "range_feet": 150,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Every book within the radius slams shut, audibly"]
+    },
+    {
+      "name": "Golden Letters",
+      "level": 5,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "7d8",
+      "damage_type": "radiant",
+      "upcast_damage": "1d8",
+      "range_feet": 120,
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Scriptorium Anathema",
+      "level": 6,
+      "school": "Necromancy",
+      "save_ability": "charisma",
+      "damage": "9d8",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "condition": "scriptorium-erased",
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["The target's name is struck from the scriptorium's rolls permanently"]
+    },
+    {
+      "name": "Library of Endings",
+      "level": 7,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "10d8",
+      "damage_type": "force",
+      "half_on_save": false,
+      "upcast_damage": "2d8",
+      "shape": "sphere",
+      "radius": 30,
+      "range_feet": 150,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Destroys every unprotected document in the radius, including the caster's"]
+    },
+    {
+      "name": "Author's Revision",
+      "level": 8,
+      "school": "Transmutation",
+      "save_ability": "intelligence",
+      "condition": "scriptorium-erased",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 4,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["What the revision changes about the target is for the table to decide"]
+    },
+    {
+      "name": "The Last Colophon",
+      "level": 9,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "14d10",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "2d10",
+      "shape": "sphere",
+      "radius": 40,
+      "range_feet": 200,
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": [
+        "Cast once in the scriptorium's history and it burned down the east wing"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "scriptorium-warded",
+      "description": "Sheets of blessed vellum turn aside what comes at the creature.",
+      "effects": { "attacked_with_disadvantage": true },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "scriptorium-dazzled",
+      "description": "Gold leaf catches the light and the creature cannot look straight at anything.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "scriptorium-clause-bound",
+      "description": "A clause the creature agreed to holds it exactly where it stands.",
+      "effects": { "speed_zero": true },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "scriptorium-hushed",
+      "description": "No sound leaves the creature. Nothing about its swing changes.",
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Cannot speak, so cannot cast with a verbal component"]
+    },
+    {
+      "name": "scriptorium-vellum-bound",
+      "description": "Wrapped tight in a sheet that will not tear from inside.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "scriptorium-erased",
+      "description": "The creature has been partly written out and does not know where it is.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "melee_hits_are_critical": true
+      },
+      "provenance": "Original content — The Gilded Scriptorium"
+    }
+  ],
+  "creatures": [
+    {
+      "name": "Scriptorium Page-Turner",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 8,
+      "hit_dice": "2d6+1",
+      "speed": 25,
+      "abilities": { "strength": 6, "dexterity": 15, "constitution": 11 },
+      "immunities": ["poison", "psychic"],
+      "attacks": [
+        {
+          "name": "Paper Edge",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Its only real function is turning pages, and it resents fighting"]
+    },
+    {
+      "name": "Scriptorium Lector",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 28,
+      "hit_dice": "6d8+1",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 12,
+        "constitution": 11,
+        "intelligence": 16,
+        "wisdom": 13,
+        "charisma": 12
+      },
+      "save_bonuses": { "intelligence": 5 },
+      "spells": ["Gilded Spark", "Quill Bolt", "Illuminated Glare", "Folio Burst"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "attacks": [
+        {
+          "name": "Weighted Codex",
+          "attack_bonus": 2,
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Scriptorium Ink Restorative": 1 },
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Will stop fighting to correct someone's pronunciation"]
+    },
+    {
+      "name": "Scriptorium Archivist-Magus",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 92,
+      "hit_dice": "15d8+22",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 13,
+        "intelligence": 20,
+        "wisdom": 16,
+        "charisma": 15
+      },
+      "save_bonuses": { "intelligence": 10, "wisdom": 8, "constitution": 6 },
+      "resistances": ["force", "psychic"],
+      "spells": [
+        "Gilded Spark",
+        "Vermilion Sigil",
+        "Palimpsest Erasure",
+        "Gilded Nova",
+        "Vellum Prison",
+        "Codex Wrath",
+        "Scriptorium Anathema",
+        "Library of Endings",
+        "Author's Revision",
+        "The Last Colophon"
+      ],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 3,
+        "4": 3,
+        "5": 3,
+        "6": 2,
+        "7": 2,
+        "8": 1,
+        "9": 1
+      },
+      "spell_save_dc": 19,
+      "spell_attack_bonus": 11,
+      "attacks": [
+        {
+          "name": "Gold-Nibbed Stylus",
+          "attack_bonus": 5,
+          "damage": "1d4+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Scriptorium Ink Restorative": 3, "Gall-Ink Vial": 2 },
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": [
+        "Legendary resistance three times per day",
+        "Will not cast The Last Colophon indoors, and the scriptorium is indoors"
+      ]
+    },
+    {
+      "name": "Scriptorium Marginal Beast",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 44,
+      "hit_dice": "8d8+8",
+      "speed": 35,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 6,
+        "wisdom": 11,
+        "charisma": 14
+      },
+      "resistances": ["psychic"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Illuminated Claw",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": [
+        "Climbed out of a margin and cannot be put back",
+        "It is flat when viewed edge-on, which has saved it twice"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "name": "Scriptorium Ink Restorative",
+      "description": "Drunk from an inkwell kept for the purpose. Black, bitter, effective.",
+      "use": { "heal": "2d6+3" },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Gall-Ink Vial",
+      "description": "Oak-gall ink at working strength, thrown at the eyes.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "acid",
+        "save_ability": "dexterity",
+        "save_dc": 15,
+        "half_on_save": true,
+        "condition": "scriptorium-dazzled"
+      },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Gilding Dust",
+      "description": "A pinch of gold leaf, thrown into a shaft of light.",
+      "use": { "condition": "scriptorium-dazzled" },
+      "provenance": "Original content — The Gilded Scriptorium"
+    },
+    {
+      "name": "Binder's Glue Pot",
+      "description": "Hide glue at full heat. It sets on contact and does not let go.",
+      "use": { "condition": "scriptorium-clause-bound" },
+      "provenance": "Original content — The Gilded Scriptorium",
+      "unmodelled": ["Solvent frees the target in a minute; so does patience"]
+    }
+  ]
+}

@@ -1,0 +1,480 @@
+{
+  "pack": "stormcaller-isles",
+  "version": "1.3",
+  "provenance": "Original content — Stormcaller Isles, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "An island chain that has been struck by lightning for nine hundred years and has grown things to match. Eight creatures across three tiers, the stormspeaker's list, four conditions, five supplies.",
+  "creatures": [
+    {
+      "name": "Stormcaller Sparkling",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 7,
+      "hit_dice": "2d6",
+      "speed": 30,
+      "abilities": {
+        "strength": 6,
+        "dexterity": 16,
+        "constitution": 10
+      },
+      "immunities": ["lightning"],
+      "vulnerabilities": ["thunder"],
+      "attacks": [
+        {
+          "name": "Arc Touch",
+          "attack_bonus": 5,
+          "damage": "1d4+3",
+          "damage_type": "lightning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "It cannot exist more than a round away from open sky"
+      ]
+    },
+    {
+      "name": "Stormcaller Gale-Hound",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 19,
+      "hit_dice": "3d8+6",
+      "speed": 50,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 17,
+        "constitution": 14,
+        "intelligence": 4,
+        "wisdom": 12,
+        "charisma": 7
+      },
+      "resistances": ["lightning"],
+      "attacks": [
+        {
+          "name": "Crackling Bite",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "lightning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Runs on the wind: it ignores difficult terrain in the open"
+      ]
+    },
+    {
+      "name": "Stormcaller Reef-Raider",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 26,
+      "hit_dice": "4d10+4",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 14,
+        "constitution": 13,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "resistances": ["lightning"],
+      "attacks": [
+        {
+          "name": "Storm-Iron Cutlass",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Boarding Javelin",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
+        }
+      ],
+      "items": {
+        "Stormcaller Kelp Tonic": 1
+      },
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Their cutlasses spark in a storm, which is theatre rather than extra damage"
+      ]
+    },
+    {
+      "name": "Stormcaller Thundershell",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 38,
+      "hit_dice": "5d10+11",
+      "speed": 20,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 8,
+        "constitution": 16,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 4
+      },
+      "immunities": ["lightning", "thunder"],
+      "attacks": [
+        {
+          "name": "Shell Slam",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Withdraw: it may raise its AC to 21 by giving up its action"
+      ]
+    },
+    {
+      "name": "Stormcaller Mast-Wight",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 31,
+      "hit_dice": "5d8+9",
+      "speed": 25,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 12,
+        "constitution": 15,
+        "intelligence": 8,
+        "wisdom": 9,
+        "charisma": 7
+      },
+      "immunities": ["poison"],
+      "resistances": ["lightning"],
+      "vulnerabilities": ["radiant"],
+      "conditions": ["stormcaller-sky-dazzled"],
+      "attacks": [
+        {
+          "name": "Splintered Spar",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "It drowned lashed to a mast and has not been dry since",
+        "Sunlight sensitivity, which is why it starts dazzled"
+      ]
+    },
+    {
+      "name": "Stormcaller Squall-Binder",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 43,
+      "hit_dice": "8d8+8",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 13,
+        "wisdom": 17,
+        "charisma": 14
+      },
+      "save_bonuses": {
+        "wisdom": 6,
+        "constitution": 4
+      },
+      "resistances": ["lightning", "thunder"],
+      "spells": ["Squall Lash", "Binder's Static", "Rolling Thunderhead"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 2
+      },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Knotted Cord",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Squall-Binder's Knot": 2,
+        "Stormcaller Kelp Tonic": 1
+      },
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Ties a wind into a cord; releasing it is a journey-scale effect, not a combat one"
+      ]
+    },
+    {
+      "name": "Stormcaller Stormspeaker",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 71,
+      "hit_dice": "11d8+22",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 16,
+        "constitution": 14,
+        "intelligence": 14,
+        "wisdom": 19,
+        "charisma": 17
+      },
+      "save_bonuses": {
+        "wisdom": 8,
+        "charisma": 7,
+        "dexterity": 6
+      },
+      "immunities": ["lightning"],
+      "resistances": ["thunder"],
+      "spells": ["Squall Lash", "Binder's Static", "Rolling Thunderhead", "Ninefold Strike", "Stormspeaker's Calm"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 3,
+        "4": 3,
+        "5": 1
+      },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks": [
+        {
+          "name": "Storm-Glass Spear",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "lightning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Stormspeaker's Cauled Vial": 2,
+        "Squall-Binder's Knot": 1
+      },
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "The weather over the whole chain answers her mood; not a combat effect",
+        "Legendary resistance twice per day"
+      ]
+    },
+    {
+      "name": "Stormcaller Sky-Leviathan Calf",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 95,
+      "hit_dice": "10d12+30",
+      "speed": 40,
+      "abilities": {
+        "strength": 21,
+        "dexterity": 10,
+        "constitution": 17,
+        "intelligence": 5,
+        "wisdom": 13,
+        "charisma": 9
+      },
+      "save_bonuses": {
+        "constitution": 7,
+        "strength": 9
+      },
+      "immunities": ["lightning", "thunder"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Tail Sweep",
+          "attack_bonus": 8,
+          "damage": "2d8+5",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "A calf. The adult is not statted and should not be fought",
+        "Swallow: a Medium creature it grapples is swallowed whole"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Squall Lash",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "3d6",
+      "damage_type": "lightning",
+      "upcast_damage": "1d6",
+      "range_feet": 60,
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Metal armour draws the lash; the caster has advantage against it in the fiction"
+      ]
+    },
+    {
+      "name": "Binder's Static",
+      "level": 2,
+      "school": "Transmutation",
+      "save_ability": "constitution",
+      "condition": "stormcaller-static-clung",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 2,
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Hair and loose cloth stand on end, which gives the target away in the dark"
+      ]
+    },
+    {
+      "name": "Rolling Thunderhead",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "5d8",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 100,
+      "condition": "stormcaller-thunder-struck",
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Audible for two miles, which ends any attempt at a quiet approach"
+      ]
+    },
+    {
+      "name": "Ninefold Strike",
+      "level": 4,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "6d10",
+      "damage_type": "lightning",
+      "half_on_save": false,
+      "upcast_damage": "2d10",
+      "range_feet": 120,
+      "max_targets": 3,
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Nine bolts fall; the engine resolves the three that matter"
+      ]
+    },
+    {
+      "name": "Stormspeaker's Calm",
+      "level": 5,
+      "school": "Abjuration",
+      "condition": "stormcaller-storm-shielded",
+      "concentration": true,
+      "range_feet": 30,
+      "max_targets": 4,
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Also stills wind and rain in a 60-foot radius for the duration"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "stormcaller-static-clung",
+      "description": "Charge crawls over the creature's skin and every movement snags on it.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "stormcaller-thunder-struck",
+      "description": "The air hit like a wall. The creature cannot hear its own orders.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "stormcaller-sky-dazzled",
+      "description": "Open sky is agony. The creature squints through everything.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "stormcaller-storm-shielded",
+      "description": "The storm has been told to leave this one alone.",
+      "effects": {
+        "attacked_with_disadvantage": true
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    }
+  ],
+  "items": [
+    {
+      "name": "Stormcaller Kelp Tonic",
+      "description": "Boiled storm-kelp. Every islander carries a flask and none of them like it.",
+      "use": {
+        "heal": "2d4+2"
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "Squall-Binder's Knot",
+      "description": "A cord with a squall tied into it. Pulled loose in someone's face.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "lightning",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "stormcaller-static-clung"
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "Stormspeaker's Cauled Vial",
+      "description": "Rainwater caught before it touched ground. It knits flesh fast.",
+      "use": {
+        "heal": "3d6+3"
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "Storm-Glass Shard",
+      "description": "Sand fused by a strike. Sharp, and it holds a charge.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "lightning",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": false
+      },
+      "provenance": "Original content — Stormcaller Isles"
+    },
+    {
+      "name": "Ward-Cord Bracelet",
+      "description": "Braided by an islander's grandmother. It keeps the storm's attention elsewhere.",
+      "use": {
+        "condition": "stormcaller-storm-shielded"
+      },
+      "provenance": "Original content — Stormcaller Isles",
+      "unmodelled": [
+        "Frays through after one use and cannot be rebraided by anyone else"
+      ]
+    }
+  ]
+}

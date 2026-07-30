@@ -1,0 +1,269 @@
+{
+  "pack": "cinderquay-docks",
+  "version": "1.0",
+  "provenance": "Original content — Cinderquay Docks, © 2026 Example Campaign",
+  "note": "Dockside trouble: five stat blocks that mostly want money, two spells the smuggler-priest actually knows, two conditions, three items sold under a tarpaulin.",
+  "creatures": [
+    {
+      "name": "Cinderquay Wharf-Tough",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 15,
+      "hit_dice": "3d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 12,
+        "constitution": 13,
+        "intelligence": 9,
+        "wisdom": 10,
+        "charisma": 10
+      },
+      "attacks": [
+        {
+          "name": "Belaying Pin",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Will take a bribe of ten gold and forget the whole thing"
+      ]
+    },
+    {
+      "name": "Cinderquay Net-Caster",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 20,
+      "hit_dice": "4d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 12,
+        "charisma": 9
+      },
+      "attacks": [
+        {
+          "name": "Weighted Net",
+          "attack_bonus": 5,
+          "damage": "1d4+3",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 15,
+          "long_range": 30
+        },
+        {
+          "name": "Gutting Knife",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Cinderquay Tar Bottle": 2
+      },
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "A net hit should restrain; run it as the condition below if the table prefers"
+      ]
+    },
+    {
+      "name": "Cinderquay Smuggler-Priest",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 30,
+      "hit_dice": "6d8+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 13,
+        "wisdom": 16,
+        "charisma": 15
+      },
+      "save_bonuses": {
+        "wisdom": 5,
+        "charisma": 4
+      },
+      "spells": ["Harbour Fog", "Debt Called Due"],
+      "spell_slots": {
+        "1": 4,
+        "2": 2
+      },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "attacks": [
+        {
+          "name": "Ledger-Weighted Sap",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Quayside Restorative": 2,
+        "Cinderquay Tar Bottle": 1
+      },
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Keeps the only honest ledger on the quay, which is why nobody kills them"
+      ]
+    },
+    {
+      "name": "Cinderquay Crane-Hand",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 33,
+      "hit_dice": "5d10+5",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 11,
+        "constitution": 13,
+        "intelligence": 8,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "save_bonuses": {
+        "strength": 5
+      },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Cargo Hook",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Can drop a pallet on a fight, which is a hazard the table should adjudicate"
+      ]
+    },
+    {
+      "name": "Cinderquay Rat-Dog",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 8,
+      "hit_dice": "2d6+1",
+      "speed": 40,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 11
+      },
+      "attacks": [
+        {
+          "name": "Snap",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Belongs to nobody and to everybody on the quay"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Harbour Fog",
+      "level": 1,
+      "school": "Conjuration",
+      "condition": "cinderquay-fogbound",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 3,
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Fills a 20-foot radius with fog; the engine tracks who is blinded by it, not the cloud"
+      ]
+    },
+    {
+      "name": "Debt Called Due",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "damage": "3d6",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "condition": "cinderquay-in-arrears",
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Only works on a creature that genuinely owes the caster something"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "cinderquay-fogbound",
+      "description": "Grey nothing in every direction. The creature swings at sounds.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_disadvantage": true
+      },
+      "provenance": "Original content — Cinderquay Docks"
+    },
+    {
+      "name": "cinderquay-in-arrears",
+      "description": "The creature has been reminded, sharply, of what it owes.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Cinderquay Docks"
+    }
+  ],
+  "items": [
+    {
+      "name": "Quayside Restorative",
+      "description": "Sold from a crate. Nobody asks what is in it and it works.",
+      "use": {
+        "heal": "2d4+1"
+      },
+      "provenance": "Original content — Cinderquay Docks"
+    },
+    {
+      "name": "Cinderquay Tar Bottle",
+      "description": "Hot deck tar in a stoppered bottle. Cruel, cheap, effective.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Cinderquay Docks"
+    },
+    {
+      "name": "Dockhand's Fog Whistle",
+      "description": "Three notes that mean the harbour watch is coming. Confusing on purpose.",
+      "use": {
+        "condition": "cinderquay-fogbound"
+      },
+      "provenance": "Original content — Cinderquay Docks",
+      "unmodelled": [
+        "Also brings the actual harbour watch in about four minutes"
+      ]
+    }
+  ]
+}

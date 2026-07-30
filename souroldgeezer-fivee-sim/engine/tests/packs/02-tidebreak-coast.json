@@ -1,0 +1,265 @@
+{
+  "pack": "tidebreak-coast",
+  "version": "1.0",
+  "provenance": "Original content — Tidebreak Coast, © 2026 Example Campaign",
+  "note": "A coastal raiding set. The brine-caller's three spells and the two conditions they impose are all defined here, so the pack stands alone.",
+  "creatures": [
+    {
+      "name": "Tidebreak Reefstalker",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 22,
+      "hit_dice": "4d8+4",
+      "speed": 30,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 7,
+        "wisdom": 12,
+        "charisma": 6
+      },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Barbed Gaff",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "Amphibious: it breathes air and water",
+        "Swim speed of 40 feet; the engine tracks one movement rate"
+      ]
+    },
+    {
+      "name": "Tidebreak Wrecker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 45,
+      "hit_dice": "6d10+12",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 12,
+        "constitution": 15,
+        "intelligence": 8,
+        "wisdom": 10,
+        "charisma": 9
+      },
+      "attacks": [
+        {
+          "name": "Wrecking Hook",
+          "attack_bonus": 5,
+          "damage": "2d6+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Hurled Ballast",
+          "attack_bonus": 5,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "items": {
+        "Tidebreak Kelp Salve": 1
+      },
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "Boarding Rush: it may Dash as a bonus action on the round it leaves a boat"
+      ]
+    },
+    {
+      "name": "Tidebreak Brine-Caller",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 31,
+      "hit_dice": "7d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 13,
+        "wisdom": 16,
+        "charisma": 12
+      },
+      "save_bonuses": {
+        "wisdom": 5
+      },
+      "resistances": ["cold"],
+      "spells": ["Brine Lash", "Undertow Grasp", "Reef Spray"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 2
+      },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Coral Rod",
+          "attack_bonus": 2,
+          "damage": "1d6",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Brine Bomb": 2,
+        "Reefglass Shard": 2
+      },
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "It can breathe water and speak with sea creatures",
+        "Tide Sense: it always knows which way the water lies"
+      ]
+    },
+    {
+      "name": "Tidebreak Gullwing",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 7,
+      "hit_dice": "2d6",
+      "speed": 20,
+      "abilities": {
+        "strength": 6,
+        "dexterity": 15,
+        "constitution": 10,
+        "intelligence": 3,
+        "wisdom": 13,
+        "charisma": 5
+      },
+      "attacks": [
+        {
+          "name": "Beak",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "Fly speed of 50 feet; the engine models one ground rate on one axis",
+        "Screech: it warns the whole flock when it takes damage"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Brine Lash",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "3d4",
+      "damage_type": "cold",
+      "upcast_damage": "1d4",
+      "range_feet": 60,
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "The lash leaves the target dripping, spoiling written notes it carries"
+      ]
+    },
+    {
+      "name": "Undertow Grasp",
+      "level": 2,
+      "school": "Conjuration",
+      "save_ability": "strength",
+      "condition": "tidebreak-undertow-held",
+      "concentration": true,
+      "range_feet": 30,
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "The target repeats the save at the end of each of its turns",
+        "Underwater, the grasp instead drags the target 10 feet downward"
+      ]
+    },
+    {
+      "name": "Reef Spray",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "6d6",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 100,
+      "provenance": "Original content — Tidebreak Coast",
+      "unmodelled": [
+        "Coral grit left behind makes the area difficult terrain for a minute"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "tidebreak-brine-choked",
+      "description": "Salt water in the lungs. Every swing comes short of breath.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    },
+    {
+      "name": "tidebreak-undertow-held",
+      "description": "Water coils around the legs and holds; the creature cannot step away.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    }
+  ],
+  "items": [
+    {
+      "name": "Tidebreak Kelp Salve",
+      "description": "Pressed kelp and fish oil, slapped over a wound.",
+      "use": {
+        "heal": "2d4"
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    },
+    {
+      "name": "Brine Bomb",
+      "description": "A sealed bladder of concentrated brine that bursts freezing cold.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    },
+    {
+      "name": "Reefglass Shard",
+      "description": "A splinter of tide-worn glass, drawn across the throat to flood it.",
+      "use": {
+        "condition": "tidebreak-brine-choked"
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    },
+    {
+      "name": "Gull-Oil Vial",
+      "description": "Rendered seabird fat; foul, and it closes a cut fast.",
+      "use": {
+        "heal": "1d8+2"
+      },
+      "provenance": "Original content — Tidebreak Coast"
+    }
+  ]
+}

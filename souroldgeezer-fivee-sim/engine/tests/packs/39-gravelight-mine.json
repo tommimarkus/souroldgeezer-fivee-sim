@@ -1,0 +1,306 @@
+{
+  "pack": "gravelight-mine",
+  "version": "1.0",
+  "provenance": "Original content — Gravelight Mine, © 2026 Example Campaign",
+  "note": "A mine lit by something that should not be glowing. Six creatures, four spells, three conditions, three items.",
+  "creatures": [
+    {
+      "name": "Gravelight Glow-Grub",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 6,
+      "hit_dice": "2d6-1",
+      "speed": 15,
+      "abilities": { "strength": 8, "dexterity": 9, "constitution": 12 },
+      "immunities": ["radiant"],
+      "attacks": [
+        {
+          "name": "Gnawing Bite",
+          "attack_bonus": 2,
+          "damage": "1d4+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Sheds dim light in 5 feet; the miners farm them for it"]
+    },
+    {
+      "name": "Gravelight Pick-Wight",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 24,
+      "hit_dice": "4d8+7",
+      "speed": 25,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 6,
+        "wisdom": 8,
+        "charisma": 6
+      },
+      "immunities": ["poison"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "conditions": ["gravelight-glare-blind"],
+      "attacks": [
+        {
+          "name": "Miner's Pick",
+          "attack_bonus": 5,
+          "damage": "1d8+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["It is still working the seam and objects to interruption"]
+    },
+    {
+      "name": "Gravelight Seam-Crawler",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 30,
+      "hit_dice": "5d8+11",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 14,
+        "constitution": 16,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 3
+      },
+      "immunities": ["acid", "poison"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Etching Mandible",
+          "attack_bonus": 5,
+          "damage": "1d6+2",
+          "damage_type": "acid",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Eats through timber props, which is how the mine kills people"]
+    },
+    {
+      "name": "Gravelight Lamp-Priest",
+      "team": "cult",
+      "ac": 14,
+      "max_hp": 35,
+      "hit_dice": "7d8+4",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 13,
+        "constitution": 12,
+        "intelligence": 13,
+        "wisdom": 17,
+        "charisma": 14
+      },
+      "save_bonuses": { "wisdom": 6 },
+      "resistances": ["radiant"],
+      "spells": ["Gravelight Glare", "Seam-Song", "Lamp-Priest's Ward"],
+      "spell_slots": { "1": 4, "2": 3 },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Lamp Chain",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "radiant",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Gravelight Miner's Draught": 2, "Glow-Grub Jar": 2 },
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Worships whatever is at the bottom of the shaft and has met it"]
+    },
+    {
+      "name": "Gravelight Shaft-Foreman",
+      "team": "cult",
+      "ac": 16,
+      "max_hp": 49,
+      "hit_dice": "7d10+11",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 12,
+        "constitution": 15,
+        "intelligence": 11,
+        "wisdom": 13,
+        "charisma": 12
+      },
+      "save_bonuses": { "strength": 6, "constitution": 5 },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Signal Sledge",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Thrown Wedge",
+          "attack_bonus": 6,
+          "damage": "1d6+3",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "items": { "Gravelight Miner's Draught": 1, "Prop-Cutter's Charge": 1 },
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Will collapse a gallery on its own people to seal the shaft"]
+    },
+    {
+      "name": "Gravelight Shaft-Bottom Thing",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 82,
+      "hit_dice": "11d10+26",
+      "speed": 20,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 9,
+        "constitution": 17,
+        "intelligence": 8,
+        "wisdom": 12,
+        "charisma": 16
+      },
+      "save_bonuses": { "constitution": 7, "charisma": 7 },
+      "immunities": ["radiant", "poison"],
+      "resistances": ["necrotic", "psychic"],
+      "spells": ["Gravelight Glare", "The Bottom's Regard"],
+      "spell_slots": { "2": 3, "3": 3, "4": 1 },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Luminous Limb",
+          "attack_bonus": 8,
+          "damage": "1d12+4",
+          "damage_type": "radiant",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": [
+        "It is the reason the mine glows and it has never been fully seen",
+        "Legendary resistance twice per day"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Gravelight Glare",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "3d6",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "condition": "gravelight-glare-blind",
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "Seam-Song",
+      "level": 1,
+      "school": "Divination",
+      "condition": "gravelight-seam-heard",
+      "concentration": true,
+      "range_feet": 10,
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Also tells the caster where the ore runs, which is its real purpose"]
+    },
+    {
+      "name": "Lamp-Priest's Ward",
+      "level": 2,
+      "school": "Abjuration",
+      "condition": "gravelight-lamp-warded",
+      "concentration": true,
+      "range_feet": 20,
+      "max_targets": 2,
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "The Bottom's Regard",
+      "level": 4,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "damage": "5d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "condition": "gravelight-glare-blind",
+      "max_targets": 2,
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["The target dreams about the shaft bottom until it goes back"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "gravelight-glare-blind",
+      "description": "Too much light in a place that has never had any.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "gravelight-seam-heard",
+      "description": "The creature can hear where the rock is thin, and where things move behind it.",
+      "effects": { "own_attacks_have_advantage": true },
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "gravelight-lamp-warded",
+      "description": "Lamp-light clings to the creature and the dark keeps its distance.",
+      "effects": { "attacked_with_disadvantage": true },
+      "provenance": "Original content — Gravelight Mine"
+    }
+  ],
+  "items": [
+    {
+      "name": "Gravelight Miner's Draught",
+      "description": "Grub-fat and spirit. It is what the mine has instead of medicine.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "Glow-Grub Jar",
+      "description": "A jar of live grubs, smashed at someone's feet. Very bright.",
+      "use": { "condition": "gravelight-glare-blind" },
+      "provenance": "Original content — Gravelight Mine"
+    },
+    {
+      "name": "Prop-Cutter's Charge",
+      "description": "A shaped charge for timber. It works on people who are near timber.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Gravelight Mine",
+      "unmodelled": ["Used properly it brings a gallery down, which the engine leaves to the table"]
+    }
+  ]
+}

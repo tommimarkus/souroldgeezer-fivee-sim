@@ -1,0 +1,216 @@
+{
+  "pack": "quillmoor-marsh",
+  "version": "1.0",
+  "provenance": "Original content — Quillmoor Marsh, © 2026 Example Campaign",
+  "note": "Everything in Quillmoor has spines. Four creatures, two spells, two conditions, three items.",
+  "creatures": [
+    {
+      "name": "Quillmoor Spinehog",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 13,
+      "hit_dice": "3d6+3",
+      "speed": 25,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 3,
+        "wisdom": 10,
+        "charisma": 5
+      },
+      "resistances": ["piercing"],
+      "attacks": [
+        {
+          "name": "Spine Roll",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": [
+        "A creature that grapples it takes 1d4 piercing at the start of each of its turns"
+      ]
+    },
+    {
+      "name": "Quillmoor Reed-Stalker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 27,
+      "hit_dice": "5d8+5",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 17,
+        "constitution": 13,
+        "intelligence": 6,
+        "wisdom": 13,
+        "charisma": 7
+      },
+      "attacks": [
+        {
+          "name": "Quill Lash",
+          "attack_bonus": 6,
+          "damage": "1d8+4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        },
+        {
+          "name": "Flung Quill",
+          "attack_bonus": 6,
+          "damage": "1d6+4",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 25,
+          "long_range": 75
+        }
+      ],
+      "items": { "Quillmoor Barb Bundle": 2 },
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": ["Stands in reeds; nothing sees it until it moves"]
+    },
+    {
+      "name": "Quillmoor Bog-Hag",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 51,
+      "hit_dice": "9d8+11",
+      "speed": 30,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 14,
+        "wisdom": 15,
+        "charisma": 16
+      },
+      "save_bonuses": { "wisdom": 5, "charisma": 6 },
+      "resistances": ["poison"],
+      "spells": ["Quillmoor Barbing", "Hag's Reed-Whisper"],
+      "spell_slots": { "1": 4, "2": 3, "3": 1 },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Hooked Nails",
+          "attack_bonus": 6,
+          "damage": "1d6+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Bog-Hag's Marrow Jar": 1, "Quillmoor Barb Bundle": 1 },
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": [
+        "Trades in names and remembers every bargain she has ever made",
+        "Takes the shape of a heron to travel; a scene tool, not a combat one"
+      ]
+    },
+    {
+      "name": "Quillmoor Marsh-Lantern",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 16,
+      "hit_dice": "4d8-2",
+      "speed": 30,
+      "abilities": {
+        "strength": 3,
+        "dexterity": 16,
+        "constitution": 9,
+        "intelligence": 7,
+        "wisdom": 12,
+        "charisma": 14
+      },
+      "immunities": ["poison"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Cold Light",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "cold",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": ["It leads travellers into deep water and watches"]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Quillmoor Barbing",
+      "level": 2,
+      "school": "Transmutation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "piercing",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "condition": "quillmoor-barbed",
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": ["The barbs must be pulled out one at a time afterwards"]
+    },
+    {
+      "name": "Hag's Reed-Whisper",
+      "level": 3,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "quillmoor-reed-led",
+      "concentration": true,
+      "range_feet": 90,
+      "max_targets": 2,
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": ["The whisper uses the target's own name, which is how she gets them"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "quillmoor-barbed",
+      "description": "Barbs under the skin. Moving hurts and swinging hurts more.",
+      "effects": { "own_attacks_have_disadvantage": true, "attacked_with_advantage": true },
+      "provenance": "Original content — Quillmoor Marsh"
+    },
+    {
+      "name": "quillmoor-reed-led",
+      "description": "Someone is calling from the reeds and the creature is going.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — Quillmoor Marsh"
+    }
+  ],
+  "items": [
+    {
+      "name": "Quillmoor Barb Bundle",
+      "description": "A dozen quills bound point-out and thrown underhand.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "piercing",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "quillmoor-barbed"
+      },
+      "provenance": "Original content — Quillmoor Marsh"
+    },
+    {
+      "name": "Bog-Hag's Marrow Jar",
+      "description": "Do not ask whose. It closes a wound in seconds.",
+      "use": { "heal": "3d4+2" },
+      "provenance": "Original content — Quillmoor Marsh",
+      "unmodelled": ["Using one puts the drinker in the hag's debt, which she collects"]
+    },
+    {
+      "name": "Reed-Cutter Salve",
+      "description": "What the marsh's own people use. Slow, clean, reliable.",
+      "use": { "heal": "1d8+2" },
+      "provenance": "Original content — Quillmoor Marsh"
+    }
+  ]
+}

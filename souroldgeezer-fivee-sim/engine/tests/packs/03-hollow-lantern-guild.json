@@ -1,0 +1,77 @@
+{
+  "pack": "hollow-lantern-guild",
+  "version": "1.2",
+  "provenance": "Original content — Hollow Lantern Guild, © 2026 Example Campaign",
+  "note": "A supply catalogue and nothing else: one section, six items, no creatures or spells. Every use is a heal or a damage roll, so the pack loads unchanged with the bundled slice excluded.",
+  "items": [
+    {
+      "name": "Hollow Lantern Restorative",
+      "description": "The guild's standard issue. Tastes of pitch and closes a wound anyway.",
+      "use": {
+        "heal": "2d6+2"
+      },
+      "provenance": "Original content — Hollow Lantern Guild"
+    },
+    {
+      "name": "Hollow Lantern Oil Flask",
+      "description": "Lamp oil in thin glass, lit at the wick before it is thrown.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Hollow Lantern Guild"
+    },
+    {
+      "name": "Guild Smelling Salts",
+      "description": "Snapped under the nose of someone who has stopped paying attention.",
+      "use": {
+        "heal": "1d4+2"
+      },
+      "provenance": "Original content — Hollow Lantern Guild",
+      "unmodelled": [
+        "Also ends a magical sleep effect; the engine does not model sleep"
+      ]
+    },
+    {
+      "name": "Wick-Cutter's Acid",
+      "description": "Kept for locks and hinges. It works on people too.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "acid",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": false
+      },
+      "provenance": "Original content — Hollow Lantern Guild",
+      "unmodelled": [
+        "Ruins one nonmagical metal object it is poured over"
+      ]
+    },
+    {
+      "name": "Guild Field Tincture",
+      "description": "The cheap one. Half a dose of the restorative at a third the price.",
+      "use": {
+        "heal": "1d8"
+      },
+      "provenance": "Original content — Hollow Lantern Guild"
+    },
+    {
+      "name": "Lamplighter's Signal Charge",
+      "description": "Meant to be heard three streets away. Held too long, it is a weapon.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 11,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Hollow Lantern Guild",
+      "unmodelled": [
+        "Audible for half a mile, which is the point of carrying one"
+      ]
+    }
+  ]
+}

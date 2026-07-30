@@ -1,0 +1,337 @@
+{
+  "pack": "sunken-choir",
+  "version": "1.1",
+  "provenance": "Original content — The Sunken Choir, © 2026 Example Campaign",
+  "note": "A drowned cult. The choir's spells lean on multi-target effects, so this pack is where max_targets earns its keep. Five creatures, four spells, three conditions, three items.",
+  "creatures": [
+    {
+      "name": "Sunken Choir Acolyte",
+      "team": "cult",
+      "ac": 12,
+      "max_hp": 14,
+      "hit_dice": "4d8-4",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 12,
+        "constitution": 10,
+        "intelligence": 11,
+        "wisdom": 14,
+        "charisma": 12
+      },
+      "resistances": ["cold"],
+      "spells": ["Drowning Hymn"],
+      "spell_slots": {
+        "1": 2
+      },
+      "spell_save_dc": 12,
+      "attacks": [
+        {
+          "name": "Ritual Sickle",
+          "attack_bonus": 3,
+          "damage": "1d4+1",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "Holds its breath for fifteen minutes, which matters in the flooded nave"
+      ]
+    },
+    {
+      "name": "Sunken Choir Chorister",
+      "team": "cult",
+      "ac": 13,
+      "max_hp": 27,
+      "hit_dice": "6d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 12,
+        "wisdom": 16,
+        "charisma": 15
+      },
+      "save_bonuses": {
+        "wisdom": 5
+      },
+      "resistances": ["cold"],
+      "spells": ["Drowning Hymn", "Choir's Descant", "Tidebell Toll"],
+      "spell_slots": {
+        "1": 4,
+        "2": 2
+      },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Ritual Sickle",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Choir's Salt Vial": 2
+      },
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "Sings in unison with every other chorister in the nave, which is unnerving and not mechanical"
+      ]
+    },
+    {
+      "name": "Sunken Choir Drowned Thrall",
+      "team": "cult",
+      "ac": 9,
+      "max_hp": 20,
+      "hit_dice": "3d8+7",
+      "speed": 20,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 7,
+        "constitution": 15,
+        "intelligence": 3,
+        "wisdom": 6,
+        "charisma": 3
+      },
+      "immunities": ["poison", "cold"],
+      "conditions": ["sunken-hymn-bound"],
+      "attacks": [
+        {
+          "name": "Bloated Grasp",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "It was a congregant; the hymn holds it upright and nothing else does"
+      ]
+    },
+    {
+      "name": "Sunken Choir Tidebell Warden",
+      "team": "cult",
+      "ac": 16,
+      "max_hp": 41,
+      "hit_dice": "6d10+8",
+      "speed": 25,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 11,
+        "constitution": 14,
+        "intelligence": 8,
+        "wisdom": 13,
+        "charisma": 10
+      },
+      "save_bonuses": {
+        "constitution": 4
+      },
+      "resistances": ["cold", "thunder"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Bell-Hammer",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Tidebell Clapper": 1
+      },
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "It guards the bell and will not step more than 20 feet from it"
+      ]
+    },
+    {
+      "name": "Sunken Choir Deep Cantrix",
+      "team": "cult",
+      "ac": 15,
+      "max_hp": 55,
+      "hit_dice": "10d8+10",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 14,
+        "wisdom": 18,
+        "charisma": 16
+      },
+      "save_bonuses": {
+        "wisdom": 7,
+        "charisma": 6
+      },
+      "resistances": ["cold", "thunder"],
+      "spells": ["Drowning Hymn", "Choir's Descant", "Tidebell Toll", "Abyssal Antiphon"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 3,
+        "4": 1
+      },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks": [
+        {
+          "name": "Coral Crozier",
+          "attack_bonus": 4,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Choir's Salt Vial": 3
+      },
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "She has not surfaced in forty years and does not need to",
+        "Legendary resistance twice per day"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Drowning Hymn",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "sunken-hymn-bound",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "A bound creature walks toward deep water if nothing prevents it"
+      ]
+    },
+    {
+      "name": "Choir's Descant",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 40,
+      "max_targets": 3,
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "Requires two choristers singing; a lone caster halves the number of targets"
+      ]
+    },
+    {
+      "name": "Tidebell Toll",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "2d8",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 60,
+      "condition": "sunken-bell-shaken",
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "Cracks glass and unset mortar within the area"
+      ]
+    },
+    {
+      "name": "Abyssal Antiphon",
+      "level": 4,
+      "school": "Necromancy",
+      "save_ability": "charisma",
+      "damage": "6d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "2d8",
+      "range_feet": 90,
+      "max_targets": 4,
+      "condition": "sunken-abyss-touched",
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "Whatever answers the antiphon is not modelled and should not be summoned lightly"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "sunken-hymn-bound",
+      "description": "The hymn is inside the creature's head and it cannot argue with it.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — The Sunken Choir"
+    },
+    {
+      "name": "sunken-bell-shaken",
+      "description": "The toll went through bone. The creature cannot find its footing.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — The Sunken Choir"
+    },
+    {
+      "name": "sunken-abyss-touched",
+      "description": "Something looked back. The creature stands very still.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — The Sunken Choir"
+    }
+  ],
+  "items": [
+    {
+      "name": "Choir's Salt Vial",
+      "description": "Sea salt blessed in the flooded nave. Rubbed into a wound, it holds.",
+      "use": {
+        "heal": "2d4+2"
+      },
+      "provenance": "Original content — The Sunken Choir"
+    },
+    {
+      "name": "Tidebell Clapper",
+      "description": "A bronze tongue cut from a smaller bell. Struck against armour, it rings a creature's ribs.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "sunken-bell-shaken"
+      },
+      "provenance": "Original content — The Sunken Choir"
+    },
+    {
+      "name": "Nave Water Flask",
+      "description": "Water from the drowned altar. It heals, and the choir knows who drank it.",
+      "use": {
+        "heal": "3d4"
+      },
+      "provenance": "Original content — The Sunken Choir",
+      "unmodelled": [
+        "The Deep Cantrix learns the drinker's name and rough direction"
+      ]
+    }
+  ]
+}

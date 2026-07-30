@@ -1,0 +1,301 @@
+{
+  "pack": "brackwater-raiders",
+  "version": "1.0",
+  "provenance": "Original content — Brackwater Raiders, © 2026 Example Campaign",
+  "note": "A river war-band with a tier for every level of trouble. Six creatures, three spells, two conditions, three items.",
+  "creatures": [
+    {
+      "name": "Brackwater Oarsman",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 13,
+      "hit_dice": "3d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 12,
+        "constitution": 12,
+        "intelligence": 9,
+        "wisdom": 10,
+        "charisma": 9
+      },
+      "attacks": [
+        {
+          "name": "Broken Oar",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Fights badly on land and knows it"]
+    },
+    {
+      "name": "Brackwater Hook-Hand",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 20,
+      "hit_dice": "4d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "attacks": [
+        {
+          "name": "Boarding Hook",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Brackwater River Tonic": 1 },
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Pulls a target 5 feet closer on a hit, if the table wants it"]
+    },
+    {
+      "name": "Brackwater Bowman",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 17,
+      "hit_dice": "4d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 16,
+        "constitution": 11,
+        "intelligence": 10,
+        "wisdom": 12,
+        "charisma": 9
+      },
+      "attacks": [
+        {
+          "name": "River Bow",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 80,
+          "long_range": 320
+        },
+        {
+          "name": "Knife",
+          "attack_bonus": 5,
+          "damage": "1d4+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Brackwater Pitch Arrow": 2 },
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Shoots from the boat and will not come ashore"]
+    },
+    {
+      "name": "Brackwater River-Witch",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 29,
+      "hit_dice": "6d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 12,
+        "wisdom": 16,
+        "charisma": 14
+      },
+      "save_bonuses": { "wisdom": 5 },
+      "resistances": ["cold"],
+      "spells": ["Brackwater Drag", "River-Witch's Chill", "Silt Curtain"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Weed-Wrapped Staff",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Brackwater River Tonic": 2 },
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["The river will not drown her, and the band believes this is a bargain"]
+    },
+    {
+      "name": "Brackwater Boat-Captain",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 44,
+      "hit_dice": "7d8+13",
+      "speed": 30,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 15,
+        "constitution": 14,
+        "intelligence": 12,
+        "wisdom": 12,
+        "charisma": 15
+      },
+      "save_bonuses": { "strength": 5, "charisma": 4 },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Captain's Cutlass",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Thrown Gaff",
+          "attack_bonus": 6,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "items": { "Brackwater River Tonic": 2, "Captain's Signal Flare": 1 },
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Will cut the mooring and leave anyone still ashore"]
+    },
+    {
+      "name": "Brackwater River-Bull",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 61,
+      "hit_dice": "8d10+18",
+      "speed": 25,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 9,
+        "constitution": 17,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 6
+      },
+      "save_bonuses": { "constitution": 6 },
+      "resistances": ["bludgeoning"],
+      "attacks": [
+        {
+          "name": "Goring Charge",
+          "attack_bonus": 7,
+          "damage": "2d10+4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": [
+        "The band keeps one chained in the hold and releases it when a raid goes badly"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Brackwater Drag",
+      "level": 1,
+      "school": "Conjuration",
+      "save_ability": "strength",
+      "condition": "brackwater-dragged-under",
+      "concentration": true,
+      "range_feet": 30,
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Only works within 30 feet of open water, which is most of the campaign"]
+    },
+    {
+      "name": "River-Witch's Chill",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "provenance": "Original content — Brackwater Raiders"
+    },
+    {
+      "name": "Silt Curtain",
+      "level": 2,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "brackwater-silt-blind",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 3,
+      "provenance": "Original content — Brackwater Raiders"
+    }
+  ],
+  "conditions": [
+    {
+      "name": "brackwater-dragged-under",
+      "description": "The river has hold of the creature's legs and is pulling steadily.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — Brackwater Raiders"
+    },
+    {
+      "name": "brackwater-silt-blind",
+      "description": "River silt in a cloud. Nothing is visible past arm's length.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_disadvantage": true
+      },
+      "provenance": "Original content — Brackwater Raiders"
+    }
+  ],
+  "items": [
+    {
+      "name": "Brackwater River Tonic",
+      "description": "River water, spirit, and something the witch put in it.",
+      "use": { "heal": "2d4+2" },
+      "provenance": "Original content — Brackwater Raiders"
+    },
+    {
+      "name": "Brackwater Pitch Arrow",
+      "description": "An arrow with a pitch-soaked rag behind the head. Used on sails.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Brackwater Raiders"
+    },
+    {
+      "name": "Captain's Signal Flare",
+      "description": "Called for when a raid is over. Fired flat, it blinds.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "brackwater-silt-blind"
+      },
+      "provenance": "Original content — Brackwater Raiders",
+      "unmodelled": ["Every boat in the band pulls for open water when they see it"]
+    }
+  ]
+}

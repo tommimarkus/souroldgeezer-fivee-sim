@@ -1,0 +1,206 @@
+{
+  "pack": "stagnant-court",
+  "version": "1.0",
+  "provenance": "Original content — The Stagnant Court, © 2026 Example Campaign",
+  "note": "A court that stopped several centuries ago and has not been told. Four creatures, three spells, two conditions, two items.",
+  "creatures": [
+    {
+      "name": "Stagnant Court Usher",
+      "team": "court",
+      "ac": 14,
+      "max_hp": 18,
+      "hit_dice": "4d8-2",
+      "speed": 25,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 14,
+        "constitution": 10,
+        "intelligence": 12,
+        "wisdom": 13,
+        "charisma": 15
+      },
+      "immunities": ["poison"],
+      "resistances": ["psychic"],
+      "attacks": [
+        {
+          "name": "Ceremonial Rod",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Will announce the party formally before attacking them"]
+    },
+    {
+      "name": "Stagnant Court Petitioner",
+      "team": "court",
+      "ac": 12,
+      "max_hp": 15,
+      "hit_dice": "3d8+2",
+      "speed": 25,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 11,
+        "constitution": 12,
+        "intelligence": 9,
+        "wisdom": 10,
+        "charisma": 8
+      },
+      "immunities": ["poison"],
+      "conditions": ["stagnant-court-becalmed"],
+      "attacks": [
+        {
+          "name": "Rolled Petition",
+          "attack_bonus": 3,
+          "damage": "1d4+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Has been waiting to be heard for three hundred years and still is"]
+    },
+    {
+      "name": "Stagnant Court Chamberlain",
+      "team": "court",
+      "ac": 15,
+      "max_hp": 40,
+      "hit_dice": "8d8+3",
+      "speed": 25,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 13,
+        "constitution": 11,
+        "intelligence": 16,
+        "wisdom": 15,
+        "charisma": 18
+      },
+      "save_bonuses": { "charisma": 7, "intelligence": 6 },
+      "immunities": ["poison"],
+      "resistances": ["psychic", "necrotic"],
+      "spells": ["Point of Order", "Court Recess", "The Endless Docket"],
+      "spell_slots": { "1": 4, "2": 3, "3": 2 },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Seal of Office",
+          "attack_bonus": 3,
+          "damage": "1d6",
+          "damage_type": "force",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Court Preserving Cordial": 2 },
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Cannot be lied to inside the chamber and knows the whole docket by heart"]
+    },
+    {
+      "name": "Stagnant Court Bailiff",
+      "team": "court",
+      "ac": 17,
+      "max_hp": 52,
+      "hit_dice": "8d10+9",
+      "speed": 25,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 11,
+        "constitution": 14,
+        "intelligence": 8,
+        "wisdom": 12,
+        "charisma": 10
+      },
+      "save_bonuses": { "strength": 6, "constitution": 5 },
+      "immunities": ["poison"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Weighted Staff of Office",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Bailiff's Restraining Writ": 2 },
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Enforces the chamberlain's rulings and will not act without one"]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Point of Order",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "damage": "2d6",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Only works on a creature that was in fact speaking out of turn"]
+    },
+    {
+      "name": "Court Recess",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "stagnant-court-becalmed",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 2,
+      "provenance": "Original content — The Stagnant Court"
+    },
+    {
+      "name": "The Endless Docket",
+      "level": 3,
+      "school": "Enchantment",
+      "save_ability": "intelligence",
+      "condition": "stagnant-court-docketed",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["The target is added to the docket and will be heard in due course"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "stagnant-court-becalmed",
+      "description": "The court is in recess. The creature is content to wait, and waits.",
+      "effects": { "speed_zero": true, "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Stagnant Court"
+    },
+    {
+      "name": "stagnant-court-docketed",
+      "description": "The creature has a case pending and cannot bring itself to leave.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — The Stagnant Court"
+    }
+  ],
+  "items": [
+    {
+      "name": "Court Preserving Cordial",
+      "description": "What keeps the court standing. It works on the living too.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — The Stagnant Court"
+    },
+    {
+      "name": "Bailiff's Restraining Writ",
+      "description": "A writ served on the spot. Refusing it is not among the options.",
+      "use": { "condition": "stagnant-court-becalmed" },
+      "provenance": "Original content — The Stagnant Court",
+      "unmodelled": ["Legally binding within the chamber and worthless outside it"]
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "pack": "mournhollow-abbey",
+  "version": "1.0",
+  "provenance": "Original content — Mournhollow Abbey, © 2026 Example Campaign",
+  "note": "An abbey that kept praying after it had stopped being an abbey. Five creatures, four spells, three conditions, three items.",
+  "creatures": [
+    {
+      "name": "Mournhollow Bell-Novice",
+      "team": "cult",
+      "ac": 12,
+      "max_hp": 12,
+      "hit_dice": "3d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 12,
+        "constitution": 11,
+        "intelligence": 10,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "attacks": [
+        {
+          "name": "Bell-Rope Whip",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["Rings the hours whatever else is happening"]
+    },
+    {
+      "name": "Mournhollow Fasting Brother",
+      "team": "cult",
+      "ac": 13,
+      "max_hp": 26,
+      "hit_dice": "6d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 14,
+        "constitution": 10,
+        "intelligence": 11,
+        "wisdom": 16,
+        "charisma": 12
+      },
+      "save_bonuses": { "wisdom": 5 },
+      "resistances": ["necrotic"],
+      "spells": ["Mournhollow Fast", "Abbey Antiphon"],
+      "spell_slots": { "1": 3, "2": 2 },
+      "spell_save_dc": 14,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Knotted Cord",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Abbey Communion Wine": 1 },
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["Has not eaten in eleven years and will describe it if asked"]
+    },
+    {
+      "name": "Mournhollow Reliquary Warden",
+      "team": "cult",
+      "ac": 17,
+      "max_hp": 46,
+      "hit_dice": "7d10+8",
+      "speed": 25,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 14,
+        "intelligence": 9,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "save_bonuses": { "constitution": 5, "wisdom": 5 },
+      "resistances": ["necrotic", "radiant"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Reliquary Mace",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Reliquary Ash Vial": 2 },
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["Guards a box nobody at the abbey has opened in two centuries"]
+    },
+    {
+      "name": "Mournhollow Choir-Corpse",
+      "team": "monsters",
+      "ac": 10,
+      "max_hp": 19,
+      "hit_dice": "3d8+7",
+      "speed": 20,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 7,
+        "constitution": 16,
+        "intelligence": 3,
+        "wisdom": 6,
+        "charisma": 4
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["radiant"],
+      "conditions": ["mournhollow-fasting"],
+      "attacks": [
+        {
+          "name": "Grasping Hands",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["Still holds its place in the choir stalls and still sings"]
+    },
+    {
+      "name": "Mournhollow Abbot-That-Remains",
+      "team": "cult",
+      "ac": 16,
+      "max_hp": 74,
+      "hit_dice": "12d8+18",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 15,
+        "wisdom": 19,
+        "charisma": 17
+      },
+      "save_bonuses": { "wisdom": 9, "charisma": 8, "constitution": 6 },
+      "immunities": ["poison"],
+      "resistances": ["necrotic", "radiant"],
+      "spells": ["Mournhollow Fast", "Abbey Antiphon", "The Abbot's Long Vigil", "Sealing Rite"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 2, "5": 1 },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks": [
+        {
+          "name": "Crozier",
+          "attack_bonus": 4,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Abbey Communion Wine": 3, "Reliquary Ash Vial": 1 },
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": [
+        "Legendary resistance twice per day",
+        "Will stop fighting for the office of the hours and expects the same courtesy"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Mournhollow Fast",
+      "level": 1,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "condition": "mournhollow-fasting",
+      "concentration": true,
+      "range_feet": 30,
+      "max_targets": 2,
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["The target cannot bring itself to eat for a day afterwards"]
+    },
+    {
+      "name": "Abbey Antiphon",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "wisdom",
+      "damage": "3d6",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "provenance": "Original content — Mournhollow Abbey"
+    },
+    {
+      "name": "The Abbot's Long Vigil",
+      "level": 4,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "mournhollow-vigil-held",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["The target keeps the vigil whether or not it wants to"]
+    },
+    {
+      "name": "Sealing Rite",
+      "level": 5,
+      "school": "Abjuration",
+      "save_ability": "charisma",
+      "damage": "7d8",
+      "damage_type": "radiant",
+      "half_on_save": false,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 60,
+      "condition": "mournhollow-sealed",
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["The rite is what keeps the reliquary shut; casting it elsewhere is a risk"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "mournhollow-fasting",
+      "description": "A hollow discipline the creature did not choose. It has no strength to spare.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — Mournhollow Abbey"
+    },
+    {
+      "name": "mournhollow-vigil-held",
+      "description": "The creature is keeping a vigil and will not be moved from it.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Mournhollow Abbey"
+    },
+    {
+      "name": "mournhollow-sealed",
+      "description": "Something has been shut, and part of it was the creature.",
+      "effects": {
+        "speed_zero": true,
+        "own_attacks_have_disadvantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — Mournhollow Abbey"
+    }
+  ],
+  "items": [
+    {
+      "name": "Abbey Communion Wine",
+      "description": "Kept for the office and used for wounds when the office allows.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — Mournhollow Abbey"
+    },
+    {
+      "name": "Reliquary Ash Vial",
+      "description": "Ash from the reliquary lamp. It burns what should not be walking.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "radiant",
+        "save_ability": "constitution",
+        "save_dc": 15,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Mournhollow Abbey"
+    },
+    {
+      "name": "Novice's Fasting Cord",
+      "description": "Tied around someone else's wrist. The discipline transfers.",
+      "use": { "condition": "mournhollow-fasting" },
+      "provenance": "Original content — Mournhollow Abbey",
+      "unmodelled": ["The abbey considers this a misuse and does it anyway"]
+    }
+  ]
+}

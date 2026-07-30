@@ -1,0 +1,516 @@
+{
+  "pack": "copperhold-deeps",
+  "version": "2.1",
+  "provenance": "Original content — Copperhold Deeps, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "A full dungeon level: nine stat blocks from the flooded third gallery down to the vault, the deep-cantor's spell list, the four conditions the level's hazards impose, and the six supplies scavengers find down there.",
+  "creatures": [
+    {
+      "name": "Copperhold Tunnel Rat",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 4,
+      "hit_dice": "1d6+1",
+      "speed": 30,
+      "abilities": {
+        "strength": 7,
+        "dexterity": 13,
+        "constitution": 12
+      },
+      "attacks": [
+        {
+          "name": "Bite",
+          "attack_bonus": 3,
+          "damage": "1d4+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "They come in dozens; run them as a group or use the swarm below"
+      ]
+    },
+    {
+      "name": "Copperhold Rat Swarm",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 22,
+      "hit_dice": "5d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 11
+      },
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Bites",
+          "attack_bonus": 4,
+          "damage": "2d6",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Swarm: it shares the space of other creatures and cannot be grappled"
+      ]
+    },
+    {
+      "name": "Copperhold Scrap-Picker",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 16,
+      "hit_dice": "3d8+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 9,
+        "charisma": 8
+      },
+      "attacks": [
+        {
+          "name": "Pry Bar",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Sling",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
+        }
+      ],
+      "items": {
+        "Copperhold Miner's Tonic": 1
+      },
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Will surrender and talk if reduced below half its hit points"
+      ]
+    },
+    {
+      "name": "Copperhold Verdigris Crawler",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 28,
+      "hit_dice": "5d8+10",
+      "speed": 25,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 12,
+        "constitution": 15,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 3
+      },
+      "immunities": ["poison", "acid"],
+      "attacks": [
+        {
+          "name": "Corroding Mandibles",
+          "attack_bonus": 5,
+          "damage": "1d8+2",
+          "damage_type": "acid",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "A hit corrodes a nonmagical metal weapon or shield, giving it a -1 penalty",
+        "It follows copper by smell through solid rock"
+      ]
+    },
+    {
+      "name": "Copperhold Drowned Miner",
+      "team": "monsters",
+      "ac": 10,
+      "max_hp": 26,
+      "hit_dice": "4d8+8",
+      "speed": 20,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 8,
+        "constitution": 16,
+        "intelligence": 3,
+        "wisdom": 7,
+        "charisma": 4
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["radiant"],
+      "conditions": ["copperhold-lamp-blind"],
+      "attacks": [
+        {
+          "name": "Waterlogged Pick",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "It has spent nine years in the dark and starts every fight already lamp-blind",
+        "Cannot leave the flooded gallery it drowned in"
+      ]
+    },
+    {
+      "name": "Copperhold Gallery Foreman",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 44,
+      "hit_dice": "7d8+14",
+      "speed": 25,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 11,
+        "wisdom": 12,
+        "charisma": 13
+      },
+      "save_bonuses": {
+        "constitution": 4,
+        "strength": 5
+      },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Sledge",
+          "attack_bonus": 5,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Copperhold Miner's Tonic": 2,
+        "Blasting Charge": 1
+      },
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Knows every prop and weak ceiling on the level and will collapse one to escape"
+      ]
+    },
+    {
+      "name": "Copperhold Deep-Cantor",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 39,
+      "hit_dice": "9d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 10,
+        "intelligence": 16,
+        "wisdom": 14,
+        "charisma": 15
+      },
+      "save_bonuses": {
+        "intelligence": 6,
+        "wisdom": 5
+      },
+      "resistances": ["thunder"],
+      "spells": [
+        "Copper Chord",
+        "Verdigris Bloom",
+        "Deepgallery Silence",
+        "Shaftfall",
+        "Cantor's Held Note"
+      ],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 2
+      },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Tuning Rod",
+          "attack_bonus": 3,
+          "damage": "1d6",
+          "damage_type": "thunder",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Cantor's Resonance Phial": 2
+      },
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "It sings the hold's foundation notes; the walls answer, which is scenery not damage",
+        "Legendary resistance once per day"
+      ]
+    },
+    {
+      "name": "Copperhold Vault Sentinel",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 60,
+      "hit_dice": "8d10+16",
+      "speed": 0,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 6,
+        "constitution": 15,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Anchored Fist",
+          "attack_bonus": 7,
+          "damage": "1d12+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Bolted to the vault floor: its speed is 0 and it can never be moved",
+        "It attacks anything that touches the vault door and nothing else"
+      ]
+    },
+    {
+      "name": "Copperhold Assay Golem",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 82,
+      "hit_dice": "11d10+22",
+      "speed": 25,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 9,
+        "constitution": 15,
+        "intelligence": 3,
+        "wisdom": 10,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic", "acid"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Crucible Slam",
+          "attack_bonus": 7,
+          "damage": "2d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Immune to any spell that would charm, frighten or paralyse it",
+        "Molten Core: it takes half damage from cold and none from fire"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Copper Chord",
+      "level": 1,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "2d6",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 40,
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Loose copper in the area rings for a round afterwards"
+      ]
+    },
+    {
+      "name": "Verdigris Bloom",
+      "level": 2,
+      "school": "Transmutation",
+      "save_ability": "dexterity",
+      "damage": "3d6",
+      "damage_type": "acid",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 60,
+      "condition": "copperhold-verdigris-fouled",
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Metal left in the area turns green and brittle over an hour"
+      ]
+    },
+    {
+      "name": "Deepgallery Silence",
+      "level": 2,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "copperhold-stone-deafened",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 3,
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Suppresses sound in a 15-foot radius, which blocks verbal spellcasting"
+      ]
+    },
+    {
+      "name": "Shaftfall",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "5d8",
+      "damage_type": "bludgeoning",
+      "half_on_save": false,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 80,
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "The ceiling it pulls down leaves rubble; treat the area as difficult terrain"
+      ]
+    },
+    {
+      "name": "Cantor's Held Note",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "condition": "copperhold-note-held",
+      "concentration": true,
+      "range_feet": 30,
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "The note is audible to everyone on the level for as long as it is held"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "copperhold-lamp-blind",
+      "description": "Years of dark, then a lamp. The creature cannot judge distance at all.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "copperhold-verdigris-fouled",
+      "description": "Green corrosion crusts armour joints and weapon grips alike.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "copperhold-stone-deafened",
+      "description": "The gallery has swallowed every sound. Orders do not arrive.",
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Cannot hear, so cannot be given warning or cast a spell with a verbal component"
+      ]
+    },
+    {
+      "name": "copperhold-note-held",
+      "description": "One note sits in the chest and will not let go. The creature stands still and listens.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    }
+  ],
+  "items": [
+    {
+      "name": "Copperhold Miner's Tonic",
+      "description": "Issued two to a shift. Bitter, brown, and it gets a crew back on its feet.",
+      "use": {
+        "heal": "2d4+2"
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "Blasting Charge",
+      "description": "A wrapped stick of mining powder with a very short fuse.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "Brings down an unsupported ceiling, which is what it is actually for"
+      ]
+    },
+    {
+      "name": "Cantor's Resonance Phial",
+      "description": "A stoppered tube that rings when uncorked, deafening whoever is nearest.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "copperhold-stone-deafened"
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "Verdigris Scraping",
+      "description": "Green flakes off a crawler's back, folded into paper and thrown.",
+      "use": {
+        "condition": "copperhold-verdigris-fouled"
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "Gallery Lamp Oil",
+      "description": "Burns clean and long. Poured out and lit, it burns something else.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Copperhold Deeps"
+    },
+    {
+      "name": "Foreman's Flask",
+      "description": "Not medicine. It works anyway, for about ten minutes.",
+      "use": {
+        "heal": "1d10"
+      },
+      "provenance": "Original content — Copperhold Deeps",
+      "unmodelled": [
+        "A second flask in the same hour does nothing but make the drinker slower"
+      ]
+    }
+  ]
+}

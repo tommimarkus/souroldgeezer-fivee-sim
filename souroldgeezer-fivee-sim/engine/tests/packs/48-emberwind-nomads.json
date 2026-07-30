@@ -1,0 +1,174 @@
+{
+  "pack": "emberwind-nomads",
+  "version": "1.0",
+  "provenance": "Original content — Emberwind Nomads, © 2026 Example Campaign",
+  "note": "Nine records: three creatures, two spells, two conditions, two items. Everything the nomads do is ranged or mounted, and nothing here is a boss.",
+  "creatures": [
+    {
+      "name": "Emberwind Scout",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 16,
+      "hit_dice": "3d8+3",
+      "speed": 35,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 17,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "resistances": ["fire"],
+      "attacks": [
+        {
+          "name": "Short Bow",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 80,
+          "long_range": 320
+        }
+      ],
+      "items": { "Emberwind Ash Cake": 1 },
+      "provenance": "Original content — Emberwind Nomads",
+      "unmodelled": ["Never closes to melee if there is any ground left to give"]
+    },
+    {
+      "name": "Emberwind Ash-Rider",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 27,
+      "hit_dice": "5d8+5",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 16,
+        "constitution": 13,
+        "intelligence": 10,
+        "wisdom": 13,
+        "charisma": 12
+      },
+      "resistances": ["fire"],
+      "attacks": [
+        {
+          "name": "Ember Lance",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 10
+        },
+        {
+          "name": "Recurve Bow",
+          "attack_bonus": 6,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 80,
+          "long_range": 320
+        }
+      ],
+      "items": { "Emberwind Cinder Pouch": 2 },
+      "provenance": "Original content — Emberwind Nomads",
+      "unmodelled": ["Mounted; the mount is not statted and the table should improvise it"]
+    },
+    {
+      "name": "Emberwind Wind-Singer",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 30,
+      "hit_dice": "7d8-4",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 10,
+        "intelligence": 12,
+        "wisdom": 16,
+        "charisma": 15
+      },
+      "save_bonuses": { "wisdom": 5 },
+      "resistances": ["fire"],
+      "spells": ["Emberwind Gust", "Singer's Ash Veil"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "attacks": [
+        {
+          "name": "Singing Rod",
+          "attack_bonus": 2,
+          "damage": "1d4",
+          "damage_type": "thunder",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Emberwind Ash Cake": 2 },
+      "provenance": "Original content — Emberwind Nomads",
+      "unmodelled": ["Sings the band's route; losing the singer means losing the way"]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Emberwind Gust",
+      "level": 1,
+      "school": "Evocation",
+      "save_ability": "strength",
+      "damage": "2d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 60,
+      "condition": "emberwind-ash-stung",
+      "provenance": "Original content — Emberwind Nomads"
+    },
+    {
+      "name": "Singer's Ash Veil",
+      "level": 2,
+      "school": "Illusion",
+      "condition": "emberwind-veiled",
+      "concentration": true,
+      "range_feet": 20,
+      "max_targets": 3,
+      "provenance": "Original content — Emberwind Nomads",
+      "unmodelled": ["Also hides the band's tracks for an hour, which is why it is taught"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "emberwind-ash-stung",
+      "description": "Hot ash across the face. The creature is fighting with its eyes half shut.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — Emberwind Nomads"
+    },
+    {
+      "name": "emberwind-veiled",
+      "description": "A skin of ash and moving air. Hard to find, harder to hit.",
+      "effects": { "attacked_with_disadvantage": true },
+      "provenance": "Original content — Emberwind Nomads"
+    }
+  ],
+  "items": [
+    {
+      "name": "Emberwind Ash Cake",
+      "description": "Baked in the coals and carried for weeks. It keeps a rider going.",
+      "use": { "heal": "1d8+2" },
+      "provenance": "Original content — Emberwind Nomads"
+    },
+    {
+      "name": "Emberwind Cinder Pouch",
+      "description": "Live cinders in a leather pouch, thrown from the saddle.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true,
+        "condition": "emberwind-ash-stung"
+      },
+      "provenance": "Original content — Emberwind Nomads"
+    }
+  ]
+}

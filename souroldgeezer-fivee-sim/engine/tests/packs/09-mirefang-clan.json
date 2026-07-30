@@ -1,0 +1,243 @@
+{
+  "pack": "mirefang-clan",
+  "version": "1.0",
+  "provenance": "Original content — Mirefang Clan, © 2026 Example Campaign",
+  "note": "A raiding clan built around one trick: the pitch-thrower fouls a target, then everyone else piles in. Four creatures, two spells, two conditions, three items.",
+  "creatures": [
+    {
+      "name": "Mirefang Whelp",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 12,
+      "hit_dice": "3d6+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 15,
+        "constitution": 11,
+        "intelligence": 8,
+        "wisdom": 9,
+        "charisma": 7
+      },
+      "attacks": [
+        {
+          "name": "Notched Cleaver",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "Will not close on a target the pitch-thrower has not fouled first"
+      ]
+    },
+    {
+      "name": "Mirefang Pitch-Thrower",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 21,
+      "hit_dice": "4d8+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "attacks": [
+        {
+          "name": "Pitch Pot",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "fire",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 90
+        },
+        {
+          "name": "Hatchet",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Mirefang Pitch Pot": 3
+      },
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "Carries three pots and will not throw the last one unless cornered"
+      ]
+    },
+    {
+      "name": "Mirefang Bone-Speaker",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 24,
+      "hit_dice": "5d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 13,
+        "constitution": 11,
+        "intelligence": 12,
+        "wisdom": 15,
+        "charisma": 14
+      },
+      "save_bonuses": {
+        "wisdom": 4
+      },
+      "spells": ["Mirefang Hex", "Bone-Speaker's Grip"],
+      "spell_slots": {
+        "1": 3,
+        "2": 1
+      },
+      "spell_save_dc": 12,
+      "spell_attack_bonus": 4,
+      "attacks": [
+        {
+          "name": "Fetish Rattle",
+          "attack_bonus": 2,
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Bone-Speaker's Marrow Draught": 1
+      },
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "Reads the clan's fortunes in cracked bone; it decides which raids happen"
+      ]
+    },
+    {
+      "name": "Mirefang Chieftain",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 47,
+      "hit_dice": "7d10+7",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 13,
+        "constitution": 13,
+        "intelligence": 10,
+        "wisdom": 12,
+        "charisma": 15
+      },
+      "save_bonuses": {
+        "strength": 5,
+        "charisma": 4
+      },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Clan Greataxe",
+          "attack_bonus": 6,
+          "damage": "1d12+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Chieftain's War Bandage": 2
+      },
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "Blood Debt: it will not retreat while any whelp of its own line is still standing"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Mirefang Hex",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "mirefang-marked-for-the-pile",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "The clan can see the mark in the dark, which is how they coordinate"
+      ]
+    },
+    {
+      "name": "Bone-Speaker's Grip",
+      "level": 2,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "2d8",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 30,
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "The bone the spell is cast through shatters and must be replaced"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "mirefang-marked-for-the-pile",
+      "description": "The clan has chosen this one. Every raider in sight comes for it.",
+      "effects": {
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Mirefang Clan"
+    },
+    {
+      "name": "mirefang-pitch-fouled",
+      "description": "Sticky burning pitch on the arms. Nothing swings cleanly.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Mirefang Clan"
+    }
+  ],
+  "items": [
+    {
+      "name": "Mirefang Pitch Pot",
+      "description": "Tar and lamp-black in a fired clay pot, lit on the rim.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true,
+        "condition": "mirefang-pitch-fouled"
+      },
+      "provenance": "Original content — Mirefang Clan"
+    },
+    {
+      "name": "Chieftain's War Bandage",
+      "description": "Filthy linen soaked in something that closes a wound and scars badly.",
+      "use": {
+        "heal": "1d8+2"
+      },
+      "provenance": "Original content — Mirefang Clan"
+    },
+    {
+      "name": "Bone-Speaker's Marrow Draught",
+      "description": "Drunk straight from a split bone. The clan says it is worth it.",
+      "use": {
+        "heal": "2d6"
+      },
+      "provenance": "Original content — Mirefang Clan",
+      "unmodelled": [
+        "The drinker cannot benefit from a second draught until they have slept"
+      ]
+    }
+  ]
+}

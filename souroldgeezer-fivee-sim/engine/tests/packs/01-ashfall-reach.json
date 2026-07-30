@@ -1,0 +1,209 @@
+{
+  "pack": "ashfall-reach",
+  "version": "1.0",
+  "provenance": "Original content — Ashfall Reach, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material. No SRD text is reproduced here.",
+  "note": "A mid-tier volcanic-waste set: three creatures, the two spells the emberpriest casts, the conditions those spells apply, and the flasks the warband carries.",
+  "creatures": [
+    {
+      "name": "Ashfall Cinderling",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 9,
+      "hit_dice": "2d6+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 6,
+        "wisdom": 10,
+        "charisma": 7
+      },
+      "immunities": ["poison"],
+      "resistances": ["fire"],
+      "vulnerabilities": ["cold"],
+      "attacks": [
+        {
+          "name": "Ember Claw",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "Ash Cloud: the cinderling's square is lightly obscured while it lives",
+        "Death Burst: 1d4 fire to each creature within 5 feet when it drops to 0 hit points"
+      ]
+    },
+    {
+      "name": "Ashfall Slagwright",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 52,
+      "hit_dice": "7d10+14",
+      "speed": 25,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 9,
+        "constitution": 15,
+        "intelligence": 8,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "resistances": ["fire"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Slag Maul",
+          "attack_bonus": 6,
+          "damage": "1d10+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "Heated Body: a creature that hits the slagwright with a melee attack takes 1d6 fire",
+        "It repairs its own plating during a short rest, regaining 10 hit points"
+      ]
+    },
+    {
+      "name": "Ashfall Emberpriest",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 33,
+      "hit_dice": "6d8+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 13,
+        "constitution": 12,
+        "intelligence": 12,
+        "wisdom": 16,
+        "charisma": 14
+      },
+      "save_bonuses": {
+        "wisdom": 5,
+        "constitution": 3
+      },
+      "resistances": ["fire"],
+      "spells": ["Ashfall Emberburst", "Cinder Brand"],
+      "spell_slots": {
+        "1": 3,
+        "2": 2
+      },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "items": {
+        "Ashfall Ember Flask": 2,
+        "Slagwright Draught": 1
+      },
+      "attacks": [
+        {
+          "name": "Ashen Sling",
+          "attack_bonus": 3,
+          "damage": "1d4+1",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
+        }
+      ],
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "Channel Ash: once per day it may reroll a failed Constitution save",
+        "It speaks the ash-cant, which the engine does not track"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Ashfall Emberburst",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "4d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 90,
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "Ash left in the area is difficult terrain until the end of the caster's next turn"
+      ]
+    },
+    {
+      "name": "Cinder Brand",
+      "level": 1,
+      "school": "Transmutation",
+      "save_ability": "constitution",
+      "condition": "ashfall-ember-marked",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "The brand glows, making the target visible through smoke",
+        "The target repeats the save at the end of each of its turns"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "ashfall-ember-marked",
+      "description": "A glowing brand sits on the creature's skin; attackers can see exactly where to strike.",
+      "effects": {
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Ashfall Reach"
+    },
+    {
+      "name": "ashfall-cinder-blind",
+      "description": "Hot grit fills the eyes. The creature strikes badly and is easy to strike.",
+      "effects": {
+        "attacked_with_advantage": true,
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Ashfall Reach"
+    }
+  ],
+  "items": [
+    {
+      "name": "Ashfall Ember Flask",
+      "description": "A clay flask of banked embers that bursts alight on impact.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Ashfall Reach"
+    },
+    {
+      "name": "Slagwright Draught",
+      "description": "Bitter mineral slurry the forge-crews drink between shifts.",
+      "use": {
+        "heal": "2d4+2"
+      },
+      "provenance": "Original content — Ashfall Reach"
+    },
+    {
+      "name": "Cinder-Grit Pouch",
+      "description": "A fistful of sharp ash, thrown into the face.",
+      "use": {
+        "condition": "ashfall-cinder-blind"
+      },
+      "provenance": "Original content — Ashfall Reach",
+      "unmodelled": [
+        "A creature with no eyes is unaffected; the engine does not track anatomy"
+      ]
+    }
+  ]
+}

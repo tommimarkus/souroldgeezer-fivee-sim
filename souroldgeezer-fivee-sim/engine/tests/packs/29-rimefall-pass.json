@@ -1,0 +1,158 @@
+{
+  "pack": "rimefall-pass",
+  "version": "1.0",
+  "provenance": "Original content — Rimefall Pass, © 2026 Example Campaign",
+  "note": "A mountain pass in eight records. Three creatures, two spells, one condition, two items. Deliberately narrow: the pass is a bottleneck and the pack is one too.",
+  "creatures": [
+    {
+      "name": "Rimefall Scree-Lurker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 25,
+      "hit_dice": "5d8+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 6,
+        "wisdom": 13,
+        "charisma": 6
+      },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Stone Claw",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Rimefall Pass",
+      "unmodelled": ["Climbs sheer rock at full speed; the engine models one axis"]
+    },
+    {
+      "name": "Rimefall Pass-Warden",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 36,
+      "hit_dice": "6d10+3",
+      "speed": 25,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 12,
+        "constitution": 13,
+        "intelligence": 10,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "save_bonuses": { "constitution": 4 },
+      "resistances": ["cold"],
+      "spells": ["Rimefall Slick"],
+      "spell_slots": { "1": 2, "2": 1 },
+      "spell_save_dc": 13,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Ice Axe",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Rimefall Fire-Stone": 1 },
+      "provenance": "Original content — Rimefall Pass",
+      "unmodelled": ["Holds the pass for whoever paid last, and will say who"]
+    },
+    {
+      "name": "Rimefall Avalanche Horn",
+      "team": "monsters",
+      "ac": 10,
+      "max_hp": 30,
+      "hit_dice": "4d10+7",
+      "speed": 0,
+      "abilities": { "strength": 16, "dexterity": 3, "constitution": 15 },
+      "immunities": ["cold", "poison"],
+      "attacks": [
+        {
+          "name": "Falling Ice",
+          "attack_bonus": 5,
+          "damage": "2d6+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — Rimefall Pass",
+      "unmodelled": [
+        "A hazard given hit points: it is the overhang, so its speed is 0",
+        "Bringing it down blocks the pass for a season"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Rimefall Slick",
+      "level": 2,
+      "school": "Transmutation",
+      "save_ability": "dexterity",
+      "damage": "2d6",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 45,
+      "condition": "rimefall-footing-lost",
+      "provenance": "Original content — Rimefall Pass",
+      "unmodelled": ["The ice stays for ten minutes and is a problem for everyone"]
+    },
+    {
+      "name": "Warden's Cold Word",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "2d8",
+      "damage_type": "cold",
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "provenance": "Original content — Rimefall Pass"
+    }
+  ],
+  "conditions": [
+    {
+      "name": "rimefall-footing-lost",
+      "description": "Ice underfoot on a slope. Standing is work; fighting is worse.",
+      "effects": {
+        "speed_zero": true,
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Rimefall Pass"
+    }
+  ],
+  "items": [
+    {
+      "name": "Rimefall Fire-Stone",
+      "description": "A stone that stays hot for an hour. Pressed to a wound, or thrown.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Rimefall Pass"
+    },
+    {
+      "name": "Pass-Warden's Flask",
+      "description": "Spirit and pine resin. It burns going down and stops the shaking.",
+      "use": { "heal": "2d4+2" },
+      "provenance": "Original content — Rimefall Pass"
+    }
+  ]
+}

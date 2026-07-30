@@ -1,0 +1,74 @@
+{
+  "pack": "redcap-crossing",
+  "version": "1.0",
+  "provenance": "Original content — Redcap Crossing, © 2026 Example Campaign",
+  "note": "Two stat blocks for one bridge. The smallest useful pack shape: creatures only, nothing referenced that is not printed on the page.",
+  "creatures": [
+    {
+      "name": "Redcap Crossing Toll-Taker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 29,
+      "hit_dice": "5d8+7",
+      "speed": 35,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 16,
+        "constitution": 14,
+        "intelligence": 10,
+        "wisdom": 12,
+        "charisma": 8
+      },
+      "save_bonuses": { "dexterity": 5 },
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Iron-Shod Boot",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Redcap Crossing",
+      "unmodelled": [
+        "It will genuinely accept a toll and let the party pass",
+        "Its boots let it move at 35 feet and it is very proud of them"
+      ]
+    },
+    {
+      "name": "Redcap Crossing Bridge-Troll",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 57,
+      "hit_dice": "7d10+19",
+      "speed": 25,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 9,
+        "constitution": 17,
+        "intelligence": 7,
+        "wisdom": 11,
+        "charisma": 6
+      },
+      "save_bonuses": { "constitution": 6 },
+      "vulnerabilities": ["fire", "acid"],
+      "attacks": [
+        {
+          "name": "Bridge-Post Club",
+          "attack_bonus": 6,
+          "damage": "2d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Redcap Crossing",
+      "unmodelled": [
+        "Regenerates 10 hit points at the start of its turn unless it took fire or acid damage",
+        "It has never left the bridge and cannot be lured off it"
+      ]
+    }
+  ]
+}

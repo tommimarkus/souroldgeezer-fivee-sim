@@ -1,0 +1,260 @@
+{
+  "pack": "nightglass-observatory",
+  "version": "1.0",
+  "provenance": "Original content — Nightglass Observatory, © 2026 Example Campaign",
+  "note": "A wizard's tower and its residents. The observatory's spell list runs from a cantrip up to a fourth-level slot, so this pack is where level 0 and heavy upcasting both appear.",
+  "creatures": [
+    {
+      "name": "Nightglass Orrery Servitor",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 13,
+      "hit_dice": "3d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 16,
+        "constitution": 10,
+        "intelligence": 4,
+        "wisdom": 10,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic"],
+      "attacks": [
+        {
+          "name": "Brass Armature",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "force",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "It continues its assigned task while fighting, badly, and resents interruption"
+      ]
+    },
+    {
+      "name": "Nightglass Star-Reader",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 25,
+      "hit_dice": "6d8-2",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 13,
+        "constitution": 10,
+        "intelligence": 17,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "save_bonuses": {
+        "intelligence": 6
+      },
+      "spells": ["Glass Mote", "Refracted Bolt", "Starfall Cone"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3
+      },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Alidade",
+          "attack_bonus": 1,
+          "damage": "1d4-1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Nightglass Restorative Lens": 1
+      },
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "Reads a creature's fate from the sky, which is a plot hook and not a mechanic"
+      ]
+    },
+    {
+      "name": "Nightglass Astronomer-Magus",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 49,
+      "hit_dice": "9d8+9",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 19,
+        "wisdom": 15,
+        "charisma": 13
+      },
+      "save_bonuses": {
+        "intelligence": 8,
+        "wisdom": 6
+      },
+      "resistances": ["force"],
+      "spells": ["Glass Mote", "Refracted Bolt", "Starfall Cone", "Void Between Stars"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 3,
+        "4": 2
+      },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks": [
+        {
+          "name": "Weighted Sleeve",
+          "attack_bonus": 3,
+          "damage": "1d4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Nightglass Restorative Lens": 2,
+        "Collapsing Star Phial": 1
+      },
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "Contingency: teleports to the tower's peak the first time it drops below 15 hit points",
+        "It will parley if the party can name the comet"
+      ]
+    },
+    {
+      "name": "Nightglass Tower Hound",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 15,
+      "hit_dice": "3d8+3",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 14,
+        "constitution": 13
+      },
+      "attacks": [
+        {
+          "name": "Bite",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "It has never been outside and will not cross the threshold"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Glass Mote",
+      "level": 0,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "1d8",
+      "damage_type": "force",
+      "range_feet": 60,
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "A cantrip, so its damage scales with the caster's level rather than a slot"
+      ]
+    },
+    {
+      "name": "Refracted Bolt",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "3d6",
+      "damage_type": "radiant",
+      "upcast_damage": "1d6",
+      "range_feet": 90,
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "Splits against a target in bright light, striking twice for half damage each"
+      ]
+    },
+    {
+      "name": "Starfall Cone",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "4d6",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 60,
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "Printed as a cone; the engine models spheres, so it is run as a burst"
+      ]
+    },
+    {
+      "name": "Void Between Stars",
+      "level": 4,
+      "school": "Necromancy",
+      "save_ability": "wisdom",
+      "damage": "5d10",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "2d10",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 120,
+      "condition": "nightglass-star-struck",
+      "concentration": true,
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "All light in the area is extinguished for the duration"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "nightglass-star-struck",
+      "description": "A cold, distant weight in the skull. The creature moves as if underwater.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "speed_zero": true
+      },
+      "provenance": "Original content — Nightglass Observatory"
+    }
+  ],
+  "items": [
+    {
+      "name": "Nightglass Restorative Lens",
+      "description": "Held over a wound, it gathers moonlight into it and the wound closes.",
+      "use": {
+        "heal": "2d6+3"
+      },
+      "provenance": "Original content — Nightglass Observatory"
+    },
+    {
+      "name": "Collapsing Star Phial",
+      "description": "A pinpoint of something very heavy in a very thin glass shell.",
+      "use": {
+        "damage": "3d8",
+        "damage_type": "force",
+        "save_ability": "dexterity",
+        "save_dc": 15,
+        "half_on_save": true,
+        "condition": "nightglass-star-struck"
+      },
+      "provenance": "Original content — Nightglass Observatory",
+      "unmodelled": [
+        "The observatory has four left and cannot make more"
+      ]
+    }
+  ]
+}

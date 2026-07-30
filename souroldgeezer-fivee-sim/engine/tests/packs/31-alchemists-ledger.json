@@ -1,0 +1,409 @@
+{
+  "pack": "alchemists-ledger",
+  "version": "4.2",
+  "provenance": "Original content — The Alchemist's Ledger, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "Thirty-eight items and the six conditions they impose, and nothing else. This is the pack shape the bundled slice cannot provide — the SRD data ships no items at all, so a session that wants potions and flasks gets them from a file like this one. 'Inert Draught' deliberately does nothing but apply a condition with no flags: a dud, and the ledger records duds.",
+  "items": [
+    {
+      "name": "Ledger Restorative, Lesser",
+      "description": "The house standard. Two coppers, tastes of iron.",
+      "use": { "heal": "2d4+2" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Restorative, Greater",
+      "description": "Four times the price and rather more than four times the effect.",
+      "use": { "heal": "4d4+4" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Restorative, Superior",
+      "description": "Kept behind the counter. Sold to people the house trusts.",
+      "use": { "heal": "8d4+8" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Field Stitching Salve",
+      "description": "Closes an open wound without a needle. Scars badly.",
+      "use": { "heal": "1d8+3" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Bonesetter's Cordial",
+      "description": "For the sort of injury that makes a noise.",
+      "use": { "heal": "3d6" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Sailmender's Tincture",
+      "description": "Meant for canvas. Works on skin, unpleasantly.",
+      "use": { "heal": "1d6+1" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Waking Salts",
+      "description": "Held under the nose of somebody who has stopped arguing.",
+      "use": { "heal": "1d4+1" },
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["Ends an ordinary faint outright, which the engine does not model"]
+    },
+    {
+      "name": "Ledger Blood Restorer",
+      "description": "For blood loss specifically. The house is proud of it.",
+      "use": { "heal": "2d8+2" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Firebottle",
+      "description": "Naphtha and a wick. The house sells more of these than anything else.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Firebottle, Heavy",
+      "description": "Twice the naphtha and a shorter wick. Sold with a warning.",
+      "use": {
+        "damage": "4d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 15,
+        "half_on_save": true,
+        "condition": "ledger-blistered"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Vitriol Flask",
+      "description": "Strong acid in thin glass. No wick, no warning.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "acid",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": false
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Fuming Vitriol",
+      "description": "The same acid, left open until it started to smoke.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "acid",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "ledger-fume-blind"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Frost Ampoule",
+      "description": "Something in it is much colder than it should be.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "ledger-tar-stuck"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Thundershot Cylinder",
+      "description": "A sealed tube that makes a noise felt in the chest.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Static Jar",
+      "description": "Charged foil in glass. Opening it is the whole use.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "lightning",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Blightpowder",
+      "description": "Ground fungus. Breathed in, it does real harm.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "poison",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "ledger-numbed"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Grave-Wick Vial",
+      "description": "Bought from somewhere the house does not name in the ledger.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "necrotic",
+        "save_ability": "constitution",
+        "save_dc": 15,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Consecrated Oil Flask",
+      "description": "Blessed, then bottled, then priced accordingly.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "radiant",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Mindsplinter Phial",
+      "description": "Very expensive, and the house will not explain it.",
+      "use": {
+        "damage": "3d8",
+        "damage_type": "psychic",
+        "save_ability": "wisdom",
+        "save_dc": 15,
+        "half_on_save": true,
+        "condition": "ledger-numbed"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Kinetic Charge",
+      "description": "Force in a canister. No heat, no light, considerable effect.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "force",
+        "save_ability": "dexterity",
+        "save_dc": 14,
+        "half_on_save": false
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Caltrop Sachet",
+      "description": "A paper twist of iron points. Cheap and effective.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "piercing",
+        "save_ability": "dexterity",
+        "save_dc": 11,
+        "half_on_save": false,
+        "condition": "ledger-tar-stuck"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Weighted Shot Bag",
+      "description": "Lead shot in canvas. Not alchemy, and the house sells it anyway.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "bludgeoning",
+        "save_ability": "dexterity",
+        "save_dc": 10,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Razorleaf Packet",
+      "description": "Dried leaf with an edge like a blade, scattered hard.",
+      "use": {
+        "damage": "2d4",
+        "damage_type": "slashing",
+        "save_ability": "dexterity",
+        "save_dc": 12,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Tar Pot",
+      "description": "Hot tar. It holds boots to floors and hands to weapons.",
+      "use": { "condition": "ledger-tar-stuck" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Numbing Draught",
+      "description": "Sold as a painkiller. Sold rather more often as a weapon.",
+      "use": { "condition": "ledger-numbed" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Blister Balm",
+      "description": "Applied to someone else's skin, against their preference.",
+      "use": { "condition": "ledger-blistered" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Smokestick",
+      "description": "Burns dirty on purpose. Two coppers, and worth ten.",
+      "use": { "condition": "ledger-fume-blind" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Quickblood Shot",
+      "description": "The house's most-regretted product. It works, briefly.",
+      "use": { "condition": "ledger-quickened" },
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["An hour later the user cannot stand; that is outside a fight's scope"]
+    },
+    {
+      "name": "Inert Draught",
+      "description": "A batch that failed. The house sells it cheap and says so.",
+      "use": { "condition": "ledger-inert" },
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["It genuinely does nothing. Recorded because the ledger records failures"]
+    },
+    {
+      "name": "Battle Draught",
+      "description": "Heals and quickens. The house charges for both.",
+      "use": { "heal": "2d6+2", "condition": "ledger-quickened" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Surgeon's Reserve",
+      "description": "The last vial in the bag, by convention.",
+      "use": { "heal": "5d4+5" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Antivenin",
+      "description": "For the house's own poisons, chiefly.",
+      "use": { "heal": "2d4+1" },
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["Ends an ordinary poisoning outright, which is what it is bought for"]
+    },
+    {
+      "name": "Char-Salve",
+      "description": "For burns. The house sells a great many firebottles.",
+      "use": { "heal": "1d10+2" },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Etching Acid",
+      "description": "Sold for glass. Bought for other reasons.",
+      "use": {
+        "damage": "1d10",
+        "damage_type": "acid",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "ledger-blistered"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Slow-Match Bundle",
+      "description": "Burns for an hour and will light anything at the end of it.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 11,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Ledger Sleeping Powder",
+      "description": "Not a sedative in any legal sense. It numbs.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "poison",
+        "save_ability": "constitution",
+        "save_dc": 12,
+        "half_on_save": true,
+        "condition": "ledger-numbed"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "Brightflare Cartridge",
+      "description": "Signals a mile off, or blinds someone standing close.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "radiant",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "ledger-fume-blind"
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "House Reserve Elixir",
+      "description": "One bottle, not for sale, kept for whoever runs the shop.",
+      "use": { "heal": "6d4+6", "condition": "ledger-quickened" },
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["There is exactly one, and the ledger notes who last drank it"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "ledger-blistered",
+      "description": "Chemical burns across the hands. Grip is the first thing to go.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "ledger-numbed",
+      "description": "The creature cannot feel its own limbs well enough to place them.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "ledger-fume-blind",
+      "description": "Smoke or flare-glare. Either way, nothing is where it looks.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_disadvantage": true
+      },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "ledger-tar-stuck",
+      "description": "Stuck fast to the floor, or to whatever was underfoot.",
+      "effects": { "speed_zero": true, "attacked_with_advantage": true },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "ledger-quickened",
+      "description": "Everything is very fast and very clear and will not last.",
+      "effects": { "own_attacks_have_advantage": true },
+      "provenance": "Original content — The Alchemist's Ledger"
+    },
+    {
+      "name": "ledger-inert",
+      "description": "Nothing happened. The creature is briefly aware that nothing happened.",
+      "provenance": "Original content — The Alchemist's Ledger",
+      "unmodelled": ["No flags at all, on purpose: a dud is still worth recording"]
+    }
+  ]
+}

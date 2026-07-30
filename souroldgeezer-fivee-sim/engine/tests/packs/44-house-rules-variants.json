@@ -1,0 +1,192 @@
+{
+  "pack": "house-rules-variants",
+  "version": "1.0",
+  "provenance": "House rules — Example Campaign table, © 2026",
+  "note": "The one pack here that deliberately replaces bundled records rather than adding new ones. Every record sets \"overrides\": true and reuses a bundled name on purpose, so the pack is the corpus's test of declared replacement. Two consequences worth knowing. First, loaded with the bundled slice excluded there is nothing to replace, and the loader emits seven 'declares an override but nothing of that name is loaded' warnings — correct behaviour, not a defect in this file. Second, 'paralyzed' is carried here with the printed flags precisely so that our Hold Person still resolves under exclude; without it the spell would reference a condition no loaded pack defines, which is an error rather than a warning.",
+  "creatures": [
+    {
+      "name": "Goblin Warrior",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 12,
+      "hit_dice": "3d6+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 10,
+        "wisdom": 8,
+        "charisma": 8
+      },
+      "attacks": [
+        {
+          "name": "Scimitar",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Shortbow",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 80,
+          "long_range": 320
+        }
+      ],
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "Our table gives goblins 12 hit points rather than 10; they were dying to one hit",
+        "We still do not model Nimble Escape"
+      ]
+    },
+    {
+      "name": "Wolf",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 11,
+      "hit_dice": "2d8+2",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 3,
+        "wisdom": 12,
+        "charisma": 6
+      },
+      "attacks": [
+        {
+          "name": "Bite",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "AC 13 rather than 12: our wolves are hill wolves and rangier",
+        "Pack Tactics still handled by the table, not the engine"
+      ]
+    },
+    {
+      "name": "Ogre",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 68,
+      "hit_dice": "8d10+24",
+      "speed": 40,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 8,
+        "constitution": 16,
+        "intelligence": 5,
+        "wisdom": 7,
+        "charisma": 7
+      },
+      "attacks": [
+        {
+          "name": "Greatclub",
+          "attack_bonus": 6,
+          "damage": "2d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Javelin",
+          "attack_bonus": 6,
+          "damage": "2d6+4",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
+        }
+      ],
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "The bundled block lists the javelin under 'unmodelled'; we gave it the attack instead"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Fireball",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "8d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 150,
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "Identical to the bundled record except that our table caps it at 60 feet indoors",
+        "Range is still printed at 150; the cap is a ruling, not a number the engine holds"
+      ]
+    },
+    {
+      "name": "Hold Person",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "paralyzed",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "Our version targets two creatures at base rather than one",
+        "Still no end-of-turn repeat save in the engine; the table calls for it"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "paralyzed",
+      "description": "Carried unchanged from the printed condition. It is here so that this pack's Hold Person still has a condition to apply when the bundled slice is excluded.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true,
+        "auto_fail_dexterity_saves": true,
+        "melee_hits_are_critical": true
+      },
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "Deliberately identical in effect to the bundled row; the record exists for load-order reasons, not to change the rules",
+        "A pack that applies a bundled condition should carry it if the pack is meant to load standalone"
+      ]
+    },
+    {
+      "name": "frightened",
+      "description": "House version: the creature attacks badly and is easier to hit, because our table found the printed condition too cheap.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "overrides": true,
+      "provenance": "House rules — Example Campaign table",
+      "unmodelled": [
+        "The printed condition also prevents moving closer to the source of fear",
+        "Replacing a bundled condition name is legal and changes it for every pack that applies it"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "pack": "thistledown-fair",
+  "version": "1.0",
+  "provenance": "Original content — Thistledown Fair, © 2026 Example Campaign",
+  "note": "Two things bought at a summer fair. The smallest kind of pack there is, and a perfectly reasonable one.",
+  "items": [
+    {
+      "name": "Thistledown Fairing Cordial",
+      "description": "Sold in a paper cup at the fair's edge. Sweet, and it genuinely helps.",
+      "use": { "heal": "1d8+2" },
+      "provenance": "Original content — Thistledown Fair"
+    },
+    {
+      "name": "Fairground Pepper-Twist",
+      "description": "Ground pepper and mustard seed in paper. Bought as a joke, used in earnest.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "poison",
+        "save_ability": "constitution",
+        "save_dc": 10,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Thistledown Fair",
+      "unmodelled": ["Every child at the fair has one and knows exactly what it is for"]
+    }
+  ]
+}

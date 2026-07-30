@@ -1,0 +1,427 @@
+{
+  "pack": "obsidian-spire",
+  "version": "1.4",
+  "provenance": "Original content — The Obsidian Spire, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "A tower of volcanic glass and the order that lives in it. Eight creatures, five spells, five conditions, five items. 'obsidian-stoneform' is the pack's one truly defensive condition — it resists all damage and costs the creature its turn, which is the trade the order teaches.",
+  "creatures": [
+    {
+      "name": "Obsidian Spire Glass-Moth",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 6,
+      "hit_dice": "2d6-1",
+      "speed": 20,
+      "abilities": { "strength": 4, "dexterity": 15, "constitution": 9 },
+      "resistances": ["fire"],
+      "attacks": [
+        {
+          "name": "Scale Dust",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "poison",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Fly speed of 30 feet; drawn to the spire's own light"]
+    },
+    {
+      "name": "Obsidian Spire Shard-Hound",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 20,
+      "hit_dice": "4d8+2",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 4,
+        "wisdom": 11,
+        "charisma": 6
+      },
+      "resistances": ["fire", "slashing"],
+      "attacks": [
+        {
+          "name": "Glass Fangs",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Sheds shards as it runs; the floor behind it becomes hazardous"]
+    },
+    {
+      "name": "Obsidian Spire Initiate",
+      "team": "cult",
+      "ac": 14,
+      "max_hp": 21,
+      "hit_dice": "4d8+3",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 11,
+        "wisdom": 13,
+        "charisma": 10
+      },
+      "resistances": ["fire"],
+      "spells": ["Glass Edge"],
+      "spell_slots": { "1": 2 },
+      "spell_save_dc": 12,
+      "spell_attack_bonus": 4,
+      "attacks": [
+        {
+          "name": "Obsidian Blade",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Has taken one vow and broken none of it yet"]
+    },
+    {
+      "name": "Obsidian Spire Stoneform Adept",
+      "team": "cult",
+      "ac": 16,
+      "max_hp": 38,
+      "hit_dice": "7d8+8",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 14,
+        "intelligence": 12,
+        "wisdom": 16,
+        "charisma": 11
+      },
+      "save_bonuses": { "wisdom": 5, "constitution": 4 },
+      "resistances": ["fire"],
+      "spells": ["Glass Edge", "Stoneform", "Spire Refraction"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Glass Knuckles",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Spire Glass Tonic": 1 },
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Holds stoneform through a whole exchange, which the order considers rude"]
+    },
+    {
+      "name": "Obsidian Spire Mirror-Warden",
+      "team": "cult",
+      "ac": 17,
+      "max_hp": 45,
+      "hit_dice": "7d10+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 16,
+        "constitution": 13,
+        "intelligence": 12,
+        "wisdom": 14,
+        "charisma": 13
+      },
+      "save_bonuses": { "dexterity": 6 },
+      "resistances": ["fire", "radiant"],
+      "attacks": [
+        {
+          "name": "Mirrored Glaive",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 10
+        },
+        {
+          "name": "Thrown Mirror-Shard",
+          "attack_bonus": 6,
+          "damage": "1d6+3",
+          "damage_type": "slashing",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "items": { "Warden's Refracting Prism": 1 },
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Sends a spell it saves against back at the caster once per day"]
+    },
+    {
+      "name": "Obsidian Spire Glassmind",
+      "team": "cult",
+      "ac": 15,
+      "max_hp": 58,
+      "hit_dice": "11d8+10",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 18,
+        "wisdom": 17,
+        "charisma": 14
+      },
+      "save_bonuses": { "intelligence": 8, "wisdom": 7 },
+      "resistances": ["fire", "psychic"],
+      "spells": ["Glass Edge", "Stoneform", "Spire Refraction", "Shattersong", "Spire's Long Regard"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 2 },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks": [
+        {
+          "name": "Glass Rod",
+          "attack_bonus": 3,
+          "damage": "1d6",
+          "damage_type": "force",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Spire Glass Tonic": 2, "Shattersong Bell": 1 },
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": [
+        "Sees a few seconds ahead, which the order says is why it never looks surprised",
+        "Legendary resistance twice per day"
+      ]
+    },
+    {
+      "name": "Obsidian Spire Volcanic Sentinel",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 79,
+      "hit_dice": "10d10+24",
+      "speed": 20,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 8,
+        "constitution": 17,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 1
+      },
+      "immunities": ["fire", "poison", "psychic"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "vulnerabilities": ["cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Magma-Core Fist",
+          "attack_bonus": 8,
+          "damage": "1d12+4",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": [
+        "Cooling it with cold damage cracks the shell; the vulnerability is that, roughly",
+        "Cannot climb, so it never leaves the spire's base"
+      ]
+    },
+    {
+      "name": "Obsidian Spire Anchor-Statue",
+      "team": "monsters",
+      "ac": 19,
+      "max_hp": 66,
+      "hit_dice": "8d10+22",
+      "speed": 0,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 4,
+        "constitution": 18,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 1
+      },
+      "immunities": ["fire", "poison", "psychic"],
+      "conditions": ["obsidian-stoneform"],
+      "attacks": [
+        {
+          "name": "Glass Sweep",
+          "attack_bonus": 7,
+          "damage": "2d6+4",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": [
+        "Speed 0 and permanently in stoneform: it resists everything and acts only when the spire is threatened",
+        "Four of them hold the spire's corners"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Glass Edge",
+      "level": 1,
+      "school": "Transmutation",
+      "requires_attack_roll": true,
+      "damage": "3d4",
+      "damage_type": "slashing",
+      "upcast_damage": "1d4",
+      "range_feet": 30,
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "Stoneform",
+      "level": 2,
+      "school": "Abjuration",
+      "condition": "obsidian-stoneform",
+      "concentration": true,
+      "range_feet": 0,
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": [
+        "Self-only. The caster cannot act while it holds, which is the cost the order accepts"
+      ]
+    },
+    {
+      "name": "Spire Refraction",
+      "level": 2,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "obsidian-refraction-lost",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 2,
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "Shattersong",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "5d6",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 60,
+      "condition": "obsidian-glass-cut",
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Every pane of glass in the radius is destroyed, including the spire's"]
+    },
+    {
+      "name": "Spire's Long Regard",
+      "level": 4,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "damage": "4d10",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d10",
+      "range_feet": 120,
+      "condition": "obsidian-spire-regarded",
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["The spire itself does the looking; the caster only points"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "obsidian-stoneform",
+      "description": "Flesh becomes glass-veined stone. Nothing hurts it and it can do nothing.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "resists_all_damage": true
+      },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "obsidian-refraction-lost",
+      "description": "The creature is swinging at a reflection and does not know which one.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "obsidian-glass-cut",
+      "description": "A hundred small cuts. None of them alone matters.",
+      "effects": { "attacked_with_advantage": true },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "obsidian-spire-regarded",
+      "description": "The spire has looked at the creature and the creature cannot stop knowing it.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "obsidian-mirror-marked",
+      "description": "A mirrored sigil sits on the creature and shows the order where it is.",
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["Every warden in the spire knows the marked creature's position"]
+    }
+  ],
+  "items": [
+    {
+      "name": "Spire Glass Tonic",
+      "description": "Ground volcanic glass in warm water. The order swears by it.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "Shattersong Bell",
+      "description": "Rung once, and never rung twice by the same hand.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 15,
+        "half_on_save": true,
+        "condition": "obsidian-glass-cut"
+      },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "Warden's Refracting Prism",
+      "description": "Held up, it puts three of you where there was one.",
+      "use": { "condition": "obsidian-refraction-lost" },
+      "provenance": "Original content — The Obsidian Spire"
+    },
+    {
+      "name": "Mirror-Mark Stylus",
+      "description": "Draws a sigil the order can see from the spire's top floor.",
+      "use": { "condition": "obsidian-mirror-marked" },
+      "provenance": "Original content — The Obsidian Spire",
+      "unmodelled": ["The mark cannot be washed off and wears away over a week"]
+    },
+    {
+      "name": "Cooling Salt Flask",
+      "description": "Thrown at a sentinel's core. Nothing else on the spire fears it.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Obsidian Spire"
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+{
+  "pack": "clockwork-cellars",
+  "version": "2.0",
+  "provenance": "Original content — Clockwork Cellars, © 2026 Example Campaign",
+  "note": "Constructs, and the two things that reliably stop them. Five creatures, three spells, three conditions, three items. Every construct here is immune to poison and psychic, which is the pack's one consistent rule.",
+  "creatures": [
+    {
+      "name": "Clockwork Cellar Scuttler",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 9,
+      "hit_dice": "2d6+2",
+      "speed": 35,
+      "abilities": {
+        "strength": 7,
+        "dexterity": 16,
+        "constitution": 12,
+        "intelligence": 2,
+        "wisdom": 8,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic"],
+      "attacks": [
+        {
+          "name": "Snipping Claw",
+          "attack_bonus": 5,
+          "damage": "1d4+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Winds down after ten minutes unless something rewinds it"
+      ]
+    },
+    {
+      "name": "Clockwork Cellar Bellows-Hound",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 22,
+      "hit_dice": "4d8+4",
+      "speed": 40,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 15,
+        "constitution": 13,
+        "intelligence": 3,
+        "wisdom": 10,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic"],
+      "resistances": ["fire"],
+      "attacks": [
+        {
+          "name": "Steam Vent",
+          "attack_bonus": 5,
+          "damage": "1d8+2",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Whistles before it vents, which gives a round of warning if anyone listens"
+      ]
+    },
+    {
+      "name": "Clockwork Cellar Ledger-Clerk",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 18,
+      "hit_dice": "4d8",
+      "speed": 25,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 12,
+        "constitution": 11,
+        "intelligence": 14,
+        "wisdom": 11,
+        "charisma": 6
+      },
+      "immunities": ["poison", "psychic"],
+      "spells": ["Tally Strike", "Cellar Lockstep"],
+      "spell_slots": {
+        "1": 3,
+        "2": 1
+      },
+      "spell_save_dc": 12,
+      "spell_attack_bonus": 4,
+      "attacks": [
+        {
+          "name": "Stylus",
+          "attack_bonus": 2,
+          "damage": "1d4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "It is counting something and will tell anyone who asks, at length"
+      ]
+    },
+    {
+      "name": "Clockwork Cellar Cask-Hauler",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 47,
+      "hit_dice": "6d10+14",
+      "speed": 20,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 7,
+        "constitution": 16,
+        "intelligence": 2,
+        "wisdom": 9,
+        "charisma": 1
+      },
+      "immunities": ["poison", "psychic"],
+      "resistances": ["bludgeoning"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Loading Arm",
+          "attack_bonus": 6,
+          "damage": "1d10+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Will set down whatever it is carrying before fighting, which takes its first turn"
+      ]
+    },
+    {
+      "name": "Clockwork Cellar Governor",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 68,
+      "hit_dice": "9d10+18",
+      "speed": 30,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 13,
+        "constitution": 15,
+        "intelligence": 17,
+        "wisdom": 13,
+        "charisma": 10
+      },
+      "save_bonuses": {
+        "intelligence": 7,
+        "constitution": 6
+      },
+      "immunities": ["poison", "psychic"],
+      "resistances": ["fire", "lightning"],
+      "spells": ["Tally Strike", "Cellar Lockstep", "Governor's Override"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 2
+      },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Regulator Flail",
+          "attack_bonus": 7,
+          "damage": "1d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Governor's Repair Oil": 2
+      },
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Commands every construct in the cellars; destroying it stops all of them next round",
+        "It negotiates, and it honours what it agrees to"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Tally Strike",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "2d8",
+      "damage_type": "force",
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "The clerk records the damage dealt, accurately, in its ledger"
+      ]
+    },
+    {
+      "name": "Cellar Lockstep",
+      "level": 2,
+      "school": "Transmutation",
+      "save_ability": "wisdom",
+      "condition": "clockwork-lockstepped",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 2,
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "The target moves in time with the cellar's mechanisms, which is deeply unpleasant"
+      ]
+    },
+    {
+      "name": "Governor's Override",
+      "level": 3,
+      "school": "Enchantment",
+      "save_ability": "intelligence",
+      "damage": "4d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 30,
+      "condition": "clockwork-overridden",
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Against a construct it takes control outright; the engine models the damage only"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "clockwork-lockstepped",
+      "description": "The creature's limbs keep the cellar's rhythm instead of its own.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Clockwork Cellars"
+    },
+    {
+      "name": "clockwork-overridden",
+      "description": "Someone else's instructions are running. The creature simply stops.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — Clockwork Cellars"
+    },
+    {
+      "name": "clockwork-mainspring-slipped",
+      "description": "A spring has jumped its housing. The thing still works, badly.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "speed_zero": true
+      },
+      "provenance": "Original content — Clockwork Cellars"
+    }
+  ],
+  "items": [
+    {
+      "name": "Governor's Repair Oil",
+      "description": "Thin, clear, and it puts a construct's joints back where they belong.",
+      "use": {
+        "heal": "2d8+2"
+      },
+      "provenance": "Original content — Clockwork Cellars",
+      "unmodelled": [
+        "Does nothing for a creature of flesh except stain it"
+      ]
+    },
+    {
+      "name": "Spring-Snapper Wedge",
+      "description": "A hardened wedge driven into a gear train. It is not subtle.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "force",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": false,
+        "condition": "clockwork-mainspring-slipped"
+      },
+      "provenance": "Original content — Clockwork Cellars"
+    },
+    {
+      "name": "Cellar Solvent Flask",
+      "description": "Strips grease, paint, and rather a lot else.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "acid",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Clockwork Cellars"
+    }
+  ]
+}

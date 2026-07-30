@@ -1,0 +1,109 @@
+{
+  "pack": "verdant-maw",
+  "version": "1.0",
+  "provenance": "Original content — The Verdant Maw, © 2026 Example Campaign",
+  "note": "One monster and its ecosystem, in five records. The maw itself has speed 0 and reach 15: it is a location that eats things.",
+  "creatures": [
+    {
+      "name": "Verdant Maw",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 76,
+      "hit_dice": "9d12+18",
+      "speed": 0,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 6,
+        "constitution": 15,
+        "intelligence": 2,
+        "wisdom": 11,
+        "charisma": 4
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["fire"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Grasping Vine",
+          "attack_bonus": 7,
+          "damage": "1d10+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — The Verdant Maw",
+      "unmodelled": [
+        "Rooted in place: speed 0, and it cannot be moved or made to follow",
+        "Swallows a Medium creature it has held for two rounds"
+      ]
+    },
+    {
+      "name": "Verdant Maw Lure-Bloom",
+      "team": "monsters",
+      "ac": 10,
+      "max_hp": 6,
+      "hit_dice": "2d6-1",
+      "speed": 0,
+      "abilities": {
+        "strength": 3,
+        "dexterity": 6,
+        "constitution": 11
+      },
+      "attacks": [
+        {
+          "name": "Spore Puff",
+          "attack_bonus": 2,
+          "damage": "1d4",
+          "damage_type": "poison",
+          "kind": "ranged",
+          "normal_range": 10,
+          "long_range": 20
+        }
+      ],
+      "provenance": "Original content — The Verdant Maw",
+      "unmodelled": [
+        "Smells like whatever the nearest creature most wants to eat",
+        "Killing the blooms does not harm the maw; it grows more in a day"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Maw-Song",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "verdant-lured",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — The Verdant Maw",
+      "unmodelled": [
+        "Not cast by the maw, which cannot cast. Druids who study it learn this"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "verdant-lured",
+      "description": "The creature wants very much to walk toward the flowers.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — The Verdant Maw"
+    }
+  ],
+  "items": [
+    {
+      "name": "Maw-Sap Antidote",
+      "description": "Distilled from the maw's own sap. It closes what the maw opens.",
+      "use": {
+        "heal": "2d6+2"
+      },
+      "provenance": "Original content — The Verdant Maw",
+      "unmodelled": [
+        "Harvesting the sap requires reaching into the maw, which is the joke"
+      ]
+    }
+  ]
+}

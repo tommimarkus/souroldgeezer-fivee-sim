@@ -1,0 +1,25 @@
+{
+  "pack": "glasspine-hollow",
+  "version": "1.0",
+  "provenance": "Original content — Glasspine Hollow, © 2026 Example Campaign",
+  "note": "Two conditions and nothing else. 'glasspine-listening' sets no flags at all, which is legal and deliberate: the hollow's watchers care about it and the dice do not.",
+  "conditions": [
+    {
+      "name": "glasspine-listening",
+      "description": "The hollow has noticed the creature. Nothing changes mechanically; everything changes about what happens next.",
+      "provenance": "Original content — Glasspine Hollow",
+      "unmodelled": [
+        "Every glasspine within a mile turns toward the listener over the next hour"
+      ]
+    },
+    {
+      "name": "glasspine-needle-struck",
+      "description": "A glass needle sits under the skin, and moving drives it deeper.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Glasspine Hollow"
+    }
+  ]
+}

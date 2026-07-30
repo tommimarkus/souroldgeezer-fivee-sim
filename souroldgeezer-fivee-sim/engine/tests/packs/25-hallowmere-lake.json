@@ -1,0 +1,245 @@
+{
+  "pack": "hallowmere-lake",
+  "version": "1.0",
+  "provenance": "Original content — Hallowmere Lake, © 2026 Example Campaign",
+  "note": "A drowned village under a holy lake. Five creatures, three spells, two conditions, three items. Radiant damage runs through the whole pack, which is unusual for undead and is the point of the place.",
+  "creatures": [
+    {
+      "name": "Hallowmere Font-Wisp",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 10,
+      "hit_dice": "3d6",
+      "speed": 30,
+      "abilities": { "strength": 4, "dexterity": 16, "constitution": 10 },
+      "immunities": ["radiant"],
+      "vulnerabilities": ["necrotic"],
+      "attacks": [
+        {
+          "name": "Bright Touch",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "radiant",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["Sheds light in a 10-foot radius and cannot stop"]
+    },
+    {
+      "name": "Hallowmere Drowned Chorister",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 22,
+      "hit_dice": "4d8+4",
+      "speed": 20,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 9,
+        "constitution": 14,
+        "intelligence": 7,
+        "wisdom": 12,
+        "charisma": 11
+      },
+      "immunities": ["poison"],
+      "resistances": ["radiant"],
+      "conditions": ["hallowmere-lake-sodden"],
+      "attacks": [
+        {
+          "name": "Water-Heavy Grasp",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": [
+        "It is still singing the office it drowned during",
+        "Blessed water does not harm it, which unsettles clerics"
+      ]
+    },
+    {
+      "name": "Hallowmere Bell-Diver",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 37,
+      "hit_dice": "6d10+4",
+      "speed": 25,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 12,
+        "constitution": 13,
+        "intelligence": 9,
+        "wisdom": 13,
+        "charisma": 10
+      },
+      "save_bonuses": { "constitution": 4 },
+      "resistances": ["radiant", "cold"],
+      "attacks": [
+        {
+          "name": "Salvage Hook",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Hallowmere Font Water": 2 },
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["Holds its breath indefinitely; it has not needed to breathe in years"]
+    },
+    {
+      "name": "Hallowmere Lantern-Saint",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 63,
+      "hit_dice": "10d8+18",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 15,
+        "constitution": 14,
+        "intelligence": 13,
+        "wisdom": 18,
+        "charisma": 17
+      },
+      "save_bonuses": { "wisdom": 8, "charisma": 7 },
+      "immunities": ["radiant", "poison"],
+      "vulnerabilities": ["necrotic"],
+      "spells": ["Hallowmere Benediction", "Font-Light Lance", "Drowned Absolution"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 1 },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks": [
+        {
+          "name": "Censer",
+          "attack_bonus": 5,
+          "damage": "1d8+2",
+          "damage_type": "radiant",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Hallowmere Font Water": 3, "Saint's Ash Vial": 1 },
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": [
+        "It believes it is still alive and will argue the point",
+        "Legendary resistance once per day"
+      ]
+    },
+    {
+      "name": "Hallowmere Weed-Thing",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 18,
+      "hit_dice": "4d8",
+      "speed": 15,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 7,
+        "constitution": 12,
+        "intelligence": 2,
+        "wisdom": 8,
+        "charisma": 3
+      },
+      "vulnerabilities": ["fire"],
+      "attacks": [
+        {
+          "name": "Weed Coil",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["Grows from the village's flooded gardens and remembers being tended"]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Hallowmere Benediction",
+      "level": 1,
+      "school": "Abjuration",
+      "condition": "hallowmere-font-blessed",
+      "concentration": true,
+      "range_feet": 30,
+      "max_targets": 3,
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["The blessing is audible underwater for a hundred feet"]
+    },
+    {
+      "name": "Font-Light Lance",
+      "level": 2,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "4d6",
+      "damage_type": "radiant",
+      "upcast_damage": "1d6",
+      "range_feet": 90,
+      "provenance": "Original content — Hallowmere Lake"
+    },
+    {
+      "name": "Drowned Absolution",
+      "level": 4,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "6d8",
+      "damage_type": "radiant",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 60,
+      "condition": "hallowmere-lake-sodden",
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["Lake water rises into the area and does not drain for an hour"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "hallowmere-lake-sodden",
+      "description": "Lake water fills everything the creature wears. Nothing moves as it should.",
+      "effects": { "speed_zero": true, "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — Hallowmere Lake"
+    },
+    {
+      "name": "hallowmere-font-blessed",
+      "description": "Font-light sits on the creature and blows slide off it.",
+      "effects": { "attacked_with_disadvantage": true },
+      "provenance": "Original content — Hallowmere Lake"
+    }
+  ],
+  "items": [
+    {
+      "name": "Hallowmere Font Water",
+      "description": "Drawn from the drowned font. It closes wounds and tastes of stone.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — Hallowmere Lake"
+    },
+    {
+      "name": "Saint's Ash Vial",
+      "description": "Ash from a lamp that has burned underwater for a decade.",
+      "use": {
+        "damage": "3d6",
+        "damage_type": "radiant",
+        "save_ability": "constitution",
+        "save_dc": 15,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Hallowmere Lake"
+    },
+    {
+      "name": "Diver's Weighted Belt",
+      "description": "Buckled onto someone else, it takes them straight down.",
+      "use": { "condition": "hallowmere-lake-sodden" },
+      "provenance": "Original content — Hallowmere Lake",
+      "unmodelled": ["Unbuckling it takes an action the wearer may not have"]
+    }
+  ]
+}

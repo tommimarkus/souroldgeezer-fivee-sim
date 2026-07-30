@@ -1,0 +1,102 @@
+{
+  "pack": "cindermoth-swarm",
+  "version": "1.0",
+  "provenance": "Original content — Cindermoth Swarm, © 2026 Example Campaign",
+  "note": "One creature at three scales plus what stops it. Five records, and the scaling is the content: a single moth, a cloud, and the thing the cloud comes out of.",
+  "creatures": [
+    {
+      "name": "Cindermoth",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 2,
+      "hit_dice": "1d4",
+      "speed": 20,
+      "abilities": { "strength": 2, "dexterity": 15, "constitution": 8 },
+      "immunities": ["fire"],
+      "attacks": [
+        {
+          "name": "Ember Wing",
+          "attack_bonus": 3,
+          "damage": "1d4",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Cindermoth Swarm",
+      "unmodelled": ["One moth. Included so a swarm's arithmetic can be checked against it"]
+    },
+    {
+      "name": "Cindermoth Cloud",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 30,
+      "hit_dice": "7d8-1",
+      "speed": 25,
+      "abilities": { "strength": 8, "dexterity": 16, "constitution": 10 },
+      "immunities": ["fire"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "vulnerabilities": ["cold"],
+      "attacks": [
+        {
+          "name": "Burning Storm",
+          "attack_bonus": 5,
+          "damage": "3d4",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Cindermoth Swarm",
+      "unmodelled": [
+        "Swarm: shares space with other creatures and cannot be grappled or shoved",
+        "Roughly two hundred moths; killing individuals does nothing"
+      ]
+    },
+    {
+      "name": "Cindermoth Brood-Trunk",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 48,
+      "hit_dice": "6d10+15",
+      "speed": 0,
+      "abilities": { "strength": 14, "dexterity": 5, "constitution": 16 },
+      "immunities": ["fire", "poison"],
+      "vulnerabilities": ["cold"],
+      "attacks": [
+        {
+          "name": "Ember Lash",
+          "attack_bonus": 5,
+          "damage": "1d10+2",
+          "damage_type": "fire",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Cindermoth Swarm",
+      "unmodelled": [
+        "Speed 0: it is the burnt tree the brood lives in",
+        "Releases a fresh cloud every third round until destroyed"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "cindermoth-ember-caught",
+      "description": "Embers in the hair and clothing. The creature is more concerned with that than with fighting.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — Cindermoth Swarm"
+    }
+  ],
+  "items": [
+    {
+      "name": "Cindermoth Smother-Blanket",
+      "description": "Wet felt. Thrown over someone who is on fire, or someone who is not yet.",
+      "use": { "heal": "1d6+2", "condition": "cindermoth-ember-caught" },
+      "provenance": "Original content — Cindermoth Swarm",
+      "unmodelled": [
+        "It heals the burns and leaves the embers where they are, which is the trade"
+      ]
+    }
+  ]
+}

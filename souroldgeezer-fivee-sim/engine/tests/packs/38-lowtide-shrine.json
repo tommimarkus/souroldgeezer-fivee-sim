@@ -1,0 +1,218 @@
+{
+  "pack": "lowtide-shrine",
+  "version": "1.0",
+  "provenance": "Original content — Lowtide Shrine, © 2026 Example Campaign",
+  "note": "A shrine that is only reachable at low tide, and the order that keeps it. Four creatures on the shrine's own team, three spells, two conditions, three items.",
+  "creatures": [
+    {
+      "name": "Lowtide Shrine Novice",
+      "team": "shrine",
+      "ac": 13,
+      "max_hp": 13,
+      "hit_dice": "3d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 13,
+        "constitution": 11,
+        "intelligence": 11,
+        "wisdom": 14,
+        "charisma": 12
+      },
+      "attacks": [
+        {
+          "name": "Shrine Staff",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Lowtide Salt Draught": 1 },
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Has not yet been told what the shrine is for"]
+    },
+    {
+      "name": "Lowtide Shrine Tide-Reader",
+      "team": "shrine",
+      "ac": 14,
+      "max_hp": 28,
+      "hit_dice": "6d8+1",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 13,
+        "wisdom": 17,
+        "charisma": 13
+      },
+      "save_bonuses": { "wisdom": 6 },
+      "resistances": ["cold"],
+      "spells": ["Lowtide Blessing", "Tide-Reader's Rebuke"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Tide-Marked Staff",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Lowtide Salt Draught": 2 },
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Knows to the minute when the causeway floods, and will say so once"]
+    },
+    {
+      "name": "Lowtide Shrine Causeway Warden",
+      "team": "shrine",
+      "ac": 17,
+      "max_hp": 44,
+      "hit_dice": "7d10+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 12,
+        "constitution": 14,
+        "intelligence": 10,
+        "wisdom": 14,
+        "charisma": 11
+      },
+      "save_bonuses": { "strength": 6, "constitution": 5 },
+      "resistances": ["cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Causeway Halberd",
+          "attack_bonus": 6,
+          "damage": "1d10+4",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Warden's Sea-Iron Vial": 1 },
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Will not step off the causeway, and knows exactly how long it has"]
+    },
+    {
+      "name": "Lowtide Shrine Drowned Petitioner",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 21,
+      "hit_dice": "4d8+3",
+      "speed": 20,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 8,
+        "constitution": 14,
+        "intelligence": 5,
+        "wisdom": 8,
+        "charisma": 6
+      },
+      "immunities": ["poison"],
+      "conditions": ["lowtide-tide-heavy"],
+      "attacks": [
+        {
+          "name": "Waterlogged Grasp",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["It mistimed the tide. Several dozen have"]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Lowtide Blessing",
+      "level": 1,
+      "school": "Abjuration",
+      "condition": "lowtide-shrine-blessed",
+      "concentration": true,
+      "range_feet": 30,
+      "max_targets": 2,
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Also keeps the blessed creature's feet dry, which the order finds funny"]
+    },
+    {
+      "name": "Tide-Reader's Rebuke",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 45,
+      "condition": "lowtide-tide-heavy",
+      "provenance": "Original content — Lowtide Shrine"
+    },
+    {
+      "name": "Causeway Flood",
+      "level": 3,
+      "school": "Conjuration",
+      "save_ability": "strength",
+      "damage": "4d6",
+      "damage_type": "bludgeoning",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 60,
+      "condition": "lowtide-tide-heavy",
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Brings the tide in early over a 20-foot stretch, and it stays"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "lowtide-tide-heavy",
+      "description": "Everything the creature wears is full of seawater and twice its weight.",
+      "effects": { "speed_zero": true, "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — Lowtide Shrine"
+    },
+    {
+      "name": "lowtide-shrine-blessed",
+      "description": "The shrine is paying attention to this one and the sea is not.",
+      "effects": { "attacked_with_disadvantage": true },
+      "provenance": "Original content — Lowtide Shrine"
+    }
+  ],
+  "items": [
+    {
+      "name": "Lowtide Salt Draught",
+      "description": "Shrine salt in fresh water. The order drinks it and so should visitors.",
+      "use": { "heal": "2d4+2" },
+      "provenance": "Original content — Lowtide Shrine"
+    },
+    {
+      "name": "Warden's Sea-Iron Vial",
+      "description": "Something the shrine pulled out of the sea. It is very cold.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "lowtide-tide-heavy"
+      },
+      "provenance": "Original content — Lowtide Shrine"
+    },
+    {
+      "name": "Causeway Marker Stone",
+      "description": "Held by a petitioner crossing at low tide. The shrine sees it.",
+      "use": { "condition": "lowtide-shrine-blessed" },
+      "provenance": "Original content — Lowtide Shrine",
+      "unmodelled": ["Only works on the causeway, which is where it matters"]
+    }
+  ]
+}

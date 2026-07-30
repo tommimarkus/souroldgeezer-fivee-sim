@@ -1,0 +1,238 @@
+{
+  "pack": "echoing-vault",
+  "version": "1.0",
+  "provenance": "Original content — The Echoing Vault, © 2026 Example Campaign",
+  "note": "A sealed vault where sound does the harm. Four creatures, four spells, three conditions, two items. Every spell here is thunder or psychic, which is the vault's whole character.",
+  "creatures": [
+    {
+      "name": "Echoing Vault Resonance Mote",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 11,
+      "hit_dice": "3d6+1",
+      "speed": 30,
+      "abilities": { "strength": 5, "dexterity": 17, "constitution": 10 },
+      "immunities": ["thunder"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Ringing Touch",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "thunder",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["It is a standing wave with intent; it cannot leave the vault"]
+    },
+    {
+      "name": "Echoing Vault Listener",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 29,
+      "hit_dice": "6d8+1",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 16,
+        "constitution": 11,
+        "intelligence": 13,
+        "wisdom": 17,
+        "charisma": 9
+      },
+      "save_bonuses": { "wisdom": 6 },
+      "immunities": ["thunder"],
+      "spells": ["Vault Echo", "Listener's Question"],
+      "spell_slots": { "1": 4, "2": 2 },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks": [
+        {
+          "name": "Tuning Fork",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "thunder",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["It hears everything said in the vault, including whispers"]
+    },
+    {
+      "name": "Echoing Vault Silence-Eater",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 47,
+      "hit_dice": "8d8+11",
+      "speed": 25,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 14,
+        "constitution": 14,
+        "intelligence": 6,
+        "wisdom": 12,
+        "charisma": 7
+      },
+      "save_bonuses": { "constitution": 5 },
+      "immunities": ["thunder", "psychic"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Hollow Fist",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Vault Sounding Rod": 1 },
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["It grows stronger in quiet, which is why the vault is never quiet"]
+    },
+    {
+      "name": "Echoing Vault Keeper of the Note",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 69,
+      "hit_dice": "12d8+13",
+      "speed": 30,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 15,
+        "constitution": 13,
+        "intelligence": 17,
+        "wisdom": 19,
+        "charisma": 15
+      },
+      "save_bonuses": { "wisdom": 9, "intelligence": 8 },
+      "immunities": ["thunder"],
+      "resistances": ["psychic"],
+      "spells": ["Vault Echo", "Listener's Question", "The Held Chord", "Vault Collapse"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 2 },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks": [
+        {
+          "name": "Keeper's Bell-Staff",
+          "attack_bonus": 5,
+          "damage": "1d8+2",
+          "damage_type": "thunder",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Vault Sounding Rod": 2, "Quiet Salve": 2 },
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": [
+        "Holds one note that keeps the vault sealed; killing it opens the vault",
+        "Legendary resistance twice per day"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Vault Echo",
+      "level": 1,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "2d8",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 40,
+      "provenance": "Original content — The Echoing Vault"
+    },
+    {
+      "name": "Listener's Question",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "damage": "2d6",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "condition": "echoing-answer-owed",
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["The question is always the same one and the target always knows it"]
+    },
+    {
+      "name": "The Held Chord",
+      "level": 3,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "condition": "echoing-chord-held",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — The Echoing Vault"
+    },
+    {
+      "name": "Vault Collapse",
+      "level": 4,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "6d8",
+      "damage_type": "thunder",
+      "half_on_save": false,
+      "upcast_damage": "2d8",
+      "shape": "sphere",
+      "radius": 25,
+      "range_feet": 90,
+      "condition": "echoing-deafened-hard",
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["Brings down part of the vault; the keeper will not cast it twice"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "echoing-answer-owed",
+      "description": "A question sits unanswered in the creature's head and will not be put down.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Echoing Vault"
+    },
+    {
+      "name": "echoing-chord-held",
+      "description": "One sustained note holds the creature exactly as it is.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "melee_hits_are_critical": true
+      },
+      "provenance": "Original content — The Echoing Vault"
+    },
+    {
+      "name": "echoing-deafened-hard",
+      "description": "Blood in the ears and nothing audible. Mechanically, nothing changes.",
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["Cannot hear, so cannot be warned, ordered, or cast at verbally"]
+    }
+  ],
+  "items": [
+    {
+      "name": "Vault Sounding Rod",
+      "description": "Struck against stone. Whatever is nearest regrets it.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "echoing-deafened-hard"
+      },
+      "provenance": "Original content — The Echoing Vault"
+    },
+    {
+      "name": "Quiet Salve",
+      "description": "Packed into the ears. The vault stops shouting.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — The Echoing Vault",
+      "unmodelled": ["Also prevents the vault's ambient thunder damage for an hour"]
+    }
+  ]
+}

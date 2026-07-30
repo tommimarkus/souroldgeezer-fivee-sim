@@ -1,0 +1,278 @@
+{
+  "pack": "saltmarsh-fen",
+  "version": "1.0",
+  "provenance": "Original content — Saltmarsh Fen, © 2026 Example Campaign",
+  "note": "Low-level fen encounters. The fen-witch's rot magic and the two conditions it leaves are here; the leech swarm is deliberately fragile.",
+  "creatures": [
+    {
+      "name": "Saltmarsh Leech Swarm",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 8,
+      "hit_dice": "3d6-2",
+      "speed": 20,
+      "abilities": {
+        "strength": 6,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 1,
+        "wisdom": 8,
+        "charisma": 2
+      },
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Bites",
+          "attack_bonus": 4,
+          "damage": "2d4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Swarm: it occupies another creature's space and cannot be grappled",
+        "It ignores creatures wearing sealed boots"
+      ]
+    },
+    {
+      "name": "Saltmarsh Mudwader",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 19,
+      "hit_dice": "3d8+6",
+      "speed": 25,
+      "abilities": {
+        "strength": 15,
+        "dexterity": 10,
+        "constitution": 14,
+        "intelligence": 6,
+        "wisdom": 11,
+        "charisma": 5
+      },
+      "immunities": ["poison"],
+      "attacks": [
+        {
+          "name": "Silt-Caked Club",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Marsh Strider: it ignores difficult terrain in the fen"
+      ]
+    },
+    {
+      "name": "Saltmarsh Fen-Witch",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 27,
+      "hit_dice": "6d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 13,
+        "constitution": 11,
+        "intelligence": 14,
+        "wisdom": 15,
+        "charisma": 13
+      },
+      "save_bonuses": {
+        "wisdom": 4,
+        "intelligence": 4
+      },
+      "resistances": ["poison"],
+      "spells": ["Rot Bloom", "Fenlight Beguilement", "Silt Shroud"],
+      "spell_slots": {
+        "1": 4,
+        "2": 2
+      },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "attacks": [
+        {
+          "name": "Bone Knife",
+          "attack_bonus": 3,
+          "damage": "1d4+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Fen-Witch's Rot Phial": 2,
+        "Marsh Poultice": 1
+      },
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Speaks with marsh birds and knows what has passed through the fen for a week",
+        "Her hut walks on stilt-legs; a location feature, not a combat one"
+      ]
+    },
+    {
+      "name": "Saltmarsh Stilt-Heron",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 14,
+      "hit_dice": "4d8-4",
+      "speed": 30,
+      "abilities": {
+        "strength": 11,
+        "dexterity": 16,
+        "constitution": 9,
+        "intelligence": 4,
+        "wisdom": 14,
+        "charisma": 6
+      },
+      "attacks": [
+        {
+          "name": "Spear Beak",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Stands motionless in reeds; advantage on Stealth in the fen",
+        "Fly speed of 40 feet"
+      ]
+    },
+    {
+      "name": "Saltmarsh Bog Effigy",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 24,
+      "hit_dice": "3d10+9",
+      "speed": 15,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 7,
+        "constitution": 16,
+        "intelligence": 3,
+        "wisdom": 8,
+        "charisma": 3
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["fire"],
+      "conditions": ["saltmarsh-rot-touched"],
+      "attacks": [
+        {
+          "name": "Sodden Fist",
+          "attack_bonus": 5,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Built from reeds and grave-mud around a stolen heart",
+        "It reforms overnight unless the heart is burned"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Rot Bloom",
+      "level": 1,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "2d8",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "condition": "saltmarsh-rot-touched",
+      "range_feet": 30,
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Plants within 10 feet wither, which is how a fen-witch's trail is followed"
+      ]
+    },
+    {
+      "name": "Fenlight Beguilement",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "saltmarsh-fenlight-led",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "The target walks toward the light of its own accord if left alone",
+        "Ends early if the target takes damage from anything but the fen"
+      ]
+    },
+    {
+      "name": "Silt Shroud",
+      "level": 1,
+      "school": "Illusion",
+      "condition": "saltmarsh-fenlight-led",
+      "range_feet": 15,
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Also lightly obscures the caster's own square"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "saltmarsh-rot-touched",
+      "description": "Flesh softens and weeps. Blows land harder than they should.",
+      "effects": {
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — Saltmarsh Fen"
+    },
+    {
+      "name": "saltmarsh-fenlight-led",
+      "description": "A pale light holds the eye. The creature swings at where it thinks things are.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Saltmarsh Fen"
+    }
+  ],
+  "items": [
+    {
+      "name": "Fen-Witch's Rot Phial",
+      "description": "Fen water left to sour for a season, thrown to splash wide.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "necrotic",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": true,
+        "condition": "saltmarsh-rot-touched"
+      },
+      "provenance": "Original content — Saltmarsh Fen"
+    },
+    {
+      "name": "Marsh Poultice",
+      "description": "Bound moss and clay. Ugly, cold, and it stops bleeding.",
+      "use": {
+        "heal": "1d6+2"
+      },
+      "provenance": "Original content — Saltmarsh Fen"
+    },
+    {
+      "name": "Reed-Cutter's Draught",
+      "description": "What the fen's own people drink before wading in past dark.",
+      "use": {
+        "heal": "2d4+1"
+      },
+      "provenance": "Original content — Saltmarsh Fen",
+      "unmodelled": [
+        "Also wards off fen-fever for a night, which is why it is brewed at all"
+      ]
+    }
+  ]
+}

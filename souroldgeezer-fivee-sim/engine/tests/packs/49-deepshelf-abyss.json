@@ -1,0 +1,915 @@
+{
+  "pack": "deepshelf-abyss",
+  "version": "2.0",
+  "provenance": "Original content — The Deepshelf Abyss, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "The largest pack in this corpus and a bestiary rather than a location: twenty-four creatures from a 3 hit point drifter to a 132 hit point shelf-mother, eight spells, four conditions, four items. Cold resistance runs through nearly everything; the shallow-water creatures at the top of the list are the exceptions, and that is the depth gradient made mechanical.",
+  "creatures": [
+    {
+      "name": "Deepshelf Drifter",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 3,
+      "hit_dice": "1d6",
+      "speed": 15,
+      "abilities": { "strength": 3, "dexterity": 11, "constitution": 10 },
+      "attacks": [
+        {
+          "name": "Stinging Fringe",
+          "attack_bonus": 2,
+          "damage": "1d4",
+          "damage_type": "poison",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Drifts. It has no say in where it goes and neither does anything else"]
+    },
+    {
+      "name": "Deepshelf Glass-Shrimp",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 5,
+      "hit_dice": "2d6-2",
+      "speed": 20,
+      "abilities": { "strength": 5, "dexterity": 16, "constitution": 9 },
+      "attacks": [
+        {
+          "name": "Snapping Claw",
+          "attack_bonus": 4,
+          "damage": "1d4+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["The snap is loud enough to be heard through a hull"]
+    },
+    {
+      "name": "Deepshelf Reef-Nipper",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 8,
+      "hit_dice": "2d6+2",
+      "speed": 30,
+      "abilities": { "strength": 8, "dexterity": 15, "constitution": 12 },
+      "attacks": [
+        {
+          "name": "Nip",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Shoals of forty; one is a nuisance and the shoal is a problem"]
+    },
+    {
+      "name": "Deepshelf Lamp-Fish",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 11,
+      "hit_dice": "3d6+1",
+      "speed": 25,
+      "abilities": { "strength": 7, "dexterity": 14, "constitution": 11 },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Lure-Bite",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Sheds dim light in 10 feet, which is the only light down here"]
+    },
+    {
+      "name": "Deepshelf Crawling Urchin",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 14,
+      "hit_dice": "4d6+3",
+      "speed": 10,
+      "abilities": { "strength": 10, "dexterity": 7, "constitution": 14 },
+      "resistances": ["cold", "piercing"],
+      "attacks": [
+        {
+          "name": "Spine Push",
+          "attack_bonus": 3,
+          "damage": "1d8+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["A creature that grapples it takes 1d6 piercing"]
+    },
+    {
+      "name": "Deepshelf Cold-Eel",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 19,
+      "hit_dice": "4d8+1",
+      "speed": 35,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 16,
+        "constitution": 11,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 5
+      },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Freezing Bite",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "cold",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Lives in a crevice and never leaves the length of its own body"]
+    },
+    {
+      "name": "Deepshelf Grasping Anemone",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 23,
+      "hit_dice": "4d8+5",
+      "speed": 0,
+      "abilities": { "strength": 15, "dexterity": 5, "constitution": 13 },
+      "immunities": ["poison"],
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Tentacle Wrap",
+          "attack_bonus": 4,
+          "damage": "1d8+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "Speed 0: anchored to the shelf and it stays anchored",
+        "It should grapple; run it with the abyss-held condition below"
+      ]
+    },
+    {
+      "name": "Deepshelf Shell-Diver",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 21,
+      "hit_dice": "5d8-2",
+      "speed": 30,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 11,
+        "wisdom": 13,
+        "charisma": 10
+      },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Prying Knife",
+          "attack_bonus": 5,
+          "damage": "1d6+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Deepshelf Pressure Draught": 1 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Holds its breath for twenty minutes and resents being interrupted"]
+    },
+    {
+      "name": "Deepshelf Bonefish",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 26,
+      "hit_dice": "5d8+4",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 14,
+        "constitution": 13,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 4
+      },
+      "immunities": ["poison"],
+      "resistances": ["cold", "necrotic"],
+      "attacks": [
+        {
+          "name": "Needle Teeth",
+          "attack_bonus": 5,
+          "damage": "2d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["It is mostly skeleton and has been for some time"]
+    },
+    {
+      "name": "Deepshelf Trench-Crab",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 32,
+      "hit_dice": "5d10+6",
+      "speed": 20,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 8,
+        "constitution": 15,
+        "intelligence": 2,
+        "wisdom": 9,
+        "charisma": 3
+      },
+      "resistances": ["cold", "bludgeoning"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Crushing Claw",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Its shell is worth money and it knows where the trench narrows"]
+    },
+    {
+      "name": "Deepshelf Pressure-Ghost",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 28,
+      "hit_dice": "6d8+1",
+      "speed": 35,
+      "abilities": {
+        "strength": 6,
+        "dexterity": 16,
+        "constitution": 10,
+        "intelligence": 9,
+        "wisdom": 13,
+        "charisma": 15
+      },
+      "immunities": ["cold", "poison"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Crushing Touch",
+          "attack_bonus": 5,
+          "damage": "2d6+3",
+          "damage_type": "force",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Someone who went too deep and did not entirely stop"]
+    },
+    {
+      "name": "Deepshelf Gulper",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 37,
+      "hit_dice": "7d8+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 12,
+        "constitution": 14,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 3
+      },
+      "resistances": ["cold"],
+      "attacks": [
+        {
+          "name": "Distending Bite",
+          "attack_bonus": 6,
+          "damage": "2d6+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Swallows a Small creature whole on a critical hit"]
+    },
+    {
+      "name": "Deepshelf Siphon-Colony",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 41,
+      "hit_dice": "9d8+1",
+      "speed": 20,
+      "abilities": { "strength": 12, "dexterity": 14, "constitution": 11 },
+      "immunities": ["poison"],
+      "resistances": ["cold", "bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Stinging Curtain",
+          "attack_bonus": 5,
+          "damage": "3d4",
+          "damage_type": "poison",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "A colony of thousands acting as one; it cannot be grappled or shoved",
+        "Forty feet long and mostly hollow"
+      ]
+    },
+    {
+      "name": "Deepshelf Angler-Hag",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 46,
+      "hit_dice": "8d8+11",
+      "speed": 30,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 14,
+        "constitution": 14,
+        "intelligence": 13,
+        "wisdom": 15,
+        "charisma": 16
+      },
+      "save_bonuses": { "charisma": 6, "wisdom": 5 },
+      "resistances": ["cold"],
+      "spells": ["Abyss Lure", "Deepshelf Chill", "Pressure Grip"],
+      "spell_slots": { "1": 4, "2": 3, "3": 1 },
+      "spell_save_dc": 14,
+      "spell_attack_bonus": 6,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Hooked Fingers",
+          "attack_bonus": 5,
+          "damage": "1d6+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Deepshelf Pressure Draught": 2, "Lure-Lamp Shard": 2 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Carries her own light on a stalk and uses it to negotiate"]
+    },
+    {
+      "name": "Deepshelf Shelf-Warden",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 53,
+      "hit_dice": "8d10+9",
+      "speed": 30,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 9,
+        "wisdom": 12,
+        "charisma": 10
+      },
+      "save_bonuses": { "strength": 6, "constitution": 5 },
+      "resistances": ["cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Shelf-Iron Trident",
+          "attack_bonus": 7,
+          "damage": "1d8+4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        },
+        {
+          "name": "Weighted Harpoon",
+          "attack_bonus": 7,
+          "damage": "1d10+4",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "items": { "Deepshelf Pressure Draught": 1 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Holds the shelf edge and will not follow anything over it"]
+    },
+    {
+      "name": "Deepshelf Trench-Stalker",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 58,
+      "hit_dice": "9d10+8",
+      "speed": 40,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 16,
+        "constitution": 13,
+        "intelligence": 5,
+        "wisdom": 14,
+        "charisma": 7
+      },
+      "save_bonuses": { "dexterity": 6 },
+      "resistances": ["cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Rending Jaws",
+          "attack_bonus": 7,
+          "damage": "1d10+4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Follows blood for a mile and does not tire"]
+    },
+    {
+      "name": "Deepshelf Lantern-Priest",
+      "team": "cult",
+      "ac": 15,
+      "max_hp": 51,
+      "hit_dice": "10d8+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 15,
+        "wisdom": 18,
+        "charisma": 14
+      },
+      "save_bonuses": { "wisdom": 8, "intelligence": 6 },
+      "immunities": ["cold"],
+      "spells": ["Abyss Lure", "Deepshelf Chill", "Pressure Grip", "Lantern-Priest's Descent"],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 1 },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks": [
+        {
+          "name": "Lantern Crozier",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "cold",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Lure-Lamp Shard": 3, "Deepshelf Pressure Draught": 2 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Serves the shelf-mother and has never seen the surface"]
+    },
+    {
+      "name": "Deepshelf Bone-Whale Calf",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 67,
+      "hit_dice": "9d12+9",
+      "speed": 35,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 10,
+        "constitution": 14,
+        "intelligence": 3,
+        "wisdom": 11,
+        "charisma": 6
+      },
+      "immunities": ["poison"],
+      "resistances": ["cold", "necrotic"],
+      "attacks": [
+        {
+          "name": "Baleen Sweep",
+          "attack_bonus": 7,
+          "damage": "2d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["The adult is not statted. There is a reason for that"]
+    },
+    {
+      "name": "Deepshelf Crush-Golem",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 74,
+      "hit_dice": "9d10+24",
+      "speed": 20,
+      "abilities": {
+        "strength": 20,
+        "dexterity": 6,
+        "constitution": 18,
+        "intelligence": 2,
+        "wisdom": 10,
+        "charisma": 1
+      },
+      "immunities": ["cold", "poison", "psychic"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Hydrostatic Fist",
+          "attack_bonus": 8,
+          "damage": "1d12+5",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Built to work at depth; it comes apart in shallow water over an hour"]
+    },
+    {
+      "name": "Deepshelf Trench-Sovereign",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 96,
+      "hit_dice": "12d10+30",
+      "speed": 35,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 15,
+        "constitution": 17,
+        "intelligence": 14,
+        "wisdom": 16,
+        "charisma": 18
+      },
+      "save_bonuses": { "constitution": 8, "charisma": 8, "wisdom": 7 },
+      "immunities": ["cold"],
+      "resistances": ["thunder"],
+      "spells": ["Deepshelf Chill", "Pressure Grip", "Sovereign's Undertow"],
+      "spell_slots": { "2": 3, "3": 3, "4": 2 },
+      "spell_save_dc": 17,
+      "spell_attack_bonus": 9,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Sovereign's Trident",
+          "attack_bonus": 9,
+          "damage": "1d10+5",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Deepshelf Pressure Draught": 3 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "Legendary resistance twice per day",
+        "Rules the trench under the shelf-mother's sufferance and resents it"
+      ]
+    },
+    {
+      "name": "Deepshelf Abyss-Maw",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 105,
+      "hit_dice": "12d12+27",
+      "speed": 25,
+      "abilities": {
+        "strength": 21,
+        "dexterity": 8,
+        "constitution": 17,
+        "intelligence": 3,
+        "wisdom": 12,
+        "charisma": 8
+      },
+      "save_bonuses": { "constitution": 8, "strength": 9 },
+      "immunities": ["cold"],
+      "resistances": ["necrotic"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Swallowing Bite",
+          "attack_bonus": 9,
+          "damage": "2d10+5",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Swallows a Medium creature whole; there is no listed escape"]
+    },
+    {
+      "name": "Deepshelf Cold-Leviathan",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 118,
+      "hit_dice": "13d12+33",
+      "speed": 40,
+      "abilities": {
+        "strength": 22,
+        "dexterity": 11,
+        "constitution": 18,
+        "intelligence": 6,
+        "wisdom": 14,
+        "charisma": 12
+      },
+      "save_bonuses": { "constitution": 9, "strength": 10, "wisdom": 7 },
+      "immunities": ["cold", "poison"],
+      "resistances": ["bludgeoning"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Sounding Tail",
+          "attack_bonus": 10,
+          "damage": "2d12+6",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 20
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "Legendary resistance three times per day",
+        "A reach of 20 feet, which is the longest in this corpus and still an understatement"
+      ]
+    },
+    {
+      "name": "Deepshelf Shelf-Mother",
+      "team": "monsters",
+      "ac": 19,
+      "max_hp": 132,
+      "hit_dice": "15d12+34",
+      "speed": 30,
+      "abilities": {
+        "strength": 20,
+        "dexterity": 13,
+        "constitution": 18,
+        "intelligence": 17,
+        "wisdom": 20,
+        "charisma": 19
+      },
+      "save_bonuses": { "constitution": 9, "wisdom": 10, "charisma": 9 },
+      "immunities": ["cold", "poison"],
+      "resistances": ["necrotic", "thunder"],
+      "spells": [
+        "Abyss Lure",
+        "Deepshelf Chill",
+        "Pressure Grip",
+        "Lantern-Priest's Descent",
+        "Sovereign's Undertow",
+        "The Shelf-Mother's Silence",
+        "Abyssal Bloom",
+        "Cold Below Cold"
+      ],
+      "spell_slots": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2, "6": 1 },
+      "spell_save_dc": 20,
+      "spell_attack_bonus": 12,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Brooding Limb",
+          "attack_bonus": 10,
+          "damage": "1d12+5",
+          "damage_type": "cold",
+          "kind": "melee",
+          "reach": 15
+        }
+      ],
+      "items": { "Shelf-Mother's Brood-Milk": 3 },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "Legendary resistance three times per day",
+        "Every creature in this pack is descended from her or serves something that is",
+        "She has never left the shelf and will not, whatever the outcome of a fight"
+      ]
+    },
+    {
+      "name": "Deepshelf Anchor-Coral",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 55,
+      "hit_dice": "7d10+17",
+      "speed": 0,
+      "abilities": { "strength": 17, "dexterity": 2, "constitution": 17 },
+      "immunities": ["cold", "poison", "psychic"],
+      "resistances": ["piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Grinding Polyps",
+          "attack_bonus": 6,
+          "damage": "2d6+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": [
+        "Speed 0: it is the shelf's own coral and part of the structure",
+        "The shelf-mother broods among it and it defends her"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Abyss Lure",
+      "level": 1,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "deepshelf-lure-taken",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Deepshelf Chill",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d8",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 45,
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Pressure Grip",
+      "level": 3,
+      "school": "Transmutation",
+      "save_ability": "strength",
+      "damage": "4d6",
+      "damage_type": "force",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "condition": "deepshelf-abyss-held",
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Lantern-Priest's Descent",
+      "level": 4,
+      "school": "Necromancy",
+      "save_ability": "wisdom",
+      "damage": "5d8",
+      "damage_type": "psychic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "condition": "deepshelf-lure-taken",
+      "max_targets": 2,
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["The target dreams of the trench and wakes wanting to go back"]
+    },
+    {
+      "name": "Sovereign's Undertow",
+      "level": 4,
+      "school": "Conjuration",
+      "save_ability": "strength",
+      "damage": "6d6",
+      "damage_type": "bludgeoning",
+      "half_on_save": false,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 60,
+      "condition": "deepshelf-abyss-held",
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "The Shelf-Mother's Silence",
+      "level": 5,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "condition": "deepshelf-mother-stilled",
+      "concentration": true,
+      "range_feet": 90,
+      "max_targets": 3,
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Nothing in the pack will attack a creature she has stilled"]
+    },
+    {
+      "name": "Abyssal Bloom",
+      "level": 5,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "8d8",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 25,
+      "range_feet": 90,
+      "condition": "deepshelf-pressure-crushed",
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Cold Below Cold",
+      "level": 6,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "10d8",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "2d8",
+      "shape": "sphere",
+      "radius": 30,
+      "range_feet": 120,
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["Water in the radius freezes at depth, which should not be possible"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "deepshelf-lure-taken",
+      "description": "There is a light and the creature has decided to go and look at it.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "deepshelf-abyss-held",
+      "description": "Water with weight behind it. The creature cannot get clear.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "deepshelf-pressure-crushed",
+      "description": "Everything hurts inward. The creature cannot draw breath or aim.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "deepshelf-mother-stilled",
+      "description": "She has asked the creature to be still, and it is.",
+      "effects": {
+        "incapacitated": true,
+        "speed_zero": true,
+        "melee_hits_are_critical": true
+      },
+      "provenance": "Original content — The Deepshelf Abyss"
+    }
+  ],
+  "items": [
+    {
+      "name": "Deepshelf Pressure Draught",
+      "description": "Drunk before a descent. It stops the depth doing what depth does.",
+      "use": { "heal": "2d6+3" },
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Lure-Lamp Shard",
+      "description": "A splinter of an angler's lamp, still lit and still hungry.",
+      "use": { "condition": "deepshelf-lure-taken" },
+      "provenance": "Original content — The Deepshelf Abyss"
+    },
+    {
+      "name": "Shelf-Mother's Brood-Milk",
+      "description": "Taken from the brooding coral. It heals a great deal and is never given freely.",
+      "use": { "heal": "6d4+6" },
+      "provenance": "Original content — The Deepshelf Abyss",
+      "unmodelled": ["She knows when a flask of it is opened, and where"]
+    },
+    {
+      "name": "Trench-Iron Charge",
+      "description": "A pressure charge from the golem-works. It works better at depth.",
+      "use": {
+        "damage": "3d8",
+        "damage_type": "force",
+        "save_ability": "constitution",
+        "save_dc": 16,
+        "half_on_save": true,
+        "condition": "deepshelf-pressure-crushed"
+      },
+      "provenance": "Original content — The Deepshelf Abyss"
+    }
+  ]
+}

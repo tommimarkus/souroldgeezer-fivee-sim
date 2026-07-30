@@ -1,0 +1,149 @@
+{
+  "pack": "ironvein-quarry",
+  "version": "1.0",
+  "provenance": "Original content — Ironvein Quarry, © 2026 Example Campaign",
+  "note": "Two working stat blocks and the quarry's supplies. No spells at all — the quarry has no casters and the pack does not pretend otherwise.",
+  "creatures": [
+    {
+      "name": "Ironvein Breaker",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 34,
+      "hit_dice": "5d10+7",
+      "speed": 25,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 14,
+        "intelligence": 7,
+        "wisdom": 10,
+        "charisma": 6
+      },
+      "save_bonuses": {
+        "strength": 5
+      },
+      "attacks": [
+        {
+          "name": "Quarry Sledge",
+          "attack_bonus": 5,
+          "damage": "2d6+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Ironvein Grit Tonic": 1
+      },
+      "provenance": "Original content — Ironvein Quarry",
+      "unmodelled": [
+        "Powerful Build: it hauls twice what its size suggests"
+      ]
+    },
+    {
+      "name": "Ironvein Sling-Hand",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 18,
+      "hit_dice": "4d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 15,
+        "constitution": 11,
+        "intelligence": 9,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "attacks": [
+        {
+          "name": "Loaded Sling",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
+        },
+        {
+          "name": "Chisel",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Quarry Blasting Powder": 1
+      },
+      "provenance": "Original content — Ironvein Quarry",
+      "unmodelled": [
+        "Slings quarry chips rather than shot, so ammunition is never a problem"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "ironvein-dust-choked",
+      "description": "Rock dust in the throat. Every action comes with a cough.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Ironvein Quarry"
+    }
+  ],
+  "items": [
+    {
+      "name": "Ironvein Grit Tonic",
+      "description": "Chalky, grey, and it puts a breaker back to work.",
+      "use": {
+        "heal": "1d8+2"
+      },
+      "provenance": "Original content — Ironvein Quarry"
+    },
+    {
+      "name": "Quarry Blasting Powder",
+      "description": "A twist of paper and a spark. Meant for stone.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Ironvein Quarry"
+    },
+    {
+      "name": "Dust Sack",
+      "description": "A sack of tailings, burst over someone's head.",
+      "use": {
+        "condition": "ironvein-dust-choked"
+      },
+      "provenance": "Original content — Ironvein Quarry"
+    },
+    {
+      "name": "Quarry Splint Kit",
+      "description": "Two battens and a strap. Crude, and it gets someone walking.",
+      "use": {
+        "heal": "1d4+1"
+      },
+      "provenance": "Original content — Ironvein Quarry",
+      "unmodelled": [
+        "Setting a broken limb properly takes an hour outside combat"
+      ]
+    },
+    {
+      "name": "Ironvein Whistle-Cap",
+      "description": "A percussion cap on a pole. Loud enough to signal the whole cut.",
+      "use": {
+        "damage": "1d4",
+        "damage_type": "thunder",
+        "save_ability": "constitution",
+        "save_dc": 10,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Ironvein Quarry"
+    }
+  ]
+}

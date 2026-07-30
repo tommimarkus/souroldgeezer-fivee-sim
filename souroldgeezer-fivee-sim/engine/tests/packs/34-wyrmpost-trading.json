@@ -1,0 +1,37 @@
+{
+  "pack": "wyrmpost-trading",
+  "version": "1.0",
+  "provenance": "Original content — Wyrmpost Trading Company, © 2026 Example Campaign",
+  "note": "What the company will sell a party at the last post before the mountains. Three items, nothing else.",
+  "items": [
+    {
+      "name": "Wyrmpost Trail Restorative",
+      "description": "Company issue. Sold at a markup to anyone who is not company.",
+      "use": { "heal": "2d4+2" },
+      "provenance": "Original content — Wyrmpost Trading Company"
+    },
+    {
+      "name": "Wyrmpost Signal Rocket",
+      "description": "Fired to call the post's outriders. Fired level, it is a weapon.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "fire",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — Wyrmpost Trading Company",
+      "unmodelled": ["Outriders arrive in ten minutes, which is usually too late"]
+    },
+    {
+      "name": "Company Bond Seal",
+      "description": "Wax and a stamp. Worth more than anything else on this list.",
+      "use": { "heal": "1d4" },
+      "provenance": "Original content — Wyrmpost Trading Company",
+      "unmodelled": [
+        "Its real use is credit at any company post, which no engine models",
+        "The hit points are the brandy that comes with the signing"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "pack": "sunder-cairn",
+  "version": "1.0",
+  "provenance": "Original content — Sunder Cairn, © 2026 Example Campaign",
+  "note": "One barrow, seven records. Two creatures, two spells, one condition, two items.",
+  "creatures": [
+    {
+      "name": "Sunder Cairn Grave-Hound",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 21,
+      "hit_dice": "4d8+3",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 13,
+        "intelligence": 3,
+        "wisdom": 12,
+        "charisma": 5
+      },
+      "immunities": ["poison"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "attacks": [
+        {
+          "name": "Grave-Cold Bite",
+          "attack_bonus": 5,
+          "damage": "1d8+3",
+          "damage_type": "necrotic",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Sunder Cairn",
+      "unmodelled": ["Two were buried with the cairn's occupant; both are still on duty"]
+    },
+    {
+      "name": "Sunder Cairn Barrow-Knight",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 54,
+      "hit_dice": "8d10+11",
+      "speed": 25,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 11,
+        "wisdom": 13,
+        "charisma": 14
+      },
+      "save_bonuses": { "constitution": 5, "wisdom": 4 },
+      "immunities": ["poison"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "spells": ["Barrow-Knight's Summons"],
+      "spell_slots": { "2": 2 },
+      "spell_save_dc": 13,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Cairn-Iron Sword",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Cairn Grave-Draught": 1 },
+      "provenance": "Original content — Sunder Cairn",
+      "unmodelled": [
+        "Will accept a formal challenge and fight it fairly",
+        "Cannot leave the cairn's mound while its sword remains buried"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Barrow-Knight's Summons",
+      "level": 2,
+      "school": "Necromancy",
+      "save_ability": "wisdom",
+      "condition": "sunder-cairn-called",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "Original content — Sunder Cairn",
+      "unmodelled": ["Also wakes the hounds, if they are down"]
+    },
+    {
+      "name": "Cairn-Split",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "4d8",
+      "damage_type": "bludgeoning",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 45,
+      "provenance": "Original content — Sunder Cairn",
+      "unmodelled": ["Cracks the barrow's capstone, which is how the cairn is opened"]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "sunder-cairn-called",
+      "description": "The cairn is calling and the creature would rather answer than fight.",
+      "effects": { "own_attacks_have_disadvantage": true, "speed_zero": true },
+      "provenance": "Original content — Sunder Cairn"
+    }
+  ],
+  "items": [
+    {
+      "name": "Cairn Grave-Draught",
+      "description": "Grave-goods, still sealed. It knits a wound cold.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — Sunder Cairn"
+    },
+    {
+      "name": "Barrow-Salt Handful",
+      "description": "Salt from the cairn's lining. It burns what the cairn keeps.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "radiant",
+        "save_ability": "constitution",
+        "save_dc": 13,
+        "half_on_save": false
+      },
+      "provenance": "Original content — Sunder Cairn"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "pack": "pale-orchard",
+  "version": "1.0",
+  "provenance": "Original content — The Pale Orchard, © 2026 Example Campaign",
+  "note": "Two conditions meant to be combined with somebody else's creatures. A conditions-only pack is a legitimate shape: it publishes vocabulary for other packs to apply.",
+  "conditions": [
+    {
+      "name": "pale-orchard-graft-taken",
+      "description": "A cutting from the orchard has taken root under the skin. It does not hurt yet.",
+      "provenance": "Original content — The Pale Orchard",
+      "unmodelled": [
+        "Over a season the grafted creature becomes part of the orchard",
+        "No flags on purpose: the graft is a campaign clock, not a combat penalty"
+      ]
+    },
+    {
+      "name": "pale-orchard-blossom-drunk",
+      "description": "Orchard pollen. The creature is entirely certain of itself and entirely wrong.",
+      "effects": {
+        "own_attacks_have_advantage": true,
+        "attacked_with_advantage": true
+      },
+      "provenance": "Original content — The Pale Orchard"
+    }
+  ]
+}

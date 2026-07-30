@@ -1,0 +1,376 @@
+{
+  "pack": "duskhollow-crypts",
+  "version": "1.0",
+  "provenance": "Original content — Duskhollow Crypts, © 2026 Example Campaign",
+  "note": "Six crypt-dwellers, the grave-cantor's four spells, three conditions, three items. Most of the undead here start a fight already carrying a condition, which is what the crypt does to things.",
+  "creatures": [
+    {
+      "name": "Duskhollow Shroud-Rat",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 5,
+      "hit_dice": "2d6-2",
+      "speed": 30,
+      "abilities": {
+        "strength": 6,
+        "dexterity": 15,
+        "constitution": 9
+      },
+      "immunities": ["poison"],
+      "attacks": [
+        {
+          "name": "Filthy Bite",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Nests in grave-linen; a bite risks crypt-fever days later"
+      ]
+    },
+    {
+      "name": "Duskhollow Bone-Picker",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 17,
+      "hit_dice": "4d8-1",
+      "speed": 30,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 9,
+        "wisdom": 10,
+        "charisma": 6
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["bludgeoning"],
+      "attacks": [
+        {
+          "name": "Rusted Shortsword",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Thrown Femur",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "bludgeoning",
+          "kind": "ranged",
+          "normal_range": 20,
+          "long_range": 60
+        }
+      ],
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Held together by grave-binding; scattering the bones stops it reforming"
+      ]
+    },
+    {
+      "name": "Duskhollow Pale Mourner",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 29,
+      "hit_dice": "6d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 9,
+        "dexterity": 14,
+        "constitution": 11,
+        "intelligence": 11,
+        "wisdom": 13,
+        "charisma": 16
+      },
+      "save_bonuses": {
+        "charisma": 5
+      },
+      "immunities": ["poison", "cold"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "attacks": [
+        {
+          "name": "Grieving Touch",
+          "attack_bonus": 4,
+          "damage": "2d6",
+          "damage_type": "necrotic",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Incorporeal: it moves through walls but ends its turn outside solid rock",
+        "Anyone who hears it weeping remembers their own dead"
+      ]
+    },
+    {
+      "name": "Duskhollow Crypt-Warden",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 42,
+      "hit_dice": "6d10+9",
+      "speed": 20,
+      "abilities": {
+        "strength": 17,
+        "dexterity": 8,
+        "constitution": 16,
+        "intelligence": 6,
+        "wisdom": 10,
+        "charisma": 5
+      },
+      "save_bonuses": {
+        "constitution": 5
+      },
+      "immunities": ["poison"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "conditions": ["duskhollow-grave-cold"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Slab-Maul",
+          "attack_bonus": 6,
+          "damage": "1d10+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Sealed in for two centuries; it is cold enough to slow itself and does not care",
+        "It will not step outside the crypt's threshold"
+      ]
+    },
+    {
+      "name": "Duskhollow Grave-Cantor",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 46,
+      "hit_dice": "9d8+6",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 13,
+        "constitution": 12,
+        "intelligence": 16,
+        "wisdom": 15,
+        "charisma": 14
+      },
+      "save_bonuses": {
+        "intelligence": 6,
+        "wisdom": 5
+      },
+      "immunities": ["poison"],
+      "resistances": ["necrotic", "cold"],
+      "vulnerabilities": ["radiant"],
+      "spells": ["Grave-Cantor's Dirge", "Ossuary Grasp", "Pall of Duskhollow", "Marrow Sap"],
+      "spell_slots": {
+        "1": 4,
+        "2": 3,
+        "3": 2
+      },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Censer Chain",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": {
+        "Duskhollow Grave-Wax": 2,
+        "Cantor's Ash Phial": 2
+      },
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "It has sung the same office nightly for two hundred years and will not be hurried",
+        "Animates any corpse left on the crypt floor overnight"
+      ]
+    },
+    {
+      "name": "Duskhollow Barrow-Lord",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 88,
+      "hit_dice": "12d10+22",
+      "speed": 30,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 12,
+        "constitution": 16,
+        "intelligence": 13,
+        "wisdom": 14,
+        "charisma": 18
+      },
+      "save_bonuses": {
+        "constitution": 7,
+        "wisdom": 6,
+        "charisma": 8
+      },
+      "immunities": ["poison", "necrotic"],
+      "resistances": ["cold", "bludgeoning", "piercing", "slashing"],
+      "vulnerabilities": ["radiant"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Barrow-Blade",
+          "attack_bonus": 8,
+          "damage": "1d10+5",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": {
+        "Duskhollow Grave-Wax": 1
+      },
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Life Drain: a hit reduces the target's maximum hit points until it rests",
+        "Legendary resistance three times per day",
+        "It reforms in its barrow after a century unless its crown is destroyed"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Grave-Cantor's Dirge",
+      "level": 1,
+      "school": "Necromancy",
+      "save_ability": "wisdom",
+      "damage": "2d6",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Corpses within earshot sit up during the casting"
+      ]
+    },
+    {
+      "name": "Ossuary Grasp",
+      "level": 2,
+      "school": "Necromancy",
+      "save_ability": "strength",
+      "condition": "duskhollow-bone-held",
+      "concentration": true,
+      "range_feet": 60,
+      "max_targets": 2,
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Needs bones underfoot; ineffective on bare stone or open water"
+      ]
+    },
+    {
+      "name": "Pall of Duskhollow",
+      "level": 3,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "4d8",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 15,
+      "range_feet": 60,
+      "condition": "duskhollow-grave-cold",
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "Frost on the walls marks where the pall fell for an hour afterwards"
+      ]
+    },
+    {
+      "name": "Marrow Sap",
+      "level": 2,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "condition": "duskhollow-marrow-sapped",
+      "range_feet": 30,
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "The cantor regains hit points equal to half the damage the target later takes"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "duskhollow-grave-cold",
+      "description": "Cold that comes from below and settles in the joints. Nothing moves quickly.",
+      "effects": {
+        "speed_zero": true,
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Duskhollow Crypts"
+    },
+    {
+      "name": "duskhollow-bone-held",
+      "description": "Hands of bone come out of the floor and hold on.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_dexterity_saves": true
+      },
+      "provenance": "Original content — Duskhollow Crypts"
+    },
+    {
+      "name": "duskhollow-marrow-sapped",
+      "description": "Something is drinking from the inside. The creature has no strength to give.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — Duskhollow Crypts"
+    }
+  ],
+  "items": [
+    {
+      "name": "Duskhollow Grave-Wax",
+      "description": "Wax from the crypt's own candles, pressed into a wound. It burns and it holds.",
+      "use": {
+        "heal": "2d6+1"
+      },
+      "provenance": "Original content — Duskhollow Crypts"
+    },
+    {
+      "name": "Cantor's Ash Phial",
+      "description": "Ash of something that used to sing. Thrown, it takes the warmth out of the air.",
+      "use": {
+        "damage": "2d6",
+        "damage_type": "cold",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "duskhollow-grave-cold"
+      },
+      "provenance": "Original content — Duskhollow Crypts"
+    },
+    {
+      "name": "Mourner's Salt",
+      "description": "Scattered at a threshold. Grave-things will not cross it willingly.",
+      "use": {
+        "damage": "1d8",
+        "damage_type": "radiant",
+        "save_ability": "charisma",
+        "save_dc": 12,
+        "half_on_save": false
+      },
+      "provenance": "Original content — Duskhollow Crypts",
+      "unmodelled": [
+        "A line of salt across a doorway holds for an hour; the engine models the throw only"
+      ]
+    }
+  ]
+}

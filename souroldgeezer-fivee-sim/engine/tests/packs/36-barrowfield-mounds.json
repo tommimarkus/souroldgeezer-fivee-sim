@@ -1,0 +1,376 @@
+{
+  "pack": "barrowfield-mounds",
+  "version": "1.1",
+  "provenance": "Original content — The Barrowfield Mounds, © 2026 Example Campaign",
+  "attribution": "Written for this repository as content-pack test material.",
+  "note": "Twenty-one records for a field of forty barrows: seven creatures, five spells, four conditions, five items. Radiant vulnerability is the through-line and the party is expected to notice.",
+  "creatures": [
+    {
+      "name": "Barrowfield Grave-Moth",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 4,
+      "hit_dice": "1d6+1",
+      "speed": 20,
+      "abilities": { "strength": 3, "dexterity": 14, "constitution": 11 },
+      "immunities": ["poison"],
+      "attacks": [
+        {
+          "name": "Shroud Dust",
+          "attack_bonus": 3,
+          "damage": "1d4",
+          "damage_type": "necrotic",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Clouds of them mark a barrow that has been opened"]
+    },
+    {
+      "name": "Barrowfield Turf-Crawler",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 15,
+      "hit_dice": "3d8+2",
+      "speed": 20,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 12,
+        "constitution": 13,
+        "intelligence": 2,
+        "wisdom": 8,
+        "charisma": 3
+      },
+      "immunities": ["poison"],
+      "vulnerabilities": ["radiant"],
+      "attacks": [
+        {
+          "name": "Sod-Choked Grasp",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Burrows under turf and comes up beneath whoever is standing still"]
+    },
+    {
+      "name": "Barrowfield Cairn-Shade",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 23,
+      "hit_dice": "5d8",
+      "speed": 30,
+      "abilities": {
+        "strength": 7,
+        "dexterity": 15,
+        "constitution": 10,
+        "intelligence": 10,
+        "wisdom": 12,
+        "charisma": 14
+      },
+      "immunities": ["poison", "necrotic"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "vulnerabilities": ["radiant"],
+      "attacks": [
+        {
+          "name": "Chilling Reach",
+          "attack_bonus": 5,
+          "damage": "2d4+2",
+          "damage_type": "necrotic",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Passes through the mound walls; it will not go beyond the field's edge"]
+    },
+    {
+      "name": "Barrowfield Mound-Warden",
+      "team": "monsters",
+      "ac": 16,
+      "max_hp": 39,
+      "hit_dice": "6d10+7",
+      "speed": 25,
+      "abilities": {
+        "strength": 16,
+        "dexterity": 11,
+        "constitution": 14,
+        "intelligence": 9,
+        "wisdom": 12,
+        "charisma": 10
+      },
+      "save_bonuses": { "constitution": 5 },
+      "immunities": ["poison"],
+      "vulnerabilities": ["radiant"],
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Barrow-Spear",
+          "attack_bonus": 6,
+          "damage": "1d8+3",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "items": { "Barrowfield Grave-Cordial": 1 },
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["One per mound, and they do not help each other"]
+    },
+    {
+      "name": "Barrowfield Bone-Weaver",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 41,
+      "hit_dice": "8d8+5",
+      "speed": 30,
+      "abilities": {
+        "strength": 10,
+        "dexterity": 14,
+        "constitution": 12,
+        "intelligence": 15,
+        "wisdom": 14,
+        "charisma": 13
+      },
+      "save_bonuses": { "intelligence": 6 },
+      "immunities": ["poison"],
+      "resistances": ["necrotic"],
+      "vulnerabilities": ["radiant"],
+      "spells": ["Barrow-Weave", "Field of Forty Mounds", "Weaver's Chill"],
+      "spell_slots": { "1": 4, "2": 3, "3": 2 },
+      "spell_save_dc": 15,
+      "spell_attack_bonus": 7,
+      "attacks": [
+        {
+          "name": "Needle of Bone",
+          "attack_bonus": 4,
+          "damage": "1d4+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Weaver's Bone Needle": 2 },
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Rebuilds a destroyed warden overnight from whatever is left"]
+    },
+    {
+      "name": "Barrowfield Field-Lord",
+      "team": "monsters",
+      "ac": 18,
+      "max_hp": 78,
+      "hit_dice": "11d10+22",
+      "speed": 30,
+      "abilities": {
+        "strength": 18,
+        "dexterity": 12,
+        "constitution": 16,
+        "intelligence": 12,
+        "wisdom": 15,
+        "charisma": 17
+      },
+      "save_bonuses": { "constitution": 7, "charisma": 7, "wisdom": 6 },
+      "immunities": ["poison", "necrotic"],
+      "resistances": ["cold"],
+      "vulnerabilities": ["radiant"],
+      "spells": ["Field of Forty Mounds", "Field-Lord's Claim"],
+      "spell_slots": { "2": 3, "3": 3, "4": 1 },
+      "spell_save_dc": 16,
+      "spell_attack_bonus": 8,
+      "attacks_per_action": 2,
+      "attacks": [
+        {
+          "name": "Field-Iron Blade",
+          "attack_bonus": 8,
+          "damage": "1d10+4",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "items": { "Barrowfield Grave-Cordial": 2 },
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": [
+        "Legendary resistance twice per day",
+        "It holds title to the field and considers trespass a legal matter"
+      ]
+    },
+    {
+      "name": "Barrowfield Standing Stone",
+      "team": "monsters",
+      "ac": 17,
+      "max_hp": 44,
+      "hit_dice": "6d10+11",
+      "speed": 0,
+      "abilities": { "strength": 17, "dexterity": 3, "constitution": 16 },
+      "immunities": ["poison", "psychic", "necrotic"],
+      "resistances": ["bludgeoning", "piercing", "slashing"],
+      "attacks": [
+        {
+          "name": "Toppling Weight",
+          "attack_bonus": 6,
+          "damage": "2d8+3",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": [
+        "Speed 0: it is a menhir and stays one",
+        "Twelve stand around the field-lord's mound"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Barrow-Weave",
+      "level": 1,
+      "school": "Necromancy",
+      "save_ability": "constitution",
+      "damage": "2d6",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "condition": "barrowfield-bone-woven",
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Weaver's Chill",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d6",
+      "damage_type": "cold",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 45,
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Field of Forty Mounds",
+      "level": 3,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "barrowfield-mound-lost",
+      "concentration": true,
+      "range_feet": 120,
+      "max_targets": 3,
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Every mound looks identical for the duration, including the right one"]
+    },
+    {
+      "name": "Field-Lord's Claim",
+      "level": 4,
+      "school": "Enchantment",
+      "save_ability": "charisma",
+      "damage": "4d10",
+      "damage_type": "necrotic",
+      "half_on_save": true,
+      "upcast_damage": "1d10",
+      "range_feet": 60,
+      "condition": "barrowfield-claimed",
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["A creature that dies under the claim is buried in the field by morning"]
+    },
+    {
+      "name": "Stonelight",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "2d8",
+      "damage_type": "radiant",
+      "upcast_damage": "1d8",
+      "range_feet": 60,
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": [
+        "Learned from the field's own stones by people who intend to clear it"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "barrowfield-bone-woven",
+      "description": "Something is threading itself through the creature's bones.",
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "barrowfield-mound-lost",
+      "description": "Forty identical mounds. The creature no longer knows which way is out.",
+      "effects": { "own_attacks_have_disadvantage": true },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "barrowfield-claimed",
+      "description": "The field has claimed the creature and the ground pulls at its feet.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage": true,
+        "auto_fail_strength_saves": true
+      },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "barrowfield-stone-marked",
+      "description": "A menhir's shadow falls on the creature wherever it stands.",
+      "provenance": "Original content — The Barrowfield Mounds",
+      "unmodelled": ["Every warden in the field knows where the marked creature is"]
+    }
+  ],
+  "items": [
+    {
+      "name": "Barrowfield Grave-Cordial",
+      "description": "Grave-goods from a mound that had been robbed twice already.",
+      "use": { "heal": "2d6+2" },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Weaver's Bone Needle",
+      "description": "Thrown, not sewn with. It carries the weave into a wound.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "necrotic",
+        "save_ability": "constitution",
+        "save_dc": 14,
+        "half_on_save": true,
+        "condition": "barrowfield-bone-woven"
+      },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Field-Clearer's Lamp Oil",
+      "description": "Blessed oil the villages buy in bulk every spring.",
+      "use": {
+        "damage": "2d8",
+        "damage_type": "radiant",
+        "save_ability": "dexterity",
+        "save_dc": 13,
+        "half_on_save": true
+      },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Menhir Chalk",
+      "description": "Chalk from a standing stone, rubbed onto someone in passing.",
+      "use": { "condition": "barrowfield-stone-marked" },
+      "provenance": "Original content — The Barrowfield Mounds"
+    },
+    {
+      "name": "Turf-Cutter's Flask",
+      "description": "What the villages drink before going in to clear a mound.",
+      "use": { "heal": "1d8+2" },
+      "provenance": "Original content — The Barrowfield Mounds"
+    }
+  ]
+}

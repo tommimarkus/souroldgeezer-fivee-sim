@@ -1,0 +1,18 @@
+{
+  "pack": "quiet-fields",
+  "version": "1.0",
+  "provenance": "Original content — The Quiet Fields, © 2026 Example Campaign",
+  "note": "One record, and the smallest legal creature the format allows: a name, an armour class, hit points, and a provenance. No team, no speed, no hit dice, no abilities, no attacks. It is a thing that stands in a field and can be hit, which is genuinely all some encounters need.",
+  "creatures": [
+    {
+      "name": "Quiet Fields Scarecrow",
+      "ac": 10,
+      "max_hp": 8,
+      "provenance": "Original content — The Quiet Fields",
+      "unmodelled": [
+        "Everything optional is omitted on purpose: speed defaults to 30, attacks_per_action to 1, and it has no attack at all",
+        "It does not fight. It is here to be knocked down, set alight, or walked past"
+      ]
+    }
+  ]
+}

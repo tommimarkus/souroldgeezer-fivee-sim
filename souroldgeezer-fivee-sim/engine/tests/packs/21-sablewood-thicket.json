@@ -1,0 +1,133 @@
+{
+  "pack": "sablewood-thicket",
+  "version": "1.0",
+  "provenance": "Original content — Sablewood Thicket, © 2026 Example Campaign",
+  "note": "A dark wood in seven records. The shrike-thing is the only real threat; the rest is atmosphere with hit points.",
+  "creatures": [
+    {
+      "name": "Sablewood Thorn-Shrike",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 24,
+      "hit_dice": "5d8+2",
+      "speed": 30,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 17,
+        "constitution": 11,
+        "intelligence": 5,
+        "wisdom": 14,
+        "charisma": 7
+      },
+      "attacks": [
+        {
+          "name": "Impaling Beak",
+          "attack_bonus": 6,
+          "damage": "1d8+4",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "Original content — Sablewood Thicket",
+      "unmodelled": [
+        "Leaves its kills on thorns; the larder is how a party finds its territory",
+        "Fly speed of 50 feet"
+      ]
+    },
+    {
+      "name": "Sablewood Blackthorn Sapling",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 11,
+      "hit_dice": "2d8+2",
+      "speed": 10,
+      "abilities": {
+        "strength": 12,
+        "dexterity": 8,
+        "constitution": 13
+      },
+      "vulnerabilities": ["fire"],
+      "attacks": [
+        {
+          "name": "Thorn Whip",
+          "attack_bonus": 3,
+          "damage": "1d6+1",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 10
+        }
+      ],
+      "provenance": "Original content — Sablewood Thicket",
+      "unmodelled": [
+        "Indistinguishable from an ordinary sapling until it moves"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "name": "Sablewood Gloom",
+      "level": 1,
+      "school": "Illusion",
+      "save_ability": "wisdom",
+      "condition": "sablewood-gloom-caught",
+      "concentration": true,
+      "range_feet": 45,
+      "max_targets": 2,
+      "provenance": "Original content — Sablewood Thicket",
+      "unmodelled": [
+        "The wood itself casts this on trespassers at dusk; no caster is required"
+      ]
+    },
+    {
+      "name": "Blackthorn Lash",
+      "level": 1,
+      "school": "Conjuration",
+      "requires_attack_roll": true,
+      "damage": "2d6",
+      "damage_type": "piercing",
+      "upcast_damage": "1d6",
+      "range_feet": 30,
+      "provenance": "Original content — Sablewood Thicket",
+      "unmodelled": [
+        "Pulls the target 5 feet closer on a hit"
+      ]
+    }
+  ],
+  "conditions": [
+    {
+      "name": "sablewood-gloom-caught",
+      "description": "The wood has decided the creature should not see clearly, and it does not.",
+      "effects": {
+        "own_attacks_have_disadvantage": true
+      },
+      "provenance": "Original content — Sablewood Thicket"
+    }
+  ],
+  "items": [
+    {
+      "name": "Sablewood Bark Tea",
+      "description": "Bitter as anything and it takes the edge off a wound.",
+      "use": {
+        "heal": "1d8+1"
+      },
+      "provenance": "Original content — Sablewood Thicket"
+    },
+    {
+      "name": "Shrike-Thorn Dart",
+      "description": "A thorn from the shrike's larder. Still carrying something unpleasant.",
+      "use": {
+        "damage": "1d6",
+        "damage_type": "poison",
+        "save_ability": "constitution",
+        "save_dc": 12,
+        "half_on_save": true,
+        "condition": "sablewood-gloom-caught"
+      },
+      "provenance": "Original content — Sablewood Thicket",
+      "unmodelled": [
+        "The gloom it brings is the wood's doing, not the poison's"
+      ]
+    }
+  ]
+}
