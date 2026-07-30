@@ -674,6 +674,100 @@ class TestCustomConditions:
         assert hero.active is False
 
 
+class TestCustomTerrain:
+    """A pack's terrain kind is a plain string, resolved through the registry's table.
+
+    The :class:`TestCustomConditions` analogue: the built-in suite exercises only
+    the engine's own ``TERRAIN`` dict, so these are the tests that prove a
+    pack-defined kind flows through the loader into ``terrain_effect_of`` — and
+    that unknown kinds and unknown effect fields are refused with lists the
+    author can act on.
+    """
+
+    THORNS: dict[str, Any] = {
+        "pack": "crimson-vale-terrain",
+        "provenance": "Original content, (c) 2026 Example Campaign",
+        "terrain": [{
+            "name": "vale-thornfield",
+            "description": "Knee-high thorns: slow going, and something to duck behind.",
+            "effects": {"move_cost_multiplier": 2, "cover": 1},
+            "provenance": "Original content",
+        }],
+    }
+
+    def test_a_pack_terrain_kind_loads_and_resolves(self, tmp_path: Path) -> None:
+        from fivee_sim.kernel.grid import TERRAIN, terrain_effect_of
+
+        path = write_pack(tmp_path, "thorns.json", self.THORNS)
+        registry = load_packs([path], include_environment=False)
+        assert "vale-thornfield" not in TERRAIN
+        effect = terrain_effect_of("vale-thornfield", registry.terrain_effects)
+        assert effect.move_cost_multiplier == 2
+        assert effect.cover == 1
+        assert effect.passable and not effect.opaque
+        assert registry.source_of("terrain", "vale-thornfield") == str(path)
+
+    def test_the_builtin_kinds_arrive_through_the_same_pack_path(
+        self, tmp_path: Path
+    ) -> None:
+        from fivee_sim.kernel.grid import TERRAIN, terrain_effect_of
+
+        path = write_pack(tmp_path, "thorns.json", self.THORNS)
+        registry = load_packs([path], include_environment=False)
+        assert terrain_effect_of("difficult", registry.terrain_effects) == (
+            TERRAIN["difficult"]
+        )
+        assert registry.source_of("terrain", "difficult") == "bundled:terrain"
+        # And exclude mode removes them, exactly like every other bundled record.
+        alone = load_packs([path], builtin="exclude", include_environment=False)
+        assert "difficult" not in alone.terrain_effects
+        assert "vale-thornfield" in alone.terrain_effects
+
+    def test_an_unknown_kind_is_refused_with_the_loaded_kinds(
+        self, tmp_path: Path
+    ) -> None:
+        from fivee_sim.kernel.grid import UnknownTerrain, terrain_effect_of
+
+        path = write_pack(tmp_path, "thorns.json", self.THORNS)
+        registry = load_packs([path], include_environment=False)
+        with pytest.raises(UnknownTerrain, match="vale-thornfield"):
+            terrain_effect_of("vale-swamp", registry.terrain_effects)
+
+    def test_an_unknown_effect_field_is_refused_listing_the_valid_ones(
+        self, tmp_path: Path
+    ) -> None:
+        payload = {
+            "pack": "x", "provenance": "test",
+            "terrain": [{
+                "name": "vale-mire", "provenance": "test",
+                "effects": {"levitation": True},
+            }],
+        }
+        path = write_pack(tmp_path, "mire.json", payload)
+        with pytest.raises(ContentError) as caught:
+            load_packs([path], include_environment=False)
+        message = str(caught.value)
+        assert "levitation" in message
+        assert "new terrain kinds but not new kinds of effect" in message
+        assert "move_cost_multiplier" in message and "opaque" in message
+
+    def test_effect_values_are_type_checked(self, tmp_path: Path) -> None:
+        payload = {
+            "pack": "x", "provenance": "test",
+            "terrain": [{
+                "name": "vale-mire", "provenance": "test",
+                "effects": {"opaque": 1, "cover": 9, "move_cost_multiplier": 0},
+            }],
+        }
+        path = write_pack(tmp_path, "mire.json", payload)
+        with pytest.raises(ContentError) as caught:
+            load_packs([path], include_environment=False)
+        message = str(caught.value)
+        assert "opaque must be true or false" in message
+        assert "cover must be a whole number from 0 (none) to 3 (total)" in message
+        assert "move_cost_multiplier must be a whole number of 1 or more" in message
+
+
 class TestDeterminism:
     def test_the_same_seed_gives_the_same_fight_with_packs_loaded(
         self, pack: Path

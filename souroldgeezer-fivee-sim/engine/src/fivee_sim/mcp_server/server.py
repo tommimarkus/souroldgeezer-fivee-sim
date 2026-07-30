@@ -44,6 +44,7 @@ from ..content import validate as _validate_content
 from ..data import DataError, make_creature
 from ..kernel.actions import AttackKind
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
+from ..kernel.grid import TerrainEffect
 from ..kernel.rules import Ability, DamageType, make_d20_test
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
@@ -54,8 +55,8 @@ order, conditions, and dice are computed here, so read encounter_state as
 authoritative and narrate from it rather than tracking state yourself.
 
 Content is configurable. The bundled SRD 5.2 slice loads by default, and a campaign
-may add its own creatures, spells, conditions, and items as content packs — or run on
-its own material alone. Call content_status to see what is actually loaded before
+may add its own creatures, spells, conditions, terrain, and items as content packs —
+or run on its own material alone. Call content_status to see what is actually loaded before
 telling anyone what is available.
 
 Bundled rules content comes from SRD 5.2 under CC-BY-4.0; see the plugin's NOTICE.
@@ -403,6 +404,25 @@ def _item_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
     }
 
 
+def _terrain_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
+    effect = registry.terrain_effects[name]
+    record = registry.terrain_records.get(name, {})
+    defaults = TerrainEffect()
+    return {
+        "kind": "terrain",
+        "name": name,
+        "effects": {
+            flag: getattr(effect, flag)
+            for flag in effect.__dataclass_fields__
+            if getattr(effect, flag) != getattr(defaults, flag)
+        } or {"note": "ordinary ground; no movement or sight consequences"},
+        "description": str(record.get("description", "")),
+        "source": registry.source_of("terrain", name),
+        "provenance": str(record.get("provenance", "engine policy")),
+        "unmodelled": list(record.get("unmodelled", [])),
+    }
+
+
 def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
     record = registry.creatures[name]
     entry: dict[str, Any] = {"kind": "creature", **record}
@@ -417,7 +437,8 @@ def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
 
 @server.tool()
 def lookup_rule(topic: str = "") -> dict[str, Any]:
-    """Look up a loaded condition, spell, creature, or item. Omit ``topic`` to list all.
+    """Look up a loaded condition, spell, creature, item, or terrain kind.
+    Omit ``topic`` to list all.
 
     Searches whatever content is loaded, bundled or not, and every entry names the
     pack it came from in ``source``. A miss means the subject is not loaded — check
@@ -437,6 +458,7 @@ def lookup_rule(topic: str = "") -> dict[str, Any]:
         ("spells", registry.spells, _spell_entry),
         ("creatures", registry.creatures, _creature_entry),
         ("items", registry.items, _item_entry),
+        ("terrain", registry.terrain_effects, _terrain_entry),
     )
     for _section, table, build in finders:
         for name in table:

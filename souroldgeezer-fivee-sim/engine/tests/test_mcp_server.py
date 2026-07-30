@@ -116,6 +116,14 @@ class TestLookup:
             assert entry["provenance"] == "SRD 5.2"
             assert "unmodelled" in entry, "the skill tells Claude to check this field"
 
+    def test_a_terrain_kind_resolves_and_is_listed(self) -> None:
+        listing = api.lookup_rule()
+        assert "difficult" in listing["terrain"]
+        entry = api.lookup_rule("difficult")
+        assert entry["kind"] == "terrain"
+        assert entry["effects"]["move_cost_multiplier"] == 2
+        assert entry["source"] == "bundled:terrain"
+
     def test_a_miss_points_at_what_is_actually_loaded(self) -> None:
         # Not "only SRD content ships" any more — that stopped being true the moment
         # a campaign could load its own. The miss has to send the caller to the

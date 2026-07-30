@@ -1,8 +1,8 @@
 """Content packs: the engine's rules data, whether we shipped it or you wrote it.
 
-A pack is one JSON file holding creatures, spells, conditions, and items. The
-bundled SRD slice under ``data/srd/`` is not a special case — it is two packs the
-engine happens to carry, parsed by the code below like any other. That is what
+A pack is one JSON file holding creatures, spells, conditions, terrain, and
+items. The bundled SRD slice under ``data/srd/`` is not a special case — it is
+two packs the engine happens to carry, parsed by the code below like any other. That is what
 makes a campaign's own file "compatible" rather than a second dialect: there is
 only one format, and we eat it too.
 
@@ -39,6 +39,7 @@ from typing import Any, TypeVar
 from .kernel.actions import AttackKind
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect
 from .kernel.dice import Dice, DiceError
+from .kernel.grid import TERRAIN, TERRAIN_FLAGS, TerrainEffect
 from .kernel.items import ItemEffect, ItemError
 from .kernel.rules import Ability, DamageType
 from .kernel.spells import Spell, SpellShape
@@ -66,7 +67,7 @@ MAX_PACK_BYTES = 4 * 1024 * 1024
 #: they were retained rather than loaded.
 STRUCTURAL_CONDITIONS = (Condition.UNCONSCIOUS, Condition.PRONE)
 
-SECTIONS = ("creatures", "spells", "conditions", "items")
+SECTIONS = ("creatures", "spells", "conditions", "terrain", "items")
 
 _PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
 _COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
@@ -86,6 +87,7 @@ _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "condition", "concentration",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
+_TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
 _USE_KEYS = frozenset({
     "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
@@ -186,6 +188,8 @@ class ContentRegistry:
     spell_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
     condition_effects: Mapping[str, ConditionEffect] = field(default_factory=dict)
     condition_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    terrain_effects: Mapping[str, TerrainEffect] = field(default_factory=dict)
+    terrain_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
     items: Mapping[str, ItemEffect] = field(default_factory=dict)
     item_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
     packs: tuple[PackInfo, ...] = ()
@@ -203,6 +207,7 @@ class ContentRegistry:
             "creatures": self.creatures,
             "spells": self.spell_records,
             "conditions": self.condition_records,
+            "terrain": self.terrain_records,
             "items": self.item_records,
         }[section]
 
@@ -397,6 +402,8 @@ class _ParsedPack:
     spell_records: dict[str, dict[str, Any]]
     condition_effects: dict[str, ConditionEffect]
     condition_records: dict[str, dict[str, Any]]
+    terrain_effects: dict[str, TerrainEffect]
+    terrain_records: dict[str, dict[str, Any]]
     items: dict[str, ItemEffect]
     item_records: dict[str, dict[str, Any]]
 
@@ -405,6 +412,7 @@ class _ParsedPack:
             "creatures": self.creatures,
             "spells": self.spell_records,
             "conditions": self.condition_records,
+            "terrain": self.terrain_records,
             "items": self.item_records,
         }[name]
 
@@ -587,6 +595,58 @@ def _parse_condition(
     return ConditionEffect(**flags), dict(record)
 
 
+def _parse_terrain(
+    name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
+) -> tuple[TerrainEffect, dict[str, Any]] | None:
+    reader = _Reader(record, diagnostics, source=source, section="terrain", name=name)
+    reader.unknown_keys(_TERRAIN_KEYS)
+    _common_fields(reader)
+    reader.string("description")
+    values: dict[str, int | bool] = {}
+    for flag, value in reader.mapping("effects").items():
+        if flag not in TERRAIN_FLAGS:
+            reader.fail(
+                "effects",
+                f"{flag!r} is not an effect this engine can apply. A pack may name new "
+                f"terrain kinds but not new kinds of effect. Valid flags: "
+                f"{', '.join(TERRAIN_FLAGS)}",
+            )
+            continue
+        if flag in ("passable", "opaque"):
+            if not isinstance(value, bool):
+                reader.fail("effects", f"{flag} must be true or false, got {value!r}")
+                continue
+        elif flag == "move_cost_multiplier":
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                reader.fail(
+                    "effects",
+                    f"{flag} must be a whole number of 1 or more, got {value!r}",
+                )
+                continue
+        else:  # cover
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 3:
+                reader.fail(
+                    "effects",
+                    f"{flag} must be a whole number from 0 (none) to 3 (total), "
+                    f"got {value!r}",
+                )
+                continue
+        values[flag] = value
+    if not reader.ok:
+        return None
+    # Built field by field rather than by ``**values``: the fields are of mixed
+    # types, and spelling them out keeps the construction checkable.
+    defaults = TerrainEffect()
+    effect = TerrainEffect(
+        move_cost_multiplier=int(values.get("move_cost_multiplier",
+                                            defaults.move_cost_multiplier)),
+        passable=bool(values.get("passable", defaults.passable)),
+        opaque=bool(values.get("opaque", defaults.opaque)),
+        cover=int(values.get("cover", defaults.cover)),
+    )
+    return effect, dict(record)
+
+
 def _parse_item(
     name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
 ) -> tuple[ItemEffect, dict[str, Any]] | None:
@@ -672,7 +732,8 @@ def _parse_pack(
             counts={},
         ),
         creatures={}, spells={}, spell_records={}, condition_effects={},
-        condition_records={}, items={}, item_records={},
+        condition_records={}, terrain_effects={}, terrain_records={},
+        items={}, item_records={},
     )
 
     for name, record in _named_records(payload, "creatures", diagnostics, label):
@@ -689,6 +750,11 @@ def _parse_pack(
         if condition is not None:
             parsed.condition_effects[name] = condition[0]
             parsed.condition_records[name] = condition[1]
+    for name, record in _named_records(payload, "terrain", diagnostics, label):
+        terrain = _parse_terrain(name, record, diagnostics, label)
+        if terrain is not None:
+            parsed.terrain_effects[name] = terrain[0]
+            parsed.terrain_records[name] = terrain[1]
     for name, record in _named_records(payload, "items", diagnostics, label):
         item = _parse_item(name, record, diagnostics, label)
         if item is not None:
@@ -823,9 +889,47 @@ def _builtin_condition_payload() -> dict[str, Any]:
     }
 
 
+def _builtin_terrain_payload() -> dict[str, Any]:
+    """The engine's terrain table, expressed as a pack.
+
+    The same forced arrangement as the conditions: :data:`~fivee_sim.kernel.grid.TERRAIN`
+    is the default table the grid functions fall back to, and the kernel is not
+    allowed to perform I/O, so the table lives in code and is rendered as a pack
+    here to keep the single parse path. Unlike the conditions, the kinds
+    themselves are engine policy rather than SRD records — the SRD defines
+    difficult terrain, cover, and vision, but no tile vocabulary — and the
+    provenance says so.
+    """
+    defaults = TerrainEffect()
+    return {
+        "pack": "engine-terrain",
+        "version": "1.0",
+        "provenance": (
+            "Engine policy; movement, cover, and vision semantics follow SRD 5.2"
+        ),
+        "note": (
+            "Rendered from the engine's own terrain table so it validates and "
+            "merges like any other pack."
+        ),
+        "terrain": [
+            {
+                "name": name,
+                "provenance": "engine policy",
+                "effects": {
+                    flag: getattr(effect, flag)
+                    for flag in TERRAIN_FLAGS
+                    if getattr(effect, flag) != getattr(defaults, flag)
+                },
+            }
+            for name, effect in TERRAIN.items()
+        ],
+    }
+
+
 def _builtin_payloads(diagnostics: list[Diagnostic]) -> list[tuple[str, Mapping[str, Any]]]:
     out: list[tuple[str, Mapping[str, Any]]] = [
-        ("bundled:conditions", _builtin_condition_payload())
+        ("bundled:conditions", _builtin_condition_payload()),
+        ("bundled:terrain", _builtin_terrain_payload()),
     ]
     for filename in BUILTIN_FILES:
         label = f"bundled:{filename}"
@@ -1065,6 +1169,8 @@ def _build(
     spell_records: dict[str, dict[str, Any]] = {}
     condition_effects: dict[str, ConditionEffect] = {}
     condition_records: dict[str, dict[str, Any]] = {}
+    terrain_effects: dict[str, TerrainEffect] = {}
+    terrain_records: dict[str, dict[str, Any]] = {}
     items: dict[str, ItemEffect] = {}
     item_records: dict[str, dict[str, Any]] = {}
     sources: dict[tuple[str, str], str] = {}
@@ -1088,6 +1194,9 @@ def _build(
                     elif section == "conditions":
                         condition_effects[name] = pack.condition_effects[name]
                         condition_records[name] = pack.condition_records[name]
+                    elif section == "terrain":
+                        terrain_effects[name] = pack.terrain_effects[name]
+                        terrain_records[name] = pack.terrain_records[name]
                     else:
                         items[name] = pack.items[name]
                         item_records[name] = pack.item_records[name]
@@ -1127,6 +1236,8 @@ def _build(
         spell_records=spell_records,
         condition_effects=condition_effects,
         condition_records=condition_records,
+        terrain_effects=terrain_effects,
+        terrain_records=terrain_records,
         items=items,
         item_records=item_records,
         packs=tuple(pack.info for _level, packs in levels for pack in packs),
