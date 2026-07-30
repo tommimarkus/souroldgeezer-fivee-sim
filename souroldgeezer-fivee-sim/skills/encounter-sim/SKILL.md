@@ -220,10 +220,12 @@ State these when they bear on a ruling rather than papering over them:
   `content_status` before concluding it does not exist. Either way, do not invent
   the missing stat block: say it is not available and offer a loaded alternative.
 - **Stat blocks list what is not implemented.** Every creature carries an
-  `unmodelled` field naming printed traits the engine skips — Undead Fortitude,
-  Pack Tactics, Nimble Escape. Check it before promising a trait will fire, and
+  `unmodelled` field naming printed traits the engine skips — Nimble Escape, the
+  wolf's knock-Prone bite. Check it before promising a trait will fire, and
   mention it if a player is counting on one. Pack creatures carry the field too,
-  empty unless their author filled it in.
+  empty unless their author filled it in. Pack Tactics and Undead Fortitude are
+  modelled now, as `pack_tactics` and `undead_fortitude` flags on the stat
+  block, so they fire on their own — do not re-apply them by hand.
 - **Frightened always applies** its disadvantage; there is no visibility model to
   condition it on line of sight.
 - **Exhaustion is not implemented.** SRD 5.2 defines it; this engine models the

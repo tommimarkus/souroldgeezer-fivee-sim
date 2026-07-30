@@ -109,7 +109,10 @@ class TestLookup:
         result = api.lookup_rule("zombie")
         assert result["kind"] == "creature"
         assert result["ac"] == 8
-        assert any("Undead Fortitude" in note for note in result["unmodelled"])
+        # Undead Fortitude is modelled now, so it rides the record as a flag; the
+        # unmodelled list keeps what the engine still skips.
+        assert result["undead_fortitude"] is True
+        assert any("Exhaustion" in note for note in result["unmodelled"])
 
     def test_every_entry_names_the_pack_it_came_from(self) -> None:
         # Provenance has to survive the merge: once SRD and original material can sit

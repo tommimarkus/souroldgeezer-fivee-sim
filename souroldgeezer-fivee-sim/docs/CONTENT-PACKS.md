@@ -79,9 +79,10 @@ Every section is optional, and record shapes match the bundled files.
 ### `creatures`
 
 Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
-`hit_dice`, `abilities`, `save_bonuses`, `attacks`, `attacks_per_action`, `spells`,
-`spell_slots`, `spell_save_dc`, `spell_attack_bonus`, `items`, `conditions`,
-`unmodelled`, `immunities`, `resistances`, `vulnerabilities`, `overrides`.
+`hit_dice`, `abilities`, `save_bonuses`, `attacks`, `attacks_per_action`,
+`pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
+`spell_attack_bonus`, `items`, `conditions`, `unmodelled`, `immunities`,
+`resistances`, `vulnerabilities`, `overrides`.
 
 There is deliberately no `hp` or `position`. A creature starts a fight at full hit
 points, and position is per-instance — you set it when you add a combatant to an
@@ -90,6 +91,33 @@ encounter, not in the stat block.
 Attacks carry their own bonus and damage expression rather than deriving them from
 ability scores and proficiency. That is how a stat block presents an attack, and it
 keeps your data a transcription rather than a bet on derivation rules.
+
+An attack may also carry riders, the way stat blocks hang extras off a hit.
+`bonus_damage` with `bonus_damage_type` is extra damage on every hit — rolled
+separately, doubled on a critical hit, and defended (resistance, vulnerability,
+immunity) against its own type, the way a mephit's claw adds fire to its
+slashing. `advantage_bonus_damage` adds dice of the main damage type only when
+the attack roll actually resolved with Advantage, after every source has
+combined and cancelled — the goblin pattern. `on_hit_condition` names a
+condition the hit imposes, and any loaded condition qualifies, including one
+your own pack defines. Give `on_hit_save_ability` and `on_hit_save_dc` together
+to let the target save first; leave both out and the condition is automatic on
+a hit. `on_hit_expiry` is `"none"` (the default — the condition lasts until
+something removes it), `"start_of_attacker_next_turn"`, or
+`"end_of_target_next_turn"`. The timed forms expire when that turn slot passes,
+even if the attacker has died by then, and expiry never strips a condition
+something else is still imposing — a stat block that starts with it, or another
+effect still holding it.
+
+Two printed traits are flags on the creature rather than anything you write out.
+`pack_tactics: true` gives its attack rolls — weapon and spell alike — Advantage
+whenever another member of its team is within 5 feet of the target, conscious, and
+free of any incapacitating condition, your pack's conditions included. It counts as
+one Advantage source and cancels against Disadvantage like any other.
+`undead_fortitude: true` gives it the drop-to-0 save: damage that would reduce it
+to 0 hit points triggers a Constitution saving throw, DC 5 plus the damage taken,
+and on a success it stands at 1 hit point instead — unless any of that damage was
+Radiant, the hit was a critical, or the overflow was enough to kill it outright.
 
 `unmodelled` is where you name printed features the engine does not implement. It
 is not decoration: Claude is instructed to check it before promising a trait will

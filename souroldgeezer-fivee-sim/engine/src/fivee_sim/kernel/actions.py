@@ -25,6 +25,20 @@ class AttackKind(StrEnum):
     RANGED = "ranged"
 
 
+class RiderExpiry(StrEnum):
+    """When an attack's on-hit condition rider ends on its own.
+
+    Vocabulary only, the way :class:`AttackKind` is: turn boundaries belong to the
+    encounter stepper, which is the layer that enforces these. ``NONE`` is the
+    default — the condition lasts until something removes it, exactly as a
+    condition set directly on a stat block does.
+    """
+
+    NONE = "none"
+    START_OF_ATTACKER_NEXT_TURN = "start_of_attacker_next_turn"
+    END_OF_TARGET_NEXT_TURN = "end_of_target_next_turn"
+
+
 #: A melee attack from beyond this distance cannot reach without extra reach.
 MELEE_THRESHOLD = 5
 
@@ -131,13 +145,26 @@ def melee_hit_is_critical(
 
 @dataclass(frozen=True, slots=True)
 class AttackResolution:
-    """Everything that happened in one attack, ready to be narrated or applied."""
+    """Everything that happened in one attack, ready to be narrated or applied.
+
+    ``damage_dealt`` covers the main damage pool — the printed dice plus any
+    Advantage rider, which shares its damage type — after the target's defenses
+    against that type. ``bonus_damage_dealt`` is the secondary pool, defended
+    against its own type. :attr:`total_damage_dealt` is what the target takes.
+    """
 
     attack: AttackRoll
     advantage: Advantage
     damage: DiceRoll | None = None
     damage_dealt: int = 0
     out_of_range: bool = False
+    #: The Advantage rider's roll, present only when the resolved state was
+    #: Advantage and the attack landed. Its total is already inside
+    #: ``damage_dealt`` — it is kept so a narrator can show the extra dice.
+    advantage_damage: DiceRoll | None = None
+    #: The secondary damage roll — a different type, on every hit.
+    bonus_damage: DiceRoll | None = None
+    bonus_damage_dealt: int = 0
 
     @property
     def hit(self) -> bool:
@@ -147,14 +174,26 @@ class AttackResolution:
     def critical(self) -> bool:
         return self.hit and self.attack.critical
 
+    @property
+    def total_damage_dealt(self) -> int:
+        return self.damage_dealt + self.bonus_damage_dealt
+
     def describe(self) -> str:
         if self.out_of_range:
             return "out of range"
         text = self.attack.describe()
         if self.damage is not None:
             text += f"; damage {self.damage.describe()}"
-            if self.damage_dealt != self.damage.total:
+            rolled = self.damage.total
+            if self.advantage_damage is not None:
+                text += f" plus {self.advantage_damage.describe()} for advantage"
+                rolled += self.advantage_damage.total
+            if self.damage_dealt != rolled:
                 text += f" -> {self.damage_dealt} after defenses"
+        if self.bonus_damage is not None:
+            text += f"; plus {self.bonus_damage.describe()}"
+            if self.bonus_damage_dealt != self.bonus_damage.total:
+                text += f" -> {self.bonus_damage_dealt} after defenses"
         return text
 
 
@@ -169,8 +208,27 @@ def resolve_attack(
     resisted: bool = False,
     vulnerable: bool = False,
     immune: bool = False,
+    advantage_bonus_damage: Dice | None = None,
+    bonus_damage: Dice | None = None,
+    bonus_resisted: bool = False,
+    bonus_vulnerable: bool = False,
+    bonus_immune: bool = False,
 ) -> AttackResolution:
-    """Roll an attack and, if it lands, its damage."""
+    """Roll an attack and, if it lands, its damage.
+
+    Two riders extend the printed damage, and they defend differently because
+    they type differently. ``advantage_bonus_damage`` is extra dice rolled only
+    when ``advantage`` — the *resolved* state, after every source has combined
+    and cancelled — is Advantage; it shares the main damage type, so the two
+    rolls are summed **before** ``effective_damage`` halves or doubles, exactly
+    as one damage instance. ``bonus_damage`` is a second pool of a different
+    type, defended by the ``bonus_*`` flags on its own. Both riders double their
+    dice on a critical hit, as any damage roll does.
+
+    The roll order — main dice, Advantage rider, bonus — is load-bearing: the
+    analytics replay this stream, so reordering it would desynchronise a batch
+    from live play.
+    """
     attack = resolve_attack_roll(
         rng,
         attack_bonus=attack_bonus,
@@ -182,15 +240,31 @@ def resolve_attack(
         return AttackResolution(attack=attack, advantage=advantage)
 
     damage_roll = roll_damage(damage, rng, critical=attack.critical)
+    advantage_roll: DiceRoll | None = None
+    if advantage_bonus_damage is not None and advantage is Advantage.ADVANTAGE:
+        advantage_roll = roll_damage(advantage_bonus_damage, rng, critical=attack.critical)
     dealt = effective_damage(
-        damage_roll.total,
+        damage_roll.total + (advantage_roll.total if advantage_roll is not None else 0),
         resisted=resisted,
         vulnerable=vulnerable,
         immune=immune,
     )
+    bonus_roll: DiceRoll | None = None
+    bonus_dealt = 0
+    if bonus_damage is not None:
+        bonus_roll = roll_damage(bonus_damage, rng, critical=attack.critical)
+        bonus_dealt = effective_damage(
+            bonus_roll.total,
+            resisted=bonus_resisted,
+            vulnerable=bonus_vulnerable,
+            immune=bonus_immune,
+        )
     return AttackResolution(
         attack=attack,
         advantage=advantage,
         damage=damage_roll,
         damage_dealt=dealt,
+        advantage_damage=advantage_roll,
+        bonus_damage=bonus_roll,
+        bonus_damage_dealt=bonus_dealt,
     )

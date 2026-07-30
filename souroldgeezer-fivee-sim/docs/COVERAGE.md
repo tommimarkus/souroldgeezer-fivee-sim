@@ -25,12 +25,12 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 ## Creatures
 
-| Name | AC | HP | Speed | Attacks | Printed features not implemented |
+| Name | AC | HP | Speed | Attacks and traits | Printed features not implemented |
 | --- | --- | --- | --- | --- | --- |
-| Goblin Warrior | 15 | 10 (3d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing; Shortbow +4, range 80/320 ft, 1d6+2 piercing | Nimble Escape: Bonus Action Disengage or Hide<br>Both attacks deal an extra 1d4 damage if the attack roll had Advantage |
+| Goblin Warrior | 15 | 10 (3d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing plus 1d4 if the attack roll had advantage; Shortbow +4, range 80/320 ft, 1d6+2 piercing plus 1d4 if the attack roll had advantage | Nimble Escape: Bonus Action Disengage or Hide |
 | Ogre | 11 | 68 (8d10+24) | 40 ft | Greatclub +6, reach 5 ft, 2d8+4 bludgeoning | Javelin ranged attack option from its listed gear |
-| Wolf | 12 | 11 (2d8+2) | 40 ft | Bite +4, reach 5 ft, 1d6+2 piercing | Pack Tactics: Advantage when an ally is within 5 feet of the target<br>Bite knocks a Medium or smaller target Prone on a failed Strength save |
-| Zombie | 8 | 15 (2d8+6) | 20 ft | Slam +3, reach 5 ft, 1d8+1 bludgeoning | Undead Fortitude: on dropping to 0 HP, a Constitution save (DC 5 + damage taken) leaves it at 1 HP instead, unless the damage was Radiant or from a Critical Hit<br>Immunity to the Exhaustion and Poisoned conditions |
+| Wolf | 12 | 11 (2d8+2) | 40 ft | Bite +4, reach 5 ft, 1d6+2 piercing<br>Traits: Pack Tactics — Advantage while a capable ally is within 5 ft of the target | Bite knocks a Medium or smaller target Prone on a failed Strength save |
+| Zombie | 8 | 15 (2d8+6) | 20 ft | Slam +3, reach 5 ft, 1d8+1 bludgeoning<br>Traits: Undead Fortitude — on a drop to 0 HP, a Constitution save (DC 5 + damage taken) leaves 1 HP instead, unless the damage was Radiant, a Critical Hit, or enough to kill outright | Immunity to the Exhaustion and Poisoned conditions |
 
 ## Spells
 
@@ -69,6 +69,10 @@ Each combatant may take one action per turn, plus movement: `attack`, `cast`, `m
 `interact` is the free object interaction: once per turn, without spending the action, it opens or closes a map feature the actor stands on or next to.
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged. A condition a concentration spell imposed is lifted when that concentration ends — by a failed check, by the caster being incapacitated or killed, or by the caster beginning another concentration spell — unless another effect is still imposing it.
+
+An attack may carry riders, straight from its stat block: bonus damage of a second type on every hit, defended against its own type; extra dice added only when the attack roll actually resolved with Advantage; and an on-hit condition, automatic or applied on a failed save. Rider dice double on a critical hit like any damage dice. An on-hit condition may expire on its own — at the start of the attacker's next turn or the end of the target's next turn — and the expiry fires when that turn slot passes, even if the attacker has died; it never strips a condition something else is still imposing.
+
+Two printed creature traits are modelled as stat-block flags. Pack Tactics grants a creature's attack rolls — weapon and spell alike, opportunity attacks included — Advantage while another member of its team is within 5 feet of the target, conscious, and free of incapacitating conditions; it counts as one Advantage source and cancels against Disadvantage like any other. Undead Fortitude turns damage that would drop the creature to 0 hit points into a Constitution saving throw at DC 5 plus the damage taken, and a success leaves it standing at 1 hit point — bypassed when any of the damage was Radiant, the hit was a critical, or the overflow was enough to kill outright.
 
 A creature at 0 hit points is a legal target, not an untouchable one: an attack, an area effect it stands inside, and a usable item all reach it. Each costs it one death saving throw failure, two if the damage came from a critical hit — and an attack from within 5 feet of an Unconscious creature is always a critical hit. Only a dead creature is refused as a target.
 
@@ -114,7 +118,7 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 **Battlefield geometry beyond a flat grid.** The grid itself is real now — see the Battlefield section for the terrain kinds, cover grades, line of sight, area shapes, the diagonal-cost knob, and doors. What remains absent is the third dimension and body mechanics: elevation and 3-D space, flying, creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, forced movement (nothing pushes, drags, or knocks a creature through space), and climbing or swimming as movement modes.
 
-**Timed durations.** Concentration is tracked, and ending it lifts the condition the spell imposed. Elapsed time is not: the 'up to 1 minute' cap on a concentration spell never expires it, a spell's repeat saving throw at the end of the target's turn is not rolled, and a condition applied by an item or set directly on a stat block lasts until something removes it. A condition that should wear off on its own does not.
+**Timed durations beyond attack riders.** Concentration is tracked, and ending it lifts the condition the spell imposed. An attack's on-hit condition rider can carry its own clock — expiring at the start of the attacker's next turn or the end of the target's next turn, and the expiry fires even if the attacker has died. Beyond those two anchors, elapsed time is not modelled: the 'up to 1 minute' cap on a concentration spell never expires it, a spell's repeat saving throw at the end of the target's turn is not rolled, and a condition applied by an item or set directly on a stat block lasts until something removes it.
 
 **Reactions other than opportunity attacks.** Readied actions, Shield and similar reaction spells, Parry, and legendary or lair actions. Each combatant has one reaction per round and only ever spends it on an opportunity attack.
 

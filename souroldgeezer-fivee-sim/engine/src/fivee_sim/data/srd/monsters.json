@@ -27,7 +27,8 @@
           "damage": "1d6+2",
           "damage_type": "slashing",
           "kind": "melee",
-          "reach": 5
+          "reach": 5,
+          "advantage_bonus_damage": "1d4"
         },
         {
           "name": "Shortbow",
@@ -36,13 +37,13 @@
           "damage_type": "piercing",
           "kind": "ranged",
           "normal_range": 80,
-          "long_range": 320
+          "long_range": 320,
+          "advantage_bonus_damage": "1d4"
         }
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Nimble Escape: Bonus Action Disengage or Hide",
-        "Both attacks deal an extra 1d4 damage if the attack roll had Advantage"
+        "Nimble Escape: Bonus Action Disengage or Hide"
       ]
     },
     {
@@ -60,6 +61,7 @@
         "wisdom": 12,
         "charisma": 6
       },
+      "pack_tactics": true,
       "attacks": [
         {
           "name": "Bite",
@@ -72,7 +74,6 @@
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Pack Tactics: Advantage when an ally is within 5 feet of the target",
         "Bite knocks a Medium or smaller target Prone on a failed Strength save"
       ]
     },
@@ -95,6 +96,7 @@
         "wisdom": 0
       },
       "immunities": ["poison"],
+      "undead_fortitude": true,
       "attacks": [
         {
           "name": "Slam",
@@ -107,7 +109,6 @@
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Undead Fortitude: on dropping to 0 HP, a Constitution save (DC 5 + damage taken) leaves it at 1 HP instead, unless the damage was Radiant or from a Critical Hit",
         "Immunity to the Exhaustion and Poisoned conditions"
       ]
     },

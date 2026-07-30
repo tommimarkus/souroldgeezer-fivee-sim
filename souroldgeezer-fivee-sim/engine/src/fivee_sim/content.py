@@ -36,7 +36,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from .kernel.actions import AttackKind
+from .kernel.actions import AttackKind, RiderExpiry
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect
 from .kernel.grid import TERRAIN, TERRAIN_FLAGS, TerrainEffect
 from .kernel.items import ItemEffect, ItemError
@@ -83,11 +83,13 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "team", "ac", "max_hp", "hit_dice", "speed", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
-    "vulnerabilities",
+    "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
-    "long_range", "provenance",
+    "long_range", "bonus_damage", "bonus_damage_type", "advantage_bonus_damage",
+    "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
+    "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "save_ability", "damage", "damage_type",
@@ -280,6 +282,8 @@ def _parse_creature(
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
     reader.integer("attacks_per_action", default=1, minimum=1)
+    reader.boolean("pack_tactics")
+    reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
     reader.integer("spell_attack_bonus")
     reader.string("team")
@@ -320,6 +324,49 @@ def _parse_creature(
         sub.integer("reach", default=5, minimum=0)
         sub.integer("normal_range", minimum=0)
         sub.integer("long_range", minimum=0)
+        # The riders. Pairings are enforced here, in the layer whose job is a
+        # diagnostic the author can act on; whether an on_hit_condition resolves
+        # is a question only the merged set can answer, so that one check lives
+        # in _cross_reference with the spells' and items' condition checks.
+        sub.dice("bonus_damage")
+        sub.enum("bonus_damage_type", DamageType)
+        if attack.get("bonus_damage") is not None and (
+            attack.get("bonus_damage_type") is None
+        ):
+            sub.fail(
+                "bonus_damage_type",
+                "required when bonus_damage is present: the extra damage is "
+                "defended against its own type",
+            )
+        if attack.get("bonus_damage") is None and (
+            attack.get("bonus_damage_type") is not None
+        ):
+            sub.fail("bonus_damage", "bonus_damage_type names a type for no damage")
+        sub.dice("advantage_bonus_damage")
+        sub.string("on_hit_condition")
+        sub.enum("on_hit_save_ability", Ability)
+        sub.integer("on_hit_save_dc", minimum=1)
+        sub.enum("on_hit_expiry", RiderExpiry)
+        if attack.get("on_hit_condition") is None:
+            for dependent in ("on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry"):
+                if attack.get(dependent) is not None:
+                    sub.fail(
+                        dependent,
+                        "needs on_hit_condition: there is no condition to ride the hit",
+                    )
+        else:
+            if attack.get("on_hit_save_ability") is not None and (
+                attack.get("on_hit_save_dc") is None
+            ):
+                sub.fail(
+                    "on_hit_save_dc", "required when on_hit_save_ability is present"
+                )
+            if attack.get("on_hit_save_dc") is not None and (
+                attack.get("on_hit_save_ability") is None
+            ):
+                sub.fail(
+                    "on_hit_save_ability", "required when on_hit_save_dc is present"
+                )
         if not sub.ok:
             reader.ok = False
 
@@ -926,6 +973,15 @@ def _cross_reference(
     for name, record in creatures.items():
         for condition in record.get("conditions", []) or []:
             check("creatures", name, "conditions", str(condition))
+        for index, attack in enumerate(record.get("attacks", []) or []):
+            if not isinstance(attack, dict):
+                continue
+            rider = attack.get("on_hit_condition")
+            if rider is not None:
+                check(
+                    "creatures", name,
+                    f"attacks[{index}].on_hit_condition", str(rider),
+                )
         # Warnings, not errors: the encounter refuses these at use time with a clear
         # reason rather than crashing, so a pack meant to be combined with another is
         # still loadable. It is worth saying now, though — the alternative is finding

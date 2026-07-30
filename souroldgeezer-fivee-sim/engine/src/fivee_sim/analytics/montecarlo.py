@@ -121,6 +121,12 @@ def auto_action(encounter: Encounter) -> Action | None:
       modelling the turns it buys the rest of the party — which a one-turn greedy
       policy cannot see. A batch is a floor for a control build, not a measure of it.
     * **It does not use items.** A potion is never drunk in a batch.
+    * **It does not value an attack's on-hit condition rider.** The damage riders
+      are priced exactly — the bonus pool against its own defenses, the Advantage
+      dice under the resolved advantage state — but a poison the hit would apply
+      counts for nothing, for the same reason Hold Person is never cast: its worth
+      lives in turns this one-turn policy cannot see. The stepper still applies it
+      when the swing lands.
     """
     actor = encounter.current
     if not actor.active:
@@ -173,6 +179,20 @@ def _attack_options(
                 resisted=target.resists(option.damage_type),
                 vulnerable=option.damage_type in target.vulnerabilities,
                 immune=option.damage_type in target.immunities,
+                advantage_bonus_damage=option.advantage_bonus_damage,
+                bonus_damage=option.bonus_damage,
+                bonus_resisted=(
+                    target.resists(option.bonus_damage_type)
+                    if option.bonus_damage_type is not None else False
+                ),
+                bonus_vulnerable=(
+                    option.bonus_damage_type in target.vulnerabilities
+                    if option.bonus_damage_type is not None else False
+                ),
+                bonus_immune=(
+                    option.bonus_damage_type in target.immunities
+                    if option.bonus_damage_type is not None else False
+                ),
             )
             options.append(
                 _Option(
