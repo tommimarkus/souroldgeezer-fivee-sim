@@ -8,11 +8,14 @@ through the session correctly.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+from fivee_sim.maps import parse_document
 from fivee_sim.mcp_server import server as api
+from fivee_sim.service import maps as map_service
 
 GOBLIN: dict[str, Any] = {
     "monster": "Goblin Warrior",
@@ -422,6 +425,236 @@ class TestSpecValidation:
         broken["attacks"] = [{"name": "Club"}]
         with pytest.raises(api.ToolError, match="attack spec is missing"):
             api.encounter_create([broken, GOBLIN])
+
+
+def map_document() -> dict[str, Any]:
+    """A 5x4 room split by a wall, open along the bottom row."""
+    return {
+        "format": "fivee-sim-map",
+        "format_version": 1,
+        "name": "adapter chamber",
+        "grid": {"width": 5, "height": 4, "cell_feet": 5},
+        "legend": {".": "floor", "#": "wall"},
+        "tiles": ["..#..", "..#..", "..#..", "....."],
+        "features": [],
+        "provenance": {
+            "generator": "hand",
+            "seed": 3,
+            "params": {},
+            "edited": False,
+            "source": "Authored for the test suite; 5E-compatible original content",
+        },
+    }
+
+
+class TestMapAdapters:
+    """The map tools as thin shims: sessions, seeds, and error mapping."""
+
+    def load(self) -> str:
+        return str(api.map_load(document=map_document())["map_id"])
+
+    def test_map_generate_reports_its_seed_and_reproduces(self) -> None:
+        first = api.map_generate("dungeon", {"width": 24, "height": 20}, seed=9)
+        second = api.map_generate("dungeon", {"width": 24, "height": 20}, seed=9)
+        assert first["seed"] == second["seed"] == 9
+        assert first["render"]["rows"] == second["render"]["rows"]
+        assert first["params"]["width"] == 24
+        assert first["params"]["min_room"] == 4  # defaults come back resolved
+        assert first["provenance"]["edited"] is False
+        rendered_one = api.map_render(str(first["map_id"]))
+        rendered_two = api.map_render(str(second["map_id"]))
+        assert rendered_one["rows"] == rendered_two["rows"]
+
+    def test_map_generate_without_a_seed_still_reports_one(self) -> None:
+        result = api.map_generate("caves", {"width": 12, "height": 10})
+        assert isinstance(result["seed"], int)
+
+    def test_an_unknown_kind_lists_the_valid_ones(self) -> None:
+        with pytest.raises(api.ToolError, match="caves, dungeon, overland"):
+            api.map_generate("labyrinth")
+
+    def test_an_unknown_param_names_the_valid_keys(self) -> None:
+        with pytest.raises(api.ToolError, match="min_room"):
+            api.map_generate("dungeon", {"rooms": 9}, seed=1)
+
+    def test_map_load_requires_exactly_one_source(self) -> None:
+        with pytest.raises(api.ToolError, match="exactly one"):
+            api.map_load()
+        with pytest.raises(api.ToolError, match="exactly one"):
+            api.map_load(path="/tmp/x.json", document=map_document())
+
+    def test_map_load_reports_every_diagnostic(self) -> None:
+        broken = map_document()
+        broken["tiles"][0] = "..?.."
+        broken["grid"]["depth"] = 3
+        with pytest.raises(api.ToolError, match="2 map error"):
+            api.map_load(document=broken)
+
+    def test_an_unknown_map_id_lists_the_active_ones(self) -> None:
+        self.load()
+        with pytest.raises(api.ToolError, match="active:"):
+            api.map_render("map-does-not-exist")
+
+    def test_save_then_load_by_path_round_trips(self, tmp_path: Path) -> None:
+        map_id = self.load()
+        target = str(tmp_path / "chamber.json")
+        saved = api.map_save(map_id, path=target)
+        assert saved["path"] == target
+        reloaded = api.map_load(path=target)
+        assert reloaded["sha256"] == saved["sha256"]
+        assert reloaded["name"] == "adapter chamber"
+        assert reloaded["warnings"] == []
+
+    def test_map_save_defaults_into_the_maps_root_and_refuses_overwrite(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path))
+        map_id = self.load()
+        saved = api.map_save(map_id)
+        assert saved["path"] == str(tmp_path / "adapter-chamber.json")
+        with pytest.raises(api.ToolError, match="overwrite"):
+            api.map_save(map_id)
+        assert api.map_save(map_id, overwrite=True)["sha256"] == saved["sha256"]
+
+    def test_map_load_replace_rebinds_the_id_and_bumps_the_generation(self) -> None:
+        map_id = self.load()
+        renamed = map_document()
+        renamed["name"] = "replacement"
+        result = api.map_load(document=renamed, replace=map_id)
+        assert result["map_id"] == map_id
+        assert api.map_render(map_id)["generation"] == 2
+
+    def test_map_edit_is_atomic_over_the_wire(self) -> None:
+        map_id = self.load()
+        before = api.map_render(map_id)
+        with pytest.raises(api.ToolError, match="operation #1"):
+            api.map_edit(map_id, [
+                {"op": "paint", "cells": [[0, 0]], "terrain": "wall"},
+                {"op": "paint", "cells": [[99, 99]], "terrain": "wall"},
+            ])
+        after = api.map_render(map_id)
+        assert after["generation"] == before["generation"]
+        assert after["rows"] == before["rows"]
+
+    def test_map_edit_applies_bumps_and_marks_edited(self) -> None:
+        map_id = self.load()
+        result = api.map_edit(map_id, [
+            {"op": "paint", "cells": [[0, 0]], "terrain": "wall"},
+        ])
+        assert result["applied"] == 1
+        assert result["generation"] == 2
+        assert result["edited"] is True
+        assert result["summary"]["terrain_counts"] == {"floor": 16, "wall": 4}
+        assert result["render"]["rows"][0] == "#.#.."
+
+    def test_map_edit_parity_with_the_service_layer(self) -> None:
+        operations: list[dict[str, Any]] = [
+            {"op": "set_terrain", "rect": [3, 0, 2, 2], "terrain": "wall"},
+            {"op": "set_name", "name": "walled up"},
+        ]
+        terrain = api._registry().terrain_effects
+        document = parse_document(map_document(), source="parity", terrain=terrain)
+        expected = map_service.apply_edits(document, operations, terrain=terrain)
+
+        map_id = self.load()
+        result = api.map_edit(map_id, operations)
+        assert result["summary"]["width"] == expected.grid.width
+        assert result["summary"]["height"] == expected.grid.height
+        assert result["summary"]["features"] == len(expected.features)
+        counts: dict[str, int] = {}
+        for row in expected.tiles:
+            for char in row:
+                kind = expected.legend[char]
+                counts[kind] = counts.get(kind, 0) + 1
+        assert result["summary"]["terrain_counts"] == counts
+        assert result["render"]["rows"] == map_service.render_ascii(expected)["rows"]
+
+    def test_map_query_answers_distance_sight_and_path(self) -> None:
+        map_id = self.load()
+        distance = api.map_query(map_id, "distance", frm=[0, 1], to=[4, 1])
+        assert distance["feet"] == 20
+        sight = api.map_query(map_id, "line_of_sight", frm=[0, 1], to=[4, 1])
+        assert sight["line_of_sight"] is False
+        path = api.map_query(map_id, "path", frm=[0, 1], to=[4, 1])
+        assert path["reachable"] is True
+        assert path["cost_feet"] == 20
+
+    def test_map_query_refusals_name_the_valid_choices(self) -> None:
+        map_id = self.load()
+        with pytest.raises(api.ToolError, match="distance, line_of_sight, path"):
+            api.map_query(map_id, "cover", frm=[0, 0], to=[1, 1])
+        with pytest.raises(api.ToolError, match=r"\[x, y\]"):
+            api.map_query(map_id, "distance", frm=[0], to=[1, 1])
+        with pytest.raises(api.ToolError, match="outside the 5x4 map"):
+            api.map_query(map_id, "distance", frm=[0, 0], to=[9, 9])
+
+
+class TestEncountersOnLoadedMaps:
+    """encounter_create(map_id=...): capture by value, staleness made visible."""
+
+    def combatants(self) -> list[dict[str, Any]]:
+        return [dict(HERO), {**GOBLIN, "position": [15, 0]}]
+
+    def test_a_fight_captures_the_map_and_reports_its_source(self) -> None:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
+        source = created["map_source"]
+        assert source["map_id"] == map_id
+        assert source["map_generation"] == 1
+        assert len(source["map_sha256"]) == 64
+        assert created["state"]["map"]["width"] == 5
+
+        state = api.encounter_state(str(created["encounter_id"]))
+        assert state["map_source"] == {
+            "map_id": map_id,
+            "generation": 1,
+            "current_generation": 1,
+            "stale": False,
+        }
+
+    def test_staleness_flips_after_a_map_edit(self) -> None:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
+        encounter_id = str(created["encounter_id"])
+        api.map_edit(map_id, [{"op": "paint", "cells": [[4, 3]], "terrain": "wall"}])
+        source = api.encounter_state(encounter_id)["map_source"]
+        assert source["stale"] is True
+        assert source["current_generation"] == 2
+        # The fight itself still resolves on the map it captured.
+        assert api.encounter_state(encounter_id)["map"]["width"] == 5
+
+    def test_an_inline_map_and_a_map_id_together_are_refused(self) -> None:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        with pytest.raises(api.ToolError, match="not both"):
+            api.encounter_create(
+                self.combatants(), seed=1,
+                map={"width": 2, "height": 2}, map_id=map_id,
+            )
+
+    def test_a_mapless_fight_reports_no_map_source(self) -> None:
+        created = api.encounter_create([HERO, GOBLIN], seed=1)
+        assert "map_source" not in created
+        assert api.encounter_state(str(created["encounter_id"]))["map_source"] is None
+
+    def test_map_render_overlays_the_encounters_combatants(self) -> None:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
+        rendered = api.map_render(map_id, encounter_id=str(created["encounter_id"]))
+        assert set(rendered["tokens"].values()) == {"Thora", "Goblin"}
+        # Thora stands at square (0, 0), the goblin at (3, 0); letters follow
+        # initiative order, whatever it rolled.
+        row = rendered["rows"][0]
+        assert {row[0], row[3]} == set(rendered["tokens"])
+        assert row[2] == "#"
+
+    def test_simulate_rounds_accepts_a_map_id_and_reports_the_source(self) -> None:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        result = api.simulate_rounds(
+            self.combatants(), iterations=5, seed=7, max_rounds=10, map_id=map_id
+        )
+        assert sum(result["wins"].values()) == 5
+        assert result["map_source"]["map_id"] == map_id
+        assert result["map_source"]["map_generation"] == api.map_render(map_id)["generation"]
 
 
 class TestAnalyticsTools:

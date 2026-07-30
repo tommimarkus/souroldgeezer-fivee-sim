@@ -43,12 +43,23 @@ from ..content import validate as _validate_content
 from ..data import DataError, make_creature
 from ..kernel.actions import AttackKind
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
-from ..kernel.grid import DiagonalRule, Point, TerrainEffect
+from ..kernel.grid import (
+    DiagonalRule,
+    Point,
+    Square,
+    TerrainEffect,
+    UnknownTerrain,
+    as_point,
+    to_square,
+)
 from ..kernel.rules import Ability, DamageType, make_d20_test
+from ..maps import MapDocument, as_payload, to_grid
+from ..maps import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
-from ..service.common import resolve_seed
+from ..service import maps as _map_service
+from ..service.common import resolve_seed, sha256_of, slugify
 
 INSTRUCTIONS = """\
 A 5E-compatible combat engine. The engine owns the fight: hit points, initiative
@@ -79,6 +90,22 @@ class _Session:
     #: resolving under the content it started with, so this is how a later
     #: reconfiguration becomes visible rather than mysterious.
     content_generation: int = 0
+    #: The map session this fight was built from, if any, with the generation and
+    #: document hash it captured — the same staleness idiom as content: an edit
+    #: never reaches into a fight, so the divergence is reported instead.
+    map_id: str | None = None
+    map_generation: int = 0
+    map_sha256: str = ""
+
+
+@dataclass(slots=True)
+class _MapSession:
+    """One loaded map. The document is frozen; edits replace it and bump the
+    generation, which is how an encounter built from it can tell it moved on."""
+
+    document: MapDocument
+    generation: int = 1
+    path: str | None = None
 
 
 @dataclass(slots=True)
@@ -94,6 +121,8 @@ class _Content:
 
 _SESSIONS: dict[str, _Session] = {}
 _NEXT_ID = 0
+_MAPS: dict[str, _MapSession] = {}
+_NEXT_MAP_ID = 0
 _CONTENT: _Content | None = None
 
 
@@ -180,6 +209,75 @@ def _session(encounter_id: str) -> _Session:
         known = ", ".join(sorted(_SESSIONS)) or "none"
         raise ToolError(f"unknown encounter {encounter_id!r}; active: {known}")
     return session
+
+
+def _new_map_id() -> str:
+    global _NEXT_MAP_ID
+    _NEXT_MAP_ID += 1
+    return f"map-{_NEXT_MAP_ID}"
+
+
+def _map_session(map_id: str) -> _MapSession:
+    session = _MAPS.get(map_id)
+    if session is None:
+        known = ", ".join(sorted(_MAPS)) or "none"
+        raise ToolError(f"unknown map {map_id!r}; active: {known}")
+    return session
+
+
+def _map_summary(document: MapDocument) -> dict[str, Any]:
+    counts: dict[str, int] = {}
+    for row in document.tiles:
+        for char in row:
+            kind = document.legend[char]
+            counts[kind] = counts.get(kind, 0) + 1
+    return {
+        "width": document.grid.width,
+        "height": document.grid.height,
+        "features": len(document.features),
+        "terrain_counts": {kind: counts[kind] for kind in sorted(counts)},
+    }
+
+
+def _map_source_of(session: _Session) -> dict[str, Any] | None:
+    """How the fight's map relates to the live map session, or ``None``.
+
+    ``stale`` flips when the map has been edited or reloaded since the fight
+    captured it — the fight keeps resolving on what it captured, and this is
+    the divergence made visible, exactly as content generations work.
+    """
+    if session.map_id is None:
+        return None
+    live = _MAPS.get(session.map_id)
+    current = live.generation if live is not None else None
+    return {
+        "map_id": session.map_id,
+        "generation": session.map_generation,
+        "current_generation": current,
+        "stale": current != session.map_generation,
+    }
+
+
+def _resolve_battle_map(
+    map_spec: dict[str, Any] | None, map_id: str | None
+) -> tuple[BattleMap | None, dict[str, Any] | None]:
+    """The battle map a tool call names — inline spec or loaded session.
+
+    A session-backed map also yields the ``map_source`` capture: which map,
+    which generation, and the hash of the exact document the fight is on.
+    """
+    if map_spec is not None and map_id is not None:
+        raise ToolError("give 'map' (an inline spec) or 'map_id' (a loaded map), not both")
+    if map_spec is not None:
+        return _battle_map_from_spec(map_spec), None
+    if map_id is not None:
+        session = _map_session(map_id)
+        return to_grid(session.document), {
+            "map_id": map_id,
+            "map_generation": session.generation,
+            "map_sha256": sha256_of(_serialize_map(session.document)),
+        }
+    return None, None
 
 
 def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
@@ -653,6 +751,7 @@ def encounter_create(
     seed: int | None = None,
     movement_rule: str = "5-5-5",
     map: dict[str, Any] | None = None,
+    map_id: str | None = None,
 ) -> dict[str, Any]:
     """Start an encounter and roll initiative, optionally on a battle map.
 
@@ -673,11 +772,17 @@ def encounter_create(
     costs movement, walls block sight and routes, cover adjusts AC, and starting
     positions must be on-map, passable, and unoccupied; positions snap to their
     square. Without one, the plane is open and featureless.
+
+    ``map_id`` fights on a loaded map session (see map_generate and map_load)
+    instead of an inline spec — one or the other, never both. The fight captures
+    the document by value: a later map_edit does not reach into it, and the
+    ``map_source`` field here and in encounter_state reports the captured
+    generation and whether the live map has since moved on.
     """
     used = _resolve_seed(seed)
     rng = Random(used)
     content = _content()
-    battle_map = _battle_map_from_spec(map) if map is not None else None
+    battle_map, map_source = _resolve_battle_map(map, map_id)
     try:
         encounter = _new_encounter(
             _combatants(combatants, content.registry), rng, content.registry,
@@ -687,10 +792,15 @@ def encounter_create(
     except EncounterError as error:
         raise ToolError(str(error)) from error
     encounter_id = _new_encounter_id()
-    _SESSIONS[encounter_id] = _Session(
+    session = _Session(
         encounter=encounter, rng=rng, seed=used,
         content_generation=content.generation,
     )
+    if map_source is not None:
+        session.map_id = str(map_source["map_id"])
+        session.map_generation = int(map_source["map_generation"])
+        session.map_sha256 = str(map_source["map_sha256"])
+    _SESSIONS[encounter_id] = session
     result: dict[str, Any] = {
         "encounter_id": encounter_id,
         "seed": used,
@@ -698,6 +808,8 @@ def encounter_create(
         "state": encounter.state(),
         "log": [event.as_dict() for event in encounter.log],
     }
+    if map_source is not None:
+        result["map_source"] = map_source
     if content.startup_error:
         result["content_warning"] = (
             "configured content failed to load; this fight uses the bundled slice "
@@ -710,9 +822,14 @@ def encounter_create(
 def encounter_state(encounter_id: str) -> dict[str, Any]:
     """The authoritative state of an encounter. Narrate from this, not from memory.
 
-    Each combatant's ``position`` is ``[x, y]`` in feet on the plane.
+    Each combatant's ``position`` is ``[x, y]`` in feet on the plane. For a
+    fight created from a ``map_id``, ``map_source`` reports the map generation
+    it captured and whether the live map has been edited since (``stale``).
     """
-    return _session(encounter_id).encounter.state()
+    session = _session(encounter_id)
+    state = session.encounter.state()
+    state["map_source"] = _map_source_of(session)
+    return state
 
 
 @server.tool()
@@ -851,6 +968,331 @@ def encounter_advance(encounter_id: str) -> dict[str, Any]:
     }
 
 
+# --- maps ------------------------------------------------------------------
+#: A map at or under this many squares renders inline in tool results; a larger
+#: one returns ``render: null`` and a pointer at map_render's viewports.
+_INLINE_RENDER_CELLS = 4000
+_TOKEN_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def _on_document(document: MapDocument, square: Square) -> bool:
+    return 0 <= square[0] < document.grid.width and 0 <= square[1] < document.grid.height
+
+
+def _encounter_tokens(
+    document: MapDocument, encounter_id: str
+) -> tuple[dict[Square, str], dict[str, str]]:
+    """Combatant overlay marks for a render: letters by initiative, ``x`` downed.
+
+    Only combatants standing inside the document's bounds appear. Downed
+    bodies are placed first, so a conscious combatant sharing a square wins
+    the cell, matching the rule that a downed body blocks nothing.
+    """
+    fight = _session(encounter_id).encounter
+    tokens: dict[Square, str] = {}
+    letters: dict[str, str] = {}
+    for name in fight.order:
+        creature = fight.creatures[name]
+        if creature.conscious:
+            continue
+        square = to_square(as_point(creature.position))
+        if _on_document(document, square):
+            tokens[square] = "x"
+    index = 0
+    for name in fight.order:
+        creature = fight.creatures[name]
+        if not creature.conscious:
+            continue
+        square = to_square(as_point(creature.position))
+        if not _on_document(document, square):
+            continue
+        if index < len(_TOKEN_LETTERS):
+            letter = _TOKEN_LETTERS[index]
+            letters[letter] = name
+        else:  # more conscious combatants than letters; mark without naming
+            letter = "?"
+        index += 1
+        tokens[square] = letter
+    return tokens, letters
+
+
+def _edit_render(before: MapDocument, after: MapDocument) -> dict[str, Any]:
+    """A render sized to what an edit touched.
+
+    The whole map when it is small enough to inline; otherwise the bounding
+    box of every changed cell and feature, downsampled just far enough to fit
+    the render budget.
+    """
+    width, height = after.grid.width, after.grid.height
+    if width * height <= _INLINE_RENDER_CELLS:
+        return _map_service.render_ascii(after)
+    xs: list[int] = []
+    ys: list[int] = []
+    if (before.grid.width, before.grid.height) != (width, height):
+        xs = [0, width - 1]
+        ys = [0, height - 1]
+    else:
+        legends_match = dict(before.legend) == dict(after.legend)
+        for yy, (old_row, new_row) in enumerate(zip(before.tiles, after.tiles, strict=True)):
+            if legends_match and old_row == new_row:
+                continue
+            for xx, (old_char, new_char) in enumerate(zip(old_row, new_row, strict=True)):
+                if before.legend[old_char] != after.legend[new_char]:
+                    xs.append(xx)
+                    ys.append(yy)
+        olds = {feature.id: feature for feature in before.features}
+        news = {feature.id: feature for feature in after.features}
+        for feature_id in set(olds) | set(news):
+            old, new = olds.get(feature_id), news.get(feature_id)
+            if old == new:
+                continue
+            for feature in (old, new):
+                if feature is not None:
+                    xs.append(feature.at[0])
+                    ys.append(feature.at[1])
+        if not xs:
+            xs = [0, width - 1]
+            ys = [0, height - 1]
+    x0, y0 = min(xs), min(ys)
+    box_w, box_h = max(xs) - x0 + 1, max(ys) - y0 + 1
+    downsample = 1
+    while -(-box_w // downsample) * -(-box_h // downsample) > _map_service.RENDER_BUDGET:
+        downsample += 1
+    return _map_service.render_ascii(
+        after, x=x0, y=y0, width=box_w, height=box_h, downsample=downsample
+    )
+
+
+@server.tool()
+def map_generate(
+    kind: str,
+    params: dict[str, Any] | None = None,
+    seed: int | None = None,
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Generate a battle map — "dungeon", "caves", or "overland" — under a seed.
+
+    The seed is always reported; the same seed, kind, and params reproduce the
+    map exactly. ``params`` overrides the kind's defaults (call with an unknown
+    key to be told the valid ones), and the result's ``params`` comes back
+    fully resolved. The map is held in this session under ``map_id`` for
+    map_render, map_edit, map_query, map_save, and encounter_create; small maps
+    include an inline render, larger ones return ``render: null`` and a note —
+    use map_render with a viewport or downsample.
+    """
+    used = _resolve_seed(seed)
+    try:
+        document = _map_service.generate(kind, params, used, name=name)
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+    map_id = _new_map_id()
+    _MAPS[map_id] = _MapSession(document=document)
+    result: dict[str, Any] = {
+        "map_id": map_id,
+        "seed": used,
+        "kind": kind,
+        "name": document.name,
+        "params": dict(document.provenance.params),
+        "summary": _map_summary(document),
+        "provenance": as_payload(document)["provenance"],
+    }
+    if document.grid.width * document.grid.height <= _INLINE_RENDER_CELLS:
+        result["render"] = _map_service.render_ascii(document)
+    else:
+        result["render"] = None
+        result["note"] = (
+            "the map is too large to render inline; call map_render with a viewport "
+            "(x, y, width, height) or a downsample factor"
+        )
+    return result
+
+
+@server.tool()
+def map_load(
+    path: str | None = None,
+    document: dict[str, Any] | None = None,
+    replace: str | None = None,
+) -> dict[str, Any]:
+    """Load a map document into the session — from a file, or given inline.
+
+    Exactly one of ``path`` and ``document``. Validation is strict and a
+    failure reports every diagnostic; warnings ride along with success.
+    ``replace`` rebinds an existing map_id to the loaded document (bumping its
+    generation) instead of minting a new id — the way to re-read a file after
+    an external editor saved it. ``sha256`` is the canonical document hash.
+    """
+    if (path is None) == (document is None):
+        raise ToolError("give exactly one of 'path' (a file) or 'document' (inline JSON)")
+    terrain = _registry().terrain_effects
+    try:
+        if path is not None:
+            loaded, warnings = _map_service.load_file(path, terrain=terrain)
+        else:
+            assert document is not None
+            loaded, warnings = _map_service.parse_payload(
+                document, source="inline", terrain=terrain
+            )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+    if replace is not None:
+        session = _map_session(replace)
+        session.document = loaded
+        session.generation += 1
+        session.path = path
+        map_id = replace
+    else:
+        map_id = _new_map_id()
+        _MAPS[map_id] = _MapSession(document=loaded, path=path)
+    return {
+        "map_id": map_id,
+        "name": loaded.name,
+        "summary": _map_summary(loaded),
+        "warnings": [warning.as_dict() for warning in warnings],
+        "provenance": as_payload(loaded)["provenance"],
+        "sha256": sha256_of(_serialize_map(loaded)),
+    }
+
+
+@server.tool()
+def map_save(map_id: str, path: str | None = None, overwrite: bool = False) -> dict[str, Any]:
+    """Write a loaded map to disk as canonical JSON, refusing silent overwrites.
+
+    ``path`` defaults to ``<maps root>/<slug-of-name>.json`` under the
+    project's ``.fivee-sim/maps`` (or ``FIVEE_SIM_MAPS``). An existing file is
+    only replaced when ``overwrite`` is true. Returns the written path, byte
+    count, and sha256 — the hash to quote when handing the file elsewhere.
+    """
+    session = _map_session(map_id)
+    target = (
+        path
+        if path is not None
+        else str(_map_service.maps_root() / f"{slugify(session.document.name)}.json")
+    )
+    try:
+        saved = _map_service.save_file(session.document, target, overwrite=overwrite)
+    except (OSError, ValueError) as error:
+        raise ToolError(str(error)) from error
+    session.path = str(saved["path"])
+    return {**saved, "map_id": map_id, "provenance": as_payload(session.document)["provenance"]}
+
+
+@server.tool()
+def map_render(
+    map_id: str,
+    x: int = 0,
+    y: int = 0,
+    width: int | None = None,
+    height: int | None = None,
+    downsample: int = 1,
+    show_features: bool = True,
+    encounter_id: str | None = None,
+) -> dict[str, Any]:
+    """Render a viewport of a loaded map as rows of glyphs.
+
+    The viewport (``x``, ``y``, ``width``, ``height``, in squares) is clamped
+    to the map; ``downsample=k`` renders each k-by-k block as its majority
+    terrain. A render over 10000 cells is refused — narrow the viewport or
+    raise the downsample. Overlays: ``+`` closed door, ``/`` open door, ``<``
+    and ``>`` stairs, ``@`` spawn. With ``encounter_id``, conscious combatants
+    overlay as letters in initiative order (``tokens`` maps letter to name)
+    and downed ones as ``x`` — positions come from that encounter's state, so
+    render after acting, not before.
+    """
+    session = _map_session(map_id)
+    tokens: dict[Square, str] = {}
+    letters: dict[str, str] = {}
+    if encounter_id is not None:
+        tokens, letters = _encounter_tokens(session.document, encounter_id)
+    try:
+        rendered = _map_service.render_ascii(
+            session.document,
+            x=x, y=y, width=width, height=height,
+            downsample=downsample, show_features=show_features,
+            tokens=tokens or None,
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+    result: dict[str, Any] = {"map_id": map_id, "generation": session.generation, **rendered}
+    if encounter_id is not None:
+        result["tokens"] = letters
+    return result
+
+
+@server.tool()
+def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
+    """Edit a loaded map atomically: all operations apply, or none do.
+
+    Each operation is an object with an ``op`` key: ``set_terrain`` {rect:
+    [x, y, w, h], terrain}, ``paint`` {cells: [[x, y], ...], terrain},
+    ``line`` {from, to, terrain}, ``carve_corridor`` {from, to, terrain?,
+    horizontal_first?}, ``add_feature`` {feature}, ``remove_feature`` {id},
+    ``toggle_door`` {at}, ``resize`` {width, height, anchor?, fill?},
+    ``set_legend`` {glyph, terrain}, ``set_name`` {name}. A bad operation is
+    refused with its index and changes nothing. A successful edit bumps the
+    map's generation, marks it edited, and returns a render covering what
+    changed. Fights already created from this map keep the version they
+    captured — their encounter_state reports ``stale`` instead.
+    """
+    session = _map_session(map_id)
+    before = session.document
+    try:
+        after = _map_service.apply_edits(
+            before, operations, terrain=_registry().terrain_effects
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+    if after is not before:
+        session.document = after
+        session.generation += 1
+    return {
+        "applied": len(operations),
+        "map_id": map_id,
+        "generation": session.generation,
+        "edited": after.provenance.edited,
+        "summary": _map_summary(after),
+        "render": _edit_render(before, after),
+    }
+
+
+@server.tool()
+def map_query(
+    map_id: str,
+    query: str,
+    frm: list[int] | None = None,
+    to: list[int] | None = None,
+) -> dict[str, Any]:
+    """Geometry over a loaded map: "distance", "line_of_sight", or "path".
+
+    ``frm`` and ``to`` are ``[x, y]`` square indices (``frm`` because ``from``
+    is a reserved word in the implementation language). Doors count in their
+    recorded default state and nothing is occupied — for questions inside a
+    fight, use the encounter tools, which see live doors and creatures.
+    ``distance`` answers in feet; ``line_of_sight`` is a boolean; ``path``
+    returns the squares and cost in feet, or ``reachable: false``.
+    """
+    session = _map_session(map_id)
+
+    def _square_arg(value: list[int] | None, what: str) -> Square:
+        if not (
+            isinstance(value, list)
+            and len(value) == 2
+            and all(isinstance(part, int) and not isinstance(part, bool) for part in value)
+        ):
+            raise ToolError(f"{what} must be an [x, y] pair of squares")
+        return (value[0], value[1])
+
+    origin = _square_arg(frm, "frm")
+    target = _square_arg(to, "to")
+    try:
+        answer = _map_service.query(
+            session.document, query, origin, target,
+            terrain=_registry().terrain_effects,
+        )
+    except (UnknownTerrain, ValueError) as error:
+        raise ToolError(str(error)) from error
+    return {"map_id": map_id, **answer}
+
+
 # --- content ---------------------------------------------------------------
 def _status() -> dict[str, Any]:
     content = _content()
@@ -972,27 +1414,31 @@ def simulate_rounds(
     max_rounds: int = 20,
     movement_rule: str = "5-5-5",
     map: dict[str, Any] | None = None,
+    map_id: str | None = None,
 ) -> dict[str, Any]:
     """Auto-play the same encounter many times and report win rates and length.
 
-    Combatant specs match ``encounter_create``, as do ``movement_rule`` and the
-    inline ``map`` spec — with a map, every iteration fights on it: terrain
+    Combatant specs match ``encounter_create``, as do ``movement_rule``, the
+    inline ``map`` spec, and ``map_id`` (a loaded map session; one or the
+    other, not both) — with a map, every iteration fights on it: terrain
     costs, cover, sight, and pathfinding all apply, and doors reset to their
     initial state between iterations. Iteration ``i`` uses ``seed + i``, so one
-    iteration reproduces a single hand-played encounter at that seed.
+    iteration reproduces a single hand-played encounter at that seed. With
+    ``map_id`` the result's ``map_source`` records the exact map generation
+    and hash the batch ran on.
     """
     specs = list(combatants)
     # The registry is captured once, here. Resolving content per iteration would let
     # a reconfiguration land mid-batch and make the result unreproducible from its
     # seed, which is the one property these numbers rest on.
     registry = _registry()
-    battle_map = _battle_map_from_spec(map) if map is not None else None
+    battle_map, map_source = _resolve_battle_map(map, map_id)
 
     def factory() -> list[Creature]:
         return _combatants(specs, registry)
 
     try:
-        return _simulate_rounds(
+        result = _simulate_rounds(
             factory,
             iterations=iterations,
             seed=seed,
@@ -1006,6 +1452,9 @@ def simulate_rounds(
         )
     except (ValueError, EncounterError) as error:
         raise ToolError(str(error)) from error
+    if map_source is not None:
+        result["map_source"] = map_source
+    return result
 
 
 @server.tool()
