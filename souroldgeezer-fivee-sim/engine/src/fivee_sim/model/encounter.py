@@ -236,6 +236,26 @@ class OngoingEffect:
     stacked: bool
 
 
+def _segment_samples(origin: Point, destination: Point) -> list[Point]:
+    """The straight walk from ``origin`` to ``destination``, sampled every 5 ft.
+
+    These samples are what a mapless move replays instead of a battle map's
+    squares: 5-ft paces measured on the longer axis, so consecutive samples
+    never differ by more than 5 ft in either coordinate. Interior points round
+    to the integer lattice; both endpoints are exact.
+    """
+    dx = destination[0] - origin[0]
+    dy = destination[1] - origin[1]
+    paces = -(-max(abs(dx), abs(dy)) // FEET_PER_SQUARE)  # ceil: last pace may be short
+    samples = [origin]
+    for k in range(1, paces + 1):
+        samples.append((
+            origin[0] + (2 * k * dx + paces) // (2 * paces),
+            origin[1] + (2 * k * dy + paces) // (2 * paces),
+        ))
+    return samples
+
+
 class Encounter:
     """A fight in progress."""
 
@@ -1395,6 +1415,15 @@ class Encounter:
             )
 
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
+        """Move on the open plane: straight to the destination, provoking on the way.
+
+        The cost is charged up front and the walk replays the straight segment
+        in 5-ft samples, exactly as the mapped path replays its route square by
+        square, so leaving any threatening enemy's reach on the way provokes —
+        a pass-through is not laundered by where the move ends. The segment is
+        straight and reach is convex, so a move that ends still within reach
+        never left it and provokes nothing.
+        """
         if action.to_position is None:
             raise EncounterError("moving needs 'to_position'")
         if speed_is_zero(actor.conditions, self.condition_effects):
@@ -1413,22 +1442,34 @@ class Encounter:
                 f"{actor.name} has {self._turn.movement_left} ft of movement, needs {distance} ft"
             )
 
-        threatening = [
-            enemy for enemy in self.enemies_of(actor.name)
-            if actor.distance_to(enemy, self.movement_rule) <= MELEE_THRESHOLD
-        ]
-        actor.position = destination
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
                    detail=f"{origin} -> {destination} ({distance} ft used)",
                    origin=origin, destination=destination, cost=distance)
 
         if self._disengaged[actor.name]:
+            actor.position = destination
             return
-        for enemy in threatening:
-            if enemy.distance_to(actor, self.movement_rule) <= MELEE_THRESHOLD:
-                continue
-            self._opportunity_attack(enemy, actor, rng)
+        samples = _segment_samples(origin, destination)
+        for previous, step in zip(samples, samples[1:], strict=False):
+            threatening = [
+                enemy for enemy in self.enemies_of(actor.name)
+                if distance_feet(
+                    as_point(enemy.position), previous, self.movement_rule
+                ) <= MELEE_THRESHOLD
+            ]
+            actor.position = step
+            for enemy in threatening:
+                if distance_feet(
+                    as_point(enemy.position), step, self.movement_rule
+                ) <= MELEE_THRESHOLD:
+                    continue
+                self._opportunity_attack(enemy, actor, rng)
+            if not actor.conscious:
+                # Dropped mid-stride: the walk ends where the mover fell, and the
+                # state — not the move event's declared destination — is the truth.
+                return
+        actor.position = destination
 
     def _do_move_mapped(self, actor: Creature, action: Action, rng: Random) -> None:
         """Move on the battle map: routed, terrain-costed, provoking on the way.
