@@ -168,10 +168,17 @@ uv run ruff check .              # E,F,W,I,UP,B — line length 100
 uv run mypy                      # strict, configured in pyproject.toml
 uv run pytest
 
+uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
+
 # From the repo root: real JSON-RPC against the real launcher.
 python3 scripts/check-mcp-handshake.py
 bash scripts/hooks/test-ip-hygiene-check.sh
 ```
+
+**`docs/COVERAGE.md` is generated, never hand-edited.** Adding a creature, spell,
+or condition means regenerating it; `tests/test_coverage.py` fails otherwise. The
+"not supported" section is the exception — it is prose in `coverage.py`, because
+absence cannot be derived from the data and it is the part a reader most needs.
 
 `uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
 `~/.cache/uv` is read-only in the sandboxed development environment.

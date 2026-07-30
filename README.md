@@ -41,6 +41,17 @@ the seed it used, so no result is irreproducible after the fact.
 
 ## What is covered
 
+**[souroldgeezer-fivee-sim/docs/COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md)
+is the authoritative list** — every creature, spell, condition, damage type, and
+action, plus the printed features each stat block does not implement and the whole
+areas that are not modelled at all. It is generated from the data and a test fails
+if it drifts, so it cannot quietly become untrue.
+
+The short version: 4 creatures and 4 spells — a deliberately narrow starting
+slice. **Characters, classes, species, backgrounds, feats, items and potions are
+not modelled**; combatants are described by their statistics the way a stat block
+presents them.
+
 Weapon attacks with reach and ranged bands, movement, Dash, Disengage, Dodge,
 opportunity attacks, death saves and instant death, damage resistance and
 vulnerability, and a curated spell set with saving throws, areas, upcasting, and

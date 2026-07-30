@@ -79,6 +79,11 @@ any result can be replayed exactly. Quote the seed when a roll matters.
 `lookup_rule` returns bundled conditions, spells, and stat blocks. Call it with no
 topic to see everything available.
 
+For a full written catalogue — including what is deliberately absent —
+read [`../../docs/COVERAGE.md`](../../docs/COVERAGE.md). Prefer it when a user asks
+"what do you support?", because it states the unmodelled areas that `lookup_rule`
+cannot show you: there is no entry for a class or a potion to miss on.
+
 ## Honest limits
 
 State these when they bear on a ruling rather than papering over them:

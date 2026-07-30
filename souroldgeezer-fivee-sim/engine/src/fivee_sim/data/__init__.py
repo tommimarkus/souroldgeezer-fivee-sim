@@ -52,6 +52,17 @@ def monster_records() -> dict[str, dict[str, Any]]:
 
 
 @lru_cache(maxsize=1)
+def spell_records() -> dict[str, dict[str, Any]]:
+    """Raw spell records, keyed by name.
+
+    Kept alongside :func:`spellbook` because the records carry fields the engine
+    does not model — notably ``unmodelled`` — which the coverage report needs.
+    """
+    payload = _read("spells.json")
+    return {str(record["name"]): record for record in payload["spells"]}
+
+
+@lru_cache(maxsize=1)
 def spellbook() -> dict[str, Spell]:
     """Every bundled spell, keyed by name."""
     payload = _read("spells.json")
