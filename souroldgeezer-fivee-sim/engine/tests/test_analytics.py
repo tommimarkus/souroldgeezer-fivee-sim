@@ -16,6 +16,7 @@ import pytest
 
 from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.analytics.montecarlo import (
+    MAX_ACTIONS_PER_TURN,
     _spell_options,
     auto_action,
     run_encounter,
@@ -562,3 +563,110 @@ class TestRoundsReported:
         result = simulate_rounds(stalemate, iterations=3, seed=SEED, max_rounds=5)
         assert result["timed_out"] == 3
         assert result["rounds"]["max"] == 5.0
+
+
+class TestPolicyLeavesDownedCreaturesAlone:
+    """The stepper now permits a finishing blow; the policy still declines to take one.
+
+    That split is deliberate. Whether a downed creature *can* be hit is a rules
+    question and the answer is yes. Whether an auto-played combatant *should* spend
+    its action doing so is a tactical one the SRD does not answer, and a greedy
+    one-turn policy is not the place to decide it: a downed creature threatens
+    nobody, so finishing it costs a turn that a batch's win-rate arithmetic would
+    have spent on a standing enemy.
+
+    These tests pin the policy against the stepper's new permission. They are the
+    reason the batch numbers this engine already published stay comparable.
+    """
+
+    @staticmethod
+    def _brawl_with_one_enemy_down() -> tuple[Encounter, Creature]:
+        """Thora against two goblins, one of them dropped on the spot.
+
+        The goblin is dropped *after* the encounter reaches Thora's turn, so no
+        death save is rolled in between — one natural 20 would put it back on its
+        feet and quietly empty the test.
+        """
+        rng = Random(SEED)
+        thora = fighter("Thora", position=0)
+        downed = make_monster("Goblin Warrior", label="Downed", team="foes", position=5)
+        upright = make_monster(
+            "Goblin Warrior", label="Upright", team="foes", position=10
+        )
+        encounter = Encounter([thora, downed, upright], rng, spellbook=spellbook())
+        advance_to(encounter, "Thora", rng)
+        downed.take_damage(downed.hp)
+        assert downed.dying
+        return encounter, downed
+
+    def test_a_downed_enemy_is_never_named_by_a_chosen_action(self) -> None:
+        encounter, downed = self._brawl_with_one_enemy_down()
+        assert downed.name not in [c.name for c in encounter.enemies_of("Thora")]
+        for _ in range(MAX_ACTIONS_PER_TURN):
+            action = auto_action(encounter)
+            if action is None:
+                break
+            assert action.target != downed.name
+            assert downed.name not in action.targets
+            encounter.act(action, Random(2))
+
+    def test_a_side_that_is_only_dying_draws_no_action_at_all(self) -> None:
+        # Not merely "no attack on the downed one": with nothing conscious left to
+        # hit, the policy stops rather than falling through to a finishing blow.
+        rng = Random(SEED)
+        thora = fighter("Thora", position=0)
+        ally = fighter("Bern", position=5)  # keeps ``over`` from firing on the team
+        foe = make_monster("Goblin Warrior", label="Goblin", team="foes", position=10)
+        encounter = Encounter([thora, ally, foe], rng, spellbook=spellbook())
+        advance_to(encounter, "Thora", rng)
+        foe.take_damage(foe.hp)
+        assert foe.dying
+        assert auto_action(encounter) is None
+
+    def test_an_area_spell_is_placed_on_the_standing_enemy_not_the_downed_one(
+        self,
+    ) -> None:
+        # The placement search enumerates candidate origins from conscious creatures
+        # only, so the downed goblin at the wizard's feet never becomes a point of
+        # origin even though the stepper would now resolve a blast there.
+        rng = Random(SEED)
+        wizard = blaster(position=50)
+        downed = make_monster("Goblin Warrior", label="Downed", team="foes", position=5)
+        upright = make_monster(
+            "Goblin Warrior", label="Upright", team="foes", position=100
+        )
+        encounter = Encounter([wizard, downed, upright], rng, spellbook=spellbook())
+        advance_to(encounter, "Ilva", rng)
+        downed.take_damage(downed.hp)
+
+        action = auto_action(encounter)
+        assert action is not None
+        assert action.kind is ActionKind.CAST
+        assert action.center is not None
+        assert abs(action.center - upright.position) <= 20
+        assert abs(action.center - downed.position) > 20
+
+    def test_the_policy_still_declines_over_a_whole_batch(self) -> None:
+        # The end-to-end guard: across many auto-played fights, no attack or spell
+        # effect is ever logged against a creature that was down when it landed. A
+        # per-turn assertion cannot see a Multiattack's later swings.
+        #
+        # ``down``, ``death`` and ``death_save`` all carry the creature in ``actor``;
+        # ``attack`` and ``spell_effect`` carry it in ``target``. A natural 20 on a
+        # death save puts the creature back up, so it leaves the down set again —
+        # without that, a legitimate later attack would read as a violation.
+        for index in range(40):
+            rng = Random(SEED + index)
+            encounter = Encounter(list(melee_brawl()), rng, spellbook=spellbook())
+            run_encounter(encounter, rng, max_rounds=20)
+            down: set[str] = set()
+            for event in encounter.log:
+                if event.kind == "down":
+                    down.add(event.actor)
+                elif event.kind == "death_save" and "regains" in event.detail:
+                    down.discard(event.actor)
+                elif event.kind in {"attack", "opportunity_attack", "spell_effect"}:
+                    assert event.target not in down, (
+                        f"iteration {index}: {event.kind} on {event.target} "
+                        f"while it was down ({event.detail})"
+                    )

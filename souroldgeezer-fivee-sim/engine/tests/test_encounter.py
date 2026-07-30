@@ -19,6 +19,7 @@ from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.kernel.spells import Spell
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -529,8 +530,11 @@ class TestDamageAtZeroHitPoints:
         assert "down" not in kinds(events)
 
     def test_a_damaging_item_on_a_dying_creature_costs_a_failure(self) -> None:
-        # The reachable path: an attack refuses an unconscious target and a spell
-        # filters to conscious creatures, but an item only refuses a dead one.
+        # An item was once the *only* route to this rule: an attack refused an
+        # unconscious target and a spell filtered the area down to conscious
+        # creatures, while an item only ever refused a corpse. Attacks and spells
+        # now reach it too — see ``TestADownedCreatureIsStillATarget`` — so this
+        # covers the item path rather than standing in for all three.
         fire = ItemEffect(
             damage=Dice.parse("2d6"),
             damage_type=DamageType.FIRE,
@@ -580,6 +584,290 @@ class TestDamageAtZeroHitPoints:
         assert after["failures"] == before["failures"] + 1
         assert after["successes"] == before["successes"]
         assert victim.dying and not victim.dead
+
+
+class TestADownedCreatureIsStillATarget:
+    """A creature at 0 hit points is a legal target; only a corpse is not.
+
+    SRD 5.2, Rules Glossary, "Unconscious [Condition]": "Attacks Affected. Attack
+    rolls against you have Advantage." and "Automatic Critical Hits. Any attack
+    roll that hits you is a Critical Hit if the attacker is within 5 feet of you."
+    Both clauses are dead text if the stepper refuses the attack, which is what it
+    used to do — and the Unconscious clause "Saving Throws Affected. You
+    automatically fail Strength and Dexterity saving throws" is likewise dead if an
+    area effect filters the creature out before rolling one.
+
+    What the damage then costs is the other rule. SRD 5.2, "Playing the Game" ->
+    "Damage at 0 Hit Points": "If you take any damage while you have 0 Hit Points,
+    you suffer a Death Saving Throw failure. If the damage is from a Critical Hit,
+    you suffer two failures instead. If the damage equals or exceeds your Hit Point
+    maximum, you die."
+
+    The hit point maximums here are deliberately far above anything the fixtures
+    can roll, because the massive-damage clause is checked first: a fixture small
+    enough to die would pin instant death rather than the failure count. The one
+    test that *wants* that ordering sizes itself to reach it.
+    """
+
+    @staticmethod
+    def _paused_on_the_attackers_turn(
+        attacker: Creature, victim: Creature, *others: Creature
+    ) -> Encounter:
+        """A fight held on ``attacker``'s turn, with a third combatant to sustain it.
+
+        The ally exists because ``Encounter.over`` counts only conscious creatures:
+        without it, dropping the victim would end the fight and every action after
+        would be refused for that reason rather than the one under test. It stands
+        500 ft away so nothing under test can reach it.
+        """
+        rng = Random(8)
+        ally = fighter("Ally", team=victim.team, position=500)
+        encounter = Encounter(
+            [attacker, victim, ally, *others], rng, spellbook=spellbook()
+        )
+        advance_to(encounter, attacker.name, rng)
+        return encounter
+
+    @staticmethod
+    def _archer(name: str = "Archer", *, team: str = "foes") -> Creature:
+        archer = fighter(name, team=team, position=0)
+        archer.attacks = (
+            AttackOption(
+                name="Shortbow",
+                attack_bonus=5,
+                damage=Dice(1, 6, 2),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=80,
+                long_range=320,
+                provenance=FIXTURE,
+            ),
+        )
+        return archer
+
+    def test_the_unconscious_condition_reaches_an_attack_on_a_downed_target(
+        self,
+    ) -> None:
+        # The condition table already carried both clauses; nothing could consult
+        # them, because the only target they apply to was refused outright.
+        thug = fighter("Thug", team="foes", position=0)
+        victim = fighter("Victim", max_hp=200, hp=1, position=5)
+        encounter = self._paused_on_the_attackers_turn(thug, victim)
+        victim.take_damage(1)
+        assert victim.dying
+
+        option = thug.attacks[0]
+        assert encounter.attack_advantage(thug, victim, option) is Advantage.ADVANTAGE
+        assert encounter.attack_forced_critical(thug, victim) is True
+        # The critical is scoped by distance, so it lapses out of melee while the
+        # Advantage from Unconscious does not.
+        victim.position = 30
+        assert encounter.attack_forced_critical(thug, victim) is False
+
+    def test_an_attack_on_a_dying_creature_lands_and_costs_one_failure(self) -> None:
+        archer = self._archer()
+        victim = fighter("Victim", max_hp=200, hp=1, position=30)
+        encounter = self._paused_on_the_attackers_turn(archer, victim)
+        victim.take_damage(1)
+        assert victim.dying
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19)
+        )
+        assert "damage" in kinds(events)
+        assert victim.hp == 0
+        assert victim.death_save_failures == 1
+        assert victim.dying and not victim.dead
+        # From 30 ft the hit is an ordinary one, which is the point of the range:
+        # a melee swing would force the critical and cost two.
+        assert "critical" not in detail_of(events, "attack")
+
+    def test_a_critical_hit_on_a_dying_creature_costs_two_failures(self) -> None:
+        thug = fighter("Thug", team="foes", position=0)
+        victim = fighter("Victim", max_hp=200, hp=1, position=5)
+        encounter = self._paused_on_the_attackers_turn(thug, victim)
+        victim.take_damage(1)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19)
+        )
+        # Not a natural 20: the critical comes from the target's condition.
+        assert "critical hit" in detail_of(events, "attack")
+        assert victim.death_save_failures == 2
+        assert victim.dying and not victim.dead
+
+    def test_a_critical_reaching_the_maximum_kills_instead_of_costing_failures(
+        self,
+    ) -> None:
+        # The ordering inside ``take_damage``: massive damage is checked before the
+        # failure count, so a forced critical big enough to reach the maximum kills
+        # outright and accrues nothing. A doubled 1d8+3 tops out at 19.
+        thug = fighter("Thug", team="foes", position=0)
+        victim = fighter("Victim", max_hp=19, hp=1, position=5)
+        encounter = self._paused_on_the_attackers_turn(thug, victim)
+        victim.take_damage(1)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19)
+        )
+        assert victim.dead
+        assert victim.death_save_failures == 0
+        assert detail_of(events, "death") == "damage exceeded maximum hit points"
+
+    def test_three_failures_from_damage_kill_a_dying_creature(self) -> None:
+        archer = self._archer()
+        victim = fighter("Victim", max_hp=200, hp=1, position=30)
+        encounter = self._paused_on_the_attackers_turn(archer, victim)
+        victim.take_damage(1)
+        victim.death_save_failures = 2
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19)
+        )
+        assert victim.dead
+        assert detail_of(events, "death") == "a third failed death save"
+
+    def test_an_attack_on_a_stable_creature_starts_its_death_saves_again(self) -> None:
+        """SRD 5.2, "Stabilizing a Character": "A Stable creature doesn't make Death
+        Saving Throws even though it has 0 Hit Points, but it still has the
+        Unconscious condition. If the creature takes damage, it stops being Stable
+        and starts making Death Saving Throws again."
+
+        ``Creature.take_damage`` already did this; nothing could deliver the damage
+        by attack, because a Stable creature is not conscious either.
+        """
+        archer = self._archer()
+        victim = fighter("Victim", max_hp=200, hp=1, position=30)
+        encounter = self._paused_on_the_attackers_turn(archer, victim)
+        victim.take_damage(1)
+        victim.stable = True
+        assert not victim.dying
+
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19))
+        assert not victim.stable
+        assert victim.dying
+        assert victim.death_save_failures == 1
+
+    def test_a_corpse_is_refused_as_an_attack_target(self) -> None:
+        thug = fighter("Thug", team="foes", position=0)
+        victim = fighter("Victim", max_hp=30, hp=1, position=5)
+        encounter = self._paused_on_the_attackers_turn(thug, victim)
+        victim.take_damage(1)
+        victim.dead = True
+
+        with pytest.raises(EncounterError, match="dead"):
+            encounter.act(
+                Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(19)
+            )
+
+    def test_an_area_spell_centred_on_a_dying_creature_damages_it(self) -> None:
+        wren = caster("Wren", team="foes", position=0)
+        victim = fighter("Victim", max_hp=200, hp=1, position=30)
+        # A second creature inside the blast: the old behaviour damaged this one and
+        # left the dying creature at the exact point of origin untouched.
+        standing = fighter("Standing", max_hp=200, position=35)
+        encounter = self._paused_on_the_attackers_turn(wren, victim, standing)
+        victim.take_damage(1)
+        assert victim.dying
+        assert encounter.auto_fails_save(victim, Ability.DEXTERITY) is True
+
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=30),
+            FixedRandom(1),
+        )
+        # Eight d6 forced to 1, and the dying creature fails the save automatically.
+        assert victim.hp == 0
+        assert victim.death_save_failures == 1
+        assert standing.hp == standing.max_hp - 8
+        touched = {event.target for event in events if event.kind == "spell_effect"}
+        assert touched == {"Victim", "Standing"}
+
+    def test_a_corpse_is_not_caught_in_an_area_spell(self) -> None:
+        wren = caster("Wren", team="foes", position=0)
+        victim = fighter("Victim", max_hp=30, hp=1, position=30)
+        encounter = self._paused_on_the_attackers_turn(wren, victim)
+        victim.take_damage(1)
+        victim.dead = True
+        # The ally sits at 500 ft; only the corpse is anywhere near the blast, so a
+        # spell that still caught corpses would report an effect on it.
+        with pytest.raises(EncounterError, match="no valid targets"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=30),
+                FixedRandom(1),
+            )
+
+    def test_a_spell_attack_critical_on_a_dying_creature_costs_two_failures(
+        self,
+    ) -> None:
+        # The cast path's own critical. ``_do_cast`` reads it off the per-target
+        # attack roll the kernel already produced; without that, Guiding Bolt loosed
+        # point-blank at a downed creature doubled its dice and still cost one.
+        wren = caster("Wren", team="foes", position=0)
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 2}
+        victim = fighter("Victim", max_hp=200, hp=1, position=5)
+        encounter = self._paused_on_the_attackers_turn(wren, victim)
+        victim.take_damage(1)
+
+        events = encounter.act(
+            Action(
+                kind=ActionKind.CAST,
+                spell="Guiding Bolt",
+                slot_level=1,
+                target="Victim",
+            ),
+            FixedRandom(19),
+        )
+        assert "critical hit" in detail_of(events, "spell_effect")
+        assert victim.death_save_failures == 2
+        assert victim.dying and not victim.dead
+
+    def test_each_target_of_one_cast_carries_its_own_critical(self) -> None:
+        """The critical is read per target, because the kernel rolls it per target.
+
+        ``resolve_spell`` makes a separate attack roll for each name, and the forced
+        critical is scoped by the distance from the caster to *that* creature — so a
+        single spell-wide flag would be wrong in both directions. Two downed targets
+        in one cast, one adjacent and one across the room, separate the two: the near
+        one is a critical and costs two failures, the far one is an ordinary hit and
+        costs one. No bundled spell names more than one target, so this needs a
+        fixture spell.
+        """
+        twin = Spell(
+            name="Twin Bolt",
+            level=1,
+            requires_attack_roll=True,
+            damage=Dice(1, 6, 0),
+            damage_type=DamageType.RADIANT,
+            range_feet=120,
+            max_targets=2,
+            provenance=FIXTURE,
+        )
+        wren = caster("Wren", team="foes", position=0)
+        wren.spells = ("Twin Bolt",)
+        wren.spell_slots = {1: 2}
+        near = fighter("Near", max_hp=200, hp=1, position=5)
+        far = fighter("Far", max_hp=200, hp=1, position=60)
+        rng = Random(8)
+        ally = fighter("Ally", position=500)
+        encounter = Encounter(
+            [wren, near, far, ally], rng, spellbook={"Twin Bolt": twin}
+        )
+        advance_to(encounter, "Wren", rng)
+        near.take_damage(1)
+        far.take_damage(1)
+
+        encounter.act(
+            Action(
+                kind=ActionKind.CAST,
+                spell="Twin Bolt",
+                slot_level=1,
+                targets=("Near", "Far"),
+            ),
+            FixedRandom(19),
+        )
+        assert near.death_save_failures == 2
+        assert far.death_save_failures == 1
 
 
 class TestMovementAndReactions:

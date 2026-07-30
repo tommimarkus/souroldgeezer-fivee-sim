@@ -386,6 +386,29 @@ class Encounter:
             raise EncounterError(f"no combatant named {name!r}")
         return target
 
+    @staticmethod
+    def _require_targetable(target: Creature) -> None:
+        """Refuse a corpse, and nothing else.
+
+        A creature at 0 hit points is a legal target and the SRD says so twice
+        over. Rules Glossary, "Unconscious [Condition]": "Attacks Affected. Attack
+        rolls against you have Advantage" and "Automatic Critical Hits. Any attack
+        roll that hits you is a Critical Hit if the attacker is within 5 feet of
+        you." Neither clause can ever apply to a creature the stepper refuses to
+        aim at, and refusing was exactly what it used to do — so a dying creature
+        could only die by failing three death saves, never by a finishing blow.
+
+        What a landed hit then costs is "Damage at 0 Hit Points": one death saving
+        throw failure, two from a critical hit, and instant death if the damage
+        equals or exceeds the hit point maximum. :meth:`Creature.take_damage` owns
+        all three; this only has to let the damage through.
+
+        ``dead`` is the one refusal that survives, because a corpse is not a
+        creature a spell or an attack can target.
+        """
+        if target.dead:
+            raise EncounterError(f"{target.name} is dead and cannot be targeted")
+
     def _pick_attack(self, actor: Creature, wanted: str | None) -> AttackOption:
         if not actor.attacks:
             raise EncounterError(f"{actor.name} has no attacks")
@@ -399,8 +422,7 @@ class Encounter:
 
     def _do_attack(self, actor: Creature, action: Action, rng: Random) -> None:
         target = self._resolve_target(action.target)
-        if not target.conscious:
-            raise EncounterError(f"{target.name} is already down")
+        self._require_targetable(target)
         if self._turn.attacks_left <= 0:
             raise EncounterError(f"{actor.name} has no attacks left this turn")
         if self._turn.action_used and self._turn.attacks_left == actor.attacks_per_action:
@@ -434,7 +456,9 @@ class Encounter:
         self._emit("attack", actor.name, target.name,
                    f"{option.name}: {resolution.describe()}")
         if resolution.hit:
-            self._apply_damage(target, resolution.damage_dealt, rng)
+            self._apply_damage(
+                target, resolution.damage_dealt, rng, critical=resolution.critical
+            )
 
     def attack_advantage(
         self, actor: Creature, target: Creature, option: AttackOption
@@ -534,8 +558,7 @@ class Encounter:
                     f"{target.name} is {distance} ft away; an item can only be used on "
                     f"another creature within {MELEE_THRESHOLD} ft"
                 )
-        if target.dead:
-            raise EncounterError(f"{target.name} is dead and cannot be affected")
+        self._require_targetable(target)
 
         self._turn.action_used = True
         actor.items[name] -= 1
@@ -677,7 +700,16 @@ class Encounter:
             target = self.creatures[result.name]
             self._emit("spell_effect", actor.name, target.name, result.describe())
             if result.damage_dealt:
-                self._apply_damage(target, result.damage_dealt, rng)
+                # A spell attack carries a critical exactly as a weapon swing does,
+                # and it matters for the same reason: two death save failures rather
+                # than one against a creature already at 0. A save-based spell has no
+                # attack roll and so never crits.
+                self._apply_damage(
+                    target,
+                    result.damage_dealt,
+                    rng,
+                    critical=result.attack is not None and result.attack.critical,
+                )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(
                     actor, target, result.condition_applied,
@@ -748,37 +780,48 @@ class Encounter:
         creature at the far edge of the blast sits past the range would be wrong.
         Checking *neither* — the previous behaviour — let a 150 ft Fireball land a
         thousand feet away.
+
+        **Consciousness is not a filter.** SRD 5.2, "Spells" -> Targets -> Areas of
+        Effect: "The area determines what the spell targets." A creature at 0 hit
+        points is inside the blast or it is not, and the Unconscious condition's own
+        clause — "You automatically fail Strength and Dexterity saving throws" —
+        exists precisely for the roll a Fireball then makes it attempt. Filtering
+        here meant a blast centred on a dying creature's exact square dealt it
+        nothing while burning everyone around it. Corpses are still excluded; the
+        named branches refuse one outright rather than dropping it silently, so a
+        caller who aims at a body is told, not ignored.
         """
         if action.targets:
             chosen = [self._resolve_target(name) for name in action.targets]
             for creature in chosen:
+                self._require_targetable(creature)
                 self._require_in_range(actor, spell, creature.position, creature.name)
         elif spell.radius and action.center is not None:
             self._require_in_range(actor, spell, action.center, "the point of origin")
             chosen = [
                 c for c in self.creatures.values()
-                if c.conscious and abs(c.position - action.center) <= spell.radius
+                if not c.dead and abs(c.position - action.center) <= spell.radius
             ]
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
+            self._require_targetable(chosen[0])
             self._require_in_range(actor, spell, chosen[0].position, chosen[0].name)
         else:
             raise EncounterError(
                 f"{spell.name} needs 'target', 'targets', or 'center' to be given"
             )
-        landed = [c for c in chosen if c.conscious]
         if spell.radius:
             # An area is bounded by its radius, not by a head count. Every bundled
             # area spell leaves max_targets at its default of 1, so applying the cap
             # here would quietly shrink a Fireball to a single creature.
-            return landed
-        if len(landed) > spell.max_targets:
+            return chosen
+        if len(chosen) > spell.max_targets:
             creatures = "creature" if spell.max_targets == 1 else "creatures"
             raise EncounterError(
                 f"{spell.name} affects at most {spell.max_targets} {creatures}; "
-                f"{len(landed)} were named"
+                f"{len(chosen)} were named"
             )
-        return landed
+        return chosen
 
     def _require_in_range(
         self, actor: Creature, spell: Spell, position: int, what: str
@@ -852,7 +895,13 @@ class Encounter:
         self._emit("opportunity_attack", attacker.name, mover.name,
                    f"{melee.name}: {resolution.describe()}")
         if resolution.hit:
-            self._apply_damage(mover, resolution.damage_dealt, rng)
+            # A mover cannot currently be at 0 hit points — a dying creature has
+            # Speed 0 — so the flag changes nothing today. It is passed anyway: two
+            # call sites resolving the same kind of attack and only one carrying the
+            # critical is the asymmetry that becomes a bug when reactions grow.
+            self._apply_damage(
+                mover, resolution.damage_dealt, rng, critical=resolution.critical
+            )
 
     # --- ongoing effects --------------------------------------------------
     def _apply_condition(
