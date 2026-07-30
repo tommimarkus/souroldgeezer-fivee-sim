@@ -160,7 +160,10 @@ class ActionRecord:
     slice ``Encounter.log`` to exactly the events the call emitted. Refused
     actions are never recorded: they mutate nothing and consume no randomness, so
     applying the records in order against the same seed and combatants reproduces
-    the log byte for byte.
+    the log byte for byte. The events before the first record — round 1, the
+    opening turn_start, and any death saves the opening turn rolls — belong to
+    ``__init__``, which a rebuild from the same seed reproduces before the first
+    record is applied.
     """
 
     index: int
@@ -234,6 +237,26 @@ class OngoingEffect:
     #: ledger — a stat block that starts with it, or the stepper's own Unconscious.
     #: Such a condition is not ours to lift, so releasing this effect leaves it.
     stacked: bool
+
+
+def _segment_samples(origin: Point, destination: Point) -> list[Point]:
+    """The straight walk from ``origin`` to ``destination``, sampled every 5 ft.
+
+    These samples are what a mapless move replays instead of a battle map's
+    squares: 5-ft paces measured on the longer axis, so consecutive samples
+    never differ by more than 5 ft in either coordinate. Interior points round
+    to the integer lattice; both endpoints are exact.
+    """
+    dx = destination[0] - origin[0]
+    dy = destination[1] - origin[1]
+    paces = -(-max(abs(dx), abs(dy)) // FEET_PER_SQUARE)  # ceil: last pace may be short
+    samples = [origin]
+    for k in range(1, paces + 1):
+        samples.append((
+            origin[0] + (2 * k * dx + paces) // (2 * paces),
+            origin[1] + (2 * k * dy + paces) // (2 * paces),
+        ))
+    return samples
 
 
 class Encounter:
@@ -310,6 +333,16 @@ class Encounter:
             ),
         )
         self.turn_index = 0
+        # The fight opens the way every later turn does: round 1 and the first
+        # turn_start are announced before ``_begin_turn`` rolls anything, so a
+        # combatant dying at initiative rolls its death save after its
+        # turn_start, exactly as on any other turn. Emitting consumes no
+        # randomness, and ``order`` and ``turn_index`` exist by now, so the
+        # stamps are correct and the RNG stream is unchanged. These events
+        # precede the first ActionRecord: they belong to construction, and a
+        # replay reproduces them by rebuilding from the same seed.
+        self._emit("round", detail=f"round {self.round} begins", round=self.round)
+        self._emit("turn_start", self.current_name)
         self._begin_turn(rng)
 
     # --- the battle map ---------------------------------------------------
@@ -596,13 +629,19 @@ class Encounter:
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
         self._reaction_available[creature.name] = True
+        if creature.dying:
+            self._death_save(creature, rng)
+        # The budget is derived *after* the death save: a natural 20 regains
+        # 1 hit point (SRD 5.2, "Death Saving Throws", Rolling 20), and the
+        # revived creature is conscious for the rest of this turn — nothing in
+        # the rules forfeits its movement for having been down when the turn
+        # began. Deriving it first froze ``movement_left`` at 0 for the whole
+        # turn while ``attacks_left`` was granted regardless.
         self._turn = TurnState(
             movement_left=0 if not creature.conscious else creature.speed,
             action_used=False,
             attacks_left=creature.attacks_per_action,
         )
-        if creature.dying:
-            self._death_save(creature, rng)
         # A death save can kill, and :meth:`_death_save` marks the creature dead
         # without going through ``take_damage``, so nothing else would notice.
         self._reconcile_concentration()
@@ -903,7 +942,7 @@ class Encounter:
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
-            distance=actor.distance_to(target),
+            distance=actor.distance_to(target, self.movement_rule),
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
@@ -1050,6 +1089,19 @@ class Encounter:
         if spell.level > 0:
             actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
 
+        if spell.concentration:
+            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
+            # moment you start casting a spell that requires Concentration." The
+            # release sits exactly here: after every refusal, because a refused
+            # cast never starts and must not drop the hold — and before
+            # ``resolve_spell``, because the old spell's conditions must not
+            # shape the new one's resolution. Releasing after resolution let a
+            # caster recast at its own victim and have the victim auto-fail the
+            # new save through a paralysis the first cast was still holding. An
+            # unconditional release covers recasting the *same* spell on a new
+            # target, which comparing names could not see.
+            self._end_concentration(actor)
+
         resolution = resolve_spell(
             rng,
             spell,
@@ -1095,11 +1147,10 @@ class Encounter:
                    targets=[c.name for c in chosen])
 
         if spell.concentration:
-            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
-            # moment you start casting a spell that requires Concentration." An
-            # unconditional release covers recasting the *same* spell on a new
-            # target, which comparing names could not see.
-            self._end_concentration(actor)
+            # The old effect was released before ``resolve_spell``; the new one
+            # is recorded here, before the results are applied, so a caster
+            # caught in its own damaging area rolls the concentration save for
+            # the spell it just cast.
             actor.concentrating_on = spell.name
             self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}",
                        spell=spell.name, held=True, started=True)
@@ -1395,6 +1446,15 @@ class Encounter:
             )
 
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
+        """Move on the open plane: straight to the destination, provoking on the way.
+
+        The cost is charged up front and the walk replays the straight segment
+        in 5-ft samples, exactly as the mapped path replays its route square by
+        square, so leaving any threatening enemy's reach on the way provokes —
+        a pass-through is not laundered by where the move ends. The segment is
+        straight and reach is convex, so a move that ends still within reach
+        never left it and provokes nothing.
+        """
         if action.to_position is None:
             raise EncounterError("moving needs 'to_position'")
         if speed_is_zero(actor.conditions, self.condition_effects):
@@ -1413,22 +1473,34 @@ class Encounter:
                 f"{actor.name} has {self._turn.movement_left} ft of movement, needs {distance} ft"
             )
 
-        threatening = [
-            enemy for enemy in self.enemies_of(actor.name)
-            if actor.distance_to(enemy, self.movement_rule) <= MELEE_THRESHOLD
-        ]
-        actor.position = destination
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
                    detail=f"{origin} -> {destination} ({distance} ft used)",
                    origin=origin, destination=destination, cost=distance)
 
         if self._disengaged[actor.name]:
+            actor.position = destination
             return
-        for enemy in threatening:
-            if enemy.distance_to(actor, self.movement_rule) <= MELEE_THRESHOLD:
-                continue
-            self._opportunity_attack(enemy, actor, rng)
+        samples = _segment_samples(origin, destination)
+        for previous, step in zip(samples, samples[1:], strict=False):
+            threatening = [
+                enemy for enemy in self.enemies_of(actor.name)
+                if distance_feet(
+                    as_point(enemy.position), previous, self.movement_rule
+                ) <= MELEE_THRESHOLD
+            ]
+            actor.position = step
+            for enemy in threatening:
+                if distance_feet(
+                    as_point(enemy.position), step, self.movement_rule
+                ) <= MELEE_THRESHOLD:
+                    continue
+                self._opportunity_attack(enemy, actor, rng)
+            if not actor.conscious:
+                # Dropped mid-stride: the walk ends where the mover fell, and the
+                # state — not the move event's declared destination — is the truth.
+                return
+        actor.position = destination
 
     def _do_move_mapped(self, actor: Creature, action: Action, rng: Random) -> None:
         """Move on the battle map: routed, terrain-costed, provoking on the way.
@@ -1791,9 +1863,10 @@ class Encounter:
     def _emit(
         self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any
     ) -> None:
-        # Stamping is safe at every call site: __init__ emits nothing before
-        # ``order`` exists, the round event fires after ``round`` increments, and
-        # turn_start fires after ``turn_index`` has moved.
+        # Stamping is safe at every call site: __init__ emits only after
+        # ``order`` and ``turn_index`` exist, the round event fires after
+        # ``round`` increments, and turn_start fires after ``turn_index`` has
+        # moved.
         self.log.append(Event(
             kind=kind, actor=actor, target=target, detail=detail,
             seq=len(self.log), round=self.round, turn=self.current_name, data=data,

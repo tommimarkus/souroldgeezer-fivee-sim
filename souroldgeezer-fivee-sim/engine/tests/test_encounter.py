@@ -18,7 +18,7 @@ from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
-from fivee_sim.kernel.grid import CoverGrade, Square
+from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square, as_point
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
@@ -349,6 +349,31 @@ class TestGoingDown:
         assert not hero.stable
         assert hero.death_save_failures == 2
         assert hero.death_save_successes == 0
+
+    def test_a_natural_20_revival_leaves_the_full_movement_budget(self) -> None:
+        """SRD 5.2, "Death Saving Throws", Rolling 20: "If you roll a 20 on the
+        d20, you regain 1 Hit Point." The save is rolled at the start of the
+        creature's own turn, so the revived creature is conscious for the rest of
+        it — and a conscious creature may move up to its Speed on its turn.
+        Deriving the budget before the save froze ``movement_left`` at 0 while
+        the attack budget was granted regardless.
+        """
+        encounter, hero = self._dying_hero()
+        # A forced 20 is the natural 20: regain 1 hit point and wake.
+        advance_to(encounter, "Hero", FixedRandom(20))
+        assert hero.conscious
+        assert hero.hp == 1
+        # Revived, not tidied up: still Prone, and standing costs half Speed.
+        assert Condition.PRONE in hero.conditions
+        assert encounter.state()["turn_state"]["movement_left"] == hero.speed
+
+    def test_a_still_dying_creature_has_no_movement_budget(self) -> None:
+        encounter, hero = self._dying_hero()
+        # A forced 15 succeeds without reviving: one success, still down.
+        advance_to(encounter, "Hero", FixedRandom(15))
+        assert not hero.conscious
+        assert hero.dying
+        assert encounter.state()["turn_state"]["movement_left"] == 0
 
     def test_healing_from_zero_clears_unconsciousness_and_resets_saves(self) -> None:
         victim = fighter("Victim", max_hp=20, hp=1)
@@ -896,6 +921,46 @@ class TestMovementAndReactions:
             Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
         )
         assert "opportunity_attack" not in kinds(events)
+
+    def test_passing_straight_through_reach_provokes_without_a_map(self) -> None:
+        # The endpoint check never caught this: start and end both out of the
+        # goblin's reach, with the straight walk crossing it on the way.
+        rng = Random(6)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([fighter(), goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert kinds(events).count("opportunity_attack") == 1
+        assert encounter._reaction_available["Goblin"] is False
+
+    def test_a_disengaged_pass_through_does_not_provoke_without_a_map(self) -> None:
+        rng = Random(6)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([fighter(), goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.DISENGAGE), rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" not in kinds(events)
+
+    def test_a_mover_dropped_by_the_attack_stops_at_the_leave_point(self) -> None:
+        # The move event still declares the full 30 ft, but the state is the
+        # truth: Thora falls at (20, 0), the first sample beyond the goblin's
+        # reach, not at the destination she never got to.
+        rng = Random(6)
+        thora = fighter(hp=1)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([thora, goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" in kinds(events)
+        assert not thora.conscious
+        assert as_point(thora.position) == (20, 0)
 
     def test_moving_further_than_the_remaining_speed_is_refused(self) -> None:
         rng = Random(1)
@@ -1991,7 +2056,7 @@ class TestSpellAttackAdvantage:
         )
         return wren
 
-    def mark(self, *, position: int, conditions: Sequence[str] = ()) -> Creature:
+    def mark(self, *, position: Point | int, conditions: Sequence[str] = ()) -> Creature:
         target = Creature(
             name="Mark",
             team="foes",
@@ -2137,6 +2202,28 @@ class TestSpellAttackAdvantage:
         encounter = Encounter([wren, near, far], rng, spellbook=spellbook())
         assert encounter.attack_forced_critical(wren, near)
         assert not encounter.attack_forced_critical(wren, far)
+
+    def test_the_two_paths_agree_under_a_five_ten_five_diagonal(self) -> None:
+        # The fight's DiagonalRule threads through every distance the stepper
+        # consults, and an off-axis Prone target is where a dropped rule shows:
+        # (5, 5) reads as 5 ft under the default 5-5-5 but 7 ft under this
+        # fight's 5-10-5, so Prone's within-5-feet clause flips with the rule.
+        # The cast path measured under the default, reading Advantage where the
+        # swing path read Disadvantage for the same geometry.
+        rng = Random(4)
+        wren = self.bolt_caster()
+        target = self.mark(position=(5, 5), conditions=(Condition.PRONE,))
+        encounter = Encounter(
+            [wren, target],
+            rng,
+            spellbook=spellbook(),
+            movement_rule=DiagonalRule.FIVE_TEN_FIVE,
+        )
+        dagger = wren.attacks[0]
+        assert encounter.spell_attack_advantage(wren, target) == encounter.attack_advantage(
+            wren, target, dagger
+        )
+        assert encounter.spell_attack_advantage(wren, target) is Advantage.DISADVANTAGE
 
 
 class TestTurnLegality:
@@ -2316,6 +2403,60 @@ class TestConcentrationEffects:
         assert who["Wren"].concentrating_on == "Hold Person"
         assert Condition.PARALYZED not in who["Bandit0"].conditions
         assert Condition.PARALYZED in who["Bandit1"].conditions
+
+    def test_the_release_happens_before_the_new_spell_resolves(self) -> None:
+        """Recasting at the old victim resolves against the post-release state.
+
+        "The moment you start casting" is a *when*, not just a *whether*: by the
+        time the new spell rolls its saves, the old spell's conditions are gone.
+        Releasing after resolution instead let a caster chain-lock its own
+        victim — the paralysis the first cast was still holding auto-failed the
+        second cast's Dexterity save, whatever the die said. The end state
+        cannot see this (the release still happened, just too late), so the
+        pin is the save itself: a forced 19 + 2 beats DC 15, and there is no
+        natural-20 auto-success on saves to blur what is being tested. No
+        bundled concentration spell forces a Dexterity save, so this needs a
+        fixture spell.
+        """
+        snare = Spell(
+            name="Snare",
+            level=1,
+            save_ability=Ability.DEXTERITY,
+            condition=str(Condition.RESTRAINED),
+            range_feet=60,
+            concentration=True,
+            provenance=FIXTURE,
+        )
+        wren = caster(position=0)
+        wren.spells = ("Hold Person", "Snare")
+        wren.spell_slots = {1: 1, 2: 1}
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        book = spellbook()
+        book["Snare"] = snare
+        encounter = Encounter([wren, victim], rng, spellbook=book)
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions
+
+        self.their_turn(encounter, rng, "Wren")
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Snare", target="Bandit0"),
+            FixedRandom(19),
+        )
+        detail = detail_of(events, "spell_effect")
+        assert "auto-fail" not in detail, "the lapsed paralysis must not decide the save"
+        assert "saved" in detail
+        assert Condition.RESTRAINED not in victim.conditions
+        assert Condition.PARALYZED not in victim.conditions
+        assert wren.concentrating_on == "Snare"
+        # The release is announced before the cast, because that is when it
+        # happened: Concentration ends the moment the casting starts.
+        assert kinds(events).index("effect_end") < kinds(events).index("cast")
 
     def test_a_spell_without_concentration_leaves_the_hold_standing(self) -> None:
         """Only a *Concentration* effect displaces one. Guiding Bolt is not one."""

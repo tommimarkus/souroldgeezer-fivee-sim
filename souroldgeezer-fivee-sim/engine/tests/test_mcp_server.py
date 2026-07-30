@@ -371,7 +371,7 @@ class TestEncounterLog:
     def test_events_are_stamped_with_their_position(self) -> None:
         encounter_id = self.start()
         api.encounter_advance(encounter_id)
-        api.encounter_advance(encounter_id)  # wraps the round: five events in all
+        api.encounter_advance(encounter_id)  # wraps the round: seven events in all
         result = api.encounter_log(encounter_id, since=1, limit=3)
         assert [event["seq"] for event in result["events"]] == [1, 2, 3]
 

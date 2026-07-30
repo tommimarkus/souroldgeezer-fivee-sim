@@ -87,27 +87,53 @@ class TestEventIndexing:
 
     def test_round_stamps_follow_the_round_events_across_a_wrap(self) -> None:
         encounter, _ = played_out()
-        # Fold the expected round from the log itself: it starts at 1 and ticks at
-        # each round event, which is emitted after the counter increments.
-        expected = 1
+        # Fold the expected round from the log itself: every round, including
+        # round 1, is announced by a round event stamped with the round it
+        # opens, and every event that follows carries that round until the next
+        # announcement. The very first event of the fight is the announcement.
+        assert encounter.log[0].kind == "round"
+        expected = 0
         for event in encounter.log:
             if event.kind == "round":
                 expected += 1
+                assert event.data["round"] == expected
             assert event.round == expected, f"event {event.seq} ({event.kind})"
         assert expected > 1, "the fight never wrapped a round"
 
     def test_turn_stamps_name_the_creature_whose_turn_it_is(self) -> None:
         encounter, _ = played_out()
-        # Between a turn_start and its matching turn_end, every event happens on
-        # that creature's turn — including the death saves _begin_turn rolls.
+        # Every turn, including the first, opens with a turn_start: between it
+        # and its matching turn_end, every event happens on that creature's
+        # turn — including the death saves _begin_turn rolls — and no event
+        # other than a round announcement falls outside a turn.
+        assert [event.kind for event in encounter.log[:2]] == ["round", "turn_start"]
         current: str | None = None
         for event in encounter.log:
             if event.kind == "turn_start":
                 current = event.actor
-            if current is not None and event.kind != "round":
-                assert event.turn == current, f"event {event.seq} ({event.kind})"
+            if event.kind == "round":
+                continue
+            assert current is not None, f"event {event.seq} ({event.kind}) outside a turn"
+            assert event.turn == current, f"event {event.seq} ({event.kind})"
             if event.kind == "turn_end":
                 current = None
+
+    def test_dying_at_initiative_saves_after_the_opening_turn_start(self) -> None:
+        """The first turn is shaped like every later one, even for a combatant
+        that starts the fight dying: its death save lands after the round-1
+        announcement and its own turn_start, never into a bare log."""
+        thora = fighter("Thora", hp=0)
+        thora.conditions.add("unconscious")
+        ogre = make_monster("Ogre", label="Ogre", position=30)
+        # Seed 0 puts Thora first in initiative; the guard below pins that.
+        encounter, _ = build_encounter([thora, ogre], seed=0)
+        assert encounter.current_name == "Thora", "the dying creature must act first"
+        opening = encounter.log[:3]
+        assert [event.kind for event in opening] == ["round", "turn_start", "death_save"]
+        assert opening[0].detail == "round 1 begins"
+        assert opening[0].data["round"] == 1
+        assert opening[1].actor == "Thora"
+        assert all(event.round == 1 and event.turn == "Thora" for event in opening)
 
     def test_every_emitted_kind_is_a_declared_kind(self) -> None:
         assert len(EVENT_KINDS) == 21
@@ -265,7 +291,10 @@ class TestActionRecords:
 
     def test_records_tile_the_log_with_no_gaps(self) -> None:
         encounter, _ = played_out()
-        position = 0
+        # ``__init__`` announces round 1 and the opening turn before any record
+        # exists; from there, the records tile the log exactly to its end.
+        position = encounter.actions[0].first_event
+        assert [e.kind for e in encounter.log[:position]] == ["round", "turn_start"]
         for record in encounter.actions:
             assert record.first_event == position
             position += record.event_count

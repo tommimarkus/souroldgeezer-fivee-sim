@@ -760,7 +760,11 @@ def simulate_dpr(
         )
         # ``__init__`` has already begun a turn for whoever won Initiative, so the
         # budget in hand is theirs. Read that before the order is rewritten below,
-        # which does not rebuild it.
+        # which does not rebuild it. ``__init__`` also announced round 1 and that
+        # creature's turn_start; when the rewrite hands the turn to the attacker
+        # instead, the opening turn_start is left naming the initiative winner.
+        # Nothing here reads the log — only the dummy's hit points and the
+        # actions taken feed the answer — so no corrective event is emitted.
         began_for = encounter.current_name
         # Force the attacker to act first: initiative is irrelevant to a damage
         # measurement, and a passive dummy would otherwise waste a turn.
