@@ -355,8 +355,12 @@
     },
     {
       "name": "shatterhorn-scree-pinned",
-      "description": "Loose rock over the legs. Not crushing, and not going anywhere either.",
-      "effects": { "speed_zero": true, "attacked_with_advantage": true },
+      "description": "Loose rock over the legs. Not crushing, and not going anywhere either. Down among the stones a swung weapon finds them easily; a bowshot across the scree does not.",
+      "effects": {
+        "speed_zero": true,
+        "attacked_with_advantage_in_melee": true,
+        "attacked_with_disadvantage_at_range": true
+      },
       "provenance": "Original content — Shatterhorn Crag"
     },
     {
