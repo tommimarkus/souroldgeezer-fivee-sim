@@ -9,10 +9,14 @@ one layer of that contract.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from random import Random
 
+import pytest
+
 from fivee_sim.analytics.montecarlo import run_encounter
-from fivee_sim.data import make_monster, spellbook
+from fivee_sim.content import ContentRegistry, load_packs
+from fivee_sim.data import make_creature, make_monster, spellbook
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.model.creature import Creature
@@ -21,6 +25,7 @@ from fivee_sim.model.encounter import (
     Action,
     ActionKind,
     Encounter,
+    EncounterError,
     build_encounter,
 )
 
@@ -28,6 +33,7 @@ from .test_encounter import advance_to, caster, fighter
 
 SEED = 20260730
 FIXTURE = "synthetic test fixture, not SRD content"
+CORPUS = Path(__file__).parent / "packs"
 
 ITEMS = {
     "Healing Draught": ItemEffect(heal=Dice.parse("2d4+2"), provenance=FIXTURE),
@@ -180,3 +186,148 @@ class TestStructuredPayloads:
         for event in encounter.log:
             payload = json.dumps(event.as_dict())
             assert json.loads(payload)["kind"] == event.kind
+
+
+def replayed(original: Encounter, fresh: Encounter, rng: Random) -> Encounter:
+    """Apply ``original``'s action records to a freshly built ``fresh``."""
+    for record in original.actions:
+        if record.action is None:
+            fresh.advance(rng)
+        else:
+            fresh.act(record.action, rng)
+    return fresh
+
+
+class TestActionRecords:
+    def test_each_successful_call_appends_exactly_one_record(self) -> None:
+        encounter, rng = build_encounter(
+            [fighter("Thora", position=0), make_monster("Ogre", label="Ogre", position=5)],
+            seed=SEED,
+        )
+        assert encounter.actions == []
+        advance_to(encounter, "Thora", rng)
+        advances = len(encounter.actions)
+        assert all(r.action is None for r in encounter.actions)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Ogre"), rng)
+        encounter.act(Action(kind=ActionKind.MOVE, to_position=15), rng)
+        assert len(encounter.actions) == advances + 2
+        assert [r.index for r in encounter.actions] == list(range(advances + 2))
+        last = encounter.actions[-1]
+        assert last.actor == "Thora"
+        assert last.action == Action(kind=ActionKind.MOVE, to_position=15)
+
+    def test_a_refused_action_records_nothing(self) -> None:
+        encounter, rng = build_encounter(
+            [fighter("Thora", position=0), make_monster("Ogre", label="Ogre", position=5)],
+            seed=SEED,
+        )
+        advance_to(encounter, "Thora", rng)
+        before = list(encounter.actions)
+        with pytest.raises(EncounterError, match="no combatant"):
+            encounter.act(Action(kind=ActionKind.ATTACK, target="Nobody"), rng)
+        assert encounter.actions == before
+
+    def test_records_tile_the_log_with_no_gaps(self) -> None:
+        encounter, _ = played_out()
+        position = 0
+        for record in encounter.actions:
+            assert record.first_event == position
+            position += record.event_count
+        assert position == len(encounter.log)
+
+    def test_a_record_slices_the_log_to_its_own_events(self) -> None:
+        encounter, _ = played_out()
+        swings = [
+            r for r in encounter.actions
+            if r.action is not None and r.action.kind is ActionKind.ATTACK
+        ]
+        assert swings, "the fight never attacked"
+        for record in swings:
+            events = encounter.log[record.first_event:record.first_event + record.event_count]
+            assert events[0].kind == "attack"
+            assert events[0].actor == record.actor
+
+    def test_a_record_serialises_with_empty_fields_dropped(self) -> None:
+        encounter, _ = played_out()
+        for record in encounter.actions:
+            payload = record.as_dict()
+            json.dumps(payload)
+            if record.action is None:
+                assert payload["action"] is None
+            else:
+                assert payload["action"]["kind"] == record.action.kind.value
+                assert None not in payload["action"].values()
+
+
+@pytest.fixture(scope="module")
+def corpus_alone() -> ContentRegistry:
+    """The fifty-pack corpus with the bundled slice excluded — every condition a
+    plain string, no name secretly answering to an enum member."""
+    return load_packs([CORPUS], builtin="exclude", include_environment=False)
+
+
+class TestReplayFromRecords:
+    """The phase contract: same seed, same combatants, apply the records in
+    order, and the rebuilt log equals the original exactly."""
+
+    def test_a_policy_driven_duel_replays_exactly(self) -> None:
+        def duel() -> list[Creature]:
+            return [
+                fighter("Thora", position=0),
+                make_monster("Goblin Warrior", label="Goblin", position=15),
+            ]
+
+        original, rng = build_encounter(duel(), seed=SEED, spellbook=spellbook())
+        run_encounter(original, rng, max_rounds=20)
+        assert original.over, "the duel should conclude"
+
+        rebuilt, fresh_rng = build_encounter(duel(), seed=SEED, spellbook=spellbook())
+        replayed(original, rebuilt, fresh_rng)
+        assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]
+        assert [r.as_dict() for r in rebuilt.actions] == [
+            r.as_dict() for r in original.actions
+        ]
+
+    def test_a_scripted_brawl_replays_exactly(self) -> None:
+        original, _ = played_out()
+        rebuilt, rng = build_encounter(
+            brawl(), seed=SEED, spellbook=spellbook(), items=ITEMS
+        )
+        replayed(original, rebuilt, rng)
+        assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]
+
+    def test_custom_pack_content_rides_through_replay(
+        self, corpus_alone: ContentRegistry
+    ) -> None:
+        def combatants() -> list[Creature]:
+            attacker = make_creature(
+                "Shatterhorn Scree-Hawk", registry=corpus_alone, label="A", team="a"
+            )
+            target = make_creature(
+                "Shatterhorn Ram", registry=corpus_alone, label="B", team="b"
+            )
+            attacker.items = {"Hawk-Feather Charm": 1}
+            target.position = 5
+            return [attacker, target]
+
+        def build() -> tuple[Encounter, Random]:
+            return build_encounter(
+                combatants(), seed=SEED,
+                spellbook=corpus_alone.spells,
+                items=corpus_alone.items,
+                condition_effects=corpus_alone.condition_effects,
+            )
+
+        original, rng = build()
+        advance_to(original, "A", rng)
+        original.act(
+            Action(kind=ActionKind.USE_ITEM, item="Hawk-Feather Charm", target="A"), rng
+        )
+        run_encounter(original, rng, max_rounds=20)
+        # The point of this fixture: a plain-string condition is in play, so the
+        # replay is exercising the injected table rather than the builtin enum.
+        assert any("shatterhorn-hawk-eyed" in e.detail for e in original.log)
+
+        rebuilt, fresh_rng = build()
+        replayed(original, rebuilt, fresh_rng)
+        assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]

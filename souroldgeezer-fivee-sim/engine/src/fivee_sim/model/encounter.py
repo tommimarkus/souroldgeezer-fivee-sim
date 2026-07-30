@@ -110,6 +110,45 @@ class Event:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class ActionRecord:
+    """One successful ``act`` or ``advance`` call — the unit of replay.
+
+    ``action`` is ``None`` for an ``advance``; ``first_event`` and ``event_count``
+    slice ``Encounter.log`` to exactly the events the call emitted. Refused
+    actions are never recorded: they mutate nothing and consume no randomness, so
+    applying the records in order against the same seed and combatants reproduces
+    the log byte for byte.
+    """
+
+    index: int
+    round: int
+    actor: str
+    action: Action | None
+    first_event: int
+    event_count: int
+
+    def as_dict(self) -> dict[str, Any]:
+        action: dict[str, Any] | None = None
+        if self.action is not None:
+            action = {"kind": self.action.kind.value}
+            for name in ("target", "attack", "item", "spell", "slot_level",
+                         "to_position", "center"):
+                value = getattr(self.action, name)
+                if value is not None:
+                    action[name] = value
+            if self.action.targets:
+                action["targets"] = list(self.action.targets)
+        return {
+            "index": self.index,
+            "round": self.round,
+            "actor": self.actor,
+            "action": action,
+            "first_event": self.first_event,
+            "event_count": self.event_count,
+        }
+
+
 class EncounterError(ValueError):
     """An illegal action, reported rather than silently ignored."""
 
@@ -158,6 +197,7 @@ class Encounter:
             creature.condition_effects = self.condition_effects
         self.round = 1
         self.log: list[Event] = []
+        self.actions: list[ActionRecord] = []
         self._dodging: dict[str, bool] = {name: False for name in names}
         self._disengaged: dict[str, bool] = {name: False for name in names}
         self._reaction_available: dict[str, bool] = {name: True for name in names}
@@ -307,19 +347,26 @@ class Encounter:
     def advance(self, rng: Random) -> list[Event]:
         """End the current turn and begin the next, wrapping the round."""
         before = len(self.log)
+        in_round, by = self.round, self.current_name
         self._emit("turn_end", self.current_name)
-        if self.over:
-            return self.log[before:]
-        for _ in range(len(self.order)):
-            self.turn_index += 1
-            if self.turn_index >= len(self.order):
-                self.turn_index = 0
-                self.round += 1
-                self._emit("round", detail=f"round {self.round} begins", round=self.round)
-            if not self.creatures[self.current_name].dead:
-                break
-        self._emit("turn_start", self.current_name)
-        self._begin_turn(rng)
+        if not self.over:
+            for _ in range(len(self.order)):
+                self.turn_index += 1
+                if self.turn_index >= len(self.order):
+                    self.turn_index = 0
+                    self.round += 1
+                    self._emit("round", detail=f"round {self.round} begins",
+                               round=self.round)
+                if not self.creatures[self.current_name].dead:
+                    break
+            self._emit("turn_start", self.current_name)
+            self._begin_turn(rng)
+        # Recorded even when the fight is over: the call still emitted its
+        # turn_end, and a replay that skipped it would miss that event.
+        self.actions.append(ActionRecord(
+            index=len(self.actions), round=in_round, actor=by, action=None,
+            first_event=before, event_count=len(self.log) - before,
+        ))
         return self.log[before:]
 
     # --- acting -----------------------------------------------------------
@@ -361,6 +408,10 @@ class Encounter:
                 self._dodging[actor.name] = True
                 self._emit("dodge", actor.name,
                            detail="attacks against this creature have disadvantage")
+        self.actions.append(ActionRecord(
+            index=len(self.actions), round=self.round, actor=actor.name, action=action,
+            first_event=before, event_count=len(self.log) - before,
+        ))
         return self.log[before:]
 
     def _require_action(self, actor: Creature) -> None:
