@@ -2317,6 +2317,60 @@ class TestConcentrationEffects:
         assert Condition.PARALYZED not in who["Bandit0"].conditions
         assert Condition.PARALYZED in who["Bandit1"].conditions
 
+    def test_the_release_happens_before_the_new_spell_resolves(self) -> None:
+        """Recasting at the old victim resolves against the post-release state.
+
+        "The moment you start casting" is a *when*, not just a *whether*: by the
+        time the new spell rolls its saves, the old spell's conditions are gone.
+        Releasing after resolution instead let a caster chain-lock its own
+        victim — the paralysis the first cast was still holding auto-failed the
+        second cast's Dexterity save, whatever the die said. The end state
+        cannot see this (the release still happened, just too late), so the
+        pin is the save itself: a forced 19 + 2 beats DC 15, and there is no
+        natural-20 auto-success on saves to blur what is being tested. No
+        bundled concentration spell forces a Dexterity save, so this needs a
+        fixture spell.
+        """
+        snare = Spell(
+            name="Snare",
+            level=1,
+            save_ability=Ability.DEXTERITY,
+            condition=str(Condition.RESTRAINED),
+            range_feet=60,
+            concentration=True,
+            provenance=FIXTURE,
+        )
+        wren = caster(position=0)
+        wren.spells = ("Hold Person", "Snare")
+        wren.spell_slots = {1: 1, 2: 1}
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        book = spellbook()
+        book["Snare"] = snare
+        encounter = Encounter([wren, victim], rng, spellbook=book)
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions
+
+        self.their_turn(encounter, rng, "Wren")
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Snare", target="Bandit0"),
+            FixedRandom(19),
+        )
+        detail = detail_of(events, "spell_effect")
+        assert "auto-fail" not in detail, "the lapsed paralysis must not decide the save"
+        assert "saved" in detail
+        assert Condition.RESTRAINED not in victim.conditions
+        assert Condition.PARALYZED not in victim.conditions
+        assert wren.concentrating_on == "Snare"
+        # The release is announced before the cast, because that is when it
+        # happened: Concentration ends the moment the casting starts.
+        assert kinds(events).index("effect_end") < kinds(events).index("cast")
+
     def test_a_spell_without_concentration_leaves_the_hold_standing(self) -> None:
         """Only a *Concentration* effect displaces one. Guiding Bolt is not one."""
         encounter, rng, who = self.duel()
