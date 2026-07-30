@@ -15,7 +15,7 @@ All provenance: SRD 5.2 (see NOTICE).
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from random import Random
 from typing import Any
@@ -68,16 +68,46 @@ class Action:
     center: int | None = None
 
 
+#: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
+#: rather than an enum — this is the checklist a log consumer can rely on, pinned
+#: by test, not a constraint the model enforces.
+EVENT_KINDS: frozenset[str] = frozenset({
+    "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
+    "disengage", "dodge", "down", "heal", "move", "opportunity_attack", "round",
+    "spell_effect", "stabilised", "turn_end", "turn_start", "use_item",
+})
+
+
 @dataclass(frozen=True, slots=True)
 class Event:
+    """One thing that happened, stamped with where in the fight it happened.
+
+    ``seq`` equals the event's position in ``Encounter.log``; ``round`` and
+    ``turn`` are the round counter and the acting creature at emission. ``detail``
+    stays the human-readable line; ``data`` carries the same facts structured, and
+    every position in a payload is a 2-tuple ``(x_feet, y_feet)``.
+    """
+
     kind: str
     actor: str = ""
     target: str = ""
     detail: str = ""
+    seq: int = 0
+    round: int = 0
+    turn: str = ""
+    data: dict[str, Any] = field(default_factory=dict)
 
-    def as_dict(self) -> dict[str, str]:
-        return {"kind": self.kind, "actor": self.actor, "target": self.target,
-                "detail": self.detail}
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "actor": self.actor,
+            "target": self.target,
+            "detail": self.detail,
+            "seq": self.seq,
+            "round": self.round,
+            "turn": self.turn,
+            "data": dict(self.data),
+        }
 
 
 class EncounterError(ValueError):
@@ -726,8 +756,16 @@ class Encounter:
             else:
                 self._emit("down", target.name, detail="falls unconscious and is dying")
 
-    def _emit(self, kind: str, actor: str = "", target: str = "", detail: str = "") -> None:
-        self.log.append(Event(kind=kind, actor=actor, target=target, detail=detail))
+    def _emit(
+        self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any
+    ) -> None:
+        # Stamping is safe at every call site: __init__ emits nothing before
+        # ``order`` exists, the round event fires after ``round`` increments, and
+        # turn_start fires after ``turn_index`` has moved.
+        self.log.append(Event(
+            kind=kind, actor=actor, target=target, detail=detail,
+            seq=len(self.log), round=self.round, turn=self.current_name, data=data,
+        ))
 
 
 def build_encounter(
