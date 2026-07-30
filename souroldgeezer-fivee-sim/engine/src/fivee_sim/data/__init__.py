@@ -22,7 +22,7 @@ from functools import lru_cache
 from typing import Any
 
 from ..content import ContentRegistry, builtin_registry
-from ..kernel.actions import AttackKind
+from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.conditions import ConditionTable
 from ..kernel.dice import Dice
 from ..kernel.grid import Point
@@ -43,6 +43,8 @@ def builtin() -> ContentRegistry:
 
 
 def _attack(record: dict[str, Any]) -> AttackOption:
+    bonus_type = record.get("bonus_damage_type")
+    save_ability = record.get("on_hit_save_ability")
     return AttackOption(
         name=str(record["name"]),
         attack_bonus=int(record["attack_bonus"]),
@@ -52,6 +54,22 @@ def _attack(record: dict[str, Any]) -> AttackOption:
         reach=int(record.get("reach", 5)),
         normal_range=int(record.get("normal_range", 0)),
         long_range=int(record.get("long_range", 0)),
+        bonus_damage=(
+            Dice.parse(str(record["bonus_damage"]))
+            if record.get("bonus_damage") is not None else None
+        ),
+        bonus_damage_type=DamageType(bonus_type) if bonus_type is not None else None,
+        advantage_bonus_damage=(
+            Dice.parse(str(record["advantage_bonus_damage"]))
+            if record.get("advantage_bonus_damage") is not None else None
+        ),
+        on_hit_condition=(
+            str(record["on_hit_condition"])
+            if record.get("on_hit_condition") is not None else None
+        ),
+        on_hit_save_ability=Ability(save_ability) if save_ability is not None else None,
+        on_hit_save_dc=int(record.get("on_hit_save_dc", 0)),
+        on_hit_expiry=RiderExpiry(record.get("on_hit_expiry", "none")),
         provenance=str(record.get("provenance", "SRD 5.2")),
     )
 

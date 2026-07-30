@@ -508,6 +508,103 @@ class TestDiagnostics:
         assert not validate(include_environment=False)
 
 
+class TestAttackRiderValidation:
+    """The rider keys an attack record may carry, and the pairings they enforce."""
+
+    def check(self, tmp_path: Path, attack: dict[str, Any]) -> list[str]:
+        payload = {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
+                "attacks": [{
+                    "name": "Claw", "attack_bonus": 4, "damage": "1d6",
+                    "damage_type": "slashing", **attack,
+                }],
+            }],
+        }
+        path = write_pack(tmp_path, "riders.json", payload)
+        return problems(validate([path], include_environment=False))
+
+    def test_bonus_damage_without_its_type_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"bonus_damage": "1d4"})
+        assert any("defended against its own type" in p for p in found)
+
+    def test_a_bonus_type_without_bonus_damage_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"bonus_damage_type": "fire"})
+        assert any("names a type for no damage" in p for p in found)
+
+    def test_an_unknown_on_hit_condition_is_caught_across_the_merged_set(
+        self, tmp_path: Path
+    ) -> None:
+        found = self.check(tmp_path, {"on_hit_condition": "vale-toxin"})
+        assert any("which no loaded pack defines" in p for p in found)
+
+    def test_an_invalid_expiry_lists_the_valid_ones(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {
+            "on_hit_condition": "poisoned", "on_hit_expiry": "next_tuesday",
+        })
+        assert any(
+            "'next_tuesday' is not valid" in p
+            and "start_of_attacker_next_turn" in p
+            for p in found
+        )
+
+    def test_a_save_ability_without_a_dc_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {
+            "on_hit_condition": "poisoned", "on_hit_save_ability": "constitution",
+        })
+        assert any("required when on_hit_save_ability is present" in p for p in found)
+
+    def test_a_save_dc_without_an_ability_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {
+            "on_hit_condition": "poisoned", "on_hit_save_dc": 11,
+        })
+        assert any("required when on_hit_save_dc is present" in p for p in found)
+
+    def test_a_save_or_expiry_without_a_condition_is_refused(
+        self, tmp_path: Path
+    ) -> None:
+        found = self.check(tmp_path, {"on_hit_expiry": "end_of_target_next_turn"})
+        assert any("no condition to ride the hit" in p for p in found)
+
+    def test_a_mistyped_rider_key_is_still_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"advantage_bonus_dmg": "1d4"})
+        assert any("unknown key" in p for p in found)
+
+    def test_a_full_rider_attack_round_trips_through_make_creature(
+        self, tmp_path: Path
+    ) -> None:
+        from fivee_sim.kernel.actions import RiderExpiry
+        from fivee_sim.kernel.dice import Dice
+        from fivee_sim.kernel.rules import Ability, DamageType
+
+        path = write_pack(tmp_path, "riders.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
+                "attacks": [{
+                    "name": "Claw", "attack_bonus": 4, "damage": "1d6",
+                    "damage_type": "slashing",
+                    "bonus_damage": "1d4", "bonus_damage_type": "fire",
+                    "advantage_bonus_damage": "1d4",
+                    "on_hit_condition": "poisoned",
+                    "on_hit_save_ability": "constitution", "on_hit_save_dc": 11,
+                    "on_hit_expiry": "start_of_attacker_next_turn",
+                }],
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        thing = make_creature("Thing", registry=registry)
+        option = thing.attacks[0]
+        assert option.bonus_damage == Dice(1, 4)
+        assert option.bonus_damage_type is DamageType.FIRE
+        assert option.advantage_bonus_damage == Dice(1, 4)
+        assert option.on_hit_condition == "poisoned"
+        assert option.on_hit_save_ability is Ability.CONSTITUTION
+        assert option.on_hit_save_dc == 11
+        assert option.on_hit_expiry is RiderExpiry.START_OF_ATTACKER_NEXT_TURN
+
+
 class TestAreaDeclaration:
     """``shape`` and ``radius`` are one declaration, and they have to agree.
 

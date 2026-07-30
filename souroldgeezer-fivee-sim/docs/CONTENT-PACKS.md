@@ -91,6 +91,23 @@ Attacks carry their own bonus and damage expression rather than deriving them fr
 ability scores and proficiency. That is how a stat block presents an attack, and it
 keeps your data a transcription rather than a bet on derivation rules.
 
+An attack may also carry riders, the way stat blocks hang extras off a hit.
+`bonus_damage` with `bonus_damage_type` is extra damage on every hit — rolled
+separately, doubled on a critical hit, and defended (resistance, vulnerability,
+immunity) against its own type, the way a mephit's claw adds fire to its
+slashing. `advantage_bonus_damage` adds dice of the main damage type only when
+the attack roll actually resolved with Advantage, after every source has
+combined and cancelled — the goblin pattern. `on_hit_condition` names a
+condition the hit imposes, and any loaded condition qualifies, including one
+your own pack defines. Give `on_hit_save_ability` and `on_hit_save_dc` together
+to let the target save first; leave both out and the condition is automatic on
+a hit. `on_hit_expiry` is `"none"` (the default — the condition lasts until
+something removes it), `"start_of_attacker_next_turn"`, or
+`"end_of_target_next_turn"`. The timed forms expire when that turn slot passes,
+even if the attacker has died by then, and expiry never strips a condition
+something else is still imposing — a stat block that starts with it, or another
+effect still holding it.
+
 `unmodelled` is where you name printed features the engine does not implement. It
 is not decoration: Claude is instructed to check it before promising a trait will
 fire, so a trait you list is a trait nobody will be surprised by.
