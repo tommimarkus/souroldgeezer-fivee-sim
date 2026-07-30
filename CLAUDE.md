@@ -40,9 +40,19 @@ Game rules content comes from the **System Reference Document 5.2**, released by
 Wizards of the Coast LLC under **CC-BY-4.0**. Three rules follow, and they are
 not negotiable:
 
-**1. The attribution ships verbatim.** [NOTICE](NOTICE) contains the exact
-required statement, on a single line so it can be matched byte-for-byte. Do not
-reword, re-wrap, or extend it.
+**1. The attribution ships verbatim.** [NOTICE](NOTICE) opens with the exact
+required statement, on a single line so it can be matched byte-for-byte. Never
+reword or re-wrap that sentence.
+
+NOTICE also carries two statements about **our** work, which are required and must
+not be dropped. CC-BY-4.0 §3(a)(1)(B) obliges us to indicate that we modified the
+licensed material — we transcribe a subset into JSON and omit some printed
+features — and the licence split has to be explicit so the MIT grant is not read
+as covering the SRD material. Neither is additional attribution to Wizards, so
+neither conflicts with rule 2.
+
+Both copies must stay identical: the repo-root one and `fivee-sim/NOTICE`, which
+is the copy that actually ships to installs.
 
 **2. No branding in published metadata.** The SRD's own legal page states:
 *"Please do not include any other attribution to Wizards or its parent or

@@ -109,8 +109,10 @@ optimisation search.
 This repository's own code is MIT licensed — see [LICENSE](LICENSE).
 
 Game rules content is derived from the System Reference Document 5.2, which
-Wizards of the Coast LLC released under CC-BY-4.0. The required attribution is
-carried verbatim in [NOTICE](NOTICE) and must not be modified or extended.
+Wizards of the Coast LLC released under CC-BY-4.0. [NOTICE](NOTICE) carries the
+required attribution verbatim, records that the material has been modified (a
+subset transcribed into JSON, with some printed features not implemented), and
+states that the MIT grant covers this project's code rather than the SRD material.
 
 Note that SRD 5.2 does not cover the whole 2024 ruleset — some classes, species,
 and monsters are excluded from it, and excluded content therefore cannot ship
