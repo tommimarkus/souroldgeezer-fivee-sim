@@ -58,13 +58,21 @@ git worktree prune
 git branch -d <branch>
 ```
 
-`prune` prints `failed to delete '.git/worktrees/fivee-sim': Device or resource
-busy` and still exits 0. That is one stale entry from a session predating the
-rename — the devcontainer holds character-device mounts over
-`.git/worktrees/fivee-sim/commondir` and `config.worktree` — and it has nothing
-to do with the worktree you just removed. Leave it; it goes when the container is
-recreated, and do not try to unmount it. Worktrees created today carry no such
-mounts, in the checkout or in the git metadata, and remove cleanly.
+Two of those four print errors and succeed anyway. Neither means closeout failed,
+and `git worktree list` plus `git branch` are the things to trust:
+
+- `git worktree prune` prints `failed to delete '.git/worktrees/fivee-sim':
+  Device or resource busy` and exits 0. That is one stale entry from a session
+  predating the rename — the devcontainer holds character-device mounts over its
+  `commondir` and `config.worktree` — and it is reported whatever worktree you
+  were removing. Leave it; it goes when the container is recreated, and do not
+  try to unmount it.
+- `git branch -d` prints `could not lock config file .git/config` and
+  `warning: update of config-file failed`, because `.git/config` is itself a
+  read-only mount. It still prints `Deleted branch <name>`, and it is deleted.
+
+`git worktree remove --force` is silent and clean. Worktrees created today carry
+no character-device mounts, in the checkout or in `.git/worktrees/<name>/`.
 
 ### Staging discipline
 
