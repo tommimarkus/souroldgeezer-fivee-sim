@@ -110,10 +110,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     # Written only after the bind succeeded, so a reader never finds a state
     # file describing a server that never came up. It carries the token, so it
-    # is not world-readable.
+    # is created 0600 from the first byte — a write-then-chmod would leave a
+    # window where the default umask governs.
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(
-        json.dumps(
+    state_path.unlink(missing_ok=True)  # 0o600 below applies only at creation
+    fd = os.open(state_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(
             {
                 "pid": os.getpid(),
                 "port": server.port,
@@ -121,12 +124,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "maps_dir": str(maps_dir),
                 "started": datetime.now(UTC).isoformat(timespec="seconds"),
             },
+            handle,
             indent=2,
         )
-        + "\n",
-        encoding="utf-8",
-    )
-    os.chmod(state_path, 0o600)
+        handle.write("\n")
 
     def _on_sigterm(signum: int, frame: Any) -> None:
         # shutdown() waits for serve_forever to exit, and serve_forever cannot
