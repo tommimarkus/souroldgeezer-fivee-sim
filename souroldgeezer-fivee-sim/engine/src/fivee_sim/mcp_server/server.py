@@ -18,7 +18,6 @@ diagnostics go to stderr.
 
 from __future__ import annotations
 
-import random
 import sys
 from dataclasses import dataclass
 from random import Random
@@ -49,6 +48,7 @@ from ..kernel.rules import Ability, DamageType, make_d20_test
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
+from ..service.common import resolve_seed
 
 INSTRUCTIONS = """\
 A 5E-compatible combat engine. The engine owns the fight: hit points, initiative
@@ -140,11 +140,9 @@ def _new_encounter_id() -> str:
     return f"enc-{_NEXT_ID}"
 
 
-def _resolve_seed(seed: int | None) -> int:
-    """Use the given seed, or pick one and report it so the result stays replayable."""
-    if seed is not None:
-        return seed
-    return random.SystemRandom().randrange(2**31)
+# The seed convention lives in the service layer now; the alias keeps every
+# existing tool body reading as it always has.
+_resolve_seed = resolve_seed
 
 
 def _advantage(value: str | None) -> Advantage:
