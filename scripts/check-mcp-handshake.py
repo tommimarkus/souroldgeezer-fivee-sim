@@ -9,7 +9,7 @@ checks two things the in-process tests cannot:
   line on stdout corrupts the stream, and the failure mode is a server that looks
   broken rather than merely noisy. Every line read here must parse as JSON.
 
-Lives outside fivee-sim/ deliberately: it is a development check, not part of the
+Lives outside souroldgeezer-fivee-sim/ deliberately: it is a development check, not part of the
 plugin payload that ships to installs.
 
 Usage: python3 scripts/check-mcp-handshake.py
@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-LAUNCHER = REPO_ROOT / "fivee-sim" / "scripts" / "fivee-sim-mcp.sh"
+LAUNCHER = REPO_ROOT / "souroldgeezer-fivee-sim" / "scripts" / "fivee-sim-mcp.sh"
 PROTOCOL_VERSION = "2025-06-18"
 
 EXPECTED_TOOLS = {
@@ -121,8 +121,8 @@ def main() -> int:
         result = initialized.get("result", {})
         report("serverInfo" in result, "initialize returns serverInfo", str(initialized)[:400])
         report(
-            result.get("serverInfo", {}).get("name") == "fivee-sim",
-            "server identifies as fivee-sim",
+            result.get("serverInfo", {}).get("name") == "souroldgeezer-fivee-sim",
+            "server identifies as souroldgeezer-fivee-sim",
             str(result.get("serverInfo")),
         )
 

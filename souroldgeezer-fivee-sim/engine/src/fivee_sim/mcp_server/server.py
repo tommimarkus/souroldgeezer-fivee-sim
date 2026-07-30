@@ -45,7 +45,7 @@ Rules content comes from SRD 5.2 under CC-BY-4.0; see the plugin's NOTICE.
 """
 
 server: MCPServer = MCPServer(
-    name="fivee-sim",
+    name="souroldgeezer-fivee-sim",
     version=__version__,
     instructions=INSTRUCTIONS,
 )

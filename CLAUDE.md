@@ -75,7 +75,7 @@ features — and the licence split has to be explicit so the MIT grant is not re
 as covering the SRD material. Neither is additional attribution to Wizards, so
 neither conflicts with rule 2.
 
-Both copies must stay identical: the repo-root one and `fivee-sim/NOTICE`, which
+Both copies must stay identical: the repo-root one and `souroldgeezer-fivee-sim/NOTICE`, which
 is the copy that actually ships to installs.
 
 **2. No branding in published metadata.** The SRD's own legal page states:
@@ -126,7 +126,7 @@ quote every forbidden string, and rules data naming SRD-present creatures do
 
 ## Architecture
 
-**The engine lives under the plugin root**, at `fivee-sim/engine/`. This is not
+**The engine lives under the plugin root**, at `souroldgeezer-fivee-sim/engine/`. This is not
 cosmetic: `${CLAUDE_PLUGIN_ROOT}` resolves to the plugin directory, so an engine
 at the repository root would not ship to installs.
 
@@ -163,7 +163,7 @@ returns it, so no result is ever irreproducible.
 ## Tooling
 
 ```bash
-cd fivee-sim/engine
+cd souroldgeezer-fivee-sim/engine
 uv run ruff check .              # E,F,W,I,UP,B — line length 100
 uv run mypy                      # strict, configured in pyproject.toml
 uv run pytest
@@ -173,7 +173,7 @@ python3 scripts/check-mcp-handshake.py
 bash scripts/hooks/test-ip-hygiene-check.sh
 ```
 
-`uv`'s cache is redirected to `fivee-sim/engine/.cache/uv` because the default
+`uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
 `~/.cache/uv` is read-only in the sandboxed development environment.
 
 ## Conventions

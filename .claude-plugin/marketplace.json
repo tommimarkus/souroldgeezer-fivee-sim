@@ -7,8 +7,8 @@
   },
   "plugins": [
     {
-      "name": "fivee-sim",
-      "source": "./fivee-sim",
+      "name": "souroldgeezer-fivee-sim",
+      "source": "./souroldgeezer-fivee-sim",
       "description": "5E-compatible combat simulation over a single seeded rules kernel. Stateful encounters the engine owns and Claude narrates, plus Monte Carlo damage and win-rate analytics replayed through the same stepper, so the statistics can never drift from the rules live play uses. Covers weapon attacks, movement and reactions, conditions, and a curated spell set with saves, areas, and concentration."
     }
   ]

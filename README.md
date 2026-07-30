@@ -61,7 +61,7 @@ engine skips.
 
 ```
 .claude-plugin/marketplace.json   marketplace manifest
-fivee-sim/                        the plugin
+souroldgeezer-fivee-sim/                        the plugin
   .claude-plugin/plugin.json      manifest + MCP server declaration
   skills/                         how Claude drives the engine
   agents/
@@ -82,14 +82,14 @@ Register this directory as a marketplace, then enable the plugin:
 
 ```bash
 # In Claude Code, add a directory-source marketplace pointing at this repo,
-# then enable the fivee-sim plugin. Verify the server independently with:
+# then enable the souroldgeezer-fivee-sim plugin. Verify the server independently with:
 python3 scripts/check-mcp-handshake.py
 ```
 
 ## Development
 
 ```bash
-cd fivee-sim/engine
+cd souroldgeezer-fivee-sim/engine
 uv run pytest && uv run ruff check . && uv run mypy
 ```
 

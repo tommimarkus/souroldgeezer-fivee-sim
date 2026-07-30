@@ -27,15 +27,15 @@ trap 'rm -rf "$tmp"' EXIT
 # A representative project root: the real conf and a byte-exact NOTICE.
 make_root() {
   local root="$tmp/$1"
-  mkdir -p "$root/fivee-sim/.claude-plugin" \
-           "$root/fivee-sim/skills/encounter-sim" \
-           "$root/fivee-sim/agents" \
-           "$root/fivee-sim/engine/src/fivee_sim/data"
+  mkdir -p "$root/souroldgeezer-fivee-sim/.claude-plugin" \
+           "$root/souroldgeezer-fivee-sim/skills/encounter-sim" \
+           "$root/souroldgeezer-fivee-sim/agents" \
+           "$root/souroldgeezer-fivee-sim/engine/src/fivee_sim/data"
   cp "$repo_root/.ip-hygiene-local.conf" "$root/"
   # Both declared copies: the repo-root one and the one inside the plugin, which
   # is what actually ships to installs.
   cp "$repo_root/NOTICE" "$root/NOTICE"
-  cp "$repo_root/NOTICE" "$root/fivee-sim/NOTICE"
+  cp "$repo_root/NOTICE" "$root/souroldgeezer-fivee-sim/NOTICE"
   printf '%s' "$root"
 }
 
@@ -55,14 +55,14 @@ check() { # check <label> <expected_rc> <project_root> <file_path>
 }
 
 R="$(make_root main)"
-P="$R/fivee-sim"
+P="$R/souroldgeezer-fivee-sim"
 
 # --- published branding metadata ------------------------------------------
-printf '{"name":"fivee-sim","description":"Dungeons & Dragons 2024 simulation."}\n' \
+printf '{"name":"souroldgeezer-fivee-sim","description":"Dungeons & Dragons 2024 simulation."}\n' \
   > "$P/.claude-plugin/plugin.json"
 check "mark in plugin.json description" 2 "$R" "$P/.claude-plugin/plugin.json"
 
-printf '{"name":"fivee-sim","description":"5E-compatible combat simulation."}\n' \
+printf '{"name":"souroldgeezer-fivee-sim","description":"5E-compatible combat simulation."}\n' \
   > "$P/.claude-plugin/plugin.json"
 check "clean plugin.json" 0 "$R" "$P/.claude-plugin/plugin.json"
 
@@ -109,25 +109,25 @@ check "engine data naming Drow (a 2024 Elf lineage)" 0 "$R" "$D/lineage.json"
 # --- attribution integrity ------------------------------------------------
 T="$(make_root tampered)"
 echo 'Includes material from the SRD 5.2 by Wizards of the Coast.' > "$T/NOTICE"
-printf '{"monsters":[{"name":"Goblin"}]}\n' > "$T/fivee-sim/engine/src/fivee_sim/data/m.json"
-check "reworded NOTICE, detected on a data edit" 2 "$T" "$T/fivee-sim/engine/src/fivee_sim/data/m.json"
+printf '{"monsters":[{"name":"Goblin"}]}\n' > "$T/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
+check "reworded NOTICE, detected on a data edit" 2 "$T" "$T/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 check "reworded NOTICE, detected on editing NOTICE itself" 2 "$T" "$T/NOTICE"
 
 M="$(make_root missing)"
 rm -f "$M/NOTICE"
-printf '{"monsters":[{"name":"Goblin"}]}\n' > "$M/fivee-sim/engine/src/fivee_sim/data/m.json"
-check "missing repo-root NOTICE" 2 "$M" "$M/fivee-sim/engine/src/fivee_sim/data/m.json"
+printf '{"monsters":[{"name":"Goblin"}]}\n' > "$M/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
+check "missing repo-root NOTICE" 2 "$M" "$M/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
 # The copy inside the plugin is the one that ships. A tripwire that only watched
 # the repo-root copy would guard the file that never reaches an install.
 S2="$(make_root shipped)"
-rm -f "$S2/fivee-sim/NOTICE"
-printf '{"monsters":[{"name":"Goblin"}]}\n' > "$S2/fivee-sim/engine/src/fivee_sim/data/m.json"
-check "missing plugin NOTICE, root copy intact" 2 "$S2" "$S2/fivee-sim/engine/src/fivee_sim/data/m.json"
+rm -f "$S2/souroldgeezer-fivee-sim/NOTICE"
+printf '{"monsters":[{"name":"Goblin"}]}\n' > "$S2/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
+check "missing plugin NOTICE, root copy intact" 2 "$S2" "$S2/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
 S3="$(make_root shipped_tampered)"
-echo 'Material from SRD 5.2, Wizards of the Coast.' > "$S3/fivee-sim/NOTICE"
-check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/fivee-sim/NOTICE"
+echo 'Material from SRD 5.2, Wizards of the Coast.' > "$S3/souroldgeezer-fivee-sim/NOTICE"
+check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/souroldgeezer-fivee-sim/NOTICE"
 
 # --- worktree / nested-root resolution ------------------------------------
 # Implementation happens in git worktrees under .worktrees/, which carry their
@@ -135,32 +135,32 @@ check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/fivee-sim/NO
 # edited, not the primary checkout's.
 nest() { # nest <outer_root> -> prints inner root
   local inner="$1/.worktrees/inner"
-  mkdir -p "$inner/fivee-sim/engine/src/fivee_sim/data"
+  mkdir -p "$inner/souroldgeezer-fivee-sim/engine/src/fivee_sim/data"
   cp "$repo_root/.ip-hygiene-local.conf" "$inner/"
   cp "$repo_root/NOTICE" "$inner/NOTICE"
   printf '{"monsters":[{"name":"Goblin"}]}\n' \
-    > "$inner/fivee-sim/engine/src/fivee_sim/data/m.json"
+    > "$inner/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
   printf '%s' "$inner"
 }
 
 O="$(make_root outer)"
 I="$(nest "$O")"
-echo 'Material from SRD 5.2, Wizards of the Coast.' > "$I/fivee-sim/NOTICE"
+echo 'Material from SRD 5.2, Wizards of the Coast.' > "$I/souroldgeezer-fivee-sim/NOTICE"
 check "nested root: the inner tampered NOTICE is what gets checked" 2 "$O" \
-  "$I/fivee-sim/engine/src/fivee_sim/data/m.json"
+  "$I/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
 O2="$(make_root outer_tampered)"
 echo 'bogus attribution' > "$O2/NOTICE"
 I2="$(nest "$O2")"
-cp "$repo_root/NOTICE" "$I2/fivee-sim/NOTICE"
+cp "$repo_root/NOTICE" "$I2/souroldgeezer-fivee-sim/NOTICE"
 check "nested root: clean inner passes despite a tampered outer" 0 "$O2" \
-  "$I2/fivee-sim/engine/src/fivee_sim/data/m.json"
+  "$I2/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
 # --- activation guard -----------------------------------------------------
 N="$tmp/nomarker"
-mkdir -p "$N/fivee-sim/.claude-plugin"
-printf '{"name":"x","description":"Dungeons & Dragons."}\n' > "$N/fivee-sim/.claude-plugin/plugin.json"
-check "no marker file: inert even on a would-be finding" 0 "$N" "$N/fivee-sim/.claude-plugin/plugin.json"
+mkdir -p "$N/souroldgeezer-fivee-sim/.claude-plugin"
+printf '{"name":"x","description":"Dungeons & Dragons."}\n' > "$N/souroldgeezer-fivee-sim/.claude-plugin/plugin.json"
+check "no marker file: inert even on a would-be finding" 0 "$N" "$N/souroldgeezer-fivee-sim/.claude-plugin/plugin.json"
 check "path outside the project root" 0 "$R" "/etc/hostname"
 check "payload with no file_path" 0 "$R" ""
 

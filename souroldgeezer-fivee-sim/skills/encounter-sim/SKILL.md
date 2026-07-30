@@ -1,6 +1,6 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the souroldgeezer-fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
 ---
 
 # Encounter Simulation

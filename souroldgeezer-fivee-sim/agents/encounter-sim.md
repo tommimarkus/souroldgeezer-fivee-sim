@@ -1,7 +1,7 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
-tools: Read, Skill, mcp__plugin_fivee-sim_fivee_sim__roll, mcp__plugin_fivee-sim_fivee_sim__check, mcp__plugin_fivee-sim_fivee_sim__save, mcp__plugin_fivee-sim_fivee_sim__lookup_rule, mcp__plugin_fivee-sim_fivee_sim__encounter_create, mcp__plugin_fivee-sim_fivee_sim__encounter_state, mcp__plugin_fivee-sim_fivee_sim__encounter_act, mcp__plugin_fivee-sim_fivee_sim__encounter_advance, mcp__plugin_fivee-sim_fivee_sim__simulate_rounds, mcp__plugin_fivee-sim_fivee_sim__simulate_dpr
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the souroldgeezer-fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
+tools: Read, Skill, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__roll, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__check, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__save, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__lookup_rule, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__encounter_create, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__encounter_state, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__encounter_act, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__encounter_advance, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__simulate_rounds, mcp__plugin_souroldgeezer-fivee-sim_fivee_sim__simulate_dpr
 model: sonnet
 ---
 
