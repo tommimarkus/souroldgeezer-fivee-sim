@@ -498,6 +498,44 @@ def encounter_state(encounter_id: str) -> dict[str, Any]:
 
 
 @server.tool()
+def encounter_log(
+    encounter_id: str,
+    since: int = 0,
+    limit: int = 500,
+    include_actions: bool = True,
+) -> dict[str, Any]:
+    """The full event history of an encounter, paged, with the actions that made it.
+
+    Events come back from ``since`` (a ``seq`` value) in pages of at most ``limit``;
+    ``next`` is the ``since`` for the following page, or null on the last one.
+    ``actions`` lists every successful act and advance in order — applied against
+    the reported seed and the same combatants, they reproduce the log exactly.
+    ``encounter_state`` stays the view of now; this is the record of how the fight
+    got there.
+    """
+    session = _session(encounter_id)
+    if since < 0:
+        raise ToolError(f"since must not be negative: {since}")
+    if limit < 1:
+        raise ToolError(f"limit must be at least 1: {limit}")
+    log = session.encounter.log
+    page = log[since:since + limit]
+    result: dict[str, Any] = {
+        "encounter_id": encounter_id,
+        "seed": session.seed,
+        "format": "fivee-sim-log/1",
+        "total_events": len(log),
+        "since": since,
+        "events": [event.as_dict() for event in page],
+        "next": since + len(page) if since + len(page) < len(log) else None,
+        "total_actions": len(session.encounter.actions),
+    }
+    if include_actions:
+        result["actions"] = [record.as_dict() for record in session.encounter.actions]
+    return result
+
+
+@server.tool()
 def encounter_act(
     encounter_id: str,
     kind: str,

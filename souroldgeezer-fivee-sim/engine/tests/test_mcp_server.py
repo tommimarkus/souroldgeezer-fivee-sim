@@ -169,6 +169,78 @@ class TestEncounterFlow:
             api.encounter_act(encounter_id, kind="attack", target="Nobody")
 
 
+class TestEncounterLog:
+    def start(self, seed: int = 11) -> str:
+        created = api.encounter_create([HERO, GOBLIN], seed=seed)
+        return str(created["encounter_id"])
+
+    def test_the_log_reports_its_seed_and_format(self) -> None:
+        encounter_id = self.start(seed=42)
+        result = api.encounter_log(encounter_id)
+        assert result["encounter_id"] == encounter_id
+        assert result["seed"] == 42
+        assert result["format"] == "fivee-sim-log/1"
+
+    def test_paging_walks_the_whole_log_without_loss(self) -> None:
+        encounter_id = self.start()
+        for _ in range(4):
+            api.encounter_advance(encounter_id)
+        full = api.encounter_log(encounter_id, include_actions=False)
+        assert full["total_events"] > 2
+        assert full["next"] is None
+
+        paged: list[dict[str, object]] = []
+        since = 0
+        while True:
+            page = api.encounter_log(encounter_id, since=since, limit=2,
+                                     include_actions=False)
+            assert len(page["events"]) <= 2
+            paged.extend(page["events"])
+            if page["next"] is None:
+                break
+            assert page["next"] == since + len(page["events"])
+            since = page["next"]
+        assert paged == full["events"]
+
+    def test_events_are_stamped_with_their_position(self) -> None:
+        encounter_id = self.start()
+        api.encounter_advance(encounter_id)
+        api.encounter_advance(encounter_id)  # wraps the round: five events in all
+        result = api.encounter_log(encounter_id, since=1, limit=3)
+        assert [event["seq"] for event in result["events"]] == [1, 2, 3]
+
+    def test_actions_appear_after_an_act_and_can_be_omitted(self) -> None:
+        encounter_id = self.start()
+        state = api.encounter_state(encounter_id)
+        actor = str(state["turn"])
+        target = "Goblin" if actor == "Thora" else "Thora"
+        attack = "Longsword" if actor == "Thora" else "Scimitar"
+        api.encounter_act(encounter_id, kind="attack", target=target, attack=attack)
+
+        result = api.encounter_log(encounter_id)
+        assert result["total_actions"] == len(result["actions"]) == 1
+        record = result["actions"][0]
+        assert record["actor"] == actor
+        assert record["action"]["kind"] == "attack"
+        assert record["action"]["target"] == target
+
+        trimmed = api.encounter_log(encounter_id, include_actions=False)
+        assert "actions" not in trimmed
+        assert trimmed["total_actions"] == 1
+
+    def test_an_unknown_id_lists_the_active_encounters(self) -> None:
+        self.start()
+        with pytest.raises(api.ToolError, match="active:"):
+            api.encounter_log("enc-does-not-exist")
+
+    def test_bad_paging_arguments_are_refused(self) -> None:
+        encounter_id = self.start()
+        with pytest.raises(api.ToolError, match="since"):
+            api.encounter_log(encounter_id, since=-1)
+        with pytest.raises(api.ToolError, match="limit"):
+            api.encounter_log(encounter_id, limit=0)
+
+
 class TestSpecValidation:
     def test_fewer_than_two_combatants_is_refused(self) -> None:
         with pytest.raises(api.ToolError, match="at least two"):

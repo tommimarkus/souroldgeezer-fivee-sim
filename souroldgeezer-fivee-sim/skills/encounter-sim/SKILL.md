@@ -40,6 +40,12 @@ narrating from memory puts it straight back.
    rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
+Past events are never lost: **`encounter_log`** pages the whole history
+(`since`/`limit`), each event stamped with its round and turn, plus the action
+records that — with the reported seed — reproduce the fight exactly. Recap
+earlier rounds from it rather than from memory; `encounter_state` stays the view
+of *now*.
+
 An illegal action is **refused with a reason** — out of reach, no slots left, no
 attacks remaining, none of that potion left, speed 0 while Grappled. Read the
 reason and adapt. Do not retry the same call hoping for a different answer, and do

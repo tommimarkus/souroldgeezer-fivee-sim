@@ -15,7 +15,7 @@ All provenance: SRD 5.2 (see NOTICE).
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from random import Random
 from typing import Any
@@ -70,16 +70,86 @@ class Action:
     center: int | None = None
 
 
+#: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
+#: rather than an enum — this is the checklist a log consumer can rely on, pinned
+#: by test, not a constraint the model enforces.
+EVENT_KINDS: frozenset[str] = frozenset({
+    "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
+    "disengage", "dodge", "down", "effect_end", "heal", "move",
+    "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
+    "turn_start", "use_item",
+})
+
+
 @dataclass(frozen=True, slots=True)
 class Event:
+    """One thing that happened, stamped with where in the fight it happened.
+
+    ``seq`` equals the event's position in ``Encounter.log``; ``round`` and
+    ``turn`` are the round counter and the acting creature at emission. ``detail``
+    stays the human-readable line; ``data`` carries the same facts structured, and
+    every position in a payload is a 2-tuple ``(x_feet, y_feet)``.
+    """
+
     kind: str
     actor: str = ""
     target: str = ""
     detail: str = ""
+    seq: int = 0
+    round: int = 0
+    turn: str = ""
+    data: dict[str, Any] = field(default_factory=dict)
 
-    def as_dict(self) -> dict[str, str]:
-        return {"kind": self.kind, "actor": self.actor, "target": self.target,
-                "detail": self.detail}
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "actor": self.actor,
+            "target": self.target,
+            "detail": self.detail,
+            "seq": self.seq,
+            "round": self.round,
+            "turn": self.turn,
+            "data": dict(self.data),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ActionRecord:
+    """One successful ``act`` or ``advance`` call — the unit of replay.
+
+    ``action`` is ``None`` for an ``advance``; ``first_event`` and ``event_count``
+    slice ``Encounter.log`` to exactly the events the call emitted. Refused
+    actions are never recorded: they mutate nothing and consume no randomness, so
+    applying the records in order against the same seed and combatants reproduces
+    the log byte for byte.
+    """
+
+    index: int
+    round: int
+    actor: str
+    action: Action | None
+    first_event: int
+    event_count: int
+
+    def as_dict(self) -> dict[str, Any]:
+        action: dict[str, Any] | None = None
+        if self.action is not None:
+            action = {"kind": self.action.kind.value}
+            for name in ("target", "attack", "item", "spell", "slot_level",
+                         "to_position", "center"):
+                value = getattr(self.action, name)
+                if value is not None:
+                    action[name] = value
+            if self.action.targets:
+                action["targets"] = list(self.action.targets)
+        return {
+            "index": self.index,
+            "round": self.round,
+            "actor": self.actor,
+            "action": action,
+            "first_event": self.first_event,
+            "event_count": self.event_count,
+        }
 
 
 class EncounterError(ValueError):
@@ -161,6 +231,7 @@ class Encounter:
             creature.condition_effects = self.condition_effects
         self.round = 1
         self.log: list[Event] = []
+        self.actions: list[ActionRecord] = []
         # A list, not a set or a dict: effects are released by iterating it, and an
         # unordered container would let the order of releases — and so the order of
         # log entries — vary between a live fight and its analytics replay.
@@ -280,19 +351,32 @@ class Encounter:
         roll = roll_d20(rng)
         if roll.natural == 20:
             creature.heal(1)
-            self._emit("death_save", creature.name, detail="natural 20 — regains 1 hit point")
+            self._emit("death_save", creature.name,
+                       detail="natural 20 — regains 1 hit point",
+                       natural=20,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
             return
         if roll.natural == 1:
             creature.death_save_failures += 2
-            self._emit("death_save", creature.name, detail="natural 1 — two failures")
+            self._emit("death_save", creature.name, detail="natural 1 — two failures",
+                       natural=1,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
         elif roll.natural >= DEATH_SAVE_DC:
             creature.death_save_successes += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success")
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success",
+                       natural=roll.natural,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
         else:
             creature.death_save_failures += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure")
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure",
+                       natural=roll.natural,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
 
         if creature.death_save_failures >= DEATH_SAVES_TO_DIE:
             creature.dead = True
@@ -314,19 +398,26 @@ class Encounter:
     def advance(self, rng: Random) -> list[Event]:
         """End the current turn and begin the next, wrapping the round."""
         before = len(self.log)
+        in_round, by = self.round, self.current_name
         self._emit("turn_end", self.current_name)
-        if self.over:
-            return self.log[before:]
-        for _ in range(len(self.order)):
-            self.turn_index += 1
-            if self.turn_index >= len(self.order):
-                self.turn_index = 0
-                self.round += 1
-                self._emit("round", detail=f"round {self.round} begins")
-            if not self.creatures[self.current_name].dead:
-                break
-        self._emit("turn_start", self.current_name)
-        self._begin_turn(rng)
+        if not self.over:
+            for _ in range(len(self.order)):
+                self.turn_index += 1
+                if self.turn_index >= len(self.order):
+                    self.turn_index = 0
+                    self.round += 1
+                    self._emit("round", detail=f"round {self.round} begins",
+                               round=self.round)
+                if not self.creatures[self.current_name].dead:
+                    break
+            self._emit("turn_start", self.current_name)
+            self._begin_turn(rng)
+        # Recorded even when the fight is over: the call still emitted its
+        # turn_end, and a replay that skipped it would miss that event.
+        self.actions.append(ActionRecord(
+            index=len(self.actions), round=in_round, actor=by, action=None,
+            first_event=before, event_count=len(self.log) - before,
+        ))
         return self.log[before:]
 
     # --- acting -----------------------------------------------------------
@@ -353,7 +444,8 @@ class Encounter:
                 self._turn.action_used = True
                 self._turn.movement_left += actor.speed
                 self._emit("dash", actor.name,
-                           detail=f"movement now {self._turn.movement_left} ft")
+                           detail=f"movement now {self._turn.movement_left} ft",
+                           movement_left=self._turn.movement_left)
             case ActionKind.DISENGAGE:
                 self._require_action(actor)
                 self._turn.action_used = True
@@ -371,7 +463,15 @@ class Encounter:
         # creature that is concentrating, and ``Creature.add_condition`` clears the
         # field from inside the model, where no release could be issued. A spell or
         # item that imposes one without dealing damage reaches nothing else.
+        #
+        # This runs before the action is recorded so that any release it emits falls
+        # inside that record's event span; recording first would leave the events
+        # orphaned between one action and the next.
         self._reconcile_concentration()
+        self.actions.append(ActionRecord(
+            index=len(self.actions), round=self.round, actor=actor.name, action=action,
+            first_event=before, event_count=len(self.log) - before,
+        ))
         return self.log[before:]
 
     def _require_action(self, actor: Creature) -> None:
@@ -435,7 +535,8 @@ class Encounter:
         reach = option.max_distance()
         if distance > reach:
             self._emit("attack", actor.name, target.name,
-                       f"{option.name} cannot reach ({distance} ft > {reach} ft)")
+                       f"{option.name} cannot reach ({distance} ft > {reach} ft)",
+                       attack=option.name, out_of_range=True)
             return
 
         self._turn.attacks_left -= 1
@@ -454,7 +555,14 @@ class Encounter:
             immune=option.damage_type in target.immunities,
         )
         self._emit("attack", actor.name, target.name,
-                   f"{option.name}: {resolution.describe()}")
+                   f"{option.name}: {resolution.describe()}",
+                   attack=option.name,
+                   hit=resolution.hit,
+                   critical=resolution.critical,
+                   natural=resolution.attack.roll.natural,
+                   total=resolution.attack.total,
+                   advantage=resolution.advantage.value,
+                   damage=resolution.damage_dealt)
         if resolution.hit:
             self._apply_damage(
                 target, resolution.damage_dealt, rng, critical=resolution.critical
@@ -589,13 +697,15 @@ class Encounter:
         self._emit(
             "use_item", actor.name, target.name,
             f"{resolution.describe()} ({actor.items[name]} left)",
+            item=name, remaining=actor.items[name],
         )
         if resolution.healed:
             before = target.hp
             target.heal(resolution.healed)
             self._emit("heal", target=target.name,
                        detail=f"{target.hp - before} hit points restored, "
-                              f"{target.hp}/{target.max_hp}")
+                              f"{target.hp}/{target.max_hp}",
+                       amount=target.hp - before, hp=target.hp, max_hp=target.max_hp)
         if resolution.damage_dealt:
             self._apply_damage(target, resolution.damage_dealt, rng)
         if resolution.condition_applied is not None and target.conscious:
@@ -685,7 +795,11 @@ class Encounter:
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
             detail += f", damage {resolution.damage_roll.describe()}"
-        self._emit("cast", actor.name, detail=detail)
+        self._emit("cast", actor.name, detail=detail,
+                   spell=spell.name,
+                   slot_level=slot_level,
+                   center=(action.center, 0) if action.center is not None else None,
+                   targets=[c.name for c in chosen])
 
         if spell.concentration:
             # SRD 5.2, "Concentration": "You lose Concentration on an effect the
@@ -694,11 +808,17 @@ class Encounter:
             # target, which comparing names could not see.
             self._end_concentration(actor)
             actor.concentrating_on = spell.name
-            self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}")
+            self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}",
+                       spell=spell.name, held=True, started=True)
 
         for result in resolution.results:
             target = self.creatures[result.name]
-            self._emit("spell_effect", actor.name, target.name, result.describe())
+            self._emit("spell_effect", actor.name, target.name, result.describe(),
+                       spell=spell.name,
+                       damage=result.damage_dealt,
+                       affected=result.affected,
+                       saved=result.save.success if result.save is not None else None,
+                       condition=result.condition_applied)
             if result.damage_dealt:
                 # A spell attack carries a critical exactly as a weapon swing does,
                 # and it matters for the same reason: two death save failures rather
@@ -856,7 +976,8 @@ class Encounter:
         actor.position = action.to_position
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
-                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)")
+                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)",
+                   origin=(origin, 0), destination=(actor.position, 0), cost=distance)
 
         if self._disengaged[actor.name]:
             return
@@ -893,7 +1014,14 @@ class Encounter:
             immune=melee.damage_type in mover.immunities,
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
-                   f"{melee.name}: {resolution.describe()}")
+                   f"{melee.name}: {resolution.describe()}",
+                   attack=melee.name,
+                   hit=resolution.hit,
+                   critical=resolution.critical,
+                   natural=resolution.attack.roll.natural,
+                   total=resolution.attack.total,
+                   advantage=resolution.advantage.value,
+                   damage=resolution.damage_dealt)
         if resolution.hit:
             # A mover cannot currently be at 0 hit points — a dying creature has
             # Speed 0 — so the flag changes nothing today. It is passed anyway: two
@@ -1033,7 +1161,8 @@ class Encounter:
         # critical hit costs two death save failures instead of one.
         target.take_damage(amount, critical=critical)
         self._emit("damage", target=target.name,
-                   detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left")
+                   detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left",
+                   amount=amount, hp=target.hp, max_hp=target.max_hp)
         if concentrating is not None and target.conscious:
             dc = concentration_dc(amount)
             save = make_d20_test(
@@ -1043,11 +1172,13 @@ class Encounter:
             )
             if save.success:
                 self._emit("concentration", target.name,
-                           detail=f"holds {concentrating} ({save.describe()})")
+                           detail=f"holds {concentrating} ({save.describe()})",
+                           spell=concentrating, held=True)
             else:
                 target.concentrating_on = None
                 self._emit("concentration", target.name,
-                           detail=f"loses {concentrating} ({save.describe()})")
+                           detail=f"loses {concentrating} ({save.describe()})",
+                           spell=concentrating, held=False)
         # Death is announced from ``dead`` rather than from a loss of consciousness.
         # Keying it on the latter meant a creature already at 0 — killed by its third
         # failure, or by damage matching its maximum — died with the state correct
@@ -1065,8 +1196,16 @@ class Encounter:
         # to the loss rather than at the end of the action that caused it.
         self._reconcile_concentration()
 
-    def _emit(self, kind: str, actor: str = "", target: str = "", detail: str = "") -> None:
-        self.log.append(Event(kind=kind, actor=actor, target=target, detail=detail))
+    def _emit(
+        self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any
+    ) -> None:
+        # Stamping is safe at every call site: __init__ emits nothing before
+        # ``order`` exists, the round event fires after ``round`` increments, and
+        # turn_start fires after ``turn_index`` has moved.
+        self.log.append(Event(
+            kind=kind, actor=actor, target=target, detail=detail,
+            seq=len(self.log), round=self.round, turn=self.current_name, data=data,
+        ))
 
 
 def build_encounter(

@@ -102,3 +102,5 @@ Stated explicitly because absence is invisible in the data above, and because a 
 `lookup_rule` with no topic lists every loaded condition, spell, creature, and item. With a topic it returns that entry, including the pack it came from and its `unmodelled` field. A miss means the subject is not loaded — it is refused rather than invented.
 
 `content_status` reports which packs are loaded, whether the bundled slice is included, and any encounter still running on content from before the last change. `content_validate` checks a pack without loading it.
+
+`encounter_log` pages the full event and action history of a fight in progress, stamped with rounds and turns — the record to recap or replay from, where `encounter_state` is only the view of now.

@@ -35,6 +35,7 @@ EXPECTED_TOOLS = {
     "lookup_rule",
     "encounter_create",
     "encounter_state",
+    "encounter_log",
     "encounter_act",
     "encounter_advance",
     "simulate_rounds",
