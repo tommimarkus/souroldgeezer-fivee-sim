@@ -176,6 +176,28 @@ bash scripts/hooks/test-ip-hygiene-check.sh
 `uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
 `~/.cache/uv` is read-only in the sandboxed development environment.
 
+### The virtual environment
+
+`uv` builds it; nothing else should. `uv sync` in the engine directory creates
+`.venv` with the dev group included, which is what `uv run pytest` and `uv run
+mypy` use.
+
+At runtime the launcher **execs the venv's own console script** rather than going
+through `uv run`. That keeps uv out of the spawn path — one process instead of
+two, and uv is needed only when the environment has to be built. The handshake
+check passes with `uv` removed from `PATH` entirely, which is the test of it.
+
+The launcher syncs with `--no-dev`, so a venv it built has no test tooling. That
+only happens on a cold start; `uv run pytest` re-syncs the dev group
+automatically, so the two uses do not fight.
+
+**A venv is not portable.** Its console scripts hard-code an absolute interpreter
+path in their shebang, so moving or renaming the plugin directory leaves a venv
+that exists and looks executable but cannot start — this bit the rename to
+`souroldgeezer-fivee-sim`. The launcher now detects it by checking the shebang
+still resolves, and rebuilds. If you relocate the repo and something behaves
+oddly, `rm -rf` the venv rather than debugging it.
+
 ## Conventions
 
 Mirrors the sibling `souroldgeezer` marketplace at `../skills`:

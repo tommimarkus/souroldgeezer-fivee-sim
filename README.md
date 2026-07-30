@@ -90,8 +90,14 @@ python3 scripts/check-mcp-handshake.py
 
 ```bash
 cd souroldgeezer-fivee-sim/engine
+uv sync                                    # builds .venv, dev group included
 uv run pytest && uv run ruff check . && uv run mypy
 ```
+
+`uv` owns the virtual environment. At runtime the MCP launcher execs the venv's
+console script directly rather than going through `uv run`, so uv is only needed
+when the environment has to be built — and a venv left stale by a moved directory
+is detected and rebuilt automatically.
 
 See [CLAUDE.md](CLAUDE.md) for the layer boundaries, the determinism rules, and
 the character-device staging hazards in this workspace.
