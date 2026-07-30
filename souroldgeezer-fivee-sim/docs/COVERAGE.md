@@ -131,3 +131,5 @@ Stated explicitly because absence is invisible in the data above, and because a 
 `content_status` reports which packs are loaded, whether the bundled slice is included, and any encounter still running on content from before the last change. `content_validate` checks a pack without loading it.
 
 `encounter_log` pages the full event and action history of a fight in progress, stamped with rounds and turns — the record to recap or replay from, where `encounter_state` is only the view of now.
+
+The `map_*` tools — `map_generate`, `map_load`, `map_save`, `map_render`, `map_edit`, `map_query` — manage battle maps as seeded, editable documents in the running session; what maps exist there, and at which generation, is their answer rather than this document's.

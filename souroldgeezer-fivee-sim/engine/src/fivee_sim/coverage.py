@@ -389,6 +389,13 @@ def render_markdown() -> str:
         "progress, stamped with rounds and turns — the record to recap or replay "
         "from, where `encounter_state` is only the view of now."
     )
+    add("")
+    add(
+        "The `map_*` tools — `map_generate`, `map_load`, `map_save`, `map_render`, "
+        "`map_edit`, `map_query` — manage battle maps as seeded, editable documents "
+        "in the running session; what maps exist there, and at which generation, is "
+        "their answer rather than this document's."
+    )
     return "\n".join(lines) + "\n"
 
 

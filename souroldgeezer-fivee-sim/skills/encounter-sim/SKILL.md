@@ -70,6 +70,24 @@ square centres, and `state["map"]` reports dimensions and door state.
 once per turn, from the feature's square or one next to it. `simulate_rounds`
 accepts the same `map` and `movement_rule`, so batches fight on the terrain too.
 
+## Maps
+
+Six tools manage maps as first-class documents. **`map_generate`** builds a
+dungeon, caves, or overland map under a seed (always reported — quote it);
+**`map_render`** shows any of them as glyph rows, with `x`/`y`/`width`/`height`
+viewports and `downsample` for big maps, and an `encounter_id` overlay that
+letters the combatants; **`map_edit`** applies verbal tweaks atomically —
+paint, line, carve_corridor, set_terrain, add/remove_feature, toggle_door,
+resize, set_legend, set_name — a bad operation names its index and changes
+nothing; **`map_save`** writes canonical JSON (refusing silent overwrites) and
+**`map_load`** reads a file or inline document back, so the workflow is
+generate → render → edit → save, and load by path next session.
+**`map_query`** answers distance, line-of-sight, and pathing questions on a
+bare map. `encounter_create(map_id=...)` and `simulate_rounds(map_id=...)` put
+a fight on a loaded map; the fight captures the document as it stands, and
+`encounter_state["map_source"].stale` turns true if the map is edited after —
+re-create the encounter when the new layout should apply.
+
 ## Aiming a spell
 
 `cast` takes `target` for one creature, `targets` for several, or an area aim:
