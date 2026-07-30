@@ -71,10 +71,10 @@ SECTIONS = ("creatures", "spells", "conditions", "items")
 _PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
 _COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
-    "team", "ac", "max_hp", "hp", "hit_dice", "speed", "abilities", "save_bonuses",
+    "team", "ac", "max_hp", "hit_dice", "speed", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
-    "vulnerabilities", "position",
+    "vulnerabilities",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -457,16 +457,31 @@ def _named_records(
     return out
 
 
+def _common_fields(reader: _Reader) -> str:
+    """The fields every record carries, checked identically in every section.
+
+    Shared rather than repeated because it was repeated and one section quietly did
+    not: creatures went without a ``provenance`` check, which is the one rule the
+    licence boundary actually turns on.
+    """
+    provenance = reader.string("provenance", required=True)
+    reader.string_list("unmodelled")
+    reader.boolean("overrides")
+    return provenance
+
+
 def _parse_creature(
     name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
 ) -> dict[str, Any] | None:
     reader = _Reader(record, diagnostics, source=source, section="creatures", name=name)
     reader.unknown_keys(_CREATURE_KEYS)
+    _common_fields(reader)
     reader.integer("ac", required=True, minimum=0)
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
     reader.integer("attacks_per_action", default=1, minimum=1)
     reader.integer("spell_save_dc", default=10, minimum=1)
+    reader.integer("spell_attack_bonus")
     reader.string("team")
     reader.string("hit_dice")
     reader.enum_keyed_ints("abilities", Ability)
@@ -516,6 +531,7 @@ def _parse_spell(
 ) -> tuple[Spell, dict[str, Any]] | None:
     reader = _Reader(record, diagnostics, source=source, section="spells", name=name)
     reader.unknown_keys(_SPELL_KEYS)
+    provenance = _common_fields(reader)
     level = reader.integer("level", required=True, minimum=0)
     spell = Spell(
         name=name,
@@ -533,7 +549,7 @@ def _parse_spell(
         max_targets=reader.integer("max_targets", default=1, minimum=1),
         condition=reader.string("condition") or None,
         concentration=reader.boolean("concentration"),
-        provenance=reader.string("provenance", required=True),
+        provenance=provenance,
     )
     if spell.damage is not None and spell.damage_type is None:
         reader.fail("damage_type", "a spell that deals damage must name a damage type")
@@ -550,7 +566,7 @@ def _parse_condition(
 ) -> tuple[ConditionEffect, dict[str, Any]] | None:
     reader = _Reader(record, diagnostics, source=source, section="conditions", name=name)
     reader.unknown_keys(_CONDITION_KEYS)
-    reader.string("provenance", required=True)
+    _common_fields(reader)
     reader.string("description")
     flags: dict[str, bool] = {}
     for flag, value in reader.mapping("effects").items():
@@ -576,7 +592,7 @@ def _parse_item(
 ) -> tuple[ItemEffect, dict[str, Any]] | None:
     reader = _Reader(record, diagnostics, source=source, section="items", name=name)
     reader.unknown_keys(_ITEM_KEYS)
-    provenance = reader.string("provenance", required=True)
+    provenance = _common_fields(reader)
     description = reader.string("description")
     if record.get("use") is None:
         reader.fail("use", "required; an item is defined by what using it does")
@@ -973,6 +989,28 @@ def _cross_reference(
     for name, record in creatures.items():
         for condition in record.get("conditions", []) or []:
             check("creatures", name, "conditions", str(condition))
+        # Warnings, not errors: the encounter refuses these at use time with a clear
+        # reason rather than crashing, so a pack meant to be combined with another is
+        # still loadable. It is worth saying now, though — the alternative is finding
+        # out mid-fight.
+        for referenced, table, field_name in (
+            (record.get("spells", []) or [], spells, "spells"),
+            (record.get("items", {}) or {}, items, "items"),
+        ):
+            for entry in referenced:
+                if str(entry) in table:
+                    continue
+                diagnostics.append(
+                    Diagnostic(
+                        source=sources.get(("creatures", name), "unknown"),
+                        section="creatures", record=name, field=field_name,
+                        problem=(
+                            f"refers to {str(entry)!r}, which no loaded pack defines; "
+                            f"the engine will refuse it when the creature tries to use it"
+                        ),
+                        severity=Severity.WARNING,
+                    )
+                )
 
 
 def _build(
@@ -1056,9 +1094,24 @@ def _build(
 
     retained: list[str] = []
     for condition in STRUCTURAL_CONDITIONS:
-        if condition not in condition_effects:
-            condition_effects[str(condition)] = EFFECTS[condition]
-            retained.append(str(condition))
+        name = str(condition)
+        if name in condition_effects:
+            continue
+        condition_effects[name] = EFFECTS[condition]
+        # A record too, not just an effect. ``names()`` and the counts read the
+        # records, so without this the catalogue would omit a condition the stepper
+        # goes on to apply — leaving ``lookup_rule`` and ``encounter_state``
+        # disagreeing, which is the exact failure the engine exists to prevent.
+        condition_records[name] = {
+            "name": name,
+            "provenance": "SRD 5.2",
+            "description": (
+                "Retained by the engine: the stepper applies this itself when a "
+                "creature drops to 0 hit points."
+            ),
+            "unmodelled": [],
+        }
+        retained.append(name)
 
     _cross_reference(
         condition_effects, spells, spell_records, items, creatures, sources, diagnostics

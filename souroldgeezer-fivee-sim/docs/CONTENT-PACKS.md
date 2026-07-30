@@ -78,11 +78,14 @@ Every section is optional, and record shapes match the bundled files.
 
 ### `creatures`
 
-Required: `name`, `ac`, `max_hp`. Optional: `team`, `hp`, `speed`, `hit_dice`,
-`abilities`, `save_bonuses`, `attacks`, `attacks_per_action`, `spells`,
+Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
+`hit_dice`, `abilities`, `save_bonuses`, `attacks`, `attacks_per_action`, `spells`,
 `spell_slots`, `spell_save_dc`, `spell_attack_bonus`, `items`, `conditions`,
-`immunities`, `resistances`, `vulnerabilities`, `position`, `provenance`,
-`unmodelled`, `overrides`.
+`unmodelled`, `immunities`, `resistances`, `vulnerabilities`, `overrides`.
+
+There is deliberately no `hp` or `position`. A creature starts a fight at full hit
+points, and position is per-instance — you set it when you add a combatant to an
+encounter, not in the stat block.
 
 Attacks carry their own bonus and damage expression rather than deriving them from
 ability scores and proficiency. That is how a stat block presents an attack, and it
@@ -197,6 +200,11 @@ Precisely:
 A spell naming `"condition": "vale-cursed"` is valid exactly when some pack in the
 merged set defines it. No per-file check can know that, so `content_validate`
 performs the merge and then checks references across it.
+
+An unresolved **condition** is an error — nothing could apply it. An unresolved
+**spell or item name on a creature** is a warning, because the engine refuses those
+at use time with a clear reason rather than crashing, so a pack meant to be combined
+with another still loads. You would rather hear about it now than mid-fight.
 
 ### Paths
 

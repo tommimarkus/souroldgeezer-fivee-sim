@@ -180,6 +180,14 @@ class TestExcludeMode:
         registry = load_packs([pack], builtin="exclude", include_environment=False)
         assert set(registry.retained_conditions) == {"unconscious", "prone"}
         assert "blinded" not in registry.condition_effects
+        # And they must appear in the catalogue, not only in the effects table. A
+        # condition the stepper applies but `lookup_rule` does not list would leave the
+        # catalogue contradicting `encounter_state`, which is precisely the drift this
+        # engine exists to remove.
+        listed = registry.names()["conditions"]
+        assert "unconscious" in listed and "prone" in listed
+        assert registry.summary()["counts"]["conditions"] == len(listed)
+        assert registry.source_of("conditions", "prone") == "engine"
 
     def test_a_fight_in_exclude_mode_can_still_drop_a_creature(self, pack: Path) -> None:
         registry = load_packs([pack], builtin="exclude", include_environment=False)
@@ -423,6 +431,76 @@ class TestDiagnostics:
             }],
         })
         assert len(found) >= 3, found
+
+    def test_a_creature_without_provenance_is_refused(self, tmp_path: Path) -> None:
+        # Creatures were the one section that skipped this check, which is the section
+        # where the licence boundary actually bites.
+        found = self.check(tmp_path, {
+            "pack": "x", "provenance": "test",
+            "creatures": [{"name": "Thing", "ac": 10, "max_hp": 10}],
+        })
+        assert any("required" in p for p in found)
+
+    def test_hp_and_position_are_not_creature_record_keys(self, tmp_path: Path) -> None:
+        # make_creature always starts a creature at full hit points and takes position
+        # as a per-instance argument, so accepting them in a record would accept a key
+        # and silently drop it.
+        found = self.check(tmp_path, {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
+                "hp": 4, "position": 15,
+            }],
+        })
+        assert sum("unknown key" in p for p in found) == 2, found
+
+    @pytest.mark.parametrize(
+        "key,wrong",
+        [
+            ("team", 5), ("ac", "high"), ("max_hp", "lots"), ("hit_dice", 3),
+            ("speed", "fast"), ("abilities", []), ("save_bonuses", []),
+            ("attacks", "none"), ("attacks_per_action", "two"), ("spells", "Fireball"),
+            ("spell_slots", []), ("spell_save_dc", "hard"),
+            ("spell_attack_bonus", "high"), ("items", []), ("conditions", "prone"),
+            ("immunities", "fire"), ("resistances", "cold"), ("vulnerabilities", "acid"),
+            ("provenance", 1), ("unmodelled", "a trait"), ("overrides", "yes"),
+        ],
+    )
+    def test_no_allowed_creature_key_escapes_validation(
+        self, tmp_path: Path, key: str, wrong: Any
+    ) -> None:
+        """Every key we accept must be checked, or the loader's promise is false.
+
+        ``data/__init__.py`` states that records reaching ``make_creature`` are already
+        validated, so construction does not re-check them. A key that is accepted and
+        unvalidated breaks that: it passes ``content_validate`` and then raises a bare
+        ``ValueError`` part-way into building an encounter. Parametrised over the
+        allowed set so adding a key without validating it fails here.
+        """
+        record: dict[str, Any] = {
+            "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
+        }
+        record[key] = wrong
+        found = self.check(tmp_path, {
+            "pack": "x", "provenance": "test", "creatures": [record],
+        })
+        assert found, f"{key}={wrong!r} passed validation unchecked"
+
+    def test_a_creature_naming_an_undefined_spell_or_item_warns(
+        self, tmp_path: Path
+    ) -> None:
+        path = write_pack(tmp_path, "x.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
+                "spells": ["Nonexistent Bolt"], "items": {"Nonexistent Flask": 1},
+            }],
+        })
+        diagnostics = validate([path], include_environment=False)
+        assert not problems(diagnostics), "these are warnings, not load failures"
+        warned = problems(diagnostics, Severity.WARNING)
+        assert any("Nonexistent Bolt" in p for p in warned)
+        assert any("Nonexistent Flask" in p for p in warned)
 
     def test_the_bundled_packs_validate_clean(self) -> None:
         # The built-in slice goes through this same parser, so a malformed row could
