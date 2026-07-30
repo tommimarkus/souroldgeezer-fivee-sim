@@ -1,0 +1,1126 @@
+"""Content packs: the engine's rules data, whether we shipped it or you wrote it.
+
+A pack is one JSON file holding creatures, spells, conditions, and items. The
+bundled SRD slice under ``data/srd/`` is not a special case — it is two packs the
+engine happens to carry, parsed by the code below like any other. That is what
+makes a campaign's own file "compatible" rather than a second dialect: there is
+only one format, and we eat it too.
+
+Three properties this module exists to guarantee:
+
+**Validation is strict.** An unknown section or an unknown record key is an error,
+never ignored. A pack that misspells ``attack_bonus`` as ``attack_bonuses`` would
+otherwise load a creature that fights wrongly and looks entirely fine.
+
+**A name collision is reported, never resolved silently.** Two packs defining
+``Goblin Warrior`` fail and name both files. A pack that *means* to replace
+something says ``"overrides": true`` on that record, so intent is declared rather
+than inferred from whichever file happened to load first.
+
+**Nothing is ambient.** :func:`load_packs` returns a :class:`ContentRegistry` and
+holds no module state. Callers pass the tables into the encounter, which captures
+them, so reloading content cannot reach into a fight already in progress.
+
+Diagnostics are structured because the consumer is a campaign author debugging
+their own JSON, and "invalid pack" tells them nothing they can act on.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
+from enum import StrEnum
+from importlib import resources
+from pathlib import Path
+from typing import Any, TypeVar
+
+from .kernel.actions import AttackKind
+from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect
+from .kernel.dice import Dice, DiceError
+from .kernel.items import ItemEffect, ItemError
+from .kernel.rules import Ability, DamageType
+from .kernel.spells import Spell, SpellShape
+
+#: Environment variable holding an ``os.pathsep``-separated list of files or
+#: directories to load.
+CONTENT_ENV = "FIVEE_SIM_CONTENT"
+#: Environment variable selecting whether the bundled SRD slice is loaded.
+BUILTIN_ENV = "FIVEE_SIM_BUILTIN"
+#: Claude Code exports this; a campaign keeping content in its own repo needs no
+#: configuration beyond putting files in the directory below.
+PROJECT_ENV = "CLAUDE_PROJECT_DIR"
+PROJECT_SUBDIR = Path(".fivee-sim") / "content"
+
+_BUILTIN_PACKAGE = "fivee_sim.data.srd"
+BUILTIN_FILES = ("monsters.json", "spells.json")
+
+#: A pack larger than this fails cleanly instead of stalling session start. Packs
+#: are hand-authored rules data; the whole SRD would not approach this.
+MAX_PACK_BYTES = 4 * 1024 * 1024
+
+#: Conditions the stepper applies on its own behalf when a creature drops to 0 hit
+#: points. They survive ``exclude`` mode because dropping is engine machinery, not
+#: content — a pack may still override them, and ``content_status`` reports when
+#: they were retained rather than loaded.
+STRUCTURAL_CONDITIONS = (Condition.UNCONSCIOUS, Condition.PRONE)
+
+SECTIONS = ("creatures", "spells", "conditions", "items")
+
+_PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
+_COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
+_CREATURE_KEYS = _COMMON_RECORD_KEYS | {
+    "team", "ac", "max_hp", "hp", "hit_dice", "speed", "abilities", "save_bonuses",
+    "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
+    "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
+    "vulnerabilities", "position",
+}
+_ATTACK_KEYS = frozenset({
+    "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
+    "long_range", "provenance",
+})
+_SPELL_KEYS = _COMMON_RECORD_KEYS | {
+    "level", "school", "requires_attack_roll", "save_ability", "damage", "damage_type",
+    "half_on_save", "upcast_damage", "shape", "radius", "range_feet", "max_targets",
+    "condition", "concentration",
+}
+_CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
+_ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
+_USE_KEYS = frozenset({
+    "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
+    "condition",
+})
+
+
+class BuiltinMode(StrEnum):
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
+
+
+class Severity(StrEnum):
+    ERROR = "error"
+    WARNING = "warning"
+
+
+@dataclass(frozen=True, slots=True)
+class Diagnostic:
+    """One problem, located precisely enough for the author to go and fix it."""
+
+    source: str
+    problem: str
+    section: str = ""
+    record: str = ""
+    field: str = ""
+    severity: Severity = Severity.ERROR
+
+    def describe(self) -> str:
+        where = self.source
+        if self.section:
+            where += f" [{self.section}]"
+        if self.record:
+            where += f" {self.record!r}"
+        if self.field:
+            where += f".{self.field}"
+        return f"{self.severity.value}: {where}: {self.problem}"
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "severity": self.severity.value,
+            "source": self.source,
+            "section": self.section,
+            "record": self.record,
+            "field": self.field,
+            "problem": self.problem,
+        }
+
+
+class ContentError(ValueError):
+    """One or more packs could not be loaded. Carries every diagnostic, not the first."""
+
+    def __init__(self, diagnostics: Sequence[Diagnostic]) -> None:
+        self.diagnostics = tuple(diagnostics)
+        errors = [d for d in self.diagnostics if d.severity is Severity.ERROR]
+        super().__init__(
+            f"{len(errors)} content error(s):\n"
+            + "\n".join(f"  {d.describe()}" for d in errors)
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class PackInfo:
+    """What a loaded pack was and where it came from."""
+
+    label: str
+    level: str
+    pack: str
+    version: str
+    provenance: str
+    path: str = ""
+    counts: Mapping[str, int] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "label": self.label,
+            "level": self.level,
+            "pack": self.pack,
+            "version": self.version,
+            "provenance": self.provenance,
+            "path": self.path,
+            "counts": dict(self.counts),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ContentRegistry:
+    """Everything the engine knows about, merged and immutable.
+
+    Immutability is the point: an encounter captures the tables it needs, and a
+    later reload builds a *new* registry rather than mutating this one, so a fight
+    in progress cannot have content changed underneath it.
+    """
+
+    builtin: BuiltinMode = BuiltinMode.INCLUDE
+    creatures: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    spells: Mapping[str, Spell] = field(default_factory=dict)
+    spell_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    condition_effects: Mapping[str, ConditionEffect] = field(default_factory=dict)
+    condition_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    items: Mapping[str, ItemEffect] = field(default_factory=dict)
+    item_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    packs: tuple[PackInfo, ...] = ()
+    sources: Mapping[tuple[str, str], str] = field(default_factory=dict)
+    warnings: tuple[Diagnostic, ...] = ()
+    #: Structural conditions kept despite not being defined by any loaded pack.
+    retained_conditions: tuple[str, ...] = ()
+
+    def source_of(self, section: str, name: str) -> str:
+        """Which pack a name came from, or ``"engine"`` for a retained structural row."""
+        return self.sources.get((section, name), "engine")
+
+    def records_for(self, section: str) -> Mapping[str, dict[str, Any]]:
+        return {
+            "creatures": self.creatures,
+            "spells": self.spell_records,
+            "conditions": self.condition_records,
+            "items": self.item_records,
+        }[section]
+
+    def names(self) -> dict[str, list[str]]:
+        return {section: sorted(self.records_for(section)) for section in SECTIONS}
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "builtin": self.builtin.value,
+            "counts": {
+                section: len(self.records_for(section)) for section in SECTIONS
+            },
+            "packs": [pack.as_dict() for pack in self.packs],
+            "retained_conditions": list(self.retained_conditions),
+            "warnings": [warning.as_dict() for warning in self.warnings],
+        }
+
+
+# --- reading records -------------------------------------------------------
+_E = TypeVar("_E", bound=StrEnum)
+
+
+class _Reader:
+    """Reads one record's fields, collecting every problem instead of raising.
+
+    A record with three mistakes should report three, not send the author round the
+    loop three times.
+    """
+
+    def __init__(
+        self,
+        record: Mapping[str, Any],
+        diagnostics: list[Diagnostic],
+        *,
+        source: str,
+        section: str,
+        name: str,
+    ) -> None:
+        self._record = record
+        self._diagnostics = diagnostics
+        self._source = source
+        self._section = section
+        self._name = name
+        self.ok = True
+
+    def fail(self, field: str, problem: str) -> None:
+        self.ok = False
+        self._diagnostics.append(
+            Diagnostic(
+                source=self._source, section=self._section, record=self._name,
+                field=field, problem=problem,
+            )
+        )
+
+    def warn(self, field: str, problem: str) -> None:
+        self._diagnostics.append(
+            Diagnostic(
+                source=self._source, section=self._section, record=self._name,
+                field=field, problem=problem, severity=Severity.WARNING,
+            )
+        )
+
+    def unknown_keys(self, allowed: frozenset[str]) -> None:
+        for key in sorted(set(self._record) - allowed):
+            self.fail(
+                key,
+                f"unknown key; a mistyped key would be silently dropped, so it is "
+                f"refused. Valid keys: {', '.join(sorted(allowed))}",
+            )
+
+    def string(self, key: str, *, required: bool = False, default: str = "") -> str:
+        value = self._record.get(key)
+        if value is None:
+            if required:
+                self.fail(key, "required")
+            return default
+        if not isinstance(value, str):
+            self.fail(key, f"must be text, got {type(value).__name__}")
+            return default
+        return value
+
+    def integer(
+        self, key: str, *, required: bool = False, default: int = 0,
+        minimum: int | None = None,
+    ) -> int:
+        value = self._record.get(key)
+        if value is None:
+            if required:
+                self.fail(key, "required")
+            return default
+        if isinstance(value, bool) or not isinstance(value, int):
+            self.fail(key, f"must be a whole number, got {value!r}")
+            return default
+        if minimum is not None and value < minimum:
+            self.fail(key, f"must be at least {minimum}, got {value}")
+            return default
+        return value
+
+    def boolean(self, key: str, *, default: bool = False) -> bool:
+        value = self._record.get(key)
+        if value is None:
+            return default
+        if not isinstance(value, bool):
+            self.fail(key, f"must be true or false, got {value!r}")
+            return default
+        return value
+
+    def dice(self, key: str) -> Dice | None:
+        value = self._record.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            self.fail(key, f"must be a dice expression such as \"2d6+3\", got {value!r}")
+            return None
+        try:
+            return Dice.parse(value)
+        except DiceError as error:
+            self.fail(key, str(error))
+            return None
+
+    def enum(self, key: str, enum_class: type[_E]) -> _E | None:
+        value = self._record.get(key)
+        if value is None:
+            return None
+        allowed = ", ".join(member.value for member in enum_class)
+        if not isinstance(value, str):
+            self.fail(key, f"must be one of: {allowed}")
+            return None
+        try:
+            return enum_class(value)
+        except ValueError:
+            self.fail(key, f"{value!r} is not valid; must be one of: {allowed}")
+            return None
+
+    def string_list(self, key: str) -> list[str]:
+        value = self._record.get(key)
+        if value is None:
+            return []
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            self.fail(key, "must be a list of names")
+            return []
+        return list(value)
+
+    def mapping(self, key: str) -> Mapping[str, Any]:
+        value = self._record.get(key)
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            self.fail(key, f"must be an object, got {type(value).__name__}")
+            return {}
+        return value
+
+    def sequence(self, key: str) -> list[Any]:
+        value = self._record.get(key)
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            self.fail(key, f"must be a list, got {type(value).__name__}")
+            return []
+        return value
+
+    def enum_keyed_ints(self, key: str, enum_class: type[_E]) -> None:
+        """Validate a mapping such as ``abilities`` without rebuilding it."""
+        allowed = ", ".join(member.value for member in enum_class)
+        for name, value in self.mapping(key).items():
+            try:
+                enum_class(name)
+            except ValueError:
+                self.fail(key, f"{name!r} is not valid; keys must be one of: {allowed}")
+                continue
+            if isinstance(value, bool) or not isinstance(value, int):
+                self.fail(key, f"{name} must be a whole number, got {value!r}")
+
+    def enum_list(self, key: str, enum_class: type[_E]) -> None:
+        allowed = ", ".join(member.value for member in enum_class)
+        for value in self.sequence(key):
+            if not isinstance(value, str):
+                self.fail(key, f"entries must be one of: {allowed}")
+                continue
+            try:
+                enum_class(value)
+            except ValueError:
+                self.fail(key, f"{value!r} is not valid; must be one of: {allowed}")
+
+
+# --- parsing one pack ------------------------------------------------------
+@dataclass(slots=True)
+class _ParsedPack:
+    info: PackInfo
+    creatures: dict[str, dict[str, Any]]
+    spells: dict[str, Spell]
+    spell_records: dict[str, dict[str, Any]]
+    condition_effects: dict[str, ConditionEffect]
+    condition_records: dict[str, dict[str, Any]]
+    items: dict[str, ItemEffect]
+    item_records: dict[str, dict[str, Any]]
+
+    def section(self, name: str) -> Mapping[str, Any]:
+        return {
+            "creatures": self.creatures,
+            "spells": self.spell_records,
+            "conditions": self.condition_records,
+            "items": self.item_records,
+        }[name]
+
+
+def _named_records(
+    payload: Mapping[str, Any],
+    section: str,
+    diagnostics: list[Diagnostic],
+    source: str,
+) -> list[tuple[str, Mapping[str, Any]]]:
+    """Pull ``section`` out of a pack, reporting anything that is not a named record."""
+    entries = payload.get(section)
+    if entries is None:
+        return []
+    if not isinstance(entries, list):
+        diagnostics.append(
+            Diagnostic(source=source, section=section, problem="must be a list of records")
+        )
+        return []
+    out: list[tuple[str, Mapping[str, Any]]] = []
+    seen: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            diagnostics.append(
+                Diagnostic(
+                    source=source, section=section, record=f"#{index}",
+                    problem=f"must be an object, got {type(entry).__name__}",
+                )
+            )
+            continue
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            diagnostics.append(
+                Diagnostic(
+                    source=source, section=section, record=f"#{index}",
+                    field="name", problem="required, and must be non-empty text",
+                )
+            )
+            continue
+        if name in seen:
+            diagnostics.append(
+                Diagnostic(
+                    source=source, section=section, record=name,
+                    problem="defined twice in the same pack",
+                )
+            )
+            continue
+        seen.add(name)
+        out.append((name, entry))
+    return out
+
+
+def _parse_creature(
+    name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
+) -> dict[str, Any] | None:
+    reader = _Reader(record, diagnostics, source=source, section="creatures", name=name)
+    reader.unknown_keys(_CREATURE_KEYS)
+    reader.integer("ac", required=True, minimum=0)
+    reader.integer("max_hp", required=True, minimum=1)
+    reader.integer("speed", default=30, minimum=0)
+    reader.integer("attacks_per_action", default=1, minimum=1)
+    reader.integer("spell_save_dc", default=10, minimum=1)
+    reader.string("team")
+    reader.string("hit_dice")
+    reader.enum_keyed_ints("abilities", Ability)
+    reader.enum_keyed_ints("save_bonuses", Ability)
+    for key in ("immunities", "resistances", "vulnerabilities"):
+        reader.enum_list(key, DamageType)
+    reader.string_list("spells")
+    reader.string_list("conditions")
+    for item_name, count in reader.mapping("items").items():
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            reader.fail("items", f"{item_name} quantity must be a whole number of 0 or more")
+    for level, count in reader.mapping("spell_slots").items():
+        if not (isinstance(level, str) and level.isdigit()):
+            reader.fail("spell_slots", f"slot level {level!r} must be a number")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            reader.fail("spell_slots", f"slot {level} count must be a whole number")
+
+    for index, attack in enumerate(reader.sequence("attacks")):
+        label = f"{name} attack #{index}"
+        if not isinstance(attack, dict):
+            reader.fail("attacks", f"attack #{index} must be an object")
+            continue
+        sub = _Reader(attack, diagnostics, source=source, section="creatures", name=label)
+        sub.unknown_keys(_ATTACK_KEYS)
+        sub.string("name", required=True)
+        sub.integer("attack_bonus", required=True)
+        if attack.get("damage") is None:
+            sub.fail("damage", "required")
+        else:
+            sub.dice("damage")
+        if attack.get("damage_type") is None:
+            sub.fail("damage_type", "required")
+        else:
+            sub.enum("damage_type", DamageType)
+        sub.enum("kind", AttackKind)
+        sub.integer("reach", default=5, minimum=0)
+        sub.integer("normal_range", minimum=0)
+        sub.integer("long_range", minimum=0)
+        if not sub.ok:
+            reader.ok = False
+
+    return dict(record) if reader.ok else None
+
+
+def _parse_spell(
+    name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
+) -> tuple[Spell, dict[str, Any]] | None:
+    reader = _Reader(record, diagnostics, source=source, section="spells", name=name)
+    reader.unknown_keys(_SPELL_KEYS)
+    level = reader.integer("level", required=True, minimum=0)
+    spell = Spell(
+        name=name,
+        level=level,
+        school=reader.string("school"),
+        requires_attack_roll=reader.boolean("requires_attack_roll"),
+        save_ability=reader.enum("save_ability", Ability),
+        damage=reader.dice("damage"),
+        damage_type=reader.enum("damage_type", DamageType),
+        half_on_save=reader.boolean("half_on_save", default=True),
+        upcast_damage=reader.dice("upcast_damage"),
+        shape=reader.enum("shape", SpellShape) or SpellShape.SINGLE,
+        radius=reader.integer("radius", minimum=0),
+        range_feet=reader.integer("range_feet", minimum=0),
+        max_targets=reader.integer("max_targets", default=1, minimum=1),
+        condition=reader.string("condition") or None,
+        concentration=reader.boolean("concentration"),
+        provenance=reader.string("provenance", required=True),
+    )
+    if spell.damage is not None and spell.damage_type is None:
+        reader.fail("damage_type", "a spell that deals damage must name a damage type")
+    if spell.requires_attack_roll and spell.save_ability is not None:
+        reader.fail(
+            "save_ability",
+            "a spell cannot both require an attack roll and offer a saving throw",
+        )
+    return (spell, dict(record)) if reader.ok else None
+
+
+def _parse_condition(
+    name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
+) -> tuple[ConditionEffect, dict[str, Any]] | None:
+    reader = _Reader(record, diagnostics, source=source, section="conditions", name=name)
+    reader.unknown_keys(_CONDITION_KEYS)
+    reader.string("provenance", required=True)
+    reader.string("description")
+    flags: dict[str, bool] = {}
+    for flag, value in reader.mapping("effects").items():
+        if flag not in EFFECT_FLAGS:
+            reader.fail(
+                "effects",
+                f"{flag!r} is not an effect this engine can apply. A pack may name new "
+                f"conditions but not new kinds of effect. Valid flags: "
+                f"{', '.join(EFFECT_FLAGS)}",
+            )
+            continue
+        if not isinstance(value, bool):
+            reader.fail("effects", f"{flag} must be true or false, got {value!r}")
+            continue
+        flags[flag] = value
+    if not reader.ok:
+        return None
+    return ConditionEffect(**flags), dict(record)
+
+
+def _parse_item(
+    name: str, record: Mapping[str, Any], diagnostics: list[Diagnostic], source: str
+) -> tuple[ItemEffect, dict[str, Any]] | None:
+    reader = _Reader(record, diagnostics, source=source, section="items", name=name)
+    reader.unknown_keys(_ITEM_KEYS)
+    provenance = reader.string("provenance", required=True)
+    description = reader.string("description")
+    if record.get("use") is None:
+        reader.fail("use", "required; an item is defined by what using it does")
+        return None
+    use = reader.mapping("use")
+    sub = _Reader(use, diagnostics, source=source, section="items", name=name)
+    sub.unknown_keys(_USE_KEYS)
+    heal = sub.dice("heal")
+    damage = sub.dice("damage")
+    damage_type = sub.enum("damage_type", DamageType)
+    save_ability = sub.enum("save_ability", Ability)
+    save_dc = sub.integer("save_dc", minimum=1) if save_ability is not None else 0
+    half_on_save = sub.boolean("half_on_save", default=True)
+    condition = sub.string("condition") or None
+    if not (reader.ok and sub.ok):
+        return None
+    try:
+        effect = ItemEffect(
+            heal=heal,
+            damage=damage,
+            damage_type=damage_type,
+            save_ability=save_ability,
+            save_dc=save_dc,
+            half_on_save=half_on_save,
+            condition=condition,
+            description=description,
+            provenance=provenance,
+        )
+    except ItemError as error:
+        reader.fail("use", str(error))
+        return None
+    return effect, dict(record)
+
+
+def _parse_pack(
+    payload: Mapping[str, Any],
+    diagnostics: list[Diagnostic],
+    *,
+    label: str,
+    level: str,
+    path: str,
+) -> _ParsedPack | None:
+    if not isinstance(payload, dict):
+        diagnostics.append(
+            Diagnostic(source=label, problem="a pack must be a JSON object")
+        )
+        return None
+    for key in sorted(set(payload) - _PACK_KEYS):
+        diagnostics.append(
+            Diagnostic(
+                source=label, field=key,
+                problem=(
+                    f"unknown top-level key. Valid keys: {', '.join(sorted(_PACK_KEYS))}"
+                ),
+            )
+        )
+    provenance = payload.get("provenance")
+    if not isinstance(provenance, str) or not provenance.strip():
+        diagnostics.append(
+            Diagnostic(
+                source=label, field="provenance",
+                problem=(
+                    "required. Every pack must say where its content came from, so a "
+                    "session mixing SRD and original material can always report which "
+                    "is which"
+                ),
+            )
+        )
+        provenance = ""
+
+    parsed = _ParsedPack(
+        info=PackInfo(
+            label=label, level=level, path=path,
+            pack=str(payload.get("pack", label)),
+            version=str(payload.get("version", "")),
+            provenance=provenance,
+            counts={},
+        ),
+        creatures={}, spells={}, spell_records={}, condition_effects={},
+        condition_records={}, items={}, item_records={},
+    )
+
+    for name, record in _named_records(payload, "creatures", diagnostics, label):
+        creature = _parse_creature(name, record, diagnostics, label)
+        if creature is not None:
+            parsed.creatures[name] = creature
+    for name, record in _named_records(payload, "spells", diagnostics, label):
+        spell = _parse_spell(name, record, diagnostics, label)
+        if spell is not None:
+            parsed.spells[name] = spell[0]
+            parsed.spell_records[name] = spell[1]
+    for name, record in _named_records(payload, "conditions", diagnostics, label):
+        condition = _parse_condition(name, record, diagnostics, label)
+        if condition is not None:
+            parsed.condition_effects[name] = condition[0]
+            parsed.condition_records[name] = condition[1]
+    for name, record in _named_records(payload, "items", diagnostics, label):
+        item = _parse_item(name, record, diagnostics, label)
+        if item is not None:
+            parsed.items[name] = item[0]
+            parsed.item_records[name] = item[1]
+
+    counts = {section: len(parsed.section(section)) for section in SECTIONS}
+    parsed.info = PackInfo(
+        label=parsed.info.label, level=parsed.info.level, path=parsed.info.path,
+        pack=parsed.info.pack, version=parsed.info.version,
+        provenance=parsed.info.provenance, counts=counts,
+    )
+    return parsed
+
+
+# --- finding packs on disk -------------------------------------------------
+def _discover(entry: str | Path, diagnostics: list[Diagnostic]) -> list[Path]:
+    """Every ``*.json`` an entry names, refusing anything that escapes it.
+
+    A named file is a declaration by whoever configured it, so it needs no
+    containment check. A *directory* does: the caller declared the directory, not
+    whatever a symlink inside it happens to point at.
+    """
+    try:
+        root = Path(entry).expanduser().resolve()
+    except OSError as error:
+        diagnostics.append(Diagnostic(source=str(entry), problem=f"cannot be resolved: {error}"))
+        return []
+    if not root.exists():
+        diagnostics.append(Diagnostic(source=str(root), problem="does not exist"))
+        return []
+    if root.is_file():
+        if root.suffix.lower() != ".json":
+            diagnostics.append(
+                Diagnostic(source=str(root), problem="content packs must be .json files")
+            )
+            return []
+        return [root]
+
+    found: list[Path] = []
+    for directory, subdirectories, filenames in os.walk(root, followlinks=False):
+        subdirectories.sort()
+        for filename in sorted(filenames):
+            if not filename.lower().endswith(".json"):
+                continue
+            candidate = Path(directory) / filename
+            try:
+                resolved = candidate.resolve()
+            except OSError as error:
+                diagnostics.append(
+                    Diagnostic(source=str(candidate), problem=f"cannot be resolved: {error}")
+                )
+                continue
+            if not resolved.is_relative_to(root):
+                diagnostics.append(
+                    Diagnostic(
+                        source=str(candidate),
+                        problem=(
+                            f"resolves to {resolved}, outside the content directory that "
+                            f"was configured; it is not read"
+                        ),
+                    )
+                )
+                continue
+            found.append(resolved)
+    return found
+
+
+def _read_pack(path: Path, diagnostics: list[Diagnostic]) -> Mapping[str, Any] | None:
+    try:
+        size = path.stat().st_size
+    except OSError as error:
+        diagnostics.append(Diagnostic(source=str(path), problem=f"cannot be read: {error}"))
+        return None
+    if size > MAX_PACK_BYTES:
+        diagnostics.append(
+            Diagnostic(
+                source=str(path),
+                problem=f"is {size} bytes, over the {MAX_PACK_BYTES} byte limit for a pack",
+            )
+        )
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        diagnostics.append(Diagnostic(source=str(path), problem=f"cannot be read: {error}"))
+        return None
+    except UnicodeDecodeError as error:
+        diagnostics.append(Diagnostic(source=str(path), problem=f"is not valid UTF-8: {error}"))
+        return None
+    try:
+        payload: Any = json.loads(text)
+    except json.JSONDecodeError as error:
+        diagnostics.append(
+            Diagnostic(source=str(path), problem=f"is not valid JSON: {error}")
+        )
+        return None
+    if not isinstance(payload, dict):
+        diagnostics.append(Diagnostic(source=str(path), problem="a pack must be a JSON object"))
+        return None
+    return payload
+
+
+def _builtin_condition_payload() -> dict[str, Any]:
+    """The SRD condition table, expressed as a pack.
+
+    Conditions are the one built-in category that is code rather than a JSON file,
+    and deliberately so: :data:`~fivee_sim.kernel.conditions.EFFECTS` is the default
+    table every kernel function falls back to, and the kernel is not allowed to
+    perform I/O. Rendering it as a pack here keeps a single parse path — the
+    built-in conditions go through exactly the validation a campaign's do, which
+    also means a malformed row could never ship unnoticed.
+    """
+    return {
+        "pack": "srd-5.2-conditions",
+        "version": "1.0",
+        "provenance": "SRD 5.2",
+        "note": (
+            "Rendered from the engine's own condition table so it validates and "
+            "merges like any other pack."
+        ),
+        "conditions": [
+            {
+                "name": str(name),
+                "provenance": "SRD 5.2",
+                "effects": {
+                    flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)
+                },
+            }
+            for name, effect in EFFECTS.items()
+        ],
+    }
+
+
+def _builtin_payloads(diagnostics: list[Diagnostic]) -> list[tuple[str, Mapping[str, Any]]]:
+    out: list[tuple[str, Mapping[str, Any]]] = [
+        ("bundled:conditions", _builtin_condition_payload())
+    ]
+    for filename in BUILTIN_FILES:
+        label = f"bundled:{filename}"
+        text = resources.files(_BUILTIN_PACKAGE).joinpath(filename).read_text(encoding="utf-8")
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as error:  # pragma: no cover - a shipping bug
+            diagnostics.append(Diagnostic(source=label, problem=f"is not valid JSON: {error}"))
+            continue
+        out.append((label, payload))
+    return out
+
+
+def environment_paths(env: Mapping[str, str] | None = None) -> list[str]:
+    """Paths the environment asks for, in precedence order.
+
+    ``FIVEE_SIM_CONTENT`` wins outright when set. Only when it is unset does the
+    project directory apply, so a developer exporting the variable is not silently
+    also loading whatever sits in the repo they happen to be in.
+    """
+    environ = os.environ if env is None else env
+    configured = environ.get(CONTENT_ENV, "").strip()
+    if configured:
+        return [part for part in configured.split(os.pathsep) if part.strip()]
+    project = environ.get(PROJECT_ENV, "").strip()
+    if project:
+        candidate = Path(project) / PROJECT_SUBDIR
+        if candidate.is_dir():
+            return [str(candidate)]
+    return []
+
+
+def builtin_mode(env: Mapping[str, str] | None = None) -> BuiltinMode:
+    environ = os.environ if env is None else env
+    raw = environ.get(BUILTIN_ENV, "").strip().casefold()
+    if not raw:
+        return BuiltinMode.INCLUDE
+    try:
+        return BuiltinMode(raw)
+    except ValueError:
+        allowed = ", ".join(mode.value for mode in BuiltinMode)
+        raise ContentError(
+            [
+                Diagnostic(
+                    source=BUILTIN_ENV,
+                    problem=f"must be one of: {allowed}; got {raw!r}",
+                )
+            ]
+        ) from None
+
+
+# --- merging ---------------------------------------------------------------
+def _merge_section(
+    section: str,
+    levels: Sequence[tuple[str, Sequence[_ParsedPack]]],
+    diagnostics: list[Diagnostic],
+) -> dict[str, str]:
+    """Decide which pack owns each name in ``section``. Returns name -> pack label.
+
+    Within a level, order is only path-sorted, so two packs both claiming a name are
+    ambiguous and refused even when both say ``overrides``. Across levels the later
+    level wins, because that ordering is declared rather than incidental.
+    """
+    owner: dict[str, str] = {}
+    owner_level: dict[str, str] = {}
+    for level, packs in levels:
+        claimed_here: dict[str, str] = {}
+        for pack in packs:
+            for name, record in pack.section(section).items():
+                overrides = bool(record.get("overrides", False))
+                previous = owner.get(name)
+                if name in claimed_here:
+                    diagnostics.append(
+                        Diagnostic(
+                            source=pack.info.label, section=section, record=name,
+                            problem=(
+                                f"is also defined by {claimed_here[name]}. Packs at the "
+                                f"same level load in path order, so which one wins would "
+                                f"be arbitrary — rename one, or load them at different "
+                                f"levels"
+                            ),
+                        )
+                    )
+                    continue
+                if previous is not None and not overrides:
+                    diagnostics.append(
+                        Diagnostic(
+                            source=pack.info.label, section=section, record=name,
+                            problem=(
+                                f"is already defined by {previous} (loaded as "
+                                f"{owner_level[name]}). Set \"overrides\": true on this "
+                                f"record to replace it deliberately, or rename it"
+                            ),
+                        )
+                    )
+                    continue
+                if previous is None and overrides:
+                    diagnostics.append(
+                        Diagnostic(
+                            source=pack.info.label, section=section, record=name,
+                            field="overrides",
+                            problem=(
+                                "declares an override but nothing of that name is loaded; "
+                                "it registers as a new entry. Check for a typo, or drop "
+                                "the flag"
+                            ),
+                            severity=Severity.WARNING,
+                        )
+                    )
+                claimed_here[name] = pack.info.label
+                owner[name] = pack.info.label
+                owner_level[name] = level
+    return owner
+
+
+def _cross_reference(
+    registry_conditions: Mapping[str, ConditionEffect],
+    spells: Mapping[str, Spell],
+    spell_records: Mapping[str, dict[str, Any]],
+    items: Mapping[str, ItemEffect],
+    creatures: Mapping[str, dict[str, Any]],
+    sources: Mapping[tuple[str, str], str],
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Check references that only the merged set can answer.
+
+    A spell naming ``condition: "vale-cursed"`` is valid exactly when some pack in
+    the merged set defines it, which no per-file validator can know.
+    """
+    known = sorted(registry_conditions)
+    available = ", ".join(known) or "none"
+
+    def check(section: str, owner: str, field: str, condition: str | None) -> None:
+        if condition is None or condition in registry_conditions:
+            return
+        diagnostics.append(
+            Diagnostic(
+                source=sources.get((section, owner), "unknown"),
+                section=section, record=owner, field=field,
+                problem=(
+                    f"applies condition {condition!r}, which no loaded pack defines. "
+                    f"Available: {available}"
+                ),
+            )
+        )
+
+    for name, spell in spells.items():
+        check("spells", name, "condition", spell.condition)
+        record = spell_records.get(name, {})
+        if spell.radius and record.get("shape") is None:
+            diagnostics.append(
+                Diagnostic(
+                    source=sources.get(("spells", name), "unknown"),
+                    section="spells", record=name, field="shape",
+                    problem="has a radius but no shape; it will be treated as single-target",
+                    severity=Severity.WARNING,
+                )
+            )
+    for name, effect in items.items():
+        check("items", name, "use.condition", effect.condition)
+    for name, record in creatures.items():
+        for condition in record.get("conditions", []) or []:
+            check("creatures", name, "conditions", str(condition))
+
+
+def _build(
+    configured: Sequence[str | Path] = (),
+    *,
+    builtin: BuiltinMode = BuiltinMode.INCLUDE,
+    env: Mapping[str, str] | None = None,
+    include_environment: bool = True,
+) -> tuple[ContentRegistry | None, list[Diagnostic]]:
+    diagnostics: list[Diagnostic] = []
+    levels: list[tuple[str, list[_ParsedPack]]] = []
+
+    def parse_level(name: str, entries: Iterable[tuple[str, Mapping[str, Any], str]]) -> None:
+        packs: list[_ParsedPack] = []
+        for label, payload, path in entries:
+            parsed = _parse_pack(payload, diagnostics, label=label, level=name, path=path)
+            if parsed is not None:
+                packs.append(parsed)
+        if packs:
+            levels.append((name, packs))
+
+    if builtin is BuiltinMode.INCLUDE:
+        parse_level(
+            "builtin",
+            [(label, payload, "") for label, payload in _builtin_payloads(diagnostics)],
+        )
+
+    # One file is one pack however many times it is named. Without this, validating a
+    # pack that the environment already loads — or configuring a path that is also in
+    # FIVEE_SIM_CONTENT — would report every one of its names as colliding with
+    # itself, which is a spurious failure with a baffling message.
+    seen: set[Path] = set()
+
+    def from_paths(name: str, entries: Sequence[str | Path]) -> None:
+        collected: list[tuple[str, Mapping[str, Any], str]] = []
+        for entry in entries:
+            for path in _discover(entry, diagnostics):
+                if path in seen:
+                    continue
+                seen.add(path)
+                payload = _read_pack(path, diagnostics)
+                if payload is not None:
+                    collected.append((str(path), payload, str(path)))
+        parse_level(name, collected)
+
+    if include_environment:
+        from_paths("environment", environment_paths(env))
+    from_paths("configured", list(configured))
+
+    creatures: dict[str, dict[str, Any]] = {}
+    spells: dict[str, Spell] = {}
+    spell_records: dict[str, dict[str, Any]] = {}
+    condition_effects: dict[str, ConditionEffect] = {}
+    condition_records: dict[str, dict[str, Any]] = {}
+    items: dict[str, ItemEffect] = {}
+    item_records: dict[str, dict[str, Any]] = {}
+    sources: dict[tuple[str, str], str] = {}
+
+    ownership = {
+        section: _merge_section(section, levels, diagnostics) for section in SECTIONS
+    }
+    for _level, packs in levels:
+        for pack in packs:
+            for section in SECTIONS:
+                owners = ownership[section]
+                for name in pack.section(section):
+                    if owners.get(name) != pack.info.label:
+                        continue
+                    sources[(section, name)] = pack.info.label
+                    if section == "creatures":
+                        creatures[name] = pack.creatures[name]
+                    elif section == "spells":
+                        spells[name] = pack.spells[name]
+                        spell_records[name] = pack.spell_records[name]
+                    elif section == "conditions":
+                        condition_effects[name] = pack.condition_effects[name]
+                        condition_records[name] = pack.condition_records[name]
+                    else:
+                        items[name] = pack.items[name]
+                        item_records[name] = pack.item_records[name]
+
+    retained: list[str] = []
+    for condition in STRUCTURAL_CONDITIONS:
+        if condition not in condition_effects:
+            condition_effects[str(condition)] = EFFECTS[condition]
+            retained.append(str(condition))
+
+    _cross_reference(
+        condition_effects, spells, spell_records, items, creatures, sources, diagnostics
+    )
+
+    errors = [d for d in diagnostics if d.severity is Severity.ERROR]
+    if errors:
+        return None, diagnostics
+    registry = ContentRegistry(
+        builtin=builtin,
+        creatures=creatures,
+        spells=spells,
+        spell_records=spell_records,
+        condition_effects=condition_effects,
+        condition_records=condition_records,
+        items=items,
+        item_records=item_records,
+        packs=tuple(pack.info for _level, packs in levels for pack in packs),
+        sources=sources,
+        warnings=tuple(d for d in diagnostics if d.severity is Severity.WARNING),
+        retained_conditions=tuple(retained),
+    )
+    return registry, diagnostics
+
+
+def load_packs(
+    configured: Sequence[str | Path] = (),
+    *,
+    builtin: BuiltinMode | str = BuiltinMode.INCLUDE,
+    env: Mapping[str, str] | None = None,
+    include_environment: bool = True,
+) -> ContentRegistry:
+    """Load content and return the merged registry, or raise with every diagnostic."""
+    mode = BuiltinMode(builtin)
+    registry, diagnostics = _build(
+        configured, builtin=mode, env=env, include_environment=include_environment
+    )
+    if registry is None:
+        raise ContentError(diagnostics)
+    return registry
+
+
+def validate(
+    configured: Sequence[str | Path] = (),
+    *,
+    builtin: BuiltinMode | str = BuiltinMode.INCLUDE,
+    env: Mapping[str, str] | None = None,
+    include_environment: bool = True,
+) -> list[Diagnostic]:
+    """Every problem with the given packs, without loading them. The authoring aid."""
+    _registry, diagnostics = _build(
+        configured, builtin=BuiltinMode(builtin), env=env,
+        include_environment=include_environment,
+    )
+    return diagnostics
+
+
+def builtin_registry() -> ContentRegistry:
+    """The bundled SRD slice alone, with nothing from the environment."""
+    return load_packs(builtin=BuiltinMode.INCLUDE, include_environment=False)
+
+
+def registry_from_environment() -> ContentRegistry:
+    """The registry a freshly started server should use."""
+    return load_packs(builtin=builtin_mode())

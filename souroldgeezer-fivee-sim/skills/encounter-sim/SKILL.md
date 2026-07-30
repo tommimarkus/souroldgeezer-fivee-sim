@@ -1,6 +1,6 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the souroldgeezer-fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
 ---
 
 # Encounter Simulation
@@ -8,7 +8,8 @@ description: Use when running, narrating, or analysing 5E-compatible combat — 
 Run 5E-compatible combat through the `fivee_sim` MCP engine. The engine resolves
 the rules and owns the state; your job is to drive it and narrate what it reports.
 
-Rules content is SRD 5.2 under CC-BY-4.0. See the plugin's `NOTICE`.
+Bundled rules content is SRD 5.2 under CC-BY-4.0. See the plugin's `NOTICE`. A
+campaign may load its own content as well — see "What is actually loaded" below.
 
 ## The one rule that matters
 
@@ -32,16 +33,26 @@ narrating from memory puts it straight back.
    `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they identify
    combatants in every later call. Positions are feet along one axis.
 2. **`encounter_state`** to see whose turn it is and what the situation is.
-3. **`encounter_act`** for each action: `attack`, `cast`, `move`, `dash`,
-   `disengage`, `dodge`. It returns the events it generated plus fresh state.
+3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
+   `dash`, `disengage`, `dodge`. It returns the events it generated plus fresh
+   state.
 4. **`encounter_advance`** to end the turn. Death saves for dying creatures are
    rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
 An illegal action is **refused with a reason** — out of reach, no slots left, no
-attacks remaining, speed 0 while Grappled. Read the reason and adapt. Do not
-retry the same call hoping for a different answer, and do not narrate the action
-as though it happened.
+attacks remaining, none of that potion left, speed 0 while Grappled. Read the
+reason and adapt. Do not retry the same call hoping for a different answer, and do
+not narrate the action as though it happened.
+
+## Items
+
+`encounter_act(kind="use_item", item="Potion of Healing")` spends the action.
+Healing defaults to the user; a damaging or condition-applying item needs a
+`target`, and any item used on another creature needs to be within 5 ft. Quantity
+is the charge count, and `encounter_state` shows what each combatant has left.
+
+No items ship in the bundled slice — they arrive through a content pack.
 
 ## Narrating well
 
@@ -66,6 +77,10 @@ the rules. Iteration `i` uses `seed + i`, so one iteration reproduces a single
 hand-played fight at that seed — handy when a batch result looks wrong and you
 want to watch the actual fight.
 
+**Neither uses items.** The auto-play policy attacks, casts, and closes distance; it
+never drinks a potion, so items on a combatant are ignored in a batch. Say so if
+the question turns on one, and play the fight by hand instead.
+
 When comparing options, hold the seed and iteration count fixed and change one
 thing. Report the distribution, not just the mean: `p90` and `max` are what a
 player feels on a lucky round.
@@ -76,13 +91,36 @@ player feels on a lucky round.
 Every one accepts an optional `seed` and **always reports the seed it used**, so
 any result can be replayed exactly. Quote the seed when a roll matters.
 
-`lookup_rule` returns bundled conditions, spells, and stat blocks. Call it with no
-topic to see everything available.
+`lookup_rule` returns loaded conditions, spells, creatures, and items, each naming
+the pack it came from in `source`. Call it with no topic to see everything
+available.
 
 For a full written catalogue — including what is deliberately absent —
 read [`../../docs/COVERAGE.md`](../../docs/COVERAGE.md). Prefer it when a user asks
 "what do you support?", because it states the unmodelled areas that `lookup_rule`
-cannot show you: there is no entry for a class or a potion to miss on.
+cannot show you: there is no entry for a class or a feat to miss on.
+
+## What is actually loaded
+
+**Do not assume the bundled slice is what is loaded.** A campaign can add its own
+creatures, spells, conditions, and items as content packs, and can exclude the
+bundled SRD content entirely to run on its own material.
+
+- **`content_status`** — what is loaded, from where, under which mode. Call this
+  before telling anyone what the engine supports, and whenever a name you expected
+  is missing. It also flags any encounter still running on content from before the
+  last change.
+- **`content_validate`** — check a pack without loading it. The diagnostics name
+  the pack, section, record, and field, so use them verbatim when helping an author
+  fix their JSON.
+- **`content_configure`** — load packs, or switch the bundled slice in or out.
+
+Encounters in progress keep the content they started with; only new ones use
+freshly loaded content. A failed `content_configure` changes nothing.
+
+To help someone write a pack, read
+[`../../docs/CONTENT-PACKS.md`](../../docs/CONTENT-PACKS.md) — it has the format,
+the precedence rules, and a worked example.
 
 ## Honest limits
 
@@ -90,15 +128,21 @@ State these when they bear on a ruling rather than papering over them:
 
 - **Geometry is one axis.** Distance, reach, ranged penalties, and spell radii all
   work; flanking, cover, and difficult terrain do not exist.
-- **Only SRD 5.2 content ships.** `lookup_rule` refusing a name usually means it
-  is outside the SRD, not misspelled. Do not invent the missing stat block — say
-  it is not available and offer a bundled alternative.
-- **Stat blocks list what is not implemented.** Every bundled monster carries an
+- **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
+  loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
+  `content_status` before concluding it does not exist. Either way, do not invent
+  the missing stat block: say it is not available and offer a loaded alternative.
+- **Stat blocks list what is not implemented.** Every creature carries an
   `unmodelled` field naming printed traits the engine skips — Undead Fortitude,
   Pack Tactics, Nimble Escape. Check it before promising a trait will fire, and
-  mention it if a player is counting on one.
+  mention it if a player is counting on one. Pack creatures carry the field too,
+  empty unless their author filled it in.
 - **Frightened always applies** its disadvantage; there is no visibility model to
   condition it on line of sight.
 - **Exhaustion is not implemented.** SRD 5.2 defines it; this engine models the
   other fourteen conditions only. Do not apply exhaustion effects by hand — say it
-  is unsupported.
+  is unsupported. A pack could define an exhaustion-like condition, but only out of
+  the effects the engine already applies; it cannot invent a new kind of effect.
+- **Character building is still absent.** Classes, species, backgrounds, feats, and
+  levelling are not modelled and packs do not add them; a pack extends the
+  categories the engine already has.

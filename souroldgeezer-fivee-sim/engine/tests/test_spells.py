@@ -160,7 +160,9 @@ class TestConditionSpells:
             Random(2), hold, slot_level=2, save_dc=15,
             targets=(SpellTarget(name="Free", save_modifier=+40),),
         )
-        assert failed.results[0].condition_applied is Condition.PARALYZED
+        # Compared by value, not identity: a condition is a name, and one loaded from
+        # a pack is an ordinary string rather than a Condition member.
+        assert failed.results[0].condition_applied == Condition.PARALYZED
         assert saved.results[0].condition_applied is None
 
     def test_concentration_is_reported_for_concentration_spells(self) -> None:

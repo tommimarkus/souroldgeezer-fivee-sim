@@ -1,8 +1,10 @@
 {
+  "pack": "srd-5.2-creatures",
+  "version": "1.0",
   "provenance": "SRD 5.2",
   "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 stat blocks.",
   "note": "Every 'unmodelled' entry is a trait the stat block has that this engine does not implement. It is listed so the gap is visible rather than silently absent.",
-  "monsters": [
+  "creatures": [
     {
       "name": "Goblin Warrior",
       "team": "monsters",

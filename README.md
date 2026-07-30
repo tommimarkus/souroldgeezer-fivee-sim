@@ -8,8 +8,8 @@ computed and owned by the engine — not recalled by a language model.
 Compatible with fifth edition (2024 rules).
 
 > **Status: v1 complete, unpublished.** The engine, MCP server, plugin, skill,
-> and a starter SRD data slice all work end to end. Not yet published to a
-> remote marketplace.
+> a starter SRD data slice, and user-defined content packs all work end to end.
+> Not yet published to a remote marketplace.
 
 ## Why an engine instead of prose
 
@@ -35,6 +35,7 @@ the live encounter uses.
 | Stateful | `encounter_create`, `encounter_state`, `encounter_act`, `encounter_advance` |
 | Analytics | `simulate_rounds`, `simulate_dpr` |
 | Primitives | `roll`, `check`, `save`, `lookup_rule` |
+| Content | `content_status`, `content_configure`, `content_validate` |
 
 Every tool that consumes randomness accepts an optional `seed` and always reports
 the seed it used, so no result is irreproducible after the fact.
@@ -48,14 +49,15 @@ areas that are not modelled at all. It is generated from the data and a test fai
 if it drifts, so it cannot quietly become untrue.
 
 The short version: 4 creatures and 4 spells — a deliberately narrow starting
-slice. **Characters, classes, species, backgrounds, feats, items and potions are
-not modelled**; combatants are described by their statistics the way a stat block
-presents them.
+slice. **Characters, classes, species, backgrounds and feats are not modelled**;
+combatants are described by their statistics the way a stat block presents them.
+Simple usable items — potions, flasks, doses of poison — are modelled, but none
+ship: they arrive through a content pack.
 
 Weapon attacks with reach and ranged bands, movement, Dash, Disengage, Dodge,
 opportunity attacks, death saves and instant death, damage resistance and
-vulnerability, and a curated spell set with saving throws, areas, upcasting, and
-concentration.
+vulnerability, usable items, and a curated spell set with saving throws, areas,
+upcasting, and concentration.
 
 Fourteen conditions are implemented as a data table: Blinded, Charmed, Deafened,
 Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned,
@@ -67,6 +69,27 @@ a single axis, so there is no flanking or cover; Frightened applies its
 disadvantage unconditionally because there is no visibility model; and only SRD
 5.2 content ships, with each bundled stat block listing the printed traits the
 engine skips.
+
+## Bringing your own content
+
+A campaign is not limited to what ships. Its own creatures, spells, conditions and
+usable items go in a JSON **content pack**, in the same format the bundled data
+uses — the SRD slice is loaded by the same parser and validated by the same rules,
+so there is one format rather than a second dialect.
+
+Drop a pack in `.fivee-sim/content/` at the root of a campaign repository and the
+engine finds it with no configuration. `FIVEE_SIM_BUILTIN=exclude` drops the
+bundled SRD content entirely, which is what lets a publisher run this engine on
+material that is wholly their own.
+
+Names never collide silently: two packs claiming one name fail and say which files,
+and a pack that means to replace something declares `"overrides": true`. Validation
+is strict — an unknown key is an error, because a mistyped `attack_bonus` would
+otherwise produce a creature that fights wrongly and looks fine.
+
+See
+**[souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md](souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md)**
+for the format, the precedence rules, and a worked example.
 
 ## Layout
 
@@ -123,8 +146,11 @@ the character-device staging hazards in this workspace.
 - [x] Phase 5 — skill and agent
 - [x] Phase 6 — SRD 5.2 data slice
 
-Next, in rough order of value: widen the data slice, add
-`encounter_legal_actions`, then reconsider the v1 exclusions —
+- [x] Phase 7 — user-defined content packs and usable items
+
+Next, in rough order of value: widen the data slice (it ships no items at all, and
+SRD 5.2 has some), add `encounter_legal_actions`, teach the auto-play policy to use
+items so analytics can see them, then reconsider the v1 exclusions —
 encounter/monster builder, whole-adventuring-day attrition, and build-space
 optimisation search.
 

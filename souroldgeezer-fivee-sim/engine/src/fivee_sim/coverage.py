@@ -19,8 +19,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .data import monster_records, spell_records, spellbook
-from .kernel.conditions import EFFECTS, Condition
+from .data import item_effects, monster_records, spell_records, spellbook
+from .kernel.conditions import Condition, effect_of
 from .kernel.rules import DamageType
 from .model.encounter import ActionKind
 
@@ -37,9 +37,14 @@ NOT_SUPPORTED = (
         "derives those numbers.",
     ),
     (
-        "Equipment and items",
-        "Weapons and armour as objects, potions, scrolls, magic items, attunement, "
-        "encumbrance, and ammunition. An attack carries its own bonus and damage "
+        "Equipment beyond simple usable items",
+        "Simple usable items *are* modelled: potions, flasks, and doses of poison — one "
+        "use that heals, deals damage, or applies a condition, held in a quantity that "
+        "is also its charge count. None ship in the bundled slice, so potions reach a "
+        "session through a content pack. Nothing beyond that use is modelled. Weapons "
+        "and armour as objects that derive attack bonuses and armour class, scrolls, "
+        "attunement, encumbrance, ammunition, and charges tracked separately from "
+        "quantity are all absent. An attack carries its own bonus and damage "
         "expression; nothing models the object producing it.",
     ),
     (
@@ -74,7 +79,7 @@ def _md_escape(text: str) -> str:
 
 
 def _condition_summary(condition: Condition) -> str:
-    effect = EFFECTS[condition]
+    effect = effect_of(condition)
     active = [name for name in effect.__dataclass_fields__ if getattr(effect, name)]
     if not active:
         return "tracked; no combat-roll consequences"
@@ -104,6 +109,7 @@ def render_markdown() -> str:
     monsters = monster_records()
     spells = spellbook()
     raw_spells = spell_records()
+    items = item_effects()
     conditions = list(Condition)
 
     lines: list[str] = []
@@ -125,6 +131,15 @@ def render_markdown() -> str:
         "available to this project at all."
     )
     add("")
+    add(
+        "**This describes the bundled slice.** A campaign can add its own creatures, "
+        "spells, conditions, and usable items as content packs, or exclude the bundled "
+        "content entirely and run on its own material — see "
+        "[CONTENT-PACKS.md](CONTENT-PACKS.md). What a given session actually has "
+        "loaded is reported by the `content_status` tool, which is the authority when "
+        "packs are in play; this document is the authority for what ships."
+    )
+    add("")
     add("## At a glance")
     add("")
     add("| Category | Supported |")
@@ -134,8 +149,8 @@ def render_markdown() -> str:
     add(f"| Conditions | {len(conditions)} |")
     add(f"| Damage types | {len(list(DamageType))} |")
     add(f"| Actions | {len(list(ActionKind))} |")
+    add(f"| Usable items | {len(items)} bundled — the category is modelled, packs supply it |")
     add("| Classes, species, backgrounds, feats | 0 — not modelled |")
-    add("| Items, potions, equipment | 0 — not modelled |")
     add("")
     add(
         "The creature and spell lists are a deliberately narrow starting slice, not an "
@@ -233,10 +248,16 @@ def render_markdown() -> str:
     add("## Checking at runtime")
     add("")
     add(
-        "`lookup_rule` with no topic lists every bundled condition, spell, and stat "
-        "block. With a topic it returns that entry, including its `unmodelled` field. "
-        "A miss means the subject is outside what ships — it is refused rather than "
-        "invented."
+        "`lookup_rule` with no topic lists every loaded condition, spell, creature, and "
+        "item. With a topic it returns that entry, including the pack it came from and "
+        "its `unmodelled` field. A miss means the subject is not loaded — it is refused "
+        "rather than invented."
+    )
+    add("")
+    add(
+        "`content_status` reports which packs are loaded, whether the bundled slice is "
+        "included, and any encounter still running on content from before the last "
+        "change. `content_validate` checks a pack without loading it."
     )
     return "\n".join(lines) + "\n"
 

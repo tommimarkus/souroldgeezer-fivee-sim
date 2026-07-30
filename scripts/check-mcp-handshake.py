@@ -39,6 +39,9 @@ EXPECTED_TOOLS = {
     "encounter_advance",
     "simulate_rounds",
     "simulate_dpr",
+    "content_status",
+    "content_configure",
+    "content_validate",
 }
 
 failures: list[str] = []
@@ -188,9 +191,19 @@ def main() -> int:
         )
         text = json.dumps(refused)
         report(
-            "only SRD 5.2 content" in text or refused.get("result", {}).get("isError"),
-            "non-SRD lookup is refused rather than invented",
+            "content_status" in text or refused.get("result", {}).get("isError"),
+            "an unloaded lookup is refused rather than invented",
             text[:300],
+        )
+
+        status = server.request(
+            7, "tools/call", {"name": "content_status", "arguments": {}}
+        )
+        status_text = json.dumps(status.get("result", {}))
+        report(
+            '"builtin": "include"' in status_text,
+            "content_status reports the bundled slice by default",
+            status_text[:300],
         )
     finally:
         server.close()

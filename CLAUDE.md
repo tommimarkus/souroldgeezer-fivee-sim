@@ -98,6 +98,12 @@ examples. Content outside the SRD is not licensed to us. Every data record
 carries a provenance field naming SRD 5.2; if a name cannot be traced to the
 SRD, it does not ship.
 
+This constrains what **we redistribute**, not what a user may load. A campaign's
+own content packs are outside the repo by design and are not subject to our
+denylist — their content is theirs. That is why the local hook scopes its non-SRD
+name check to `souroldgeezer-fivee-sim/engine/src/fivee_sim/data/`: extending it to
+user packs would be both useless and wrong.
+
 Before publishing, run the `souroldgeezer-audit:ip-hygiene` skill over the
 plugin surface as the release gate. The local hook is a tripwire, not a
 substitute for it.
@@ -152,10 +158,34 @@ to catch exactly that: it requires every line the server emits on stdout to pars
 as JSON.
 
 **Layer boundaries.** `kernel/` holds the primitives — dice, resolution,
-conditions, attacks, spells — and knows nothing about creatures; callers pass the
-handful of values a roll depends on. `model/` owns creatures and is the only place
-combat state changes. Spell definitions live in `kernel/spells.py` rather than a
-separate layer because they are resolution primitives like the rest.
+conditions, attacks, spells, items — and knows nothing about creatures; callers pass
+the handful of values a roll depends on. `model/` owns creatures and is the only
+place combat state changes. Spell and item definitions live in `kernel/` rather than
+a separate layer because they are resolution primitives like the rest.
+
+**Content is data, and the bundled slice is not privileged.** `content.py` loads
+every pack — including `data/srd/*.json` — through one parser and one validator, and
+returns an immutable `ContentRegistry`. There is one exception, and it is forced:
+the SRD **condition table lives in `kernel/conditions.py`**, because it is the
+default every kernel function falls back to and the kernel may not do I/O.
+`content.py` renders that table as a synthetic pack so it still goes through the
+same validation.
+
+**Conditions are strings, not enum members.** `Condition` remains as constants for
+the SRD set, but a pack's condition is a plain `str`. Two consequences: never call
+`.value` on a condition, and never look one up in a module-level table — every
+function that consults conditions takes the table, for the same reason every
+rolling function takes a `Random`. A green test suite does **not** prove this
+works, because every built-in condition is a `StrEnum` member and answers to both;
+`tests/test_content.py::TestCustomConditions` is the test that does.
+
+**An encounter captures its content tables by value.** `content_configure` builds a
+new registry rather than mutating the live one, so a fight in progress finishes
+under the content it started with — switching to `exclude` mid-fight would otherwise
+strip the creature currently taking its turn. `Encounter.__init__` also *injects*
+its condition table into every combatant, which is load-bearing rather than tidy:
+`analytics/montecarlo.py` builds the `simulate_dpr` dummy itself, where no caller
+can pass a table.
 
 **Every tool reports its seed.** A tool called without one picks a seed and
 returns it, so no result is ever irreproducible.
@@ -176,9 +206,14 @@ bash scripts/hooks/test-ip-hygiene-check.sh
 ```
 
 **`docs/COVERAGE.md` is generated, never hand-edited.** Adding a creature, spell,
-or condition means regenerating it; `tests/test_coverage.py` fails otherwise. The
-"not supported" section is the exception — it is prose in `coverage.py`, because
-absence cannot be derived from the data and it is the part a reader most needs.
+condition, or action means regenerating it; `tests/test_coverage.py` fails
+otherwise. The "not supported" section is the exception — it is prose in
+`coverage.py`, because absence cannot be derived from the data and it is the part a
+reader most needs.
+
+It describes the **bundled** slice only. What a session actually has loaded is the
+`content_status` tool's answer, and the skill says so — a generated document cannot
+know about a pack it has never seen.
 
 `uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
 `~/.cache/uv` is read-only in the sandboxed development environment.

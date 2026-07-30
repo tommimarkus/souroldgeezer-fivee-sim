@@ -19,6 +19,7 @@ diagnostics go to stderr.
 from __future__ import annotations
 
 import random
+import sys
 from dataclasses import dataclass
 from random import Random
 from typing import Any
@@ -28,9 +29,20 @@ from mcp.server.mcpserver import MCPServer
 from .. import __version__
 from ..analytics.montecarlo import simulate_dpr as _simulate_dpr
 from ..analytics.montecarlo import simulate_rounds as _simulate_rounds
-from ..data import DataError, make_monster, monster_names, monster_records, spellbook
+from ..content import (
+    BUILTIN_ENV,
+    CONTENT_ENV,
+    BuiltinMode,
+    ContentError,
+    ContentRegistry,
+    builtin_mode,
+    builtin_registry,
+    environment_paths,
+    load_packs,
+)
+from ..content import validate as _validate_content
+from ..data import DataError, make_creature
 from ..kernel.actions import AttackKind
-from ..kernel.conditions import EFFECTS, Condition
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.rules import Ability, DamageType, make_d20_test
 from ..model.creature import AttackOption, Creature
@@ -41,7 +53,12 @@ A 5E-compatible combat engine. The engine owns the fight: hit points, initiative
 order, conditions, and dice are computed here, so read encounter_state as
 authoritative and narrate from it rather than tracking state yourself.
 
-Rules content comes from SRD 5.2 under CC-BY-4.0; see the plugin's NOTICE.
+Content is configurable. The bundled SRD 5.2 slice loads by default, and a campaign
+may add its own creatures, spells, conditions, and items as content packs — or run on
+its own material alone. Call content_status to see what is actually loaded before
+telling anyone what is available.
+
+Bundled rules content comes from SRD 5.2 under CC-BY-4.0; see the plugin's NOTICE.
 """
 
 server: MCPServer = MCPServer(
@@ -56,14 +73,63 @@ class _Session:
     encounter: Encounter
     rng: Random
     seed: int
+    #: Which content generation this fight was built against. An encounter keeps
+    #: resolving under the content it started with, so this is how a later
+    #: reconfiguration becomes visible rather than mysterious.
+    content_generation: int = 0
+
+
+@dataclass(slots=True)
+class _Content:
+    """The active registry, replaced wholesale rather than mutated."""
+
+    registry: ContentRegistry
+    generation: int = 1
+    configured: tuple[str, ...] = ()
+    #: Set when content named by the environment could not be loaded at start-up.
+    startup_error: str = ""
 
 
 _SESSIONS: dict[str, _Session] = {}
 _NEXT_ID = 0
+_CONTENT: _Content | None = None
 
 
 class ToolError(ValueError):
     """Bad tool input, reported to the caller rather than crashing the server."""
+
+
+def _content() -> _Content:
+    """The active content, loaded from the environment on first use.
+
+    A pack the environment names but that will not load must not take the server
+    down with it: the process would fail its handshake and the user would get no
+    tools at all, with the reason invisible. Instead the built-in slice loads, the
+    failure goes to stderr, and ``content_status`` reports it — so the session works
+    and the problem is still discoverable.
+    """
+    global _CONTENT
+    if _CONTENT is None:
+        try:
+            _CONTENT = _Content(registry=load_packs(builtin=builtin_mode()))
+        except ContentError as error:
+            print(f"fivee-sim: falling back to bundled content: {error}", file=sys.stderr)
+            _CONTENT = _Content(registry=builtin_registry(), startup_error=str(error))
+    return _CONTENT
+
+
+def _registry() -> ContentRegistry:
+    return _content().registry
+
+
+def _mode(value: str | None, *, default: BuiltinMode) -> BuiltinMode:
+    if value is None:
+        return default
+    try:
+        return BuiltinMode(value.strip().casefold())
+    except ValueError as error:
+        allowed = ", ".join(item.value for item in BuiltinMode)
+        raise ToolError(f"builtin must be one of: {allowed}") from error
 
 
 def _new_encounter_id() -> str:
@@ -112,12 +178,18 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
         raise ToolError(f"attack spec is missing {error.args[0]!r}") from error
 
 
-def _creature_from_spec(spec: dict[str, Any]) -> Creature:
-    """Build a combatant from a bundled stat block or an explicit description."""
-    if "monster" in spec:
+def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
+    """Build a combatant from a loaded stat block or an explicit description.
+
+    ``monster`` and ``creature`` are accepted interchangeably; the stat block is
+    looked up in ``registry``, so which names resolve depends on what is loaded.
+    """
+    named = spec.get("creature", spec.get("monster"))
+    if named is not None:
         try:
-            return make_monster(
-                str(spec["monster"]),
+            return make_creature(
+                str(named),
+                registry=registry,
                 label=spec.get("label"),
                 team=spec.get("team"),
                 position=int(spec.get("position", 0)),
@@ -153,20 +225,36 @@ def _creature_from_spec(spec: dict[str, Any]) -> Creature:
             vulnerabilities=frozenset(
                 DamageType(entry) for entry in spec.get("vulnerabilities", [])
             ),
+            items={str(k): int(v) for k, v in spec.get("items", {}).items()},
+            conditions={str(entry) for entry in spec.get("conditions", [])},
+            condition_effects=registry.condition_effects,
             position=int(spec.get("position", 0)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
         raise ToolError(
             f"combatant spec is missing {error.args[0]!r}; give either "
-            f"{{'monster': '<bundled name>'}} or name/team/ac/max_hp"
+            f"{{'creature': '<loaded name>'}} or name/team/ac/max_hp"
         ) from error
 
 
-def _combatants(specs: list[dict[str, Any]]) -> list[Creature]:
+def _combatants(specs: list[dict[str, Any]], registry: ContentRegistry) -> list[Creature]:
     if len(specs) < 2:
         raise ToolError("an encounter needs at least two combatants")
-    return [_creature_from_spec(spec) for spec in specs]
+    return [_creature_from_spec(spec, registry) for spec in specs]
+
+
+def _new_encounter(
+    combatants: list[Creature], rng: Random, registry: ContentRegistry
+) -> Encounter:
+    """Build an encounter bound to ``registry``'s tables, captured by value."""
+    return Encounter(
+        combatants,
+        rng,
+        spellbook=registry.spells,
+        items=registry.items,
+        condition_effects=registry.condition_effects,
+    )
 
 
 # --- primitives ------------------------------------------------------------
@@ -251,63 +339,113 @@ def save(
     }
 
 
+def _condition_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
+    effect = registry.condition_effects[name]
+    record = registry.condition_records.get(name, {})
+    return {
+        "kind": "condition",
+        "name": name,
+        "effects": {
+            flag: getattr(effect, flag)
+            for flag in effect.__dataclass_fields__
+            if getattr(effect, flag)
+        } or {"note": "no combat-roll consequences"},
+        "description": str(record.get("description", "")),
+        "source": registry.source_of("conditions", name),
+        "provenance": str(record.get("provenance", "SRD 5.2")),
+        "unmodelled": list(record.get("unmodelled", [])),
+    }
+
+
+def _spell_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
+    spell = registry.spells[name]
+    record = registry.spell_records.get(name, {})
+    return {
+        "kind": "spell",
+        "name": spell.name,
+        "level": spell.level,
+        "school": spell.school,
+        "save": spell.save_ability.value if spell.save_ability else None,
+        "attack_roll": spell.requires_attack_roll,
+        "damage": str(spell.damage) if spell.damage else None,
+        "damage_type": spell.damage_type.value if spell.damage_type else None,
+        "half_on_save": spell.half_on_save,
+        "upcast_damage": str(spell.upcast_damage) if spell.upcast_damage else None,
+        "radius": spell.radius,
+        "range_feet": spell.range_feet,
+        "condition": spell.condition,
+        "concentration": spell.concentration,
+        "source": registry.source_of("spells", name),
+        "provenance": spell.provenance,
+        "unmodelled": list(record.get("unmodelled", [])),
+    }
+
+
+def _item_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
+    effect = registry.items[name]
+    record = registry.item_records.get(name, {})
+    return {
+        "kind": "item",
+        "name": name,
+        "use": {
+            "heal": str(effect.heal) if effect.heal else None,
+            "damage": str(effect.damage) if effect.damage else None,
+            "damage_type": effect.damage_type.value if effect.damage_type else None,
+            "save_ability": effect.save_ability.value if effect.save_ability else None,
+            "save_dc": effect.save_dc or None,
+            "half_on_save": effect.half_on_save,
+            "condition": effect.condition,
+        },
+        "description": effect.description,
+        "source": registry.source_of("items", name),
+        "provenance": effect.provenance,
+        "unmodelled": list(record.get("unmodelled", [])),
+    }
+
+
+def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
+    record = registry.creatures[name]
+    entry: dict[str, Any] = {"kind": "creature", **record}
+    entry["source"] = registry.source_of("creatures", name)
+    # ``unmodelled`` is present even when empty. The skill tells Claude to check it
+    # before promising a trait will fire, and that instruction has to stay true for a
+    # campaign's own creature rather than hitting a missing key.
+    entry.setdefault("unmodelled", [])
+    entry.setdefault("provenance", entry["source"])
+    return entry
+
+
 @server.tool()
 def lookup_rule(topic: str = "") -> dict[str, Any]:
-    """Look up a bundled condition, spell, or stat block. Omit ``topic`` to list everything.
+    """Look up a loaded condition, spell, creature, or item. Omit ``topic`` to list all.
 
-    Only SRD 5.2 content is bundled, so a miss usually means the subject is outside
-    the SRD rather than misspelled.
+    Searches whatever content is loaded, bundled or not, and every entry names the
+    pack it came from in ``source``. A miss means the subject is not loaded — check
+    content_status before concluding it does not exist.
     """
+    registry = _registry()
     if not topic:
-        return {
-            "conditions": sorted(condition.value for condition in Condition),
-            "spells": sorted(spellbook()),
-            "monsters": monster_names(),
-            "provenance": "SRD 5.2",
-        }
+        listing: dict[str, Any] = dict(registry.names())
+        listing["builtin"] = registry.builtin.value
+        listing["packs"] = [pack.label for pack in registry.packs]
+        listing["provenance"] = sorted({pack.provenance for pack in registry.packs})
+        return listing
     key = topic.strip().casefold()
 
-    for condition in Condition:
-        if condition.value == key:
-            effect = EFFECTS[condition]
-            return {
-                "kind": "condition",
-                "name": condition.value,
-                "effects": {
-                    field: getattr(effect, field)
-                    for field in effect.__dataclass_fields__
-                    if getattr(effect, field)
-                } or {"note": "no combat-roll consequences"},
-                "provenance": "SRD 5.2",
-            }
-
-    for name, spell in spellbook().items():
-        if name.casefold() == key:
-            return {
-                "kind": "spell",
-                "name": spell.name,
-                "level": spell.level,
-                "school": spell.school,
-                "save": spell.save_ability.value if spell.save_ability else None,
-                "attack_roll": spell.requires_attack_roll,
-                "damage": str(spell.damage) if spell.damage else None,
-                "damage_type": spell.damage_type.value if spell.damage_type else None,
-                "half_on_save": spell.half_on_save,
-                "upcast_damage": str(spell.upcast_damage) if spell.upcast_damage else None,
-                "radius": spell.radius,
-                "range_feet": spell.range_feet,
-                "condition": spell.condition.value if spell.condition else None,
-                "concentration": spell.concentration,
-                "provenance": spell.provenance,
-            }
-
-    for name, record in monster_records().items():
-        if name.casefold() == key:
-            return {"kind": "monster", **record}
+    finders = (
+        ("conditions", registry.condition_effects, _condition_entry),
+        ("spells", registry.spells, _spell_entry),
+        ("creatures", registry.creatures, _creature_entry),
+        ("items", registry.items, _item_entry),
+    )
+    for _section, table, build in finders:
+        for name in table:
+            if name.casefold() == key:
+                return build(registry, name)
 
     raise ToolError(
-        f"nothing bundled for {topic!r}. Call lookup_rule with no topic to list "
-        f"what is available; only SRD 5.2 content ships with this engine."
+        f"nothing loaded for {topic!r}. Call lookup_rule with no topic to list what "
+        f"is available, or content_status to see which packs are loaded."
     )
 
 
@@ -326,18 +464,31 @@ def encounter_create(
     """
     used = _resolve_seed(seed)
     rng = Random(used)
+    content = _content()
     try:
-        encounter = Encounter(_combatants(combatants), rng, spellbook=spellbook())
+        encounter = _new_encounter(
+            _combatants(combatants, content.registry), rng, content.registry
+        )
     except EncounterError as error:
         raise ToolError(str(error)) from error
     encounter_id = _new_encounter_id()
-    _SESSIONS[encounter_id] = _Session(encounter=encounter, rng=rng, seed=used)
-    return {
+    _SESSIONS[encounter_id] = _Session(
+        encounter=encounter, rng=rng, seed=used,
+        content_generation=content.generation,
+    )
+    result: dict[str, Any] = {
         "encounter_id": encounter_id,
         "seed": used,
+        "content_generation": content.generation,
         "state": encounter.state(),
         "log": [event.as_dict() for event in encounter.log],
     }
+    if content.startup_error:
+        result["content_warning"] = (
+            "configured content failed to load; this fight uses the bundled slice "
+            "only. See content_status."
+        )
+    return result
 
 
 @server.tool()
@@ -352,6 +503,7 @@ def encounter_act(
     kind: str,
     target: str | None = None,
     attack: str | None = None,
+    item: str | None = None,
     spell: str | None = None,
     slot_level: int | None = None,
     to_position: int | None = None,
@@ -360,10 +512,11 @@ def encounter_act(
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
-    ``kind`` is attack, cast, move, dash, disengage, or dodge. Attacks need
+    ``kind`` is attack, cast, use_item, move, dash, disengage, or dodge. Attacks need
     ``target``; casting needs ``spell`` plus either ``target``/``targets`` or a
-    ``center`` for an area; moving needs ``to_position``. Illegal actions are
-    refused with the reason rather than silently adjusted.
+    ``center`` for an area; using an item needs ``item``, and ``target`` unless the
+    item is self-directed; moving needs ``to_position``. Illegal actions are refused
+    with the reason rather than silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -375,6 +528,7 @@ def encounter_act(
         kind=action_kind,
         target=target,
         attack=attack,
+        item=item,
         spell=spell,
         slot_level=slot_level,
         to_position=to_position,
@@ -402,6 +556,118 @@ def encounter_advance(encounter_id: str) -> dict[str, Any]:
     }
 
 
+# --- content ---------------------------------------------------------------
+def _status() -> dict[str, Any]:
+    content = _content()
+    stale = [
+        {"encounter_id": name, "content_generation": session.content_generation}
+        for name, session in sorted(_SESSIONS.items())
+        if session.content_generation != content.generation
+    ]
+    status: dict[str, Any] = {
+        "generation": content.generation,
+        "configured_paths": list(content.configured),
+        "environment": {
+            CONTENT_ENV: environment_paths() or None,
+            BUILTIN_ENV: content.registry.builtin.value,
+        },
+        **content.registry.summary(),
+    }
+    if stale:
+        # A fight keeps the content it started with, so this is not a fault — it is
+        # the divergence made visible, which is the only way narration stays honest.
+        status["encounters_on_older_content"] = stale
+    if content.startup_error:
+        status["startup_error"] = content.startup_error
+    return status
+
+
+@server.tool()
+def content_status() -> dict[str, Any]:
+    """What content is loaded, from where, and under which mode.
+
+    Use this before telling anyone what the engine supports: with packs loaded, or
+    with the bundled slice excluded, the answer is whatever this reports and not what
+    ships by default. It also names any encounter still running on older content.
+    """
+    return _status()
+
+
+@server.tool()
+def content_validate(
+    paths: list[str] | None = None,
+    builtin: str | None = None,
+) -> dict[str, Any]:
+    """Report problems with content packs without loading them. The authoring aid.
+
+    Give ``paths`` to check specific files or directories, or omit it to re-check what
+    is currently configured. Every diagnostic names the pack, section, record, and
+    field, and separates errors from warnings.
+    """
+    content = _content()
+    candidates = list(paths) if paths is not None else list(content.configured)
+    diagnostics = _validate_content(
+        candidates, builtin=_mode(builtin, default=content.registry.builtin)
+    )
+    errors = [d for d in diagnostics if d.severity.value == "error"]
+    warnings = [d for d in diagnostics if d.severity.value == "warning"]
+    return {
+        "checked": candidates,
+        "builtin": _mode(builtin, default=content.registry.builtin).value,
+        "ok": not errors,
+        "errors": [d.as_dict() for d in errors],
+        "warnings": [d.as_dict() for d in warnings],
+        "summary": (
+            "no problems found" if not diagnostics
+            else f"{len(errors)} error(s), {len(warnings)} warning(s)"
+        ),
+    }
+
+
+@server.tool()
+def content_configure(
+    paths: list[str] | None = None,
+    builtin: str | None = None,
+    add: bool = False,
+) -> dict[str, Any]:
+    """Load content packs and/or switch whether the bundled SRD slice is included.
+
+    ``paths`` names files or directories of ``*.json`` packs and replaces the current
+    set unless ``add`` is true. ``builtin`` is "include" or "exclude"; omit either
+    argument to leave it as it is.
+
+    Nothing changes unless the new content loads cleanly — a failed call reports every
+    diagnostic and leaves the working content in place. Encounters already in progress
+    keep resolving under the content they started with; only new ones use the result.
+    """
+    content = _content()
+    if paths is None and builtin is None:
+        raise ToolError("give 'paths', 'builtin', or both — there is nothing to change")
+    mode = _mode(builtin, default=content.registry.builtin)
+    if paths is None:
+        configured = list(content.configured)
+    elif add:
+        configured = [*content.configured, *paths]
+    else:
+        configured = list(paths)
+
+    try:
+        registry = load_packs(configured, builtin=mode)
+    except ContentError as error:
+        raise ToolError(
+            f"content not changed. {error}"
+        ) from error
+
+    global _CONTENT
+    _CONTENT = _Content(
+        registry=registry,
+        generation=content.generation + 1,
+        configured=tuple(configured),
+        startup_error="",
+    )
+    return {"changed": True, **_status()}
+
+
 # --- analytics -------------------------------------------------------------
 @server.tool()
 def simulate_rounds(
@@ -416,9 +682,13 @@ def simulate_rounds(
     so one iteration reproduces a single hand-played encounter at that seed.
     """
     specs = list(combatants)
+    # The registry is captured once, here. Resolving content per iteration would let
+    # a reconfiguration land mid-batch and make the result unreproducible from its
+    # seed, which is the one property these numbers rest on.
+    registry = _registry()
 
     def factory() -> list[Creature]:
-        return _combatants(specs)
+        return _combatants(specs, registry)
 
     try:
         return _simulate_rounds(
@@ -426,7 +696,9 @@ def simulate_rounds(
             iterations=iterations,
             seed=seed,
             max_rounds=max_rounds,
-            spellbook=spellbook(),
+            spellbook=dict(registry.spells),
+            items=dict(registry.items),
+            condition_effects=registry.condition_effects,
         )
     except (ValueError, EncounterError) as error:
         raise ToolError(str(error)) from error
@@ -447,9 +719,10 @@ def simulate_dpr(
     resistances apply exactly as they would in play.
     """
     spec = dict(build)
+    registry = _registry()
 
     def attacker() -> Creature:
-        creature = _creature_from_spec(spec)
+        creature = _creature_from_spec(spec, registry)
         creature.team = "attacker"
         return creature
 
@@ -460,7 +733,9 @@ def simulate_dpr(
             rounds=rounds,
             iterations=iterations,
             seed=seed,
-            spellbook=spellbook(),
+            spellbook=dict(registry.spells),
+            items=dict(registry.items),
+            condition_effects=registry.condition_effects,
         )
     except (ValueError, EncounterError) as error:
         raise ToolError(str(error)) from error

@@ -1,4 +1,6 @@
 {
+  "pack": "srd-5.2-spells",
+  "version": "1.0",
   "provenance": "SRD 5.2",
   "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 spell descriptions.",
   "note": "A curated combat set, not the full spell list. Each 'unmodelled' entry is part of the printed spell this engine does not implement.",
