@@ -32,7 +32,10 @@ make_root() {
            "$root/fivee-sim/agents" \
            "$root/fivee-sim/engine/src/fivee_sim/data"
   cp "$repo_root/.ip-hygiene-local.conf" "$root/"
+  # Both declared copies: the repo-root one and the one inside the plugin, which
+  # is what actually ships to installs.
   cp "$repo_root/NOTICE" "$root/NOTICE"
+  cp "$repo_root/NOTICE" "$root/fivee-sim/NOTICE"
   printf '%s' "$root"
 }
 
@@ -63,11 +66,20 @@ printf '{"name":"fivee-sim","description":"5E-compatible combat simulation."}\n'
   > "$P/.claude-plugin/plugin.json"
 check "clean plugin.json" 0 "$R" "$P/.claude-plugin/plugin.json"
 
-printf '{"name":"t","plugins":[{"name":"x","description":"A D&D engine."}]}\n' \
-  > "$R/.claude-plugin-marketplace-tmp.json"
 mkdir -p "$R/.claude-plugin"
-mv "$R/.claude-plugin-marketplace-tmp.json" "$R/.claude-plugin/marketplace.json"
+printf '{"name":"t","plugins":[{"name":"x","description":"A D&D engine."}]}\n' \
+  > "$R/.claude-plugin/marketplace.json"
 check "mark in a marketplace plugin entry (root-level path)" 2 "$R" "$R/.claude-plugin/marketplace.json"
+
+# The marketplace's own description is published branding too, not just the
+# entries nested under it.
+printf '{"name":"t","description":"Dungeons & Dragons tooling.","plugins":[{"name":"x","description":"clean"}]}\n' \
+  > "$R/.claude-plugin/marketplace.json"
+check "mark in the marketplace top-level description" 2 "$R" "$R/.claude-plugin/marketplace.json"
+
+printf '{"name":"t","description":"5E-compatible tooling.","plugins":[{"name":"x","description":"clean"}]}\n' \
+  > "$R/.claude-plugin/marketplace.json"
+check "clean marketplace.json" 0 "$R" "$R/.claude-plugin/marketplace.json"
 
 printf -- '---\nname: encounter-sim\ndescription: Use when running a D&D encounter.\n---\nBody.\n' \
   > "$P/skills/encounter-sim/SKILL.md"
@@ -104,7 +116,18 @@ check "reworded NOTICE, detected on editing NOTICE itself" 2 "$T" "$T/NOTICE"
 M="$(make_root missing)"
 rm -f "$M/NOTICE"
 printf '{"monsters":[{"name":"Goblin"}]}\n' > "$M/fivee-sim/engine/src/fivee_sim/data/m.json"
-check "missing NOTICE" 2 "$M" "$M/fivee-sim/engine/src/fivee_sim/data/m.json"
+check "missing repo-root NOTICE" 2 "$M" "$M/fivee-sim/engine/src/fivee_sim/data/m.json"
+
+# The copy inside the plugin is the one that ships. A tripwire that only watched
+# the repo-root copy would guard the file that never reaches an install.
+S2="$(make_root shipped)"
+rm -f "$S2/fivee-sim/NOTICE"
+printf '{"monsters":[{"name":"Goblin"}]}\n' > "$S2/fivee-sim/engine/src/fivee_sim/data/m.json"
+check "missing plugin NOTICE, root copy intact" 2 "$S2" "$S2/fivee-sim/engine/src/fivee_sim/data/m.json"
+
+S3="$(make_root shipped_tampered)"
+echo 'Material from SRD 5.2, Wizards of the Coast.' > "$S3/fivee-sim/NOTICE"
+check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/fivee-sim/NOTICE"
 
 # --- activation guard -----------------------------------------------------
 N="$tmp/nomarker"

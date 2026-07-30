@@ -87,6 +87,14 @@ extract_branding() {
   esac
 }
 
+is_attribution_file() {
+  local candidate
+  for candidate in "${IP_ATTRIBUTION_FILES[@]}"; do
+    [ "$1" = "$candidate" ] && return 0
+  done
+  return 1
+}
+
 # --- Check 1: marks in published branding metadata -------------------------
 if matches_any "$rel" "${IP_METADATA_GLOBS[@]}"; then
   branding="$(extract_branding "$abs")"
@@ -100,15 +108,19 @@ if matches_any "$rel" "${IP_METADATA_GLOBS[@]}"; then
 fi
 
 # --- Check 2: attribution integrity ---------------------------------------
-# Fires when rules data changes (the attribution must still be shipping) or
-# when NOTICE itself is edited (it must not drift).
-if matches_any "$rel" "${IP_DATA_GLOBS[@]}" || [ "$rel" = "$IP_ATTRIBUTION_FILE" ]; then
-  notice="$root/$IP_ATTRIBUTION_FILE"
-  if [ ! -f "$notice" ]; then
-    findings+=("$IP_ATTRIBUTION_FILE is missing — CC-BY-4.0 requires the SRD 5.2 attribution to ship")
-  elif ! grep -qF -- "$IP_ATTRIBUTION_STRING" "$notice"; then
-    findings+=("$IP_ATTRIBUTION_FILE no longer contains the SRD 5.2 attribution byte-for-byte — it must not be reworded or re-wrapped")
-  fi
+# Fires when rules data changes (the attribution must still be shipping) or when
+# any declared NOTICE is edited (it must not drift). Every declared copy is
+# checked, not just the touched one, because the copy inside the plugin is the
+# one that actually reaches installs.
+if matches_any "$rel" "${IP_DATA_GLOBS[@]}" || is_attribution_file "$rel"; then
+  for notice_rel in "${IP_ATTRIBUTION_FILES[@]}"; do
+    notice="$root/$notice_rel"
+    if [ ! -f "$notice" ]; then
+      findings+=("$notice_rel is missing — CC-BY-4.0 requires the SRD 5.2 attribution to ship with the distributed plugin")
+    elif ! grep -qF -- "$IP_ATTRIBUTION_STRING" "$notice"; then
+      findings+=("$notice_rel no longer contains the SRD 5.2 attribution byte-for-byte — it must not be reworded or re-wrapped")
+    fi
+  done
 fi
 
 # --- Check 3: non-SRD names in engine data --------------------------------

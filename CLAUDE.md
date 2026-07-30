@@ -84,6 +84,12 @@ so the hook is inert in every other project.
 On a finding it exits 2 with detail on stderr, which feeds the problem back for
 fixing in-loop. Clean means exit 0 and silence.
 
+Scope is the subtle part, so it is pinned by tests — run
+`bash scripts/hooks/test-ip-hygiene-check.sh` after touching the hook or its
+conf. The negative cases matter most: they assert that this file, which has to
+quote every forbidden string, and rules data naming SRD-present creatures do
+**not** trip the tripwire.
+
 ## Architecture
 
 **The engine lives under the plugin root**, at `fivee-sim/engine/`. This is not
