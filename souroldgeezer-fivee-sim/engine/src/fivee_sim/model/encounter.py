@@ -948,8 +948,33 @@ class Encounter:
             target_conditions=target.conditions,
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
+            extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
+        )
+
+    def _pack_tactics_applies(self, actor: Creature, target: Creature) -> bool:
+        """Whether Pack Tactics grants ``actor`` Advantage against ``target``.
+
+        SRD 5.2 (Wolf): Advantage on an attack roll "if at least one of the
+        wolf's allies is within 5 feet of the creature and the ally doesn't have
+        the Incapacitated condition." An ally is another member of the actor's
+        team — never the actor, never the target — and a capable one:
+        :attr:`Creature.active` reads consciousness plus the ``incapacitated``
+        flag off the fight's own condition table, so a pack-defined condition
+        that incapacitates disqualifies exactly as the SRD ones do. Fed into
+        :func:`compute_attack_advantage` as one more Advantage source rather
+        than applied afterwards, so it cancels against Disadvantage under the
+        one combination rule.
+        """
+        if not actor.pack_tactics:
+            return False
+        return any(
+            ally is not actor and ally is not target
+            and ally.team == actor.team
+            and ally.active
+            and ally.distance_to(target, self.movement_rule) <= MELEE_THRESHOLD
+            for ally in self.creatures.values()
         )
 
     def attack_forced_critical(self, actor: Creature, target: Creature) -> bool:
@@ -987,11 +1012,15 @@ class Encounter:
         question of what kind of attack a spell is never arises.
         ``TestSpellAttackAdvantage`` pins both halves of the Prone clause so the
         point survives editing.
+
+        Pack Tactics rides along for the same reason the call is shared: the
+        trait names "an attack roll", and a spell attack is one.
         """
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
             distance=actor.distance_to(target, self.movement_rule),
+            extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
@@ -1713,6 +1742,9 @@ class Encounter:
             attacker_conditions=attacker.conditions,
             target_conditions=mover.conditions,
             distance=MELEE_THRESHOLD,
+            # An opportunity attack is an attack roll, so Pack Tactics reads
+            # here too — against the mover wherever the walk has taken it.
+            extra_advantage=1 if self._pack_tactics_applies(attacker, mover) else 0,
             extra_disadvantage=1 if self._dodge_benefits(mover) else 0,
             condition_effects=self.condition_effects,
         )

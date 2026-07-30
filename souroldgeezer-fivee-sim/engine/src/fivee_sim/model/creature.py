@@ -111,6 +111,10 @@ class Creature:
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
+    #: Pack Tactics, as a flag: the stat block prints it, the encounter resolves
+    #: it, because whether a capable ally is within 5 feet of the target is a
+    #: question about the whole fight, not about this creature.
+    pack_tactics: bool = False
     spells: tuple[str, ...] = ()
     spell_slots: dict[int, int] = field(default_factory=dict)
     spell_save_dc: int = 10
