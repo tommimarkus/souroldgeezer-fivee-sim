@@ -29,6 +29,11 @@ from ..kernel.rules import Ability, DamageType, ability_modifier
 
 __all__ = ["AttackKind", "AttackOption", "Creature"]
 
+#: Failures that kill. Duplicated from ``model.encounter``, which owns the death
+#: save *roll* but cannot be imported here — it imports this module. Damage taken
+#: at 0 hit points accrues a failure too, so the threshold is needed on both sides.
+DEATH_SAVES_TO_DIE = 3
+
 
 @dataclass(frozen=True, slots=True)
 class AttackOption:
@@ -146,29 +151,45 @@ class Creature:
     def remove_condition(self, condition: str) -> None:
         self.conditions.discard(condition)
 
-    def take_damage(self, amount: int) -> None:
+    def take_damage(self, amount: int, *, critical: bool = False) -> None:
         """Apply damage that has already been adjusted for resistance.
 
-        Reaching 0 hit points knocks the creature out. Damage remaining after that
-        kills outright if it equals or exceeds the creature's maximum hit points,
-        which is what makes a big critical lethal rather than merely dropping.
+        Two different rules meet here and the difference is which side of 0 the
+        creature started on.
+
+        *Dropping* to 0 knocks the creature out and begins a fresh dying state, so
+        its death saves start from nothing. Damage remaining after the drop kills
+        outright if it equals or exceeds the creature's maximum hit points.
+
+        Damage taken *while already* at 0 is the other rule: it costs a death
+        saving throw failure, two if it came from a critical hit, and the third
+        failure kills. It resets nothing — only regaining hit points or becoming
+        stable does that — so the drop-to-0 reset must not run a second time.
         """
-        if amount <= 0:
+        if amount <= 0 or self.dead:
             return
+        already_down = self.hp == 0
         overflow = amount - self.hp
         self.hp = max(0, self.hp - amount)
-        if self.hp == 0:
-            if overflow >= self.max_hp:
-                self.dead = True
-                self.concentrating_on = None
-                self.conditions.discard(Condition.UNCONSCIOUS)
-                return
-            self.stable = False
-            self.death_save_successes = 0
-            self.death_save_failures = 0
+        if self.hp > 0:
+            return
+        if overflow >= self.max_hp:
+            self.dead = True
             self.concentrating_on = None
-            self.add_condition(Condition.UNCONSCIOUS)
-            self.add_condition(Condition.PRONE)
+            self.conditions.discard(Condition.UNCONSCIOUS)
+            return
+        self.stable = False
+        if already_down:
+            self.death_save_failures += 2 if critical else 1
+            if self.death_save_failures >= DEATH_SAVES_TO_DIE:
+                self.dead = True
+                self.conditions.discard(Condition.UNCONSCIOUS)
+            return
+        self.death_save_successes = 0
+        self.death_save_failures = 0
+        self.concentrating_on = None
+        self.add_condition(Condition.UNCONSCIOUS)
+        self.add_condition(Condition.PRONE)
 
     def heal(self, amount: int) -> None:
         if self.dead or amount <= 0:

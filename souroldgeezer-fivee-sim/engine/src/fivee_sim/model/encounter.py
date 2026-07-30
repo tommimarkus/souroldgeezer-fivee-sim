@@ -698,12 +698,16 @@ class Encounter:
             self._apply_damage(mover, resolution.damage_dealt, rng)
 
     # --- damage and concentration ----------------------------------------
-    def _apply_damage(self, target: Creature, amount: int, rng: Random) -> None:
+    def _apply_damage(
+        self, target: Creature, amount: int, rng: Random, *, critical: bool = False
+    ) -> None:
         if amount <= 0:
             return
         was_conscious = target.conscious
         concentrating = target.concentrating_on
-        target.take_damage(amount)
+        # ``critical`` only matters for a target already at 0 hit points, where a
+        # critical hit costs two death save failures instead of one.
+        target.take_damage(amount, critical=critical)
         self._emit("damage", target=target.name,
                    detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left")
         if concentrating is not None and target.conscious:

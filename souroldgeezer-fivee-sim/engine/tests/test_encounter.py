@@ -17,6 +17,7 @@ from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
@@ -228,6 +229,149 @@ class TestGoingDown:
         assert victim.hp == 5
         assert Condition.UNCONSCIOUS not in victim.conditions
         assert victim.death_save_failures == 0
+
+
+class TestDamageAtZeroHitPoints:
+    """Damage taken *while already* at 0 hit points is its own rule.
+
+    SRD 5.2, "Damage at 0 Hit Points": any damage costs a death saving throw
+    failure, a critical hit costs two, and damage equalling or exceeding the hit
+    point maximum kills outright. Nothing there resets the counters — only
+    regaining hit points or becoming stable does that — so these tests are what
+    keep the drop-to-0 reset from being applied a second time to a creature that
+    was already down.
+    """
+
+    @staticmethod
+    def _downed(failures: int = 0, successes: int = 0, max_hp: int = 30) -> Creature:
+        victim = fighter("Victim", max_hp=max_hp, hp=1)
+        victim.take_damage(1)
+        assert victim.dying
+        victim.death_save_failures = failures
+        victim.death_save_successes = successes
+        return victim
+
+    def test_damage_while_down_costs_one_failure_and_keeps_the_rest(self) -> None:
+        victim = self._downed(failures=1, successes=2)
+        victim.take_damage(3)
+        assert victim.hp == 0
+        assert victim.death_save_failures == 2
+        # Successes survive: only healing or stabilising resets them.
+        assert victim.death_save_successes == 2
+        assert victim.dying and not victim.dead
+
+    def test_a_critical_hit_while_down_costs_two_failures(self) -> None:
+        victim = self._downed()
+        victim.take_damage(3, critical=True)
+        assert victim.death_save_failures == 2
+        assert victim.dying and not victim.dead
+
+    def test_a_third_failure_from_damage_kills(self) -> None:
+        victim = self._downed(failures=2)
+        victim.take_damage(3)
+        assert victim.dead
+        assert not victim.dying
+        # The rolled-failure death path discards unconsciousness; so must this one.
+        assert Condition.UNCONSCIOUS not in victim.conditions
+
+    def test_a_critical_hit_finishes_a_creature_that_has_failed_once(self) -> None:
+        victim = self._downed(failures=1)
+        victim.take_damage(3, critical=True)
+        assert victim.dead
+
+    def test_damage_equal_to_the_maximum_kills_outright_rather_than_by_failure(
+        self,
+    ) -> None:
+        victim = self._downed(max_hp=30)
+        victim.take_damage(30)
+        assert victim.dead
+        # Killed by the massive-damage rule, so no failure was ever accrued.
+        assert victim.death_save_failures == 0
+        assert Condition.UNCONSCIOUS not in victim.conditions
+
+    def test_damage_ends_stability_and_still_costs_a_failure(self) -> None:
+        # A stable creature has 0 hit points, so both rules apply at once: it stops
+        # being stable *and* it takes the failure.
+        victim = self._downed()
+        victim.stable = True
+        victim.take_damage(3)
+        assert not victim.stable
+        assert victim.death_save_failures == 1
+        assert victim.dying
+
+    def test_dropping_to_zero_still_clears_the_counters(self) -> None:
+        # The behaviour the fix must not regress: the *drop* is a fresh dying state.
+        victim = fighter("Victim", max_hp=30, hp=10)
+        victim.death_save_failures = 2
+        victim.death_save_successes = 1
+        victim.take_damage(10)
+        assert victim.hp == 0
+        assert victim.death_save_failures == 0
+        assert victim.death_save_successes == 0
+        assert Condition.UNCONSCIOUS in victim.conditions
+        assert Condition.PRONE in victim.conditions
+
+    def test_damage_to_a_corpse_changes_nothing(self) -> None:
+        victim = self._downed(failures=2)
+        victim.take_damage(3)
+        assert victim.dead
+        victim.take_damage(3)
+        assert victim.dead
+        assert victim.death_save_failures == 3
+        assert Condition.UNCONSCIOUS not in victim.conditions
+
+    def test_a_damaging_item_on_a_dying_creature_costs_a_failure(self) -> None:
+        # The reachable path: an attack refuses an unconscious target and a spell
+        # filters to conscious creatures, but an item only refuses a dead one.
+        fire = ItemEffect(
+            damage=Dice.parse("2d6"),
+            damage_type=DamageType.FIRE,
+            save_ability=Ability.DEXTERITY,
+            save_dc=13,
+            provenance=FIXTURE,
+        )
+        rng = Random(11)
+        thug = fighter("Thug", team="foes", position=0)
+        thug.items = {"Alchemist's Fire": 2}
+        victim = fighter("Victim", max_hp=30, hp=1, position=5)
+        ally = fighter("Ally", position=40)  # a third combatant keeps the fight alive
+        encounter = Encounter(
+            [thug, victim, ally], rng, items={"Alchemist's Fire": fire}
+        )
+
+        def death_saves() -> dict[str, int]:
+            for row in encounter.state()["combatants"]:
+                if row["name"] == "Victim":
+                    saves: dict[str, int] = row["death_saves"]
+                    return saves
+            raise AssertionError("Victim is not in the state")
+
+        advance_to(encounter, "Thug", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(20))
+        assert victim.dying
+
+        # Accrue one real failure: a forced natural 5 fails every death save.
+        for _ in range(12):
+            encounter.advance(FixedRandom(5))
+            if victim.death_save_failures:
+                break
+        assert death_saves() == {"successes": 0, "failures": 1}
+
+        # A forced 15 succeeds, so reaching the thug's turn cannot add a failure
+        # and cannot reach the three successes that would stabilise.
+        advance_to(encounter, "Thug", FixedRandom(15))
+        before = death_saves()
+        events = encounter.act(
+            Action(kind=ActionKind.USE_ITEM, item="Alchemist's Fire", target="Victim"),
+            Random(3),
+        )
+        after = death_saves()
+
+        assert "damage" in kinds(events)
+        assert victim.hp == 0
+        assert after["failures"] == before["failures"] + 1
+        assert after["successes"] == before["successes"]
+        assert victim.dying and not victim.dead
 
 
 class TestMovementAndReactions:
