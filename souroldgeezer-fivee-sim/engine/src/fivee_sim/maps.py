@@ -33,6 +33,7 @@ bridge to the encounter-facing :class:`~fivee_sim.model.battlemap.BattleMap`.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from collections import Counter
 from collections.abc import Mapping
@@ -41,6 +42,7 @@ from types import MappingProxyType
 from typing import Any
 
 from .kernel.grid import FEET_PER_SQUARE, Square, TerrainTable
+from .kernel.mapgen import GeneratedMap
 from .model.battlemap import BattleMap, MapFeature
 from .validation import Diagnostic, Reader, Severity
 
@@ -48,6 +50,7 @@ __all__ = [
     "DEFAULT_LEGEND",
     "FORMAT",
     "FORMAT_VERSION",
+    "GENERATED_SOURCE",
     "MAX_MAP_BYTES",
     "MAX_MAP_DIM",
     "RESERVED_GLYPHS",
@@ -57,6 +60,7 @@ __all__ = [
     "MapGrid",
     "MapProvenance",
     "as_payload",
+    "document_from",
     "parse_document",
     "serialize",
     "to_grid",
@@ -65,6 +69,10 @@ __all__ = [
 
 FORMAT = "fivee-sim-map"
 FORMAT_VERSION = 1
+
+#: The provenance ``source`` written for generator output. Original content:
+#: generated layouts derive from no published material.
+GENERATED_SOURCE = "Generated original content; 5E-compatible"
 
 #: Documents refuse to grow past either cap: a 512-square side keeps every
 #: whole-map pass affordable, and the byte cap stops a runaway file from
@@ -542,6 +550,63 @@ def serialize(document: MapDocument) -> str:
     unchanged map rewrites identical bytes and version control stays quiet.
     """
     return json.dumps(as_payload(document), indent=2, ensure_ascii=False) + "\n"
+
+
+# --- encoding generator output ---------------------------------------------
+def document_from(
+    generated: GeneratedMap, *, name: str, generator: str, seed: int, params: Any
+) -> MapDocument:
+    """Encode a generator's output as a map document.
+
+    Tiles are written through :data:`DEFAULT_LEGEND` — every kind a bundled
+    generator emits has a glyph there, and a kind without one is refused
+    rather than assigned an invented glyph, because a silently extended
+    legend would make two runs of the same generator disagree. ``params`` is
+    the generator's params dataclass (or an equivalent mapping), recorded
+    fully resolved so the document alone reproduces the map; ``edited``
+    starts false and ``source`` says the content is generated and original.
+    """
+    glyph_of = {kind: glyph for glyph, kind in DEFAULT_LEGEND.items()}
+    tiles: list[str] = []
+    for y, row in enumerate(generated.cells):
+        glyphs: list[str] = []
+        for x, kind in enumerate(row):
+            glyph = glyph_of.get(kind)
+            if glyph is None:
+                raise MapError(
+                    [
+                        Diagnostic(
+                            source=name, section="map", field="tiles",
+                            problem=(
+                                f"cell ({x}, {y}) is {kind!r}, which has no glyph in the "
+                                f"default legend; add one before encoding"
+                            ),
+                        )
+                    ]
+                )
+            glyphs.append(glyph)
+        tiles.append("".join(glyphs))
+    if dataclasses.is_dataclass(params) and not isinstance(params, type):
+        resolved: dict[str, Any] = dataclasses.asdict(params)
+    else:
+        resolved = dict(params)
+    return MapDocument(
+        name=name,
+        grid=MapGrid(width=generated.width, height=generated.height),
+        legend=DEFAULT_LEGEND,
+        tiles=tuple(tiles),
+        features=tuple(
+            MapFeatureRecord(
+                id=feature.id, kind=feature.kind, at=feature.at,
+                orientation=feature.orientation, state=feature.state, team=feature.team,
+            )
+            for feature in generated.features
+        ),
+        provenance=MapProvenance(
+            generator=generator, seed=seed, params=MappingProxyType(resolved),
+            edited=False, source=GENERATED_SOURCE,
+        ),
+    )
 
 
 # --- the bridge to the battle map ------------------------------------------
