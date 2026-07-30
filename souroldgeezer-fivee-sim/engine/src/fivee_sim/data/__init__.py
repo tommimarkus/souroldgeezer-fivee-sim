@@ -110,6 +110,8 @@ def make_creature(
         },
         attacks=tuple(_attack(entry) for entry in record.get("attacks", [])),
         attacks_per_action=int(record.get("attacks_per_action", 1)),
+        pack_tactics=bool(record.get("pack_tactics", False)),
+        undead_fortitude=bool(record.get("undead_fortitude", False)),
         spells=tuple(str(entry) for entry in record.get("spells", [])),
         spell_slots={int(k): int(v) for k, v in record.get("spell_slots", {}).items()},
         spell_save_dc=int(record.get("spell_save_dc", 10)),

@@ -83,7 +83,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "team", "ac", "max_hp", "hit_dice", "speed", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
-    "vulnerabilities",
+    "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -282,6 +282,8 @@ def _parse_creature(
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
     reader.integer("attacks_per_action", default=1, minimum=1)
+    reader.boolean("pack_tactics")
+    reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
     reader.integer("spell_attack_bonus")
     reader.string("team")

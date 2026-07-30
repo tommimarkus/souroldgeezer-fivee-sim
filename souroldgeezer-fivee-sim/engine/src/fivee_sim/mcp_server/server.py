@@ -357,6 +357,8 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             },
             attacks=tuple(_attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),
+            pack_tactics=bool(spec.get("pack_tactics", False)),
+            undead_fortitude=bool(spec.get("undead_fortitude", False)),
             spells=tuple(str(name) for name in spec.get("spells", [])),
             spell_slots={int(k): int(v) for k, v in spec.get("spell_slots", {}).items()},
             spell_save_dc=int(spec.get("spell_save_dc", 10)),
