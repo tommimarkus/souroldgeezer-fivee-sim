@@ -115,6 +115,11 @@ class Creature:
     #: it, because whether a capable ally is within 5 feet of the target is a
     #: question about the whole fight, not about this creature.
     pack_tactics: bool = False
+    #: Undead Fortitude, likewise: the drop-to-0 Constitution save that leaves
+    #: the creature at 1 hit point. The encounter resolves it too — the save
+    #: needs the fight's dice and the dropping damage's types, and this module
+    #: rolls nothing.
+    undead_fortitude: bool = False
     spells: tuple[str, ...] = ()
     spell_slots: dict[int, int] = field(default_factory=dict)
     spell_save_dc: int = 10

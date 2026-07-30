@@ -63,7 +63,7 @@ from ..kernel.grid import (
 )
 from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
-from ..kernel.rules import Ability, D20Test, concentration_dc, make_d20_test
+from ..kernel.rules import Ability, D20Test, DamageType, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
 from .battlemap import BattleMap, MapState
 from .creature import AttackOption, Creature
@@ -71,6 +71,8 @@ from .creature import AttackOption, Creature
 DEATH_SAVE_DC = 10
 DEATH_SAVES_TO_STABILISE = 3
 DEATH_SAVES_TO_DIE = 3
+#: Undead Fortitude's save is DC this plus the damage that caused the drop.
+UNDEAD_FORTITUDE_BASE_DC = 5
 
 
 class ActionKind(StrEnum):
@@ -117,7 +119,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
-    "turn_start", "use_item",
+    "turn_start", "undead_fortitude", "use_item",
 })
 
 
@@ -900,10 +902,23 @@ class Encounter:
                    **extras)
         if resolution.hit:
             self._apply_damage(
-                target, resolution.total_damage_dealt, rng, critical=resolution.critical
+                target, resolution.total_damage_dealt, rng,
+                critical=resolution.critical,
+                damage_types=self._attack_damage_types(option),
             )
             if option.on_hit_condition is not None:
                 self._apply_attack_rider(actor, target, option, rng)
+
+    @staticmethod
+    def _attack_damage_types(option: AttackOption) -> tuple[DamageType, ...]:
+        """Every damage type one hit with this attack delivers as one instance.
+
+        The main pool's type, plus the bonus pool's when the attack carries one.
+        Undead Fortitude reads this: Radiant in either pool bypasses the save.
+        """
+        if option.bonus_damage_type is None:
+            return (option.damage_type,)
+        return (option.damage_type, option.bonus_damage_type)
 
     @staticmethod
     def _rider_damage_arguments(
@@ -1101,7 +1116,12 @@ class Encounter:
                               f"{target.hp}/{target.max_hp}",
                        amount=target.hp - before, hp=target.hp, max_hp=target.max_hp)
         if resolution.damage_dealt:
-            self._apply_damage(target, resolution.damage_dealt, rng)
+            self._apply_damage(
+                target, resolution.damage_dealt, rng,
+                damage_types=(
+                    (effect.damage_type,) if effect.damage_type is not None else ()
+                ),
+            )
         if resolution.condition_applied is not None and target.conscious:
             # An item's condition has no Concentration behind it, so nothing ever
             # releases it. It is recorded anyway, because it *holds* the condition:
@@ -1256,6 +1276,9 @@ class Encounter:
                     result.damage_dealt,
                     rng,
                     critical=result.attack is not None and result.attack.critical,
+                    damage_types=(
+                        (spell.damage_type,) if spell.damage_type is not None else ()
+                    ),
                 )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(
@@ -1774,7 +1797,9 @@ class Encounter:
             # call sites resolving the same kind of attack and only one carrying the
             # critical is the asymmetry that becomes a bug when reactions grow.
             self._apply_damage(
-                mover, resolution.total_damage_dealt, rng, critical=resolution.critical
+                mover, resolution.total_damage_dealt, rng,
+                critical=resolution.critical,
+                damage_types=self._attack_damage_types(melee),
             )
             if melee.on_hit_condition is not None:
                 # The same bite carries the same rider as a reaction. One edge is
@@ -1978,7 +2003,13 @@ class Encounter:
 
     # --- damage and concentration ----------------------------------------
     def _apply_damage(
-        self, target: Creature, amount: int, rng: Random, *, critical: bool = False
+        self,
+        target: Creature,
+        amount: int,
+        rng: Random,
+        *,
+        critical: bool = False,
+        damage_types: tuple[DamageType, ...] = (),
     ) -> None:
         if amount <= 0:
             return
@@ -1989,12 +2020,30 @@ class Encounter:
         # death that accrues none.
         failures_before = target.death_save_failures
         concentrating = target.concentrating_on
-        # ``critical`` only matters for a target already at 0 hit points, where a
-        # critical hit costs two death save failures instead of one.
-        target.take_damage(amount, critical=critical)
+        fortitude = self._undead_fortitude_save(
+            target, amount, rng, critical=critical, damage_types=damage_types
+        )
+        if fortitude is not None and fortitude.success:
+            # SRD 5.2 (Zombie): "On a successful save, the zombie drops to 1 Hit
+            # Point instead." It never reaches 0, so none of the drop's machinery
+            # runs: no Unconscious, no Prone, no death saves — and the
+            # concentration check below still fires, because damage was taken.
+            target.hp = 1
+        else:
+            # ``critical`` only matters for a target already at 0 hit points, where
+            # a critical hit costs two death save failures instead of one.
+            target.take_damage(amount, critical=critical)
         self._emit("damage", target=target.name,
                    detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left",
                    amount=amount, hp=target.hp, max_hp=target.max_hp)
+        if fortitude is not None:
+            held = fortitude.success
+            self._emit("undead_fortitude", target.name,
+                       detail=(
+                           f"{'holds at 1 hit point' if held else 'drops'} "
+                           f"({fortitude.describe()})"
+                       ),
+                       success=held, dc=fortitude.dc)
         if concentrating is not None and target.conscious:
             dc = concentration_dc(amount)
             save = make_d20_test(
@@ -2027,6 +2076,48 @@ class Encounter:
         # save above, being knocked out, and dying — so the release is reported next
         # to the loss rather than at the end of the action that caused it.
         self._reconcile_concentration()
+
+    def _undead_fortitude_save(
+        self,
+        target: Creature,
+        amount: int,
+        rng: Random,
+        *,
+        critical: bool,
+        damage_types: tuple[DamageType, ...],
+    ) -> D20Test | None:
+        """Roll Undead Fortitude against a drop to 0, or ``None`` when it cannot apply.
+
+        SRD 5.2 (Zombie): "If damage reduces the zombie to 0 Hit Points, it
+        makes a Constitution saving throw (DC 5 plus the damage taken) unless
+        the damage is Radiant or from a Critical Hit."
+
+        ``damage_types`` names every type in the dropping instance — the main
+        pool and, on an attack, the rider's bonus pool. Radiant in **any**
+        component disqualifies: the rule reads "the damage", singular, and a hit
+        is not less radiant for splitting its dice. The DC uses the amount
+        actually dealt, after the target's defenses, because that is the damage
+        taken. Two more gates are drops the rule never sees: a creature already
+        at 0 is not *reduced* to it, and overflow at or past the maximum is
+        instant death rather than a drop — the massive-damage rule wins.
+        Eligibility is a pure function of state, so the roll consumes
+        randomness exactly when a replay would consume it. The save itself goes
+        through the same machinery as every other save the fight rolls, with
+        the target's own advantage and auto-fail circumstances.
+        """
+        if not target.undead_fortitude or not target.conscious:
+            return None
+        if amount < target.hp or amount - target.hp >= target.max_hp:
+            return None
+        if critical or DamageType.RADIANT in damage_types:
+            return None
+        return make_d20_test(
+            rng,
+            modifier=target.save_modifier(Ability.CONSTITUTION),
+            dc=UNDEAD_FORTITUDE_BASE_DC + amount,
+            advantage=self.save_advantage(target, Ability.CONSTITUTION),
+            auto_fail=self.auto_fails_save(target, Ability.CONSTITUTION),
+        )
 
     def _emit(
         self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any
