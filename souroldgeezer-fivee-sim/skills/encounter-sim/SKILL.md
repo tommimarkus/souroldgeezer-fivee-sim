@@ -88,6 +88,9 @@ a fight on a loaded map; the fight captures the document as it stands, and
 `encounter_state["map_source"].stale` turns true if the map is edited after —
 re-create the encounter when the new layout should apply.
 
+For the full map workflow — generation seeds, the interactive browser editor,
+and exporting a fight as a shareable replay — use the **map-forge** skill.
+
 ## Aiming a spell
 
 `cast` takes `target` for one creature, `targets` for several, or an area aim:

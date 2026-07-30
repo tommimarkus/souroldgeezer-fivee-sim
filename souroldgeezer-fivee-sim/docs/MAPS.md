@@ -1,0 +1,186 @@
+# Battle maps
+
+Your maps, as documents the engine generates, validates, edits, and fights on.
+
+A map is one JSON file with a lifecycle — generated, hand-edited, played — and
+**the file is the source of truth** once a hand has touched it. Maps are not a
+content-pack section: packs are merged named-record registries, and merging two
+maps by name is meaningless. A map validates on every load through the same
+diagnostic machinery packs use, so a broken file names every problem at once.
+
+## Quick start
+
+A complete, valid document — a walled room with a door and a stair:
+
+```json
+{
+  "format": "fivee-sim-map",
+  "format_version": 1,
+  "name": "guard room",
+  "grid": { "width": 6, "height": 5, "cell_feet": 5 },
+  "legend": { ".": "floor", "#": "wall", "%": "difficult" },
+  "tiles": [
+    "######",
+    "#....#",
+    "#.%...",
+    "#....#",
+    "######"
+  ],
+  "features": [
+    { "id": "door-east", "kind": "door", "at": [5, 2],
+      "orientation": "vertical", "state": "closed" },
+    { "id": "stair-1", "kind": "stairs_down", "at": [1, 3] }
+  ],
+  "provenance": {
+    "generator": "hand",
+    "seed": 0,
+    "params": {},
+    "edited": false,
+    "source": "Original content; 5E-compatible"
+  }
+}
+```
+
+Squares are zero-based `[x, y]`, origin top-left, y downward; `tiles` lists the
+top row first, one character per square, each resolved through the document's
+own `legend`. Save it under the maps directory and `map_load` it by path, or
+hand the object to `map_load` inline.
+
+## Where maps live
+
+In precedence order:
+
+1. **`FIVEE_SIM_MAPS`** — an `os.pathsep`-separated list of files or
+   directories. When set, it wins outright.
+2. **`$CLAUDE_PROJECT_DIR/.fivee-sim/maps/`**, used only when the variable is
+   unset — the maps analogue of the content-pack convention.
+3. The same `.fivee-sim/maps/` under the current directory, as a last resort.
+
+The first configured root is also where `map_save` writes by default
+(`<slug-of-name>.json`) and where `replay_export` puts its files (under
+`replays/`).
+
+## The document, field by field
+
+Every unknown key is a hard error, everywhere — a mistyped field must never
+silently become a default.
+
+| Field | Meaning |
+| --- | --- |
+| `format` | Always `"fivee-sim-map"`. |
+| `format_version` | Always `1`. |
+| `name` | Display name; `map_save`'s default filename is its slug. |
+| `grid` | `width` and `height` in squares (1–512 each), `cell_feet` fixed at 5. |
+| `legend` | Single character → terrain-kind string. The glyphs `+` `/` `<` `>` `@` are reserved for renderer overlays and may not be claimed. |
+| `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
+| `features` | Doors, stairs, spawn hints — see below. |
+| `provenance` | `generator`, `seed`, fully resolved `params`, the `edited` flag, and a `source` string. |
+
+A document is refused past 4 MB or a 512-square side.
+
+**Features** carry `id` (unique), `kind`, `at`, and optionally `orientation`,
+`state`, `team`. A `door` requires `orientation` (`horizontal`/`vertical`) and
+`state` (`open`/`closed`) — that state is the door's *default*; what a door is
+doing mid-fight lives in the encounter's overlay, never in the file. Door
+squares are ordinary floor in `tiles`; the feature supplies the blocking.
+Other bundled kinds: `stairs_up`, `stairs_down`, `spawn` (placement hint,
+optionally with a `team`).
+
+**Terrain kinds are strings**, resolved against loaded content exactly like
+conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
+`plain`, `forest`, `hill`, `mountain`, the cover kinds, and door terrain, and
+a content pack may define more. A kind nothing defines is a validation error
+naming what is available.
+
+**Provenance** makes a map reproducible: `generator` + `seed` + resolved
+`params` regenerate it exactly, until `edited` flips true — from then on the
+file is the truth and regeneration would lose the hand's work.
+
+## Edit operations
+
+`map_edit` (MCP) and `POST /api/maps/{id}/edits` (REST) accept the same list
+of operations and apply it **atomically** — a bad operation names its index
+and nothing changes. Each operation is an object with an `op` key:
+
+| `op` | Keys |
+| --- | --- |
+| `set_terrain` | `rect: [x, y, w, h]`, `terrain` |
+| `paint` | `cells: [[x, y], ...]`, `terrain` |
+| `line` | `from`, `to`, `terrain` — Bresenham raster |
+| `carve_corridor` | `from`, `to`, `terrain?` (default floor), `horizontal_first?` |
+| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?}` |
+| `remove_feature` | `id` |
+| `toggle_door` | `at` — flips the recorded default state |
+| `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
+| `set_legend` | `glyph`, `terrain` — reserved glyphs refused |
+| `set_name` | `name` |
+
+Terrain named in an operation must already have a glyph in the document's
+legend (`set_legend` first if not). A successful edit marks the document
+`edited` and, in the session, bumps the map's generation.
+
+## The interactive editor
+
+Two ways to start it, one server either way:
+
+- **MCP**: `map_editor_serve` spawns a detached editor process and returns its
+  URL; calling it again finds the running one (`already_running`).
+  `map_editor_stop` shuts it down.
+- **CLI**: `fivee-sim-editor [--maps-dir DIR] [--port N]` from the engine's
+  environment, for development.
+
+**Token model.** The server binds `127.0.0.1` only and mints a fresh token per
+launch. Every `/api/*` request must carry it in `X-Fivee-Editor-Token`; the
+token reaches the browser only by being injected into the served page, and it
+is never put in a URL, so the URL alone is safe to hand around on the machine.
+Requests with a foreign `Host` header are refused, which is what keeps a
+DNS-rebinding page from driving the API.
+
+**ETag semantics.** A map's identity is the sha256 of its canonical bytes, and
+that hash is its `ETag`. `PUT /api/maps/{id}` requires `If-Match`: the ETag
+from your last `GET` to update, or `*` to create. A stale hash is a `409`
+(someone saved in between — re-`GET` and reapply), a missing header is `428`,
+and an invalid document is `422` carrying the same diagnostics the validator
+prints. `POST /api/generate` **never persists** — the page reviews the result
+and saves the keeper with `PUT`, exactly as `map_generate` hands off to
+`map_save`.
+
+After saving in the editor, the file has moved on from any session copy:
+`map_load` (with `replace` to keep the same map id) re-reads it. Once
+hand-edited, the file is the source of truth — re-load, never assume.
+
+## The replay bundle
+
+`replay_export` turns an encounter into a portable record, format
+`fivee-sim-replay` version 1:
+
+```json
+{
+  "format": "fivee-sim-replay",
+  "format_version": 1,
+  "name": "guard room",
+  "seed": 71203941,
+  "map": { "...": "a fivee-sim-map payload, or null" },
+  "initial": {
+    "creatures": [
+      { "name": "Thora", "team": "party", "position": [5, 5],
+        "hp": 30, "max_hp": 30 }
+    ],
+    "map_open_features": ["door-east"]
+  },
+  "events": [ { "kind": "round", "detail": "round 1 begins", "...": "..." } ]
+}
+```
+
+`map` is the document **as the fight captured it** — an edit made after
+`encounter_create` never changes an export. Fights created mapless or from an
+inline `map` spec carry `null` and replay on a neutral plane. Positions are
+`[x, y]` in feet; `events` is the structured log `encounter_log` pages, in
+full.
+
+Small bundles come back inline; larger ones (or any call with `path`) are
+written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
+bundle is baked into the replay viewer instead, yielding a single
+self-contained `.html` — open it in any browser, no server required. The
+viewer is also served live at `/viewer` by the editor process, where it takes
+a dropped bundle file.

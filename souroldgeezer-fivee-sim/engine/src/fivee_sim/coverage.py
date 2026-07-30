@@ -387,7 +387,11 @@ def render_markdown() -> str:
     add(
         "`encounter_log` pages the full event and action history of a fight in "
         "progress, stamped with rounds and turns — the record to recap or replay "
-        "from, where `encounter_state` is only the view of now."
+        "from, where `encounter_state` is only the view of now. `replay_export` "
+        "turns that record into a portable replay bundle — the fight's seed, its "
+        "map as captured at creation, the starting roster, and every event — or, "
+        "with `embed`, a single self-contained page that plays the fight back in "
+        "a browser."
     )
     add("")
     add(
