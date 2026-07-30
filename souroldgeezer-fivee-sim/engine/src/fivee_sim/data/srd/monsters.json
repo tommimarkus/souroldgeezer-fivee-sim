@@ -61,6 +61,7 @@
         "wisdom": 12,
         "charisma": 6
       },
+      "pack_tactics": true,
       "attacks": [
         {
           "name": "Bite",
@@ -73,7 +74,6 @@
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Pack Tactics: Advantage when an ally is within 5 feet of the target",
         "Bite knocks a Medium or smaller target Prone on a failed Strength save"
       ]
     },
@@ -96,6 +96,7 @@
         "wisdom": 0
       },
       "immunities": ["poison"],
+      "undead_fortitude": true,
       "attacks": [
         {
           "name": "Slam",
@@ -108,7 +109,6 @@
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Undead Fortitude: on dropping to 0 HP, a Constitution save (DC 5 + damage taken) leaves it at 1 HP instead, unless the damage was Radiant or from a Critical Hit",
         "Immunity to the Exhaustion and Poisoned conditions"
       ]
     },

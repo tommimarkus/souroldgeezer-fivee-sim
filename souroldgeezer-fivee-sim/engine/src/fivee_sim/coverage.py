@@ -173,6 +173,24 @@ def _attack_summary(attacks: list[dict[str, Any]]) -> str:
     return "; ".join(parts) or "none"
 
 
+def _trait_summary(record: dict[str, Any]) -> str:
+    """The stat block's modelled trait flags, as a line after the attacks."""
+    traits: list[str] = []
+    if record.get("pack_tactics"):
+        traits.append(
+            "Pack Tactics — Advantage while a capable ally is within 5 ft of the target"
+        )
+    if record.get("undead_fortitude"):
+        traits.append(
+            "Undead Fortitude — on a drop to 0 HP, a Constitution save (DC 5 + damage "
+            "taken) leaves 1 HP instead, unless the damage was Radiant, a Critical "
+            "Hit, or enough to kill outright"
+        )
+    if not traits:
+        return ""
+    return "<br>Traits: " + "; ".join(traits)
+
+
 def _notes(record: dict[str, Any]) -> str:
     return "<br>".join(_md_escape(note) for note in record.get("unmodelled", [])) or "—"
 
@@ -264,14 +282,15 @@ def render_markdown() -> str:
 
     add("## Creatures")
     add("")
-    add("| Name | AC | HP | Speed | Attacks | Printed features not implemented |")
+    add("| Name | AC | HP | Speed | Attacks and traits | Printed features not implemented |")
     add("| --- | --- | --- | --- | --- | --- |")
     for name in sorted(monsters):
         record = monsters[name]
         add(
             f"| {name} | {record['ac']} | {record['max_hp']} "
             f"({record.get('hit_dice', '—')}) | {record.get('speed', 30)} ft | "
-            f"{_md_escape(_attack_summary(record.get('attacks', [])))} | "
+            f"{_md_escape(_attack_summary(record.get('attacks', [])))}"
+            f"{_trait_summary(record)} | "
             f"{_notes(record)} |"
         )
     add("")
@@ -347,6 +366,17 @@ def render_markdown() -> str:
         "next turn — and the expiry fires when that turn slot passes, even if the "
         "attacker has died; it never strips a condition something else is still "
         "imposing.")
+    add("")
+    add("Two printed creature traits are modelled as stat-block flags. Pack Tactics "
+        "grants a creature's attack rolls — weapon and spell alike, opportunity "
+        "attacks included — Advantage while another member of its team is within 5 "
+        "feet of the target, conscious, and free of incapacitating conditions; it "
+        "counts as one Advantage source and cancels against Disadvantage like any "
+        "other. Undead Fortitude turns damage that would drop the creature to 0 hit "
+        "points into a Constitution saving throw at DC 5 plus the damage taken, and "
+        "a success leaves it standing at 1 hit point — bypassed when any of the "
+        "damage was Radiant, the hit was a critical, or the overflow was enough to "
+        "kill outright.")
     add("")
     add("A creature at 0 hit points is a legal target, not an untouchable one: an "
         "attack, an area effect it stands inside, and a usable item all reach it. Each "
