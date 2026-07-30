@@ -1,0 +1,38 @@
+# Devcontainer /dev/null mounts.
+#
+# These names exist in this workspace as character devices (major/minor 1,3),
+# not regular files. `git status` reports them as untracked; staging one either
+# errors or commits something meaningless. They are ignored here so that
+# `git status --porcelain` is trustworthy. See CLAUDE.md "Staging discipline".
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc
+
+# Claude Code per-project state. In this workspace every entry under .claude/
+# is also a /dev/null mount, so nothing here is storable or meaningful.
+.claude/
+
+# Git worktrees used for implementation branches.
+.worktrees/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+.cache/
