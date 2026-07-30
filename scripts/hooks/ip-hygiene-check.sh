@@ -21,13 +21,12 @@
 
 set -uo pipefail
 
-root="${CLAUDE_PROJECT_DIR:-$PWD}"
-conf="$root/.ip-hygiene-local.conf"
+project_root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 # Activation marker. Also checked in the settings.json wiring, on purpose: that
 # wiring is user-global, so without a guard there it would try to execute
 # "$CLAUDE_PROJECT_DIR/scripts/hooks/..." in unrelated repositories.
-[ -f "$conf" ] || exit 0
+[ -f "$project_root/.ip-hygiene-local.conf" ] || exit 0
 
 payload="$(cat)"
 file_path="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
@@ -35,20 +34,40 @@ file_path="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty' 2>/
 
 case "$file_path" in
   /*) abs="$file_path" ;;
-  *)  abs="$root/$file_path" ;;
+  *)  abs="$project_root/$file_path" ;;
 esac
 
 # Stay inside the project, and ignore deletes/moves that leave nothing to read.
 case "$abs" in
-  "$root"/*) ;;
+  "$project_root"/*) ;;
   *) exit 0 ;;
 esac
 [ -f "$abs" ] || exit 0
 
+# Resolve the artifact root: the nearest ancestor that declares this policy.
+#
+# This is not the same as CLAUDE_PROJECT_DIR. Implementation happens in git
+# worktrees under .worktrees/, which carry their own copy of the conf and their
+# own NOTICE. Resolving against CLAUDE_PROJECT_DIR would check the primary
+# checkout's artifacts while editing the worktree's — reporting a missing NOTICE
+# that exists, or passing a tampered one that does not.
+find_artifact_root() {
+  local dir="$1"
+  while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+    if [ -f "$dir/.ip-hygiene-local.conf" ]; then
+      printf '%s' "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+root="$(find_artifact_root "$(dirname "$abs")")" || root="$project_root"
 rel="${abs#"$root"/}"
 
 # shellcheck source=/dev/null
-. "$conf"
+. "$root/.ip-hygiene-local.conf"
 
 findings=()
 

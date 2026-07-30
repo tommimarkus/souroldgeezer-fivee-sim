@@ -129,6 +129,33 @@ S3="$(make_root shipped_tampered)"
 echo 'Material from SRD 5.2, Wizards of the Coast.' > "$S3/fivee-sim/NOTICE"
 check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/fivee-sim/NOTICE"
 
+# --- worktree / nested-root resolution ------------------------------------
+# Implementation happens in git worktrees under .worktrees/, which carry their
+# own conf and their own NOTICE. The artifacts checked must be the ones being
+# edited, not the primary checkout's.
+nest() { # nest <outer_root> -> prints inner root
+  local inner="$1/.worktrees/inner"
+  mkdir -p "$inner/fivee-sim/engine/src/fivee_sim/data"
+  cp "$repo_root/.ip-hygiene-local.conf" "$inner/"
+  cp "$repo_root/NOTICE" "$inner/NOTICE"
+  printf '{"monsters":[{"name":"Goblin"}]}\n' \
+    > "$inner/fivee-sim/engine/src/fivee_sim/data/m.json"
+  printf '%s' "$inner"
+}
+
+O="$(make_root outer)"
+I="$(nest "$O")"
+echo 'Material from SRD 5.2, Wizards of the Coast.' > "$I/fivee-sim/NOTICE"
+check "nested root: the inner tampered NOTICE is what gets checked" 2 "$O" \
+  "$I/fivee-sim/engine/src/fivee_sim/data/m.json"
+
+O2="$(make_root outer_tampered)"
+echo 'bogus attribution' > "$O2/NOTICE"
+I2="$(nest "$O2")"
+cp "$repo_root/NOTICE" "$I2/fivee-sim/NOTICE"
+check "nested root: clean inner passes despite a tampered outer" 0 "$O2" \
+  "$I2/fivee-sim/engine/src/fivee_sim/data/m.json"
+
 # --- activation guard -----------------------------------------------------
 N="$tmp/nomarker"
 mkdir -p "$N/fivee-sim/.claude-plugin"
