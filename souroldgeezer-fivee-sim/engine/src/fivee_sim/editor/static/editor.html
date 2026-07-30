@@ -2,14 +2,1112 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>fivee-sim map editor</title>
 <script>
 /*__EDITOR_CONFIG__*/
 </script>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea; --panel: #ebe7de; --edge: #d4cfc2; --text: #2b2925;
+  --muted: #6f6a5e; --accent: #7a5c2e; --error: #a03434; --ok: #3f7a3f;
+  --canvas-bg: #efece3;
+  --terrain-floor: #e9e4d8; --terrain-normal: #e9e4d8; --terrain-wall: #4d463c;
+  --terrain-difficult: #dcd3bd; --terrain-half-cover: #ddd8c6;
+  --terrain-three-quarters-cover: #d3cdb8;
+  --terrain-door-open: #e2d3b4; --terrain-door-closed: #8a6f4d;
+  --terrain-water: #a9c6ce; --terrain-plain: #d9dfb6; --terrain-forest: #a7c396;
+  --terrain-hill: #cfc49c; --terrain-mountain: #b3aa9d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1f22; --panel: #24272b; --edge: #34383d; --text: #d9d6cf;
+    --muted: #8f8b82; --accent: #c9a86a; --error: #d98181; --ok: #9ecb9e;
+    --canvas-bg: #191b1e;
+    --terrain-floor: #31353b; --terrain-normal: #31353b; --terrain-wall: #14161a;
+    --terrain-difficult: #383b34; --terrain-half-cover: #343a3c;
+    --terrain-three-quarters-cover: #383f42;
+    --terrain-door-open: #403a2c; --terrain-door-closed: #3d3020;
+    --terrain-water: #1f3a44; --terrain-plain: #333d2b; --terrain-forest: #25372a;
+    --terrain-hill: #3e392a; --terrain-mountain: #48443e;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column;
+}
+button, select, input {
+  font: inherit; color: inherit; background: var(--panel);
+  border: 1px solid var(--edge); border-radius: 4px; padding: 3px 8px;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.active { border-color: var(--accent); background: var(--edge); }
+header {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  border-bottom: 1px solid var(--edge); background: var(--panel); flex-wrap: wrap;
+}
+header .spacer { flex: 1; }
+#map-name { min-width: 180px; font-weight: 600; }
+#provenance { color: var(--muted); white-space: nowrap; }
+#mode-note { color: var(--accent); }
+#layout { display: flex; flex: 1; min-height: 0; }
+#toolbar {
+  width: 132px; padding: 8px; border-right: 1px solid var(--edge);
+  background: var(--panel); display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
+}
+#toolbar h3, #panel h3 {
+  margin: 8px 0 2px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted);
+}
+#toolbar h3:first-child { margin-top: 0; }
+#canvas-wrap { flex: 1; position: relative; min-width: 0; }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#panel {
+  width: 230px; padding: 8px; border-left: 1px solid var(--edge);
+  background: var(--panel); overflow-y: auto;
+}
+#legend-list { display: flex; flex-direction: column; gap: 2px; }
+.legend-row {
+  display: flex; align-items: center; gap: 6px; padding: 2px 4px;
+  border-radius: 4px; cursor: pointer; border: 1px solid transparent;
+}
+.legend-row.selected { border-color: var(--accent); background: var(--bg); }
+.legend-swatch {
+  width: 16px; height: 16px; border: 1px solid var(--edge); border-radius: 3px;
+  flex: none;
+}
+.legend-glyph { font-family: ui-monospace, monospace; width: 14px; text-align: center; }
+#legend-add { display: flex; gap: 4px; margin-top: 6px; }
+#legend-add input:first-child { width: 32px; text-align: center; }
+#legend-add input:nth-child(2) { flex: 1; min-width: 0; }
+#readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
+#feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
+footer {
+  border-top: 1px solid var(--edge); background: var(--panel);
+  padding: 4px 10px; max-height: 130px; overflow-y: auto;
+}
+#status { white-space: pre-wrap; font-family: ui-monospace, monospace; }
+#status.error { color: var(--error); }
+#status.ok { color: var(--ok); }
+dialog {
+  background: var(--panel); color: var(--text); border: 1px solid var(--edge);
+  border-radius: 6px; max-width: 30rem; padding: 14px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+dialog h2 { margin: 0 0 8px; font-size: 14px; }
+dialog .row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+dialog .row label { width: 9em; color: var(--muted); }
+dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top: 12px; }
+#map-list { list-style: none; margin: 0; padding: 0; max-height: 18rem; overflow-y: auto; }
+#map-list li {
+  padding: 5px 8px; border-radius: 4px; cursor: pointer;
+  display: flex; justify-content: space-between; gap: 10px;
+}
+#map-list li:hover { background: var(--bg); }
+#map-list .dim { color: var(--muted); }
+#gen-params .row input { width: 7em; }
+.hint { color: var(--muted); font-size: 12px; }
+</style>
 </head>
 <body>
-<p>The map editor page ships in the next commit. This placeholder pins the
-serving contract: the script block above carries the injected launch
-configuration.</p>
+<header>
+  <input id="map-name" type="text" placeholder="untitled map" aria-label="map name">
+  <span id="provenance"></span>
+  <span class="spacer"></span>
+  <span id="mode-note"></span>
+  <button id="btn-open">Open&#8230;</button>
+  <button id="btn-open-file">Open file&#8230;</button>
+  <input id="file-input" type="file" accept=".json,application/json" hidden>
+  <button id="btn-generate">Generate&#8230;</button>
+  <button id="btn-validate">Validate</button>
+  <button id="btn-save">Save</button>
+  <button id="btn-download">Download JSON</button>
+</header>
+<div id="layout">
+  <nav id="toolbar">
+    <h3>Tools</h3>
+    <button class="tool" data-tool="pan">Pan / select</button>
+    <button class="tool" data-tool="brush">Brush</button>
+    <select id="brush-size" aria-label="brush size">
+      <option value="1">size 1</option>
+      <option value="3">size 3</option>
+      <option value="5">size 5</option>
+    </select>
+    <button class="tool" data-tool="rect">Rectangle</button>
+    <button class="tool" data-tool="line">Line</button>
+    <button class="tool" data-tool="door">Door</button>
+    <button class="tool" data-tool="feature">Feature</button>
+    <select id="feature-kind" aria-label="feature kind">
+      <option value="stairs_up">stairs up</option>
+      <option value="stairs_down">stairs down</option>
+      <option value="spawn">spawn</option>
+    </select>
+    <button class="tool" data-tool="erase">Eraser</button>
+    <h3>Map</h3>
+    <button id="btn-resize">Resize&#8230;</button>
+    <button id="btn-fit">Fit view</button>
+    <h3>History</h3>
+    <button id="btn-undo">Undo</button>
+    <button id="btn-redo">Redo</button>
+  </nav>
+  <main id="canvas-wrap"><canvas id="map"></canvas></main>
+  <aside id="panel">
+    <h3>Legend</h3>
+    <div id="legend-list"></div>
+    <div id="legend-add">
+      <input id="new-glyph" type="text" maxlength="1" placeholder="#" aria-label="glyph">
+      <input id="new-kind" type="text" placeholder="terrain kind" aria-label="terrain kind">
+      <button id="btn-add-legend">Add</button>
+    </div>
+    <h3>Selected feature</h3>
+    <div id="feature-info">none</div>
+    <button id="btn-delete-feature" hidden>Delete feature</button>
+    <h3>Cursor</h3>
+    <div id="readout">&#8212;</div>
+  </aside>
+</div>
+<footer><div id="status">No map loaded. Open one, open a file, or generate.</div></footer>
+
+<dialog id="dlg-open">
+  <h2>Open a map from the server</h2>
+  <ul id="map-list"></ul>
+  <div class="buttons"><button id="dlg-open-cancel">Cancel</button></div>
+</dialog>
+
+<dialog id="dlg-generate">
+  <h2>Generate a map</h2>
+  <div class="row"><label for="gen-kind">kind</label>
+    <select id="gen-kind">
+      <option value="dungeon">dungeon</option>
+      <option value="caves">caves</option>
+      <option value="overland">overland</option>
+    </select>
+  </div>
+  <div id="gen-params"></div>
+  <div class="row"><label for="gen-seed">seed (optional)</label>
+    <input id="gen-seed" type="text" inputmode="numeric" placeholder="random"></div>
+  <div class="row"><label for="gen-name">name (optional)</label>
+    <input id="gen-name" type="text"></div>
+  <p class="hint">The seed actually used is always reported and recorded in the
+    map's provenance, so the result can be regenerated exactly.</p>
+  <div class="buttons">
+    <button id="dlg-generate-cancel">Cancel</button>
+    <button id="dlg-generate-go">Generate</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-resize">
+  <h2>Resize the map</h2>
+  <div class="row"><label for="rs-width">width</label>
+    <input id="rs-width" type="number" min="1" max="512"></div>
+  <div class="row"><label for="rs-height">height</label>
+    <input id="rs-height" type="number" min="1" max="512"></div>
+  <div class="row"><label for="rs-anchor">anchor</label>
+    <select id="rs-anchor">
+      <option value="top-left">top-left</option>
+      <option value="top-right">top-right</option>
+      <option value="bottom-left">bottom-left</option>
+      <option value="bottom-right">bottom-right</option>
+    </select>
+  </div>
+  <div class="row"><label for="rs-fill">fill terrain</label>
+    <input id="rs-fill" type="text" value="wall"></div>
+  <div class="buttons">
+    <button id="dlg-resize-cancel">Cancel</button>
+    <button id="dlg-resize-go">Resize</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-conflict">
+  <h2>The saved map has changed</h2>
+  <p>Someone else saved this map since it was loaded here. Reload discards the
+    edits made on this page; overwrite discards theirs.</p>
+  <div class="buttons">
+    <button id="dlg-conflict-reload">Reload theirs</button>
+    <button id="dlg-conflict-overwrite">Overwrite with mine</button>
+    <button id="dlg-conflict-cancel">Cancel</button>
+  </div>
+</dialog>
+
+<script src="/assets/renderer.js"></script>
+<script>
+/* Served, the absolute path above resolves; opened straight from the static
+   directory it cannot, so fall back to the sibling file. The tag is assembled
+   from pieces so the page's script tags stay countable. */
+if (typeof FiveeRenderer === "undefined") {
+  document.write("<scr" + "ipt src=\"renderer.js\"></scr" + "ipt>");
+}
+</script>
+<script>
+"use strict";
+(function () {
+  var CONFIG = window.__FIVEE_EDITOR__ || null;
+  var R = FiveeRenderer;
+
+  /* --- state ------------------------------------------------------------ */
+  var doc = null;         /* the in-memory document payload; edits are local */
+  var mapId = null;       /* the server id this document saves to */
+  var etag = null;        /* ETag from the last GET or PUT; null means new */
+  var baseline = null;    /* content serialization at load, for the edited flag */
+  var generatedSeed = null;
+  var undoStack = [];
+  var redoStack = [];
+  var UNDO_LIMIT = 100;
+  var view = null;
+  var tool = "pan";
+  var selectedGlyph = null;
+  var selectedFeatureId = null;
+  var drag = null;
+  var hoverCell = null;
+
+  var canvas = document.getElementById("map");
+  var ctx = canvas.getContext("2d");
+  var status = document.getElementById("status");
+
+  function byId(id) { return document.getElementById(id); }
+
+  /* --- status ----------------------------------------------------------- */
+  function setStatus(text, cls) {
+    status.textContent = text;
+    status.className = cls || "";
+  }
+  function showDiagnostics(prefix, list) {
+    var lines = [prefix];
+    (list || []).forEach(function (d) {
+      lines.push("  " + [d.severity, d.section, d.name, d.field, d.problem]
+        .filter(function (part) { return part; }).join(" · "));
+    });
+    setStatus(lines.join("\n"), "error");
+  }
+
+  /* --- server ----------------------------------------------------------- */
+  function request(method, path, body, headers) {
+    var sent = Object.assign({ "X-Fivee-Editor-Token": CONFIG.token }, headers || {});
+    var options = { method: method, headers: sent };
+    if (body !== undefined) {
+      sent["Content-Type"] = "application/json";
+      options.body = JSON.stringify(body);
+    }
+    return fetch(CONFIG.apiBase + path, options).then(function (response) {
+      return response.text().then(function (text) {
+        var parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
+        return { status: response.status, headers: response.headers, json: parsed };
+      });
+    });
+  }
+
+  /* --- document plumbing ------------------------------------------------ */
+  function contentOf(payload) {
+    return JSON.stringify({
+      name: payload.name, grid: payload.grid, legend: payload.legend,
+      tiles: payload.tiles, features: payload.features
+    });
+  }
+  function snapshot() {
+    undoStack.push(contentOf(doc));
+    if (undoStack.length > UNDO_LIMIT) { undoStack.shift(); }
+    redoStack = [];
+  }
+  function restore(serialized) {
+    var previous = JSON.parse(serialized);
+    doc.name = previous.name;
+    doc.grid = previous.grid;
+    doc.legend = previous.legend;
+    doc.tiles = previous.tiles;
+    doc.features = previous.features;
+    byId("map-name").value = doc.name;
+    renderLegend();
+    redraw();
+  }
+  function undo() {
+    if (!doc || !undoStack.length) { return; }
+    redoStack.push(contentOf(doc));
+    restore(undoStack.pop());
+  }
+  function redo() {
+    if (!doc || !redoStack.length) { return; }
+    undoStack.push(contentOf(doc));
+    restore(redoStack.pop());
+  }
+
+  function clientSlug(name) {
+    var slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return slug || "map";
+  }
+
+  function loadDocument(payload, source) {
+    doc = payload;
+    mapId = source.id || clientSlug(payload.name);
+    etag = source.etag || null;
+    baseline = contentOf(payload);
+    generatedSeed = source.seed !== undefined ? source.seed : null;
+    undoStack = [];
+    redoStack = [];
+    selectedFeatureId = null;
+    byId("map-name").value = doc.name;
+    var box = canvas.getBoundingClientRect();
+    view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
+    renderLegend();
+    renderProvenance();
+    renderFeatureInfo();
+    redraw();
+  }
+
+  function renderProvenance() {
+    var line = "";
+    if (doc) {
+      var p = doc.provenance;
+      line = p.generator + " · seed " + p.seed + (p.edited ? " · edited" : "");
+      if (generatedSeed !== null) { line += " · generated this session"; }
+    }
+    byId("provenance").textContent = line;
+  }
+
+  /* --- legend panel ----------------------------------------------------- */
+  var RESERVED = ["+", "/", "<", ">", "@"];
+  function renderLegend() {
+    var list = byId("legend-list");
+    list.textContent = "";
+    if (!doc) { return; }
+    var glyphs = Object.keys(doc.legend).sort();
+    if (selectedGlyph === null || !(selectedGlyph in doc.legend)) {
+      selectedGlyph = glyphs[0] || null;
+    }
+    glyphs.forEach(function (glyph) {
+      var row = document.createElement("div");
+      row.className = "legend-row" + (glyph === selectedGlyph ? " selected" : "");
+      var swatch = document.createElement("span");
+      swatch.className = "legend-swatch";
+      swatch.style.background = R.terrainColor(
+        doc.legend[glyph], R.isDark(), getComputedStyle(canvas));
+      var mark = document.createElement("span");
+      mark.className = "legend-glyph";
+      mark.textContent = glyph;
+      var kind = document.createElement("span");
+      kind.textContent = doc.legend[glyph];
+      row.appendChild(swatch);
+      row.appendChild(mark);
+      row.appendChild(kind);
+      row.addEventListener("click", function () {
+        selectedGlyph = glyph;
+        renderLegend();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  byId("btn-add-legend").addEventListener("click", function () {
+    if (!doc) { return; }
+    var glyph = byId("new-glyph").value;
+    var kind = byId("new-kind").value.trim();
+    if (glyph.length !== 1) {
+      setStatus("'glyph' must be a single character, got '" + glyph + "'", "error");
+      return;
+    }
+    if (RESERVED.indexOf(glyph) !== -1) {
+      setStatus("glyph '" + glyph + "' is reserved for renderer overlays (+ / < > @) "
+        + "and cannot name terrain", "error");
+      return;
+    }
+    if (!kind) {
+      setStatus("'terrain' must name a terrain kind", "error");
+      return;
+    }
+    snapshot();
+    doc.legend[glyph] = kind;
+    selectedGlyph = glyph;
+    byId("new-glyph").value = "";
+    byId("new-kind").value = "";
+    renderLegend();
+    setStatus("legend: '" + glyph + "' → " + kind
+      + " (the server validates the kind on save)");
+    redraw();
+  });
+
+  /* --- tile editing ----------------------------------------------------- */
+  function inBounds(cell) {
+    return doc && cell[0] >= 0 && cell[0] < doc.grid.width
+      && cell[1] >= 0 && cell[1] < doc.grid.height;
+  }
+  function paintCell(x, y, glyph) {
+    var row = doc.tiles[y];
+    doc.tiles[y] = row.substring(0, x) + glyph + row.substring(x + 1);
+  }
+  function brushCells(center, size) {
+    var half = Math.floor(size / 2);
+    var cells = [];
+    for (var dy = -half; dy <= half; dy++) {
+      for (var dx = -half; dx <= half; dx++) {
+        var cell = [center[0] + dx, center[1] + dy];
+        if (inBounds(cell)) { cells.push(cell); }
+      }
+    }
+    return cells;
+  }
+  function lineCells(a, b) {
+    var cells = [];
+    var x0 = a[0], y0 = a[1], x1 = b[0], y1 = b[1];
+    var dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    var sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    var err = dx + dy;
+    for (;;) {
+      cells.push([x0, y0]);
+      if (x0 === x1 && y0 === y1) { return cells; }
+      var doubled = 2 * err;
+      if (doubled >= dy) { err += dy; x0 += sx; }
+      if (doubled <= dx) { err += dx; y0 += sy; }
+    }
+  }
+  function rectCells(a, b) {
+    var cells = [];
+    var x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]);
+    var y0 = Math.min(a[1], b[1]), y1 = Math.max(a[1], b[1]);
+    for (var y = y0; y <= y1; y++) {
+      for (var x = x0; x <= x1; x++) { cells.push([x, y]); }
+    }
+    return cells;
+  }
+  function glyphForKind(kind) {
+    for (var glyph in doc.legend) {
+      if (doc.legend[glyph] === kind) { return glyph; }
+    }
+    return null;
+  }
+  function eraseGlyph() {
+    return glyphForKind("floor") || glyphForKind("normal");
+  }
+  function kindAt(cell) {
+    return doc.legend[doc.tiles[cell[1]].charAt(cell[0])];
+  }
+  function featureAt(cell, predicate) {
+    for (var i = 0; i < doc.features.length; i++) {
+      var feature = doc.features[i];
+      if (feature.at[0] === cell[0] && feature.at[1] === cell[1]
+        && (!predicate || predicate(feature))) {
+        return feature;
+      }
+    }
+    return null;
+  }
+  function nextFeatureId(prefix) {
+    var used = {};
+    doc.features.forEach(function (f) { used[f.id] = true; });
+    for (var n = 1; ; n++) {
+      var candidate = prefix + "-" + n;
+      if (!used[candidate]) { return candidate; }
+    }
+  }
+  function wallish(cell) {
+    return inBounds(cell) && kindAt(cell) === "wall";
+  }
+  function doorOrientation(cell) {
+    var left = wallish([cell[0] - 1, cell[1]]);
+    var right = wallish([cell[0] + 1, cell[1]]);
+    var up = wallish([cell[0], cell[1] - 1]);
+    var down = wallish([cell[0], cell[1] + 1]);
+    if (left && right) { return "horizontal"; }
+    if (up && down) { return "vertical"; }
+    if (left || right) { return "horizontal"; }
+    if (up || down) { return "vertical"; }
+    return "horizontal";
+  }
+  function cycleDoor(cell) {
+    var door = featureAt(cell, function (f) { return f.kind === "door"; });
+    snapshot();
+    if (door === null) {
+      doc.features.push({
+        id: nextFeatureId("door"), kind: "door",
+        at: [cell[0], cell[1]],
+        orientation: doorOrientation(cell), state: "closed"
+      });
+      setStatus("placed a closed door at [" + cell + "]; click again to open, again to remove");
+    } else if (door.state === "closed") {
+      door.state = "open";
+      setStatus("door " + door.id + " now stands open by default");
+    } else {
+      doc.features.splice(doc.features.indexOf(door), 1);
+      setStatus("removed " + door.id);
+    }
+    redraw();
+  }
+  function placeOrRemoveFeature(cell) {
+    var existing = featureAt(cell, function (f) { return f.kind !== "door"; });
+    snapshot();
+    if (existing !== null) {
+      doc.features.splice(doc.features.indexOf(existing), 1);
+      setStatus("removed " + existing.id);
+    } else {
+      var kind = byId("feature-kind").value;
+      var id = nextFeatureId(kind.replace(/_/g, "-"));
+      doc.features.push({ id: id, kind: kind, at: [cell[0], cell[1]] });
+      setStatus("placed " + id + " at [" + cell + "]");
+    }
+    renderFeatureInfo();
+    redraw();
+  }
+
+  function renderFeatureInfo() {
+    var info = byId("feature-info");
+    var remove = byId("btn-delete-feature");
+    var feature = null;
+    if (doc && selectedFeatureId !== null) {
+      doc.features.forEach(function (f) {
+        if (f.id === selectedFeatureId) { feature = f; }
+      });
+    }
+    if (feature === null) {
+      info.textContent = "none";
+      remove.hidden = true;
+      return;
+    }
+    var lines = ["id: " + feature.id, "kind: " + feature.kind,
+      "at: [" + feature.at + "]"];
+    if (feature.orientation) { lines.push("orientation: " + feature.orientation); }
+    if (feature.state) { lines.push("state: " + feature.state); }
+    if (feature.team) { lines.push("team: " + feature.team); }
+    info.textContent = lines.join("\n");
+    remove.hidden = false;
+  }
+  byId("btn-delete-feature").addEventListener("click", function () {
+    if (!doc || selectedFeatureId === null) { return; }
+    snapshot();
+    doc.features = doc.features.filter(function (f) {
+      return f.id !== selectedFeatureId;
+    });
+    selectedFeatureId = null;
+    renderFeatureInfo();
+    redraw();
+  });
+
+  /* --- canvas ----------------------------------------------------------- */
+  var framePending = false;
+  function redraw() {
+    if (framePending) { return; }
+    framePending = true;
+    window.requestAnimationFrame(function () {
+      framePending = false;
+      var box = R.resizeCanvas(canvas, ctx);
+      if (!doc || !view) {
+        ctx.clearRect(0, 0, box.width, box.height);
+        return;
+      }
+      view.width = box.width;
+      view.height = box.height;
+      var marks = [];
+      if (drag && drag.preview) {
+        drag.preview.forEach(function (cell) { marks.push({ at: cell }); });
+      }
+      if (hoverCell && inBounds(hoverCell) && tool !== "pan") {
+        marks.push({ at: hoverCell, alpha: 0.2 });
+      }
+      R.render(ctx, doc, view, { marks: marks });
+    });
+  }
+
+  function eventCell(event) {
+    var box = canvas.getBoundingClientRect();
+    return R.cellAt(view, event.clientX - box.left, event.clientY - box.top);
+  }
+
+  canvas.addEventListener("pointerdown", function (event) {
+    if (!doc) { return; }
+    canvas.setPointerCapture(event.pointerId);
+    var cell = eventCell(event);
+    var panning = tool === "pan" || event.button === 1 || event.button === 2;
+    if (panning) {
+      drag = { kind: "pan", lastX: event.clientX, lastY: event.clientY,
+        moved: false, cell: cell };
+      return;
+    }
+    if (event.button !== 0) { return; }
+    if (tool === "brush" || tool === "erase") {
+      var glyph = tool === "erase" ? eraseGlyph() : selectedGlyph;
+      if (glyph === null) {
+        setStatus(tool === "erase"
+          ? "the eraser paints floor, and this legend has no glyph for "
+            + "'floor' or 'normal'; add one first"
+          : "select a legend glyph to paint with", "error");
+        drag = null;
+        return;
+      }
+      snapshot();
+      drag = { kind: "paint", glyph: glyph };
+      brushCells(cell, Number(byId("brush-size").value)).forEach(function (c) {
+        paintCell(c[0], c[1], drag.glyph);
+      });
+      redraw();
+    } else if (tool === "rect" || tool === "line") {
+      drag = { kind: tool, start: cell, preview: [cell] };
+      redraw();
+    } else if (tool === "door") {
+      if (inBounds(cell)) { cycleDoor(cell); }
+    } else if (tool === "feature") {
+      if (inBounds(cell)) { placeOrRemoveFeature(cell); }
+    }
+  });
+
+  canvas.addEventListener("pointermove", function (event) {
+    if (!doc) { return; }
+    var cell = eventCell(event);
+    hoverCell = cell;
+    var parts = [];
+    if (inBounds(cell)) {
+      parts.push("[" + cell[0] + ", " + cell[1] + "] " + kindAt(cell));
+      var feature = featureAt(cell);
+      if (feature) { parts.push(feature.kind + " " + feature.id); }
+    } else {
+      parts.push("—");
+    }
+    byId("readout").textContent = parts.join(" · ");
+    if (!drag) { redraw(); return; }
+    if (drag.kind === "pan") {
+      R.panBy(view, event.clientX - drag.lastX, event.clientY - drag.lastY);
+      if (Math.abs(event.clientX - drag.lastX) + Math.abs(event.clientY - drag.lastY) > 2) {
+        drag.moved = true;
+      }
+      drag.lastX = event.clientX;
+      drag.lastY = event.clientY;
+    } else if (drag.kind === "paint") {
+      brushCells(cell, Number(byId("brush-size").value)).forEach(function (c) {
+        paintCell(c[0], c[1], drag.glyph);
+      });
+    } else if (drag.kind === "rect") {
+      drag.preview = rectCells(drag.start, clampCell(cell));
+    } else if (drag.kind === "line") {
+      drag.preview = lineCells(drag.start, clampCell(cell));
+    }
+    redraw();
+  });
+
+  function clampCell(cell) {
+    return [
+      Math.max(0, Math.min(doc.grid.width - 1, cell[0])),
+      Math.max(0, Math.min(doc.grid.height - 1, cell[1]))
+    ];
+  }
+
+  canvas.addEventListener("pointerup", function (event) {
+    if (!doc || !drag) { drag = null; return; }
+    var finished = drag;
+    drag = null;
+    if (finished.kind === "pan") {
+      if (!finished.moved && inBounds(finished.cell)) {
+        var feature = featureAt(finished.cell);
+        selectedFeatureId = feature ? feature.id : null;
+        renderFeatureInfo();
+      }
+    } else if (finished.kind === "rect" || finished.kind === "line") {
+      if (selectedGlyph === null) {
+        setStatus("select a legend glyph to paint with", "error");
+      } else {
+        snapshot();
+        var cells = finished.kind === "rect"
+          ? rectCells(finished.start, clampCell(eventCell(event)))
+          : lineCells(finished.start, clampCell(eventCell(event)));
+        cells.forEach(function (c) {
+          if (inBounds(c)) { paintCell(c[0], c[1], selectedGlyph); }
+        });
+      }
+    }
+    redraw();
+  });
+
+  canvas.addEventListener("wheel", function (event) {
+    if (!doc) { return; }
+    event.preventDefault();
+    var box = canvas.getBoundingClientRect();
+    R.zoomAt(view, event.clientX - box.left, event.clientY - box.top,
+      event.deltaY < 0 ? 1.15 : 1 / 1.15);
+    redraw();
+  }, { passive: false });
+  canvas.addEventListener("contextmenu", function (event) { event.preventDefault(); });
+
+  /* --- toolbar ---------------------------------------------------------- */
+  var toolButtons = document.querySelectorAll("#toolbar .tool");
+  toolButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      tool = button.dataset.tool;
+      toolButtons.forEach(function (b) {
+        b.classList.toggle("active", b === button);
+      });
+    });
+  });
+  document.querySelector('[data-tool="pan"]').classList.add("active");
+  byId("btn-undo").addEventListener("click", undo);
+  byId("btn-redo").addEventListener("click", redo);
+  byId("btn-fit").addEventListener("click", function () {
+    if (!doc) { return; }
+    var box = canvas.getBoundingClientRect();
+    view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
+    redraw();
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") { return; }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      if (event.shiftKey) { redo(); } else { undo(); }
+    } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+      event.preventDefault();
+      redo();
+    }
+  });
+
+  byId("map-name").addEventListener("change", function () {
+    if (!doc) { return; }
+    var name = byId("map-name").value.trim();
+    if (!name) { byId("map-name").value = doc.name; return; }
+    snapshot();
+    doc.name = name;
+  });
+
+  /* --- resize dialog ---------------------------------------------------- */
+  byId("btn-resize").addEventListener("click", function () {
+    if (!doc) { return; }
+    byId("rs-width").value = doc.grid.width;
+    byId("rs-height").value = doc.grid.height;
+    byId("dlg-resize").showModal();
+  });
+  byId("dlg-resize-cancel").addEventListener("click", function () {
+    byId("dlg-resize").close();
+  });
+  byId("dlg-resize-go").addEventListener("click", function () {
+    var width = Number(byId("rs-width").value);
+    var height = Number(byId("rs-height").value);
+    var anchor = byId("rs-anchor").value;
+    var fillKind = byId("rs-fill").value.trim();
+    if (!(width >= 1 && width <= 512 && height >= 1 && height <= 512)) {
+      setStatus("width and height must be between 1 and 512 squares", "error");
+      return;
+    }
+    var fill = glyphForKind(fillKind);
+    if (fill === null) {
+      setStatus("terrain '" + fillKind + "' has no glyph in this document's legend; "
+        + "add one first", "error");
+      return;
+    }
+    snapshot();
+    var offX = anchor.indexOf("left") !== -1 ? 0 : width - doc.grid.width;
+    var offY = anchor.indexOf("top") === 0 ? 0 : height - doc.grid.height;
+    var tiles = [];
+    for (var y = 0; y < height; y++) {
+      var row = "";
+      for (var x = 0; x < width; x++) {
+        var ox = x - offX, oy = y - offY;
+        row += (ox >= 0 && ox < doc.grid.width && oy >= 0 && oy < doc.grid.height)
+          ? doc.tiles[oy].charAt(ox) : fill;
+      }
+      tiles.push(row);
+    }
+    doc.tiles = tiles;
+    doc.features = doc.features.map(function (f) {
+      return Object.assign({}, f, { at: [f.at[0] + offX, f.at[1] + offY] });
+    }).filter(function (f) {
+      return f.at[0] >= 0 && f.at[0] < width && f.at[1] >= 0 && f.at[1] < height;
+    });
+    doc.grid.width = width;
+    doc.grid.height = height;
+    byId("dlg-resize").close();
+    setStatus("resized to " + width + "x" + height + " (" + anchor + ", fill "
+      + fillKind + ")");
+    redraw();
+  });
+
+  /* --- open: file ------------------------------------------------------- */
+  function openFileObject(file) {
+    file.text().then(function (text) {
+      var payload;
+      try { payload = JSON.parse(text); } catch (error) {
+        setStatus("that file is not JSON: " + error.message, "error");
+        return;
+      }
+      if (!payload || payload.format !== "fivee-sim-map") {
+        setStatus("that file is not a fivee-sim-map document", "error");
+        return;
+      }
+      loadDocument(payload, {});
+      setStatus("opened " + file.name + " (unsaved; the server validates on save)");
+    });
+  }
+  byId("btn-open-file").addEventListener("click", function () {
+    byId("file-input").click();
+  });
+  byId("file-input").addEventListener("change", function (event) {
+    if (event.target.files.length) { openFileObject(event.target.files[0]); }
+    event.target.value = "";
+  });
+  document.addEventListener("dragover", function (event) { event.preventDefault(); });
+  document.addEventListener("drop", function (event) {
+    event.preventDefault();
+    if (event.dataTransfer.files.length) {
+      openFileObject(event.dataTransfer.files[0]);
+    }
+  });
+
+  /* --- download --------------------------------------------------------- */
+  byId("btn-download").addEventListener("click", function () {
+    if (!doc) { return; }
+    var blob = new Blob([JSON.stringify(doc, null, 2) + "\n"],
+      { type: "application/json" });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = clientSlug(doc.name) + ".json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  /* --- open: server ----------------------------------------------------- */
+  byId("btn-open").addEventListener("click", function () {
+    request("GET", "/maps").then(function (response) {
+      var list = byId("map-list");
+      list.textContent = "";
+      var maps = (response.json && response.json.maps) || [];
+      if (!maps.length) {
+        var empty = document.createElement("li");
+        empty.textContent = "no maps in the maps directory yet";
+        list.appendChild(empty);
+      }
+      maps.forEach(function (entry) {
+        var item = document.createElement("li");
+        var label = document.createElement("span");
+        label.textContent = entry.name + " (" + entry.id + ")";
+        var dim = document.createElement("span");
+        dim.className = "dim";
+        dim.textContent = entry.width + "x" + entry.height + " · "
+          + entry.generator + (entry.edited ? " · edited" : "");
+        item.appendChild(label);
+        item.appendChild(dim);
+        item.addEventListener("click", function () {
+          byId("dlg-open").close();
+          openFromServer(entry.id);
+        });
+        list.appendChild(item);
+      });
+      byId("dlg-open").showModal();
+    });
+  });
+  byId("dlg-open-cancel").addEventListener("click", function () {
+    byId("dlg-open").close();
+  });
+  function openFromServer(id) {
+    request("GET", "/maps/" + id).then(function (response) {
+      if (response.status !== 200) {
+        setStatus("could not open " + id + ": "
+          + (response.json && response.json.detail), "error");
+        return;
+      }
+      loadDocument(response.json, { id: id, etag: response.headers.get("ETag") });
+      setStatus("opened " + id + " from the server");
+    });
+  }
+
+  /* --- generate --------------------------------------------------------- */
+  /* The parameter sets mirror the engine's generator defaults; the server
+     reports the fully resolved set back in the document's provenance. */
+  var GENERATOR_PARAMS = {
+    dungeon: [
+      ["width", "int", 48], ["height", "int", 32], ["min_room", "int", 4],
+      ["max_room", "int", 12], ["min_leaf", "int", 8],
+      ["split_bias", "float", 1.25], ["door_chance", "float", 0.75],
+      ["extra_connections", "int", 2]
+    ],
+    caves: [
+      ["width", "int", 48], ["height", "int", 32],
+      ["initial_wall_chance", "float", 0.45], ["smoothing_passes", "int", 5],
+      ["wall_threshold", "int", 5], ["min_region", "int", 16],
+      ["connect_regions", "bool", true]
+    ],
+    overland: [
+      ["width", "int", 64], ["height", "int", 64], ["scale", "float", 24.0],
+      ["octaves", "int", 4], ["persistence", "float", 0.5],
+      ["lacunarity", "float", 2.0], ["water_level", "float", 0.30],
+      ["hill_level", "float", 0.62], ["mountain_level", "float", 0.78],
+      ["forest_moisture", "float", 0.55]
+    ]
+  };
+  function renderGenerateParams() {
+    var kind = byId("gen-kind").value;
+    var wrap = byId("gen-params");
+    wrap.textContent = "";
+    GENERATOR_PARAMS[kind].forEach(function (spec) {
+      var row = document.createElement("div");
+      row.className = "row";
+      var label = document.createElement("label");
+      label.textContent = spec[0];
+      var input = document.createElement("input");
+      input.dataset.param = spec[0];
+      input.dataset.type = spec[1];
+      if (spec[1] === "bool") {
+        input.type = "checkbox";
+        input.checked = spec[2];
+      } else {
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.value = String(spec[2]);
+      }
+      row.appendChild(label);
+      row.appendChild(input);
+      wrap.appendChild(row);
+    });
+  }
+  byId("gen-kind").addEventListener("change", renderGenerateParams);
+  byId("btn-generate").addEventListener("click", function () {
+    renderGenerateParams();
+    byId("dlg-generate").showModal();
+  });
+  byId("dlg-generate-cancel").addEventListener("click", function () {
+    byId("dlg-generate").close();
+  });
+  byId("dlg-generate-go").addEventListener("click", function () {
+    var kind = byId("gen-kind").value;
+    var params = {};
+    var bad = null;
+    byId("gen-params").querySelectorAll("input").forEach(function (input) {
+      var name = input.dataset.param;
+      if (input.dataset.type === "bool") {
+        params[name] = input.checked;
+        return;
+      }
+      var value = input.dataset.type === "int"
+        ? parseInt(input.value, 10) : parseFloat(input.value);
+      if (Number.isNaN(value)) { bad = name; return; }
+      params[name] = value;
+    });
+    if (bad !== null) {
+      setStatus("parameter '" + bad + "' must be a number", "error");
+      return;
+    }
+    var body = { kind: kind, params: params };
+    var seedText = byId("gen-seed").value.trim();
+    if (seedText) {
+      var seed = parseInt(seedText, 10);
+      if (Number.isNaN(seed)) { setStatus("the seed must be a whole number", "error"); return; }
+      body.seed = seed;
+    }
+    var name = byId("gen-name").value.trim();
+    if (name) { body.name = name; }
+    request("POST", "/generate", body).then(function (response) {
+      if (response.status !== 200) {
+        if (response.json && response.json.diagnostics) {
+          showDiagnostics("generate refused:", response.json.diagnostics);
+        } else {
+          setStatus("generate refused: " + (response.json && response.json.detail), "error");
+        }
+        return;
+      }
+      byId("dlg-generate").close();
+      loadDocument(response.json.document, { seed: response.json.seed });
+      setStatus("generated " + kind + " under seed " + response.json.seed
+        + " — quote the seed; it reproduces this map exactly. "
+        + "Unsaved until you press Save.");
+    });
+  });
+
+  /* --- validate --------------------------------------------------------- */
+  byId("btn-validate").addEventListener("click", function () {
+    if (!doc) { return; }
+    request("POST", "/validate", doc).then(function (response) {
+      var result = response.json || {};
+      if (result.ok) {
+        var warned = (result.warnings || []).length;
+        setStatus(warned
+          ? "valid, with " + warned + " warning(s)"
+          : "valid — no problems found", "ok");
+        if (warned) { showDiagnostics("valid, with warnings:", result.warnings); }
+      } else {
+        showDiagnostics("invalid:", (result.errors || []).concat(result.warnings || []));
+      }
+    });
+  });
+
+  /* --- save ------------------------------------------------------------- */
+  function put(ifMatch) {
+    var body = JSON.parse(JSON.stringify(doc));
+    if (contentOf(doc) !== baseline) {
+      /* The page changed the document, so the save records that a hand has
+         touched it. generator, seed, and params are never altered here. */
+      body.provenance = Object.assign({}, body.provenance, { edited: true });
+    }
+    return request("PUT", "/maps/" + mapId, body, { "If-Match": ifMatch });
+  }
+  function handleSaved(response) {
+    etag = response.headers.get("ETag");
+    doc.provenance = Object.assign({}, doc.provenance,
+      response.json.provenance || {});
+    baseline = contentOf(doc);
+    generatedSeed = null;
+    renderProvenance();
+    var warnings = response.json.warnings || [];
+    setStatus("saved " + mapId + " · sha256 " + response.json.sha256
+      + (warnings.length ? " · " + warnings.length + " warning(s)" : ""), "ok");
+  }
+  byId("btn-save").addEventListener("click", function () {
+    if (!doc) { return; }
+    mapId = mapId || clientSlug(doc.name);
+    put(etag === null ? "*" : etag).then(function (response) {
+      if (response.status === 200 || response.status === 201) {
+        handleSaved(response);
+      } else if (response.status === 409) {
+        byId("dlg-conflict").showModal();
+      } else if (response.status === 422) {
+        showDiagnostics("the server refused the document:",
+          (response.json && response.json.diagnostics) || []);
+      } else {
+        setStatus("save failed (" + response.status + "): "
+          + (response.json && response.json.detail), "error");
+      }
+    });
+  });
+  byId("dlg-conflict-cancel").addEventListener("click", function () {
+    byId("dlg-conflict").close();
+  });
+  byId("dlg-conflict-reload").addEventListener("click", function () {
+    byId("dlg-conflict").close();
+    openFromServer(mapId);
+  });
+  byId("dlg-conflict-overwrite").addEventListener("click", function () {
+    byId("dlg-conflict").close();
+    request("GET", "/maps/" + mapId).then(function (response) {
+      var current = response.headers.get("ETag");
+      return put(current === null ? "*" : current);
+    }).then(function (response) {
+      if (response.status === 200 || response.status === 201) {
+        handleSaved(response);
+      } else {
+        setStatus("overwrite failed (" + response.status + "): "
+          + (response.json && response.json.detail), "error");
+      }
+    });
+  });
+
+  /* --- modes ------------------------------------------------------------ */
+  window.addEventListener("resize", redraw);
+  if (!CONFIG) {
+    /* Opened from disk with no server behind it: editing, file open, and
+       download still work; everything that needs the API is off. */
+    byId("mode-note").textContent =
+      "serverless — file open and download only";
+    ["btn-open", "btn-generate", "btn-validate", "btn-save"].forEach(function (id) {
+      byId(id).disabled = true;
+    });
+  } else {
+    request("GET", "/ping").then(function (response) {
+      if (response.json && response.json.ok) {
+        setStatus("editor server " + response.json.version + " · maps in "
+          + response.json.maps_dir);
+      }
+    });
+  }
+  redraw();
+})();
+</script>
 </body>
 </html>

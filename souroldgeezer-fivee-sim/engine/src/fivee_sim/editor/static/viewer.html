@@ -2,15 +2,483 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>fivee-sim replay viewer</title>
 <script>
 /*__EDITOR_CONFIG__*/
 </script>
 <script type="application/json" id="embedded-data">null</script>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea; --panel: #ebe7de; --edge: #d4cfc2; --text: #2b2925;
+  --muted: #6f6a5e; --accent: #7a5c2e; --canvas-bg: #efece3;
+  --terrain-floor: #e9e4d8; --terrain-normal: #e9e4d8; --terrain-wall: #4d463c;
+  --terrain-difficult: #dcd3bd; --terrain-half-cover: #ddd8c6;
+  --terrain-three-quarters-cover: #d3cdb8;
+  --terrain-door-open: #e2d3b4; --terrain-door-closed: #8a6f4d;
+  --terrain-water: #a9c6ce; --terrain-plain: #d9dfb6; --terrain-forest: #a7c396;
+  --terrain-hill: #cfc49c; --terrain-mountain: #b3aa9d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1f22; --panel: #24272b; --edge: #34383d; --text: #d9d6cf;
+    --muted: #8f8b82; --accent: #c9a86a; --canvas-bg: #191b1e;
+    --terrain-floor: #31353b; --terrain-normal: #31353b; --terrain-wall: #14161a;
+    --terrain-difficult: #383b34; --terrain-half-cover: #343a3c;
+    --terrain-three-quarters-cover: #383f42;
+    --terrain-door-open: #403a2c; --terrain-door-closed: #3d3020;
+    --terrain-water: #1f3a44; --terrain-plain: #333d2b; --terrain-forest: #25372a;
+    --terrain-hill: #3e392a; --terrain-mountain: #48443e;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column;
+}
+button, select, input { font: inherit; color: inherit; background: var(--panel);
+  border: 1px solid var(--edge); border-radius: 4px; padding: 3px 8px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+header {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px;
+  border-bottom: 1px solid var(--edge); background: var(--panel); flex-wrap: wrap;
+}
+#title { font-weight: 600; }
+#seed { color: var(--muted); font-family: ui-monospace, monospace; }
+header .spacer { flex: 1; }
+#layout { display: flex; flex: 1; min-height: 0; }
+#canvas-wrap { flex: 1; position: relative; min-width: 0; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#ticker {
+  width: 300px; border-left: 1px solid var(--edge); background: var(--panel);
+  overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+}
+#ticker li {
+  padding: 2px 6px; border-radius: 4px; cursor: pointer; color: var(--muted);
+}
+#ticker li.round-row { color: var(--accent); font-weight: 600; margin-top: 4px; }
+#ticker li.current { background: var(--bg); color: var(--text); }
+#ticker li:hover { background: var(--bg); }
+footer {
+  border-top: 1px solid var(--edge); background: var(--panel);
+  padding: 6px 10px; display: flex; flex-direction: column; gap: 4px;
+}
+#controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#readout { font-family: ui-monospace, monospace; color: var(--muted); }
+#scrub-wrap { position: relative; width: 100%; }
+#ticks { display: block; width: 100%; height: 12px; }
+#scrub { width: 100%; margin: 0; padding: 0; }
+#empty-note {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); text-align: center; padding: 2em;
+}
+</style>
 </head>
 <body>
-<p>The replay viewer page ships in the next commit. This placeholder pins the
-serving contract: the injected launch configuration above, and the
-embedded-data slot a standalone export fills.</p>
+<header>
+  <span id="title">replay viewer</span>
+  <span id="seed"></span>
+  <span class="spacer"></span>
+  <button id="btn-open-file">Open replay&#8230;</button>
+  <input id="file-input" type="file" accept=".json,application/json" hidden>
+</header>
+<div id="layout">
+  <main id="canvas-wrap">
+    <canvas id="stage"></canvas>
+    <div id="empty-note">No replay loaded.<br>
+      Open a replay bundle file, or drop one anywhere on this page.</div>
+  </main>
+  <ul id="ticker"></ul>
+</div>
+<footer>
+  <div id="controls">
+    <button id="btn-play">Play</button>
+    <button id="btn-back">&#8722;1</button>
+    <button id="btn-forward">+1</button>
+    <select id="speed" aria-label="playback speed">
+      <option value="0.5">0.5&#215;</option>
+      <option value="1" selected>1&#215;</option>
+      <option value="2">2&#215;</option>
+      <option value="4">4&#215;</option>
+    </select>
+    <span id="readout">&#8212;</span>
+  </div>
+  <div id="scrub-wrap">
+    <canvas id="ticks"></canvas>
+    <input id="scrub" type="range" min="0" max="0" value="0" step="1"
+      aria-label="scrub through the fight">
+  </div>
+</footer>
+
+<script src="/assets/renderer.js"></script>
+<script>
+/* Served, the absolute path above resolves; opened straight from the static
+   directory it cannot, so fall back to the sibling file. A standalone export
+   has the renderer inlined instead and skips both. The tag is assembled from
+   pieces so the page's script tags stay countable. */
+if (typeof FiveeRenderer === "undefined") {
+  document.write("<scr" + "ipt src=\"renderer.js\"></scr" + "ipt>");
+}
+</script>
+<script>
+"use strict";
+(function () {
+  var R = FiveeRenderer;
+  var FLASH_KINDS = { attack: 1, opportunity_attack: 1, cast: 1, spell_effect: 1 };
+
+  var bundle = null;
+  var mapDoc = null;      /* the map payload, or a synthesized neutral plane */
+  var offset = [0, 0];    /* cell shift applied on the neutral plane */
+  var cellFeet = 5;
+  var cursor = 0;         /* how many events are applied: 0..events.length */
+  var state = null;
+  var view = null;
+  var playing = false;
+  var playTimer = null;
+
+  var canvas = document.getElementById("stage");
+  var ctx = canvas.getContext("2d");
+  var scrub = document.getElementById("scrub");
+  var ticker = document.getElementById("ticker");
+
+  function byId(id) { return document.getElementById(id); }
+
+  function feetToCell(point) {
+    return [
+      Math.floor(point[0] / cellFeet) + offset[0],
+      Math.floor(point[1] / cellFeet) + offset[1]
+    ];
+  }
+
+  /* --- folding the event log ------------------------------------------- */
+  function initialState() {
+    var tokens = {};
+    (bundle.initial.creatures || []).forEach(function (creature) {
+      tokens[creature.name] = {
+        name: creature.name,
+        team: creature.team,
+        at: feetToCell(creature.position),
+        hp: creature.hp,
+        maxHp: creature.max_hp,
+        down: creature.hp === 0,
+        dead: false,
+        stable: false
+      };
+    });
+    var featureStates = {};
+    if (bundle.map) {
+      var openList = bundle.initial.map_open_features || [];
+      (bundle.map.features || []).forEach(function (feature) {
+        if (feature.kind === "door") {
+          featureStates[feature.id] = openList.indexOf(feature.id) !== -1
+            || (openList.length === 0 && feature.state === "open");
+        }
+      });
+    }
+    return { tokens: tokens, featureStates: featureStates, round: 0, turn: "" };
+  }
+
+  function fold(current, event) {
+    current.round = event.round;
+    current.turn = event.turn;
+    var data = event.data || {};
+    var token;
+    if (event.kind === "move" && data.destination) {
+      token = current.tokens[event.actor];
+      if (token) { token.at = feetToCell(data.destination); }
+    } else if (event.kind === "damage" || event.kind === "heal") {
+      token = current.tokens[event.target];
+      if (token && typeof data.hp === "number") {
+        token.hp = data.hp;
+        if (token.hp > 0) { token.down = false; token.stable = false; }
+      }
+    } else if (event.kind === "down") {
+      token = current.tokens[event.actor];
+      if (token) { token.down = true; }
+    } else if (event.kind === "death") {
+      token = current.tokens[event.actor];
+      if (token) { token.dead = true; token.down = true; }
+    } else if (event.kind === "stabilised") {
+      token = current.tokens[event.actor];
+      if (token) { token.stable = true; }
+    } else if (event.kind === "interact" && data.feature !== undefined) {
+      current.featureStates[data.feature] = !!data.open;
+    }
+    return current;
+  }
+
+  function stateAt(n) {
+    var current = initialState();
+    for (var i = 0; i < n; i++) { fold(current, bundle.events[i]); }
+    return current;
+  }
+
+  /* The cells to flash: the participants of the event just applied. */
+  function flashMarks() {
+    if (cursor === 0) { return []; }
+    var event = bundle.events[cursor - 1];
+    if (!FLASH_KINDS[event.kind] && event.kind !== "move") { return []; }
+    var marks = [];
+    [event.actor, event.target].forEach(function (name) {
+      var token = state.tokens[name];
+      if (token) {
+        marks.push({ at: token.at, alpha: FLASH_KINDS[event.kind] ? 0.45 : 0.25 });
+      }
+    });
+    return marks;
+  }
+
+  /* --- rendering -------------------------------------------------------- */
+  var framePending = false;
+  function redraw() {
+    if (framePending) { return; }
+    framePending = true;
+    window.requestAnimationFrame(function () {
+      framePending = false;
+      var box = R.resizeCanvas(canvas, ctx);
+      if (!bundle) { ctx.clearRect(0, 0, box.width, box.height); return; }
+      view.width = box.width;
+      view.height = box.height;
+      var tokens = [];
+      Object.keys(state.tokens).forEach(function (name) {
+        var token = state.tokens[name];
+        tokens.push({
+          at: token.at,
+          label: name.charAt(0),
+          team: token.team,
+          hpFraction: token.maxHp > 0 ? token.hp / token.maxHp : 0,
+          down: token.down,
+          dead: token.dead,
+          stable: token.stable
+        });
+      });
+      R.render(ctx, mapDoc, view, {
+        tokens: tokens,
+        featureStates: state.featureStates,
+        marks: flashMarks()
+      });
+      drawTicks();
+    });
+  }
+
+  function drawTicks() {
+    var strip = byId("ticks");
+    var box = strip.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    strip.width = Math.max(1, Math.round(box.width * dpr));
+    strip.height = Math.max(1, Math.round(12 * dpr));
+    var tctx = strip.getContext("2d");
+    tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    tctx.clearRect(0, 0, box.width, 12);
+    if (!bundle || !bundle.events.length) { return; }
+    var total = bundle.events.length;
+    var dark = R.isDark();
+    bundle.events.forEach(function (event, index) {
+      var heavy = event.kind === "round";
+      if (!heavy && event.kind !== "turn_start") { return; }
+      var x = Math.round(((index + 1) / total) * box.width) + 0.5;
+      tctx.strokeStyle = heavy
+        ? (dark ? "#c9a86a" : "#7a5c2e")
+        : (dark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)");
+      tctx.beginPath();
+      tctx.moveTo(x, heavy ? 0 : 5);
+      tctx.lineTo(x, 12);
+      tctx.stroke();
+    });
+  }
+
+  function updateReadout() {
+    if (!bundle) { byId("readout").textContent = "—"; return; }
+    var text = "round " + state.round
+      + (state.turn ? " · " + state.turn : "")
+      + " · event " + cursor + "/" + bundle.events.length;
+    byId("readout").textContent = text;
+  }
+
+  function updateTicker() {
+    var rows = ticker.children;
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].classList.toggle("current", i === cursor - 1);
+    }
+    if (cursor > 0 && rows[cursor - 1]) {
+      rows[cursor - 1].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function setCursor(n, incremental) {
+    if (!bundle) { return; }
+    n = Math.max(0, Math.min(bundle.events.length, n));
+    if (incremental && n === cursor + 1) {
+      fold(state, bundle.events[cursor]);
+    } else if (n !== cursor || state === null) {
+      state = stateAt(n);
+    }
+    cursor = n;
+    scrub.value = String(cursor);
+    updateReadout();
+    updateTicker();
+    redraw();
+  }
+
+  /* --- playback --------------------------------------------------------- */
+  function stopPlaying() {
+    playing = false;
+    if (playTimer !== null) { window.clearTimeout(playTimer); playTimer = null; }
+    byId("btn-play").textContent = "Play";
+  }
+  function tick() {
+    if (!playing) { return; }
+    if (cursor >= bundle.events.length) { stopPlaying(); return; }
+    setCursor(cursor + 1, true);
+    playTimer = window.setTimeout(tick, 500 / Number(byId("speed").value));
+  }
+  byId("btn-play").addEventListener("click", function () {
+    if (!bundle) { return; }
+    if (playing) { stopPlaying(); return; }
+    if (cursor >= bundle.events.length) { setCursor(0); }
+    playing = true;
+    byId("btn-play").textContent = "Pause";
+    tick();
+  });
+  byId("btn-back").addEventListener("click", function () {
+    stopPlaying();
+    setCursor(cursor - 1);
+  });
+  byId("btn-forward").addEventListener("click", function () {
+    stopPlaying();
+    setCursor(cursor + 1, true);
+  });
+  scrub.addEventListener("input", function () {
+    stopPlaying();
+    setCursor(Number(scrub.value));
+  });
+
+  /* --- loading ---------------------------------------------------------- */
+  function describe(event) {
+    if (event.detail) { return event.detail; }
+    if (event.kind === "turn_start") { return "turn: " + event.actor; }
+    if (event.kind === "turn_end") { return "end of " + event.actor + "'s turn"; }
+    return event.kind + (event.actor ? " · " + event.actor : "");
+  }
+
+  function buildTicker() {
+    ticker.textContent = "";
+    bundle.events.forEach(function (event, index) {
+      var row = document.createElement("li");
+      if (event.kind === "round") { row.className = "round-row"; }
+      row.textContent = describe(event);
+      row.title = event.kind + " · round " + event.round;
+      row.addEventListener("click", function () {
+        stopPlaying();
+        setCursor(index + 1);
+      });
+      ticker.appendChild(row);
+    });
+  }
+
+  function neutralPlane() {
+    /* No map travelled with this fight: size a plain floor to the fight's
+       own footprint — every starting position and every move destination —
+       with at least a 12x8 stage and a one-cell margin. */
+    var squares = [];
+    (bundle.initial.creatures || []).forEach(function (creature) {
+      squares.push([Math.floor(creature.position[0] / cellFeet),
+        Math.floor(creature.position[1] / cellFeet)]);
+    });
+    bundle.events.forEach(function (event) {
+      var data = event.data || {};
+      if (event.kind === "move" && data.destination) {
+        squares.push([Math.floor(data.destination[0] / cellFeet),
+          Math.floor(data.destination[1] / cellFeet)]);
+      }
+    });
+    if (!squares.length) { squares.push([0, 0]); }
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    squares.forEach(function (square) {
+      minX = Math.min(minX, square[0]); maxX = Math.max(maxX, square[0]);
+      minY = Math.min(minY, square[1]); maxY = Math.max(maxY, square[1]);
+    });
+    var width = Math.max(12, maxX - minX + 3);
+    var height = Math.max(8, maxY - minY + 3);
+    offset = [1 - minX, 1 - minY];
+    var tiles = [];
+    for (var y = 0; y < height; y++) {
+      tiles.push(new Array(width + 1).join("."));
+    }
+    return {
+      grid: { width: width, height: height, cell_feet: cellFeet },
+      legend: { ".": "floor" },
+      tiles: tiles,
+      features: []
+    };
+  }
+
+  function loadBundle(payload, sourceName) {
+    if (!payload || payload.format !== "fivee-sim-replay") {
+      window.alert((sourceName || "that") + " is not a fivee-sim-replay bundle");
+      return;
+    }
+    stopPlaying();
+    bundle = payload;
+    offset = [0, 0];
+    cellFeet = (payload.map && payload.map.grid && payload.map.grid.cell_feet) || 5;
+    mapDoc = payload.map ? payload.map : neutralPlane();
+    byId("title").textContent = payload.name || "replay";
+    byId("seed").textContent = "seed " + payload.seed;
+    byId("empty-note").hidden = true;
+    scrub.max = String(payload.events.length);
+    var box = canvas.getBoundingClientRect();
+    view = R.fitView(mapDoc.grid.width, mapDoc.grid.height, box.width, box.height);
+    buildTicker();
+    state = null;
+    setCursor(0);
+  }
+
+  byId("btn-open-file").addEventListener("click", function () {
+    byId("file-input").click();
+  });
+  byId("file-input").addEventListener("change", function (event) {
+    if (event.target.files.length) { openFileObject(event.target.files[0]); }
+    event.target.value = "";
+  });
+  function openFileObject(file) {
+    file.text().then(function (text) {
+      var payload = null;
+      try { payload = JSON.parse(text); } catch (error) {
+        window.alert(file.name + " is not JSON: " + error.message);
+        return;
+      }
+      loadBundle(payload, file.name);
+    });
+  }
+  document.addEventListener("dragover", function (event) { event.preventDefault(); });
+  document.addEventListener("drop", function (event) {
+    event.preventDefault();
+    if (event.dataTransfer.files.length) {
+      openFileObject(event.dataTransfer.files[0]);
+    }
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") { return; }
+    if (event.key === "ArrowRight") { stopPlaying(); setCursor(cursor + 1, true); }
+    else if (event.key === "ArrowLeft") { stopPlaying(); setCursor(cursor - 1); }
+    else if (event.key === " ") { event.preventDefault(); byId("btn-play").click(); }
+  });
+  window.addEventListener("resize", redraw);
+
+  /* Data sources, in priority order: the embedded slot a standalone export
+     fills, then a file opened or dropped by hand. */
+  var embedded = null;
+  try {
+    embedded = JSON.parse(document.getElementById("embedded-data").textContent);
+  } catch (error) { embedded = null; }
+  if (embedded !== null) { loadBundle(embedded, "embedded replay"); }
+})();
+</script>
 </body>
 </html>
