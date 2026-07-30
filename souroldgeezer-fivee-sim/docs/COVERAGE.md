@@ -6,6 +6,8 @@ What this engine actually implements, and what it does not.
 
 Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 covers only part of the 2024 ruleset, so content absent from the SRD is not available to this project at all.
 
+**This describes the bundled slice.** A campaign can add its own creatures, spells, conditions, and usable items as content packs, or exclude the bundled content entirely and run on its own material — see [CONTENT-PACKS.md](CONTENT-PACKS.md). What a given session actually has loaded is reported by the `content_status` tool, which is the authority when packs are in play; this document is the authority for what ships.
+
 ## At a glance
 
 | Category | Supported |
@@ -14,9 +16,9 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 | Spells | 4 |
 | Conditions | 14 |
 | Damage types | 13 |
-| Actions | 6 |
+| Actions | 7 |
+| Usable items | 0 bundled — the category is modelled, packs supply it |
 | Classes, species, backgrounds, feats | 0 — not modelled |
-| Items, potions, equipment | 0 — not modelled |
 
 The creature and spell lists are a deliberately narrow starting slice, not an attempt at the whole SRD.
 
@@ -61,7 +63,7 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 ## Actions
 
-Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
+Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged.
 
@@ -75,7 +77,7 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 **Character building.** Classes, subclasses, species and lineages, backgrounds, feats, ability-score generation, levelling, and multiclassing. Combatants are described directly by their statistics — armour class, hit points, attacks, save bonuses — the way a stat block presents them. There is no notion of a character sheet that derives those numbers.
 
-**Equipment and items.** Weapons and armour as objects, potions, scrolls, magic items, attunement, encumbrance, and ammunition. An attack carries its own bonus and damage expression; nothing models the object producing it.
+**Equipment beyond simple usable items.** Simple usable items *are* modelled: potions, flasks, and doses of poison — one use that heals, deals damage, or applies a condition, held in a quantity that is also its charge count. None ship in the bundled slice, so potions reach a session through a content pack. Nothing beyond that use is modelled. Weapons and armour as objects that derive attack bonuses and armour class, scrolls, attunement, encumbrance, ammunition, and charges tracked separately from quantity are all absent. An attack carries its own bonus and damage expression; nothing models the object producing it.
 
 **Spell resources beyond slots.** Spell lists per class, preparation rules, ritual casting, cantrip scaling by level, components, and material costs. A combatant simply holds a set of spell names and a count of slots per level.
 
@@ -87,4 +89,6 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 ## Checking at runtime
 
-`lookup_rule` with no topic lists every bundled condition, spell, and stat block. With a topic it returns that entry, including its `unmodelled` field. A miss means the subject is outside what ships — it is refused rather than invented.
+`lookup_rule` with no topic lists every loaded condition, spell, creature, and item. With a topic it returns that entry, including the pack it came from and its `unmodelled` field. A miss means the subject is not loaded — it is refused rather than invented.
+
+`content_status` reports which packs are loaded, whether the bundled slice is included, and any encounter still running on content from before the last change. `content_validate` checks a pack without loading it.

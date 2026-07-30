@@ -17,7 +17,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from random import Random
 
-from .conditions import Condition
 from .dice import Advantage, Dice, DiceRoll, roll_dice
 from .rules import (
     Ability,
@@ -53,7 +52,7 @@ class Spell:
     radius: int = 0
     range_feet: int = 0
     max_targets: int = 1
-    condition: Condition | None = None
+    condition: str | None = None
     concentration: bool = False
     provenance: str = "SRD 5.2"
 
@@ -90,7 +89,7 @@ class SpellTargetResult:
     save: D20Test | None = None
     attack: AttackRoll | None = None
     damage_dealt: int = 0
-    condition_applied: Condition | None = None
+    condition_applied: str | None = None
 
     @property
     def affected(self) -> bool:
@@ -110,7 +109,7 @@ class SpellTargetResult:
         if self.damage_dealt:
             parts.append(f"{self.damage_dealt} damage")
         if self.condition_applied is not None:
-            parts.append(f"gains {self.condition_applied.value}")
+            parts.append(f"gains {self.condition_applied}")
         return f"{self.name}: " + "; ".join(parts) if parts else f"{self.name}: no effect"
 
 

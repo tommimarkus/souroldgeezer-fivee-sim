@@ -27,8 +27,15 @@ from ..kernel.actions import (
     melee_hit_is_critical,
     resolve_attack,
 )
-from ..kernel.conditions import Condition
+from ..kernel.conditions import (
+    EFFECTS,
+    Condition,
+    ConditionTable,
+    effect_of,
+    speed_is_zero,
+)
 from ..kernel.dice import roll_d20
+from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellTarget, resolve_spell
 from .creature import AttackOption, Creature
@@ -45,6 +52,7 @@ class ActionKind(StrEnum):
     DASH = "dash"
     DISENGAGE = "disengage"
     DODGE = "dodge"
+    USE_ITEM = "use_item"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +60,7 @@ class Action:
     kind: ActionKind
     target: str | None = None
     attack: str | None = None
+    item: str | None = None
     spell: str | None = None
     slot_level: int | None = None
     to_position: int | None = None
@@ -91,6 +100,8 @@ class Encounter:
         rng: Random,
         *,
         spellbook: Mapping[str, Spell] | None = None,
+        items: Mapping[str, ItemEffect] | None = None,
+        condition_effects: ConditionTable | None = None,
     ) -> None:
         if len(combatants) < 2:
             raise EncounterError("an encounter needs at least two combatants")
@@ -102,6 +113,19 @@ class Encounter:
             )
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
         self.spellbook: dict[str, Spell] = dict(spellbook or {})
+        self.items: dict[str, ItemEffect] = dict(items or {})
+        # The content tables above are captured by value, so reconfiguring content
+        # mid-session leaves a fight in progress resolving under what it started
+        # with rather than under something swapped in beneath it.
+        self.condition_effects: ConditionTable = (
+            dict(condition_effects) if condition_effects is not None else EFFECTS
+        )
+        # Combatants are handed the encounter's table rather than trusted to carry
+        # the right one. Analytics builds its damage-per-round dummy directly, with
+        # no route for a caller to pass a table, so without this a fight could hold
+        # combatants reading two different condition tables.
+        for creature in combatants:
+            creature.condition_effects = self.condition_effects
         self.round = 1
         self.log: list[Event] = []
         self._dodging: dict[str, bool] = {name: False for name in names}
@@ -180,7 +204,7 @@ class Encounter:
             "ac": creature.ac,
             "position": creature.position,
             "initiative": self.initiative[creature.name],
-            "conditions": sorted(c.value for c in creature.conditions),
+            "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
             "dodging": self._dodging[creature.name],
             "conscious": creature.conscious,
@@ -194,6 +218,7 @@ class Encounter:
             "spell_slots": dict(sorted(creature.spell_slots.items())),
             "attacks": [option.name for option in creature.attacks],
             "spells": list(creature.spells),
+            "items": dict(sorted(creature.items.items())),
         }
 
     # --- turn lifecycle ---------------------------------------------------
@@ -263,7 +288,7 @@ class Encounter:
         if not actor.conscious:
             raise EncounterError(f"{actor.name} is not conscious and cannot act")
         if not actor.active:
-            held = ", ".join(sorted(c.value for c in actor.conditions))
+            held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} is incapacitated ({held}) and cannot act")
 
         match action.kind:
@@ -284,6 +309,8 @@ class Encounter:
                 self._turn.action_used = True
                 self._disengaged[actor.name] = True
                 self._emit("disengage", actor.name, detail="no opportunity attacks this turn")
+            case ActionKind.USE_ITEM:
+                self._do_use_item(actor, action, rng)
             case ActionKind.DODGE:
                 self._require_action(actor)
                 self._turn.action_used = True
@@ -340,6 +367,7 @@ class Encounter:
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
             extra_disadvantage=1 if self._dodging[target.name] else 0,
+            condition_effects=self.condition_effects,
         )
         resolution = resolve_attack(
             rng,
@@ -351,6 +379,7 @@ class Encounter:
                 target_conditions=target.conditions,
                 kind=option.kind,
                 distance=distance,
+                condition_effects=self.condition_effects,
             ),
             resisted=target.resists(option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
@@ -360,6 +389,84 @@ class Encounter:
                    f"{option.name}: {resolution.describe()}")
         if resolution.hit:
             self._apply_damage(target, resolution.damage_dealt, rng)
+
+    def _pick_item(self, actor: Creature, wanted: str) -> str:
+        held = [name for name, count in actor.items.items() if count > 0]
+        for name in actor.items:
+            if name.casefold() == wanted.casefold():
+                if actor.items[name] <= 0:
+                    raise EncounterError(f"{actor.name} has no {name} left")
+                return name
+        carrying = ", ".join(sorted(held)) or "nothing"
+        raise EncounterError(f"{actor.name} is not carrying {wanted!r}; has: {carrying}")
+
+    def _do_use_item(self, actor: Creature, action: Action, rng: Random) -> None:
+        self._require_action(actor)
+        if action.item is None:
+            raise EncounterError("using an item needs 'item'")
+        name = self._pick_item(actor, action.item)
+        effect = self.items.get(name)
+        if effect is None:
+            available = ", ".join(sorted(self.items)) or "none"
+            raise EncounterError(
+                f"{name!r} is not defined by the loaded content; defined: {available}"
+            )
+
+        if action.target is not None:
+            target = self._resolve_target(action.target)
+        elif effect.targets_others:
+            raise EncounterError(f"{name} needs a target")
+        else:
+            target = actor
+        if target is not actor:
+            distance = actor.distance_to(target)
+            if distance > MELEE_THRESHOLD:
+                raise EncounterError(
+                    f"{target.name} is {distance} ft away; an item can only be used on "
+                    f"another creature within {MELEE_THRESHOLD} ft"
+                )
+        if target.dead:
+            raise EncounterError(f"{target.name} is dead and cannot be affected")
+
+        self._turn.action_used = True
+        actor.items[name] -= 1
+
+        resolution = resolve_item_use(
+            rng,
+            effect,
+            item=name,
+            target=target.name,
+            save_modifier=(
+                target.save_modifier(effect.save_ability)
+                if effect.save_ability is not None else 0
+            ),
+            auto_fail_save=self._auto_fails_save(target, effect.save_ability),
+            resisted=(
+                target.resists(effect.damage_type) if effect.damage_type is not None else False
+            ),
+            vulnerable=(
+                effect.damage_type in target.vulnerabilities
+                if effect.damage_type is not None else False
+            ),
+            immune=(
+                effect.damage_type in target.immunities
+                if effect.damage_type is not None else False
+            ),
+        )
+        self._emit(
+            "use_item", actor.name, target.name,
+            f"{resolution.describe()} ({actor.items[name]} left)",
+        )
+        if resolution.healed:
+            before = target.hp
+            target.heal(resolution.healed)
+            self._emit("heal", target=target.name,
+                       detail=f"{target.hp - before} hit points restored, "
+                              f"{target.hp}/{target.max_hp}")
+        if resolution.damage_dealt:
+            self._apply_damage(target, resolution.damage_dealt, rng)
+        if resolution.condition_applied is not None and target.conscious:
+            target.add_condition(resolution.condition_applied)
 
     def _do_cast(self, actor: Creature, action: Action, rng: Random) -> None:
         self._require_action(actor)
@@ -436,10 +543,8 @@ class Encounter:
     def _auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
         if ability is None:
             return False
-        from ..kernel.conditions import EFFECTS
-
         for condition in creature.conditions:
-            effect = EFFECTS[condition]
+            effect = effect_of(condition, self.condition_effects)
             if ability is Ability.STRENGTH and effect.auto_fail_strength_saves:
                 return True
             if ability is Ability.DEXTERITY and effect.auto_fail_dexterity_saves:
@@ -474,10 +579,8 @@ class Encounter:
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.to_position is None:
             raise EncounterError("moving needs 'to_position'")
-        from ..kernel.conditions import speed_is_zero
-
-        if speed_is_zero(actor.conditions):
-            held = ", ".join(sorted(c.value for c in actor.conditions))
+        if speed_is_zero(actor.conditions, self.condition_effects):
+            held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
         distance = abs(action.to_position - actor.position)
         if distance > self._turn.movement_left:
@@ -518,6 +621,7 @@ class Encounter:
             kind=melee.kind,
             distance=MELEE_THRESHOLD,
             extra_disadvantage=1 if self._dodging[mover.name] else 0,
+            condition_effects=self.condition_effects,
         )
         resolution = resolve_attack(
             rng,
@@ -572,7 +676,16 @@ def build_encounter(
     *,
     seed: int,
     spellbook: Mapping[str, Spell] | None = None,
+    items: Mapping[str, ItemEffect] | None = None,
+    condition_effects: ConditionTable | None = None,
 ) -> tuple[Encounter, Random]:
     """Create an encounter and the generator that drives it, from a seed alone."""
     rng = Random(seed)
-    return Encounter(list(combatants), rng, spellbook=spellbook), rng
+    encounter = Encounter(
+        list(combatants),
+        rng,
+        spellbook=spellbook,
+        items=items,
+        condition_effects=condition_effects,
+    )
+    return encounter, rng

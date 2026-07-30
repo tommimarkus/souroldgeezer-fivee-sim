@@ -17,7 +17,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..kernel.actions import AttackKind
-from ..kernel.conditions import EFFECTS, Condition
+from ..kernel.conditions import (
+    EFFECTS,
+    Condition,
+    ConditionEffect,
+    ConditionTable,
+    effect_of,
+)
 from ..kernel.dice import Dice
 from ..kernel.rules import Ability, DamageType, ability_modifier
 
@@ -67,8 +73,14 @@ class Creature:
     spell_slots: dict[int, int] = field(default_factory=dict)
     spell_save_dc: int = 10
     spell_attack_bonus: int = 0
-    conditions: set[Condition] = field(default_factory=set)
+    conditions: set[str] = field(default_factory=set)
     concentrating_on: str | None = None
+    #: Usable items, name to quantity held. Quantity *is* the charge count.
+    items: dict[str, int] = field(default_factory=dict)
+    #: The condition table this creature's conditions are read against. An
+    #: ``Encounter`` overwrites this with its own so a fight cannot end up with
+    #: combatants consulting different rules; standalone use gets the SRD set.
+    condition_effects: ConditionTable = field(default_factory=lambda: EFFECTS)
     resistances: frozenset[DamageType] = frozenset()
     immunities: frozenset[DamageType] = frozenset()
     vulnerabilities: frozenset[DamageType] = frozenset()
@@ -109,23 +121,29 @@ class Creature:
         """Able to act: conscious and not held by an incapacitating condition."""
         if not self.conscious:
             return False
-        return not any(EFFECTS[condition].incapacitated for condition in self.conditions)
+        return not any(self._effect(condition).incapacitated for condition in self.conditions)
 
     def resists(self, damage_type: DamageType) -> bool:
         if damage_type in self.resistances:
             return True
-        return any(EFFECTS[condition].resists_all_damage for condition in self.conditions)
+        return any(self._effect(condition).resists_all_damage for condition in self.conditions)
 
     def distance_to(self, other: Creature) -> int:
         return abs(self.position - other.position)
 
+    def _effect(self, condition: str) -> ConditionEffect:
+        return effect_of(condition, self.condition_effects)
+
     # --- mutation ---------------------------------------------------------
-    def add_condition(self, condition: Condition) -> None:
+    def add_condition(self, condition: str) -> None:
+        # Look the effect up first: an unknown name must be refused before it is
+        # recorded, or the creature carries a condition nothing can resolve.
+        incapacitates = self._effect(condition).incapacitated
         self.conditions.add(condition)
-        if EFFECTS[condition].incapacitated:
+        if incapacitates:
             self.concentrating_on = None
 
-    def remove_condition(self, condition: Condition) -> None:
+    def remove_condition(self, condition: str) -> None:
         self.conditions.discard(condition)
 
     def take_damage(self, amount: int) -> None:

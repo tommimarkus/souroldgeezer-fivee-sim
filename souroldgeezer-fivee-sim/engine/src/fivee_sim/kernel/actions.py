@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from random import Random
 
-from .conditions import EFFECTS, Condition
+from .conditions import EFFECTS, ConditionTable, effect_of
 from .dice import Advantage, Dice, DiceRoll, resolve_advantage
 from .rules import AttackRoll, effective_damage, resolve_attack_roll, roll_damage
 
@@ -31,13 +31,14 @@ MELEE_THRESHOLD = 5
 
 def compute_attack_advantage(
     *,
-    attacker_conditions: Iterable[Condition],
-    target_conditions: Iterable[Condition],
+    attacker_conditions: Iterable[str],
+    target_conditions: Iterable[str],
     kind: AttackKind,
     distance: int,
     long_range_penalty: bool = False,
     extra_advantage: int = 0,
     extra_disadvantage: int = 0,
+    condition_effects: ConditionTable = EFFECTS,
 ) -> Advantage:
     """Collect every source of Advantage and Disadvantage, then collapse them.
 
@@ -53,7 +54,7 @@ def compute_attack_advantage(
     disadvantage_sources = extra_disadvantage
 
     for condition in attacker_conditions:
-        effect = EFFECTS[condition]
+        effect = effect_of(condition, condition_effects)
         if effect.own_attacks_have_advantage:
             advantage_sources += 1
         if effect.own_attacks_have_disadvantage:
@@ -61,7 +62,7 @@ def compute_attack_advantage(
 
     in_melee_range = kind is AttackKind.MELEE and distance <= MELEE_THRESHOLD
     for condition in target_conditions:
-        effect = EFFECTS[condition]
+        effect = effect_of(condition, condition_effects)
         if effect.attacked_with_advantage:
             advantage_sources += 1
         if effect.attacked_with_disadvantage:
@@ -82,14 +83,18 @@ def compute_attack_advantage(
 
 def melee_hit_is_critical(
     *,
-    target_conditions: Iterable[Condition],
+    target_conditions: Iterable[str],
     kind: AttackKind,
     distance: int,
+    condition_effects: ConditionTable = EFFECTS,
 ) -> bool:
     """Whether a landed hit is upgraded to a critical by the target's condition."""
     if kind is not AttackKind.MELEE or distance > MELEE_THRESHOLD:
         return False
-    return any(EFFECTS[condition].melee_hits_are_critical for condition in target_conditions)
+    return any(
+        effect_of(condition, condition_effects).melee_hits_are_critical
+        for condition in target_conditions
+    )
 
 
 @dataclass(frozen=True, slots=True)

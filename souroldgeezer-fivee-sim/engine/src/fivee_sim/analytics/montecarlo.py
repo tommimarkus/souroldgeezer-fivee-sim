@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import Any
 
+from ..kernel.conditions import ConditionTable
+from ..kernel.items import ItemEffect
 from ..kernel.spells import Spell
 from ..model.creature import Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
@@ -181,8 +183,15 @@ def simulate_rounds(
     seed: int,
     max_rounds: int = 20,
     spellbook: dict[str, Spell] | None = None,
+    items: dict[str, ItemEffect] | None = None,
+    condition_effects: ConditionTable | None = None,
 ) -> dict[str, Any]:
-    """Auto-play the same encounter ``iterations`` times and summarise the outcomes."""
+    """Auto-play the same encounter ``iterations`` times and summarise the outcomes.
+
+    The content tables are arguments rather than something resolved per iteration:
+    a batch that reloaded content while running would stop being reproducible from
+    its seed, which is the one property these numbers rest on.
+    """
     if iterations < 1:
         raise ValueError(f"iterations must be at least 1: {iterations}")
     wins: dict[str, int] = {}
@@ -190,7 +199,13 @@ def simulate_rounds(
     timeouts = 0
     for index in range(iterations):
         rng = Random(seed + index)
-        encounter = Encounter(list(factory()), rng, spellbook=spellbook)
+        encounter = Encounter(
+            list(factory()),
+            rng,
+            spellbook=spellbook,
+            items=items,
+            condition_effects=condition_effects,
+        )
         outcome = run_encounter(encounter, rng, max_rounds=max_rounds)
         key = outcome.winner if outcome.winner is not None else "none"
         wins[key] = wins.get(key, 0) + 1
@@ -219,6 +234,8 @@ def simulate_dpr(
     seed: int = 0,
     target_name: str = "Target",
     spellbook: dict[str, Spell] | None = None,
+    items: dict[str, ItemEffect] | None = None,
+    condition_effects: ConditionTable | None = None,
 ) -> dict[str, Any]:
     """Damage a build lands over ``rounds`` against a passive target of ``target_ac``.
 
@@ -242,7 +259,13 @@ def simulate_dpr(
             position=attacker.position,
             provenance="synthetic test dummy, not SRD content",
         )
-        encounter = Encounter([attacker, dummy], rng, spellbook=spellbook)
+        encounter = Encounter(
+            [attacker, dummy],
+            rng,
+            spellbook=spellbook,
+            items=items,
+            condition_effects=condition_effects,
+        )
         # Force the attacker to act first: initiative is irrelevant to a damage
         # measurement, and a passive dummy would otherwise waste a turn.
         encounter.order = [attacker.name, dummy.name]

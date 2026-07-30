@@ -76,11 +76,15 @@ class TestPrimitives:
 
 
 class TestLookup:
-    def test_no_topic_lists_everything_bundled(self) -> None:
+    def test_no_topic_lists_everything_loaded(self) -> None:
         listing = api.lookup_rule()
         assert "prone" in listing["conditions"]
         assert "Fireball" in listing["spells"]
-        assert "Goblin Warrior" in listing["monsters"]
+        assert "Goblin Warrior" in listing["creatures"]
+        # The listing has to say what it is a listing *of*: with packs loaded or the
+        # bundled slice excluded, "what is available" is not a fixed answer.
+        assert listing["builtin"] == "include"
+        assert "SRD 5.2" in listing["provenance"]
 
     def test_a_condition_reports_only_its_active_effects(self) -> None:
         result = api.lookup_rule("restrained")
@@ -97,14 +101,26 @@ class TestLookup:
         assert result["save"] == "dexterity"
         assert result["radius"] == 20
 
-    def test_a_monster_returns_its_record_including_unmodelled_traits(self) -> None:
+    def test_a_creature_returns_its_record_including_unmodelled_traits(self) -> None:
         result = api.lookup_rule("zombie")
-        assert result["kind"] == "monster"
+        assert result["kind"] == "creature"
         assert result["ac"] == 8
         assert any("Undead Fortitude" in note for note in result["unmodelled"])
 
-    def test_a_miss_explains_that_only_srd_content_ships(self) -> None:
-        with pytest.raises(api.ToolError, match="only SRD 5.2 content"):
+    def test_every_entry_names_the_pack_it_came_from(self) -> None:
+        # Provenance has to survive the merge: once SRD and original material can sit
+        # in one session, "where did this come from?" must be answerable per entry.
+        for topic in ("prone", "Fireball", "zombie"):
+            entry = api.lookup_rule(topic)
+            assert entry["source"].startswith("bundled:"), entry["source"]
+            assert entry["provenance"] == "SRD 5.2"
+            assert "unmodelled" in entry, "the skill tells Claude to check this field"
+
+    def test_a_miss_points_at_what_is_actually_loaded(self) -> None:
+        # Not "only SRD content ships" any more — that stopped being true the moment
+        # a campaign could load its own. The miss has to send the caller to the
+        # listing rather than assert a fixed catalogue.
+        with pytest.raises(api.ToolError, match="content_status"):
             api.lookup_rule("Beholder")
 
 
