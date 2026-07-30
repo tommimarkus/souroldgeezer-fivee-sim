@@ -131,7 +131,14 @@ consequences the rules engine already knows how to apply:
 `attacked_with_disadvantage`, `attacked_with_advantage_in_melee`,
 `attacked_with_disadvantage_at_range`, `own_attacks_have_advantage`,
 `own_attacks_have_disadvantage`, `auto_fail_strength_saves`,
-`auto_fail_dexterity_saves`, `melee_hits_are_critical`, `resists_all_damage`.
+`auto_fail_dexterity_saves`, `advantage_on_dexterity_saves`,
+`disadvantage_on_dexterity_saves`, `melee_hits_are_critical`,
+`resists_all_damage`.
+
+Failing a save and being bad at one are different flags on purpose.
+`auto_fail_dexterity_saves` decides the outcome; `disadvantage_on_dexterity_saves`
+only weights it, and the creature can still succeed. Setting both leaves the
+automatic failure in charge.
 
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.

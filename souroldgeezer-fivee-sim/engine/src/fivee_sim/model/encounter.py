@@ -31,7 +31,9 @@ from ..kernel.conditions import (
     EFFECTS,
     Condition,
     ConditionTable,
+    compute_save_advantage,
     effect_of,
+    is_incapacitated,
     speed_is_zero,
 )
 from ..kernel.dice import Advantage, roll_d20
@@ -397,7 +399,7 @@ class Encounter:
             kind=option.kind,
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
-            extra_disadvantage=1 if self._dodging[target.name] else 0,
+            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
 
@@ -463,6 +465,7 @@ class Encounter:
                 if effect.save_ability is not None else 0
             ),
             auto_fail_save=self.auto_fails_save(target, effect.save_ability),
+            save_advantage=self.save_advantage(target, effect.save_ability),
             resisted=(
                 target.resists(effect.damage_type) if effect.damage_type is not None else False
             ),
@@ -530,6 +533,7 @@ class Encounter:
                         if spell.save_ability is not None else 0
                     ),
                     auto_fail_save=self.auto_fails_save(c, spell.save_ability),
+                    save_advantage=self.save_advantage(c, spell.save_ability),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
                     ),
@@ -577,6 +581,42 @@ class Encounter:
             if ability is Ability.DEXTERITY and effect.auto_fail_dexterity_saves:
                 return True
         return False
+
+    def save_advantage(self, creature: Creature, ability: Ability | None) -> Advantage:
+        """Advantage this creature's saving throw resolves under.
+
+        Separate from :meth:`auto_fails_save` rather than folded into it, because a
+        forced failure still rolls: the two answers are independent and both are
+        needed at the same call sites.
+        """
+        if ability is None:
+            return Advantage.NONE
+        return compute_save_advantage(
+            conditions=creature.conditions,
+            ability=ability,
+            extra_advantage=(
+                1
+                if ability is Ability.DEXTERITY and self._dodge_benefits(creature)
+                else 0
+            ),
+            condition_effects=self.condition_effects,
+        )
+
+    def _dodge_benefits(self, creature: Creature) -> bool:
+        """Whether a Dodge taken this round is still doing anything.
+
+        Taking the action is not the same as keeping it: the benefits are lost while
+        the creature is Incapacitated or its Speed is 0. Restrained makes that
+        reachable — a Restrained creature may still Dodge, and gains nothing by it,
+        so its Dexterity save stays at Disadvantage instead of cancelling to a
+        straight roll.
+        """
+        if not self._dodging[creature.name]:
+            return False
+        return not (
+            is_incapacitated(creature.conditions, self.condition_effects)
+            or speed_is_zero(creature.conditions, self.condition_effects)
+        )
 
     def _spell_targets(
         self, actor: Creature, spell: Spell, action: Action
@@ -679,7 +719,7 @@ class Encounter:
             target_conditions=mover.conditions,
             kind=melee.kind,
             distance=MELEE_THRESHOLD,
-            extra_disadvantage=1 if self._dodging[mover.name] else 0,
+            extra_disadvantage=1 if self._dodge_benefits(mover) else 0,
             condition_effects=self.condition_effects,
         )
         resolution = resolve_attack(

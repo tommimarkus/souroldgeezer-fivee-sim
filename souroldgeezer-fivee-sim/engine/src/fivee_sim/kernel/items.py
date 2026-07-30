@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from random import Random
 
-from .dice import Dice, DiceRoll, roll_dice
+from .dice import Advantage, Dice, DiceRoll, roll_dice
 from .rules import Ability, D20Test, DamageType, effective_damage, make_d20_test
 
 
@@ -109,6 +109,7 @@ def resolve_item_use(
     target: str,
     save_modifier: int = 0,
     auto_fail_save: bool = False,
+    save_advantage: Advantage = Advantage.NONE,
     resisted: bool = False,
     vulnerable: bool = False,
     immune: bool = False,
@@ -127,6 +128,7 @@ def resolve_item_use(
             rng,
             modifier=save_modifier,
             dc=effect.save_dc,
+            advantage=save_advantage,
             auto_fail=auto_fail_save,
         )
 

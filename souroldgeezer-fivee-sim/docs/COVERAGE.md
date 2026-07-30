@@ -55,8 +55,8 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 | petrified | incapacitated, speed zero, attacked with advantage, auto fail strength saves, auto fail dexterity saves, resists all damage |
 | poisoned | own attacks have disadvantage |
 | prone | attacked with advantage in melee, attacked with disadvantage at range, own attacks have disadvantage |
-| restrained | speed zero, attacked with advantage, own attacks have disadvantage, auto fail dexterity saves |
-| stunned | incapacitated, speed zero, attacked with advantage, auto fail strength saves, auto fail dexterity saves |
+| restrained | speed zero, attacked with advantage, own attacks have disadvantage, disadvantage on dexterity saves |
+| stunned | incapacitated, attacked with advantage, auto fail strength saves, auto fail dexterity saves |
 | unconscious | incapacitated, speed zero, attacked with advantage, auto fail strength saves, auto fail dexterity saves, melee hits are critical |
 
 **Not implemented:** Exhaustion. SRD 5.2 defines it; this engine does not track it.

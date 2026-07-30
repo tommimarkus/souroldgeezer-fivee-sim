@@ -16,7 +16,7 @@ import pytest
 from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
-from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.creature import AttackOption, Creature
@@ -583,6 +583,96 @@ class TestSpellcasting:
         wizard.concentrating_on = "Hold Person"
         wizard.take_damage(wizard.hp)
         assert wizard.concentrating_on is None
+
+
+class TestSavingThrowAdvantage:
+    """A saving throw carries Advantage and Disadvantage the way an attack does.
+
+    The rule these pin is that Restrained does *not* make a Dexterity save fail —
+    it makes it hard. A Restrained creature caught in a Fireball still rolls, and
+    can still take half damage, which an auto-fail flag makes impossible.
+    """
+
+    def fireball_save(
+        self, *, conditions: Sequence[str] = (), dodging: bool = False
+    ) -> Event:
+        """Cast Fireball at a Goblin and return the event describing its save."""
+        rng = Random(4)
+        wizard = caster(position=0)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        for condition in conditions:
+            goblin.add_condition(condition)
+        encounter = Encounter([wizard, goblin], rng, spellbook=spellbook())
+        if dodging:
+            advance_to(encounter, "Goblin", rng)
+            encounter.act(Action(kind=ActionKind.DODGE), rng)
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=30),
+            Random(9),
+        )
+        return next(
+            event
+            for event in events
+            if event.kind == "spell_effect" and event.target == "Goblin"
+        )
+
+    def test_a_restrained_target_saves_with_disadvantage_rather_than_failing(
+        self,
+    ) -> None:
+        detail = self.fireball_save(conditions=(Condition.RESTRAINED,)).detail
+        assert "disadvantage" in detail
+        assert "auto-fail" not in detail
+
+    def test_an_unhindered_target_saves_straight(self) -> None:
+        detail = self.fireball_save().detail
+        assert "disadvantage" not in detail
+        assert "advantage" not in detail
+
+    def test_a_paralyzed_target_still_fails_outright(self) -> None:
+        assert "auto-fail" in self.fireball_save(conditions=(Condition.PARALYZED,)).detail
+
+    def test_dodging_gives_advantage_on_a_dexterity_save(self) -> None:
+        assert "advantage" in self.fireball_save(dodging=True).detail
+
+    def test_a_restrained_dodger_loses_the_benefit_rather_than_cancelling(self) -> None:
+        # Dodge's benefits are lost while Speed is 0, and Restrained sets Speed 0.
+        # Treating the Dodge as a live source of Advantage would cancel the
+        # Disadvantage and hand the creature a straight roll it has not earned.
+        detail = self.fireball_save(
+            conditions=(Condition.RESTRAINED,), dodging=True
+        ).detail
+        assert "disadvantage" in detail
+
+    def test_a_forced_failure_and_disadvantage_are_decided_independently(self) -> None:
+        rng = Random(4)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        goblin.add_condition(Condition.PARALYZED)
+        goblin.add_condition(Condition.RESTRAINED)
+        encounter = Encounter([caster(), goblin], rng, spellbook=spellbook())
+        assert encounter.auto_fails_save(goblin, Ability.DEXTERITY)
+        assert encounter.save_advantage(goblin, Ability.DEXTERITY) is Advantage.DISADVANTAGE
+
+    def test_an_items_saving_throw_carries_it_too(self) -> None:
+        fire = ItemEffect(
+            damage=Dice.parse("2d6"),
+            damage_type=DamageType.FIRE,
+            save_ability=Ability.DEXTERITY,
+            save_dc=13,
+            provenance=FIXTURE,
+        )
+        rng = Random(11)
+        thug = fighter("Thug", team="foes", position=0)
+        thug.items = {"Alchemist's Fire": 1}
+        victim = fighter("Victim", position=5)
+        victim.add_condition(Condition.RESTRAINED)
+        encounter = Encounter([thug, victim], rng, items={"Alchemist's Fire": fire})
+        advance_to(encounter, "Thug", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.USE_ITEM, item="Alchemist's Fire", target="Victim"),
+            Random(6),
+        )
+        assert "disadvantage" in events[0].detail
 
 
 class TestTurnLegality:

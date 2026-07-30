@@ -78,6 +78,9 @@ class SpellTarget:
     ac: int = 10
     save_modifier: int = 0
     auto_fail_save: bool = False
+    #: Per target rather than per spell: one creature in a Fireball may be
+    #: Restrained and the next Dodging, so a single spell-wide value cannot serve.
+    save_advantage: Advantage = Advantage.NONE
     resisted: bool = False
     vulnerable: bool = False
     immune: bool = False
@@ -183,6 +186,7 @@ def resolve_spell(
                 rng,
                 modifier=target.save_modifier,
                 dc=save_dc,
+                advantage=target.save_advantage,
                 auto_fail=target.auto_fail_save,
             )
         # A spell offering neither a saving throw nor an attack roll simply lands;

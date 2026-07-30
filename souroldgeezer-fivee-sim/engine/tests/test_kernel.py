@@ -16,7 +16,15 @@ from fivee_sim.kernel.actions import (
     compute_attack_advantage,
     melee_hit_is_critical,
 )
-from fivee_sim.kernel.conditions import Condition, is_incapacitated, speed_is_zero
+from fivee_sim.kernel.conditions import (
+    EFFECTS,
+    Condition,
+    UnknownCondition,
+    compute_save_advantage,
+    effect_of,
+    is_incapacitated,
+    speed_is_zero,
+)
 from fivee_sim.kernel.dice import (
     Advantage,
     Dice,
@@ -26,10 +34,12 @@ from fivee_sim.kernel.dice import (
     roll_dice,
 )
 from fivee_sim.kernel.rules import (
+    Ability,
     AttackRoll,
     ability_modifier,
     concentration_dc,
     effective_damage,
+    make_d20_test,
     proficiency_bonus,
     resolve_attack_roll,
 )
@@ -242,3 +252,86 @@ class TestConditionInteractions:
         assert not is_incapacitated((Condition.PRONE,))
         assert speed_is_zero((Condition.GRAPPLED,))
         assert not speed_is_zero((Condition.PRONE,))
+
+    def test_stunned_does_not_zero_speed(self) -> None:
+        # SRD 5.2 Stunned is Incapacitated, auto-failed Strength and Dexterity
+        # saves, and Advantage on attacks against you. There is no Speed 0 clause —
+        # that was the 2014 wording ("can't move"), and Incapacitated does not carry
+        # one either. Paralyzed, Petrified, and Unconscious each state Speed 0
+        # explicitly, which is what makes its absence here deliberate.
+        assert not speed_is_zero((Condition.STUNNED,))
+
+
+class TestSavingThrowConditions:
+    """Which conditions touch a saving throw, and how.
+
+    SRD 5.2 divides them two ways, and the difference is not cosmetic. Paralyzed,
+    Petrified, Stunned, and Unconscious make Strength and Dexterity saving throws
+    fail outright. Restrained only imposes Disadvantage on Dexterity saving throws
+    — the creature still rolls, and can still succeed.
+    """
+
+    def test_restrained_imposes_disadvantage_rather_than_automatic_failure(self) -> None:
+        effect = effect_of(Condition.RESTRAINED)
+        assert not effect.auto_fail_dexterity_saves
+        assert effect.disadvantage_on_dexterity_saves
+
+    def test_only_the_four_incapacitating_conditions_auto_fail_saves(self) -> None:
+        auto_failing = {
+            name
+            for name, effect in EFFECTS.items()
+            if effect.auto_fail_strength_saves or effect.auto_fail_dexterity_saves
+        }
+        assert auto_failing == {
+            Condition.PARALYZED,
+            Condition.PETRIFIED,
+            Condition.STUNNED,
+            Condition.UNCONSCIOUS,
+        }
+
+    def test_a_restrained_creature_rolls_dexterity_saves_with_disadvantage(self) -> None:
+        assert (
+            compute_save_advantage(
+                conditions=(Condition.RESTRAINED,), ability=Ability.DEXTERITY
+            )
+            is Advantage.DISADVANTAGE
+        )
+
+    def test_restrained_leaves_every_other_ability_alone(self) -> None:
+        for ability in (Ability.STRENGTH, Ability.CONSTITUTION, Ability.WISDOM):
+            assert (
+                compute_save_advantage(
+                    conditions=(Condition.RESTRAINED,), ability=ability
+                )
+                is Advantage.NONE
+            )
+
+    def test_advantage_from_elsewhere_cancels_the_disadvantage(self) -> None:
+        # Dodge is the caller that supplies it. The cancel rule is the one attack
+        # rolls already use: any Advantage plus any Disadvantage yields neither.
+        assert (
+            compute_save_advantage(
+                conditions=(Condition.RESTRAINED,),
+                ability=Ability.DEXTERITY,
+                extra_advantage=1,
+            )
+            is Advantage.NONE
+        )
+
+    def test_a_condition_the_table_does_not_define_is_reported(self) -> None:
+        with pytest.raises(UnknownCondition):
+            compute_save_advantage(conditions=("smitten",), ability=Ability.STRENGTH)
+
+    def test_an_auto_failed_save_still_rolls_its_dice(self) -> None:
+        # Paralyzed and Restrained together: the save fails whatever the dice say,
+        # but Disadvantage still costs two rolls. Skipping them when the outcome is
+        # forced would desynchronise the analytics replay from live play.
+        test = make_d20_test(
+            Random(1),
+            modifier=3,
+            dc=15,
+            advantage=Advantage.DISADVANTAGE,
+            auto_fail=True,
+        )
+        assert not test.success
+        assert len(test.roll.rolls) == 2
