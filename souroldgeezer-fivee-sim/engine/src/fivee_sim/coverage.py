@@ -259,6 +259,12 @@ def render_markdown() -> str:
         "included, and any encounter still running on content from before the last "
         "change. `content_validate` checks a pack without loading it."
     )
+    add("")
+    add(
+        "`encounter_log` pages the full event and action history of a fight in "
+        "progress, stamped with rounds and turns — the record to recap or replay "
+        "from, where `encounter_state` is only the view of now."
+    )
     return "\n".join(lines) + "\n"
 
 
