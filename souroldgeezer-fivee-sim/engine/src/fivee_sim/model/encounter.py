@@ -160,7 +160,10 @@ class ActionRecord:
     slice ``Encounter.log`` to exactly the events the call emitted. Refused
     actions are never recorded: they mutate nothing and consume no randomness, so
     applying the records in order against the same seed and combatants reproduces
-    the log byte for byte.
+    the log byte for byte. The events before the first record — round 1, the
+    opening turn_start, and any death saves the opening turn rolls — belong to
+    ``__init__``, which a rebuild from the same seed reproduces before the first
+    record is applied.
     """
 
     index: int
@@ -310,6 +313,16 @@ class Encounter:
             ),
         )
         self.turn_index = 0
+        # The fight opens the way every later turn does: round 1 and the first
+        # turn_start are announced before ``_begin_turn`` rolls anything, so a
+        # combatant dying at initiative rolls its death save after its
+        # turn_start, exactly as on any other turn. Emitting consumes no
+        # randomness, and ``order`` and ``turn_index`` exist by now, so the
+        # stamps are correct and the RNG stream is unchanged. These events
+        # precede the first ActionRecord: they belong to construction, and a
+        # replay reproduces them by rebuilding from the same seed.
+        self._emit("round", detail=f"round {self.round} begins", round=self.round)
+        self._emit("turn_start", self.current_name)
         self._begin_turn(rng)
 
     # --- the battle map ---------------------------------------------------
@@ -1809,9 +1822,10 @@ class Encounter:
     def _emit(
         self, kind: str, actor: str = "", target: str = "", detail: str = "", **data: Any
     ) -> None:
-        # Stamping is safe at every call site: __init__ emits nothing before
-        # ``order`` exists, the round event fires after ``round`` increments, and
-        # turn_start fires after ``turn_index`` has moved.
+        # Stamping is safe at every call site: __init__ emits only after
+        # ``order`` and ``turn_index`` exist, the round event fires after
+        # ``round`` increments, and turn_start fires after ``turn_index`` has
+        # moved.
         self.log.append(Event(
             kind=kind, actor=actor, target=target, detail=detail,
             seq=len(self.log), round=self.round, turn=self.current_name, data=data,
