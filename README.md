@@ -42,13 +42,20 @@ the seed it used, so no result is irreproducible after the fact.
 ## What is covered
 
 Weapon attacks with reach and ranged bands, movement, Dash, Disengage, Dodge,
-opportunity attacks, all fourteen conditions as a data table, death saves and
-instant death, damage resistance and vulnerability, and a curated spell set with
-saving throws, areas, upcasting, and concentration.
+opportunity attacks, death saves and instant death, damage resistance and
+vulnerability, and a curated spell set with saving throws, areas, upcasting, and
+concentration.
 
-Deliberate limits, stated so they are not mistaken for bugs: geometry is a single
-axis, so there is no flanking or cover; only SRD 5.2 content ships, and each
-bundled stat block lists the printed traits the engine does not implement.
+Fourteen conditions are implemented as a data table: Blinded, Charmed, Deafened,
+Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned,
+Prone, Restrained, Stunned, Unconscious. **Exhaustion is not** — SRD 5.2 defines
+it and this engine does not model it.
+
+Further deliberate limits, stated so they are not mistaken for bugs: geometry is
+a single axis, so there is no flanking or cover; Frightened applies its
+disadvantage unconditionally because there is no visibility model; and only SRD
+5.2 content ships, with each bundled stat block listing the printed traits the
+engine skips.
 
 ## Layout
 

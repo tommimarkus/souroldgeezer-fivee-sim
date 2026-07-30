@@ -94,3 +94,6 @@ State these when they bear on a ruling rather than papering over them:
   mention it if a player is counting on one.
 - **Frightened always applies** its disadvantage; there is no visibility model to
   condition it on line of sight.
+- **Exhaustion is not implemented.** SRD 5.2 defines it; this engine models the
+  other fourteen conditions only. Do not apply exhaustion effects by hand — say it
+  is unsupported.
