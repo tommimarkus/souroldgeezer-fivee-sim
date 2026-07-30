@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..kernel.actions import AttackKind
+from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.conditions import (
     EFFECTS,
     Condition,
@@ -30,7 +30,7 @@ from ..kernel.dice import Dice
 from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, ability_modifier
 
-__all__ = ["AttackKind", "AttackOption", "Creature"]
+__all__ = ["AttackKind", "AttackOption", "Creature", "RiderExpiry"]
 
 #: Failures that kill. Duplicated from ``model.encounter``, which owns the death
 #: save *roll* but cannot be imported here — it imports this module. Damage taken
@@ -40,7 +40,18 @@ DEATH_SAVES_TO_DIE = 3
 
 @dataclass(frozen=True, slots=True)
 class AttackOption:
-    """One attack a creature can make, as printed on a stat block."""
+    """One attack a creature can make, as printed on a stat block.
+
+    Stat blocks hang riders off a hit, and three shapes cover the printed forms:
+    ``bonus_damage`` is a second pool of a different type on every hit (a claw
+    that adds fire to its slashing); ``advantage_bonus_damage`` is extra dice of
+    the main type only when the attack roll resolved with Advantage (the goblin
+    pattern); ``on_hit_condition`` is a condition the hit imposes — automatic,
+    or on a failed save when ``on_hit_save_ability`` and ``on_hit_save_dc`` are
+    given — that ``on_hit_expiry`` may end on a turn boundary. The condition is
+    a plain string on purpose: a pack-defined condition works here exactly as an
+    SRD one does.
+    """
 
     name: str
     attack_bonus: int
@@ -50,7 +61,30 @@ class AttackOption:
     reach: int = 5
     normal_range: int = 0
     long_range: int = 0
+    bonus_damage: Dice | None = None
+    bonus_damage_type: DamageType | None = None
+    advantage_bonus_damage: Dice | None = None
+    on_hit_condition: str | None = None
+    on_hit_save_ability: Ability | None = None
+    on_hit_save_dc: int = 0
+    on_hit_expiry: RiderExpiry = RiderExpiry.NONE
     provenance: str = "SRD 5.2"
+
+    def __post_init__(self) -> None:
+        # Refused at construction rather than discovered mid-swing: without a
+        # type the bonus pool cannot be defended, and without a DC a save cannot
+        # be rolled. Content validation reports these first with a diagnostic;
+        # this guards direct construction the same way.
+        if self.bonus_damage is not None and self.bonus_damage_type is None:
+            raise ValueError(
+                f"{self.name}: bonus_damage needs bonus_damage_type — the extra "
+                f"damage is defended against its own type"
+            )
+        if self.on_hit_save_ability is not None and self.on_hit_save_dc < 1:
+            raise ValueError(
+                f"{self.name}: on_hit_save_ability needs an on_hit_save_dc of 1 "
+                f"or more"
+            )
 
     def max_distance(self) -> int:
         if self.kind is AttackKind.MELEE:
@@ -77,6 +111,15 @@ class Creature:
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
+    #: Pack Tactics, as a flag: the stat block prints it, the encounter resolves
+    #: it, because whether a capable ally is within 5 feet of the target is a
+    #: question about the whole fight, not about this creature.
+    pack_tactics: bool = False
+    #: Undead Fortitude, likewise: the drop-to-0 Constitution save that leaves
+    #: the creature at 1 hit point. The encounter resolves it too — the save
+    #: needs the fight's dice and the dropping damage's types, and this module
+    #: rolls nothing.
+    undead_fortitude: bool = False
     spells: tuple[str, ...] = ()
     spell_slots: dict[int, int] = field(default_factory=dict)
     spell_save_dc: int = 10

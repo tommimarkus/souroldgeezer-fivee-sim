@@ -51,7 +51,7 @@ from ..content import validate as _validate_content
 from ..data import DataError, make_creature
 from ..editor.cli import read_state, state_file_for
 from ..editor.http_server import TOKEN_HEADER
-from ..kernel.actions import AttackKind
+from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import (
     DiagonalRule,
@@ -307,6 +307,8 @@ def _resolve_battle_map(
 
 
 def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
+    bonus_type = spec.get("bonus_damage_type")
+    save_ability = spec.get("on_hit_save_ability")
     try:
         return AttackOption(
             name=str(spec["name"]),
@@ -317,10 +319,32 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
             reach=int(spec.get("reach", 5)),
             normal_range=int(spec.get("normal_range", 0)),
             long_range=int(spec.get("long_range", 0)),
+            bonus_damage=(
+                Dice.parse(str(spec["bonus_damage"]))
+                if spec.get("bonus_damage") is not None else None
+            ),
+            bonus_damage_type=(
+                DamageType(bonus_type) if bonus_type is not None else None
+            ),
+            advantage_bonus_damage=(
+                Dice.parse(str(spec["advantage_bonus_damage"]))
+                if spec.get("advantage_bonus_damage") is not None else None
+            ),
+            on_hit_condition=(
+                str(spec["on_hit_condition"])
+                if spec.get("on_hit_condition") is not None else None
+            ),
+            on_hit_save_ability=(
+                Ability(save_ability) if save_ability is not None else None
+            ),
+            on_hit_save_dc=int(spec.get("on_hit_save_dc", 0)),
+            on_hit_expiry=RiderExpiry(spec.get("on_hit_expiry", "none")),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
         raise ToolError(f"attack spec is missing {error.args[0]!r}") from error
+    except ValueError as error:
+        raise ToolError(f"attack spec is invalid: {error}") from error
 
 
 def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
@@ -359,6 +383,8 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             },
             attacks=tuple(_attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),
+            pack_tactics=bool(spec.get("pack_tactics", False)),
+            undead_fortitude=bool(spec.get("undead_fortitude", False)),
             spells=tuple(str(name) for name in spec.get("spells", [])),
             spell_slots={int(k): int(v) for k, v in spec.get("spell_slots", {}).items()},
             spell_save_dc=int(spec.get("spell_save_dc", 10)),

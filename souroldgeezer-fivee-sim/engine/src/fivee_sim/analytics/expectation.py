@@ -94,6 +94,64 @@ def expected_damage(
     return expected
 
 
+@cache
+def _rolled_distribution(dice: Dice, *, critical: bool = False) -> tuple[float, ...]:
+    """``P(DiceRoll.total == index)`` for one roll of ``dice``.
+
+    ``DiceRoll.total`` clamps at zero per roll, so the clamp is applied here —
+    before any sum with another roll — exactly as the kernel does it.
+    """
+    count = dice.count * 2 if critical else dice.count
+    top = max(0, count * dice.faces + dice.modifier)
+    totals = [0.0] * (top + 1)
+    for rolled, probability in enumerate(_sum_distribution(count, dice.faces)):
+        totals[max(0, rolled + dice.modifier)] += probability
+    return tuple(totals)
+
+
+@cache
+def _hit_damage(
+    damage: Dice,
+    extra: Dice | None,
+    *,
+    critical: bool = False,
+    resisted: bool = False,
+    vulnerable: bool = False,
+    immune: bool = False,
+) -> float:
+    """Expected damage of one landed hit's same-type pool.
+
+    ``extra`` is the Advantage rider's dice: it shares the main damage type, so
+    the kernel sums the two rolls **before** ``effective_damage`` halves or
+    doubles — one damage instance, one rounding. That is why this enumerates the
+    joint distribution rather than adding two separately-halved expectations,
+    which would drift by the floor on odd totals.
+    """
+    if extra is None:
+        return expected_damage(
+            damage, critical=critical, resisted=resisted, vulnerable=vulnerable,
+            immune=immune,
+        )
+    if immune:
+        return 0.0
+    expected = 0.0
+    for main_total, main_probability in enumerate(
+        _rolled_distribution(damage, critical=critical)
+    ):
+        if main_probability == 0.0:
+            continue
+        for extra_total, extra_probability in enumerate(
+            _rolled_distribution(extra, critical=critical)
+        ):
+            if extra_probability == 0.0:
+                continue
+            expected += main_probability * extra_probability * effective_damage(
+                main_total + extra_total,
+                resisted=resisted, vulnerable=vulnerable, immune=immune,
+            )
+    return expected
+
+
 def attack_damage_expectation(
     *,
     attack_bonus: int,
@@ -104,14 +162,39 @@ def attack_damage_expectation(
     resisted: bool = False,
     vulnerable: bool = False,
     immune: bool = False,
+    advantage_bonus_damage: Dice | None = None,
+    bonus_damage: Dice | None = None,
+    bonus_resisted: bool = False,
+    bonus_vulnerable: bool = False,
+    bonus_immune: bool = False,
 ) -> float:
-    """Expected damage from one attack, mirroring ``AttackRoll``'s hit and crit rules."""
-    normal = expected_damage(
-        damage, resisted=resisted, vulnerable=vulnerable, immune=immune
+    """Expected damage from one attack, mirroring ``AttackRoll``'s hit and crit rules.
+
+    The riders are valued exactly as ``resolve_attack`` rolls them.
+    ``advantage_bonus_damage`` counts only when ``advantage`` — the resolved
+    state the caller read off the encounter, never re-derived here — is
+    Advantage, and it joins the main pool before that pool's defenses round.
+    ``bonus_damage`` is the secondary pool, defended by the ``bonus_*`` flags
+    against its own type. Every rider's dice double on a critical hit exactly as
+    the main dice do.
+    """
+    extra = advantage_bonus_damage if advantage is Advantage.ADVANTAGE else None
+    normal = _hit_damage(
+        damage, extra, resisted=resisted, vulnerable=vulnerable, immune=immune
     )
-    critical = expected_damage(
-        damage, critical=True, resisted=resisted, vulnerable=vulnerable, immune=immune
+    critical = _hit_damage(
+        damage, extra, critical=True, resisted=resisted, vulnerable=vulnerable,
+        immune=immune,
     )
+    if bonus_damage is not None:
+        normal += expected_damage(
+            bonus_damage, resisted=bonus_resisted, vulnerable=bonus_vulnerable,
+            immune=bonus_immune,
+        )
+        critical += expected_damage(
+            bonus_damage, critical=True, resisted=bonus_resisted,
+            vulnerable=bonus_vulnerable, immune=bonus_immune,
+        )
     expected = 0.0
     for natural, probability in enumerate(_natural_distribution(advantage)):
         if probability == 0.0:

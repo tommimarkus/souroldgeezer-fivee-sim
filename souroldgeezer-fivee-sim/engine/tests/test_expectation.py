@@ -24,6 +24,7 @@ from fivee_sim.analytics.expectation import (
     expected_damage,
     save_damage_expectation,
 )
+from fivee_sim.kernel.actions import resolve_attack
 from fivee_sim.kernel.dice import Advantage, Dice, roll_dice
 from fivee_sim.kernel.rules import (
     effective_damage,
@@ -138,6 +139,123 @@ class TestAttackExpectation:
         )
         normal, critical = expected_damage(dice), expected_damage(dice, critical=True)
         assert expected == pytest.approx((18 * normal + critical) / 20)
+
+
+class TestAttackRiderExpectation:
+    """The riders, pinned against ``resolve_attack`` actually rolling them.
+
+    The kernel path is the full attack — roll, riders, defenses — so these run it
+    whole rather than reassembling it from pieces, and the closed form has to land
+    on the empirical mean under every advantage state.
+    """
+
+    MAIN = Dice(1, 6, 2)
+    RIDER = Dice(1, 4, 0)
+    BONUS = Dice(1, 4, 0)
+
+    @pytest.mark.parametrize(
+        "advantage", [Advantage.NONE, Advantage.ADVANTAGE, Advantage.DISADVANTAGE]
+    )
+    def test_riders_match_the_kernel_resolving_attacks(
+        self, advantage: Advantage
+    ) -> None:
+        rng = Random(SEED)
+        dealt = []
+        for _ in range(SAMPLES):
+            resolution = resolve_attack(
+                rng,
+                attack_bonus=4,
+                target_ac=15,
+                damage=self.MAIN,
+                advantage=advantage,
+                advantage_bonus_damage=self.RIDER,
+                bonus_damage=self.BONUS,
+                bonus_resisted=True,
+            )
+            dealt.append(resolution.total_damage_dealt)
+        assert attack_damage_expectation(
+            attack_bonus=4,
+            target_ac=15,
+            damage=self.MAIN,
+            advantage=advantage,
+            advantage_bonus_damage=self.RIDER,
+            bonus_damage=self.BONUS,
+            bonus_resisted=True,
+        ) == pytest.approx(empirical(dealt), abs=0.25)
+
+    def test_resistance_rounds_the_combined_pool_once(self) -> None:
+        # The advantage rider joins the main pool before resistance halves, so
+        # the closed form must model E[floor((a+b)/2)] — not floor each part.
+        rng = Random(SEED)
+        dealt = []
+        for _ in range(SAMPLES):
+            resolution = resolve_attack(
+                rng,
+                attack_bonus=4,
+                target_ac=15,
+                damage=self.MAIN,
+                advantage=Advantage.ADVANTAGE,
+                advantage_bonus_damage=self.RIDER,
+                resisted=True,
+            )
+            dealt.append(resolution.total_damage_dealt)
+        assert attack_damage_expectation(
+            attack_bonus=4,
+            target_ac=15,
+            damage=self.MAIN,
+            advantage=Advantage.ADVANTAGE,
+            advantage_bonus_damage=self.RIDER,
+            resisted=True,
+        ) == pytest.approx(empirical(dealt), abs=0.25)
+
+    @pytest.mark.parametrize("advantage", [Advantage.NONE, Advantage.DISADVANTAGE])
+    def test_the_advantage_rider_is_worthless_without_advantage(
+        self, advantage: Advantage
+    ) -> None:
+        with_rider = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN, advantage=advantage,
+            advantage_bonus_damage=self.RIDER,
+        )
+        without = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN, advantage=advantage,
+        )
+        assert with_rider == without
+
+    def test_the_advantage_rider_raises_the_advantaged_expectation(self) -> None:
+        with_rider = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN,
+            advantage=Advantage.ADVANTAGE, advantage_bonus_damage=self.RIDER,
+        )
+        without = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN,
+            advantage=Advantage.ADVANTAGE,
+        )
+        assert with_rider > without
+
+    def test_a_critical_doubles_every_riders_dice_in_the_arithmetic(self) -> None:
+        # AC 40 is unhittable on the arithmetic; only the natural 20 gets
+        # through, and it crits. With no defenses in play the pools are
+        # independent, so the crit value decomposes into per-pool expectations —
+        # each with its dice doubled — and the whole expectation is 1/20 of it.
+        expected = attack_damage_expectation(
+            attack_bonus=0, target_ac=40, damage=self.MAIN,
+            advantage_bonus_damage=self.RIDER, bonus_damage=self.BONUS,
+        )
+        # advantage_bonus_damage contributes nothing here: the state is NONE.
+        crit = expected_damage(self.MAIN, critical=True) + expected_damage(
+            self.BONUS, critical=True
+        )
+        assert expected == pytest.approx(crit / 20)
+
+    def test_bonus_damage_is_defended_against_its_own_type(self) -> None:
+        immune = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN,
+            bonus_damage=self.BONUS, bonus_immune=True,
+        )
+        plain = attack_damage_expectation(
+            attack_bonus=4, target_ac=15, damage=self.MAIN,
+        )
+        assert immune == pytest.approx(plain)
 
 
 class TestSaveExpectation:
