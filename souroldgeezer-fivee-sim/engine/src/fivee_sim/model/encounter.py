@@ -23,6 +23,7 @@ from typing import Any
 from ..kernel.actions import (
     MELEE_THRESHOLD,
     AttackKind,
+    RiderExpiry,
     compute_attack_advantage,
     melee_hit_is_critical,
     resolve_attack,
@@ -62,7 +63,7 @@ from ..kernel.grid import (
 )
 from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
-from ..kernel.rules import Ability, concentration_dc, make_d20_test
+from ..kernel.rules import Ability, D20Test, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
 from .battlemap import BattleMap, MapState
 from .creature import AttackOption, Creature
@@ -114,8 +115,8 @@ class Action:
 #: by test, not a constraint the model enforces.
 EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
-    "disengage", "dodge", "down", "effect_end", "heal", "interact", "move",
-    "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
+    "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
+    "move", "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
     "turn_start", "use_item",
 })
 
@@ -237,6 +238,11 @@ class OngoingEffect:
     #: ledger — a stat block that starts with it, or the stepper's own Unconscious.
     #: Such a condition is not ours to lift, so releasing this effect leaves it.
     stacked: bool
+    #: Timed expiry, for an attack rider's condition: the phase (``"start"`` or
+    #: ``"end"``) and the creature whose turn boundary ends this effect. Empty
+    #: strings mean no timer — the effect lasts until something else releases it.
+    expires_phase: str = ""
+    expires_anchor: str = ""
 
 
 def _segment_samples(origin: Point, destination: Point) -> list[Point]:
@@ -699,6 +705,7 @@ class Encounter:
         before = len(self.log)
         in_round, by = self.round, self.current_name
         self._emit("turn_end", self.current_name)
+        self._expire_timed("end", self.current_name)
         if not self.over:
             for _ in range(len(self.order)):
                 self.turn_index += 1
@@ -709,7 +716,14 @@ class Encounter:
                                round=self.round)
                 if not self.creatures[self.current_name].dead:
                     break
+                # A dead creature's slot still passes: both its turn boundaries
+                # go by without it acting, and a rider anchored to either must
+                # expire now rather than never. The slot passing is the trigger,
+                # not the creature acting.
+                self._expire_timed("start", self.current_name)
+                self._expire_timed("end", self.current_name)
             self._emit("turn_start", self.current_name)
+            self._expire_timed("start", self.current_name)
             self._begin_turn(rng)
         # Recorded even when the fight is over: the call still emitted its
         # turn_end, and a replay that skipped it would miss that event.
@@ -864,11 +878,15 @@ class Encounter:
             resisted=target.resists(option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
+            **self._rider_damage_arguments(option, target),
         )
         cover_note = ""
         if grade is not CoverGrade.NONE:
             label = "half" if grade is CoverGrade.HALF else "three-quarters"
             cover_note = f" ({label} cover, +{cover_bonus} AC)"
+        extras: dict[str, Any] = {}
+        if resolution.bonus_damage is not None:
+            extras["bonus_damage"] = resolution.bonus_damage_dealt
         self._emit("attack", actor.name, target.name,
                    f"{option.name}: {resolution.describe()}{cover_note}",
                    attack=option.name,
@@ -877,12 +895,43 @@ class Encounter:
                    natural=resolution.attack.roll.natural,
                    total=resolution.attack.total,
                    advantage=resolution.advantage.value,
-                   damage=resolution.damage_dealt,
-                   cover=int(grade))
+                   damage=resolution.total_damage_dealt,
+                   cover=int(grade),
+                   **extras)
         if resolution.hit:
             self._apply_damage(
-                target, resolution.damage_dealt, rng, critical=resolution.critical
+                target, resolution.total_damage_dealt, rng, critical=resolution.critical
             )
+            if option.on_hit_condition is not None:
+                self._apply_attack_rider(actor, target, option, rng)
+
+    @staticmethod
+    def _rider_damage_arguments(
+        option: AttackOption, target: Creature
+    ) -> dict[str, Any]:
+        """The damage-rider keywords one attack passes to ``resolve_attack``.
+
+        Shared by the attack action and the opportunity attack, because the
+        riders belong to the attack option itself: a centipede's bite is the
+        same bite as a reaction. The bonus pool's defenses are read against its
+        **own** type, which is the point of it having one.
+        """
+        return {
+            "advantage_bonus_damage": option.advantage_bonus_damage,
+            "bonus_damage": option.bonus_damage,
+            "bonus_resisted": (
+                target.resists(option.bonus_damage_type)
+                if option.bonus_damage_type is not None else False
+            ),
+            "bonus_vulnerable": (
+                option.bonus_damage_type in target.vulnerabilities
+                if option.bonus_damage_type is not None else False
+            ),
+            "bonus_immune": (
+                option.bonus_damage_type in target.immunities
+                if option.bonus_damage_type is not None else False
+            ),
+        }
 
     def attack_advantage(
         self, actor: Creature, target: Creature, option: AttackOption
@@ -1676,6 +1725,7 @@ class Encounter:
             resisted=mover.resists(melee.damage_type),
             vulnerable=melee.damage_type in mover.vulnerabilities,
             immune=melee.damage_type in mover.immunities,
+            **self._rider_damage_arguments(melee, mover),
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
                    f"{melee.name}: {resolution.describe()}",
@@ -1685,15 +1735,23 @@ class Encounter:
                    natural=resolution.attack.roll.natural,
                    total=resolution.attack.total,
                    advantage=resolution.advantage.value,
-                   damage=resolution.damage_dealt)
+                   damage=resolution.total_damage_dealt)
         if resolution.hit:
             # A mover cannot currently be at 0 hit points — a dying creature has
             # Speed 0 — so the flag changes nothing today. It is passed anyway: two
             # call sites resolving the same kind of attack and only one carrying the
             # critical is the asymmetry that becomes a bug when reactions grow.
             self._apply_damage(
-                mover, resolution.damage_dealt, rng, critical=resolution.critical
+                mover, resolution.total_damage_dealt, rng, critical=resolution.critical
             )
+            if melee.on_hit_condition is not None:
+                # The same bite carries the same rider as a reaction. One edge is
+                # deliberate and literal: a rider timed to the end of the target's
+                # next turn, landed by an opportunity attack *during* the target's
+                # own turn, expires at that same turn's end — the pointer reaching
+                # the anchor's boundary is the trigger, with no memory of whose
+                # turn the hit interrupted.
+                self._apply_attack_rider(attacker, mover, melee, rng)
 
     # --- ongoing effects --------------------------------------------------
     def _apply_condition(
@@ -1704,6 +1762,8 @@ class Encounter:
         *,
         effect_name: str,
         concentration: bool,
+        expires_phase: str = "",
+        expires_anchor: str = "",
     ) -> None:
         """Impose ``condition`` and record what is imposing it.
 
@@ -1725,8 +1785,84 @@ class Encounter:
                 condition=condition,
                 concentration=concentration,
                 stacked=already_held and not held_by_ledger,
+                expires_phase=expires_phase,
+                expires_anchor=expires_anchor,
             )
         )
+
+    def _apply_attack_rider(
+        self, actor: Creature, target: Creature, option: AttackOption, rng: Random
+    ) -> None:
+        """Resolve an attack's on-hit condition rider against a landed hit.
+
+        A target the damage just dropped receives nothing — the same stance
+        spells and items take: a condition is imposed only on a conscious
+        creature, and skipping the save with it keeps a state-determined RNG
+        stream. The save, when the stat block prints one, is rolled with the
+        target's own advantage and auto-fail circumstances, exactly as an item's
+        save is. The timed forms register their anchor here; :meth:`advance`
+        fires them when the pointer reaches that turn boundary.
+        """
+        condition = option.on_hit_condition
+        assert condition is not None
+        if not target.conscious:
+            return
+        save: D20Test | None = None
+        if option.on_hit_save_ability is not None:
+            save = make_d20_test(
+                rng,
+                modifier=target.save_modifier(option.on_hit_save_ability),
+                dc=option.on_hit_save_dc,
+                advantage=self.save_advantage(target, option.on_hit_save_ability),
+                auto_fail=self.auto_fails_save(target, option.on_hit_save_ability),
+            )
+            if save.success:
+                self._emit(
+                    "effect_apply", actor.name, target.name,
+                    f"{option.name}: {target.name} saves against {condition} "
+                    f"({save.describe()})",
+                    attack=option.name, condition=condition, applied=False,
+                    saved=True,
+                )
+                return
+        phase, anchor = "", ""
+        if option.on_hit_expiry == RiderExpiry.START_OF_ATTACKER_NEXT_TURN:
+            phase, anchor = "start", actor.name
+        elif option.on_hit_expiry == RiderExpiry.END_OF_TARGET_NEXT_TURN:
+            phase, anchor = "end", target.name
+        self._apply_condition(
+            actor, target, condition,
+            effect_name=option.name, concentration=False,
+            expires_phase=phase, expires_anchor=anchor,
+        )
+        until = ""
+        if phase == "start":
+            until = f" until the start of {anchor}'s next turn"
+        elif phase == "end":
+            until = f" until the end of {anchor}'s next turn"
+        detail = f"{option.name}: {target.name} has {condition}{until}"
+        if save is not None:
+            detail += f" ({save.describe()})"
+        self._emit(
+            "effect_apply", actor.name, target.name, detail,
+            attack=option.name, condition=condition, applied=True,
+            saved=False if save is not None else None,
+            expiry=str(option.on_hit_expiry),
+        )
+
+    def _expire_timed(self, phase: str, anchor: str) -> None:
+        """Release every timed effect whose turn boundary has just passed.
+
+        The trigger is the turn *slot*, not the creature acting: ``advance``
+        calls this for a dead creature's skipped slot exactly as for a living
+        one's turn, so a poison anchored to a dead centipede still ends on
+        schedule. Release goes through :meth:`_release_effect`, so a condition
+        something else still imposes — another live rider, or an application
+        outside this ledger — persists.
+        """
+        for effect in list(self._effects):
+            if effect.expires_phase == phase and effect.expires_anchor == anchor:
+                self._release_effect(effect)
 
     def _holders(self, target: str, condition: str) -> list[OngoingEffect]:
         return [
