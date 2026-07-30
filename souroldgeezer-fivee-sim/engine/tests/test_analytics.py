@@ -10,9 +10,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from random import Random
+from typing import Any
 
 import pytest
 
+from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.analytics.montecarlo import (
     auto_action,
     run_encounter,
@@ -144,6 +146,174 @@ class TestSimulateDpr:
             seed=SEED,
         )
         assert twice["damage"]["mean"] > once["damage"]["mean"] * 1.5
+
+
+def sword_and_spell(name: str = "Thora") -> Creature:
+    """A three-attack build that also knows a spell.
+
+    The weapon is deliberately worth more per swing than the spell (about 14.7
+    against AC 15, against the bolt's 9.8), so the policy attacks first. That
+    ordering is what exposes a turn budget the attacker never had: an Attack
+    action it has already spent must not leave a second action in hand.
+    """
+    return Creature(
+        name=name,
+        team="party",
+        ac=16,
+        max_hp=60,
+        speed=30,
+        abilities={Ability.STRENGTH: 16, Ability.DEXTERITY: 14},
+        attacks=(
+            AttackOption(
+                name="Greatsword",
+                attack_bonus=9,
+                damage=Dice(2, 8, 10),
+                damage_type=DamageType.SLASHING,
+                kind=AttackKind.MELEE,
+                provenance="synthetic test fixture, not SRD content",
+            ),
+        ),
+        attacks_per_action=3,
+        spells=("Guiding Bolt",),
+        spell_slots={1: 4},
+        spell_save_dc=15,
+        spell_attack_bonus=7,
+        position=0,
+        provenance="synthetic test fixture, not SRD content",
+    )
+
+
+class TestSimulateDprSpendsTheAttackersOwnTurnBudget:
+    """Round 1 must run on the attacker's budget, not the initiative winner's.
+
+    ``Encounter.__init__`` begins a turn for whoever won Initiative, and
+    ``simulate_dpr`` then rewrites the order to put the attacker first. While the
+    turn state was left as ``__init__`` built it, round 1 ran on the *dummy's*
+    budget — ``movement_left=0``, ``attacks_left=1`` — in the 153/400 of seeds
+    where the dummy won the roll, which cost swings, forfeited the round for a
+    build starting out of reach, and left a spent action looking unspent.
+
+    SRD 5.2 is explicit on both halves: "On your turn, you can move a distance up
+    to your Speed and take one action" (Combat, "Your Turn"), and Extra Attack is
+    "You can attack twice instead of once whenever you take the Attack action on
+    your turn" — more swings inside one action, never a second action.
+    """
+
+    ROUNDS = 3
+    TARGET_AC = 14
+
+    @pytest.mark.parametrize("attacks_per_action", [1, 2, 3])
+    def test_every_round_lands_the_full_legal_swing_count(
+        self, attacks_per_action: int
+    ) -> None:
+        # Zero variance by construction: the dummy has 10,000 hit points so it
+        # never drops, neither creature moves, and nothing else is on offer. The
+        # count is therefore exactly the legal one or the budget was wrong.
+        iterations = 200
+        result = simulate_dpr(
+            lambda: fighter("Thora", attacks_per_action=attacks_per_action),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+        )
+        legal = attacks_per_action * self.ROUNDS * iterations
+        swings = result["actions"].get("attack:Longsword", 0)
+        # An Attack action grants attacks_per_action swings and no more.
+        assert swings <= legal
+        # And every one of them is taken.
+        assert result["actions"] == {"attack:Longsword": legal}
+
+    @pytest.mark.parametrize("attacks_per_action", [1, 2, 3])
+    def test_damage_per_round_matches_the_closed_form(
+        self, attacks_per_action: int
+    ) -> None:
+        # The oracle is the engine's own exact arithmetic, read off the same
+        # fixture the run uses so the two cannot drift apart.
+        option = fighter("Thora").attacks[0]
+        expected = attacks_per_action * attack_damage_expectation(
+            attack_bonus=option.attack_bonus,
+            target_ac=self.TARGET_AC,
+            damage=option.damage,
+        )
+        result = simulate_dpr(
+            lambda: fighter("Thora", attacks_per_action=attacks_per_action),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=6_000,
+            seed=SEED,
+        )
+        # 3% sits above four standard errors at this sample size and well below
+        # the 6-8% the stale budget cost, so it discriminates rather than merely
+        # passing.
+        assert result["damage_per_round"] == pytest.approx(expected, rel=0.03)
+
+    def test_a_build_starting_out_of_reach_still_closes_in_round_one(self) -> None:
+        # The other half of the budget. A stale movement_left of 0 made
+        # _closing_move return None, so a melee build measured at range simply
+        # forfeited its first round.
+        iterations = 200
+        result = simulate_dpr(
+            lambda: fighter("Thora"),
+            target_ac=self.TARGET_AC,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+            distance=20,
+        )
+        assert result["actions"]["attack:Longsword"] == self.ROUNDS * iterations
+
+    def test_a_spent_attack_action_does_not_also_buy_a_spell(self) -> None:
+        # The rules defect rather than the measurement one. _do_attack marks the
+        # action used only when attacks_left falls to attacks_per_action - 1, so
+        # a stale attacks_left of 1 on a three-attack build decremented to 0
+        # without ever setting it — and the policy was then offered a Magic
+        # action on top of the Attack action already taken.
+        iterations = 200
+        result = simulate_dpr(
+            sword_and_spell,
+            target_ac=15,
+            rounds=self.ROUNDS,
+            iterations=iterations,
+            seed=SEED,
+            spellbook=spellbook(),
+        )
+        assert result["actions"] == {"attack:Greatsword": 3 * self.ROUNDS * iterations}
+
+
+class TestSimulateDprStaysReproducible:
+    def test_the_same_seed_reproduces_the_same_result(self) -> None:
+        def run(seed: int) -> dict[str, object]:
+            return simulate_dpr(
+                lambda: fighter("Thora", attacks_per_action=3),
+                target_ac=14,
+                rounds=3,
+                iterations=120,
+                seed=seed,
+            )
+
+        assert run(SEED) == run(SEED)
+        assert run(SEED) != run(SEED + 1)
+
+    def test_iteration_i_still_uses_seed_plus_i(self) -> None:
+        def run(*, iterations: int, seed: int) -> dict[str, Any]:
+            return simulate_dpr(
+                lambda: fighter("Thora", attacks_per_action=3),
+                target_ac=14,
+                rounds=3,
+                iterations=iterations,
+                seed=seed,
+            )
+
+        batch = run(iterations=6, seed=SEED)
+        singles = [
+            run(iterations=1, seed=SEED + index)["damage"]["mean"] for index in range(6)
+        ]
+        assert batch["damage"]["min"] == min(singles)
+        assert batch["damage"]["max"] == max(singles)
+        # ``Stats.as_dict`` reports the mean rounded to three decimals, so this
+        # agrees to within that rounding rather than exactly.
+        assert batch["damage"]["mean"] == pytest.approx(sum(singles) / 6, abs=1e-3)
 
 
 class TestSummarise:

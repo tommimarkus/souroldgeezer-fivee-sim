@@ -497,10 +497,22 @@ def simulate_dpr(
             items=items,
             condition_effects=condition_effects,
         )
+        # ``__init__`` has already begun a turn for whoever won Initiative, so the
+        # budget in hand is theirs. Read that before the order is rewritten below,
+        # which does not rebuild it.
+        began_for = encounter.current_name
         # Force the attacker to act first: initiative is irrelevant to a damage
         # measurement, and a passive dummy would otherwise waste a turn.
         encounter.order = [attacker.name, dummy.name]
         encounter.turn_index = 0
+        if began_for != attacker.name:
+            # Begin the attacker's turn through the stepper's own setup — the same
+            # call ``advance`` makes — rather than restating what a turn grants.
+            # Without this, round 1 ran on the dummy's budget: no movement, and a
+            # single swing however many the Attack action allows. Guarded because
+            # ``_begin_turn`` is not idempotent — it rolls a death save for a dying
+            # creature, and a turn is worth one of those, not two.
+            encounter._begin_turn(rng)
         for _ in range(rounds):
             for _ in range(MAX_ACTIONS_PER_TURN):
                 action = auto_action(encounter)
