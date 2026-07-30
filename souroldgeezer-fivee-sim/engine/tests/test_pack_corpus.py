@@ -42,7 +42,6 @@ from fivee_sim.content import (
 from fivee_sim.data import make_creature
 from fivee_sim.kernel.actions import (
     MELEE_THRESHOLD,
-    AttackKind,
     compute_attack_advantage,
     melee_hit_is_critical,
 )
@@ -103,7 +102,7 @@ def from_corpus(registry: ContentRegistry, section: str) -> dict[str, Any]:
 
 
 def expected_advantage(
-    effect: ConditionEffect, *, as_attacker: bool, in_melee: bool
+    effect: ConditionEffect, *, as_attacker: bool, within_5_feet: bool
 ) -> Advantage:
     """What one condition, alone, should do to a d20 roll.
 
@@ -111,6 +110,10 @@ def expected_advantage(
     ``compute_attack_advantage``: a test that asks the implementation what it expects
     agrees with every regression. It is small enough to be worth the duplication, and
     the directional pair is exactly the part a mix-up would get wrong.
+
+    The oracle is keyed on **distance**, matching the rule the two directional flags
+    encode — Prone's "if the attacker is within 5 feet of you", which names no
+    weapon. The flag names are historical and pack-facing, so they still say melee.
     """
     up = down = 0
     if as_attacker:
@@ -119,8 +122,8 @@ def expected_advantage(
     else:
         up += effect.attacked_with_advantage
         down += effect.attacked_with_disadvantage
-        up += effect.attacked_with_advantage_in_melee and in_melee
-        down += effect.attacked_with_disadvantage_at_range and not in_melee
+        up += effect.attacked_with_advantage_in_melee and within_5_feet
+        down += effect.attacked_with_disadvantage_at_range and not within_5_feet
     if up and down:
         return Advantage.NONE  # 2024: both cancel, however many of each
     if up:
@@ -385,12 +388,11 @@ class TestConditionsAreOrdinaryStrings:
             # short-circuiting on an enum member would diverge here.
             assert is_incapacitated([name], table) is effect.incapacitated
             assert speed_is_zero([name], table) is effect.speed_zero
-            for kind, distance in ((AttackKind.MELEE, 5), (AttackKind.RANGED, 60)):
-                in_melee = kind is AttackKind.MELEE
-                # The automatic critical is scoped by distance alone, so its oracle
-                # reads the distance. The two cases above vary kind and distance
-                # together, so an oracle keyed on ``in_melee`` agreed here by
-                # coincidence and would have hidden a ranged attack from inside 5 ft.
+            # Distances only. Neither query reads a weapon: the automatic critical
+            # and the directional advantage pair are both scoped by "within 5 feet".
+            # The boundary is swept from both sides so a ranged attack from inside
+            # 5 ft cannot hide behind a case that varies kind and distance together.
+            for distance in (MELEE_THRESHOLD, MELEE_THRESHOLD + 5, 60):
                 within_5_feet = distance <= MELEE_THRESHOLD
                 assert melee_hit_is_critical(
                     target_conditions=[name], distance=distance,
@@ -400,30 +402,31 @@ class TestConditionsAreOrdinaryStrings:
                     got = compute_attack_advantage(
                         attacker_conditions=[name] if as_attacker else [],
                         target_conditions=[] if as_attacker else [name],
-                        kind=kind,
                         distance=distance,
                         condition_effects=table,
                     )
                     want = expected_advantage(
-                        effect, as_attacker=as_attacker, in_melee=in_melee
+                        effect, as_attacker=as_attacker, within_5_feet=within_5_feet
                     )
                     role = "attacker" if as_attacker else "target"
-                    assert got is want, f"{name} as {role}, {kind} at {distance} ft"
+                    assert got is want, f"{name} as {role} at {distance} ft"
 
     def test_a_custom_condition_can_be_directional(
         self, corpus_alone: ContentRegistry
     ) -> None:
         # The prone shape, which no bundled-condition test can reach through a pack:
-        # easier to hit up close, harder to hit from across the scree.
+        # easier to hit up close, harder to hit from across the scree. Direction is
+        # distance, not weapon — a bow drawn point-blank on a pinned creature gets
+        # the same Advantage a spear does.
         table = corpus_alone.condition_effects
         pinned = ["shatterhorn-scree-pinned"]
         assert compute_attack_advantage(
             attacker_conditions=[], target_conditions=pinned,
-            kind=AttackKind.MELEE, distance=5, condition_effects=table,
+            distance=MELEE_THRESHOLD, condition_effects=table,
         ) is Advantage.ADVANTAGE
         assert compute_attack_advantage(
             attacker_conditions=[], target_conditions=pinned,
-            kind=AttackKind.RANGED, distance=60, condition_effects=table,
+            distance=60, condition_effects=table,
         ) is Advantage.DISADVANTAGE
 
     def test_a_custom_condition_takes_a_creature_out_of_the_fight(

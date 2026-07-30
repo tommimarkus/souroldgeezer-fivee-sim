@@ -33,7 +33,7 @@ from fivee_sim.content import (
     validate,
 )
 from fivee_sim.data import make_creature
-from fivee_sim.kernel.actions import AttackKind, compute_attack_advantage
+from fivee_sim.kernel.actions import compute_attack_advantage
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.mcp_server import server as api
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
@@ -694,7 +694,6 @@ class TestCustomConditions:
         assert compute_attack_advantage(
             attacker_conditions=["vale-cursed"],
             target_conditions=[],
-            kind=AttackKind.MELEE,
             distance=5,
             condition_effects=registry.condition_effects,
         ) is Advantage.DISADVANTAGE
@@ -709,7 +708,6 @@ class TestCustomConditions:
             compute_attack_advantage(
                 attacker_conditions=["vale-blessed"],
                 target_conditions=[],
-                kind=AttackKind.MELEE,
                 distance=5,
                 condition_effects=registry.condition_effects,
             )

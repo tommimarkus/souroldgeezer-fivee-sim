@@ -59,7 +59,10 @@ class ConditionEffect:
     #: Attack rolls against the afflicted creature.
     attacked_with_advantage: bool = False
     attacked_with_disadvantage: bool = False
-    #: Prone is directional: advantage in melee, disadvantage at range.
+    #: Prone is directional, and scoped by **distance, not by weapon**: advantage
+    #: from within 5 ft, disadvantage from beyond it, whatever the attack. Both
+    #: names are historical and pack-facing, so they stay — see
+    #: ``melee_hits_are_critical`` below, which kept its name for the same reason.
     attacked_with_advantage_in_melee: bool = False
     attacked_with_disadvantage_at_range: bool = False
     #: The afflicted creature's own attack rolls.

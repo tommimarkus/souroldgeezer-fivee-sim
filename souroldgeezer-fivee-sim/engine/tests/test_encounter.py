@@ -106,6 +106,13 @@ def kinds(events: Sequence[Event]) -> list[str]:
     return [event.kind for event in events]
 
 
+def detail_of(events: Sequence[Event], kind: str) -> str:
+    """The detail of the one event of ``kind``, asserting there is exactly one."""
+    matching = [event for event in events if event.kind == kind]
+    assert len(matching) == 1, f"expected one {kind!r} event, got {len(matching)}"
+    return matching[0].detail
+
+
 class TestInitiative:
     def test_the_same_seed_produces_the_same_order(self) -> None:
         first = Encounter([fighter(), make_monster("Wolf")], Random(7))
@@ -172,6 +179,66 @@ class TestAttacking:
         events = encounter.act(Action(kind=ActionKind.ATTACK, target="Goblin"), Random(4))
         assert "disadvantage" in events[0].detail
 
+    def test_a_shot_from_5_feet_at_a_prone_target_has_advantage(self) -> None:
+        """SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "An attack roll
+        against you has Advantage if the attacker is within 5 feet of you.
+        Otherwise, that attack roll has Disadvantage."
+
+        The clause names a distance and no weapon, exactly as the
+        Paralyzed/Unconscious automatic critical does. The engine used to gate it on
+        ``AttackKind``, so a bow loosed point-blank at a Prone creature came out
+        with Disadvantage where the rule gives Advantage.
+        """
+        rng = Random(2)
+        archer = fighter("Archer")
+        shortbow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        archer.attacks = (shortbow,)
+        target = fighter("Mark", team="foes", position=5)
+        target.add_condition(Condition.PRONE)
+        encounter = Encounter([archer, target], rng)
+        assert (
+            encounter.attack_advantage(archer, target, shortbow) is Advantage.ADVANTAGE
+        )
+        # The other half of the same clause is likewise the distance: the same bow
+        # from across the room still gets Disadvantage, and no long-range penalty is
+        # in play at 60 ft to confuse the reading.
+        target.position = 60
+        assert (
+            encounter.attack_advantage(archer, target, shortbow)
+            is Advantage.DISADVANTAGE
+        )
+
+    def test_a_reach_weapon_beyond_5_feet_gets_the_prone_disadvantage(self) -> None:
+        # The mirror case, and the one the old gate got right by accident: a melee
+        # attack made from beyond 5 feet is not "within 5 feet of you" either.
+        rng = Random(2)
+        pikeman = fighter("Pikeman")
+        pike = AttackOption(
+            name="Pike",
+            attack_bonus=5,
+            damage=Dice(1, 10, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.MELEE,
+            reach=10,
+            provenance=FIXTURE,
+        )
+        pikeman.attacks = (pike,)
+        target = fighter("Mark", team="foes", position=10)
+        target.add_condition(Condition.PRONE)
+        encounter = Encounter([pikeman, target], rng)
+        assert (
+            encounter.attack_advantage(pikeman, target, pike) is Advantage.DISADVANTAGE
+        )
+
     def test_unknown_attack_name_is_reported_with_the_options(self) -> None:
         rng = Random(1)
         encounter = Encounter([fighter(), make_monster("Wolf", position=5)], rng)
@@ -220,6 +287,62 @@ class TestGoingDown:
                 assert "death_save" in kinds(events)
                 return
         raise AssertionError("the dying creature never took a turn")
+
+    @staticmethod
+    def _dying_hero() -> tuple[Encounter, Creature]:
+        """A fight whose Hero is at 0 hit points, paused on the attacker's turn."""
+        rng = Random(8)
+        hero = fighter("Hero", max_hp=30, hp=1, position=0)
+        foe = fighter("Foe", team="foes", position=5)
+        ally = fighter("Ally", position=40)  # keeps the fight from ending
+        encounter = Encounter([hero, foe, ally], rng)
+        advance_to(encounter, "Foe", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Hero"), FixedRandom(20))
+        assert hero.dying
+        return encounter, hero
+
+    def test_stabilising_clears_both_death_save_counters(self) -> None:
+        """SRD 5.2, "Playing the Game" -> "Death Saving Throws", Three
+        Successes/Failures: "The successes and failures don't need to be
+        consecutive; keep track of both until you collect three of a kind. The
+        number of both is reset to zero when you regain any Hit Points or become
+        Stable."
+
+        ``Creature.heal`` already honours the first half. The roll that stabilises
+        set ``stable`` and left the counters standing.
+        """
+        encounter, hero = self._dying_hero()
+        hero.death_save_successes = 2
+        hero.death_save_failures = 1
+        # A forced 15 succeeds: the third success, which stabilises.
+        advance_to(encounter, "Hero", FixedRandom(15))
+        assert hero.stable
+        assert hero.death_save_successes == 0
+        assert hero.death_save_failures == 0
+
+    def test_a_stabilised_creature_knocked_down_again_starts_from_nothing(
+        self,
+    ) -> None:
+        # What the stale counters bought: with three successes still on the sheet, a
+        # *failed* death save re-stabilised the creature. The failure took it to two,
+        # short of the three that kill, and the untouched successes then tripped the
+        # stabilise branch immediately below.
+        encounter, hero = self._dying_hero()
+        hero.death_save_successes = 2
+        advance_to(encounter, "Hero", FixedRandom(15))
+        assert hero.stable
+
+        hero.take_damage(3)
+        assert not hero.stable
+        assert hero.death_save_successes == 0
+        assert hero.death_save_failures == 1
+
+        # A forced 5 fails. It must not stabilise anything.
+        encounter.advance(FixedRandom(5))
+        advance_to(encounter, "Hero", FixedRandom(5))
+        assert not hero.stable
+        assert hero.death_save_failures == 2
+        assert hero.death_save_successes == 0
 
     def test_healing_from_zero_clears_unconsciousness_and_resets_saves(self) -> None:
         victim = fighter("Victim", max_hp=20, hp=1)
@@ -319,6 +442,91 @@ class TestDamageAtZeroHitPoints:
         assert victim.dead
         assert victim.death_save_failures == 3
         assert Condition.UNCONSCIOUS not in victim.conditions
+
+    @staticmethod
+    def _fight_with_a_dying_creature(
+        item: ItemEffect, *, max_hp: int = 30
+    ) -> tuple[Encounter, Creature]:
+        """A fight paused on Thug's turn, with Victim at 0 hit points.
+
+        A third combatant keeps the encounter running — dropping the only opponent
+        would end it, and ``advance`` would stop. Every death save on the way back
+        round is forced to 15, a success, so the victim can neither die nor
+        stabilise before the item lands.
+        """
+        rng = Random(11)
+        thug = fighter("Thug", team="foes", position=0)
+        thug.items = {"Vial": 2}
+        victim = fighter("Victim", max_hp=max_hp, hp=1, position=5)
+        ally = fighter("Ally", position=40)
+        encounter = Encounter([thug, victim, ally], rng, items={"Vial": item})
+        advance_to(encounter, "Thug", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Victim"), FixedRandom(20))
+        assert victim.dying
+        encounter.advance(FixedRandom(15))
+        advance_to(encounter, "Thug", FixedRandom(15))
+        return encounter, victim
+
+    @staticmethod
+    def _throw_the_vial(encounter: Encounter) -> list[Event]:
+        return encounter.act(
+            Action(kind=ActionKind.USE_ITEM, item="Vial", target="Victim"), Random(3)
+        )
+
+    def test_a_third_failure_from_damage_is_announced_as_a_death(self) -> None:
+        """Killing an already-unconscious creature has to narrate.
+
+        ``_apply_damage`` decided whether to announce anything from
+        ``was_conscious and not conscious``, which is false for a creature that was
+        already at 0. So the creature died, the state said so, and the log said
+        nothing — the one event a narrator most needs.
+        """
+        fire = ItemEffect(
+            damage=Dice.parse("2d6"),
+            damage_type=DamageType.FIRE,
+            save_ability=Ability.DEXTERITY,
+            save_dc=13,
+            provenance=FIXTURE,
+        )
+        encounter, victim = self._fight_with_a_dying_creature(fire)
+        victim.death_save_failures = 2
+        events = self._throw_the_vial(encounter)
+        assert victim.dead
+        assert victim.death_save_failures == 3
+        assert "death" in kinds(events)
+        assert "failed death save" in detail_of(events, "death")
+
+    def test_massive_damage_to_a_dying_creature_is_announced_as_a_death(self) -> None:
+        # The second route to ``dead`` from 0 hit points, and it was equally silent:
+        # damage at 0 that equals or exceeds the maximum kills without ever
+        # accruing a failure.
+        bomb = ItemEffect(
+            damage=Dice(4, 6, 40), damage_type=DamageType.FIRE, provenance=FIXTURE
+        )
+        encounter, victim = self._fight_with_a_dying_creature(bomb, max_hp=25)
+        events = self._throw_the_vial(encounter)
+        assert victim.dead
+        # Killed by the massive-damage rule, so no failure was accrued...
+        assert victim.death_save_failures == 0
+        assert "death" in kinds(events)
+        # ...and the narration says which rule did it.
+        assert detail_of(events, "death") == "damage exceeded maximum hit points"
+
+    def test_a_creature_that_survives_the_hit_is_not_announced_dead(self) -> None:
+        # The guard on the fix: a dying creature that merely takes another failure
+        # still produces no death event.
+        fire = ItemEffect(
+            damage=Dice.parse("2d6"),
+            damage_type=DamageType.FIRE,
+            save_ability=Ability.DEXTERITY,
+            save_dc=13,
+            provenance=FIXTURE,
+        )
+        encounter, victim = self._fight_with_a_dying_creature(fire)
+        events = self._throw_the_vial(encounter)
+        assert victim.dying and not victim.dead
+        assert "death" not in kinds(events)
+        assert "down" not in kinds(events)
 
     def test_a_damaging_item_on_a_dying_creature_costs_a_failure(self) -> None:
         # The reachable path: an attack refuses an unconscious target and a spell
@@ -446,6 +654,37 @@ class TestSpellcasting:
                 Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=30),
                 rng,
             )
+
+    def test_a_slot_below_the_spells_level_is_refused_before_anything_is_spent(
+        self,
+    ) -> None:
+        """A refusal must cost nothing — not the slot, and not the action.
+
+        The check that a slot can carry the spell lives in ``resolve_spell``, which
+        runs after the action is marked used and the slot decremented. So the
+        refusal used to arrive having already taken both, and as a bare
+        ``ValueError`` that ``encounter_act`` does not catch — escaping the
+        "illegal actions are refused with the reason" contract as an unhandled
+        server error.
+        """
+        rng = Random(4)
+        wizard = caster()
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        encounter = Encounter([wizard, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="level 3 .* level 2 slot"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Fireball", slot_level=2, center=30),
+                rng,
+            )
+        assert wizard.spell_slots == {2: 1, 3: 1}
+        assert encounter.state()["turn_state"]["action_used"] is False
+        # The turn is intact, so the legal cast still goes through.
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=30),
+            Random(9),
+        )
+        assert wizard.spell_slots == {2: 1, 3: 0}
 
     def test_an_area_spell_catches_everyone_inside_its_radius(self) -> None:
         rng = Random(4)
@@ -812,10 +1051,9 @@ class TestSpellAttackAdvantage:
     ) -> None:
         # SRD 5.2, Prone: "An attack roll against you has Advantage if the
         # attacker is within 5 feet of you. Otherwise, that attack roll has
-        # Disadvantage." This pair is what pins the AttackKind a spell attack is
-        # classified as. MELEE collapses the engine's melee/range gate to exactly
-        # that distance clause; classifying a spell attack as RANGED would invert
-        # the first half of it.
+        # Disadvantage." The clause names a distance and no weapon, so a spell
+        # attack reads it exactly as a weapon does — nothing here needs to decide
+        # what kind of attack a spell is.
         near = self.bolt(target_conditions=(Condition.PRONE,), distance=5)
         far = self.bolt(target_conditions=(Condition.PRONE,), distance=30)
         assert self.rolled_with(near) == "advantage"
@@ -823,8 +1061,9 @@ class TestSpellAttackAdvantage:
 
     def test_the_cast_path_and_the_swing_path_agree_about_advantage(self) -> None:
         # The drift guard, and the half of it that still has two code paths to
-        # compare: spell_attack_advantage pins kind, attack_advantage reads it off
-        # the weapon, and against this target they have to land on the same answer.
+        # compare: spell_attack_advantage and attack_advantage assemble their
+        # arguments separately, and against this target they have to land on the
+        # same answer.
         rng = Random(4)
         wren = self.bolt_caster()
         target = self.mark(position=5, conditions=(Condition.PARALYZED,))

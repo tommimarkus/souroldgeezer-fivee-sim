@@ -261,6 +261,15 @@ class Encounter:
             self._emit("death", creature.name, detail="three failed death saves")
         elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
             creature.stable = True
+            # SRD 5.2, Death Saving Throws: "The number of both is reset to zero when
+            # you regain any Hit Points or become Stable." ``Creature.heal`` already
+            # covers the first clause; this is the second. Leaving the counters
+            # standing let a creature that was stabilised, then knocked down again,
+            # re-stabilise on its very next roll — even a *failed* one, since the
+            # failure landed short of three while the stale successes still tripped
+            # this branch.
+            creature.death_save_successes = 0
+            creature.death_save_failures = 0
             self._emit("stabilised", creature.name, detail="three successful death saves")
 
     def advance(self, rng: Random) -> list[Event]:
@@ -396,7 +405,6 @@ class Encounter:
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
-            kind=option.kind,
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
@@ -430,21 +438,18 @@ class Encounter:
         have to read the same either way, which they cannot if two functions decide
         it.
 
-        **On the ``kind``.** A spell has a ``range_feet``, not a melee/ranged kind,
-        and inventing one would be a data field every pack author had to set. It is
-        not needed. ``kind`` has exactly one job left inside
-        :func:`compute_attack_advantage` — gating the within-5-feet clause that
-        Prone states — and passing ``MELEE`` collapses that gate to ``distance <=
-        5``, which is verbatim the rule: "An attack roll against you has Advantage
-        if the attacker is within 5 feet of you. Otherwise, that attack roll has
-        Disadvantage." So this is not a claim that spells are melee weapons; it
-        selects the distance clause. ``RANGED`` would invert it inside 5 feet.
-        ``TestSpellAttackAdvantage`` pins both halves so the point survives editing.
+        **There is nothing left to classify.** A spell has a ``range_feet``, not a
+        melee/ranged kind, and inventing one would be a data field every pack author
+        had to set. It is not needed:
+        :func:`~fivee_sim.kernel.actions.compute_attack_advantage` now reads only
+        the distance, so this passes the same arguments the swing path does and the
+        question of what kind of attack a spell is never arises.
+        ``TestSpellAttackAdvantage`` pins both halves of the Prone clause so the
+        point survives editing.
         """
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
-            kind=AttackKind.MELEE,
             distance=actor.distance_to(target),
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
@@ -539,6 +544,17 @@ class Encounter:
         if spell is None:
             raise EncounterError(f"unknown spell {action.spell!r}")
         slot_level = action.slot_level if action.slot_level is not None else spell.level
+        # Every reason to refuse is gathered before a single thing is spent. The
+        # slot-level check in particular used to live only inside ``resolve_spell``,
+        # which runs after the action is marked used and the slot decremented — so a
+        # refusal cost the caster both, and arrived as a bare ``ValueError`` the MCP
+        # adapter does not catch. Validate here, in the layer that owns the state and
+        # speaks ``EncounterError``.
+        if slot_level < spell.level:
+            raise EncounterError(
+                f"{spell.name} is level {spell.level} and cannot be cast with a "
+                f"level {slot_level} slot"
+            )
         if spell.level > 0:
             available = actor.spell_slots.get(slot_level, 0)
             if available <= 0:
@@ -760,7 +776,6 @@ class Encounter:
         advantage = compute_attack_advantage(
             attacker_conditions=attacker.conditions,
             target_conditions=mover.conditions,
-            kind=melee.kind,
             distance=MELEE_THRESHOLD,
             extra_disadvantage=1 if self._dodge_benefits(mover) else 0,
             condition_effects=self.condition_effects,
@@ -787,6 +802,11 @@ class Encounter:
         if amount <= 0:
             return
         was_conscious = target.conscious
+        was_dead = target.dead
+        # Which rule killed the creature is not recoverable afterwards, so the
+        # failure count is read here: the massive-damage rule is the only route to
+        # death that accrues none.
+        failures_before = target.death_save_failures
         concentrating = target.concentrating_on
         # ``critical`` only matters for a target already at 0 hit points, where a
         # critical hit costs two death save failures instead of one.
@@ -807,11 +827,18 @@ class Encounter:
                 target.concentrating_on = None
                 self._emit("concentration", target.name,
                            detail=f"loses {concentrating} ({save.describe()})")
-        if was_conscious and not target.conscious:
-            if target.dead:
-                self._emit("death", target.name, detail="damage exceeded maximum hit points")
-            else:
-                self._emit("down", target.name, detail="falls unconscious and is dying")
+        # Death is announced from ``dead`` rather than from a loss of consciousness.
+        # Keying it on the latter meant a creature already at 0 — killed by its third
+        # failure, or by damage matching its maximum — died with the state correct
+        # and the log silent, which is the one event a narrator cannot do without.
+        if target.dead and not was_dead:
+            self._emit("death", target.name, detail=(
+                "a third failed death save"
+                if target.death_save_failures > failures_before
+                else "damage exceeded maximum hit points"
+            ))
+        elif was_conscious and not target.conscious:
+            self._emit("down", target.name, detail="falls unconscious and is dying")
 
     def _emit(self, kind: str, actor: str = "", target: str = "", detail: str = "") -> None:
         self.log.append(Event(kind=kind, actor=actor, target=target, detail=detail))

@@ -7,13 +7,13 @@ Resistance rounding — rather than restating what the code obviously does.
 
 from __future__ import annotations
 
+from inspect import signature
 from random import Random
 
 import pytest
 
 from fivee_sim.kernel.actions import (
     MELEE_THRESHOLD,
-    AttackKind,
     compute_attack_advantage,
     melee_hit_is_critical,
 )
@@ -201,28 +201,49 @@ class TestDerivedNumbers:
 
 
 class TestConditionInteractions:
-    def test_prone_gives_melee_advantage_and_ranged_disadvantage(self) -> None:
-        melee = compute_attack_advantage(
+    def test_prone_advantage_is_scoped_by_distance_not_by_weapon(self) -> None:
+        # SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "You have Disadvantage
+        # on attack rolls. An attack roll against you has Advantage if the attacker
+        # is within 5 feet of you. Otherwise, that attack roll has Disadvantage."
+        # The same shape as the Paralyzed/Unconscious automatic critical: it names a
+        # distance and no weapon kind, which is why this function takes no
+        # AttackKind. The boundary is what the old melee gate got wrong — a shot
+        # fired from inside 5 feet is still made by an attacker "within 5 feet".
+        assert compute_attack_advantage(
             attacker_conditions=(),
             target_conditions=(Condition.PRONE,),
-            kind=AttackKind.MELEE,
-            distance=5,
-        )
-        ranged = compute_attack_advantage(
+            distance=MELEE_THRESHOLD,
+        ) is Advantage.ADVANTAGE
+        assert compute_attack_advantage(
             attacker_conditions=(),
             target_conditions=(Condition.PRONE,),
-            kind=AttackKind.RANGED,
+            distance=MELEE_THRESHOLD + 5,
+        ) is Advantage.DISADVANTAGE
+        assert compute_attack_advantage(
+            attacker_conditions=(),
+            target_conditions=(Condition.PRONE,),
             distance=60,
+        ) is Advantage.DISADVANTAGE
+
+    def test_compute_attack_advantage_does_not_consult_the_weapon(self) -> None:
+        # The guard against reintroducing the gate: no source of Advantage in the
+        # table is scoped by melee/ranged, so the function has nothing to read an
+        # AttackKind for. ``long_range_penalty`` is the caller's job precisely
+        # because it is the one thing that *is* weapon-shaped.
+        parameters = signature(compute_attack_advantage).parameters
+        assert "kind" not in parameters
+        # ``from __future__ import annotations`` makes these strings, so match on the
+        # name rather than the class.
+        assert not any(
+            "AttackKind" in str(parameter.annotation)
+            for parameter in parameters.values()
         )
-        assert melee is Advantage.ADVANTAGE
-        assert ranged is Advantage.DISADVANTAGE
 
     def test_restrained_target_and_poisoned_attacker_cancel_out(self) -> None:
         assert (
             compute_attack_advantage(
                 attacker_conditions=(Condition.POISONED,),
                 target_conditions=(Condition.RESTRAINED,),
-                kind=AttackKind.MELEE,
                 distance=5,
             )
             is Advantage.NONE
@@ -233,7 +254,6 @@ class TestConditionInteractions:
             compute_attack_advantage(
                 attacker_conditions=(),
                 target_conditions=(),
-                kind=AttackKind.RANGED,
                 distance=200,
                 long_range_penalty=True,
             )
