@@ -903,7 +903,7 @@ class Encounter:
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
-            distance=actor.distance_to(target),
+            distance=actor.distance_to(target, self.movement_rule),
             extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )

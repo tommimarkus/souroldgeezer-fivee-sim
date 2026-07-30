@@ -18,7 +18,7 @@ from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
-from fivee_sim.kernel.grid import CoverGrade, Square
+from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
@@ -1991,7 +1991,7 @@ class TestSpellAttackAdvantage:
         )
         return wren
 
-    def mark(self, *, position: int, conditions: Sequence[str] = ()) -> Creature:
+    def mark(self, *, position: Point | int, conditions: Sequence[str] = ()) -> Creature:
         target = Creature(
             name="Mark",
             team="foes",
@@ -2137,6 +2137,28 @@ class TestSpellAttackAdvantage:
         encounter = Encounter([wren, near, far], rng, spellbook=spellbook())
         assert encounter.attack_forced_critical(wren, near)
         assert not encounter.attack_forced_critical(wren, far)
+
+    def test_the_two_paths_agree_under_a_five_ten_five_diagonal(self) -> None:
+        # The fight's DiagonalRule threads through every distance the stepper
+        # consults, and an off-axis Prone target is where a dropped rule shows:
+        # (5, 5) reads as 5 ft under the default 5-5-5 but 7 ft under this
+        # fight's 5-10-5, so Prone's within-5-feet clause flips with the rule.
+        # The cast path measured under the default, reading Advantage where the
+        # swing path read Disadvantage for the same geometry.
+        rng = Random(4)
+        wren = self.bolt_caster()
+        target = self.mark(position=(5, 5), conditions=(Condition.PRONE,))
+        encounter = Encounter(
+            [wren, target],
+            rng,
+            spellbook=spellbook(),
+            movement_rule=DiagonalRule.FIVE_TEN_FIVE,
+        )
+        dagger = wren.attacks[0]
+        assert encounter.spell_attack_advantage(wren, target) == encounter.attack_advantage(
+            wren, target, dagger
+        )
+        assert encounter.spell_attack_advantage(wren, target) is Advantage.DISADVANTAGE
 
 
 class TestTurnLegality:
