@@ -1,34 +1,69 @@
-# dndsim — a 5E-compatible simulation engine for Claude
+# souroldgeezer-fivee-sim
 
-A Claude Code marketplace and plugin that let Claude **run** tabletop combat
-rather than imagine it. The rules live in a Python engine exposed over the Model
-Context Protocol, so hit points, dice, initiative order, and conditions are
-computed and owned by the engine — not recalled by a language model.
+A 5E-compatible combat simulation engine for Claude Code™, by Sour Old Geezer.
+This repository is the marketplace source and the plugin tree.
 
 Compatible with fifth edition (2024 rules).
 
-> **Status: v1 complete, unpublished.** The engine, MCP server, plugin, skill,
-> a starter SRD data slice, and user-defined content packs all work end to end.
-> Not yet published to a remote marketplace.
+> **Status: v1 complete.** Engine, MCP server, plugin, skill, a starter SRD data
+> slice, and user-defined content packs all work end to end.
 
-## Why an engine instead of prose
+## What this is
 
 A model asked to track a fight will drift: hit points wander, a condition gets
-forgotten a round later, a die roll conveniently favours the narrative. Moving
-resolution into code makes the state authoritative and the randomness
-reproducible. Ask for the same seed twice and you get the same fight twice.
+forgotten a round later, a die roll conveniently favours the narrative. Here the
+rules live in a Python engine exposed over the Model Context Protocol, so hit
+points, dice, initiative order, and conditions are computed and owned by the
+engine rather than recalled. Ask for the same seed twice and you get the same
+fight twice.
 
-The same kernel serves two different questions:
+One kernel answers two questions:
 
 - **"What happens in this fight?"** — stateful tools step an encounter round by
   round, and Claude narrates what the engine reports.
-- **"Is this build actually good?"** — analytics tools replay the same stepper
+- **"Is this build actually good?"** — analytics tools replay that same stepper
   across thousands of seeded iterations and report a distribution.
 
-Both run on one rules kernel, so the statistics can never drift from the rules
-the live encounter uses.
+Because both run on the one kernel, the statistics cannot drift from the rules
+live play uses.
 
-## Tool surface
+| Plugin | Version | Skill | Agent |
+|---|---:|---|---|
+| `souroldgeezer-fivee-sim` | `2026.07.1` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
+
+## Install
+
+Needs Python 3.11+ and [`uv`](https://docs.astral.sh/uv/). The MCP launcher builds
+its own `uv`-managed environment on first run, so there is nothing to install
+globally.
+
+The marketplace is not published yet, so point Claude at a clone:
+
+```json
+// ~/.claude/settings.json
+{
+  "extraKnownMarketplaces": {
+    "souroldgeezer-tabletop": {
+      "source": { "source": "directory", "path": "/absolute/path/to/this/repo" }
+    }
+  },
+  "enabledPlugins": {
+    "souroldgeezer-fivee-sim@souroldgeezer-tabletop": true
+  }
+}
+```
+
+Once it is published, the same thing is two commands:
+
+```text
+/plugin marketplace add tommimarkus/souroldgeezer-fivee-sim
+/plugin install souroldgeezer-fivee-sim@souroldgeezer-tabletop
+```
+
+From a clone, `python3 scripts/check-mcp-handshake.py` verifies the MCP server
+independently of Claude.
+
+## Tools
 
 | Group | Tools |
 | --- | --- |
@@ -42,128 +77,58 @@ the seed it used, so no result is irreproducible after the fact.
 
 ## What is covered
 
-**[souroldgeezer-fivee-sim/docs/COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md)
-is the authoritative list** — every creature, spell, condition, damage type, and
-action, plus the printed features each stat block does not implement and the whole
-areas that are not modelled at all. It is generated from the data and a test fails
-if it drifts, so it cannot quietly become untrue.
+The bundled slice is deliberately narrow: 4 creatures, 4 spells, 14 conditions, 13
+damage types, 7 actions, and no items — items are modelled, but they arrive through
+a content pack. Weapon attacks with reach and ranged bands, movement, Dash,
+Disengage, Dodge, opportunity attacks, death saves, and damage resistance and
+vulnerability all work; spells carry saving throws, areas, upcasting, and
+concentration.
 
-The short version: 4 creatures and 4 spells — a deliberately narrow starting
-slice. **Characters, classes, species, backgrounds and feats are not modelled**;
-combatants are described by their statistics the way a stat block presents them.
-Simple usable items — potions, flasks, doses of poison — are modelled, but none
-ship: they arrive through a content pack.
+Limits worth knowing before you report one as a bug:
 
-Weapon attacks with reach and ranged bands, movement, Dash, Disengage, Dodge,
-opportunity attacks, death saves and instant death, damage resistance and
-vulnerability, usable items, and a curated spell set with saving throws, areas,
-upcasting, and concentration.
+- **No character building.** No classes, species, backgrounds, feats or levelling.
+  Combatants are described directly by their statistics, the way a stat block
+  presents them — there is no character sheet deriving those numbers.
+- **Geometry is a single axis.** Reach, ranged bands and spell radii work; facing,
+  flanking, cover, terrain and elevation do not exist.
+- **Opportunity attacks are the only reaction.** No readied actions, no Shield or
+  similar reaction spells, no legendary or lair actions.
+- **Nothing outside a fight.** No exploration, resting or recovery — an encounter
+  begins and ends, and resources do not regenerate between them.
+- **Exhaustion is not implemented**, though SRD 5.2 defines it, and Frightened
+  applies its disadvantage unconditionally because there is no visibility model.
 
-Fourteen conditions are implemented as a data table: Blinded, Charmed, Deafened,
-Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned,
-Prone, Restrained, Stunned, Unconscious. **Exhaustion is not** — SRD 5.2 defines
-it and this engine does not model it.
+[COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md) is the authoritative list —
+every creature, spell, condition, and action, plus the printed features each stat
+block skips. It is generated from the data and a test fails if it drifts, so it
+cannot quietly become untrue.
 
-Further deliberate limits, stated so they are not mistaken for bugs: geometry is
-a single axis, so there is no flanking or cover; Frightened applies its
-disadvantage unconditionally because there is no visibility model; and only SRD
-5.2 content ships, with each bundled stat block listing the printed traits the
-engine skips.
+## Your own content
 
-## Bringing your own content
+A campaign is not limited to what ships. Its creatures, spells, conditions and
+items go in a JSON **content pack** using the same format, parser and validation as
+the bundled data — there is one format, not a second dialect. Drop a pack in
+`.fivee-sim/content/` at the root of your campaign repository and the engine finds
+it with no configuration. Setting `FIVEE_SIM_BUILTIN=exclude` drops the bundled SRD
+content entirely, which is what lets you run this engine on material wholly your
+own. Validation is strict and names never collide silently: an unknown key is an
+error, because a mistyped `attack_bonus` would otherwise produce a creature that
+fights wrongly and looks fine.
 
-A campaign is not limited to what ships. Its own creatures, spells, conditions and
-usable items go in a JSON **content pack**, in the same format the bundled data
-uses — the SRD slice is loaded by the same parser and validated by the same rules,
-so there is one format rather than a second dialect.
+See [CONTENT-PACKS.md](souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md) for the
+format, the precedence rules, and a worked example.
 
-Drop a pack in `.fivee-sim/content/` at the root of a campaign repository and the
-engine finds it with no configuration. `FIVEE_SIM_BUILTIN=exclude` drops the
-bundled SRD content entirely, which is what lets a publisher run this engine on
-material that is wholly their own.
+## Contributing
 
-Names never collide silently: two packs claiming one name fail and say which files,
-and a pack that means to replace something declares `"overrides": true`. Validation
-is strict — an unknown key is an error, because a mistyped `attack_bonus` would
-otherwise produce a creature that fights wrongly and looks fine.
+[CLAUDE.md](CLAUDE.md) is the contributor guide — layer boundaries, the determinism
+rules the kernel holds to, and the test and lint commands.
 
-See
-**[souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md](souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md)**
-for the format, the precedence rules, and a worked example.
-
-## Layout
-
-```
-.claude-plugin/marketplace.json   marketplace manifest
-souroldgeezer-fivee-sim/                        the plugin
-  .claude-plugin/plugin.json      manifest + MCP server declaration
-  skills/                         how Claude drives the engine
-  agents/
-  engine/                         the Python rules engine
-  scripts/                        MCP stdio launcher
-scripts/hooks/                    local development hooks
-```
-
-## Requirements
-
-- Python 3.11+ (developed against 3.14)
-- [`uv`](https://docs.astral.sh/uv/) — the MCP launcher uses a `uv`-managed
-  project environment, so no global installs are needed
-
-## Trying it locally
-
-Register this directory as a marketplace, then enable the plugin:
-
-```bash
-# In Claude Code, add a directory-source marketplace pointing at this repo,
-# then enable the souroldgeezer-fivee-sim plugin. Verify the server independently with:
-python3 scripts/check-mcp-handshake.py
-```
-
-## Development
-
-```bash
-cd souroldgeezer-fivee-sim/engine
-uv sync                                    # builds .venv, dev group included
-uv run pytest && uv run ruff check . && uv run mypy
-```
-
-`uv` owns the virtual environment. At runtime the MCP launcher execs the venv's
-console script directly rather than going through `uv run`, so uv is only needed
-when the environment has to be built — and a venv left stale by a moved directory
-is detected and rebuilt automatically.
-
-See [CLAUDE.md](CLAUDE.md) for the layer boundaries, the determinism rules, and
-the character-device staging hazards in this workspace.
-
-## Roadmap
-
-- [x] Phase 0 — repo bootstrap, licence boundary, project guidance
-- [x] Phase 1 — local ip-hygiene development hook
-- [x] Phase 2 — marketplace + plugin skeleton
-- [x] Phase 3 — rules kernel and test suite
-- [x] Phase 4 — MCP server and launcher
-- [x] Phase 5 — skill and agent
-- [x] Phase 6 — SRD 5.2 data slice
-
-- [x] Phase 7 — user-defined content packs and usable items
-
-Next, in rough order of value: widen the data slice (it ships no items at all, and
-SRD 5.2 has some), add `encounter_legal_actions`, teach the auto-play policy to use
-items so analytics can see them, then reconsider the v1 exclusions —
-encounter/monster builder, whole-adventuring-day attrition, and build-space
-optimisation search.
-
-## Licence and attribution
+## Licence
 
 This repository's own code is MIT licensed — see [LICENSE](LICENSE).
 
-Game rules content is derived from the System Reference Document 5.2, which
-Wizards of the Coast LLC released under CC-BY-4.0. [NOTICE](NOTICE) carries the
-required attribution verbatim, records that the material has been modified (a
-subset transcribed into JSON, with some printed features not implemented), and
-states that the MIT grant covers this project's code rather than the SRD material.
-
-Note that SRD 5.2 does not cover the whole 2024 ruleset — some classes, species,
-and monsters are excluded from it, and excluded content therefore cannot ship
-here. [CLAUDE.md](CLAUDE.md) records the full boundary.
+Game rules content derives from the System Reference Document 5.2, which Wizards of
+the Coast LLC released under CC-BY-4.0. [NOTICE](NOTICE) carries the required
+attribution, records that the material has been modified, and states that the MIT
+grant covers this project's code rather than the SRD material. SRD 5.2 covers only
+part of the 2024 ruleset, and content absent from it cannot ship here.
