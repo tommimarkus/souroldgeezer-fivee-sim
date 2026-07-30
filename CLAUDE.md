@@ -21,29 +21,50 @@ hooks.** Do not try to write them; the content silently goes to `/dev/null`.
 Local development hooks live in `scripts/hooks/` and are wired from the user's
 own `~/.claude/settings.json` — see "Local development hook" below.
 
-### Worktrees cannot be fully removed here
+### Worktrees: only `add` is special
 
-The sandbox only permits writes inside the project, so implementation worktrees
-have to live at `.worktrees/<name>` — and the devcontainer replicates its
-character-device mounts *into* each one. `.worktrees/<name>/.claude/settings.json`
-and its siblings become live `devtmpfs` mounts, so:
+Implementation work belongs in a worktree rather than a branch in the primary
+checkout, so several agents can work the repo at once. The sandbox only permits
+writes inside the project, so they live at `.worktrees/<name>`. Expect `main` to
+move under you, and expect other `.worktrees/*` entries to belong to live agents.
 
-`git worktree remove` fails with **"Device or resource busy"**, and so does
-`rm -rf`, even after a clean merge.
+**`git worktree add` fails under the sandbox**, which presents `.git/worktrees`
+as read-only:
 
-This is not a merge problem and not something to retry. Close out like this:
-
-```bash
-git worktree remove --force .worktrees/<name>   # fails on the mounts; expected
-git worktree prune                              # metadata cleanup does succeed
-git branch --merged                             # confirm before deleting
-git branch -d <branch>
-rm -rf .worktrees/<name>                        # removes everything unmounted
+```
+fatal: could not create directory of '.git/worktrees/<name>': Read-only file system
 ```
 
-Git state ends up genuinely clean — `git worktree list` shows only the primary
-checkout. What survives is a few kilobytes of empty mount points. Leave them;
-they disappear when the container is recreated. Do not try to unmount them.
+Run that one command with the sandbox disabled. Everything else — `remove`,
+`prune`, `commit`, `merge`, `rm -rf` — works sandboxed.
+
+A fresh worktree has no `.venv`, and uv's cache is project-relative
+(`cache-dir = ".cache/uv"`), so a new one starts empty and `uv sync` would want
+network it does not have. Point it at the primary checkout's cache instead, and
+keep passing the variable to `uv run` in that worktree:
+
+```bash
+cd .worktrees/<name>/souroldgeezer-fivee-sim/engine
+export UV_CACHE_DIR=/home/souroldgeezer/repos/dndsim/souroldgeezer-fivee-sim/engine/.cache/uv
+uv sync
+```
+
+Closeout is ordinary:
+
+```bash
+git branch --merged                             # confirm before deleting
+git worktree remove --force .worktrees/<name>
+git worktree prune
+git branch -d <branch>
+```
+
+`prune` prints `failed to delete '.git/worktrees/fivee-sim': Device or resource
+busy` and still exits 0. That is one stale entry from a session predating the
+rename — the devcontainer holds character-device mounts over
+`.git/worktrees/fivee-sim/commondir` and `config.worktree` — and it has nothing
+to do with the worktree you just removed. Leave it; it goes when the container is
+recreated, and do not try to unmount it. Worktrees created today carry no such
+mounts, in the checkout or in the git metadata, and remove cleanly.
 
 ### Staging discipline
 
