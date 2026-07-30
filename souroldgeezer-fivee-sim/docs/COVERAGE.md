@@ -16,7 +16,7 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 | Spells | 4 |
 | Conditions | 14 |
 | Damage types | 13 |
-| Actions | 7 |
+| Actions | 8 |
 | Usable items | 0 bundled — the category is modelled, packs supply it |
 | Classes, species, backgrounds, feats | 0 — not modelled |
 
@@ -63,7 +63,7 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 ## Actions
 
-Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
+Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged.
 

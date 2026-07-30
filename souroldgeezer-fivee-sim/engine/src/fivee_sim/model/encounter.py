@@ -35,10 +35,28 @@ from ..kernel.conditions import (
     speed_is_zero,
 )
 from ..kernel.dice import Advantage, roll_d20
-from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
+from ..kernel.grid import (
+    FEET_PER_SQUARE,
+    TERRAIN,
+    CoverGrade,
+    DiagonalRule,
+    Point,
+    Square,
+    TerrainEffect,
+    TerrainTable,
+    as_point,
+    cover_ac_bonus,
+    distance_feet,
+    find_path,
+    square_center,
+    terrain_effect_of,
+    to_square,
+)
+from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellTarget, resolve_spell
+from .battlemap import BattleMap, MapState
 from .creature import AttackOption, Creature
 
 DEATH_SAVE_DC = 10
@@ -54,6 +72,7 @@ class ActionKind(StrEnum):
     DISENGAGE = "disengage"
     DODGE = "dodge"
     USE_ITEM = "use_item"
+    INTERACT = "interact"
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,8 +106,9 @@ class Action:
 #: by test, not a constraint the model enforces.
 EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
-    "disengage", "dodge", "down", "heal", "move", "opportunity_attack", "round",
-    "spell_effect", "stabilised", "turn_end", "turn_start", "use_item",
+    "disengage", "dodge", "down", "heal", "interact", "move",
+    "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
+    "turn_start", "use_item",
 })
 
 
@@ -174,6 +194,7 @@ class TurnState:
     movement_left: int = 0
     action_used: bool = False
     attacks_left: int = 0
+    interaction_used: bool = False
 
 
 class Encounter:
@@ -188,6 +209,8 @@ class Encounter:
         items: Mapping[str, ItemEffect] | None = None,
         condition_effects: ConditionTable | None = None,
         movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
+        battle_map: BattleMap | None = None,
+        terrain_effects: TerrainTable | None = None,
     ) -> None:
         if len(combatants) < 2:
             raise EncounterError("an encounter needs at least two combatants")
@@ -208,6 +231,14 @@ class Encounter:
         self.condition_effects: ConditionTable = (
             dict(condition_effects) if condition_effects is not None else EFFECTS
         )
+        self.terrain_effects: TerrainTable = (
+            dict(terrain_effects) if terrain_effects is not None else TERRAIN
+        )
+        self.battle_map = battle_map
+        self.map_state: MapState | None = None
+        self._feature_squares: dict[Square, str] = {}
+        if battle_map is not None:
+            self._adopt_map(battle_map, combatants)
         # Combatants are handed the encounter's table rather than trusted to carry
         # the right one. Analytics builds its damage-per-round dummy directly, with
         # no route for a caller to pass a table, so without this a fight could hold
@@ -236,6 +267,141 @@ class Encounter:
         )
         self.turn_index = 0
         self._begin_turn(rng)
+
+    # --- the battle map ---------------------------------------------------
+    def _adopt_map(self, battle_map: BattleMap, combatants: Sequence[Creature]) -> None:
+        """Validate the map against the terrain table and place the combatants.
+
+        Everything a map can get wrong is refused here, before the first roll:
+        a terrain kind the captured table does not define, a feature off the map
+        or doubled up on a square, a combatant off the map, inside a wall, or on
+        another combatant. Positions are snapped to the centre of their square —
+        on a grid, the square is the position.
+        """
+        if battle_map.width < 1 or battle_map.height < 1:
+            raise EncounterError(
+                f"a battle map needs at least one square; "
+                f"got {battle_map.width}x{battle_map.height}"
+            )
+        named = {battle_map.default_terrain, *battle_map.terrain.values()}
+        for feature in battle_map.features.values():
+            named.add(feature.closed_terrain)
+            named.add(feature.open_terrain)
+        unknown = sorted(kind for kind in named if kind not in self.terrain_effects)
+        if unknown:
+            defined = ", ".join(sorted(self.terrain_effects)) or "none"
+            raise EncounterError(
+                f"the map names terrain the loaded content does not define: "
+                f"{', '.join(unknown)}. Defined: {defined}"
+            )
+        for name, feature in battle_map.features.items():
+            if not self._on_map(feature.square):
+                raise EncounterError(
+                    f"feature {name!r} sits at {feature.square}, off the "
+                    f"{battle_map.width}x{battle_map.height} map"
+                )
+            other = self._feature_squares.get(feature.square)
+            if other is not None:
+                raise EncounterError(
+                    f"features {other!r} and {name!r} share square {feature.square}"
+                )
+            self._feature_squares[feature.square] = name
+        self.map_state = MapState(open_features={
+            name for name, feature in battle_map.features.items()
+            if feature.initially_open
+        })
+
+        placed: dict[Square, str] = {}
+        for creature in combatants:
+            square = to_square(as_point(creature.position))
+            if not self._on_map(square):
+                raise EncounterError(
+                    f"{creature.name} starts at {as_point(creature.position)}, off the "
+                    f"{battle_map.width}x{battle_map.height} map"
+                )
+            if self._entry_cost(square) is None:
+                raise EncounterError(
+                    f"{creature.name} starts on impassable "
+                    f"{self._terrain_at(square)!r} at {square}"
+                )
+            other = placed.get(square)
+            if other is not None:
+                raise EncounterError(
+                    f"{creature.name} and {other} both start in square {square}"
+                )
+            placed[square] = creature.name
+            creature.position = square_center(square)
+
+    def _on_map(self, square: Square) -> bool:
+        assert self.battle_map is not None
+        return 0 <= square[0] < self.battle_map.width and (
+            0 <= square[1] < self.battle_map.height
+        )
+
+    def _terrain_at(self, square: Square) -> str:
+        """What one square is right now: feature state first, then the map."""
+        assert self.battle_map is not None and self.map_state is not None
+        feature_name = self._feature_squares.get(square)
+        if feature_name is not None:
+            feature = self.battle_map.features[feature_name]
+            if feature_name in self.map_state.open_features:
+                return feature.open_terrain
+            return feature.closed_terrain
+        return self.battle_map.terrain.get(square, self.battle_map.default_terrain)
+
+    def _terrain_effect(self, square: Square) -> TerrainEffect:
+        return terrain_effect_of(self._terrain_at(square), self.terrain_effects)
+
+    def _entry_cost(self, square: Square) -> int | None:
+        """Feet to enter a square, or ``None`` off the map or into a wall."""
+        if not self._on_map(square):
+            return None
+        effect = self._terrain_effect(square)
+        if not effect.passable:
+            return None
+        return FEET_PER_SQUARE * effect.move_cost_multiplier
+
+    def _opaque(self, square: Square) -> bool:
+        return self._on_map(square) and self._terrain_effect(square).opaque
+
+    def _cover_of(self, square: Square) -> int:
+        """The cover a square contributes to a sight line. Opaque means total."""
+        if not self._on_map(square):
+            return 0
+        effect = self._terrain_effect(square)
+        if effect.opaque:
+            return int(CoverGrade.TOTAL)
+        return effect.cover
+
+    def _occupied(self) -> dict[Square, str]:
+        """Which squares conscious creatures stand in. A downed body blocks nothing."""
+        return {
+            to_square(as_point(creature.position)): creature.name
+            for creature in self.creatures.values()
+            if creature.conscious
+        }
+
+    def cover_between(self, attacker_name: str, target_name: str) -> CoverGrade:
+        """The cover the target has against the attacker, on this fight's map.
+
+        Public for the same reason as :meth:`attack_advantage`: the auto-play
+        policy must weigh cover with the same eyes the stepper resolves it, not
+        re-derive it. Without a map there is no cover at all.
+        """
+        if self.battle_map is None:
+            return CoverGrade.NONE
+        attacker = self.creatures[attacker_name]
+        target = self.creatures[target_name]
+        occupied = frozenset(
+            square for square, name in self._occupied().items()
+            if name not in (attacker_name, target_name)
+        )
+        return grid_cover_between(
+            to_square(as_point(attacker.position)),
+            to_square(as_point(target.position)),
+            cover_of=self._cover_of,
+            occupied=occupied,
+        )
 
     # --- queries ----------------------------------------------------------
     @property
@@ -279,9 +445,29 @@ class Encounter:
                 "movement_left": self._turn.movement_left,
                 "action_used": self._turn.action_used,
                 "attacks_left": self._turn.attacks_left,
+                "interaction_used": self._turn.interaction_used,
             },
+            "map": self._map_state(),
             "combatants": [self._creature_state(c) for c in
                            (self.creatures[n] for n in self.order)],
+        }
+
+    def _map_state(self) -> dict[str, Any] | None:
+        if self.battle_map is None or self.map_state is None:
+            return None
+        return {
+            "name": self.battle_map.name,
+            "width": self.battle_map.width,
+            "height": self.battle_map.height,
+            "movement_rule": self.movement_rule.value,
+            "features": {
+                name: {
+                    "square": list(feature.square),
+                    "kind": feature.kind,
+                    "open": name in self.map_state.open_features,
+                }
+                for name, feature in sorted(self.battle_map.features.items())
+            },
         }
 
     def _creature_state(self, creature: Creature) -> dict[str, Any]:
@@ -421,6 +607,8 @@ class Encounter:
                 self._emit("disengage", actor.name, detail="no opportunity attacks this turn")
             case ActionKind.USE_ITEM:
                 self._do_use_item(actor, action, rng)
+            case ActionKind.INTERACT:
+                self._do_interact(actor, action)
             case ActionKind.DODGE:
                 self._require_action(actor)
                 self._turn.action_used = True
@@ -475,15 +663,25 @@ class Encounter:
                        f"{option.name} cannot reach ({distance} ft > {reach} ft)",
                        attack=option.name, out_of_range=True)
             return
+        # Total cover refuses the attack before it is spent, exactly as being out
+        # of reach does: there is no roll to make against a target that cannot be
+        # targeted, so nothing is consumed and nothing random happens.
+        grade = self.cover_between(actor.name, target.name)
+        if grade is CoverGrade.TOTAL:
+            self._emit("attack", actor.name, target.name,
+                       f"{option.name} has no line to {target.name} (total cover)",
+                       attack=option.name, total_cover=True)
+            return
 
         self._turn.attacks_left -= 1
         if self._turn.attacks_left == actor.attacks_per_action - 1:
             self._turn.action_used = True
 
+        cover_bonus = cover_ac_bonus(grade)
         resolution = resolve_attack(
             rng,
             attack_bonus=option.attack_bonus,
-            target_ac=target.ac,
+            target_ac=target.ac + cover_bonus,
             damage=option.damage,
             advantage=self.attack_advantage(actor, target, option),
             forced_critical=self.attack_forced_critical(actor, target, option),
@@ -491,15 +689,20 @@ class Encounter:
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
         )
+        cover_note = ""
+        if grade is not CoverGrade.NONE:
+            label = "half" if grade is CoverGrade.HALF else "three-quarters"
+            cover_note = f" ({label} cover, +{cover_bonus} AC)"
         self._emit("attack", actor.name, target.name,
-                   f"{option.name}: {resolution.describe()}",
+                   f"{option.name}: {resolution.describe()}{cover_note}",
                    attack=option.name,
                    hit=resolution.hit,
                    critical=resolution.critical,
                    natural=resolution.attack.roll.natural,
                    total=resolution.attack.total,
                    advantage=resolution.advantage.value,
-                   damage=resolution.damage_dealt)
+                   damage=resolution.damage_dealt,
+                   cover=int(grade))
         if resolution.hit:
             self._apply_damage(target, resolution.damage_dealt, rng)
 
@@ -777,11 +980,14 @@ class Encounter:
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.to_position is None:
             raise EncounterError("moving needs 'to_position'")
-        if action.path:
-            raise EncounterError("waypoints need a battle map; this fight has none")
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
+        if self.battle_map is not None:
+            self._do_move_mapped(actor, action, rng)
+            return
+        if action.path:
+            raise EncounterError("waypoints need a battle map; this fight has none")
         origin = as_point(actor.position)
         destination = as_point(action.to_position)
         distance = distance_feet(origin, destination, self.movement_rule)
@@ -806,6 +1012,161 @@ class Encounter:
             if enemy.distance_to(actor, self.movement_rule) <= MELEE_THRESHOLD:
                 continue
             self._opportunity_attack(enemy, actor, rng)
+
+    def _do_move_mapped(self, actor: Creature, action: Action, rng: Random) -> None:
+        """Move on the battle map: routed, terrain-costed, provoking on the way.
+
+        The destination must be an on-map, passable, unoccupied square. The route
+        is either the caller's explicit ``path``, validated leg by leg, or the
+        cheapest one :func:`~fivee_sim.kernel.grid.find_path` finds; enemy-held
+        squares block either way, allies' squares can be crossed but not ended
+        in. The cost is charged up front and the walk replays square by square,
+        so leaving any threatening enemy's reach on the way provokes — a
+        pass-through is not laundered by where the move ends.
+        """
+        assert self.battle_map is not None and action.to_position is not None
+        origin = as_point(actor.position)
+        origin_sq = to_square(origin)
+        dest_sq = to_square(as_point(action.to_position))
+        destination = square_center(dest_sq)
+        if not self._on_map(dest_sq):
+            raise EncounterError(
+                f"{dest_sq} is off the {self.battle_map.width}x"
+                f"{self.battle_map.height} map"
+            )
+        if self._entry_cost(dest_sq) is None:
+            raise EncounterError(
+                f"cannot end a move on impassable {self._terrain_at(dest_sq)!r} "
+                f"at {dest_sq}"
+            )
+        occupied = self._occupied()
+        holder = occupied.get(dest_sq)
+        if holder is not None and holder != actor.name:
+            raise EncounterError(f"square {dest_sq} is occupied by {holder}")
+        enemy_squares = frozenset(
+            square for square, name in occupied.items()
+            if self.creatures[name].team != actor.team
+        )
+
+        if action.path:
+            route = [origin_sq, *(to_square(as_point(point)) for point in action.path)]
+            if route[-1] != dest_sq:
+                raise EncounterError(
+                    f"the path ends at {route[-1]}, not at the destination {dest_sq}"
+                )
+            cost = 0
+            parity = 0
+            for previous, step in zip(route, route[1:], strict=False):
+                dx = abs(step[0] - previous[0])
+                dy = abs(step[1] - previous[1])
+                if max(dx, dy) != 1:
+                    raise EncounterError(
+                        f"path step {previous} -> {step} is not to an adjacent square"
+                    )
+                if not self._on_map(step):
+                    raise EncounterError(
+                        f"the path leaves the map at {step}"
+                    )
+                entering = self._entry_cost(step)
+                if entering is None:
+                    raise EncounterError(
+                        f"the path enters impassable {self._terrain_at(step)!r} "
+                        f"at {step}"
+                    )
+                if step in enemy_squares:
+                    raise EncounterError(
+                        f"the path passes through {occupied[step]}'s square {step}"
+                    )
+                if dx and dy and self.movement_rule is DiagonalRule.FIVE_TEN_FIVE:
+                    cost += entering * 2 if parity else entering
+                    parity ^= 1
+                else:
+                    cost += entering
+        else:
+            found = find_path(
+                origin_sq,
+                dest_sq,
+                entry_cost=self._entry_cost,
+                rule=self.movement_rule,
+                bounds=(self.battle_map.width, self.battle_map.height),
+                blocked=enemy_squares,
+            )
+            if found is None:
+                raise EncounterError(
+                    f"no route to {dest_sq}: walls, terrain, or enemies block the way"
+                )
+            route = list(found.squares)
+            cost = found.cost_feet
+        if cost > self._turn.movement_left:
+            raise EncounterError(
+                f"{actor.name} has {self._turn.movement_left} ft of movement, "
+                f"needs {cost} ft"
+            )
+
+        self._turn.movement_left -= cost
+        self._emit("move", actor.name,
+                   detail=f"{origin} -> {destination} ({cost} ft used)",
+                   origin=origin, destination=destination, cost=cost,
+                   squares=[list(square) for square in route])
+        suppressed = self._disengaged[actor.name]
+        for previous, step in zip(route, route[1:], strict=False):
+            threatening: list[Creature] = []
+            if not suppressed:
+                threatening = [
+                    enemy for enemy in self.enemies_of(actor.name)
+                    if distance_feet(
+                        as_point(enemy.position), square_center(previous),
+                        self.movement_rule,
+                    ) <= MELEE_THRESHOLD
+                ]
+            actor.position = square_center(step)
+            for enemy in threatening:
+                if distance_feet(
+                    as_point(enemy.position), square_center(step), self.movement_rule
+                ) <= MELEE_THRESHOLD:
+                    continue
+                self._opportunity_attack(enemy, actor, rng)
+            if not actor.conscious:
+                # Dropped mid-stride: the walk ends where the mover fell, and the
+                # state — not the move event's declared destination — is the truth.
+                return
+
+    def _do_interact(self, actor: Creature, action: Action) -> None:
+        """Open or close a named map feature. Free, once per turn, from adjacency."""
+        if self.battle_map is None or self.map_state is None:
+            raise EncounterError(
+                "there is no battle map, so there is nothing to interact with"
+            )
+        if action.feature is None:
+            raise EncounterError("interacting needs 'feature'")
+        feature = self.battle_map.features.get(action.feature)
+        if feature is None:
+            available = ", ".join(sorted(self.battle_map.features)) or "none"
+            raise EncounterError(
+                f"no feature named {action.feature!r}; the map has: {available}"
+            )
+        if self._turn.interaction_used:
+            raise EncounterError(
+                f"{actor.name} has already interacted with a feature this turn"
+            )
+        actor_sq = to_square(as_point(actor.position))
+        apart = max(
+            abs(actor_sq[0] - feature.square[0]), abs(actor_sq[1] - feature.square[1])
+        )
+        if apart > 1:
+            raise EncounterError(
+                f"{feature.name} is at {feature.square}, out of reach from "
+                f"{actor_sq}; stand on or next to it"
+            )
+        self._turn.interaction_used = True
+        now_open = feature.name not in self.map_state.open_features
+        if now_open:
+            self.map_state.open_features.add(feature.name)
+        else:
+            self.map_state.open_features.discard(feature.name)
+        self._emit("interact", actor.name,
+                   detail=f"{'opens' if now_open else 'closes'} {feature.name}",
+                   feature=feature.name, open=now_open)
 
     def _opportunity_attack(self, attacker: Creature, mover: Creature, rng: Random) -> None:
         if not self._reaction_available.get(attacker.name, False) or not attacker.active:
@@ -899,6 +1260,8 @@ def build_encounter(
     items: Mapping[str, ItemEffect] | None = None,
     condition_effects: ConditionTable | None = None,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
+    battle_map: BattleMap | None = None,
+    terrain_effects: TerrainTable | None = None,
 ) -> tuple[Encounter, Random]:
     """Create an encounter and the generator that drives it, from a seed alone."""
     rng = Random(seed)
@@ -909,5 +1272,7 @@ def build_encounter(
         items=items,
         condition_effects=condition_effects,
         movement_rule=movement_rule,
+        battle_map=battle_map,
+        terrain_effects=terrain_effects,
     )
     return encounter, rng

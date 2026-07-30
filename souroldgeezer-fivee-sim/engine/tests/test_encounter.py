@@ -17,7 +17,9 @@ from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.grid import CoverGrade, Square
 from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.model.battlemap import BattleMap, MapFeature
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -327,6 +329,443 @@ class TestPlanarMovement:
             encounter.act(
                 Action(kind=ActionKind.MOVE, to_position=(10, 0), path=((5, 0),)), rng
             )
+
+
+def archer(name: str = "Sylvi", *, position: int | tuple[int, int] = 0,
+           team: str = "party") -> Creature:
+    return Creature(
+        name=name,
+        team=team,
+        ac=14,
+        max_hp=20,
+        attacks=(
+            AttackOption(
+                name="Shortbow",
+                attack_bonus=5,
+                damage=Dice(1, 6, 3),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=80,
+                long_range=320,
+                provenance=FIXTURE,
+            ),
+        ),
+        position=position,
+        provenance=FIXTURE,
+    )
+
+
+def strip(
+    width: int,
+    height: int = 1,
+    *,
+    terrain: dict[Square, str] | None = None,
+    features: tuple[MapFeature, ...] = (),
+) -> BattleMap:
+    return BattleMap(
+        name="test map",
+        width=width,
+        height=height,
+        terrain=terrain or {},
+        features={feature.name: feature for feature in features},
+        provenance=FIXTURE,
+    )
+
+
+class TestMapMovement:
+    def test_difficult_terrain_charges_double_for_every_entered_square(self) -> None:
+        rng = Random(1)
+        battle_map = strip(6, terrain={(2, 0): "difficult", (3, 0): "difficult"})
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(25, 0))], rng,
+            battle_map=battle_map,
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 30  # 5 + 10 + 10 + 5
+        assert move.data["squares"] == [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
+    def test_a_move_the_terrain_makes_unaffordable_is_refused(self) -> None:
+        rng = Random(1)
+        battle_map = strip(7, terrain={(2, 0): "difficult", (3, 0): "difficult"})
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(30, 0))], rng,
+            battle_map=battle_map,
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="needs 35 ft"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(25, 0)), rng)
+
+    def test_a_wall_forces_the_route_around_it(self) -> None:
+        rng = Random(1)
+        battle_map = strip(4, 3, terrain={(1, 0): "wall", (1, 1): "wall"})
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 10))], rng,
+            battle_map=battle_map,
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 20
+        walked = {tuple(square) for square in move.data["squares"]}
+        assert not walked & {(1, 0), (1, 1)}
+
+    def test_a_walled_off_destination_is_refused(self) -> None:
+        rng = Random(1)
+        battle_map = strip(4, terrain={(1, 0): "wall"})
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng,
+            battle_map=battle_map,
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="no route"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
+
+    def test_a_move_may_not_end_on_a_conscious_creature(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(10, 0))], rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="occupied by Wolf"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
+
+    def test_a_move_off_the_map_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(10, 0))], rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="off the 5x1 map"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(40, 0)), rng)
+
+    def test_allies_can_be_crossed_but_not_stopped_on(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [
+                fighter(),
+                fighter("Ally", position=(10, 0)),
+                make_monster("Wolf", position=(20, 0)),
+            ],
+            rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(15, 0)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert [2, 0] in move.data["squares"]  # straight through the ally
+
+    def test_an_enemy_blocks_the_only_route(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [
+                fighter(),
+                make_monster("Goblin Warrior", label="Goblin", position=(10, 0)),
+                make_monster("Wolf", position=(20, 0)),
+            ],
+            rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="no route"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(15, 0)), rng)
+
+    def test_passing_through_reach_provokes_even_when_the_move_ends_clear(self) -> None:
+        # The 1-D endpoint check never caught this: start and end both out of
+        # reach, with the walk crossing the goblin's threat on the way.
+        rng = Random(6)
+        battle_map = strip(5, 2)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=(10, 5))
+        encounter = Encounter([fighter(), goblin], rng, battle_map=battle_map)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), FixedRandom(20)
+        )
+        assert "opportunity_attack" in kinds(events)
+
+    def test_disengage_suppresses_the_pass_through_attack(self) -> None:
+        rng = Random(6)
+        battle_map = strip(5, 2)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=(10, 5))
+        encounter = Encounter([fighter(), goblin], rng, battle_map=battle_map)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.DISENGAGE), rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), FixedRandom(20)
+        )
+        assert "opportunity_attack" not in kinds(events)
+
+    def test_an_explicit_path_is_honoured_when_legal(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(20, 0))], rng,
+            battle_map=strip(5, 2),
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(
+                kind=ActionKind.MOVE,
+                to_position=(10, 0),
+                path=((5, 5), (10, 5), (10, 0)),
+            ),
+            rng,
+        )
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["squares"] == [[0, 0], [1, 1], [2, 1], [2, 0]]
+        assert move.data["cost"] == 15
+
+    def test_a_path_with_a_gap_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(20, 0))], rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="not to an adjacent square"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0), path=((10, 0),)),
+                rng,
+            )
+
+    def test_a_path_through_a_wall_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng,
+            battle_map=strip(4, terrain={(1, 0): "wall"}),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="impassable 'wall'"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0),
+                       path=((5, 0), (10, 0))),
+                rng,
+            )
+
+    def test_a_path_must_end_at_the_destination(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(20, 0))], rng,
+            battle_map=strip(5),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="ends at"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0), path=((5, 0),)),
+                rng,
+            )
+
+
+class TestMapPlacement:
+    def test_starting_inside_a_wall_is_refused(self) -> None:
+        with pytest.raises(EncounterError, match="impassable 'wall'"):
+            Encounter(
+                [fighter(position=(5, 0)), make_monster("Wolf", position=(15, 0))],
+                Random(1),
+                battle_map=strip(4, terrain={(1, 0): "wall"}),
+            )
+
+    def test_starting_off_the_map_is_refused(self) -> None:
+        with pytest.raises(EncounterError, match="off the 4x1 map"):
+            Encounter(
+                [fighter(position=(25, 0)), make_monster("Wolf", position=(15, 0))],
+                Random(1),
+                battle_map=strip(4),
+            )
+
+    def test_two_combatants_may_not_share_a_square(self) -> None:
+        with pytest.raises(EncounterError, match="both start in square"):
+            Encounter(
+                [fighter(position=(0, 0)), make_monster("Wolf", position=(2, 2))],
+                Random(1),
+                battle_map=strip(4),
+            )
+
+    def test_positions_snap_to_the_centre_of_their_square(self) -> None:
+        encounter = Encounter(
+            [fighter(position=(7, 3)), make_monster("Wolf", position=(15, 0))],
+            Random(1),
+            battle_map=strip(4),
+        )
+        assert encounter.creatures["Thora"].position == (5, 0)
+
+    def test_a_map_naming_unknown_terrain_is_refused_with_the_loaded_kinds(
+        self,
+    ) -> None:
+        with pytest.raises(EncounterError, match="vale-lava"):
+            Encounter(
+                [fighter(), make_monster("Wolf", position=(15, 0))],
+                Random(1),
+                battle_map=strip(4, terrain={(2, 0): "vale-lava"}),
+            )
+
+    def test_the_map_block_appears_in_state(self) -> None:
+        door = MapFeature(name="crypt door", square=(1, 0))
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))],
+            Random(1),
+            battle_map=strip(4, features=(door,)),
+        )
+        block = encounter.state()["map"]
+        assert block == {
+            "name": "test map",
+            "width": 4,
+            "height": 1,
+            "movement_rule": "5-5-5",
+            "features": {
+                "crypt door": {"square": [1, 0], "kind": "door", "open": False},
+            },
+        }
+
+    def test_a_mapless_fight_reports_no_map(self) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf", position=5)], Random(1))
+        assert encounter.state()["map"] is None
+
+
+class TestCoverChangesTheAttack:
+    #: A full wall column with no gap: the only geometry that seals sight, since
+    #: the corner rule sees past a lone pillar.
+    WALL_COLUMN = {(2, 0): "wall", (2, 1): "wall", (2, 2): "wall"}
+
+    def duel(self, terrain: dict[Square, str]) -> Encounter:
+        rng = Random(3)
+        encounter = Encounter(
+            [archer(position=(0, 5)),
+             make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
+            rng,
+            battle_map=strip(5, 3, terrain=terrain),
+        )
+        advance_to(encounter, "Sylvi", rng)
+        return encounter
+
+    def test_half_cover_turns_a_pinned_hit_into_a_miss(self) -> None:
+        # Natural 11 + 5 = 16: a hit against AC 15 in the open, a miss against
+        # 15 + 2 behind the half-cover pillar. Same roll, different fight.
+        open_ground = self.duel({})
+        events = open_ground.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin"), FixedRandom(11)
+        )
+        assert events[0].data["hit"]
+        assert events[0].data["cover"] == 0
+
+        covered = self.duel({(2, 1): "half-cover"})
+        events = covered.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin"), FixedRandom(11)
+        )
+        assert not events[0].data["hit"]
+        assert events[0].data["cover"] == 1
+        assert "half cover, +2 AC" in events[0].detail
+
+    def test_total_cover_refuses_without_consuming_the_attack(self) -> None:
+        sealed = self.duel(self.WALL_COLUMN)
+        before = sealed.state()["turn_state"]
+        events = sealed.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin"), FixedRandom(20)
+        )
+        assert events[0].data["total_cover"]
+        assert "total cover" in events[0].detail
+        goblin = sealed.creatures["Goblin"]
+        assert goblin.hp == goblin.max_hp
+        assert sealed.state()["turn_state"] == before
+
+    def test_cover_between_is_the_public_authority(self) -> None:
+        assert self.duel({}).cover_between("Sylvi", "Goblin") is CoverGrade.NONE
+        assert self.duel({(2, 1): "half-cover"}).cover_between(
+            "Sylvi", "Goblin"
+        ) is CoverGrade.HALF
+        assert self.duel(self.WALL_COLUMN).cover_between(
+            "Sylvi", "Goblin"
+        ) is CoverGrade.TOTAL
+
+    def test_an_intervening_creature_grants_half_cover(self) -> None:
+        rng = Random(3)
+        encounter = Encounter(
+            [
+                archer(position=(0, 5)),
+                fighter("Ally", position=(10, 5)),
+                make_monster("Goblin Warrior", label="Goblin", position=(20, 5)),
+            ],
+            rng,
+            battle_map=strip(5, 3),
+        )
+        assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.HALF
+
+
+class TestInteract:
+    def corridor(self) -> tuple[Encounter, Random]:
+        """A doorway in an otherwise solid wall: walls above and below, door in
+        the middle row, archer on one side and goblin on the other."""
+        rng = Random(3)
+        door = MapFeature(name="door", square=(1, 1))
+        encounter = Encounter(
+            [archer(position=(0, 5)),
+             make_monster("Goblin Warrior", label="Goblin", position=(15, 5))],
+            rng,
+            battle_map=strip(
+                4, 3, terrain={(1, 0): "wall", (1, 2): "wall"}, features=(door,)
+            ),
+        )
+        advance_to(encounter, "Sylvi", rng)
+        return encounter, rng
+
+    def test_a_closed_door_blocks_sight_and_passage_until_opened(self) -> None:
+        encounter, rng = self.corridor()
+        assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.TOTAL
+        with pytest.raises(EncounterError, match="no route"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 5)), rng)
+
+        events = encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        assert events[0].kind == "interact"
+        assert events[0].data == {"feature": "door", "open": True}
+        assert encounter.state()["map"]["features"]["door"]["open"] is True
+        assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.NONE
+        encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 5)), rng)
+        assert encounter.creatures["Sylvi"].position == (10, 5)
+
+    def test_interacting_is_free_but_only_once_per_turn(self) -> None:
+        encounter, rng = self.corridor()
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        assert not encounter.state()["turn_state"]["action_used"]
+        with pytest.raises(EncounterError, match="already interacted"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+
+    def test_the_same_creature_can_close_it_again_next_turn(self) -> None:
+        encounter, rng = self.corridor()
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        for _ in range(4):
+            encounter.advance(rng)
+            if encounter.current_name == "Sylvi":
+                break
+        events = encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        assert events[0].data == {"feature": "door", "open": False}
+
+    def test_a_feature_out_of_reach_is_refused(self) -> None:
+        rng = Random(3)
+        door = MapFeature(name="far door", square=(3, 0))
+        encounter = Encounter(
+            [archer(), make_monster("Goblin Warrior", label="Goblin",
+                                    position=(20, 0))],
+            rng,
+            battle_map=strip(5, features=(door,)),
+        )
+        advance_to(encounter, "Sylvi", rng)
+        with pytest.raises(EncounterError, match="out of reach"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="far door"), rng)
+
+    def test_an_unknown_feature_lists_what_the_map_has(self) -> None:
+        encounter, rng = self.corridor()
+        with pytest.raises(EncounterError, match="the map has: door"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="portcullis"), rng)
+
+    def test_interacting_without_a_map_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter([fighter(), make_monster("Wolf", position=5)], rng)
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="no battle map"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
 
 
 class TestSpellcasting:

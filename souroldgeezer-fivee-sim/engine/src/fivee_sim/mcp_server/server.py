@@ -46,6 +46,7 @@ from ..kernel.actions import AttackKind
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import DiagonalRule, Point, TerrainEffect
 from ..kernel.rules import Ability, DamageType, make_d20_test
+from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 
@@ -266,12 +267,157 @@ def _combatants(specs: list[dict[str, Any]], registry: ContentRegistry) -> list[
     return [_creature_from_spec(spec, registry) for spec in specs]
 
 
+_MAP_KEYS = frozenset({
+    "name", "width", "height", "default_terrain", "rows", "legend", "terrain",
+    "features",
+})
+_FEATURE_KEYS = frozenset({
+    "name", "square", "kind", "initially_open", "closed_terrain", "open_terrain",
+})
+#: An inline map is authored by hand or by a model, not generated; this bound only
+#: exists so a malformed spec fails with a size complaint instead of an allocation.
+MAX_MAP_SQUARES = 512
+
+
+def _square(value: Any, what: str, width: int, height: int) -> tuple[int, int]:
+    if not (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(isinstance(part, int) and not isinstance(part, bool) for part in value)
+    ):
+        raise ToolError(f"{what} must be an [x, y] pair of squares")
+    x, y = value
+    if not (0 <= x < width and 0 <= y < height):
+        raise ToolError(
+            f"{what} is [{x}, {y}], outside the {width}x{height} map"
+        )
+    return (x, y)
+
+
+def _map_dimension(spec: dict[str, Any], key: str) -> int:
+    value = spec.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ToolError(f"map {key} is required and must be a whole number of squares")
+    if not 1 <= value <= MAX_MAP_SQUARES:
+        raise ToolError(f"map {key} must be between 1 and {MAX_MAP_SQUARES}, got {value}")
+    return value
+
+
+def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
+    """Build a :class:`BattleMap` from the inline tool spec, refusing precisely.
+
+    Terrain is authored either as ``rows`` of characters with a ``legend`` — the
+    form a person or a model writes by hand — or as a ``terrain`` list of
+    ``{"kind", "squares"}`` entries. Terrain *kinds* are not resolved here: the
+    encounter validates them against the content it captured, so a pack-defined
+    kind works and an unknown one is refused with the loaded list.
+    """
+    for key in sorted(set(spec) - _MAP_KEYS):
+        raise ToolError(
+            f"unknown map key {key!r}. Valid keys: {', '.join(sorted(_MAP_KEYS))}"
+        )
+    width = _map_dimension(spec, "width")
+    height = _map_dimension(spec, "height")
+    default_terrain = str(spec.get("default_terrain", "normal"))
+    terrain: dict[tuple[int, int], str] = {}
+
+    rows = spec.get("rows")
+    entries = spec.get("terrain")
+    if rows is not None and entries is not None:
+        raise ToolError("give 'rows' with a 'legend', or a 'terrain' list — not both")
+    if rows is not None:
+        legend = spec.get("legend")
+        if not isinstance(legend, dict) or not all(
+            isinstance(key, str) and len(key) == 1 and isinstance(value, str)
+            for key, value in legend.items()
+        ):
+            raise ToolError(
+                "'rows' needs a 'legend' object mapping single characters to "
+                "terrain kinds, such as {\"#\": \"wall\", \".\": \"normal\"}"
+            )
+        if not isinstance(rows, list) or not all(isinstance(row, str) for row in rows):
+            raise ToolError("'rows' must be a list of strings, one per map row")
+        if len(rows) != height:
+            raise ToolError(f"'rows' has {len(rows)} rows; the map is {height} high")
+        for y, row in enumerate(rows):
+            if len(row) != width:
+                raise ToolError(
+                    f"row {y} is {len(row)} characters; the map is {width} wide"
+                )
+            for x, char in enumerate(row):
+                kind = legend.get(char)
+                if kind is None:
+                    raise ToolError(
+                        f"row {y} column {x} uses {char!r}, which the legend does "
+                        f"not define"
+                    )
+                if kind != default_terrain:
+                    terrain[(x, y)] = kind
+    elif entries is not None:
+        if not isinstance(entries, list):
+            raise ToolError("'terrain' must be a list of {kind, squares} entries")
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict) or set(entry) != {"kind", "squares"}:
+                raise ToolError(
+                    f"terrain entry #{index} must be {{\"kind\": ..., \"squares\": "
+                    f"[[x, y], ...]}}"
+                )
+            kind = entry["kind"]
+            if not isinstance(kind, str):
+                raise ToolError(f"terrain entry #{index} kind must be a terrain name")
+            squares = entry["squares"]
+            if not isinstance(squares, list):
+                raise ToolError(f"terrain entry #{index} squares must be a list")
+            for value in squares:
+                terrain[_square(value, f"terrain entry #{index} square", width, height)] = kind
+
+    features: dict[str, MapFeature] = {}
+    raw_features = spec.get("features", [])
+    if not isinstance(raw_features, list):
+        raise ToolError("'features' must be a list of feature objects")
+    for index, entry in enumerate(raw_features):
+        if not isinstance(entry, dict):
+            raise ToolError(f"feature #{index} must be an object")
+        for key in sorted(set(entry) - _FEATURE_KEYS):
+            raise ToolError(
+                f"feature #{index} has unknown key {key!r}. Valid keys: "
+                f"{', '.join(sorted(_FEATURE_KEYS))}"
+            )
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ToolError(f"feature #{index} needs a non-empty 'name'")
+        if name in features:
+            raise ToolError(f"two features are named {name!r}; names must be unique")
+        initially_open = entry.get("initially_open", False)
+        if not isinstance(initially_open, bool):
+            raise ToolError(f"feature {name!r} initially_open must be true or false")
+        features[name] = MapFeature(
+            name=name,
+            square=_square(entry.get("square"), f"feature {name!r} square",
+                           width, height),
+            kind=str(entry.get("kind", "door")),
+            closed_terrain=str(entry.get("closed_terrain", "door-closed")),
+            open_terrain=str(entry.get("open_terrain", "door-open")),
+            initially_open=initially_open,
+        )
+
+    return BattleMap(
+        name=str(spec.get("name", "battle map")),
+        width=width,
+        height=height,
+        default_terrain=default_terrain,
+        terrain=terrain,
+        features=features,
+    )
+
+
 def _new_encounter(
     combatants: list[Creature],
     rng: Random,
     registry: ContentRegistry,
     *,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
+    battle_map: BattleMap | None = None,
 ) -> Encounter:
     """Build an encounter bound to ``registry``'s tables, captured by value."""
     return Encounter(
@@ -281,6 +427,8 @@ def _new_encounter(
         items=registry.items,
         condition_effects=registry.condition_effects,
         movement_rule=movement_rule,
+        battle_map=battle_map,
+        terrain_effects=registry.terrain_effects,
     )
 
 
@@ -503,8 +651,9 @@ def encounter_create(
     combatants: list[dict[str, Any]],
     seed: int | None = None,
     movement_rule: str = "5-5-5",
+    map: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Start an encounter and roll initiative.
+    """Start an encounter and roll initiative, optionally on a battle map.
 
     Each combatant is either ``{"monster": "Goblin Warrior", "label": "Goblin A",
     "team": "monsters", "position": [15, 0]}`` for a bundled stat block, or an
@@ -513,14 +662,26 @@ def encounter_create(
     in feet on a flat plane; a bare number is accepted and means feet along the
     x-axis. ``movement_rule`` is how diagonals are measured: "5-5-5" (the default)
     or "5-10-5" (every second diagonal costs double).
+
+    ``map`` puts the fight on a grid of 5-foot squares: ``{"width", "height"}``
+    plus either ``"rows"`` (a list of strings, one per row, top row first) with a
+    ``"legend"`` mapping each character to a terrain kind, or a ``"terrain"``
+    list of ``{"kind", "squares": [[x, y], ...]}`` overrides on
+    ``"default_terrain"``. ``"features"`` lists doors and the like:
+    ``{"name", "square", "kind"?, "initially_open"?}``. With a map, terrain
+    costs movement, walls block sight and routes, cover adjusts AC, and starting
+    positions must be on-map, passable, and unoccupied; positions snap to their
+    square. Without one, the plane is open and featureless.
     """
     used = _resolve_seed(seed)
     rng = Random(used)
     content = _content()
+    battle_map = _battle_map_from_spec(map) if map is not None else None
     try:
         encounter = _new_encounter(
             _combatants(combatants, content.registry), rng, content.registry,
             movement_rule=_movement_rule(movement_rule),
+            battle_map=battle_map,
         )
     except EncounterError as error:
         raise ToolError(str(error)) from error
@@ -603,16 +764,22 @@ def encounter_act(
     to_position: int | list[int] | None = None,
     targets: list[str] | None = None,
     center: int | list[int] | None = None,
+    path: list[list[int]] | None = None,
+    feature: str | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
-    ``kind`` is attack, cast, use_item, move, dash, disengage, or dodge. Attacks need
-    ``target``; casting needs ``spell`` plus either ``target``/``targets`` or a
-    ``center`` for an area; using an item needs ``item``, and ``target`` unless the
-    item is self-directed; moving needs ``to_position``. A position — ``to_position``
-    or ``center`` — is ``[x, y]`` in feet on the plane; a bare number is accepted and
-    means feet along the x-axis. Illegal actions are refused with the reason rather
-    than silently adjusted.
+    ``kind`` is attack, cast, use_item, move, dash, disengage, dodge, or interact.
+    Attacks need ``target``; casting needs ``spell`` plus either
+    ``target``/``targets`` or a ``center`` for an area; using an item needs
+    ``item``, and ``target`` unless the item is self-directed; moving needs
+    ``to_position``; interacting — opening or closing a map feature, free once per
+    turn — needs ``feature``. A position — ``to_position`` or ``center`` — is
+    ``[x, y]`` in feet on the plane; a bare number is accepted and means feet
+    along the x-axis. On a battle map a move routes itself around walls and
+    enemies; ``path`` optionally pins the exact route as ``[x, y]`` waypoints,
+    one per square. Illegal actions are refused with the reason rather than
+    silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -620,6 +787,12 @@ def encounter_act(
     except ValueError as error:
         allowed = ", ".join(item.value for item in ActionKind)
         raise ToolError(f"kind must be one of: {allowed}") from error
+    waypoints: list[tuple[int, int]] = []
+    for step in path or []:
+        point = _point(step, "each path waypoint")
+        if isinstance(point, int):
+            raise ToolError("each path waypoint must be an [x, y] pair of feet")
+        waypoints.append(point)
     action = Action(
         kind=action_kind,
         target=target,
@@ -632,6 +805,8 @@ def encounter_act(
         ),
         targets=tuple(targets or ()),
         center=_point(center, "center") if center is not None else None,
+        path=tuple(waypoints),
+        feature=feature,
     )
     try:
         events = session.encounter.act(action, session.rng)

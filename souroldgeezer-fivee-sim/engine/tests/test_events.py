@@ -110,7 +110,7 @@ class TestEventIndexing:
                 current = None
 
     def test_every_emitted_kind_is_a_declared_kind(self) -> None:
-        assert len(EVENT_KINDS) == 19
+        assert len(EVENT_KINDS) == 20
         encounter, _ = played_out()
         seen = {event.kind for event in encounter.log}
         assert seen <= EVENT_KINDS, f"undeclared kinds: {sorted(seen - EVENT_KINDS)}"
@@ -295,6 +295,45 @@ class TestReplayFromRecords:
         )
         replayed(original, rebuilt, rng)
         assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]
+
+    def test_a_mapped_fight_replays_exactly(self) -> None:
+        # The map adds routing, terrain costs, a door, and pass-through
+        # opportunity attacks to the record; the contract must hold with the same
+        # BattleMap handed to the reconstruction.
+        from fivee_sim.model.battlemap import BattleMap, MapFeature
+
+        door_map = BattleMap(
+            name="crypt", width=6, height=2,
+            terrain={(2, 0): "wall"},
+            features={"door": MapFeature(name="door", square=(2, 1))},
+            provenance=FIXTURE,
+        )
+
+        def combatants() -> list[Creature]:
+            return [
+                fighter("Thora", position=(0, 0)),
+                make_monster("Goblin Warrior", label="Goblin", position=(25, 0)),
+            ]
+
+        def build() -> tuple[Encounter, Random]:
+            return build_encounter(
+                combatants(), seed=SEED, spellbook=spellbook(), battle_map=door_map
+            )
+
+        original, rng = build()
+        advance_to(original, "Thora", rng)
+        original.act(Action(kind=ActionKind.MOVE, to_position=(5, 5)), rng)
+        original.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        original.act(Action(kind=ActionKind.MOVE, to_position=(15, 5)), rng)
+        run_encounter(original, rng, max_rounds=20)
+        assert any(event.kind == "interact" for event in original.log)
+
+        rebuilt, fresh_rng = build()
+        replayed(original, rebuilt, fresh_rng)
+        assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]
+        assert [r.as_dict() for r in rebuilt.actions] == [
+            r.as_dict() for r in original.actions
+        ]
 
     def test_custom_pack_content_rides_through_replay(
         self, corpus_alone: ContentRegistry

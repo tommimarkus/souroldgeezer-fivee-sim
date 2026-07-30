@@ -230,6 +230,108 @@ class TestPlanarPositions:
         assert created["state"]["round"] == 1
 
 
+class TestMapTools:
+    """The inline map spec: rows-and-legend authoring, features, and refusals."""
+
+    CORRIDOR: dict[str, Any] = {
+        "name": "corridor",
+        "width": 4,
+        "height": 3,
+        "rows": [".#..", ".#..", ".#.."],
+        "legend": {".": "normal", "#": "wall"},
+        "features": [{"name": "door", "square": [1, 1]}],
+    }
+
+    def start(self) -> str:
+        created = api.encounter_create(
+            [HERO, {**GOBLIN, "position": [15, 0]}], seed=11, map=self.CORRIDOR
+        )
+        return str(created["encounter_id"])
+
+    def advance_to_thora(self, encounter_id: str) -> None:
+        for _ in range(6):
+            if api.encounter_state(encounter_id)["turn"] == "Thora":
+                return
+            api.encounter_advance(encounter_id)
+        raise AssertionError("Thora never got a turn")
+
+    def test_a_created_map_appears_in_state(self) -> None:
+        state = api.encounter_state(self.start())
+        assert state["map"]["name"] == "corridor"
+        assert state["map"]["width"] == 4
+        assert state["map"]["height"] == 3
+        assert state["map"]["features"]["door"] == {
+            "square": [1, 1], "kind": "door", "open": False,
+        }
+
+    def test_interact_opens_the_door_over_the_wire(self) -> None:
+        encounter_id = self.start()
+        self.advance_to_thora(encounter_id)
+        api.encounter_act(encounter_id, kind="move", to_position=[0, 5])
+        acted = api.encounter_act(encounter_id, kind="interact", feature="door")
+        assert acted["state"]["map"]["features"]["door"]["open"] is True
+
+    def test_a_wall_refuses_the_move_with_the_reason(self) -> None:
+        encounter_id = self.start()
+        self.advance_to_thora(encounter_id)
+        with pytest.raises(api.ToolError, match="no route"):
+            api.encounter_act(encounter_id, kind="move", to_position=[10, 0])
+
+    def test_an_unknown_map_key_is_refused(self) -> None:
+        with pytest.raises(api.ToolError, match="unknown map key"):
+            api.encounter_create(
+                [HERO, GOBLIN], seed=1, map={**self.CORRIDOR, "tiles": []}
+            )
+
+    def test_a_row_of_the_wrong_width_is_refused(self) -> None:
+        broken = {**self.CORRIDOR, "rows": [".#..", ".#.", "...."]}
+        with pytest.raises(api.ToolError, match="row 1 is 3 characters"):
+            api.encounter_create([HERO, GOBLIN], seed=1, map=broken)
+
+    def test_a_character_missing_from_the_legend_is_refused(self) -> None:
+        broken = {**self.CORRIDOR, "rows": [".#..", ".#..", "..~."]}
+        with pytest.raises(api.ToolError, match="legend does not define"):
+            api.encounter_create([HERO, GOBLIN], seed=1, map=broken)
+
+    def test_rows_and_a_terrain_list_together_are_refused(self) -> None:
+        broken = {**self.CORRIDOR, "terrain": []}
+        with pytest.raises(api.ToolError, match="not both"):
+            api.encounter_create([HERO, GOBLIN], seed=1, map=broken)
+
+    def test_a_terrain_list_is_an_accepted_alternative(self) -> None:
+        spec: dict[str, Any] = {
+            "width": 4, "height": 1,
+            "terrain": [{"kind": "difficult", "squares": [[2, 0]]}],
+        }
+        created = api.encounter_create(
+            [HERO, {**GOBLIN, "position": [15, 0]}], seed=11, map=spec
+        )
+        assert created["state"]["map"]["width"] == 4
+
+    def test_a_feature_off_the_map_is_refused(self) -> None:
+        broken = {
+            **self.CORRIDOR,
+            "features": [{"name": "door", "square": [9, 9]}],
+        }
+        with pytest.raises(api.ToolError, match="outside the 4x3 map"):
+            api.encounter_create([HERO, GOBLIN], seed=1, map=broken)
+
+    def test_an_unknown_terrain_kind_is_refused_with_the_loaded_kinds(self) -> None:
+        broken = {**self.CORRIDOR, "legend": {".": "normal", "#": "vale-lava"}}
+        with pytest.raises(api.ToolError, match="vale-lava"):
+            api.encounter_create(
+                [HERO, {**GOBLIN, "position": [15, 0]}], seed=1, map=broken
+            )
+
+    def test_a_starting_position_inside_a_wall_is_refused(self) -> None:
+        with pytest.raises(api.ToolError, match="impassable"):
+            api.encounter_create(
+                [{**HERO, "position": [5, 0]}, {**GOBLIN, "position": [15, 0]}],
+                seed=1,
+                map=self.CORRIDOR,
+            )
+
+
 class TestEncounterLog:
     def start(self, seed: int = 11) -> str:
         created = api.encounter_create([HERO, GOBLIN], seed=seed)

@@ -723,6 +723,44 @@ class TestCustomTerrain:
         assert "difficult" not in alone.terrain_effects
         assert "vale-thornfield" in alone.terrain_effects
 
+    def test_a_pack_terrain_kind_works_end_to_end_on_a_battle_map(
+        self, tmp_path: Path
+    ) -> None:
+        # The deferred assertion from the terrain content step: a pack-defined
+        # kind, on a real map, actually slows movement and actually screens.
+        from fivee_sim.kernel.grid import CoverGrade
+        from fivee_sim.model.battlemap import BattleMap
+
+        path = write_pack(tmp_path, "thorns.json", self.THORNS)
+        registry = load_packs([path], include_environment=False)
+        battle_map = BattleMap(
+            name="thornfield", width=5, height=1,
+            terrain={(2, 0): "vale-thornfield"},
+            provenance="test fixture",
+        )
+        hero = make_creature("Goblin Warrior", registry=registry, label="A", team="a")
+        villain = make_creature(
+            "Goblin Warrior", registry=registry, label="B", team="b",
+            position=(20, 0),
+        )
+        rng = Random(5)
+        encounter = Encounter(
+            [hero, villain], rng,
+            condition_effects=registry.condition_effects,
+            battle_map=battle_map,
+            terrain_effects=registry.terrain_effects,
+        )
+        # cover: 1 — the thorns screen whoever stands behind them.
+        assert encounter.cover_between("A", "B") is CoverGrade.HALF
+        for _ in range(4):
+            if encounter.current_name == "A":
+                break
+            encounter.advance(rng)
+        # move_cost_multiplier: 2 — three squares, the thorny one at double.
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(15, 0)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 20
+
     def test_an_unknown_kind_is_refused_with_the_loaded_kinds(
         self, tmp_path: Path
     ) -> None:
