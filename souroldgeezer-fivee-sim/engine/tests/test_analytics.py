@@ -23,6 +23,7 @@ from fivee_sim.analytics.montecarlo import (
 from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.grid import as_point
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import ActionKind, Encounter
@@ -268,7 +269,7 @@ class TestPolicyPlacesAreaSpells:
         caught = [
             creature
             for creature in combatants
-            if abs(creature.position - action.center) <= 20
+            if abs(as_point(creature.position)[0] - action.center) <= 20
         ]
         assert sorted(c.name for c in caught) == [
             "Goblin A", "Goblin B", "Goblin C", "Goblin D",

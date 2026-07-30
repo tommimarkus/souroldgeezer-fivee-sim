@@ -29,6 +29,7 @@ from typing import Any
 
 from ..kernel.conditions import ConditionTable
 from ..kernel.dice import Dice
+from ..kernel.grid import as_point
 from ..kernel.items import ItemEffect
 from ..kernel.spells import Spell
 from ..model.creature import Creature
@@ -233,13 +234,16 @@ def _area_option(
 
     Allies caught in the blast, the caster included, count *against* the placement.
     """
+    # Interval arithmetic on the x components: the battlefield is still the
+    # x-axis this step, and the endpoints of each catchment stay exhaustive.
+    actor_x = as_point(actor.position)[0]
     candidates: set[int] = set()
     for creature in encounter.creatures.values():
         if not creature.conscious:
             continue
         for offset in (-spell.radius, 0, spell.radius):
-            centre = creature.position + offset
-            if spell.range_feet and abs(centre - actor.position) > spell.range_feet:
+            centre = as_point(creature.position)[0] + offset
+            if spell.range_feet and abs(centre - actor_x) > spell.range_feet:
                 continue
             candidates.add(centre)
 
@@ -249,7 +253,7 @@ def _area_option(
         for creature in encounter.creatures.values():
             if not creature.conscious:
                 continue
-            if abs(creature.position - centre) > spell.radius:
+            if abs(as_point(creature.position)[0] - centre) > spell.radius:
                 continue
             expected = _save_expectation(encounter, actor, spell, dice, creature)
             share = min(expected, float(creature.hp))
@@ -322,8 +326,10 @@ def _closing_move(
     step = min(turn["movement_left"], distance - desired)
     if step <= 0:
         return None
-    direction = 1 if target.position > actor.position else -1
-    return Action(kind=ActionKind.MOVE, to_position=actor.position + direction * step)
+    # Dominant-axis stepping on x: bit-identical to the scalar policy on y=0.
+    actor_x = as_point(actor.position)[0]
+    direction = 1 if as_point(target.position)[0] > actor_x else -1
+    return Action(kind=ActionKind.MOVE, to_position=actor_x + direction * step)
 
 
 def _threat_range(encounter: Encounter, actor: Creature) -> int | None:
@@ -481,13 +487,14 @@ def simulate_dpr(
     for index in range(iterations):
         rng = Random(seed + index)
         attacker = attacker_factory()
+        ax, ay = as_point(attacker.position)
         dummy = Creature(
             name=target_name,
             team="dummy",
             ac=target_ac,
             max_hp=10_000,
             speed=0,
-            position=attacker.position + distance,
+            position=(ax + distance, ay),
             provenance="synthetic test dummy, not SRD content",
         )
         encounter = Encounter(

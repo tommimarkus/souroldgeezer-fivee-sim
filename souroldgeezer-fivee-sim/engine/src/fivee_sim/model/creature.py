@@ -5,9 +5,11 @@ them from ability scores, proficiency, and class features. That is how SRD stat
 blocks present attacks, so data stays a faithful transcription instead of relying
 on derivation rules the engine would have to invent.
 
-Positions are a single axis measured in feet. A one-dimensional battlefield is
-enough for reach, ranged distance, and spell radii, and it keeps geometry
-testable; it deliberately cannot express flanking or cover.
+Positions are points on a plane, measured in feet. A bare int is accepted
+wherever a position goes and means feet along the x-axis — the original
+one-dimensional battlefield is this plane's x-axis, and a scalar caller sees
+identical numbers. Distance defaults to the SRD diagonal rule; the encounter
+passes its own.
 
 All provenance: SRD 5.2 (see NOTICE).
 """
@@ -25,6 +27,7 @@ from ..kernel.conditions import (
     effect_of,
 )
 from ..kernel.dice import Dice
+from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, ability_modifier
 
 __all__ = ["AttackKind", "AttackOption", "Creature"]
@@ -84,7 +87,8 @@ class Creature:
     resistances: frozenset[DamageType] = frozenset()
     immunities: frozenset[DamageType] = frozenset()
     vulnerabilities: frozenset[DamageType] = frozenset()
-    position: int = 0
+    #: A point in feet; a scalar is accepted and widened to ``(x, 0)``.
+    position: Point | int = (0, 0)
     death_save_successes: int = 0
     death_save_failures: int = 0
     stable: bool = False
@@ -94,6 +98,7 @@ class Creature:
     def __post_init__(self) -> None:
         if self.hp < 0:
             self.hp = self.max_hp
+        self.position = as_point(self.position)
 
     # --- derived values ---------------------------------------------------
     def ability_score(self, ability: Ability) -> int:
@@ -128,8 +133,10 @@ class Creature:
             return True
         return any(self._effect(condition).resists_all_damage for condition in self.conditions)
 
-    def distance_to(self, other: Creature) -> int:
-        return abs(self.position - other.position)
+    def distance_to(
+        self, other: Creature, rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE
+    ) -> int:
+        return distance_feet(as_point(self.position), as_point(other.position), rule)
 
     def _effect(self, condition: str) -> ConditionEffect:
         return effect_of(condition, self.condition_effects)

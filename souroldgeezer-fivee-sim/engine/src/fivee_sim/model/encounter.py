@@ -35,6 +35,7 @@ from ..kernel.conditions import (
     speed_is_zero,
 )
 from ..kernel.dice import Advantage, roll_d20
+from ..kernel.grid import Point, as_point, distance_feet
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellTarget, resolve_spell
@@ -272,7 +273,8 @@ class Encounter:
             "hp": creature.hp,
             "max_hp": creature.max_hp,
             "ac": creature.ac,
-            "position": creature.position,
+            # follow-up: [x, y] — the 2-D state break lands with the MCP/skill update.
+            "position": as_point(creature.position)[0],
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
@@ -712,9 +714,11 @@ class Encounter:
                 self._require_in_range(actor, spell, creature.position, creature.name)
         elif spell.radius and action.center is not None:
             self._require_in_range(actor, spell, action.center, "the point of origin")
+            centre = (action.center, 0)  # the centre stays a scalar on the wire, for now
             chosen = [
                 c for c in self.creatures.values()
-                if c.conscious and abs(c.position - action.center) <= spell.radius
+                if c.conscious
+                and distance_feet(as_point(c.position), centre) <= spell.radius
             ]
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
@@ -738,12 +742,12 @@ class Encounter:
         return landed
 
     def _require_in_range(
-        self, actor: Creature, spell: Spell, position: int, what: str
+        self, actor: Creature, spell: Spell, position: Point | int, what: str
     ) -> None:
         """Refuse a spell whose range does not reach ``position``."""
         if not spell.range_feet:
             return
-        distance = abs(position - actor.position)
+        distance = distance_feet(as_point(position), as_point(actor.position))
         if distance > spell.range_feet:
             raise EncounterError(
                 f"{what} is {distance} ft away, beyond {spell.name}'s "
@@ -756,7 +760,9 @@ class Encounter:
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
-        distance = abs(action.to_position - actor.position)
+        origin = as_point(actor.position)
+        destination = (action.to_position, 0)  # the action stays scalar, for now
+        distance = distance_feet(origin, destination)
         if distance > self._turn.movement_left:
             raise EncounterError(
                 f"{actor.name} has {self._turn.movement_left} ft of movement, needs {distance} ft"
@@ -766,17 +772,16 @@ class Encounter:
             enemy for enemy in self.enemies_of(actor.name)
             if actor.distance_to(enemy) <= MELEE_THRESHOLD
         ]
-        origin = actor.position
-        actor.position = action.to_position
+        actor.position = destination
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
-                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)",
-                   origin=(origin, 0), destination=(actor.position, 0), cost=distance)
+                   detail=f"{origin[0]} ft -> {destination[0]} ft ({distance} ft used)",
+                   origin=origin, destination=destination, cost=distance)
 
         if self._disengaged[actor.name]:
             return
         for enemy in threatening:
-            if abs(enemy.position - actor.position) <= MELEE_THRESHOLD:
+            if enemy.distance_to(actor) <= MELEE_THRESHOLD:
                 continue
             self._opportunity_attack(enemy, actor, rng)
 

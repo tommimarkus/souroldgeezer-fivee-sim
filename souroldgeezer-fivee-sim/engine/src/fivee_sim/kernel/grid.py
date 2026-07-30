@@ -142,6 +142,18 @@ def terrain_effect_of(kind: str, table: TerrainTable = TERRAIN) -> TerrainEffect
 
 
 # --- points and squares ----------------------------------------------------
+def as_point(position: Point | int) -> Point:
+    """Widen a scalar position to a point on the x-axis.
+
+    Positions predate the plane: a bare int has always meant feet along one
+    axis, and it still does. ``Creature`` widens on construction, but its
+    attribute admits both forms, so read sites narrow through here.
+    """
+    if isinstance(position, int):
+        return (position, 0)
+    return position
+
+
 def to_square(point: Point) -> Square:
     """The square a point in feet falls in. Floor division: edges belong down-right."""
     return (point[0] // FEET_PER_SQUARE, point[1] // FEET_PER_SQUARE)

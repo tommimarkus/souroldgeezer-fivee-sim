@@ -265,7 +265,7 @@ class TestMovementAndReactions:
         advance_to(encounter, "Thora", rng)
         encounter.act(Action(kind=ActionKind.DASH), rng)
         encounter.act(Action(kind=ActionKind.MOVE, to_position=60), rng)
-        assert encounter.creatures["Thora"].position == 60
+        assert encounter.creatures["Thora"].position == (60, 0)
 
     def test_a_grappled_creature_cannot_move(self) -> None:
         rng = Random(1)
