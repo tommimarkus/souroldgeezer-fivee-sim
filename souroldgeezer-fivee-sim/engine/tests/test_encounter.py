@@ -350,6 +350,31 @@ class TestGoingDown:
         assert hero.death_save_failures == 2
         assert hero.death_save_successes == 0
 
+    def test_a_natural_20_revival_leaves_the_full_movement_budget(self) -> None:
+        """SRD 5.2, "Death Saving Throws", Rolling 20: "If you roll a 20 on the
+        d20, you regain 1 Hit Point." The save is rolled at the start of the
+        creature's own turn, so the revived creature is conscious for the rest of
+        it — and a conscious creature may move up to its Speed on its turn.
+        Deriving the budget before the save froze ``movement_left`` at 0 while
+        the attack budget was granted regardless.
+        """
+        encounter, hero = self._dying_hero()
+        # A forced 20 is the natural 20: regain 1 hit point and wake.
+        advance_to(encounter, "Hero", FixedRandom(20))
+        assert hero.conscious
+        assert hero.hp == 1
+        # Revived, not tidied up: still Prone, and standing costs half Speed.
+        assert Condition.PRONE in hero.conditions
+        assert encounter.state()["turn_state"]["movement_left"] == hero.speed
+
+    def test_a_still_dying_creature_has_no_movement_budget(self) -> None:
+        encounter, hero = self._dying_hero()
+        # A forced 15 succeeds without reviving: one success, still down.
+        advance_to(encounter, "Hero", FixedRandom(15))
+        assert not hero.conscious
+        assert hero.dying
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
     def test_healing_from_zero_clears_unconsciousness_and_resets_saves(self) -> None:
         victim = fighter("Victim", max_hp=20, hp=1)
         victim.take_damage(1)

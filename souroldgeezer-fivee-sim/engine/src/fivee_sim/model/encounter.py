@@ -596,13 +596,19 @@ class Encounter:
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
         self._reaction_available[creature.name] = True
+        if creature.dying:
+            self._death_save(creature, rng)
+        # The budget is derived *after* the death save: a natural 20 regains
+        # 1 hit point (SRD 5.2, "Death Saving Throws", Rolling 20), and the
+        # revived creature is conscious for the rest of this turn — nothing in
+        # the rules forfeits its movement for having been down when the turn
+        # began. Deriving it first froze ``movement_left`` at 0 for the whole
+        # turn while ``attacks_left`` was granted regardless.
         self._turn = TurnState(
             movement_left=0 if not creature.conscious else creature.speed,
             action_used=False,
             attacks_left=creature.attacks_per_action,
         )
-        if creature.dying:
-            self._death_save(creature, rng)
         # A death save can kill, and :meth:`_death_save` marks the creature dead
         # without going through ``take_damage``, so nothing else would notice.
         self._reconcile_concentration()
