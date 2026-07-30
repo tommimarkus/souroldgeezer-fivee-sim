@@ -302,6 +302,7 @@ def _parse_features(
         return ()
     features: list[MapFeatureRecord] = []
     claimed: dict[str, int] = {}
+    door_squares: dict[Square, str] = {}
     for index, entry in enumerate(raw):
         if not isinstance(entry, Mapping):
             reader.fail("features", f"feature #{index} must be an object")
@@ -355,6 +356,19 @@ def _parse_features(
                 sub.fail("orientation", "required for a door")
             if state is None:
                 sub.fail("state", "required for a door; the document stores the default")
+            # One door per square: the encounter refuses a map whose doors
+            # collide, so the document must refuse it first — a battle map
+            # resolves a square to one feature state, never two. Annotations
+            # (stairs, spawns) may share squares freely.
+            if at is not None:
+                if at in door_squares:
+                    sub.fail(
+                        "at",
+                        f"({at[0]}, {at[1]}) already holds door "
+                        f"'{door_squares[at]}'; one door per square",
+                    )
+                else:
+                    door_squares[at] = label
 
         if feature_id.strip():
             if feature_id in claimed:

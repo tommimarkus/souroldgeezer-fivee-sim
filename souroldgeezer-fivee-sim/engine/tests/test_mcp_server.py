@@ -645,8 +645,10 @@ class TestEncountersOnLoadedMaps:
         created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
         source = created["map_source"]
         assert source["map_id"] == map_id
-        assert source["map_generation"] == 1
-        assert len(source["map_sha256"]) == 64
+        assert source["generation"] == 1
+        assert source["current_generation"] == 1
+        assert source["stale"] is False
+        assert len(source["sha256"]) == 64
         assert created["state"]["map"]["width"] == 5
 
         state = api.encounter_state(str(created["encounter_id"]))
@@ -699,7 +701,7 @@ class TestEncountersOnLoadedMaps:
         )
         assert sum(result["wins"].values()) == 5
         assert result["map_source"]["map_id"] == map_id
-        assert result["map_source"]["map_generation"] == api.map_render(map_id)["generation"]
+        assert result["map_source"]["generation"] == api.map_render(map_id)["generation"]
 
 
 class TestAnalyticsTools:

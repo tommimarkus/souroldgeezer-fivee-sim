@@ -286,6 +286,9 @@ def _resolve_battle_map(
 
     A session-backed map also yields the ``map_source`` capture: which map,
     which generation, and the hash of the exact document the fight is on.
+    The shape matches :func:`_map_source_of`, so a caller reads ``stale`` off
+    either tool's result — at capture time it is ``False`` by construction —
+    plus ``sha256``, which only the capture can name.
     """
     if map_spec is not None and map_id is not None:
         raise ToolError("give 'map' (an inline spec) or 'map_id' (a loaded map), not both")
@@ -295,8 +298,10 @@ def _resolve_battle_map(
         session = _map_session(map_id)
         return to_grid(session.document), {
             "map_id": map_id,
-            "map_generation": session.generation,
-            "map_sha256": sha256_of(_serialize_map(session.document)),
+            "generation": session.generation,
+            "current_generation": session.generation,
+            "stale": False,
+            "sha256": sha256_of(_serialize_map(session.document)),
         }
     return None, None
 
@@ -838,8 +843,8 @@ def encounter_create(
         session.initial_open_features = sorted(encounter.map_state.open_features)
     if map_source is not None:
         session.map_id = str(map_source["map_id"])
-        session.map_generation = int(map_source["map_generation"])
-        session.map_sha256 = str(map_source["map_sha256"])
+        session.map_generation = int(map_source["generation"])
+        session.map_sha256 = str(map_source["sha256"])
         # The payload, not the session reference: replay_export must see the
         # document as it stands now, whatever happens to the map later.
         session.map_payload = as_payload(_map_session(session.map_id).document)
@@ -1638,7 +1643,9 @@ def map_editor_stop(maps_dir: str | None = None) -> dict[str, Any]:
                 process.wait(timeout=3.0)
             except subprocess.TimeoutExpired:
                 pass
-    return {"stopped": stopped, "was_running": stopped}
+    # A state file existed, so something was there to stop — even when both
+    # shutdown paths failed because the recorded process is already dead.
+    return {"stopped": stopped, "was_running": True}
 
 
 # --- content ---------------------------------------------------------------

@@ -230,6 +230,29 @@ class TestFeatureDiagnostics:
         payload["features"][1]["id"] = "door-1"
         assert any("already used by feature #0" in p for p in errors_of(payload))
 
+    def test_two_doors_on_one_square(self) -> None:
+        # The encounter refuses a map whose doors collide, so the document
+        # must refuse it first — a valid-looking file may not explode only
+        # when a fight starts on it.
+        payload = document()
+        payload["features"].append(
+            {
+                "id": "door-2",
+                "kind": "door",
+                "at": [3, 4],
+                "orientation": "vertical",
+                "state": "open",
+            }
+        )
+        assert any("already holds door 'door-1'" in p for p in errors_of(payload))
+
+    def test_an_annotation_may_share_a_door_square(self) -> None:
+        # Stairs and spawns are annotations, not terrain state; sharing a
+        # square is legitimate (a spawn on the stairs, a marker at a door).
+        payload = document()
+        payload["features"][1]["at"] = [3, 4]  # spawn onto the door square
+        assert errors_of(payload) == []
+
     def test_bad_orientation(self) -> None:
         payload = document()
         payload["features"][0]["orientation"] = "diagonal"

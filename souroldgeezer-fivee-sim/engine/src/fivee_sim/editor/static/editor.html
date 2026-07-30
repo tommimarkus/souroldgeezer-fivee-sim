@@ -301,6 +301,15 @@ if (typeof FiveeRenderer === "undefined") {
         try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
         return { status: response.status, headers: response.headers, json: parsed };
       });
+    }).catch(function (error) {
+      /* A network-level rejection (server stopped, connection refused) must
+         surface like any failed call, not hang the page as an unhandled
+         rejection: report it, and resolve with a status no branch treats as
+         success so every caller's chain completes. */
+      var detail = "editor server unreachable (" + error + "); is it still "
+        + "running? Download JSON keeps your work.";
+      setStatus(detail, "error");
+      return { status: 0, headers: new Headers(), json: { detail: detail } };
     });
   }
 
