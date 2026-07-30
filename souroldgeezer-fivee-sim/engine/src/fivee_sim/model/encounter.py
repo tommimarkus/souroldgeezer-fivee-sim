@@ -373,7 +373,7 @@ class Encounter:
             target_ac=target.ac,
             damage=option.damage,
             advantage=self.attack_advantage(actor, target, option),
-            forced_critical=self.attack_forced_critical(actor, target, option),
+            forced_critical=self.attack_forced_critical(actor, target),
             resisted=target.resists(option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
@@ -403,14 +403,50 @@ class Encounter:
             condition_effects=self.condition_effects,
         )
 
-    def attack_forced_critical(
-        self, actor: Creature, target: Creature, option: AttackOption
-    ) -> bool:
-        """Whether a landed hit would be upgraded to a critical one. See above."""
+    def attack_forced_critical(self, actor: Creature, target: Creature) -> bool:
+        """Whether a landed hit would be upgraded to a critical one. See above.
+
+        **One function serves the swing path and the cast path**, and takes no
+        :class:`AttackOption`, because the rule reads nothing about the attack: SRD
+        5.2 scopes it on the target's condition and the attacker's distance alone —
+        "Any attack roll that hits you is a Critical Hit if the attacker is within 5
+        feet of you." A second copy taking a weapon would be a copy that could
+        disagree with this one.
+        """
         return melee_hit_is_critical(
             target_conditions=target.conditions,
-            kind=option.kind,
             distance=actor.distance_to(target),
+            condition_effects=self.condition_effects,
+        )
+
+    def spell_attack_advantage(self, actor: Creature, target: Creature) -> Advantage:
+        """Advantage a spell attack against ``target`` would resolve under.
+
+        The cast path's counterpart to :meth:`attack_advantage`, and deliberately
+        the same call underneath rather than a second derivation: SRD 5.2 defines
+        an attack roll as "a D20 Test that represents making an attack with a
+        weapon, an Unarmed Strike, or a spell", and no source of Advantage
+        distinguishes them. A Blinded caster, a Dodging target and a Restrained one
+        have to read the same either way, which they cannot if two functions decide
+        it.
+
+        **On the ``kind``.** A spell has a ``range_feet``, not a melee/ranged kind,
+        and inventing one would be a data field every pack author had to set. It is
+        not needed. ``kind`` has exactly one job left inside
+        :func:`compute_attack_advantage` — gating the within-5-feet clause that
+        Prone states — and passing ``MELEE`` collapses that gate to ``distance <=
+        5``, which is verbatim the rule: "An attack roll against you has Advantage
+        if the attacker is within 5 feet of you. Otherwise, that attack roll has
+        Disadvantage." So this is not a claim that spells are melee weapons; it
+        selects the distance clause. ``RANGED`` would invert it inside 5 feet.
+        ``TestSpellAttackAdvantage`` pins both halves so the point survives editing.
+        """
+        return compute_attack_advantage(
+            attacker_conditions=actor.conditions,
+            target_conditions=target.conditions,
+            kind=AttackKind.MELEE,
+            distance=actor.distance_to(target),
+            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
             condition_effects=self.condition_effects,
         )
 
@@ -534,6 +570,13 @@ class Encounter:
                     ),
                     auto_fail_save=self.auto_fails_save(c, spell.save_ability),
                     save_advantage=self.save_advantage(c, spell.save_ability),
+                    # Filled for every target rather than only for attack-roll
+                    # spells, the way the save fields are filled for every target
+                    # of an attack-roll one. Both are cheap, neither consumes
+                    # randomness, and ``resolve_spell`` reads each pair only on the
+                    # branch it belongs to.
+                    attack_advantage=self.spell_attack_advantage(actor, c),
+                    forced_critical=self.attack_forced_critical(actor, c),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
                     ),

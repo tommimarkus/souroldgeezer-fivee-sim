@@ -81,6 +81,14 @@ class SpellTarget:
     #: Per target rather than per spell: one creature in a Fireball may be
     #: Restrained and the next Dodging, so a single spell-wide value cannot serve.
     save_advantage: Advantage = Advantage.NONE
+    #: The attack-roll counterparts, per target for the same reason and for one
+    #: stronger one: ``forced_critical`` is scoped by the distance from the caster
+    #: to *this* creature, so it could not be a property of the cast even in
+    #: principle. A spell attack is an attack roll — SRD 5.2 defines one as "a D20
+    #: Test that represents making an attack with a weapon, an Unarmed Strike, or
+    #: a spell" — so it carries whatever the d20 test carries.
+    attack_advantage: Advantage = Advantage.NONE
+    forced_critical: bool = False
     resisted: bool = False
     vulnerable: bool = False
     immune: bool = False
@@ -133,7 +141,6 @@ def resolve_spell(
     save_dc: int,
     spell_attack_bonus: int = 0,
     targets: Sequence[SpellTarget],
-    advantage: Advantage = Advantage.NONE,
 ) -> SpellResolution:
     """Resolve ``spell`` against ``targets`` using one slot of ``slot_level``."""
     if slot_level < spell.level:
@@ -150,7 +157,8 @@ def resolve_spell(
                 rng,
                 attack_bonus=spell_attack_bonus,
                 target_ac=target.ac,
-                advantage=advantage,
+                advantage=target.attack_advantage,
+                forced_critical=target.forced_critical,
             )
             dealt = 0
             if attack.hit and dice is not None:

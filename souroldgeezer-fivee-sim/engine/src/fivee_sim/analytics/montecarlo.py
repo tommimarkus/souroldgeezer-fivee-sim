@@ -146,7 +146,7 @@ def _attack_options(
                 target_ac=target.ac,
                 damage=option.damage,
                 advantage=encounter.attack_advantage(actor, target, option),
-                forced_critical=encounter.attack_forced_critical(actor, target, option),
+                forced_critical=encounter.attack_forced_critical(actor, target),
                 resisted=target.resists(option.damage_type),
                 vulnerable=option.damage_type in target.vulnerabilities,
                 immune=option.damage_type in target.immunities,
@@ -196,10 +196,16 @@ def _spell_options(
                 if spell.range_feet and actor.distance_to(target) > spell.range_feet:
                     continue
                 if spell.requires_attack_roll:
+                    # Read off the encounter, never re-derived: the stepper will
+                    # roll this attack under exactly these two values, and a policy
+                    # that guessed them would value a Guiding Bolt at a helpless
+                    # target as a flat d20 and pass over the best action it had.
                     expected = attack_damage_expectation(
                         attack_bonus=actor.spell_attack_bonus,
                         target_ac=target.ac,
                         damage=dice,
+                        advantage=encounter.spell_attack_advantage(actor, target),
+                        forced_critical=encounter.attack_forced_critical(actor, target),
                         resisted=_resists(target, spell),
                         vulnerable=_vulnerable(target, spell),
                         immune=_immune(target, spell),

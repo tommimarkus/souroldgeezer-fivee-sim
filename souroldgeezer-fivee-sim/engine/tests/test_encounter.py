@@ -675,6 +675,181 @@ class TestSavingThrowAdvantage:
         assert "disadvantage" in events[0].detail
 
 
+class TestSpellAttackAdvantage:
+    """The cast path reaches the same answer about Advantage as the swing path.
+
+    SRD 5.2 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
+    represents making an attack with a weapon, an Unarmed Strike, or a spell."
+    None of the Advantage sources distinguishes the two, so a Blinded caster, a
+    Dodging target, and a Paralyzed one have to read identically whether the
+    attack came off a sword or out of a spell slot.
+    """
+
+    def bolt_caster(self, position: int = 0) -> Creature:
+        wren = caster(position=position)
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 4}
+        wren.spell_attack_bonus = 5
+        wren.attacks = (
+            AttackOption(
+                name="Dagger",
+                attack_bonus=5,
+                damage=Dice(1, 4, 1),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.MELEE,
+                provenance=FIXTURE,
+            ),
+        )
+        return wren
+
+    def mark(self, *, position: int, conditions: Sequence[str] = ()) -> Creature:
+        target = Creature(
+            name="Mark",
+            team="foes",
+            ac=15,
+            max_hp=200,
+            speed=30,
+            position=position,
+            provenance=FIXTURE,
+        )
+        for condition in conditions:
+            target.add_condition(condition)
+        return target
+
+    def bolt(
+        self,
+        *,
+        target_conditions: Sequence[str] = (),
+        caster_conditions: Sequence[str] = (),
+        distance: int = 5,
+        dodging: bool = False,
+        rng: Random | None = None,
+    ) -> Event:
+        """Cast Guiding Bolt at a dummy and return the event describing the attack."""
+        driver = Random(4)
+        wren = self.bolt_caster()
+        for condition in caster_conditions:
+            wren.add_condition(condition)
+        encounter = Encounter(
+            [wren, self.mark(position=distance, conditions=target_conditions)],
+            driver,
+            spellbook=spellbook(),
+        )
+        if dodging:
+            advance_to(encounter, "Mark", driver)
+            encounter.act(Action(kind=ActionKind.DODGE), driver)
+        advance_to(encounter, "Wren", driver)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", targets=("Mark",)),
+            Random(9) if rng is None else rng,
+        )
+        return next(event for event in events if event.kind == "spell_effect")
+
+    @staticmethod
+    def rolled_with(event: Event) -> str:
+        """The Advantage state the d20 in this event was rolled under.
+
+        Matched on the describe() token rather than by substring, because
+        ``"advantage" in "disadvantage"`` is true and would pass either way.
+        """
+        for state in ("disadvantage", "advantage"):
+            if f"] {state} ->" in event.detail:
+                return state
+        return "none"
+
+    def test_an_unhindered_target_is_attacked_straight(self) -> None:
+        assert self.rolled_with(self.bolt()) == "none"
+
+    def test_a_paralyzed_target_grants_advantage(self) -> None:
+        event = self.bolt(target_conditions=(Condition.PARALYZED,))
+        assert self.rolled_with(event) == "advantage"
+
+    def test_a_restrained_target_grants_advantage(self) -> None:
+        event = self.bolt(target_conditions=(Condition.RESTRAINED,))
+        assert self.rolled_with(event) == "advantage"
+
+    def test_a_blinded_caster_attacks_with_disadvantage(self) -> None:
+        event = self.bolt(caster_conditions=(Condition.BLINDED,))
+        assert self.rolled_with(event) == "disadvantage"
+
+    def test_a_frightened_caster_attacks_with_disadvantage(self) -> None:
+        event = self.bolt(caster_conditions=(Condition.FRIGHTENED,))
+        assert self.rolled_with(event) == "disadvantage"
+
+    def test_a_dodging_target_imposes_disadvantage(self) -> None:
+        # SRD 5.2, Dodge: "any attack roll made against you has Disadvantage if
+        # you can see the attacker". The _dodging map was never consulted on the
+        # cast path, so a Dodge bought nothing against a spell.
+        assert self.rolled_with(self.bolt(dodging=True)) == "disadvantage"
+
+    def test_a_blinded_caster_on_a_paralyzed_target_cancels_to_neither(self) -> None:
+        event = self.bolt(
+            caster_conditions=(Condition.BLINDED,),
+            target_conditions=(Condition.PARALYZED,),
+        )
+        assert self.rolled_with(event) == "none"
+
+    def test_a_hit_on_a_paralyzed_target_within_5_feet_is_a_critical(self) -> None:
+        # SRD 5.2, Paralyzed: "Any attack roll that hits you is a Critical Hit if
+        # the attacker is within 5 feet of you."
+        event = self.bolt(
+            target_conditions=(Condition.PARALYZED,), distance=5, rng=FixedRandom(15)
+        )
+        assert "critical hit" in event.detail
+
+    def test_the_same_hit_from_beyond_5_feet_is_not(self) -> None:
+        event = self.bolt(
+            target_conditions=(Condition.PARALYZED,), distance=30, rng=FixedRandom(15)
+        )
+        assert "critical hit" not in event.detail
+        assert "-> hit" in event.detail
+        # Only the automatic critical is distance-scoped; the Advantage the
+        # condition grants applies at any range.
+        assert self.rolled_with(event) == "advantage"
+
+    def test_a_prone_target_is_advantaged_within_5_feet_and_disadvantaged_beyond(
+        self,
+    ) -> None:
+        # SRD 5.2, Prone: "An attack roll against you has Advantage if the
+        # attacker is within 5 feet of you. Otherwise, that attack roll has
+        # Disadvantage." This pair is what pins the AttackKind a spell attack is
+        # classified as. MELEE collapses the engine's melee/range gate to exactly
+        # that distance clause; classifying a spell attack as RANGED would invert
+        # the first half of it.
+        near = self.bolt(target_conditions=(Condition.PRONE,), distance=5)
+        far = self.bolt(target_conditions=(Condition.PRONE,), distance=30)
+        assert self.rolled_with(near) == "advantage"
+        assert self.rolled_with(far) == "disadvantage"
+
+    def test_the_cast_path_and_the_swing_path_agree_about_advantage(self) -> None:
+        # The drift guard, and the half of it that still has two code paths to
+        # compare: spell_attack_advantage pins kind, attack_advantage reads it off
+        # the weapon, and against this target they have to land on the same answer.
+        rng = Random(4)
+        wren = self.bolt_caster()
+        target = self.mark(position=5, conditions=(Condition.PARALYZED,))
+        encounter = Encounter([wren, target], rng, spellbook=spellbook())
+        dagger = wren.attacks[0]
+        assert encounter.spell_attack_advantage(wren, target) == encounter.attack_advantage(
+            wren, target, dagger
+        )
+        assert encounter.spell_attack_advantage(wren, target) is Advantage.ADVANTAGE
+
+    def test_one_forced_critical_rule_serves_both_paths(self) -> None:
+        # There is deliberately no spell-specific counterpart to compare against:
+        # the rule reads the target's conditions and the attacker's distance and
+        # nothing about the attack, so the encounter exposes exactly one method and
+        # both paths call it. What is left to pin is the distance scope itself.
+        rng = Random(4)
+        wren = self.bolt_caster()
+        near = self.mark(position=5, conditions=(Condition.PARALYZED,))
+        far = self.mark(position=30, conditions=(Condition.PARALYZED,))
+        far.name = "Distant"
+        encounter = Encounter([wren, near, far], rng, spellbook=spellbook())
+        assert encounter.attack_forced_critical(wren, near)
+        assert not encounter.attack_forced_critical(wren, far)
+
+
 class TestTurnLegality:
     def test_an_incapacitated_creature_cannot_act(self) -> None:
         rng = Random(1)

@@ -13,7 +13,7 @@ import pytest
 
 from fivee_sim.data import spellbook
 from fivee_sim.kernel.conditions import Condition
-from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellTarget, resolve_spell
 
@@ -147,6 +147,110 @@ class TestAttackRollSpells:
         )
         assert resolution.results[0].damage_dealt == 0
         assert not resolution.results[0].affected
+
+
+class TestSpellAttackAdvantage:
+    """A spell attack roll carries Advantage the way a weapon attack roll does.
+
+    SRD 5.2 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
+    represents making an attack with a weapon, an Unarmed Strike, or a spell."
+    Advantage is a property of the d20 test, not of the thing swung, so nothing
+    about a spell exempts it.
+    """
+
+    def bolt(self) -> Spell:
+        return spellbook()["Guiding Bolt"]
+
+    def test_a_target_carrying_advantage_rolls_two_dice(self) -> None:
+        resolution = resolve_spell(
+            Random(5),
+            self.bolt(),
+            slot_level=1,
+            save_dc=15,
+            spell_attack_bonus=5,
+            targets=(
+                SpellTarget(name="Held", ac=15, attack_advantage=Advantage.ADVANTAGE),
+            ),
+        )
+        attack = resolution.results[0].attack
+        assert attack is not None
+        assert attack.roll.advantage is Advantage.ADVANTAGE
+        assert len(attack.roll.rolls) == 2
+
+    def test_advantage_is_decided_per_target_rather_than_per_cast(self) -> None:
+        # The reason these live on SpellTarget rather than on the call: one spell
+        # can strike several creatures in different states, and a single
+        # spell-wide value cannot describe all three of these at once.
+        resolution = resolve_spell(
+            Random(5),
+            self.bolt(),
+            slot_level=1,
+            save_dc=15,
+            spell_attack_bonus=5,
+            targets=(
+                SpellTarget(name="Held", ac=15, attack_advantage=Advantage.ADVANTAGE),
+                SpellTarget(name="Alert", ac=15),
+                SpellTarget(
+                    name="Dodging", ac=15, attack_advantage=Advantage.DISADVANTAGE
+                ),
+            ),
+        )
+        held, alert, dodging = (result.attack for result in resolution.results)
+        assert held is not None and alert is not None and dodging is not None
+        assert held.roll.advantage is Advantage.ADVANTAGE
+        assert alert.roll.advantage is Advantage.NONE
+        assert dodging.roll.advantage is Advantage.DISADVANTAGE
+
+    def test_a_forced_critical_upgrades_a_hit(self) -> None:
+        resolution = resolve_spell(
+            FixedRandom(15),
+            self.bolt(),
+            slot_level=1,
+            save_dc=15,
+            spell_attack_bonus=5,
+            targets=(SpellTarget(name="Held", ac=15, forced_critical=True),),
+        )
+        result = resolution.results[0]
+        assert result.attack is not None
+        assert result.attack.hit
+        assert result.attack.critical
+        # Guiding Bolt is 4d6, doubled to 8d6, every die maximised by the fixture.
+        assert result.damage_dealt == 8 * 6
+
+    def test_a_forced_critical_does_not_turn_a_miss_into_a_hit(self) -> None:
+        resolution = resolve_spell(
+            FixedRandom(2),
+            self.bolt(),
+            slot_level=1,
+            save_dc=15,
+            spell_attack_bonus=0,
+            targets=(SpellTarget(name="Missed", ac=25, forced_critical=True),),
+        )
+        result = resolution.results[0]
+        assert result.attack is not None
+        assert not result.attack.hit
+        assert not result.attack.critical
+        assert result.damage_dealt == 0
+
+    def test_a_forced_critical_is_decided_per_target_too(self) -> None:
+        # Two creatures caught by one spell, one within 5 ft of the caster and one
+        # not. The automatic critical is scoped by that distance, so it cannot be
+        # a property of the cast.
+        resolution = resolve_spell(
+            FixedRandom(15),
+            self.bolt(),
+            slot_level=1,
+            save_dc=15,
+            spell_attack_bonus=5,
+            targets=(
+                SpellTarget(name="Adjacent", ac=15, forced_critical=True),
+                SpellTarget(name="Distant", ac=15, forced_critical=False),
+            ),
+        )
+        adjacent, distant = (result.attack for result in resolution.results)
+        assert adjacent is not None and distant is not None
+        assert adjacent.hit and adjacent.critical
+        assert distant.hit and not distant.critical
 
 
 class TestConditionSpells:

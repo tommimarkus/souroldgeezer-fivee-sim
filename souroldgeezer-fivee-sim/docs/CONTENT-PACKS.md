@@ -140,6 +140,15 @@ Failing a save and being bad at one are different flags on purpose.
 only weights it, and the creature can still succeed. Setting both leaves the
 automatic failure in charge.
 
+`melee_hits_are_critical` is scoped by **distance, not by weapon**, and the name is
+historical. It upgrades any attack roll that lands from within 5 ft — a swing, a
+shot, or a spell attack — which is how SRD 5.2 words the clause on Paralyzed and
+Unconscious. Beyond 5 ft it does nothing.
+
+The three flags that read on attack rolls — `attacked_with_advantage`,
+`own_attacks_have_disadvantage`, and their siblings — apply to spell attack rolls
+as well as weapon ones, because the rules treat both as the same D20 Test.
+
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.
 

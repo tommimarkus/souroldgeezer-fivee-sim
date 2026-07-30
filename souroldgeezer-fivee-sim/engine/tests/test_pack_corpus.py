@@ -41,6 +41,7 @@ from fivee_sim.content import (
 )
 from fivee_sim.data import make_creature
 from fivee_sim.kernel.actions import (
+    MELEE_THRESHOLD,
     AttackKind,
     compute_attack_advantage,
     melee_hit_is_critical,
@@ -386,10 +387,15 @@ class TestConditionsAreOrdinaryStrings:
             assert speed_is_zero([name], table) is effect.speed_zero
             for kind, distance in ((AttackKind.MELEE, 5), (AttackKind.RANGED, 60)):
                 in_melee = kind is AttackKind.MELEE
+                # The automatic critical is scoped by distance alone, so its oracle
+                # reads the distance. The two cases above vary kind and distance
+                # together, so an oracle keyed on ``in_melee`` agreed here by
+                # coincidence and would have hidden a ranged attack from inside 5 ft.
+                within_5_feet = distance <= MELEE_THRESHOLD
                 assert melee_hit_is_critical(
-                    target_conditions=[name], kind=kind, distance=distance,
+                    target_conditions=[name], distance=distance,
                     condition_effects=table,
-                ) is (effect.melee_hits_are_critical and in_melee)
+                ) is (effect.melee_hits_are_critical and within_5_feet)
                 for as_attacker in (True, False):
                     got = compute_attack_advantage(
                         attacker_conditions=[name] if as_attacker else [],

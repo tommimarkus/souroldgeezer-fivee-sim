@@ -16,6 +16,7 @@ import pytest
 
 from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.analytics.montecarlo import (
+    _spell_options,
     auto_action,
     run_encounter,
     simulate_dpr,
@@ -24,12 +25,13 @@ from fivee_sim.analytics.montecarlo import (
 )
 from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.dice import Dice
+from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import ActionKind, Encounter
 
-from .test_encounter import advance_to, fighter
+from .test_encounter import advance_to, caster, fighter
 
 SEED = 20260730
 
@@ -418,6 +420,81 @@ class TestPolicyChoosesByExpectedDamage:
         )
         assert result["actions"] == {"attack:Dagger": 600}
         assert result["damage"]["mean"] > 0
+
+
+class TestPolicyValuesSpellAttacks:
+    """The policy weighs a spell attack under the state it will actually roll under.
+
+    The weapon branch already asked the encounter for both Advantage and forced
+    criticals; the attack-roll spell branch asked for neither, so a Guiding Bolt
+    at a helpless target was valued as a flat d20 while the stepper would roll it
+    with Advantage and turn every hit into a critical. CLAUDE.md: analytics
+    replays the stepper, it does not keep a second copy of the rules.
+    """
+
+    def bolt_caster(self) -> Creature:
+        wren = caster(position=0)
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 4}
+        wren.spell_attack_bonus = 5
+        return wren
+
+    def valued(self, *, conditions: Sequence[str], distance: int) -> float:
+        wren = self.bolt_caster()
+        mark = Creature(
+            name="Mark",
+            team="foes",
+            ac=15,
+            max_hp=200,
+            speed=30,
+            position=distance,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        for condition in conditions:
+            mark.add_condition(condition)
+        encounter = Encounter([wren, mark], Random(SEED), spellbook=spellbook())
+        options = _spell_options(encounter, wren, [mark])
+        return next(
+            option.value
+            for option in options
+            if option.tiebreak == "cast:Guiding Bolt:1:Mark"
+        )
+
+    def test_a_helpless_adjacent_target_is_valued_with_advantage_and_the_critical(
+        self,
+    ) -> None:
+        # The oracle is the engine's own exact arithmetic under the state the
+        # stepper will roll under, so the two cannot drift.
+        expected = attack_damage_expectation(
+            attack_bonus=5,
+            target_ac=15,
+            damage=Dice(4, 6),
+            advantage=Advantage.ADVANTAGE,
+            forced_critical=True,
+        )
+        assert self.valued(
+            conditions=(Condition.PARALYZED,), distance=5
+        ) == pytest.approx(expected)
+
+    def test_the_same_target_out_of_reach_keeps_the_advantage_and_loses_the_critical(
+        self,
+    ) -> None:
+        expected = attack_damage_expectation(
+            attack_bonus=5,
+            target_ac=15,
+            damage=Dice(4, 6),
+            advantage=Advantage.ADVANTAGE,
+            forced_critical=False,
+        )
+        assert self.valued(
+            conditions=(Condition.PARALYZED,), distance=30
+        ) == pytest.approx(expected)
+
+    def test_an_unhindered_target_is_still_valued_as_a_flat_roll(self) -> None:
+        expected = attack_damage_expectation(
+            attack_bonus=5, target_ac=15, damage=Dice(4, 6)
+        )
+        assert self.valued(conditions=(), distance=30) == pytest.approx(expected)
 
 
 class TestPolicyPlacesAreaSpells:

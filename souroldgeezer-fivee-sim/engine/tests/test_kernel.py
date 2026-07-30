@@ -12,6 +12,7 @@ from random import Random
 import pytest
 
 from fivee_sim.kernel.actions import (
+    MELEE_THRESHOLD,
     AttackKind,
     compute_attack_advantage,
     melee_hit_is_critical,
@@ -241,11 +242,26 @@ class TestConditionInteractions:
 
     def test_paralyzed_makes_melee_hits_critical_only_within_reach(self) -> None:
         assert melee_hit_is_critical(
-            target_conditions=(Condition.PARALYZED,), kind=AttackKind.MELEE, distance=5
+            target_conditions=(Condition.PARALYZED,), distance=5
         )
         assert not melee_hit_is_critical(
-            target_conditions=(Condition.PARALYZED,), kind=AttackKind.RANGED, distance=30
+            target_conditions=(Condition.PARALYZED,), distance=30
         )
+
+    def test_the_automatic_critical_is_scoped_by_distance_not_by_weapon(self) -> None:
+        # SRD 5.2 Rules Glossary, Paralyzed and Unconscious, both verbatim: "Any
+        # attack roll that hits you is a Critical Hit if the attacker is within 5
+        # feet of you." The clause names a distance and no weapon kind, which is
+        # why the function takes no AttackKind: an attack that is not melee still
+        # qualifies when it is made from inside 5 feet, and one that is melee does
+        # not qualify from outside it.
+        for condition in (Condition.PARALYZED, Condition.UNCONSCIOUS):
+            assert melee_hit_is_critical(
+                target_conditions=(condition,), distance=MELEE_THRESHOLD
+            )
+            assert not melee_hit_is_critical(
+                target_conditions=(condition,), distance=MELEE_THRESHOLD + 5
+            )
 
     def test_incapacitating_and_speed_zero_conditions(self) -> None:
         assert is_incapacitated((Condition.STUNNED,))

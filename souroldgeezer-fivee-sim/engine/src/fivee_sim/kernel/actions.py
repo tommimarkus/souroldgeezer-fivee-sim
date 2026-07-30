@@ -84,12 +84,24 @@ def compute_attack_advantage(
 def melee_hit_is_critical(
     *,
     target_conditions: Iterable[str],
-    kind: AttackKind,
     distance: int,
     condition_effects: ConditionTable = EFFECTS,
 ) -> bool:
-    """Whether a landed hit is upgraded to a critical by the target's condition."""
-    if kind is not AttackKind.MELEE or distance > MELEE_THRESHOLD:
+    """Whether a landed hit is upgraded to a critical by the target's condition.
+
+    **The rule is scoped by distance, not by weapon.** Paralyzed and Unconscious
+    both word it identically in SRD 5.2: "Any attack roll that hits you is a
+    Critical Hit if the attacker is within 5 feet of you." That names a distance
+    and no melee/ranged qualifier, so a ranged attack — or a spell attack — made
+    from inside 5 feet qualifies exactly as a sword swing does. This function
+    therefore takes no :class:`AttackKind`; an argument the rule does not consult
+    is an invitation to reintroduce a check the rule never had.
+
+    The flag it reads is still called ``melee_hits_are_critical``. That name is
+    historical and pack-facing, so it stays: renaming it would break every content
+    pack that sets it, for no change in behaviour.
+    """
+    if distance > MELEE_THRESHOLD:
         return False
     return any(
         effect_of(condition, condition_effects).melee_hits_are_critical
