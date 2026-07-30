@@ -972,17 +972,23 @@ def simulate_rounds(
     iterations: int = 500,
     seed: int = 0,
     max_rounds: int = 20,
+    movement_rule: str = "5-5-5",
+    map: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Auto-play the same encounter many times and report win rates and length.
 
-    Combatant specs match ``encounter_create``. Iteration ``i`` uses ``seed + i``,
-    so one iteration reproduces a single hand-played encounter at that seed.
+    Combatant specs match ``encounter_create``, as do ``movement_rule`` and the
+    inline ``map`` spec — with a map, every iteration fights on it: terrain
+    costs, cover, sight, and pathfinding all apply, and doors reset to their
+    initial state between iterations. Iteration ``i`` uses ``seed + i``, so one
+    iteration reproduces a single hand-played encounter at that seed.
     """
     specs = list(combatants)
     # The registry is captured once, here. Resolving content per iteration would let
     # a reconfiguration land mid-batch and make the result unreproducible from its
     # seed, which is the one property these numbers rest on.
     registry = _registry()
+    battle_map = _battle_map_from_spec(map) if map is not None else None
 
     def factory() -> list[Creature]:
         return _combatants(specs, registry)
@@ -996,6 +1002,9 @@ def simulate_rounds(
             spellbook=dict(registry.spells),
             items=dict(registry.items),
             condition_effects=registry.condition_effects,
+            movement_rule=_movement_rule(movement_rule),
+            battle_map=battle_map,
+            terrain_effects=registry.terrain_effects,
         )
     except (ValueError, EncounterError) as error:
         raise ToolError(str(error)) from error

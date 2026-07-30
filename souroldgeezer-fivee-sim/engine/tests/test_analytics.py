@@ -25,10 +25,11 @@ from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
 from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.model.battlemap import BattleMap
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import ActionKind, Encounter
 
-from .test_encounter import advance_to, fighter
+from .test_encounter import advance_to, fighter, shaped_spellbook, shaper
 
 SEED = 20260730
 
@@ -163,7 +164,9 @@ class TestSummarise:
         assert stats.p90 == 9.0
 
 
-def blaster(name: str = "Ilva", *, position: int = 0, team: str = "party") -> Creature:
+def blaster(
+    name: str = "Ilva", *, position: int | tuple[int, int] = 0, team: str = "party"
+) -> Creature:
     """A caster carrying a weapon — the case the old policy measured wrongly."""
     return Creature(
         name=name,
@@ -303,6 +306,157 @@ class TestPolicyPlacesAreaSpells:
             spellbook=spellbook(),
         )
         assert result["win_rate"].get("party", 0.0) > 0.5
+
+
+FIXTURE = "synthetic test fixture, not SRD content"
+
+
+def walled_arena() -> BattleMap:
+    """A 6x3 arena with a wall stub: melee must walk around, sight is partial."""
+    return BattleMap(
+        name="arena", width=6, height=3,
+        terrain={(2, 0): "wall", (2, 1): "wall"},
+        provenance=FIXTURE,
+    )
+
+
+def mapped_duel() -> Sequence[Creature]:
+    return [
+        fighter("Thora", position=(0, 0)),
+        make_monster("Goblin Warrior", label="Goblin", position=(25, 0)),
+    ]
+
+
+class TestMappedAnalytics:
+    def test_a_mapped_iteration_matches_a_single_hand_driven_run(self) -> None:
+        # The mapped sibling of the load-bearing parity test: one batch iteration
+        # on a map must equal a hand-driven encounter on the identical map.
+        rng = Random(SEED)
+        encounter = Encounter(
+            list(mapped_duel()), rng, spellbook=spellbook(),
+            battle_map=walled_arena(),
+        )
+        manual = run_encounter(encounter, rng, max_rounds=20)
+
+        batch = simulate_rounds(
+            mapped_duel, iterations=1, seed=SEED, max_rounds=20,
+            spellbook=spellbook(), battle_map=walled_arena(),
+        )
+
+        expected_winner = manual.winner if manual.winner is not None else "none"
+        assert batch["wins"] == {expected_winner: 1}
+        assert batch["rounds"]["mean"] == float(manual.rounds)
+
+    def test_the_same_seed_produces_an_identical_mapped_transcript(self) -> None:
+        def transcript(seed: int) -> list[tuple[str, str, str, str]]:
+            rng = Random(seed)
+            encounter = Encounter(
+                list(mapped_duel()), rng, spellbook=spellbook(),
+                battle_map=walled_arena(),
+            )
+            run_encounter(encounter, rng, max_rounds=20)
+            return [
+                (event.kind, event.actor, event.target, event.detail)
+                for event in encounter.log
+            ]
+
+        assert transcript(SEED) == transcript(SEED)
+
+    def test_the_policy_closes_around_the_wall_and_the_fight_concludes(self) -> None:
+        # A dominant-axis stepper would march into the wall, be refused, and
+        # stall to the round cap; a routed closer reaches the goblin and ends it.
+        result = simulate_rounds(
+            mapped_duel, iterations=5, seed=SEED, max_rounds=20,
+            spellbook=spellbook(), battle_map=walled_arena(),
+        )
+        assert result["timed_out"] == 0
+        assert sum(result["wins"].values()) == 5
+
+
+class TestPolicyPlacesShapes:
+    def test_a_cone_is_aimed_at_the_wedge_that_catches_the_cluster(self) -> None:
+        rng = Random(SEED)
+        combatants = [
+            shaper(position=(0, 0)),
+            make_monster("Goblin Warrior", label="East A", position=(10, 0)),
+            make_monster("Goblin Warrior", label="East B", position=(10, 5)),
+        ]
+        encounter = Encounter(combatants, rng, spellbook=shaped_spellbook())
+        advance_to(encounter, "Vesna", rng)
+        action = auto_action(encounter)
+        assert action is not None
+        assert action.kind is ActionKind.CAST
+        assert action.spell == "Flame Fan"
+        assert action.direction is not None
+        caught = encounter.area_targets(
+            encounter.spellbook["Flame Fan"], "Vesna", direction=action.direction
+        )
+        assert sorted(creature.name for creature in caught) == ["East A", "East B"]
+
+    def test_a_line_is_aimed_down_the_rank_of_enemies(self) -> None:
+        rng = Random(SEED)
+        combatants = [
+            shaper(position=(0, 0)),
+            make_monster("Goblin Warrior", label="Near", position=(15, 0)),
+            make_monster("Goblin Warrior", label="Far", position=(30, 0)),
+        ]
+        encounter = Encounter(combatants, rng, spellbook=shaped_spellbook())
+        # Keep only the line in hand so the choice under test is the aim.
+        encounter.creatures["Vesna"].spells = ("Spark Line",)
+        advance_to(encounter, "Vesna", rng)
+        action = auto_action(encounter)
+        assert action is not None
+        assert action.spell == "Spark Line"
+        assert action.toward is not None
+        caught = encounter.area_targets(
+            encounter.spellbook["Spark Line"], "Vesna", toward=action.toward
+        )
+        assert sorted(creature.name for creature in caught) == ["Far", "Near"]
+
+    def test_a_cube_corner_is_chosen_to_cover_both_targets(self) -> None:
+        rng = Random(SEED)
+        combatants = [
+            shaper(position=(0, 0)),
+            make_monster("Goblin Warrior", label="A", position=(30, 0)),
+            make_monster("Goblin Warrior", label="B", position=(35, 5)),
+        ]
+        encounter = Encounter(combatants, rng, spellbook=shaped_spellbook())
+        encounter.creatures["Vesna"].spells = ("Stone Cube",)
+        advance_to(encounter, "Vesna", rng)
+        action = auto_action(encounter)
+        assert action is not None
+        assert action.spell == "Stone Cube"
+        assert action.center is not None
+        caught = encounter.area_targets(
+            encounter.spellbook["Stone Cube"], "Vesna", center=action.center
+        )
+        assert sorted(creature.name for creature in caught) == ["A", "B"]
+
+    def test_a_sphere_on_a_map_is_never_centred_where_the_caster_cannot_see(
+        self,
+    ) -> None:
+        # Goblins far enough behind a full-height wall that every origin within
+        # the blast's radius of them is on the hidden side: no visible origin
+        # catches them, so the policy must not propose the cast at all. Everyone
+        # stands in interior rows — a corner on the map boundary could legally
+        # graze along the edge, which is the sight policy, not the subject here.
+        rng = Random(SEED)
+        sealed = BattleMap(
+            name="sealed", width=10, height=5,
+            terrain={(3, row): "wall" for row in range(5)},
+            provenance=FIXTURE,
+        )
+        combatants = [
+            blaster(position=(0, 10)),
+            make_monster("Goblin Warrior", label="Hidden A", position=(40, 10)),
+            make_monster("Goblin Warrior", label="Hidden B", position=(40, 15)),
+        ]
+        encounter = Encounter(
+            combatants, rng, spellbook=spellbook(), battle_map=sealed
+        )
+        advance_to(encounter, "Ilva", rng)
+        action = auto_action(encounter)
+        assert action is None or action.kind is not ActionKind.CAST
 
 
 class TestRoundsReported:

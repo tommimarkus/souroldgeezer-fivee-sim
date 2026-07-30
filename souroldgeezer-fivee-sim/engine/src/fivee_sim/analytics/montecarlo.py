@@ -29,9 +29,23 @@ from typing import Any
 
 from ..kernel.conditions import ConditionTable
 from ..kernel.dice import Dice
-from ..kernel.grid import as_point
+from ..kernel.grid import (
+    FEET_PER_SQUARE,
+    CoverGrade,
+    DiagonalRule,
+    Point,
+    Square,
+    TerrainTable,
+    as_point,
+    cover_ac_bonus,
+    distance_feet,
+    sphere_squares,
+    square_center,
+    to_square,
+)
 from ..kernel.items import ItemEffect
-from ..kernel.spells import Spell
+from ..kernel.spells import Spell, SpellShape
+from ..model.battlemap import BattleMap
 from ..model.creature import Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from .expectation import attack_damage_expectation, save_damage_expectation
@@ -135,16 +149,24 @@ def auto_action(encounter: Encounter) -> Action | None:
 def _attack_options(
     encounter: Encounter, actor: Creature, enemies: Sequence[Creature]
 ) -> list[_Option]:
-    """Every attack the actor could make right now, valued."""
+    """Every attack the actor could make right now, valued.
+
+    Cover comes from :meth:`Encounter.cover_between` — the stepper's own
+    authority — so a target the stepper would refuse (total cover) is never
+    proposed, and a screened one is valued at its actual, raised AC.
+    """
     options: list[_Option] = []
     for option in actor.attacks:
         reach = option.max_distance()
         for target in enemies:
             if actor.distance_to(target, encounter.movement_rule) > reach:
                 continue
+            grade = encounter.cover_between(actor.name, target.name)
+            if grade is CoverGrade.TOTAL:
+                continue
             expected = attack_damage_expectation(
                 attack_bonus=option.attack_bonus,
-                target_ac=target.ac,
+                target_ac=target.ac + cover_ac_bonus(grade),
                 damage=option.damage,
                 advantage=encounter.attack_advantage(actor, target, option),
                 forced_critical=encounter.attack_forced_critical(actor, target, option),
@@ -224,52 +246,94 @@ def _spell_options(
     return options
 
 
+def _area_value(
+    encounter: Encounter,
+    actor: Creature,
+    spell: Spell,
+    dice: Dice,
+    caught: Sequence[Creature],
+) -> float:
+    """What one placement is worth: enemy damage in, ally damage against.
+
+    Each share is capped at the creature's remaining hit points, so overkill is
+    not value; allies caught in the area, the caster included, subtract theirs.
+    """
+    value = 0.0
+    for creature in caught:
+        expected = _save_expectation(encounter, actor, spell, dice, creature)
+        share = min(expected, float(creature.hp))
+        value += -share if creature.team == actor.team else share
+    return value
+
+
 def _area_option(
     encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
 ) -> _Option | None:
-    """Best point of origin for an area spell, or ``None`` if no placement is worth it.
+    """Best placement of an area spell, or ``None`` if no placement is worth it.
 
-    Only the endpoints of each creature's catchment need testing. A creature at
-    ``p`` is caught exactly when the origin lies in ``[p - radius, p + radius]``, so
-    the set of creatures caught only changes at those endpoints — testing them is
-    exhaustive, not a sample.
+    Membership always comes from :meth:`Encounter.area_targets` — the same
+    authority the stepper resolves the cast with — so what the policy expects to
+    catch is exactly what the cast will catch. What varies by shape is the
+    candidate set of placements:
 
-    Allies caught in the blast, the caster included, count *against* the placement.
+    * **Spheres on a map** are exhaustive over lattice origins: any origin that
+      catches at least one creature lies inside that creature's own catchment
+      ball, so the union of per-creature balls (clipped to the map, the spell's
+      range, and the caster's sight) contains the true optimum, and the value of
+      an origin depends only on the set it catches.
+    * **Spheres on the open plane** test each creature's interval endpoints —
+      ``x - r``, ``x``, ``x + r`` at the creature's own ``y``. On the one-axis
+      battlefield this is the historical candidate set, choice for choice; off
+      the axis it is an approximation that never beats the map-borne search.
+    * **Cubes** are exhaustive by the same union argument: a cube catches a
+      creature exactly when its minimum corner lies in the n-by-n box below and
+      left of the creature's square.
+    * **Cones** have eight castable directions; trying all eight is exhaustive
+      by construction.
+    * **Lines** are aimed at each conscious enemy in turn — deliberately
+      approximate: a line clipping two creatures while aimed between them is
+      never considered, and that is documented rather than hidden.
+
+    Candidates are iterated in sorted order and the first strict maximum wins,
+    so the choice is deterministic and consumes no randomness.
     """
-    from ..kernel.spells import SpellShape
+    match spell.effective_shape:
+        case SpellShape.SPHERE:
+            return _sphere_option(encounter, actor, spell, slot_level, dice)
+        case SpellShape.CUBE:
+            return _cube_option(encounter, actor, spell, slot_level, dice)
+        case SpellShape.CONE:
+            return _cone_option(encounter, actor, spell, slot_level, dice)
+        case SpellShape.LINE:
+            return _line_option(encounter, actor, spell, slot_level, dice)
+        case _:
+            return None
 
-    if spell.effective_shape is not SpellShape.SPHERE:
-        # Cones, lines, and cubes are resolvable by the stepper but not yet
-        # placeable by the policy; the analytics rework teaches it to aim them.
-        return None
-    # Interval arithmetic on the x components: the battlefield is still the
-    # x-axis this step, and the endpoints of each catchment stay exhaustive.
-    actor_x = as_point(actor.position)[0]
-    candidates: set[int] = set()
-    for creature in encounter.creatures.values():
-        if not creature.conscious:
-            continue
-        for offset in (-spell.radius, 0, spell.radius):
-            centre = as_point(creature.position)[0] + offset
-            if spell.range_feet and abs(centre - actor_x) > spell.range_feet:
-                continue
-            candidates.add(centre)
 
+def _centered_option(
+    encounter: Encounter,
+    actor: Creature,
+    spell: Spell,
+    slot_level: int,
+    dice: Dice,
+    candidates: set[Point],
+) -> _Option | None:
+    """Best of the candidate centres, range- and sight-filtered, first max wins."""
+    origin = as_point(actor.position)
     best: _Option | None = None
     for centre in sorted(candidates):
-        value = 0.0
-        for creature in encounter.creatures.values():
-            if not creature.conscious:
-                continue
-            if abs(as_point(creature.position)[0] - centre) > spell.radius:
-                continue
-            expected = _save_expectation(encounter, actor, spell, dice, creature)
-            share = min(expected, float(creature.hp))
-            value += -share if creature.team == actor.team else share
+        if spell.range_feet and (
+            distance_feet(centre, origin, encounter.movement_rule) > spell.range_feet
+        ):
+            continue
+        if not encounter.origin_visible(actor.name, centre):
+            continue
+        caught = encounter.area_targets(spell, actor.name, center=centre)
+        value = _area_value(encounter, actor, spell, dice, caught)
         if best is None or value > best.value:
             best = _Option(
                 value=value,
-                tiebreak=f"cast:{spell.name}:{slot_level}:@{centre}",
+                tiebreak=f"cast:{spell.name}:{slot_level}:@{centre[0]},{centre[1]}",
                 action=Action(
                     kind=ActionKind.CAST,
                     spell=spell.name,
@@ -278,6 +342,101 @@ def _area_option(
                 ),
             )
     return best
+
+
+def _conscious(encounter: Encounter) -> list[Creature]:
+    return [c for c in encounter.creatures.values() if c.conscious]
+
+
+def _sphere_option(
+    encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
+) -> _Option | None:
+    candidates: set[Point] = set()
+    if encounter.battle_map is None:
+        for creature in _conscious(encounter):
+            px, py = as_point(creature.position)
+            for offset in (-spell.radius, 0, spell.radius):
+                candidates.add((px + offset, py))
+    else:
+        width, height = encounter.battle_map.width, encounter.battle_map.height
+        squares: set[Square] = set()
+        for creature in _conscious(encounter):
+            squares |= sphere_squares(
+                to_square(as_point(creature.position)),
+                spell.radius,
+                rule=encounter.movement_rule,
+            )
+        candidates = {
+            square_center(square)
+            for square in squares
+            if 0 <= square[0] < width and 0 <= square[1] < height
+        }
+    return _centered_option(encounter, actor, spell, slot_level, dice, candidates)
+
+
+def _cube_option(
+    encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
+) -> _Option | None:
+    side = max(1, spell.size // FEET_PER_SQUARE)
+    candidates: set[Point] = set()
+    for creature in _conscious(encounter):
+        sx, sy = to_square(as_point(creature.position))
+        for dx in range(side):
+            for dy in range(side):
+                candidates.add(square_center((sx - dx, sy - dy)))
+    return _centered_option(encounter, actor, spell, slot_level, dice, candidates)
+
+
+def _cone_option(
+    encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
+) -> _Option | None:
+    best: _Option | None = None
+    for direction in sorted(_DIRECTIONS):
+        caught = encounter.area_targets(spell, actor.name, direction=direction)
+        value = _area_value(encounter, actor, spell, dice, caught)
+        if best is None or value > best.value:
+            best = _Option(
+                value=value,
+                tiebreak=(
+                    f"cast:{spell.name}:{slot_level}:@{direction[0]},{direction[1]}"
+                ),
+                action=Action(
+                    kind=ActionKind.CAST,
+                    spell=spell.name,
+                    slot_level=slot_level,
+                    direction=direction,
+                ),
+            )
+    return best
+
+
+def _line_option(
+    encounter: Encounter, actor: Creature, spell: Spell, slot_level: int, dice: Dice
+) -> _Option | None:
+    actor_square = to_square(as_point(actor.position))
+    best: _Option | None = None
+    for enemy in sorted(encounter.enemies_of(actor.name), key=lambda c: c.name):
+        if to_square(as_point(enemy.position)) == actor_square:
+            continue  # a line cannot be aimed at the caster's own square
+        caught = encounter.area_targets(spell, actor.name, toward=enemy.name)
+        value = _area_value(encounter, actor, spell, dice, caught)
+        if best is None or value > best.value:
+            best = _Option(
+                value=value,
+                tiebreak=f"cast:{spell.name}:{slot_level}:@{enemy.name}",
+                action=Action(
+                    kind=ActionKind.CAST,
+                    spell=spell.name,
+                    slot_level=slot_level,
+                    toward=enemy.name,
+                ),
+            )
+    return best
+
+
+_DIRECTIONS: tuple[Point, ...] = (
+    (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1),
+)
 
 
 def _resists(target: Creature, spell: Spell) -> bool:
@@ -325,6 +484,10 @@ def _closing_move(
     desired = _threat_range(encounter, actor)
     if desired is None:
         return None
+    if encounter.battle_map is not None:
+        return _closing_move_mapped(
+            encounter, actor, enemies, int(turn["movement_left"]), desired
+        )
     rule = encounter.movement_rule
     target = min(
         enemies, key=lambda creature: (actor.distance_to(creature, rule), creature.name)
@@ -345,6 +508,61 @@ def _closing_move(
     else:
         destination = (ax, ay + (step if ty > ay else -step))
     return Action(kind=ActionKind.MOVE, to_position=destination)
+
+
+def _closing_move_mapped(
+    encounter: Encounter,
+    actor: Creature,
+    enemies: Sequence[Creature],
+    budget: int,
+    desired: int,
+) -> Action | None:
+    """Close on the nearest reachable enemy along a real route.
+
+    The nearest enemy is nearest **by route cost**, ties broken on name — a foe
+    five feet away through a wall is further than one down the corridor. The
+    move walks the affordable part of that route: the furthest square on it that
+    the budget reaches, is not stood in, and does not overshoot the desired
+    range. Every candidate stop is priced with :meth:`Encounter.route`, the same
+    pathfinding the stepper charges with, so an emitted move is never refused.
+    Unreachable enemies — or no affordable progress at all — mean ``None``.
+    """
+    rule = encounter.movement_rule
+    routed: list[tuple[int, str, Creature, tuple[Square, ...]]] = []
+    for enemy in sorted(enemies, key=lambda creature: creature.name):
+        path = encounter.route(
+            actor.name, to_square(as_point(enemy.position)), stop_adjacent=True
+        )
+        if path is not None:
+            routed.append((path.cost_feet, enemy.name, enemy, path.squares))
+    if not routed:
+        return None
+    _cost, _name, enemy, squares = min(routed, key=lambda entry: (entry[0], entry[1]))
+    if actor.distance_to(enemy, rule) <= desired:
+        return None
+    # Truncate at the first square already within the desired range: a ranged
+    # attacker stops where it can shoot from rather than marching into melee.
+    walk = list(squares)
+    for index, square in enumerate(walk):
+        if index and distance_feet(
+            square_center(square), as_point(enemy.position), rule
+        ) <= desired:
+            walk = walk[: index + 1]
+            break
+    occupied = {
+        to_square(as_point(creature.position))
+        for creature in encounter.creatures.values()
+        if creature.conscious and creature.name != actor.name
+    }
+    for index in range(len(walk) - 1, 0, -1):
+        stop = walk[index]
+        if stop in occupied:
+            continue
+        leg = encounter.route(actor.name, stop, max_cost=budget)
+        if leg is None:
+            continue
+        return Action(kind=ActionKind.MOVE, to_position=square_center(stop))
+    return None
 
 
 def _threat_range(encounter: Encounter, actor: Creature) -> int | None:
@@ -414,12 +632,19 @@ def simulate_rounds(
     spellbook: dict[str, Spell] | None = None,
     items: dict[str, ItemEffect] | None = None,
     condition_effects: ConditionTable | None = None,
+    movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
+    battle_map: BattleMap | None = None,
+    terrain_effects: TerrainTable | None = None,
 ) -> dict[str, Any]:
     """Auto-play the same encounter ``iterations`` times and summarise the outcomes.
 
     The content tables are arguments rather than something resolved per iteration:
     a batch that reloaded content while running would stop being reproducible from
     its seed, which is the one property these numbers rest on.
+
+    ``battle_map`` puts every iteration on the same frozen map — safe to share,
+    since a map is immutable and each :class:`Encounter` builds its own overlay
+    state (door positions reset between iterations by construction).
 
     **Pass ``spellbook`` if any combatant casts.** The policy looks its spells up
     there and skips what it cannot find, so omitting it does not fail — it returns a
@@ -443,6 +668,9 @@ def simulate_rounds(
             spellbook=spellbook,
             items=items,
             condition_effects=condition_effects,
+            movement_rule=movement_rule,
+            battle_map=battle_map,
+            terrain_effects=terrain_effects,
         )
         outcome = run_encounter(encounter, rng, max_rounds=max_rounds)
         key = outcome.winner if outcome.winner is not None else "none"

@@ -40,6 +40,7 @@ from ..kernel.grid import (
     TERRAIN,
     CoverGrade,
     DiagonalRule,
+    Path,
     Point,
     Square,
     TerrainEffect,
@@ -385,6 +386,41 @@ class Encounter:
             for creature in self.creatures.values()
             if creature.conscious
         }
+
+    def route(
+        self,
+        actor_name: str,
+        goal: Square,
+        *,
+        stop_adjacent: bool = False,
+        max_cost: int | None = None,
+    ) -> Path | None:
+        """The cheapest route the named creature could walk to ``goal``, or ``None``.
+
+        Public for the auto-play policy, which must plan movement with the same
+        rules the stepper charges for it. Squares held by conscious enemies
+        block; allies can be crossed. A mapless fight has no routes — movement
+        there is free-form. ``stop_adjacent`` accepts any square next to the
+        goal, which is how you walk *to* a creature; ``max_cost`` abandons
+        routes over budget.
+        """
+        if self.battle_map is None:
+            return None
+        actor = self.creatures[actor_name]
+        blocked = frozenset(
+            square for square, name in self._occupied().items()
+            if name != actor_name and self.creatures[name].team != actor.team
+        )
+        return find_path(
+            to_square(as_point(actor.position)),
+            goal,
+            entry_cost=self._entry_cost,
+            rule=self.movement_rule,
+            bounds=(self.battle_map.width, self.battle_map.height),
+            blocked=blocked,
+            stop_adjacent=stop_adjacent,
+            max_cost=max_cost,
+        )
 
     def cover_between(self, attacker_name: str, target_name: str) -> CoverGrade:
         """The cover the target has against the attacker, on this fight's map.
@@ -1200,14 +1236,7 @@ class Encounter:
                 else:
                     cost += entering
         else:
-            found = find_path(
-                origin_sq,
-                dest_sq,
-                entry_cost=self._entry_cost,
-                rule=self.movement_rule,
-                bounds=(self.battle_map.width, self.battle_map.height),
-                blocked=enemy_squares,
-            )
+            found = self.route(actor.name, dest_sq)
             if found is None:
                 raise EncounterError(
                     f"no route to {dest_sq}: walls, terrain, or enemies block the way"
