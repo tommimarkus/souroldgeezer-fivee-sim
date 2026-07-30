@@ -1,0 +1,69 @@
+{
+  "provenance": "SRD 5.2",
+  "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 spell descriptions.",
+  "note": "A curated combat set, not the full spell list. Each 'unmodelled' entry is part of the printed spell this engine does not implement.",
+  "spells": [
+    {
+      "name": "Fireball",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "8d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 150,
+      "provenance": "SRD 5.2",
+      "unmodelled": ["Flammable objects in the area start burning"]
+    },
+    {
+      "name": "Shatter",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d8",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 60,
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "A Construct has Disadvantage on the save",
+        "Unattended nonmagical objects in the area also take the damage"
+      ]
+    },
+    {
+      "name": "Hold Person",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "paralyzed",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "Targets Humanoids only; the engine does not track creature type",
+        "The target repeats the save at the end of each of its turns, ending the effect on a success",
+        "Upcasting targets one additional creature per slot level above 2"
+      ]
+    },
+    {
+      "name": "Guiding Bolt",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "damage": "4d6",
+      "damage_type": "radiant",
+      "upcast_damage": "1d6",
+      "range_feet": 120,
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "The next attack roll against a hit target before the end of your next turn has Advantage"
+      ]
+    }
+  ]
+}

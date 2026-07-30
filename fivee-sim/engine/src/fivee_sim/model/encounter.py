@@ -1,0 +1,578 @@
+"""The encounter: initiative, turns, and the authoritative state of a fight.
+
+This is the only place combat state changes. The kernel decides *what* happens;
+this decides *what that does to the fight*. Analytics replays this same stepper
+rather than reimplementing it, which is why a batch run can never disagree with
+live play.
+
+Determinism is a requirement, not a nicety. Initiative ties break on Dexterity
+modifier then name, never randomly, and forced rolls are still rolled so the RNG
+stream stays aligned between a live encounter and its replay.
+
+All provenance: SRD 5.2 (see NOTICE).
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
+from enum import StrEnum
+from random import Random
+from typing import Any
+
+from ..kernel.actions import (
+    MELEE_THRESHOLD,
+    AttackKind,
+    compute_attack_advantage,
+    melee_hit_is_critical,
+    resolve_attack,
+)
+from ..kernel.conditions import Condition
+from ..kernel.dice import roll_d20
+from ..kernel.rules import Ability, concentration_dc, make_d20_test
+from ..kernel.spells import Spell, SpellTarget, resolve_spell
+from .creature import AttackOption, Creature
+
+DEATH_SAVE_DC = 10
+DEATH_SAVES_TO_STABILISE = 3
+DEATH_SAVES_TO_DIE = 3
+
+
+class ActionKind(StrEnum):
+    ATTACK = "attack"
+    CAST = "cast"
+    MOVE = "move"
+    DASH = "dash"
+    DISENGAGE = "disengage"
+    DODGE = "dodge"
+
+
+@dataclass(frozen=True, slots=True)
+class Action:
+    kind: ActionKind
+    target: str | None = None
+    attack: str | None = None
+    spell: str | None = None
+    slot_level: int | None = None
+    to_position: int | None = None
+    targets: tuple[str, ...] = ()
+    center: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Event:
+    kind: str
+    actor: str = ""
+    target: str = ""
+    detail: str = ""
+
+    def as_dict(self) -> dict[str, str]:
+        return {"kind": self.kind, "actor": self.actor, "target": self.target,
+                "detail": self.detail}
+
+
+class EncounterError(ValueError):
+    """An illegal action, reported rather than silently ignored."""
+
+
+@dataclass(slots=True)
+class TurnState:
+    movement_left: int = 0
+    action_used: bool = False
+    attacks_left: int = 0
+
+
+class Encounter:
+    """A fight in progress."""
+
+    def __init__(
+        self,
+        combatants: Sequence[Creature],
+        rng: Random,
+        *,
+        spellbook: Mapping[str, Spell] | None = None,
+    ) -> None:
+        if len(combatants) < 2:
+            raise EncounterError("an encounter needs at least two combatants")
+        names = [creature.name for creature in combatants]
+        duplicates = {name for name in names if names.count(name) > 1}
+        if duplicates:
+            raise EncounterError(
+                "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
+            )
+        self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
+        self.spellbook: dict[str, Spell] = dict(spellbook or {})
+        self.round = 1
+        self.log: list[Event] = []
+        self._dodging: dict[str, bool] = {name: False for name in names}
+        self._disengaged: dict[str, bool] = {name: False for name in names}
+        self._reaction_available: dict[str, bool] = {name: True for name in names}
+        self._turn = TurnState()
+
+        self.initiative: dict[str, int] = {}
+        for creature in combatants:
+            roll = roll_d20(rng)
+            self.initiative[creature.name] = roll.natural + creature.ability_mod(Ability.DEXTERITY)
+        self.order: list[str] = sorted(
+            names,
+            key=lambda name: (
+                -self.initiative[name],
+                -self.creatures[name].ability_mod(Ability.DEXTERITY),
+                name,
+            ),
+        )
+        self.turn_index = 0
+        self._begin_turn(rng)
+
+    # --- queries ----------------------------------------------------------
+    @property
+    def current_name(self) -> str:
+        return self.order[self.turn_index]
+
+    @property
+    def current(self) -> Creature:
+        return self.creatures[self.current_name]
+
+    def teams(self) -> dict[str, list[str]]:
+        grouped: dict[str, list[str]] = {}
+        for creature in self.creatures.values():
+            grouped.setdefault(creature.team, []).append(creature.name)
+        return grouped
+
+    def living_teams(self) -> set[str]:
+        return {c.team for c in self.creatures.values() if c.conscious}
+
+    @property
+    def over(self) -> bool:
+        return len(self.living_teams()) <= 1
+
+    @property
+    def winner(self) -> str | None:
+        alive = self.living_teams()
+        return next(iter(alive)) if len(alive) == 1 else None
+
+    def enemies_of(self, name: str) -> list[Creature]:
+        team = self.creatures[name].team
+        return [c for c in self.creatures.values() if c.team != team and c.conscious]
+
+    def state(self) -> dict[str, Any]:
+        return {
+            "round": self.round,
+            "turn": self.current_name,
+            "over": self.over,
+            "winner": self.winner,
+            "order": list(self.order),
+            "turn_state": {
+                "movement_left": self._turn.movement_left,
+                "action_used": self._turn.action_used,
+                "attacks_left": self._turn.attacks_left,
+            },
+            "combatants": [self._creature_state(c) for c in
+                           (self.creatures[n] for n in self.order)],
+        }
+
+    def _creature_state(self, creature: Creature) -> dict[str, Any]:
+        return {
+            "name": creature.name,
+            "team": creature.team,
+            "hp": creature.hp,
+            "max_hp": creature.max_hp,
+            "ac": creature.ac,
+            "position": creature.position,
+            "initiative": self.initiative[creature.name],
+            "conditions": sorted(c.value for c in creature.conditions),
+            "concentrating_on": creature.concentrating_on,
+            "dodging": self._dodging[creature.name],
+            "conscious": creature.conscious,
+            "dying": creature.dying,
+            "dead": creature.dead,
+            "stable": creature.stable,
+            "death_saves": {
+                "successes": creature.death_save_successes,
+                "failures": creature.death_save_failures,
+            },
+            "spell_slots": dict(sorted(creature.spell_slots.items())),
+            "attacks": [option.name for option in creature.attacks],
+            "spells": list(creature.spells),
+        }
+
+    # --- turn lifecycle ---------------------------------------------------
+    def _begin_turn(self, rng: Random) -> None:
+        creature = self.current
+        self._dodging[creature.name] = False
+        self._disengaged[creature.name] = False
+        self._reaction_available[creature.name] = True
+        self._turn = TurnState(
+            movement_left=0 if not creature.conscious else creature.speed,
+            action_used=False,
+            attacks_left=creature.attacks_per_action,
+        )
+        if creature.dying:
+            self._death_save(creature, rng)
+
+    def _death_save(self, creature: Creature, rng: Random) -> None:
+        roll = roll_d20(rng)
+        if roll.natural == 20:
+            creature.heal(1)
+            self._emit("death_save", creature.name, detail="natural 20 — regains 1 hit point")
+            return
+        if roll.natural == 1:
+            creature.death_save_failures += 2
+            self._emit("death_save", creature.name, detail="natural 1 — two failures")
+        elif roll.natural >= DEATH_SAVE_DC:
+            creature.death_save_successes += 1
+            self._emit("death_save", creature.name,
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success")
+        else:
+            creature.death_save_failures += 1
+            self._emit("death_save", creature.name,
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure")
+
+        if creature.death_save_failures >= DEATH_SAVES_TO_DIE:
+            creature.dead = True
+            creature.conditions.discard(Condition.UNCONSCIOUS)
+            self._emit("death", creature.name, detail="three failed death saves")
+        elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
+            creature.stable = True
+            self._emit("stabilised", creature.name, detail="three successful death saves")
+
+    def advance(self, rng: Random) -> list[Event]:
+        """End the current turn and begin the next, wrapping the round."""
+        before = len(self.log)
+        self._emit("turn_end", self.current_name)
+        if self.over:
+            return self.log[before:]
+        for _ in range(len(self.order)):
+            self.turn_index += 1
+            if self.turn_index >= len(self.order):
+                self.turn_index = 0
+                self.round += 1
+                self._emit("round", detail=f"round {self.round} begins")
+            if not self.creatures[self.current_name].dead:
+                break
+        self._emit("turn_start", self.current_name)
+        self._begin_turn(rng)
+        return self.log[before:]
+
+    # --- acting -----------------------------------------------------------
+    def act(self, action: Action, rng: Random) -> list[Event]:
+        before = len(self.log)
+        actor = self.current
+        if self.over:
+            raise EncounterError("the encounter is over")
+        if not actor.conscious:
+            raise EncounterError(f"{actor.name} is not conscious and cannot act")
+        if not actor.active:
+            held = ", ".join(sorted(c.value for c in actor.conditions))
+            raise EncounterError(f"{actor.name} is incapacitated ({held}) and cannot act")
+
+        match action.kind:
+            case ActionKind.ATTACK:
+                self._do_attack(actor, action, rng)
+            case ActionKind.CAST:
+                self._do_cast(actor, action, rng)
+            case ActionKind.MOVE:
+                self._do_move(actor, action, rng)
+            case ActionKind.DASH:
+                self._require_action(actor)
+                self._turn.action_used = True
+                self._turn.movement_left += actor.speed
+                self._emit("dash", actor.name,
+                           detail=f"movement now {self._turn.movement_left} ft")
+            case ActionKind.DISENGAGE:
+                self._require_action(actor)
+                self._turn.action_used = True
+                self._disengaged[actor.name] = True
+                self._emit("disengage", actor.name, detail="no opportunity attacks this turn")
+            case ActionKind.DODGE:
+                self._require_action(actor)
+                self._turn.action_used = True
+                self._dodging[actor.name] = True
+                self._emit("dodge", actor.name,
+                           detail="attacks against this creature have disadvantage")
+        return self.log[before:]
+
+    def _require_action(self, actor: Creature) -> None:
+        if self._turn.action_used:
+            raise EncounterError(f"{actor.name} has already taken an action this turn")
+
+    def _resolve_target(self, name: str | None) -> Creature:
+        if name is None:
+            raise EncounterError("this action needs a target")
+        target = self.creatures.get(name)
+        if target is None:
+            raise EncounterError(f"no combatant named {name!r}")
+        return target
+
+    def _pick_attack(self, actor: Creature, wanted: str | None) -> AttackOption:
+        if not actor.attacks:
+            raise EncounterError(f"{actor.name} has no attacks")
+        if wanted is None:
+            return actor.attacks[0]
+        for option in actor.attacks:
+            if option.name.casefold() == wanted.casefold():
+                return option
+        available = ", ".join(option.name for option in actor.attacks)
+        raise EncounterError(f"{actor.name} has no attack {wanted!r}; has: {available}")
+
+    def _do_attack(self, actor: Creature, action: Action, rng: Random) -> None:
+        target = self._resolve_target(action.target)
+        if not target.conscious:
+            raise EncounterError(f"{target.name} is already down")
+        if self._turn.attacks_left <= 0:
+            raise EncounterError(f"{actor.name} has no attacks left this turn")
+        option = self._pick_attack(actor, action.attack)
+        distance = actor.distance_to(target)
+        reach = option.max_distance()
+        if distance > reach:
+            self._emit("attack", actor.name, target.name,
+                       f"{option.name} cannot reach ({distance} ft > {reach} ft)")
+            return
+
+        self._turn.attacks_left -= 1
+        if self._turn.attacks_left == actor.attacks_per_action - 1:
+            self._turn.action_used = True
+
+        advantage = compute_attack_advantage(
+            attacker_conditions=actor.conditions,
+            target_conditions=target.conditions,
+            kind=option.kind,
+            distance=distance,
+            long_range_penalty=option.has_long_range_penalty(distance),
+            extra_disadvantage=1 if self._dodging[target.name] else 0,
+        )
+        resolution = resolve_attack(
+            rng,
+            attack_bonus=option.attack_bonus,
+            target_ac=target.ac,
+            damage=option.damage,
+            advantage=advantage,
+            forced_critical=melee_hit_is_critical(
+                target_conditions=target.conditions,
+                kind=option.kind,
+                distance=distance,
+            ),
+            resisted=target.resists(option.damage_type),
+            vulnerable=option.damage_type in target.vulnerabilities,
+            immune=option.damage_type in target.immunities,
+        )
+        self._emit("attack", actor.name, target.name,
+                   f"{option.name}: {resolution.describe()}")
+        if resolution.hit:
+            self._apply_damage(target, resolution.damage_dealt, rng)
+
+    def _do_cast(self, actor: Creature, action: Action, rng: Random) -> None:
+        self._require_action(actor)
+        if action.spell is None:
+            raise EncounterError("casting needs a spell name")
+        if action.spell not in actor.spells:
+            raise EncounterError(f"{actor.name} does not have {action.spell!r} prepared")
+        spell = self.spellbook.get(action.spell)
+        if spell is None:
+            raise EncounterError(f"unknown spell {action.spell!r}")
+        slot_level = action.slot_level if action.slot_level is not None else spell.level
+        if spell.level > 0:
+            available = actor.spell_slots.get(slot_level, 0)
+            if available <= 0:
+                raise EncounterError(
+                    f"{actor.name} has no level {slot_level} slots remaining"
+                )
+
+        chosen = self._spell_targets(actor, spell, action)
+        if not chosen:
+            raise EncounterError(f"{spell.name} has no valid targets")
+
+        self._turn.action_used = True
+        if spell.level > 0:
+            actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
+
+        resolution = resolve_spell(
+            rng,
+            spell,
+            slot_level=slot_level,
+            save_dc=actor.spell_save_dc,
+            spell_attack_bonus=actor.spell_attack_bonus,
+            targets=tuple(
+                SpellTarget(
+                    name=c.name,
+                    ac=c.ac,
+                    save_modifier=(
+                        c.save_modifier(spell.save_ability)
+                        if spell.save_ability is not None else 0
+                    ),
+                    auto_fail_save=self._auto_fails_save(c, spell.save_ability),
+                    resisted=(
+                        c.resists(spell.damage_type) if spell.damage_type is not None else False
+                    ),
+                    vulnerable=(
+                        spell.damage_type in c.vulnerabilities
+                        if spell.damage_type is not None else False
+                    ),
+                    immune=(
+                        spell.damage_type in c.immunities
+                        if spell.damage_type is not None else False
+                    ),
+                )
+                for c in chosen
+            ),
+        )
+        detail = f"{spell.name} (slot {slot_level})"
+        if resolution.damage_roll is not None:
+            detail += f", damage {resolution.damage_roll.describe()}"
+        self._emit("cast", actor.name, detail=detail)
+
+        if spell.concentration:
+            actor.concentrating_on = spell.name
+            self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}")
+
+        for result in resolution.results:
+            target = self.creatures[result.name]
+            self._emit("spell_effect", actor.name, target.name, result.describe())
+            if result.damage_dealt:
+                self._apply_damage(target, result.damage_dealt, rng)
+            if result.condition_applied is not None and target.conscious:
+                target.add_condition(result.condition_applied)
+
+    def _auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
+        if ability is None:
+            return False
+        from ..kernel.conditions import EFFECTS
+
+        for condition in creature.conditions:
+            effect = EFFECTS[condition]
+            if ability is Ability.STRENGTH and effect.auto_fail_strength_saves:
+                return True
+            if ability is Ability.DEXTERITY and effect.auto_fail_dexterity_saves:
+                return True
+        return False
+
+    def _spell_targets(
+        self, actor: Creature, spell: Spell, action: Action
+    ) -> list[Creature]:
+        if action.targets:
+            chosen = [self._resolve_target(name) for name in action.targets]
+        elif spell.radius and action.center is not None:
+            chosen = [
+                c for c in self.creatures.values()
+                if c.conscious and abs(c.position - action.center) <= spell.radius
+            ]
+        elif action.target is not None:
+            chosen = [self._resolve_target(action.target)]
+        else:
+            raise EncounterError(
+                f"{spell.name} needs 'target', 'targets', or 'center' to be given"
+            )
+        for creature in chosen:
+            distance = actor.distance_to(creature)
+            if spell.range_feet and distance > spell.range_feet and not spell.radius:
+                raise EncounterError(
+                    f"{creature.name} is {distance} ft away, beyond {spell.name}'s "
+                    f"{spell.range_feet} ft range"
+                )
+        return [c for c in chosen if c.conscious][: max(spell.max_targets, len(chosen))]
+
+    def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
+        if action.to_position is None:
+            raise EncounterError("moving needs 'to_position'")
+        from ..kernel.conditions import speed_is_zero
+
+        if speed_is_zero(actor.conditions):
+            held = ", ".join(sorted(c.value for c in actor.conditions))
+            raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
+        distance = abs(action.to_position - actor.position)
+        if distance > self._turn.movement_left:
+            raise EncounterError(
+                f"{actor.name} has {self._turn.movement_left} ft of movement, needs {distance} ft"
+            )
+
+        threatening = [
+            enemy for enemy in self.enemies_of(actor.name)
+            if actor.distance_to(enemy) <= MELEE_THRESHOLD
+        ]
+        origin = actor.position
+        actor.position = action.to_position
+        self._turn.movement_left -= distance
+        self._emit("move", actor.name,
+                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)")
+
+        if self._disengaged[actor.name]:
+            return
+        for enemy in threatening:
+            if abs(enemy.position - actor.position) <= MELEE_THRESHOLD:
+                continue
+            self._opportunity_attack(enemy, actor, rng)
+
+    def _opportunity_attack(self, attacker: Creature, mover: Creature, rng: Random) -> None:
+        if not self._reaction_available.get(attacker.name, False) or not attacker.active:
+            return
+        melee = next(
+            (option for option in attacker.attacks if option.kind is AttackKind.MELEE),
+            None,
+        )
+        if melee is None:
+            return
+        self._reaction_available[attacker.name] = False
+        advantage = compute_attack_advantage(
+            attacker_conditions=attacker.conditions,
+            target_conditions=mover.conditions,
+            kind=melee.kind,
+            distance=MELEE_THRESHOLD,
+            extra_disadvantage=1 if self._dodging[mover.name] else 0,
+        )
+        resolution = resolve_attack(
+            rng,
+            attack_bonus=melee.attack_bonus,
+            target_ac=mover.ac,
+            damage=melee.damage,
+            advantage=advantage,
+            resisted=mover.resists(melee.damage_type),
+            vulnerable=melee.damage_type in mover.vulnerabilities,
+            immune=melee.damage_type in mover.immunities,
+        )
+        self._emit("opportunity_attack", attacker.name, mover.name,
+                   f"{melee.name}: {resolution.describe()}")
+        if resolution.hit:
+            self._apply_damage(mover, resolution.damage_dealt, rng)
+
+    # --- damage and concentration ----------------------------------------
+    def _apply_damage(self, target: Creature, amount: int, rng: Random) -> None:
+        if amount <= 0:
+            return
+        was_conscious = target.conscious
+        concentrating = target.concentrating_on
+        target.take_damage(amount)
+        self._emit("damage", target=target.name,
+                   detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left")
+        if concentrating is not None and target.conscious:
+            dc = concentration_dc(amount)
+            save = make_d20_test(
+                rng,
+                modifier=target.save_modifier(Ability.CONSTITUTION),
+                dc=dc,
+            )
+            if save.success:
+                self._emit("concentration", target.name,
+                           detail=f"holds {concentrating} ({save.describe()})")
+            else:
+                target.concentrating_on = None
+                self._emit("concentration", target.name,
+                           detail=f"loses {concentrating} ({save.describe()})")
+        if was_conscious and not target.conscious:
+            if target.dead:
+                self._emit("death", target.name, detail="damage exceeded maximum hit points")
+            else:
+                self._emit("down", target.name, detail="falls unconscious and is dying")
+
+    def _emit(self, kind: str, actor: str = "", target: str = "", detail: str = "") -> None:
+        self.log.append(Event(kind=kind, actor=actor, target=target, detail=detail))
+
+
+def build_encounter(
+    combatants: Iterable[Creature],
+    *,
+    seed: int,
+    spellbook: Mapping[str, Spell] | None = None,
+) -> tuple[Encounter, Random]:
+    """Create an encounter and the generator that drives it, from a seed alone."""
+    rng = Random(seed)
+    return Encounter(list(combatants), rng, spellbook=spellbook), rng

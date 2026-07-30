@@ -1,0 +1,143 @@
+{
+  "provenance": "SRD 5.2",
+  "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 stat blocks.",
+  "note": "Every 'unmodelled' entry is a trait the stat block has that this engine does not implement. It is listed so the gap is visible rather than silently absent.",
+  "monsters": [
+    {
+      "name": "Goblin Warrior",
+      "team": "monsters",
+      "ac": 15,
+      "max_hp": 10,
+      "hit_dice": "3d6",
+      "speed": 30,
+      "abilities": {
+        "strength": 8,
+        "dexterity": 15,
+        "constitution": 10,
+        "intelligence": 10,
+        "wisdom": 8,
+        "charisma": 8
+      },
+      "attacks": [
+        {
+          "name": "Scimitar",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "slashing",
+          "kind": "melee",
+          "reach": 5
+        },
+        {
+          "name": "Shortbow",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 80,
+          "long_range": 320
+        }
+      ],
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "Nimble Escape: Bonus Action Disengage or Hide",
+        "Both attacks deal an extra 1d4 damage if the attack roll had Advantage"
+      ]
+    },
+    {
+      "name": "Wolf",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 11,
+      "hit_dice": "2d8+2",
+      "speed": 40,
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 3,
+        "wisdom": 12,
+        "charisma": 6
+      },
+      "attacks": [
+        {
+          "name": "Bite",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "Pack Tactics: Advantage when an ally is within 5 feet of the target",
+        "Bite knocks a Medium or smaller target Prone on a failed Strength save"
+      ]
+    },
+    {
+      "name": "Zombie",
+      "team": "monsters",
+      "ac": 8,
+      "max_hp": 15,
+      "hit_dice": "2d8+6",
+      "speed": 20,
+      "abilities": {
+        "strength": 13,
+        "dexterity": 6,
+        "constitution": 16,
+        "intelligence": 3,
+        "wisdom": 6,
+        "charisma": 5
+      },
+      "save_bonuses": {
+        "wisdom": 0
+      },
+      "immunities": ["poison"],
+      "attacks": [
+        {
+          "name": "Slam",
+          "attack_bonus": 3,
+          "damage": "1d8+1",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "Undead Fortitude: on dropping to 0 HP, a Constitution save (DC 5 + damage taken) leaves it at 1 HP instead, unless the damage was Radiant or from a Critical Hit",
+        "Immunity to the Exhaustion and Poisoned conditions"
+      ]
+    },
+    {
+      "name": "Ogre",
+      "team": "monsters",
+      "ac": 11,
+      "max_hp": 68,
+      "hit_dice": "8d10+24",
+      "speed": 40,
+      "abilities": {
+        "strength": 19,
+        "dexterity": 8,
+        "constitution": 16,
+        "intelligence": 5,
+        "wisdom": 7,
+        "charisma": 7
+      },
+      "attacks": [
+        {
+          "name": "Greatclub",
+          "attack_bonus": 6,
+          "damage": "2d8+4",
+          "damage_type": "bludgeoning",
+          "kind": "melee",
+          "reach": 5
+        }
+      ],
+      "provenance": "SRD 5.2",
+      "unmodelled": [
+        "Javelin ranged attack option from its listed gear"
+      ]
+    }
+  ]
+}

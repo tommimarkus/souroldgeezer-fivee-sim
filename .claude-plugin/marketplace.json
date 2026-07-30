@@ -1,0 +1,15 @@
+{
+  "name": "souroldgeezer-tabletop",
+  "description": "Claude Code plugins by Sour Old Geezer for tabletop roleplaying simulation: seeded, deterministic rules engines exposed over MCP, with the skills that drive them.",
+  "owner": {
+    "name": "Sour Old Geezer",
+    "email": "claude-marketplace-a.varsity439@passmail.net"
+  },
+  "plugins": [
+    {
+      "name": "fivee-sim",
+      "source": "./fivee-sim",
+      "description": "5E-compatible combat simulation over a single seeded rules kernel. Stateful encounters the engine owns and Claude narrates, plus Monte Carlo damage and win-rate analytics replayed through the same stepper, so the statistics can never drift from the rules live play uses. Covers weapon attacks, movement and reactions, conditions, and a curated spell set with saves, areas, and concentration."
+    }
+  ]
+}
