@@ -25,7 +25,8 @@ import subprocess
 import sys
 import time
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from importlib import resources
 from pathlib import Path
 from random import Random
 from typing import Any
@@ -68,6 +69,7 @@ from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from ..service import maps as _map_service
+from ..service import replay as _replay_service
 from ..service.common import resolve_seed, sha256_of, slugify
 
 INSTRUCTIONS = """\
@@ -105,6 +107,15 @@ class _Session:
     map_id: str | None = None
     map_generation: int = 0
     map_sha256: str = ""
+    #: What a replay bundle needs, snapshotted the moment the encounter was
+    #: built: the combatants as they stood before any turn, which features
+    #: began open, and — for a session-map fight — the map document payload
+    #: **by value**, so a later map_edit can never change an exported replay.
+    #: An inline map spec is not a document; those fights keep ``None`` and
+    #: replay on the viewer's neutral plane.
+    initial_creatures: list[dict[str, Any]] = field(default_factory=list)
+    initial_open_features: list[str] = field(default_factory=list)
+    map_payload: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -516,6 +527,22 @@ def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
     )
 
 
+def _initial_creatures(encounter: Encounter) -> list[dict[str, Any]]:
+    """The combatants as the fight begins, in initiative order — the replay
+    viewer's starting tokens. Captured right after construction, before any
+    turn has moved or hurt anybody."""
+    return [
+        {
+            "name": creature.name,
+            "team": creature.team,
+            "position": list(as_point(creature.position)),
+            "hp": creature.hp,
+            "max_hp": creature.max_hp,
+        }
+        for creature in (encounter.creatures[name] for name in encounter.order)
+    ]
+
+
 def _new_encounter(
     combatants: list[Creature],
     rng: Random,
@@ -805,10 +832,16 @@ def encounter_create(
         encounter=encounter, rng=rng, seed=used,
         content_generation=content.generation,
     )
+    session.initial_creatures = _initial_creatures(encounter)
+    if encounter.map_state is not None:
+        session.initial_open_features = sorted(encounter.map_state.open_features)
     if map_source is not None:
         session.map_id = str(map_source["map_id"])
         session.map_generation = int(map_source["map_generation"])
         session.map_sha256 = str(map_source["map_sha256"])
+        # The payload, not the session reference: replay_export must see the
+        # document as it stands now, whatever happens to the map later.
+        session.map_payload = as_payload(_map_session(session.map_id).document)
     _SESSIONS[encounter_id] = session
     result: dict[str, Any] = {
         "encounter_id": encounter_id,
@@ -974,6 +1007,97 @@ def encounter_advance(encounter_id: str) -> dict[str, Any]:
     return {
         "events": [event.as_dict() for event in events],
         "state": session.encounter.state(),
+    }
+
+
+#: A serialized replay bundle at or under this many bytes is returned inline;
+#: a larger one is written to disk and answered with its path — the same
+#: result-size rule the map tools follow for oversized documents.
+_INLINE_BUNDLE_BYTES = 64 * 1024
+
+
+@server.tool()
+def replay_export(
+    encounter_id: str, path: str | None = None, embed: bool = False
+) -> dict[str, Any]:
+    """Export a fight's replay: a bundle file, or a standalone viewer page.
+
+    The bundle (``fivee-sim-replay`` version 1) carries the seed, the map
+    document the fight captured at creation (``null`` for mapless and
+    inline-spec fights, which replay on a neutral plane), the combatants'
+    starting positions and hit points, and the full structured event log so
+    far — export mid-fight and you get the fight so far. A later map_edit
+    never changes an export: the map travelled by value.
+
+    Plain export: a small bundle is returned inline as ``bundle``; a large
+    one — or any call with ``path`` — is written to disk (default
+    ``<maps root>/replays/<name>-<seed>.json``) and answered with ``path``,
+    ``bytes``, and ``sha256``. With ``embed`` true the bundle is baked into
+    the replay viewer page instead, producing one self-contained ``.html``
+    the user opens directly in a browser — no server, hand the file over.
+    An existing file at the target is replaced: the export is derived from
+    the session, not an original.
+    """
+    session = _session(encounter_id)
+    name = (
+        str(session.map_payload["name"])
+        if session.map_payload is not None
+        else encounter_id
+    )
+    bundle = _replay_service.replay_bundle(
+        name=name,
+        seed=session.seed,
+        map_payload=session.map_payload,
+        initial_creatures=session.initial_creatures,
+        map_open_features=session.initial_open_features,
+        events=[event.as_dict() for event in session.encounter.log],
+    )
+    serialized = _replay_service.serialize_bundle(bundle)
+    slug = slugify(name)
+    result: dict[str, Any] = {
+        "encounter_id": encounter_id,
+        "seed": session.seed,
+        "format": _replay_service.FORMAT,
+        "events": len(session.encounter.log),
+    }
+
+    if embed:
+        static = resources.files("fivee_sim.editor") / "static"
+        viewer = (static / "viewer.html").read_text(encoding="utf-8")
+        renderer = (static / "renderer.js").read_text(encoding="utf-8")
+        html = _replay_service.embed_in_viewer(
+            viewer, serialized, renderer_js=renderer
+        )
+        target = (
+            Path(path).expanduser()
+            if path is not None
+            else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.html"
+        )
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(html, encoding="utf-8")
+        except OSError as error:
+            raise ToolError(f"cannot write {target}: {error}") from error
+        return {**result, "path": str(target), "bytes": len(html.encode("utf-8"))}
+
+    size = len(serialized.encode("utf-8"))
+    if path is None and size <= _INLINE_BUNDLE_BYTES:
+        return {**result, "bundle": bundle, "bytes": size}
+    target = (
+        Path(path).expanduser()
+        if path is not None
+        else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.json"
+    )
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(serialized, encoding="utf-8")
+    except OSError as error:
+        raise ToolError(f"cannot write {target}: {error}") from error
+    return {
+        **result,
+        "path": str(target),
+        "bytes": size,
+        "sha256": sha256_of(serialized),
     }
 
 

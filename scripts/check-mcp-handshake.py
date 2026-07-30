@@ -38,6 +38,7 @@ EXPECTED_TOOLS = {
     "encounter_log",
     "encounter_act",
     "encounter_advance",
+    "replay_export",
     "map_generate",
     "map_load",
     "map_save",
