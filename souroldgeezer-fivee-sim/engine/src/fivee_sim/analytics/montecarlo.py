@@ -188,7 +188,7 @@ def _spell_options(
             dice = spell.damage_at(slot_level)
             if dice is None:
                 continue
-            if spell.radius:
+            if spell.is_area:
                 placed = _area_option(encounter, actor, spell, slot_level, dice)
                 if placed is not None:
                     options.append(placed)
@@ -236,6 +236,12 @@ def _area_option(
 
     Allies caught in the blast, the caster included, count *against* the placement.
     """
+    from ..kernel.spells import SpellShape
+
+    if spell.effective_shape is not SpellShape.SPHERE:
+        # Cones, lines, and cubes are resolvable by the stepper but not yet
+        # placeable by the policy; the analytics rework teaches it to aim them.
+        return None
     # Interval arithmetic on the x components: the battlefield is still the
     # x-axis this step, and the endpoints of each catchment stay exhaustive.
     actor_x = as_point(actor.position)[0]

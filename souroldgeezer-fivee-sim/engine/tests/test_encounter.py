@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from random import Random
+from typing import Any
 
 import pytest
 
@@ -19,6 +20,7 @@ from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import CoverGrade, Square
 from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.kernel.spells import Spell, SpellShape
 from fivee_sim.model.battlemap import BattleMap, MapFeature
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
@@ -74,7 +76,9 @@ def fighter(
     )
 
 
-def caster(name: str = "Wren", *, position: int = 0, team: str = "party") -> Creature:
+def caster(
+    name: str = "Wren", *, position: int | tuple[int, int] = 0, team: str = "party"
+) -> Creature:
     return Creature(
         name=name,
         team=team,
@@ -945,6 +949,167 @@ class TestSpellcasting:
         wizard.concentrating_on = "Hold Person"
         wizard.take_damage(wizard.hp)
         assert wizard.concentrating_on is None
+
+
+def shaped_spellbook() -> dict[str, Spell]:
+    """One spell of each grid shape, small enough to reason about by hand."""
+    common: dict[str, Any] = {
+        "level": 1,
+        "save_ability": Ability.DEXTERITY,
+        "damage": Dice(3, 6, 0),
+        "damage_type": DamageType.FIRE,
+        "provenance": FIXTURE,
+    }
+    return {
+        "Flame Fan": Spell(name="Flame Fan", shape=SpellShape.CONE, length=15,
+                           **common),
+        "Spark Line": Spell(name="Spark Line", shape=SpellShape.LINE, length=30,
+                            **common),
+        "Stone Cube": Spell(name="Stone Cube", shape=SpellShape.CUBE, size=10,
+                            range_feet=60, **common),
+    }
+
+
+def shaper(position: int | tuple[int, int] = 0) -> Creature:
+    return Creature(
+        name="Vesna",
+        team="party",
+        ac=12,
+        max_hp=20,
+        spells=("Flame Fan", "Spark Line", "Stone Cube"),
+        spell_slots={1: 5},
+        spell_save_dc=13,
+        position=position,
+        provenance=FIXTURE,
+    )
+
+
+class TestAoeShapes2D:
+    """Golden shape resolutions through the stepper: who is caught is the test."""
+
+    def hit_names(self, events: Sequence[Event]) -> set[str]:
+        return {event.target for event in events if event.kind == "spell_effect"}
+
+    def cast(self, encounter: Encounter, rng: Random, **aim: Any) -> set[str]:
+        advance_to(encounter, "Vesna", rng)
+        events = encounter.act(Action(kind=ActionKind.CAST, **aim), Random(2))
+        return self.hit_names(events)
+
+    def test_a_cone_catches_the_wedge_and_misses_a_flank(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(),
+                make_monster("Goblin Warrior", label="Front", position=(10, 0)),
+                make_monster("Goblin Warrior", label="Flank", position=(5, 10)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = self.cast(encounter, rng, spell="Flame Fan", direction=(1, 0))
+        assert caught == {"Front"}
+
+    def test_a_cone_needs_one_of_the_eight_directions(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [shaper(), make_monster("Goblin Warrior", label="Front",
+                                    position=(10, 0))],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        advance_to(encounter, "Vesna", rng)
+        with pytest.raises(EncounterError, match="unit offsets"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Flame Fan", direction=(2, 0)),
+                rng,
+            )
+
+    def test_a_line_runs_down_the_corridor_it_is_aimed_along(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(),
+                make_monster("Goblin Warrior", label="Near", position=(10, 0)),
+                make_monster("Goblin Warrior", label="Far", position=(25, 0)),
+                make_monster("Goblin Warrior", label="Off", position=(10, 5)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = self.cast(encounter, rng, spell="Spark Line", toward="Far")
+        assert caught == {"Near", "Far"}
+
+    def test_a_cube_is_a_block_from_its_minimum_corner(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(),
+                make_monster("Goblin Warrior", label="Inside", position=(15, 5)),
+                make_monster("Goblin Warrior", label="Outside", position=(5, 0)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = self.cast(encounter, rng, spell="Stone Cube", center=(10, 0))
+        assert caught == {"Inside"}
+
+    def test_a_sphere_lands_on_a_two_dimensional_cluster(self) -> None:
+        rng = Random(4)
+        wizard = caster(position=(0, 0))
+        encounter = Encounter(
+            [
+                wizard,
+                make_monster("Goblin Warrior", label="A", position=(100, 100)),
+                make_monster("Goblin Warrior", label="B", position=(105, 105)),
+                make_monster("Goblin Warrior", label="C", position=(140, 140)),
+            ],
+            rng,
+            spellbook=spellbook(),
+        )
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3,
+                   center=(100, 100)),
+            Random(2),
+        )
+        assert self.hit_names(events) == {"A", "B"}
+
+    def test_a_wall_between_caster_and_origin_refuses_the_sphere(self) -> None:
+        rng = Random(4)
+        wizard = caster(position=(0, 5))
+        encounter = Encounter(
+            [wizard, make_monster("Goblin Warrior", label="Goblin",
+                                  position=(20, 5))],
+            rng,
+            spellbook=spellbook(),
+            battle_map=strip(
+                5, 3,
+                terrain={(2, 0): "wall", (2, 1): "wall", (2, 2): "wall"},
+            ),
+        )
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="cannot see"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3,
+                       center=(20, 5)),
+                rng,
+            )
+
+    def test_area_targets_is_the_membership_authority(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(),
+                make_monster("Goblin Warrior", label="Front", position=(10, 0)),
+                make_monster("Goblin Warrior", label="Flank", position=(5, 10)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = encounter.area_targets(
+            encounter.spellbook["Flame Fan"], "Vesna", direction=(1, 0)
+        )
+        assert [creature.name for creature in caught] == ["Front"]
 
 
 class TestTurnLegality:

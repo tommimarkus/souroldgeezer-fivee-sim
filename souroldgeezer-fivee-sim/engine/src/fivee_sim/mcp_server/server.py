@@ -546,7 +546,10 @@ def _spell_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
         "damage_type": spell.damage_type.value if spell.damage_type else None,
         "half_on_save": spell.half_on_save,
         "upcast_damage": str(spell.upcast_damage) if spell.upcast_damage else None,
+        "shape": spell.effective_shape.value,
         "radius": spell.radius,
+        "length": spell.length,
+        "size": spell.size,
         "range_feet": spell.range_feet,
         "condition": spell.condition,
         "concentration": spell.concentration,
@@ -764,22 +767,26 @@ def encounter_act(
     to_position: int | list[int] | None = None,
     targets: list[str] | None = None,
     center: int | list[int] | None = None,
+    direction: list[int] | None = None,
+    toward: str | list[int] | None = None,
     path: list[list[int]] | None = None,
     feature: str | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
     ``kind`` is attack, cast, use_item, move, dash, disengage, dodge, or interact.
-    Attacks need ``target``; casting needs ``spell`` plus either
-    ``target``/``targets`` or a ``center`` for an area; using an item needs
-    ``item``, and ``target`` unless the item is self-directed; moving needs
-    ``to_position``; interacting — opening or closing a map feature, free once per
-    turn — needs ``feature``. A position — ``to_position`` or ``center`` — is
-    ``[x, y]`` in feet on the plane; a bare number is accepted and means feet
-    along the x-axis. On a battle map a move routes itself around walls and
-    enemies; ``path`` optionally pins the exact route as ``[x, y]`` waypoints,
-    one per square. Illegal actions are refused with the reason rather than
-    silently adjusted.
+    Attacks need ``target``; casting needs ``spell`` plus an aim — ``target`` or
+    ``targets`` for named creatures, ``center`` for a sphere (or a cube's minimum
+    corner), ``direction`` for a cone (one of the eight unit offsets, such as
+    ``[1, 0]`` or ``[-1, 1]``), ``toward`` for a line (a combatant name or a
+    point). Using an item needs ``item``, and ``target`` unless the item is
+    self-directed; moving needs ``to_position``; interacting — opening or closing
+    a map feature, free once per turn — needs ``feature``. A position —
+    ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
+    the plane; a bare number is accepted and means feet along the x-axis. On a
+    battle map a move routes itself around walls and enemies; ``path`` optionally
+    pins the exact route as ``[x, y]`` waypoints, one per square. Illegal actions
+    are refused with the reason rather than silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -793,6 +800,21 @@ def encounter_act(
         if isinstance(point, int):
             raise ToolError("each path waypoint must be an [x, y] pair of feet")
         waypoints.append(point)
+    aim_direction: tuple[int, int] | None = None
+    if direction is not None:
+        parsed = _point(direction, "direction")
+        if isinstance(parsed, int):
+            raise ToolError("direction must be an [x, y] unit offset such as [1, 0]")
+        aim_direction = parsed
+    aim_toward: str | tuple[int, int] | None = None
+    if toward is not None:
+        if isinstance(toward, str):
+            aim_toward = toward
+        else:
+            parsed = _point(toward, "toward")
+            if isinstance(parsed, int):
+                raise ToolError("toward must be a combatant name or an [x, y] point")
+            aim_toward = parsed
     action = Action(
         kind=action_kind,
         target=target,
@@ -805,6 +827,8 @@ def encounter_act(
         ),
         targets=tuple(targets or ()),
         center=_point(center, "center") if center is not None else None,
+        direction=aim_direction,
+        toward=aim_toward,
         path=tuple(waypoints),
         feature=feature,
     )

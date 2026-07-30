@@ -806,6 +806,70 @@ class TestCustomTerrain:
         assert "move_cost_multiplier must be a whole number of 1 or more" in message
 
 
+class TestSpellShapeSchema:
+    """The shape fields pair with their measurements, checked at load."""
+
+    def spell_pack(self, tmp_path: Path, record: dict[str, Any]) -> Path:
+        payload = {
+            "pack": "shapes", "provenance": "test",
+            "spells": [{
+                "name": "Test Spell", "provenance": "test", "level": 1,
+                "save_ability": "dexterity", "damage": "3d6",
+                "damage_type": "fire", **record,
+            }],
+        }
+        return write_pack(tmp_path, "shapes.json", payload)
+
+    def test_a_cone_without_a_length_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "cone"})
+        with pytest.raises(ContentError, match="a cone needs a length"):
+            load_packs([path], include_environment=False)
+
+    def test_a_cube_without_a_size_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "cube"})
+        with pytest.raises(ContentError, match="a cube needs a size"):
+            load_packs([path], include_environment=False)
+
+    def test_a_sphere_without_a_radius_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "sphere"})
+        with pytest.raises(ContentError, match="a sphere needs a radius"):
+            load_packs([path], include_environment=False)
+
+    def test_each_shape_loads_with_its_measurement(self, tmp_path: Path) -> None:
+        from fivee_sim.kernel.spells import SpellShape
+
+        for record, checks in (
+            ({"shape": "cone", "length": 15},
+             {"shape": SpellShape.CONE, "length": 15}),
+            ({"shape": "line", "length": 30, "width": 5},
+             {"shape": SpellShape.LINE, "length": 30}),
+            ({"shape": "cube", "size": 10},
+             {"shape": SpellShape.CUBE, "size": 10}),
+        ):
+            path = self.spell_pack(tmp_path, record)
+            spell = load_packs(
+                [path], include_environment=False
+            ).spells["Test Spell"]
+            assert spell.is_area
+            for field_name, expected in checks.items():
+                assert getattr(spell, field_name) == expected
+
+    def test_a_legacy_radius_without_a_shape_still_resolves_as_a_sphere(
+        self, tmp_path: Path
+    ) -> None:
+        from fivee_sim.content import validate
+        from fivee_sim.kernel.spells import SpellShape
+
+        path = self.spell_pack(tmp_path, {"radius": 20, "range_feet": 120})
+        registry = load_packs([path], include_environment=False)
+        spell = registry.spells["Test Spell"]
+        assert spell.is_area
+        assert spell.effective_shape is SpellShape.SPHERE
+        # And it still warns, so the author is told the encoding is legacy.
+        diagnostics = validate([path], include_environment=False)
+        assert any("resolves as a sphere" in d.problem for d in diagnostics)
+
+
 class TestDeterminism:
     def test_the_same_seed_gives_the_same_fight_with_packs_loaded(
         self, pack: Path

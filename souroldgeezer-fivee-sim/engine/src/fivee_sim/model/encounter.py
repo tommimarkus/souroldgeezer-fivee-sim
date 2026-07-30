@@ -45,9 +45,14 @@ from ..kernel.grid import (
     TerrainEffect,
     TerrainTable,
     as_point,
+    cone_squares,
     cover_ac_bonus,
+    cube_squares,
     distance_feet,
     find_path,
+    has_line_of_sight,
+    line_squares,
+    sphere_squares,
     square_center,
     terrain_effect_of,
     to_square,
@@ -55,7 +60,7 @@ from ..kernel.grid import (
 from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
-from ..kernel.spells import Spell, SpellTarget, resolve_spell
+from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
 from .battlemap import BattleMap, MapState
 from .creature import AttackOption, Creature
 
@@ -915,44 +920,156 @@ class Encounter:
                 return True
         return False
 
+    def origin_visible(self, caster_name: str, origin: Point | int) -> bool:
+        """Whether the caster has a sight line to a point of origin.
+
+        Public because the auto-play policy filters candidate placements with it,
+        and it must use the same eyes the stepper refuses with. Without a map
+        there is nothing to hide behind.
+        """
+        if self.battle_map is None:
+            return True
+        caster = self.creatures[caster_name]
+        return has_line_of_sight(
+            to_square(as_point(caster.position)),
+            to_square(as_point(origin)),
+            opaque=self._opaque,
+        )
+
+    _DIRECTIONS = frozenset({
+        (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1),
+    })
+
+    def area_targets(
+        self,
+        spell: Spell,
+        caster_name: str,
+        *,
+        center: Point | int | None = None,
+        direction: Point | None = None,
+        toward: str | Point | None = None,
+    ) -> list[Creature]:
+        """Every conscious creature one placement of an area spell catches.
+
+        The single membership authority: the stepper resolves a cast through it
+        and the auto-play policy values candidate placements through it, so the
+        two can never disagree about who is inside an area. Sphere membership is
+        measured in feet from the centre on an open plane and by template squares
+        on a battle map; cones, lines, and cubes are square templates always,
+        because their published shapes are grid figures. Range and sight are the
+        caller's checks — this answers only who is inside.
+        """
+        caster = self.creatures[caster_name]
+        caster_square = to_square(as_point(caster.position))
+        match spell.effective_shape:
+            case SpellShape.SPHERE:
+                if center is None:
+                    raise EncounterError(f"{spell.name} needs 'center'")
+                centre = as_point(center)
+                if self.battle_map is None:
+                    return [
+                        c for c in self.creatures.values()
+                        if c.conscious
+                        and distance_feet(
+                            as_point(c.position), centre, self.movement_rule
+                        ) <= spell.radius
+                    ]
+                squares = sphere_squares(
+                    to_square(centre), spell.radius, rule=self.movement_rule
+                )
+            case SpellShape.CONE:
+                if direction is None or tuple(direction) not in self._DIRECTIONS:
+                    raise EncounterError(
+                        f"{spell.name} needs 'direction': one of the eight unit "
+                        f"offsets, such as [1, 0] or [-1, 1]"
+                    )
+                squares = cone_squares(caster_square, direction, spell.length)
+            case SpellShape.LINE:
+                if toward is None:
+                    raise EncounterError(
+                        f"{spell.name} needs 'toward': a combatant name or a point "
+                        f"to aim the line at"
+                    )
+                if isinstance(toward, str):
+                    aim = to_square(as_point(self._resolve_target(toward).position))
+                else:
+                    aim = to_square(as_point(toward))
+                if aim == caster_square:
+                    raise EncounterError(
+                        f"{spell.name} cannot be aimed at the caster's own square"
+                    )
+                squares = line_squares(caster_square, aim, spell.length)
+            case SpellShape.CUBE:
+                if center is None:
+                    raise EncounterError(
+                        f"{spell.name} needs 'center': the cube's minimum corner"
+                    )
+                squares = cube_squares(to_square(as_point(center)), spell.size)
+            case _:
+                raise EncounterError(f"{spell.name} is not an area spell")
+        return [
+            c for c in self.creatures.values()
+            if c.conscious and to_square(as_point(c.position)) in squares
+        ]
+
     def _spell_targets(
         self, actor: Creature, spell: Spell, action: Action
     ) -> list[Creature]:
-        """Resolve who a spell lands on, enforcing both its range and its target cap.
+        """Resolve who a spell lands on, enforcing its range, sight, and target cap.
 
         The branches are range-checked differently, and deliberately. Named targets
-        are checked one at a time, exactly as a single-target spell is. An area is
-        checked at its **point of origin** only: those creatures come from the
-        radius rather than from the caller, so refusing the whole spell because one
-        creature at the far edge of the blast sits past the range would be wrong.
-        Checking *neither* — the previous behaviour — let a 150 ft Fireball land a
-        thousand feet away.
+        are checked one at a time, exactly as a single-target spell is. A sphere or
+        cube is checked at its **point of origin** only — those creatures come from
+        the template rather than from the caller, so refusing the whole spell
+        because one creature at the far edge of the blast sits past the range would
+        be wrong — and on a battle map the origin must also be visible. A cone or
+        line pours out of the caster, so there is nothing to range-check at all.
         """
         if action.targets:
             chosen = [self._resolve_target(name) for name in action.targets]
             for creature in chosen:
                 self._require_in_range(actor, spell, creature.position, creature.name)
-        elif spell.radius and action.center is not None:
-            self._require_in_range(actor, spell, action.center, "the point of origin")
-            centre = as_point(action.center)
-            chosen = [
-                c for c in self.creatures.values()
-                if c.conscious
-                and distance_feet(as_point(c.position), centre, self.movement_rule)
-                <= spell.radius
-            ]
+        elif spell.is_area and (
+            action.center is not None
+            or action.direction is not None
+            or action.toward is not None
+        ):
+            if spell.effective_shape in (SpellShape.SPHERE, SpellShape.CUBE):
+                if action.center is None:
+                    what = (
+                        "'center'" if spell.effective_shape is SpellShape.SPHERE
+                        else "'center' (its minimum corner)"
+                    )
+                    raise EncounterError(f"{spell.name} needs {what}")
+                self._require_in_range(
+                    actor, spell, action.center, "the point of origin"
+                )
+                if not self.origin_visible(actor.name, action.center):
+                    raise EncounterError(
+                        f"{actor.name} cannot see {spell.name}'s point of origin "
+                        f"at {as_point(action.center)}"
+                    )
+            chosen = self.area_targets(
+                spell, actor.name,
+                center=action.center,
+                direction=action.direction,
+                toward=action.toward,
+            )
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
             self._require_in_range(actor, spell, chosen[0].position, chosen[0].name)
         else:
             raise EncounterError(
-                f"{spell.name} needs 'target', 'targets', or 'center' to be given"
+                f"{spell.name} needs 'target', 'targets', or an area aim — "
+                f"'center' for a sphere or cube, 'direction' for a cone, "
+                f"'toward' for a line"
             )
         landed = [c for c in chosen if c.conscious]
-        if spell.radius:
-            # An area is bounded by its radius, not by a head count. Every bundled
-            # area spell leaves max_targets at its default of 1, so applying the cap
-            # here would quietly shrink a Fireball to a single creature.
+        if spell.is_area:
+            # An area is bounded by its template, not by a head count. Every
+            # bundled area spell leaves max_targets at its default of 1, so
+            # applying the cap here would quietly shrink a Fireball to a single
+            # creature.
             return landed
         if len(landed) > spell.max_targets:
             creatures = "creature" if spell.max_targets == 1 else "creatures"

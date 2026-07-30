@@ -32,11 +32,20 @@ from .rules import (
 class SpellShape(StrEnum):
     SINGLE = "single"
     SPHERE = "sphere"
+    CONE = "cone"
+    LINE = "line"
+    CUBE = "cube"
 
 
 @dataclass(frozen=True, slots=True)
 class Spell:
-    """A spell as far as combat resolution is concerned."""
+    """A spell as far as combat resolution is concerned.
+
+    The area fields pair with the shape: a sphere has a ``radius``, a cone and a
+    line have a ``length`` (and a line a ``width``, fixed at one square), a cube
+    has a ``size``. Content validation enforces the pairing, so a loaded spell
+    always carries the measurement its shape needs.
+    """
 
     name: str
     level: int
@@ -50,11 +59,31 @@ class Spell:
     upcast_damage: Dice | None = None
     shape: SpellShape = SpellShape.SINGLE
     radius: int = 0
+    length: int = 0
+    size: int = 0
+    width: int = 5
     range_feet: int = 0
     max_targets: int = 1
     condition: str | None = None
     concentration: bool = False
     provenance: str = "SRD 5.2"
+
+    @property
+    def is_area(self) -> bool:
+        """Whether the spell affects an area rather than named creatures.
+
+        A radius with no declared shape still reads as an area: that is the
+        legacy encoding of a sphere, and every branch point asks this property
+        rather than re-testing ``radius`` so the rule lives in one place.
+        """
+        return self.shape is not SpellShape.SINGLE or self.radius > 0
+
+    @property
+    def effective_shape(self) -> SpellShape:
+        """The shape resolution should use, folding the legacy sphere in."""
+        if self.shape is SpellShape.SINGLE and self.radius > 0:
+            return SpellShape.SPHERE
+        return self.shape
 
     def damage_at(self, slot_level: int) -> Dice | None:
         """Damage dice for a given slot, scaled for upcasting."""

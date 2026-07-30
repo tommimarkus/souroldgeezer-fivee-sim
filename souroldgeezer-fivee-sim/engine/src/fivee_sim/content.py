@@ -83,8 +83,8 @@ _ATTACK_KEYS = frozenset({
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "save_ability", "damage", "damage_type",
-    "half_on_save", "upcast_damage", "shape", "radius", "range_feet", "max_targets",
-    "condition", "concentration",
+    "half_on_save", "upcast_damage", "shape", "radius", "length", "size", "width",
+    "range_feet", "max_targets", "condition", "concentration",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -553,6 +553,9 @@ def _parse_spell(
         upcast_damage=reader.dice("upcast_damage"),
         shape=reader.enum("shape", SpellShape) or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
+        length=reader.integer("length", minimum=0),
+        size=reader.integer("size", minimum=0),
+        width=reader.integer("width", default=5, minimum=5),
         range_feet=reader.integer("range_feet", minimum=0),
         max_targets=reader.integer("max_targets", default=1, minimum=1),
         condition=reader.string("condition") or None,
@@ -566,6 +569,13 @@ def _parse_spell(
             "save_ability",
             "a spell cannot both require an attack roll and offer a saving throw",
         )
+    # Each shape needs its measurement, or the area has no extent at all.
+    if spell.shape is SpellShape.SPHERE and spell.radius <= 0:
+        reader.fail("radius", "a sphere needs a radius in feet")
+    if spell.shape in (SpellShape.CONE, SpellShape.LINE) and spell.length <= 0:
+        reader.fail("length", f"a {spell.shape.value} needs a length in feet")
+    if spell.shape is SpellShape.CUBE and spell.size <= 0:
+        reader.fail("size", "a cube needs a size in feet")
     return (spell, dict(record)) if reader.ok else None
 
 
@@ -1084,7 +1094,10 @@ def _cross_reference(
                 Diagnostic(
                     source=sources.get(("spells", name), "unknown"),
                     section="spells", record=name, field="shape",
-                    problem="has a radius but no shape; it will be treated as single-target",
+                    problem=(
+                        "has a radius but no shape; it resolves as a sphere. Say "
+                        "\"shape\": \"sphere\" to make that explicit"
+                    ),
                     severity=Severity.WARNING,
                 )
             )
