@@ -415,6 +415,24 @@ class TestPackDefinedRiderConditions:
         )
 
 
+class TestBundledGoblinRider:
+    """SRD 5.2 p290: "plus 2 (1d4) Slashing damage if the attack roll had
+    Advantage" — modelled now, so it must be off the unmodelled list."""
+
+    def test_both_goblin_attacks_carry_the_advantage_rider(self) -> None:
+        goblin = make_creature("Goblin Warrior")
+        assert [option.name for option in goblin.attacks] == ["Scimitar", "Shortbow"]
+        for option in goblin.attacks:
+            assert option.advantage_bonus_damage == Dice(1, 4)
+
+    def test_the_unmodelled_list_keeps_nimble_escape_and_drops_the_rider(self) -> None:
+        from fivee_sim.data import monster_records
+
+        notes = monster_records()["Goblin Warrior"]["unmodelled"]
+        assert any("Nimble Escape" in note for note in notes)
+        assert not any("Advantage" in note for note in notes)
+
+
 class TestAttackOptionGuards:
     def test_bonus_damage_without_a_type_is_refused(self) -> None:
         with pytest.raises(ValueError, match="bonus_damage_type"):

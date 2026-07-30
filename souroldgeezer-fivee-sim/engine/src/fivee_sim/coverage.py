@@ -72,13 +72,16 @@ NOT_SUPPORTED = (
         "through space), and climbing or swimming as movement modes.",
     ),
     (
-        "Timed durations",
+        "Timed durations beyond attack riders",
         "Concentration is tracked, and ending it lifts the condition the spell "
-        "imposed. Elapsed time is not: the 'up to 1 minute' cap on a concentration "
-        "spell never expires it, a spell's repeat saving throw at the end of the "
-        "target's turn is not rolled, and a condition applied by an item or set "
-        "directly on a stat block lasts until something removes it. A condition that "
-        "should wear off on its own does not.",
+        "imposed. An attack's on-hit condition rider can carry its own clock — "
+        "expiring at the start of the attacker's next turn or the end of the "
+        "target's next turn, and the expiry fires even if the attacker has died. "
+        "Beyond those two anchors, elapsed time is not modelled: the 'up to 1 "
+        "minute' cap on a concentration spell never expires it, a spell's repeat "
+        "saving throw at the end of the target's turn is not rolled, and a "
+        "condition applied by an item or set directly on a stat block lasts until "
+        "something removes it.",
     ),
     (
         "Reactions other than opportunity attacks",
@@ -130,6 +133,31 @@ def _condition_summary(condition: Condition) -> str:
     return ", ".join(name.replace("_", " ") for name in active)
 
 
+def _rider_summary(attack: dict[str, Any]) -> str:
+    """The attack's riders, rendered after its damage — empty when it has none."""
+    text = ""
+    if attack.get("bonus_damage"):
+        text += f" plus {attack['bonus_damage']} {attack['bonus_damage_type']}"
+    if attack.get("advantage_bonus_damage"):
+        text += (
+            f" plus {attack['advantage_bonus_damage']} if the attack roll "
+            f"had advantage"
+        )
+    if attack.get("on_hit_condition"):
+        text += f", on hit: {attack['on_hit_condition']}"
+        if attack.get("on_hit_save_ability"):
+            text += (
+                f" (DC {attack['on_hit_save_dc']} "
+                f"{attack['on_hit_save_ability']} save)"
+            )
+        expiry = attack.get("on_hit_expiry", "none")
+        if expiry == "start_of_attacker_next_turn":
+            text += " until the start of the attacker's next turn"
+        elif expiry == "end_of_target_next_turn":
+            text += " until the end of the target's next turn"
+    return text
+
+
 def _attack_summary(attacks: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for attack in attacks:
@@ -140,7 +168,7 @@ def _attack_summary(attacks: list[dict[str, Any]]) -> str:
         )
         parts.append(
             f"{attack['name']} +{attack['attack_bonus']}, {reach}, "
-            f"{attack['damage']} {attack['damage_type']}"
+            f"{attack['damage']} {attack['damage_type']}{_rider_summary(attack)}"
         )
     return "; ".join(parts) or "none"
 
@@ -309,6 +337,16 @@ def render_markdown() -> str:
         "concentration ends — by a failed check, by the caster being incapacitated or "
         "killed, or by the caster beginning another concentration spell — unless "
         "another effect is still imposing it.")
+    add("")
+    add("An attack may carry riders, straight from its stat block: bonus damage of "
+        "a second type on every hit, defended against its own type; extra dice added "
+        "only when the attack roll actually resolved with Advantage; and an on-hit "
+        "condition, automatic or applied on a failed save. Rider dice double on a "
+        "critical hit like any damage dice. An on-hit condition may expire on its "
+        "own — at the start of the attacker's next turn or the end of the target's "
+        "next turn — and the expiry fires when that turn slot passes, even if the "
+        "attacker has died; it never strips a condition something else is still "
+        "imposing.")
     add("")
     add("A creature at 0 hit points is a legal target, not an untouchable one: an "
         "attack, an area effect it stands inside, and a usable item all reach it. Each "

@@ -27,7 +27,8 @@
           "damage": "1d6+2",
           "damage_type": "slashing",
           "kind": "melee",
-          "reach": 5
+          "reach": 5,
+          "advantage_bonus_damage": "1d4"
         },
         {
           "name": "Shortbow",
@@ -36,13 +37,13 @@
           "damage_type": "piercing",
           "kind": "ranged",
           "normal_range": 80,
-          "long_range": 320
+          "long_range": 320,
+          "advantage_bonus_damage": "1d4"
         }
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Nimble Escape: Bonus Action Disengage or Hide",
-        "Both attacks deal an extra 1d4 damage if the attack roll had Advantage"
+        "Nimble Escape: Bonus Action Disengage or Hide"
       ]
     },
     {
