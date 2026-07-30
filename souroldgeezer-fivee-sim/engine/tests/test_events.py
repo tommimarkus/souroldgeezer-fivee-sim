@@ -8,6 +8,7 @@ one layer of that contract.
 
 from __future__ import annotations
 
+import json
 from random import Random
 
 from fivee_sim.analytics.montecarlo import run_encounter
@@ -113,3 +114,69 @@ class TestEventIndexing:
             "attack", "cast", "concentration", "damage", "dash", "move",
             "round", "spell_effect", "turn_end", "turn_start", "use_item", "heal",
         } <= seen
+
+
+class TestStructuredPayloads:
+    """The ``data`` payloads a replay consumer folds, checked against the prose.
+
+    Positions are always 2-tuples ``(x_feet, y_feet)`` — the one forward
+    commitment to the coming grid; a one-axis fight emits ``(feet, 0)``.
+    """
+
+    def test_a_move_carries_origin_destination_and_cost_as_positions(self) -> None:
+        encounter, rng = build_encounter(
+            [fighter("Thora", position=0), make_monster("Ogre", label="Ogre", position=60)],
+            seed=SEED,
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=10), rng)
+        move = next(e for e in events if e.kind == "move")
+        assert move.data["origin"] == (0, 0)
+        assert move.data["destination"] == (10, 0)
+        assert move.data["cost"] == 10
+
+    def test_damage_carries_the_amount_and_the_resulting_hit_points(self) -> None:
+        encounter, _ = played_out()
+        for event in encounter.log:
+            if event.kind != "damage":
+                continue
+            creature = encounter.creatures[event.target]
+            assert event.data["amount"] > 0
+            assert f"{event.data['amount']} damage" in event.detail
+            assert event.data["max_hp"] == creature.max_hp
+            assert 0 <= event.data["hp"] <= event.data["max_hp"]
+
+    def test_an_attack_payload_agrees_with_its_own_prose(self) -> None:
+        encounter, _ = played_out()
+        attacks = [
+            e for e in encounter.log
+            if e.kind in ("attack", "opportunity_attack") and not e.data.get("out_of_range")
+        ]
+        assert attacks, "the fight never swung"
+        for event in attacks:
+            data = event.data
+            assert event.detail.startswith(f"{data['attack']}:")
+            if data["critical"]:
+                assert data["hit"]
+                assert "critical hit" in event.detail
+            elif data["hit"]:
+                assert "hit" in event.detail
+            else:
+                assert "miss" in event.detail
+                assert data["damage"] == 0
+            assert 1 <= data["natural"] <= 20
+            assert data["advantage"] in ("none", "advantage", "disadvantage")
+
+    def test_a_cast_names_its_spell_slot_center_and_targets(self) -> None:
+        encounter, _ = played_out()
+        cast = next(e for e in encounter.log if e.kind == "cast" and e.data["center"])
+        assert cast.data["spell"] == "Fireball"
+        assert cast.data["slot_level"] == 3
+        assert cast.data["center"] == (32, 0)
+        assert set(cast.data["targets"]) == {"Ogre", "Goblin"}
+
+    def test_every_event_serialises_to_json(self) -> None:
+        encounter, _ = played_out()
+        for event in encounter.log:
+            payload = json.dumps(event.as_dict())
+            assert json.loads(payload)["kind"] == event.kind

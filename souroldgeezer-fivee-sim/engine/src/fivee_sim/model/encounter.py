@@ -269,19 +269,32 @@ class Encounter:
         roll = roll_d20(rng)
         if roll.natural == 20:
             creature.heal(1)
-            self._emit("death_save", creature.name, detail="natural 20 — regains 1 hit point")
+            self._emit("death_save", creature.name,
+                       detail="natural 20 — regains 1 hit point",
+                       natural=20,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
             return
         if roll.natural == 1:
             creature.death_save_failures += 2
-            self._emit("death_save", creature.name, detail="natural 1 — two failures")
+            self._emit("death_save", creature.name, detail="natural 1 — two failures",
+                       natural=1,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
         elif roll.natural >= DEATH_SAVE_DC:
             creature.death_save_successes += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success")
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success",
+                       natural=roll.natural,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
         else:
             creature.death_save_failures += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure")
+                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure",
+                       natural=roll.natural,
+                       successes=creature.death_save_successes,
+                       failures=creature.death_save_failures)
 
         if creature.death_save_failures >= DEATH_SAVES_TO_DIE:
             creature.dead = True
@@ -302,7 +315,7 @@ class Encounter:
             if self.turn_index >= len(self.order):
                 self.turn_index = 0
                 self.round += 1
-                self._emit("round", detail=f"round {self.round} begins")
+                self._emit("round", detail=f"round {self.round} begins", round=self.round)
             if not self.creatures[self.current_name].dead:
                 break
         self._emit("turn_start", self.current_name)
@@ -333,7 +346,8 @@ class Encounter:
                 self._turn.action_used = True
                 self._turn.movement_left += actor.speed
                 self._emit("dash", actor.name,
-                           detail=f"movement now {self._turn.movement_left} ft")
+                           detail=f"movement now {self._turn.movement_left} ft",
+                           movement_left=self._turn.movement_left)
             case ActionKind.DISENGAGE:
                 self._require_action(actor)
                 self._turn.action_used = True
@@ -388,7 +402,8 @@ class Encounter:
         reach = option.max_distance()
         if distance > reach:
             self._emit("attack", actor.name, target.name,
-                       f"{option.name} cannot reach ({distance} ft > {reach} ft)")
+                       f"{option.name} cannot reach ({distance} ft > {reach} ft)",
+                       attack=option.name, out_of_range=True)
             return
 
         self._turn.attacks_left -= 1
@@ -407,7 +422,14 @@ class Encounter:
             immune=option.damage_type in target.immunities,
         )
         self._emit("attack", actor.name, target.name,
-                   f"{option.name}: {resolution.describe()}")
+                   f"{option.name}: {resolution.describe()}",
+                   attack=option.name,
+                   hit=resolution.hit,
+                   critical=resolution.critical,
+                   natural=resolution.attack.roll.natural,
+                   total=resolution.attack.total,
+                   advantage=resolution.advantage.value,
+                   damage=resolution.damage_dealt)
         if resolution.hit:
             self._apply_damage(target, resolution.damage_dealt, rng)
 
@@ -508,13 +530,15 @@ class Encounter:
         self._emit(
             "use_item", actor.name, target.name,
             f"{resolution.describe()} ({actor.items[name]} left)",
+            item=name, remaining=actor.items[name],
         )
         if resolution.healed:
             before = target.hp
             target.heal(resolution.healed)
             self._emit("heal", target=target.name,
                        detail=f"{target.hp - before} hit points restored, "
-                              f"{target.hp}/{target.max_hp}")
+                              f"{target.hp}/{target.max_hp}",
+                       amount=target.hp - before, hp=target.hp, max_hp=target.max_hp)
         if resolution.damage_dealt:
             self._apply_damage(target, resolution.damage_dealt, rng)
         if resolution.condition_applied is not None and target.conscious:
@@ -578,15 +602,25 @@ class Encounter:
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
             detail += f", damage {resolution.damage_roll.describe()}"
-        self._emit("cast", actor.name, detail=detail)
+        self._emit("cast", actor.name, detail=detail,
+                   spell=spell.name,
+                   slot_level=slot_level,
+                   center=(action.center, 0) if action.center is not None else None,
+                   targets=[c.name for c in chosen])
 
         if spell.concentration:
             actor.concentrating_on = spell.name
-            self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}")
+            self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}",
+                       spell=spell.name, held=True, started=True)
 
         for result in resolution.results:
             target = self.creatures[result.name]
-            self._emit("spell_effect", actor.name, target.name, result.describe())
+            self._emit("spell_effect", actor.name, target.name, result.describe(),
+                       spell=spell.name,
+                       damage=result.damage_dealt,
+                       affected=result.affected,
+                       saved=result.save.success if result.save is not None else None,
+                       condition=result.condition_applied)
             if result.damage_dealt:
                 self._apply_damage(target, result.damage_dealt, rng)
             if result.condition_applied is not None and target.conscious:
@@ -685,7 +719,8 @@ class Encounter:
         actor.position = action.to_position
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
-                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)")
+                   detail=f"{origin} ft -> {actor.position} ft ({distance} ft used)",
+                   origin=(origin, 0), destination=(actor.position, 0), cost=distance)
 
         if self._disengaged[actor.name]:
             return
@@ -723,7 +758,14 @@ class Encounter:
             immune=melee.damage_type in mover.immunities,
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
-                   f"{melee.name}: {resolution.describe()}")
+                   f"{melee.name}: {resolution.describe()}",
+                   attack=melee.name,
+                   hit=resolution.hit,
+                   critical=resolution.critical,
+                   natural=resolution.attack.roll.natural,
+                   total=resolution.attack.total,
+                   advantage=resolution.advantage.value,
+                   damage=resolution.damage_dealt)
         if resolution.hit:
             self._apply_damage(mover, resolution.damage_dealt, rng)
 
@@ -735,7 +777,8 @@ class Encounter:
         concentrating = target.concentrating_on
         target.take_damage(amount)
         self._emit("damage", target=target.name,
-                   detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left")
+                   detail=f"{amount} damage, {target.hp}/{target.max_hp} hit points left",
+                   amount=amount, hp=target.hp, max_hp=target.max_hp)
         if concentrating is not None and target.conscious:
             dc = concentration_dc(amount)
             save = make_d20_test(
@@ -745,11 +788,13 @@ class Encounter:
             )
             if save.success:
                 self._emit("concentration", target.name,
-                           detail=f"holds {concentrating} ({save.describe()})")
+                           detail=f"holds {concentrating} ({save.describe()})",
+                           spell=concentrating, held=True)
             else:
                 target.concentrating_on = None
                 self._emit("concentration", target.name,
-                           detail=f"loses {concentrating} ({save.describe()})")
+                           detail=f"loses {concentrating} ({save.describe()})",
+                           spell=concentrating, held=False)
         if was_conscious and not target.conscious:
             if target.dead:
                 self._emit("death", target.name, detail="damage exceeded maximum hit points")
