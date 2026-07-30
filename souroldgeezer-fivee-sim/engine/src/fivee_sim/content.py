@@ -533,6 +533,7 @@ def _parse_spell(
     reader.unknown_keys(_SPELL_KEYS)
     provenance = _common_fields(reader)
     level = reader.integer("level", required=True, minimum=0)
+    shape = reader.enum("shape", SpellShape)
     spell = Spell(
         name=name,
         level=level,
@@ -543,7 +544,7 @@ def _parse_spell(
         damage_type=reader.enum("damage_type", DamageType),
         half_on_save=reader.boolean("half_on_save", default=True),
         upcast_damage=reader.dice("upcast_damage"),
-        shape=reader.enum("shape", SpellShape) or SpellShape.SINGLE,
+        shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
         range_feet=reader.integer("range_feet", minimum=0),
         max_targets=reader.integer("max_targets", default=1, minimum=1),
@@ -558,7 +559,55 @@ def _parse_spell(
             "save_ability",
             "a spell cannot both require an attack roll and offer a saving throw",
         )
+    _check_area_declaration(reader, record, spell, shape)
     return (spell, dict(record)) if reader.ok else None
+
+
+def _check_area_declaration(
+    reader: _Reader, record: Mapping[str, Any], spell: Spell, shape: SpellShape | None
+) -> None:
+    """Refuse a ``shape`` and ``radius`` that disagree about whether this is an area.
+
+    They are one declaration split over two fields, and only ``radius`` is
+    load-bearing: :mod:`~fivee_sim.model.encounter` and
+    :mod:`~fivee_sim.analytics.montecarlo` both decide "is this an area?" from it
+    alone, and nothing anywhere reads ``shape``. An author cannot be expected to know
+    that — ``shape`` is the field that looks like the one declaring an area — so each
+    way the two can disagree has to be named here or the spell quietly does something
+    other than what its record says.
+
+    Checked at parse time rather than in :func:`_cross_reference`, because this is a
+    property of one record and the raw ``record`` is what distinguishes an omitted
+    ``shape`` from an explicit ``"single"``. A ``shape`` that failed to parse is left
+    out of it: the enum check has already reported that, and guessing at the intent
+    behind an unknown word would only add a second, wronger message.
+    """
+    declared = record.get("shape")
+    if declared is not None and shape is None:
+        return
+    if spell.shape is not SpellShape.SINGLE:
+        if not spell.radius:
+            reader.fail(
+                "radius",
+                f"declares a {str(spell.shape)!r} area but gives no radius, so it "
+                f"would affect a single creature. An area is bounded by its radius, "
+                f"not by its shape: give a radius, or drop the shape",
+            )
+    elif spell.radius:
+        if declared is not None:
+            reader.fail(
+                "shape",
+                f"declares shape 'single' but carries a {spell.radius} ft radius. The "
+                f"radius is what decides who is caught, so this would affect an area: "
+                f"name an area shape, or drop the radius",
+            )
+        else:
+            reader.warn(
+                "shape",
+                f"has a {spell.radius} ft radius but does not say what shape it is. It "
+                f"resolves as an area; declare \"shape\": \"sphere\" so the record says "
+                f"what the spell does",
+            )
 
 
 def _parse_condition(
@@ -944,7 +993,6 @@ def _merge_section(
 def _cross_reference(
     registry_conditions: Mapping[str, ConditionEffect],
     spells: Mapping[str, Spell],
-    spell_records: Mapping[str, dict[str, Any]],
     items: Mapping[str, ItemEffect],
     creatures: Mapping[str, dict[str, Any]],
     sources: Mapping[tuple[str, str], str],
@@ -974,16 +1022,6 @@ def _cross_reference(
 
     for name, spell in spells.items():
         check("spells", name, "condition", spell.condition)
-        record = spell_records.get(name, {})
-        if spell.radius and record.get("shape") is None:
-            diagnostics.append(
-                Diagnostic(
-                    source=sources.get(("spells", name), "unknown"),
-                    section="spells", record=name, field="shape",
-                    problem="has a radius but no shape; it will be treated as single-target",
-                    severity=Severity.WARNING,
-                )
-            )
     for name, effect in items.items():
         check("items", name, "use.condition", effect.condition)
     for name, record in creatures.items():
@@ -1113,9 +1151,7 @@ def _build(
         }
         retained.append(name)
 
-    _cross_reference(
-        condition_effects, spells, spell_records, items, creatures, sources, diagnostics
-    )
+    _cross_reference(condition_effects, spells, items, creatures, sources, diagnostics)
 
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
     if errors:

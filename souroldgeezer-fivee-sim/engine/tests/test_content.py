@@ -508,6 +508,90 @@ class TestDiagnostics:
         assert not validate(include_environment=False)
 
 
+class TestAreaDeclaration:
+    """``shape`` and ``radius`` are one declaration, and they have to agree.
+
+    Only ``radius`` is load-bearing — ``model.encounter`` and ``analytics.montecarlo``
+    both decide "is this an area?" from it alone, and nothing anywhere reads ``shape``.
+    A pack author has no way to know that: ``shape`` is the field that *looks* like the
+    one declaring an area, and the docs tell them to set both. So a record giving one
+    without the other is a mistake the loader has to name, or the spell quietly does
+    something other than what the record says.
+    """
+
+    def check(self, tmp_path: Path, spell: dict[str, Any]) -> list[Any]:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test", "spells": [spell],
+        })
+        return validate([path], include_environment=False)
+
+    def blast(self, **overrides: Any) -> dict[str, Any]:
+        spell: dict[str, Any] = {
+            "name": "Vale Blast", "level": 3, "save_ability": "dexterity",
+            "damage": "6d6", "damage_type": "fire", "range_feet": 120,
+            "provenance": "test",
+        }
+        spell.update(overrides)
+        return spell
+
+    def test_an_area_shape_without_a_radius_is_refused(self, tmp_path: Path) -> None:
+        # The defect this class exists for. The author declared a sphere and got a
+        # spell that hits exactly one creature, with nothing said about it.
+        found = problems(self.check(tmp_path, self.blast(shape="sphere")))
+        assert any("radius" in p for p in found), found
+        assert any("sphere" in p for p in found), found
+
+    def test_declaring_single_target_alongside_a_radius_is_refused(
+        self, tmp_path: Path
+    ) -> None:
+        # The mirror image, and silent the other way round: the radius wins, so the
+        # spell sweeps an area while the record claims one target. Matched on wording
+        # unique to this branch — "radius" and "single" both appear in the sphere
+        # message too, so a looser assertion would not pin which branch fired, and
+        # branch fallthrough in this block is a mistake already made once.
+        found = problems(self.check(tmp_path, self.blast(shape="single", radius=20)))
+        assert any("decides who is caught" in p for p in found), found
+        assert any("drop the radius" in p for p in found), found
+
+    def test_a_radius_without_a_shape_warns_and_still_loads(self, tmp_path: Path) -> None:
+        # Incomplete, not wrong: radius alone already resolves as an area. So this
+        # stays a warning, and the message must not claim a consequence that does not
+        # happen — the old one said "it will be treated as single-target", which was
+        # simply false.
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [self.blast(radius=20)],
+        })
+        diagnostics = validate([path], include_environment=False)
+        assert not problems(diagnostics), "an area that works must not fail to load"
+        warned = problems(diagnostics, Severity.WARNING)
+        assert any("shape" in p for p in warned), warned
+        assert not any("single-target" in p for p in warned), warned
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Blast"].radius == 20
+
+    def test_a_shape_and_radius_that_agree_load_clean(self, tmp_path: Path) -> None:
+        # The regression guard: the check must not cost a correct pack anything.
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [self.blast(shape="sphere", radius=20)],
+        })
+        assert not validate([path], include_environment=False)
+        assert load_packs([path], include_environment=False).spells["Vale Blast"].radius == 20
+
+    def test_a_single_target_spell_declaring_neither_is_clean(self, tmp_path: Path) -> None:
+        assert not self.check(tmp_path, self.blast())
+
+    def test_an_unparseable_shape_is_reported_once_and_not_second_guessed(
+        self, tmp_path: Path
+    ) -> None:
+        # "cube" is not a shape this engine knows. That is the enum's error to report;
+        # the agreement check must not also announce what the record "declares",
+        # because it does not know.
+        found = problems(self.check(tmp_path, self.blast(shape="cube", radius=20)))
+        assert found == ["'cube' is not valid; must be one of: single, sphere"], found
+
+
 class TestPathSafety:
     def test_a_missing_path_is_reported(self, tmp_path: Path) -> None:
         found = problems(validate([tmp_path / "nope.json"], include_environment=False))
