@@ -107,20 +107,40 @@ a defect.
 use. A test pins that a 1-iteration analytics run equals a single stateful run
 at the same seed; if the two ever diverge, the statistics are lying.
 
-**The MCP layer is a thin adapter.** `fivee_sim.mcp.server` validates input,
-calls the kernel, serialises results. No rules logic belongs there.
+**The MCP layer is a thin adapter.** `fivee_sim.mcp_server.server` validates
+input, calls the kernel, serialises results. No rules logic belongs there. The
+package is `mcp_server`, not `mcp`, so it can never be confused with the
+third-party `mcp` distribution it imports.
 
 `stdout` of the MCP launcher is the JSON-RPC channel. Anything diagnostic must
-go to `stderr`, or the protocol breaks.
+go to `stderr`, or the protocol breaks. `scripts/check-mcp-handshake.py` exists
+to catch exactly that: it requires every line the server emits on stdout to parse
+as JSON.
+
+**Layer boundaries.** `kernel/` holds the primitives — dice, resolution,
+conditions, attacks, spells — and knows nothing about creatures; callers pass the
+handful of values a roll depends on. `model/` owns creatures and is the only place
+combat state changes. Spell definitions live in `kernel/spells.py` rather than a
+separate layer because they are resolution primitives like the rest.
+
+**Every tool reports its seed.** A tool called without one picks a seed and
+returns it, so no result is ever irreproducible.
 
 ## Tooling
 
 ```bash
 cd fivee-sim/engine
-uv run ruff check .          # E,F,W,I,UP,B — line length 100
-uv run mypy --strict .
+uv run ruff check .              # E,F,W,I,UP,B — line length 100
+uv run mypy                      # strict, configured in pyproject.toml
 uv run pytest
+
+# From the repo root: real JSON-RPC against the real launcher.
+python3 scripts/check-mcp-handshake.py
+bash scripts/hooks/test-ip-hygiene-check.sh
 ```
+
+`uv`'s cache is redirected to `fivee-sim/engine/.cache/uv` because the default
+`~/.cache/uv` is read-only in the sandboxed development environment.
 
 ## Conventions
 
