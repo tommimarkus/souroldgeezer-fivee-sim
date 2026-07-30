@@ -106,6 +106,12 @@ A spell cannot both require an attack roll and offer a saving throw. Set `radius
 together with `"shape": "sphere"` for an area spell; an area rolls its damage once
 and compares every creature's save against that single total.
 
+`max_targets` caps how many creatures may be **named** on one cast, and naming more
+is refused rather than quietly trimmed. It does not apply to an area spell: there,
+the radius decides who is caught, and the cap is ignored. That is why every bundled
+area spell can leave `max_targets` at its default of 1 without shrinking to a single
+creature.
+
 ### `conditions`
 
 Required: `name`, `provenance`. Optional: `effects`, `description`, `unmodelled`,

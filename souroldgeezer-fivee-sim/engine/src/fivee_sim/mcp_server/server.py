@@ -711,12 +711,20 @@ def simulate_dpr(
     rounds: int = 3,
     iterations: int = 1000,
     seed: int = 0,
+    distance: int = 5,
 ) -> dict[str, Any]:
     """Measure the damage a build lands over several rounds against a given AC.
 
     The target is a passive dummy with enough hit points to absorb the whole run,
     driven through the real encounter stepper — so advantage, criticals, and
     resistances apply exactly as they would in play.
+
+    ``distance`` is how far off the dummy stands, defaulting to melee reach. It must
+    be greater than zero for an area caster: the policy refuses to catch the caster
+    in its own blast, and a dummy standing on the attacker leaves no placement that
+    catches one without the other. The ``actions`` field reports what the build
+    actually did, so a spell the policy declined to cast is visible rather than
+    silently absent from the damage figure.
     """
     spec = dict(build)
     registry = _registry()
@@ -733,6 +741,7 @@ def simulate_dpr(
             rounds=rounds,
             iterations=iterations,
             seed=seed,
+            distance=distance,
             spellbook=dict(registry.spells),
             items=dict(registry.items),
             condition_effects=registry.condition_effects,

@@ -34,7 +34,7 @@ from ..kernel.conditions import (
     effect_of,
     speed_is_zero,
 )
-from ..kernel.dice import roll_d20
+from ..kernel.dice import Advantage, roll_d20
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellTarget, resolve_spell
@@ -348,6 +348,11 @@ class Encounter:
             raise EncounterError(f"{target.name} is already down")
         if self._turn.attacks_left <= 0:
             raise EncounterError(f"{actor.name} has no attacks left this turn")
+        if self._turn.action_used and self._turn.attacks_left == actor.attacks_per_action:
+            # Starting an Attack action costs the action. Later swings of a
+            # Multiattack do not, which is why this checks that none has been taken
+            # yet rather than checking action_used alone.
+            raise EncounterError(f"{actor.name} has already taken an action this turn")
         option = self._pick_attack(actor, action.attack)
         distance = actor.distance_to(target)
         reach = option.max_distance()
@@ -360,27 +365,13 @@ class Encounter:
         if self._turn.attacks_left == actor.attacks_per_action - 1:
             self._turn.action_used = True
 
-        advantage = compute_attack_advantage(
-            attacker_conditions=actor.conditions,
-            target_conditions=target.conditions,
-            kind=option.kind,
-            distance=distance,
-            long_range_penalty=option.has_long_range_penalty(distance),
-            extra_disadvantage=1 if self._dodging[target.name] else 0,
-            condition_effects=self.condition_effects,
-        )
         resolution = resolve_attack(
             rng,
             attack_bonus=option.attack_bonus,
             target_ac=target.ac,
             damage=option.damage,
-            advantage=advantage,
-            forced_critical=melee_hit_is_critical(
-                target_conditions=target.conditions,
-                kind=option.kind,
-                distance=distance,
-                condition_effects=self.condition_effects,
-            ),
+            advantage=self.attack_advantage(actor, target, option),
+            forced_critical=self.attack_forced_critical(actor, target, option),
             resisted=target.resists(option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
@@ -389,6 +380,37 @@ class Encounter:
                    f"{option.name}: {resolution.describe()}")
         if resolution.hit:
             self._apply_damage(target, resolution.damage_dealt, rng)
+
+    def attack_advantage(
+        self, actor: Creature, target: Creature, option: AttackOption
+    ) -> Advantage:
+        """Advantage an attack would resolve under, worked out without rolling it.
+
+        Public because the auto-play policy has to weigh an attack before taking it.
+        A policy that re-derived advantage could quietly disagree with the stepper it
+        is driving, so both ask this one function instead.
+        """
+        distance = actor.distance_to(target)
+        return compute_attack_advantage(
+            attacker_conditions=actor.conditions,
+            target_conditions=target.conditions,
+            kind=option.kind,
+            distance=distance,
+            long_range_penalty=option.has_long_range_penalty(distance),
+            extra_disadvantage=1 if self._dodging[target.name] else 0,
+            condition_effects=self.condition_effects,
+        )
+
+    def attack_forced_critical(
+        self, actor: Creature, target: Creature, option: AttackOption
+    ) -> bool:
+        """Whether a landed hit would be upgraded to a critical one. See above."""
+        return melee_hit_is_critical(
+            target_conditions=target.conditions,
+            kind=option.kind,
+            distance=actor.distance_to(target),
+            condition_effects=self.condition_effects,
+        )
 
     def _pick_item(self, actor: Creature, wanted: str) -> str:
         held = [name for name, count in actor.items.items() if count > 0]
@@ -440,7 +462,7 @@ class Encounter:
                 target.save_modifier(effect.save_ability)
                 if effect.save_ability is not None else 0
             ),
-            auto_fail_save=self._auto_fails_save(target, effect.save_ability),
+            auto_fail_save=self.auto_fails_save(target, effect.save_ability),
             resisted=(
                 target.resists(effect.damage_type) if effect.damage_type is not None else False
             ),
@@ -507,7 +529,7 @@ class Encounter:
                         c.save_modifier(spell.save_ability)
                         if spell.save_ability is not None else 0
                     ),
-                    auto_fail_save=self._auto_fails_save(c, spell.save_ability),
+                    auto_fail_save=self.auto_fails_save(c, spell.save_ability),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
                     ),
@@ -540,7 +562,12 @@ class Encounter:
             if result.condition_applied is not None and target.conscious:
                 target.add_condition(result.condition_applied)
 
-    def _auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
+    def auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
+        """Whether a condition forces this creature to fail the save outright.
+
+        Public for the same reason as ``attack_advantage``: the policy needs it to
+        value a spell, and must not keep a second copy of the rule.
+        """
         if ability is None:
             return False
         for condition in creature.conditions:
@@ -554,27 +581,59 @@ class Encounter:
     def _spell_targets(
         self, actor: Creature, spell: Spell, action: Action
     ) -> list[Creature]:
+        """Resolve who a spell lands on, enforcing both its range and its target cap.
+
+        The branches are range-checked differently, and deliberately. Named targets
+        are checked one at a time, exactly as a single-target spell is. An area is
+        checked at its **point of origin** only: those creatures come from the
+        radius rather than from the caller, so refusing the whole spell because one
+        creature at the far edge of the blast sits past the range would be wrong.
+        Checking *neither* — the previous behaviour — let a 150 ft Fireball land a
+        thousand feet away.
+        """
         if action.targets:
             chosen = [self._resolve_target(name) for name in action.targets]
+            for creature in chosen:
+                self._require_in_range(actor, spell, creature.position, creature.name)
         elif spell.radius and action.center is not None:
+            self._require_in_range(actor, spell, action.center, "the point of origin")
             chosen = [
                 c for c in self.creatures.values()
                 if c.conscious and abs(c.position - action.center) <= spell.radius
             ]
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
+            self._require_in_range(actor, spell, chosen[0].position, chosen[0].name)
         else:
             raise EncounterError(
                 f"{spell.name} needs 'target', 'targets', or 'center' to be given"
             )
-        for creature in chosen:
-            distance = actor.distance_to(creature)
-            if spell.range_feet and distance > spell.range_feet and not spell.radius:
-                raise EncounterError(
-                    f"{creature.name} is {distance} ft away, beyond {spell.name}'s "
-                    f"{spell.range_feet} ft range"
-                )
-        return [c for c in chosen if c.conscious][: max(spell.max_targets, len(chosen))]
+        landed = [c for c in chosen if c.conscious]
+        if spell.radius:
+            # An area is bounded by its radius, not by a head count. Every bundled
+            # area spell leaves max_targets at its default of 1, so applying the cap
+            # here would quietly shrink a Fireball to a single creature.
+            return landed
+        if len(landed) > spell.max_targets:
+            creatures = "creature" if spell.max_targets == 1 else "creatures"
+            raise EncounterError(
+                f"{spell.name} affects at most {spell.max_targets} {creatures}; "
+                f"{len(landed)} were named"
+            )
+        return landed
+
+    def _require_in_range(
+        self, actor: Creature, spell: Spell, position: int, what: str
+    ) -> None:
+        """Refuse a spell whose range does not reach ``position``."""
+        if not spell.range_feet:
+            return
+        distance = abs(position - actor.position)
+        if distance > spell.range_feet:
+            raise EncounterError(
+                f"{what} is {distance} ft away, beyond {spell.name}'s "
+                f"{spell.range_feet} ft range"
+            )
 
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.to_position is None:

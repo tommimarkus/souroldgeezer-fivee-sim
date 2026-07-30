@@ -45,6 +45,21 @@ attacks remaining, none of that potion left, speed 0 while Grappled. Read the
 reason and adapt. Do not retry the same call hoping for a different answer, and do
 not narrate the action as though it happened.
 
+## Aiming a spell
+
+`cast` takes `target` for one creature, `targets` for several, or **`center` for an
+area** — a point in feet along the axis, not a creature.
+
+`center` is what makes a Fireball a Fireball. Named targets are each hit
+individually, so a 20-ft blast dropped with `target` catches exactly one creature
+however tightly the enemy is packed. Give a point of origin instead and it catches
+everything within its radius — **including allies and the caster**, which is a real
+tactical cost and the engine will not protect you from it.
+
+Range is checked against the point of origin for an area, and against each named
+creature otherwise. A creature at the far edge of a blast can therefore sit past
+the spell's range legitimately; the origin is what has to be reachable.
+
 ## Items
 
 `encounter_act(kind="use_item", item="Potion of Healing")` spends the action.
@@ -70,16 +85,35 @@ handling is the interesting part, and hiding it makes the fight feel arbitrary.
 - **`simulate_rounds`** auto-plays the same encounter many times and reports win
   rates and how long fights last. Use it for "is this encounter too hard?"
 - **`simulate_dpr`** measures damage a build lands over N rounds against a given
-  AC. Use it for "is this build actually better?"
+  AC, at a `distance` you choose (5 ft by default). Use it for "is this build
+  actually better?"
 
 Both replay the same stepper live play uses, so their numbers cannot drift from
 the rules. Iteration `i` uses `seed + i`, so one iteration reproduces a single
 hand-played fight at that seed — handy when a batch result looks wrong and you
 want to watch the actual fight.
 
-**Neither uses items.** The auto-play policy attacks, casts, and closes distance; it
-never drinks a potion, so items on a combatant are ignored in a batch. Say so if
-the question turns on one, and play the fight by hand instead.
+### What the auto-play policy will and will not do
+
+It takes the action with the **highest expected damage this turn**, placing an area
+spell to catch as many enemies as it can without catching an ally. Its blind spots
+become yours the moment you quote one of these numbers, so state them when they
+bear on the question:
+
+- **It never uses an item.** No potion is ever drunk in a batch. If the question
+  turns on one, play the fight by hand instead.
+- **It never casts a spell that deals no damage.** Hold Person is loaded,
+  implemented, and still never chosen, because valuing a condition means modelling
+  the turns it buys the rest of the party. A batch is a **floor** for a control
+  build, not a measurement of it.
+- **It does not husband spell slots.** Best slot first, weapon afterwards.
+- **It is greedy, not tactical.** No focus-fire planning, no retreating, no
+  readying. Treat a win rate as "what these statistics do when both sides swing
+  hard", not as what a good table would achieve.
+
+`simulate_dpr` returns an `actions` breakdown of what the build actually did. Read
+it before trusting a damage figure — a spell that does not appear there was never
+cast, and the number is measuring something narrower than you asked for.
 
 When comparing options, hold the seed and iteration count fixed and change one
 thing. Report the distribution, not just the mean: `p90` and `max` are what a
