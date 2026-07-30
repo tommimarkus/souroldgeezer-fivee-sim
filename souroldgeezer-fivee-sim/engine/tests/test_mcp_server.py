@@ -8,6 +8,7 @@ through the session correctly.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -587,6 +588,50 @@ class TestMapAdapters:
             api.map_query(map_id, "distance", frm=[0], to=[1, 1])
         with pytest.raises(api.ToolError, match="outside the 5x4 map"):
             api.map_query(map_id, "distance", frm=[0, 0], to=[9, 9])
+
+
+class TestUvttExport:
+    """uvtt_export: always a file on disk, never an inlined payload."""
+
+    def load(self) -> str:
+        return str(api.map_load(document=map_document())["map_id"])
+
+    def test_export_writes_the_file_and_the_counts_match(self, tmp_path: Path) -> None:
+        map_id = self.load()
+        target = str(tmp_path / "chamber.uvtt")
+        result = api.uvtt_export(map_id, path=target, pixels_per_grid=8)
+        assert result["path"] == target
+        assert result["map_id"] == map_id
+        assert result["image"] is True
+        written = json.loads((tmp_path / "chamber.uvtt").read_text(encoding="utf-8"))
+        assert result["bytes"] == (tmp_path / "chamber.uvtt").stat().st_size
+        assert result["wall_polylines"] == len(written["line_of_sight"]) == 1
+        assert result["portals"] == len(written["portals"]) == 0
+        assert result["resolution"] == written["resolution"]
+        assert written["resolution"]["map_size"] == {"x": 5.0, "y": 4.0}
+        assert "bundle" not in result and "payload" not in result
+
+    def test_the_default_path_is_the_maps_root_and_overwrite_is_allowed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path))
+        map_id = self.load()
+        first = api.uvtt_export(map_id, pixels_per_grid=8, include_image=False)
+        assert first["path"] == str(tmp_path / "uvtt" / "adapter-chamber.uvtt")
+        # A derived artifact, like replay_export's files: re-export replaces it.
+        second = api.uvtt_export(map_id, pixels_per_grid=8, include_image=False)
+        assert second["path"] == first["path"]
+        assert json.loads(Path(first["path"]).read_text(encoding="utf-8"))["image"] == ""
+
+    def test_an_unknown_map_id_lists_the_active_ones(self) -> None:
+        self.load()
+        with pytest.raises(api.ToolError, match="active:"):
+            api.uvtt_export("map-does-not-exist")
+
+    def test_an_oversized_image_is_refused_with_the_remedy(self, tmp_path: Path) -> None:
+        map_id = self.load()
+        with pytest.raises(api.ToolError, match="lower pixels_per_grid"):
+            api.uvtt_export(map_id, path=str(tmp_path / "big.uvtt"), pixels_per_grid=1000)
 
 
 class TestEncountersOnLoadedMaps:

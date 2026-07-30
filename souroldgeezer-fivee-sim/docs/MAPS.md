@@ -184,3 +184,47 @@ bundle is baked into the replay viewer instead, yielding a single
 self-contained `.html` — open it in any browser, no server required. The
 viewer is also served live at `/viewer` by the editor process, where it takes
 a dropped bundle file.
+
+## Universal VTT export
+
+`uvtt_export` writes a loaded map as a Universal VTT JSON file (`format:
+0.3`) — the interchange format other virtual tabletops import — at
+`<maps root>/uvtt/<slug-of-name>.uvtt` by default. The result is always a
+file, never inlined (the payload embeds a base64 image), and an existing
+file at the target is replaced without asking: like replay files, the export
+is derived from the session's map, not an original.
+
+What is exported:
+
+- **Walls** (`line_of_sight`): polylines in grid-square units, derived from
+  the tiles — every interior cell-side where an opaque terrain kind meets a
+  non-opaque one becomes a unit edge, and the edges are chained and merged
+  into runs, deterministically. Door squares are ordinary floor in `tiles`,
+  so wall runs break at doorways by construction. The map boundary emits
+  nothing: out of bounds counts as opaque, so a wall run along the border
+  contributes only its interior-facing edge.
+- **Portals**: one per door feature, ordered by feature id, spanning the
+  door's square along its orientation, `closed` taken from the recorded
+  default state.
+- **Image**: a flat-color PNG of the tiles at `pixels_per_grid` pixels per
+  square (default 32), one fill per terrain kind plus a one-pixel grid line
+  between cells. Some importers require an image; `include_image: false`
+  writes `"image": ""` instead, deliberately. The palette is engine policy:
+  bundled kinds have fixed colors, and a pack-defined kind gets a
+  deterministic hue hashed from its name using the same fallback formula the
+  editor renderer documents — the PNG has exactly one theme, so pixel parity
+  with the themed canvas is not promised.
+
+Deliberately omitted, because the engine does not model them and inventing
+values would misrepresent the map: `lights` and `objects_line_of_sight` ship
+empty, and there is no elevation. An overland map typically has no opaque
+kinds at all, so it exports an image and an empty `line_of_sight` — correct,
+not a bug.
+
+The image side is capped at 4096 pixels: `width × pixels_per_grid` and
+`height × pixels_per_grid` must both fit, and the refusal names the largest
+`pixels_per_grid` that would (every valid document fits at 8 or fewer).
+
+The exporter is implemented defensively from the publicly documented shape
+of the format — the JSON keys importers read — with no code ported from any
+tool that produces or consumes it, and nothing beyond the standard library.

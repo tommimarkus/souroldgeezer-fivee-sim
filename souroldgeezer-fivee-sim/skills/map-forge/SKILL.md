@@ -1,6 +1,6 @@
 ---
 name: map-forge
-description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving and re-loading map files, launching the interactive browser editor for hand-tuning, putting a fight on a loaded map, or exporting a finished fight as a shareable replay. Drives the souroldgeezer-fivee-sim MCP engine's map and replay tools; running the fight itself belongs to the encounter-sim skill.
+description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving and re-loading map files, launching the interactive browser editor for hand-tuning, putting a fight on a loaded map, exporting a finished fight as a shareable replay, or handing a map to another virtual tabletop via Universal VTT export. Drives the souroldgeezer-fivee-sim MCP engine's map and replay tools; running the fight itself belongs to the encounter-sim skill.
 ---
 
 # Map Forge
@@ -52,6 +52,15 @@ session or file — is currently the truth.
    HTML page that plays the fight back in any browser — no server, no
    install. Report the written path; small plain bundles come back inline
    instead.
+9. **Hand a map to another virtual tabletop with `uvtt_export`.** It writes
+   the loaded map as a Universal VTT JSON file (default
+   `<maps root>/uvtt/<slug>.uvtt`, replaced on re-export) carrying wall
+   polylines derived from the tiles, one portal per door, and a rendered PNG
+   of the map — always a file, never inline; quote the path. Lights and
+   elevation are not exported, because the engine does not model them. The
+   image side is capped at 4096 pixels: lower `pixels_per_grid` for very
+   large maps, or pass `include_image` false when the importer does not need
+   the picture.
 
 ## Seeds and reproducibility
 

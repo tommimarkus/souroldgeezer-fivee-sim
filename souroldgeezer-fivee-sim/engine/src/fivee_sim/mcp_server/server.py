@@ -70,6 +70,7 @@ from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from ..service import maps as _map_service
 from ..service import replay as _replay_service
+from ..service import uvtt as _uvtt_service
 from ..service.common import resolve_seed, sha256_of, slugify
 
 INSTRUCTIONS = """\
@@ -1424,6 +1425,59 @@ def map_query(
     except (UnknownTerrain, ValueError) as error:
         raise ToolError(str(error)) from error
     return {"map_id": map_id, **answer}
+
+
+@server.tool()
+def uvtt_export(
+    map_id: str,
+    path: str | None = None,
+    pixels_per_grid: int = 32,
+    include_image: bool = True,
+) -> dict[str, Any]:
+    """Export a loaded map as a Universal VTT file another virtual tabletop can import.
+
+    The payload carries wall polylines derived from the tiles, one portal per
+    door feature (with its recorded default open/closed state), and — unless
+    ``include_image`` is false — a rendered PNG of the map, which some
+    importers require. Lights, object line-of-sight, and elevation are
+    deliberately absent: the engine does not model them. The image side is
+    capped at 4096 pixels; lower ``pixels_per_grid`` for large maps.
+
+    The result is always written to disk — default
+    ``<maps root>/uvtt/<slug-of-name>.uvtt`` — never inlined, because the
+    payload embeds a base64 image. An existing file at the target is
+    replaced: the export is derived from the session's map, not an original.
+    """
+    session = _map_session(map_id)
+    try:
+        payload = _uvtt_service.to_uvtt(
+            session.document,
+            terrain=_registry().terrain_effects,
+            pixels_per_grid=pixels_per_grid,
+            include_image=include_image,
+        )
+    except (UnknownTerrain, ValueError) as error:
+        raise ToolError(str(error)) from error
+    target = (
+        Path(path).expanduser()
+        if path is not None
+        else _map_service.maps_root() / "uvtt" / f"{slugify(session.document.name)}.uvtt"
+    )
+    text = json.dumps(payload) + "\n"
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+    except OSError as error:
+        raise ToolError(f"cannot write {target}: {error}") from error
+    return {
+        "path": str(target),
+        "bytes": len(text.encode("utf-8")),
+        "map_id": map_id,
+        "resolution": payload["resolution"],
+        "wall_polylines": len(payload["line_of_sight"]),
+        "portals": len(payload["portals"]),
+        "image": include_image,
+    }
 
 
 # --- the interactive editor ------------------------------------------------

@@ -391,7 +391,9 @@ def render_markdown() -> str:
         "turns that record into a portable replay bundle — the fight's seed, its "
         "map as captured at creation, the starting roster, and every event — or, "
         "with `embed`, a single self-contained page that plays the fight back in "
-        "a browser."
+        "a browser. `uvtt_export` writes a loaded map as a Universal VTT file — "
+        "wall polylines derived from the tiles, door portals, and a rendered "
+        "image — for import into other virtual tabletops."
     )
     add("")
     add(
