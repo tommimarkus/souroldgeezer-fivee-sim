@@ -93,6 +93,37 @@ class TurnState:
     attacks_left: int = 0
 
 
+@dataclass(frozen=True, slots=True)
+class OngoingEffect:
+    """One condition that one spell or item is currently imposing on one creature.
+
+    A condition on a creature is a bare string in a set; it carries no memory of
+    what put it there. That is fine until something has to *end* — SRD 5.2, Rules
+    Glossary, "Concentration": "If the effect's creator loses Concentration, the
+    effect ends." Answering that needs the link back to the caster, and answering
+    it *safely* needs to know whether anything else is imposing the same condition
+    on the same creature, so a lapsing spell does not free a creature another spell
+    is still holding.
+
+    ``id`` exists so two otherwise identical grants — the same caster, spell,
+    target and condition — remain distinct entries rather than collapsing under
+    equality when one of them is removed.
+    """
+
+    id: int
+    #: Name of the creature sustaining the effect.
+    source: str
+    #: Name of the spell or item, matched against ``Creature.concentrating_on``.
+    name: str
+    target: str
+    condition: str
+    concentration: bool
+    #: True when the target already had this condition from something outside this
+    #: ledger — a stat block that starts with it, or the stepper's own Unconscious.
+    #: Such a condition is not ours to lift, so releasing this effect leaves it.
+    stacked: bool
+
+
 class Encounter:
     """A fight in progress."""
 
@@ -130,6 +161,11 @@ class Encounter:
             creature.condition_effects = self.condition_effects
         self.round = 1
         self.log: list[Event] = []
+        # A list, not a set or a dict: effects are released by iterating it, and an
+        # unordered container would let the order of releases — and so the order of
+        # log entries — vary between a live fight and its analytics replay.
+        self._effects: list[OngoingEffect] = []
+        self._next_effect_id = 0
         self._dodging: dict[str, bool] = {name: False for name in names}
         self._disengaged: dict[str, bool] = {name: False for name in names}
         self._reaction_available: dict[str, bool] = {name: True for name in names}
@@ -236,6 +272,9 @@ class Encounter:
         )
         if creature.dying:
             self._death_save(creature, rng)
+        # A death save can kill, and :meth:`_death_save` marks the creature dead
+        # without going through ``take_damage``, so nothing else would notice.
+        self._reconcile_concentration()
 
     def _death_save(self, creature: Creature, rng: Random) -> None:
         roll = roll_d20(rng)
@@ -328,6 +367,11 @@ class Encounter:
                 self._dodging[actor.name] = True
                 self._emit("dodge", actor.name,
                            detail="attacks against this creature have disadvantage")
+        # The fourth route: an action can land an incapacitating condition on a
+        # creature that is concentrating, and ``Creature.add_condition`` clears the
+        # field from inside the model, where no release could be issued. A spell or
+        # item that imposes one without dealing damage reaches nothing else.
+        self._reconcile_concentration()
         return self.log[before:]
 
     def _require_action(self, actor: Creature) -> None:
@@ -532,7 +576,14 @@ class Encounter:
         if resolution.damage_dealt:
             self._apply_damage(target, resolution.damage_dealt, rng)
         if resolution.condition_applied is not None and target.conscious:
-            target.add_condition(resolution.condition_applied)
+            # An item's condition has no Concentration behind it, so nothing ever
+            # releases it. It is recorded anyway, because it *holds* the condition:
+            # without the entry, an unrelated spell lapsing on the same creature
+            # would lift a condition the item is still imposing.
+            self._apply_condition(
+                actor, target, resolution.condition_applied,
+                effect_name=name, concentration=False,
+            )
 
     def _do_cast(self, actor: Creature, action: Action, rng: Random) -> None:
         self._require_action(actor)
@@ -614,6 +665,11 @@ class Encounter:
         self._emit("cast", actor.name, detail=detail)
 
         if spell.concentration:
+            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
+            # moment you start casting a spell that requires Concentration." An
+            # unconditional release covers recasting the *same* spell on a new
+            # target, which comparing names could not see.
+            self._end_concentration(actor)
             actor.concentrating_on = spell.name
             self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}")
 
@@ -623,7 +679,10 @@ class Encounter:
             if result.damage_dealt:
                 self._apply_damage(target, result.damage_dealt, rng)
             if result.condition_applied is not None and target.conscious:
-                target.add_condition(result.condition_applied)
+                self._apply_condition(
+                    actor, target, result.condition_applied,
+                    effect_name=spell.name, concentration=spell.concentration,
+                )
 
     def auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
         """Whether a condition forces this creature to fail the save outright.
@@ -795,6 +854,119 @@ class Encounter:
         if resolution.hit:
             self._apply_damage(mover, resolution.damage_dealt, rng)
 
+    # --- ongoing effects --------------------------------------------------
+    def _apply_condition(
+        self,
+        source: Creature,
+        target: Creature,
+        condition: str,
+        *,
+        effect_name: str,
+        concentration: bool,
+    ) -> None:
+        """Impose ``condition`` and record what is imposing it.
+
+        Registration happens *after* ``add_condition`` so a name the active table
+        does not define is refused before anything is written down, and the
+        ``stacked`` reading is taken *before*, because it is a statement about the
+        creature as it was.
+        """
+        held_by_ledger = self._holders(target.name, condition)
+        already_held = condition in target.conditions
+        target.add_condition(condition)
+        self._next_effect_id += 1
+        self._effects.append(
+            OngoingEffect(
+                id=self._next_effect_id,
+                source=source.name,
+                name=effect_name,
+                target=target.name,
+                condition=condition,
+                concentration=concentration,
+                stacked=already_held and not held_by_ledger,
+            )
+        )
+
+    def _holders(self, target: str, condition: str) -> list[OngoingEffect]:
+        return [
+            effect for effect in self._effects
+            if effect.target == target and effect.condition == condition
+        ]
+
+    def _release_effect(self, effect: OngoingEffect) -> None:
+        """End one ongoing effect, lifting its condition only if nothing else holds it.
+
+        The two reasons a condition survives its own effect ending are the reason
+        this is a ledger rather than a ``remove_condition`` paired with each
+        ``add_condition``: a second caster may be imposing the same condition on the
+        same creature, and the creature may have been carrying it before either of
+        them arrived.
+        """
+        self._effects.remove(effect)
+        target = self.creatures.get(effect.target)
+        if target is None:  # pragma: no cover - names cannot leave the roster
+            return
+        remaining = self._holders(effect.target, effect.condition)
+        if remaining or effect.stacked:
+            reason = (
+                "another effect still holds it" if remaining
+                else "it was already held"
+            )
+            self._emit(
+                "effect_end", effect.source, effect.target,
+                f"{effect.name} ends; {effect.condition} persists ({reason})",
+            )
+            return
+        target.remove_condition(effect.condition)
+        self._emit(
+            "effect_end", effect.source, effect.target,
+            f"{effect.name} ends; {effect.condition} lifts",
+        )
+
+    def _end_concentration(self, actor: Creature) -> None:
+        """Drop whatever ``actor`` is concentrating on, and everything it sustains."""
+        for effect in list(self._effects):
+            if effect.concentration and effect.source == actor.name:
+                self._release_effect(effect)
+        actor.concentrating_on = None
+
+    def _reconcile_concentration(self) -> None:
+        """Enforce the one invariant that makes concentration effects end.
+
+        **An ongoing concentration effect exists exactly while its source is still
+        sustaining it.** Checking that, rather than releasing at each place
+        concentration can lapse, is deliberate: SRD 5.2 ends Concentration on a
+        failed Constitution save, on the Incapacitated condition, on death, and on
+        starting another Concentration effect — and two of those are enforced inside
+        :class:`~fivee_sim.model.creature.Creature`, which cannot reach this ledger.
+        A design with one release call per exit point is a design where the next
+        exit point added leaks silently.
+
+        ``dead`` and ``active`` are consulted alongside ``concentrating_on`` rather
+        than trusting it alone, because they are what SRD 5.2 actually says
+        ("Your Concentration ends if you have the Incapacitated condition or you
+        die") and because not every route to death clears the field: a creature
+        killed by its third failed death save is marked dead by
+        :meth:`_death_save`, which never touches it.
+
+        This consumes no randomness, so a batch's RNG stream is unaffected.
+        """
+        for effect in list(self._effects):
+            if not effect.concentration:
+                continue
+            source = self.creatures.get(effect.source)
+            if source is None:  # pragma: no cover - names cannot leave the roster
+                self._release_effect(effect)
+                continue
+            spent = source.dead or not source.active
+            if spent or source.concentrating_on != effect.name:
+                self._release_effect(effect)
+            # Cleared only when the creature genuinely cannot concentrate, never
+            # merely because a stale entry did not match: clearing on a mismatch
+            # would cancel a *new* concentration the caster had just begun.
+            if spent:
+                source.concentrating_on = None
+
     # --- damage and concentration ----------------------------------------
     def _apply_damage(
         self, target: Creature, amount: int, rng: Random, *, critical: bool = False
@@ -839,6 +1011,10 @@ class Encounter:
             ))
         elif was_conscious and not target.conscious:
             self._emit("down", target.name, detail="falls unconscious and is dying")
+        # Three of the four ways concentration ends pass through here — the failed
+        # save above, being knocked out, and dying — so the release is reported next
+        # to the loss rather than at the end of the action that caused it.
+        self._reconcile_concentration()
 
     def _emit(self, kind: str, actor: str = "", target: str = "", detail: str = "") -> None:
         self.log.append(Event(kind=kind, actor=actor, target=target, detail=detail))

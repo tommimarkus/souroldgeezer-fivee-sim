@@ -28,7 +28,7 @@ from fivee_sim.model.encounter import (
     Event,
 )
 
-from .test_kernel import FixedRandom
+from .test_kernel import FixedRandom, ScriptedRandom
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
@@ -1157,3 +1157,245 @@ class TestTurnLegality:
         assert set(state["order"]) == {"Thora", "Wolf"}
         assert {entry["name"] for entry in state["combatants"]} == {"Thora", "Wolf"}
         assert all("hp" in entry and "conditions" in entry for entry in state["combatants"])
+
+
+class TestConcentrationEffects:
+    """A condition a Concentration spell imposes ends when the Concentration does.
+
+    SRD 5.2, Rules Glossary, "Concentration": "Some spells and other effects require
+    Concentration to remain active, as specified in their descriptions. If the
+    effect's creator loses Concentration, the effect ends." Damage that fails the
+    Constitution save, the Incapacitated condition, death and starting a second
+    Concentration spell are the four routes named there, and every one of them has
+    to reach the creature the spell is holding.
+
+    The awkward case, and the reason this needs a ledger rather than a matching
+    ``remove_condition`` next to each ``add_condition``, is two casters holding the
+    same creature with the same condition. One losing Concentration must free
+    nothing, because the other is still holding it.
+    """
+
+    def duel(self, *, targets: int = 1) -> tuple[Encounter, Random, dict[str, Creature]]:
+        """A caster, one or two foes to hold, and a brute able to hit the caster."""
+        wren = caster(position=0)
+        wren.max_hp = wren.hp = 60
+        wren.spells = ("Fireball", "Guiding Bolt", "Hold Person")
+        wren.spell_slots = {1: 1, 2: 3, 3: 1}
+        people: list[Creature] = [wren, fighter("Thora", position=0)]
+        for index in range(targets):
+            held = fighter(f"Bandit{index}", team="foes", position=10 + index, max_hp=40)
+            # Wisdom 6: the save fails on anything but a forced high roll.
+            held.abilities[Ability.WISDOM] = 6
+            people.append(held)
+        people.append(fighter("Brute", team="foes", position=5, max_hp=40))
+        rng = Random(11)
+        encounter = Encounter(people, rng, spellbook=spellbook())
+        return encounter, rng, {c.name: c for c in people}
+
+    def their_turn(self, encounter: Encounter, rng: Random, who: str) -> None:
+        """Put ``who`` on a turn with its action still in hand."""
+        if (encounter.current_name == who
+                and encounter.state()["turn_state"]["action_used"]):
+            encounter.advance(rng)
+        advance_to(encounter, who, rng)
+
+    def hold(
+        self, encounter: Encounter, rng: Random, who: str, target: str,
+    ) -> list[Event]:
+        """``who`` casts Hold Person on ``target``, forcing the save to fail."""
+        self.their_turn(encounter, rng, who)
+        return encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target=target),
+            FixedRandom(1),
+        )
+
+    # --- the four ways Concentration ends ---------------------------------
+    def test_failing_the_concentration_save_frees_the_target(self) -> None:
+        encounter, rng, who = self.duel()
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        assert Condition.PARALYZED in who["Bandit0"].conditions
+
+        advance_to(encounter, "Brute", rng)
+        # d20 15 hits AC 13; 1d8 damage; then a natural 1 on the Constitution save.
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+            ScriptedRandom([15, 5, 1]),
+        )
+        assert "loses Hold Person" in detail_of(events, "concentration")
+        assert who["Wren"].concentrating_on is None
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+        assert who["Bandit0"].active
+
+    def test_killing_the_caster_frees_the_target(self) -> None:
+        encounter, rng, who = self.duel()
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        who["Wren"].hp = 4
+        advance_to(encounter, "Brute", rng)
+        # A hit for more than 4 + max_hp is massive damage: dead outright.
+        who["Wren"].max_hp = 4
+        encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+            FixedRandom(20),
+        )
+        assert who["Wren"].dead
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+        assert who["Bandit0"].active
+
+    def test_incapacitating_the_caster_frees_the_target(self) -> None:
+        """The rival caster holds the caster, and the caster's own hold lapses."""
+        encounter, rng, who = self.duel(targets=2)
+        rival = who["Bandit1"]
+        rival.spells = ("Hold Person",)
+        rival.spell_slots = {2: 1}
+        rival.spell_save_dc = 15
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        assert Condition.PARALYZED in who["Bandit0"].conditions
+
+        events = self.hold(encounter, rng, "Bandit1", "Wren")
+        assert Condition.PARALYZED in who["Wren"].conditions
+        assert who["Wren"].concentrating_on is None
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+        assert who["Bandit0"].active
+        assert "effect_end" in kinds(events)
+
+    def test_starting_a_second_concentration_spell_ends_the_first(self) -> None:
+        """SRD 5.2: Concentration is lost "the moment you start casting" another."""
+        encounter, rng, who = self.duel(targets=2)
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        self.hold(encounter, rng, "Wren", "Bandit1")
+        assert who["Wren"].concentrating_on == "Hold Person"
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+        assert Condition.PARALYZED in who["Bandit1"].conditions
+
+    def test_a_spell_without_concentration_leaves_the_hold_standing(self) -> None:
+        """Only a *Concentration* effect displaces one. Guiding Bolt is not one."""
+        encounter, rng, who = self.duel()
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        self.their_turn(encounter, rng, "Wren")
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", target="Brute"),
+            Random(3),
+        )
+        assert who["Wren"].concentrating_on == "Hold Person"
+        assert Condition.PARALYZED in who["Bandit0"].conditions
+
+    # --- what must *not* be released --------------------------------------
+    def test_a_second_caster_holding_the_same_target_keeps_it_held(self) -> None:
+        """Requirement: one caster losing Concentration frees nothing on its own."""
+        encounter, rng, who = self.duel(targets=2)
+        rival = who["Bandit1"]
+        rival.team = "party"
+        rival.spells = ("Hold Person",)
+        rival.spell_slots = {2: 1}
+        rival.spell_save_dc = 15
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        self.hold(encounter, rng, "Bandit1", "Bandit0")
+        assert Condition.PARALYZED in who["Bandit0"].conditions
+
+        # Wren alone is knocked out, which ends only Wren's Concentration.
+        who["Wren"].take_damage(who["Wren"].hp)
+        encounter.advance(rng)
+        assert who["Wren"].concentrating_on is None
+        assert who["Bandit1"].concentrating_on == "Hold Person"
+        assert Condition.PARALYZED in who["Bandit0"].conditions, (
+            "the second caster is still holding this creature"
+        )
+
+        # Now the second caster drops it too, and only then is the target free.
+        who["Bandit1"].take_damage(who["Bandit1"].hp)
+        encounter.advance(rng)
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+
+    def test_a_condition_from_an_untracked_source_survives(self) -> None:
+        """A condition the ledger did not grant is not the ledger's to remove.
+
+        The release must be shown to have *happened* — asserting only that the
+        condition is still there would pass just as well against an engine that
+        never releases anything, which is the defect this class exists for.
+        """
+        encounter, rng, who = self.duel()
+        who["Bandit0"].add_condition(Condition.PARALYZED)
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        who["Wren"].take_damage(who["Wren"].hp)
+        events = encounter.advance(rng)
+        assert who["Wren"].concentrating_on is None
+        assert "persists" in detail_of(events, "effect_end")
+        assert Condition.PARALYZED in who["Bandit0"].conditions
+
+    def test_an_unrelated_condition_is_untouched(self) -> None:
+        encounter, rng, who = self.duel()
+        who["Bandit0"].add_condition(Condition.POISONED)
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        who["Wren"].take_damage(who["Wren"].hp)
+        events = encounter.advance(rng)
+        assert "lifts" in detail_of(events, "effect_end")
+        assert Condition.PARALYZED not in who["Bandit0"].conditions
+        assert Condition.POISONED in who["Bandit0"].conditions
+
+    def test_an_item_applied_condition_is_not_a_concentration_effect(self) -> None:
+        """An item's condition has no Concentration behind it, so nothing ends it."""
+        rng = Random(6)
+        thrower = fighter("Thora", position=0)
+        thrower.items = {"Numbing Dart": 1}
+        victim = fighter("Bandit0", team="foes", position=5)
+        wren = caster(position=0)
+        wren.spell_slots = {2: 1}
+        brute = fighter("Brute", team="foes", position=5)
+        dart = ItemEffect(condition=Condition.PARALYZED, provenance=FIXTURE)
+        encounter = Encounter(
+            [thrower, wren, victim, brute], rng,
+            spellbook=spellbook(), items={"Numbing Dart": dart},
+        )
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.USE_ITEM, item="Numbing Dart", target="Bandit0"), rng
+        )
+        assert Condition.PARALYZED in victim.conditions
+
+        # An unrelated caster now holds the same creature, then drops it. The dart's
+        # condition is a different source and must outlive the spell.
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        wren.take_damage(wren.hp)
+        events = encounter.advance(rng)
+        assert wren.concentrating_on is None
+        assert "persists" in detail_of(events, "effect_end")
+        assert Condition.PARALYZED in victim.conditions
+
+    # --- the log ----------------------------------------------------------
+    def test_the_release_is_reported(self) -> None:
+        encounter, rng, who = self.duel()
+        self.hold(encounter, rng, "Wren", "Bandit0")
+        advance_to(encounter, "Brute", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+            ScriptedRandom([15, 5, 1]),
+        )
+        detail = detail_of(events, "effect_end")
+        assert "Hold Person" in detail
+        assert str(Condition.PARALYZED) in detail
+
+    def test_the_same_seed_still_produces_the_same_fight(self) -> None:
+        """Releases are bookkeeping: they roll nothing and reorder nothing."""
+        def transcript() -> list[dict[str, str]]:
+            encounter, rng, _ = self.duel(targets=2)
+            self.hold(encounter, rng, "Wren", "Bandit0")
+            advance_to(encounter, "Brute", rng)
+            encounter.act(
+                Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+                ScriptedRandom([15, 5, 1]),
+            )
+            for _ in range(8):
+                if encounter.over:
+                    break
+                encounter.advance(rng)
+            return [event.as_dict() for event in encounter.log]
+
+        first = transcript()
+        assert any(event["kind"] == "effect_end" for event in first), (
+            "the transcript must contain a release, or it pins nothing"
+        )
+        assert first == transcript()

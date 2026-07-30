@@ -755,6 +755,61 @@ class TestCustomConditions:
         hero.add_condition("vale-frozen")
         assert hero.active is False
 
+    def test_a_pack_concentration_spell_releases_its_own_condition(
+        self, tmp_path: Path
+    ) -> None:
+        """The release mechanism is driven by pack data, not by the SRD spell list.
+
+        Nothing here is an SRD name: the spell, the condition and the caster are the
+        pack's. If the release were special-cased on Hold Person or on the
+        ``Condition`` enum, this is the test that would fail.
+        """
+        payload = {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "vale-frozen", "provenance": "test",
+                "effects": {"incapacitated": True, "speed_zero": True},
+            }],
+            "spells": [{
+                "name": "Vale Binding", "level": 1, "provenance": "test",
+                "save_ability": "wisdom", "condition": "vale-frozen",
+                "concentration": True, "range_feet": 60,
+            }],
+        }
+        path = write_pack(tmp_path, "binding.json", payload)
+        registry = load_packs([path], include_environment=False)
+        binder = make_creature("Goblin Warrior", registry=registry, label="A", team="a")
+        binder.spells = ("Vale Binding",)
+        binder.spell_slots = {1: 1}
+        binder.spell_save_dc = 20
+        victim = make_creature("Goblin Warrior", registry=registry, label="B", team="b")
+        victim.position = 10
+        # A third combatant keeps the fight running once the binder goes down, so
+        # the encounter still takes turns and the release is observable.
+        ally = make_creature("Goblin Warrior", registry=registry, label="C", team="a")
+        ally.position = 5
+        rng = Random(5)
+        encounter = Encounter(
+            [binder, victim, ally], rng,
+            spellbook=registry.spells,
+            items=registry.items,
+            condition_effects=registry.condition_effects,
+        )
+        for _ in range(4):
+            if encounter.current_name == "A":
+                break
+            encounter.advance(rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Vale Binding", target="B"), Random(3)
+        )
+        assert "vale-frozen" in victim.conditions
+        assert binder.concentrating_on == "Vale Binding"
+
+        binder.take_damage(binder.hp)
+        encounter.advance(rng)
+        assert binder.concentrating_on is None
+        assert "vale-frozen" not in victim.conditions
+
 
 class TestDeterminism:
     def test_the_same_seed_gives_the_same_fight_with_packs_loaded(

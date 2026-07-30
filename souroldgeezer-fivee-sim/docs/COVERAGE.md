@@ -65,7 +65,7 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
-Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged.
+Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged. A condition a concentration spell imposed is lifted when that concentration ends — by a failed check, by the caster being incapacitated or killed, or by the caster beginning another concentration spell — unless another effect is still imposing it.
 
 ## Damage types
 
@@ -84,6 +84,8 @@ Stated explicitly because absence is invisible in the data above, and because a 
 **Anything outside a fight.** Exploration, travel, downtime, resting and recovery, skills and proficiencies as a system, social interaction, and the adventuring day. Resources do not regenerate; an encounter begins and ends.
 
 **Battlefield geometry.** Positions are feet along a single axis. Reach, ranged bands, and spell radii work; facing, flanking, cover, difficult terrain, elevation, and movement around obstacles do not exist.
+
+**Timed durations.** Concentration is tracked, and ending it lifts the condition the spell imposed. Elapsed time is not: the 'up to 1 minute' cap on a concentration spell never expires it, a spell's repeat saving throw at the end of the target's turn is not rolled, and a condition applied by an item or set directly on a stat block lasts until something removes it. A condition that should wear off on its own does not.
 
 **Reactions other than opportunity attacks.** Readied actions, Shield and similar reaction spells, Parry, and legendary or lair actions. Each combatant has one reaction per round and only ever spends it on an opportunity attack.
 

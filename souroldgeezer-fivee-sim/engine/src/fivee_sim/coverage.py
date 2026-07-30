@@ -66,6 +66,15 @@ NOT_SUPPORTED = (
         "around obstacles do not exist.",
     ),
     (
+        "Timed durations",
+        "Concentration is tracked, and ending it lifts the condition the spell "
+        "imposed. Elapsed time is not: the 'up to 1 minute' cap on a concentration "
+        "spell never expires it, a spell's repeat saving throw at the end of the "
+        "target's turn is not rolled, and a condition applied by an item or set "
+        "directly on a stat block lasts until something removes it. A condition that "
+        "should wear off on its own does not.",
+    ),
+    (
         "Reactions other than opportunity attacks",
         "Readied actions, Shield and similar reaction spells, Parry, and legendary or "
         "lair actions. Each combatant has one reaction per round and only ever spends "
@@ -225,7 +234,10 @@ def render_markdown() -> str:
     add("Also resolved: death saving throws, stabilising, instant death when damage "
         "past 0 hit points equals maximum hit points, damage resistance, vulnerability "
         "and immunity, and concentration checks when a concentrating creature is "
-        "damaged.")
+        "damaged. A condition a concentration spell imposed is lifted when that "
+        "concentration ends — by a failed check, by the caster being incapacitated or "
+        "killed, or by the caster beginning another concentration spell — unless "
+        "another effect is still imposing it.")
     add("")
 
     add("## Damage types")

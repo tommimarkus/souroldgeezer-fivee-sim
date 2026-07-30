@@ -7,6 +7,7 @@ Resistance rounding — rather than restating what the code obviously does.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from inspect import signature
 from random import Random
 
@@ -60,6 +61,24 @@ class FixedRandom(Random):
 
     def randint(self, a: int, b: int) -> int:
         return min(self._natural, b)
+
+
+class ScriptedRandom(Random):
+    """A generator that plays a written sequence of faces, then falls back to the max.
+
+    :class:`FixedRandom` cannot express a sequence where the rolls must differ — an
+    attack that *hits* and then a Constitution save that *fails* need a high face
+    and a low one out of the same call. Each face is clamped into the die's own
+    range, so a script written for d20s stays sane when a damage die is drawn.
+    """
+
+    def __init__(self, script: Sequence[int]) -> None:
+        super().__init__(0)
+        self._script = list(script)
+
+    def randint(self, a: int, b: int) -> int:
+        face = self._script.pop(0) if self._script else b
+        return max(a, min(face, b))
 
 
 class TestDiceParsing:
