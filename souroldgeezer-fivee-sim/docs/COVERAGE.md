@@ -78,7 +78,7 @@ acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psy
 
 Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, and doors. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
 
-**Area shapes:** sphere, cone, line, cube. **Cover grades:** none, half, three-quarters, total — graded by corner-counted sight lines; half and three-quarters raise the target's AC, total cover refuses the attack outright. **Diagonal rules:** `5-5-5`, `5-10-5` — a per-encounter knob governing movement and areas alike; the default prices every diagonal at 5 ft.
+**Area shapes:** sphere, cone, line, cube. **Cover grades:** none, half, three-quarters, total — graded by corner-counted sight lines; half and three-quarters raise the target's AC against attacks and its Dexterity saving throws against areas, while total cover refuses the attack and excludes the target from an area outright. **Diagonal rules:** `5-5-5`, `5-10-5` — a per-encounter knob governing movement and areas alike; the default prices every diagonal at 5 ft.
 
 Built-in terrain kinds — content packs may define more:
 

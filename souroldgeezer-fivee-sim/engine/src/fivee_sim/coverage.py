@@ -294,8 +294,9 @@ def render_markdown() -> str:
         + ". **Cover grades:** "
         + ", ".join(_grade_name(grade) for grade in CoverGrade)
         + " — graded by corner-counted sight lines; half and three-quarters raise "
-        "the target's AC, total cover refuses the attack outright. **Diagonal "
-        "rules:** "
+        "the target's AC against attacks and its Dexterity saving throws against "
+        "areas, while total cover refuses the attack and excludes the target "
+        "from an area outright. **Diagonal rules:** "
         + ", ".join(f"`{rule.value}`" for rule in DiagonalRule)
         + " — a per-encounter knob governing movement and areas alike; the default "
         "prices every diagonal at 5 ft."

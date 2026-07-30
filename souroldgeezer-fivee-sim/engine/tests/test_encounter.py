@@ -698,6 +698,99 @@ class TestCoverChangesTheAttack:
         assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.HALF
 
 
+class TestCoverShieldsSaves:
+    """Cover on Dexterity saves against areas, measured from the effect's origin."""
+
+    def goblin_effect(self, events: Sequence[Event]) -> Event:
+        return next(
+            event for event in events
+            if event.kind == "spell_effect" and event.target == "Goblin"
+        )
+
+    def fireball_at_own_feet(self, terrain: dict[Square, str]) -> Sequence[Event]:
+        """Wren drops a Fireball on her own square; the goblin sits 20 ft out,
+        with whatever ``terrain`` puts between the origin and it."""
+        rng = Random(3)
+        encounter = Encounter(
+            [caster(position=(0, 5)),
+             make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
+            rng,
+            spellbook=spellbook(),
+            battle_map=strip(5, 3, terrain=terrain),
+        )
+        advance_to(encounter, "Wren", rng)
+        return encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3,
+                   center=(0, 5)),
+            FixedRandom(12),
+        )
+
+    def test_half_cover_flips_a_pinned_dexterity_save(self) -> None:
+        # Natural 12 + 2 (Dex) = 14: a failure against DC 15 in the open. Behind
+        # the half-cover pillar the same roll gains +2 and saves at 16.
+        in_the_open = self.goblin_effect(self.fireball_at_own_feet({}))
+        assert in_the_open.data["saved"] is False
+        assert "cover" not in in_the_open.data
+
+        behind_cover = self.goblin_effect(
+            self.fireball_at_own_feet({(2, 1): "half-cover"})
+        )
+        assert behind_cover.data["saved"] is True
+        assert behind_cover.data["cover"] == 1
+
+    def test_a_non_dexterity_save_gets_no_cover_bonus(self) -> None:
+        # Shatter saves on Constitution: the goblin's half cover is reported in
+        # the payload but grants nothing. Natural 13 + 0 (Con) = 13 fails DC 15;
+        # were the +2 wrongly applied, 15 would save.
+        rng = Random(3)
+        wizard = caster(position=(0, 5))
+        wizard.spells = ("Shatter",)
+        encounter = Encounter(
+            [wizard, make_monster("Goblin Warrior", label="Goblin",
+                                  position=(20, 5))],
+            rng,
+            spellbook=spellbook(),
+            battle_map=strip(5, 3, terrain={(3, 1): "half-cover"}),
+        )
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Shatter", slot_level=2,
+                   center=(10, 5)),
+            FixedRandom(13),
+        )
+        effect = self.goblin_effect(events)
+        assert effect.data["cover"] == 1
+        assert effect.data["saved"] is False
+
+    def test_total_cover_from_the_origin_excludes_the_target(self) -> None:
+        # The sealed goblin is inside the template — 15 ft from the origin — but
+        # a full-height wall stands between; the blast does not reach around it.
+        rng = Random(3)
+        encounter = Encounter(
+            [
+                caster(position=(0, 5)),
+                make_monster("Goblin Warrior", label="Near", position=(10, 5)),
+                make_monster("Goblin Warrior", label="Sealed", position=(30, 5)),
+            ],
+            rng,
+            spellbook=spellbook(),
+            battle_map=strip(
+                8, 3, terrain={(4, 0): "wall", (4, 1): "wall", (4, 2): "wall"}
+            ),
+        )
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3,
+                   center=(15, 5)),
+            Random(2),
+        )
+        struck = {e.target for e in events if e.kind == "spell_effect"}
+        assert "Near" in struck
+        assert "Sealed" not in struck
+        sealed = encounter.creatures["Sealed"]
+        assert sealed.hp == sealed.max_hp
+
+
 class TestInteract:
     def corridor(self) -> tuple[Encounter, Random]:
         """A doorway in an otherwise solid wall: walls above and below, door in

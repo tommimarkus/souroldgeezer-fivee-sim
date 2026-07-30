@@ -432,13 +432,28 @@ class Encounter:
         if self.battle_map is None:
             return CoverGrade.NONE
         attacker = self.creatures[attacker_name]
+        return self._cover_from_square(
+            to_square(as_point(attacker.position)), target_name
+        )
+
+    def _cover_from_square(self, origin: Square, target_name: str) -> CoverGrade:
+        """The cover the target has against an effect measured from ``origin``.
+
+        The one composition every cover question goes through: attacks measure
+        from the attacker's square, area effects from their point of origin.
+        Intervening creatures cap at half, exactly as for attacks; the origin
+        and target squares themselves never block, so a creature standing in
+        the origin square — the caster of a cone, say — does not screen anyone.
+        """
+        if self.battle_map is None:
+            return CoverGrade.NONE
         target = self.creatures[target_name]
         occupied = frozenset(
             square for square, name in self._occupied().items()
-            if name not in (attacker_name, target_name)
+            if name != target_name
         )
         return grid_cover_between(
-            to_square(as_point(attacker.position)),
+            origin,
             to_square(as_point(target.position)),
             cover_of=self._cover_of,
             occupied=occupied,
@@ -875,9 +890,28 @@ class Encounter:
                     f"{actor.name} has no level {slot_level} slots remaining"
                 )
 
-        chosen = self._spell_targets(actor, spell, action)
+        chosen, area_origin = self._spell_targets(actor, spell, action)
         if not chosen:
             raise EncounterError(f"{spell.name} has no valid targets")
+
+        # Cover shields Dexterity saves against areas exactly as it shields AC
+        # against attacks: +2 behind half cover, +5 behind three-quarters,
+        # measured from the effect's point of origin. Total cover never appears
+        # here — area_targets already excludes anyone sealed off from the origin.
+        cover_grades: dict[str, CoverGrade] = {}
+        if area_origin is not None:
+            cover_grades = {
+                c.name: self._cover_from_square(area_origin, c.name) for c in chosen
+            }
+
+        def save_modifier(creature: Creature) -> int:
+            if spell.save_ability is None:
+                return 0
+            modifier = creature.save_modifier(spell.save_ability)
+            grade = cover_grades.get(creature.name, CoverGrade.NONE)
+            if spell.save_ability is Ability.DEXTERITY and grade is not CoverGrade.NONE:
+                modifier += cover_ac_bonus(grade)
+            return modifier
 
         self._turn.action_used = True
         if spell.level > 0:
@@ -893,10 +927,7 @@ class Encounter:
                 SpellTarget(
                     name=c.name,
                     ac=c.ac,
-                    save_modifier=(
-                        c.save_modifier(spell.save_ability)
-                        if spell.save_ability is not None else 0
-                    ),
+                    save_modifier=save_modifier(c),
                     auto_fail_save=self.auto_fails_save(c, spell.save_ability),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
@@ -929,12 +960,17 @@ class Encounter:
 
         for result in resolution.results:
             target = self.creatures[result.name]
+            shielding: dict[str, Any] = {}
+            grade = cover_grades.get(result.name, CoverGrade.NONE)
+            if grade is not CoverGrade.NONE:
+                shielding["cover"] = int(grade)
             self._emit("spell_effect", actor.name, target.name, result.describe(),
                        spell=spell.name,
                        damage=result.damage_dealt,
                        affected=result.affected,
                        saved=result.save.success if result.save is not None else None,
-                       condition=result.condition_applied)
+                       condition=result.condition_applied,
+                       **shielding)
             if result.damage_dealt:
                 self._apply_damage(target, result.damage_dealt, rng)
             if result.condition_applied is not None and target.conscious:
@@ -992,11 +1028,18 @@ class Encounter:
         two can never disagree about who is inside an area. Sphere membership is
         measured in feet from the centre on an open plane and by template squares
         on a battle map; cones, lines, and cubes are square templates always,
-        because their published shapes are grid figures. Range and sight are the
-        caller's checks — this answers only who is inside.
+        because their published shapes are grid figures.
+
+        On a battle map, a creature with **total cover** from the effect's point
+        of origin — a sphere's centre, a cube's minimum corner, the caster's own
+        square for a cone or line — is not inside the area at all: the effect
+        cannot reach behind a sealed wall, however the template falls. Range and
+        the caster's own sight to the origin are the caller's checks — this
+        answers only who the effect reaches.
         """
         caster = self.creatures[caster_name]
         caster_square = to_square(as_point(caster.position))
+        origin_square: Square = caster_square
         match spell.effective_shape:
             case SpellShape.SPHERE:
                 if center is None:
@@ -1010,8 +1053,9 @@ class Encounter:
                             as_point(c.position), centre, self.movement_rule
                         ) <= spell.radius
                     ]
+                origin_square = to_square(centre)
                 squares = sphere_squares(
-                    to_square(centre), spell.radius, rule=self.movement_rule
+                    origin_square, spell.radius, rule=self.movement_rule
                 )
             case SpellShape.CONE:
                 if direction is None or tuple(direction) not in self._DIRECTIONS:
@@ -1040,18 +1084,30 @@ class Encounter:
                     raise EncounterError(
                         f"{spell.name} needs 'center': the cube's minimum corner"
                     )
-                squares = cube_squares(to_square(as_point(center)), spell.size)
+                origin_square = to_square(as_point(center))
+                squares = cube_squares(origin_square, spell.size)
             case _:
                 raise EncounterError(f"{spell.name} is not an area spell")
-        return [
+        caught = [
             c for c in self.creatures.values()
             if c.conscious and to_square(as_point(c.position)) in squares
+        ]
+        if self.battle_map is None:
+            return caught
+        return [
+            c for c in caught
+            if self._cover_from_square(origin_square, c.name) is not CoverGrade.TOTAL
         ]
 
     def _spell_targets(
         self, actor: Creature, spell: Spell, action: Action
-    ) -> list[Creature]:
+    ) -> tuple[list[Creature], Square | None]:
         """Resolve who a spell lands on, enforcing its range, sight, and target cap.
+
+        Returns the creatures caught and, when the spell resolved *as an area*,
+        the square its effect pours out of — the origin cover against the effect
+        is measured from. Named-target casts return ``None`` there: they are
+        aimed at creatures, not at a point.
 
         The branches are range-checked differently, and deliberately. Named targets
         are checked one at a time, exactly as a single-target spell is. A sphere or
@@ -1061,6 +1117,7 @@ class Encounter:
         be wrong — and on a battle map the origin must also be visible. A cone or
         line pours out of the caster, so there is nothing to range-check at all.
         """
+        area_origin: Square | None = None
         if action.targets:
             chosen = [self._resolve_target(name) for name in action.targets]
             for creature in chosen:
@@ -1085,6 +1142,9 @@ class Encounter:
                         f"{actor.name} cannot see {spell.name}'s point of origin "
                         f"at {as_point(action.center)}"
                     )
+                area_origin = to_square(as_point(action.center))
+            else:
+                area_origin = to_square(as_point(actor.position))
             chosen = self.area_targets(
                 spell, actor.name,
                 center=action.center,
@@ -1106,14 +1166,14 @@ class Encounter:
             # bundled area spell leaves max_targets at its default of 1, so
             # applying the cap here would quietly shrink a Fireball to a single
             # creature.
-            return landed
+            return landed, area_origin
         if len(landed) > spell.max_targets:
             creatures = "creature" if spell.max_targets == 1 else "creatures"
             raise EncounterError(
                 f"{spell.name} affects at most {spell.max_targets} {creatures}; "
                 f"{len(landed)} were named"
             )
-        return landed
+        return landed, area_origin
 
     def _require_in_range(
         self, actor: Creature, spell: Spell, position: Point | int, what: str

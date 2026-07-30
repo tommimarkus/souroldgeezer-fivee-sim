@@ -61,8 +61,9 @@ not narrate the action as though it happened.
 "rows": [".#..", ...], "legend": {".": "normal", "#": "wall"}, "features":
 [{"name": "door", "square": [1, 1]}]}` — rows top-first, one character per
 square. With a map the engine charges terrain for movement, routes moves around
-walls and enemies (pass-through opportunity attacks apply), grades cover
-(+2/+5 AC; total cover refuses the attack), and blocks sight. Positions snap to
+walls and enemies (pass-through opportunity attacks apply), grades cover (+2/+5
+to AC and to Dexterity saves against areas; total cover refuses the attack and
+shelters a creature from an area entirely), and blocks sight. Positions snap to
 square centres, and `state["map"]` reports dimensions and door state.
 
 `encounter_act(kind="interact", feature="door")` opens or closes a door — free,
