@@ -18,8 +18,15 @@ diagnostics go to stderr.
 
 from __future__ import annotations
 
+import json
+import os
+import signal
+import subprocess
 import sys
+import time
+import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from random import Random
 from typing import Any
 
@@ -41,6 +48,8 @@ from ..content import (
 )
 from ..content import validate as _validate_content
 from ..data import DataError, make_creature
+from ..editor.cli import read_state, state_file_for
+from ..editor.http_server import TOKEN_HEADER
 from ..kernel.actions import AttackKind
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import (
@@ -1291,6 +1300,167 @@ def map_query(
     except (UnknownTerrain, ValueError) as error:
         raise ToolError(str(error)) from error
     return {"map_id": map_id, **answer}
+
+
+# --- the interactive editor ------------------------------------------------
+#: How long map_editor_serve waits for a spawned editor to bind and report.
+_EDITOR_SPAWN_TIMEOUT = 5.0
+#: Spawned editor processes, kept so the parent can reap them once stopped.
+_EDITOR_PROCESSES: list[subprocess.Popen[bytes]] = []
+
+
+def _editor_maps_dir(maps_dir: str | None) -> Path:
+    return Path(maps_dir).expanduser() if maps_dir is not None else _map_service.maps_root()
+
+
+def _editor_ping(port: int, token: str) -> dict[str, Any] | None:
+    """The editor's ``/api/ping`` answer, or ``None`` when nothing answers."""
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/ping", headers={TOKEN_HEADER: token}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=2.0) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _live_editor_state(state_path: Path) -> dict[str, Any] | None:
+    """The state file's record, but only when the server it names still answers."""
+    state = read_state(state_path)
+    if state is None:
+        return None
+    port, token = state.get("port"), state.get("token")
+    if not isinstance(port, int) or not isinstance(token, str):
+        return None
+    if _editor_ping(port, token) is None:
+        return None
+    return state
+
+
+@server.tool()
+def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> dict[str, Any]:
+    """Start the browser map editor and report its URL — or find it already up.
+
+    The editor is a separate localhost-only process serving the maps
+    directory; hand its ``url`` to the user to open in a browser. The served
+    page configures its own access token, so the URL alone is enough. Calling
+    this again while the editor runs returns the same URL with
+    ``already_running`` true rather than starting a second one. After the user
+    saves in the editor, the file is the truth — ``map_load`` (with
+    ``replace``) re-reads it into the session. ``maps_dir`` defaults to the
+    configured maps root; ``port`` defaults to an ephemeral one.
+    """
+    root = _editor_maps_dir(maps_dir)
+    state_path = state_file_for(root)
+    live = _live_editor_state(state_path)
+    if live is not None:
+        return {
+            "url": f"http://127.0.0.1:{live['port']}/",
+            "port": live["port"],
+            "maps_dir": str(live.get("maps_dir", root)),
+            "already_running": True,
+        }
+    # A state file nobody answers for describes a dead server; clear it so the
+    # fresh spawn's record is the only one anybody can read.
+    state_path.unlink(missing_ok=True)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path = state_path.parent / "editor.log"
+    arguments = [
+        sys.executable, "-m", "fivee_sim.editor",
+        "--maps-dir", str(root),
+        "--state-file", str(state_path),
+    ]
+    if port is not None:
+        arguments += ["--port", str(port)]
+    # stdout must be the logfile, never inherited: this process's stdout is
+    # the JSON-RPC channel, and one stray line on it breaks the protocol.
+    with open(log_path, "ab") as log_file:
+        process = subprocess.Popen(
+            arguments,
+            stdin=subprocess.DEVNULL,
+            stdout=log_file,
+            stderr=log_file,
+            start_new_session=True,
+        )
+    _EDITOR_PROCESSES.append(process)
+    deadline = time.monotonic() + _EDITOR_SPAWN_TIMEOUT
+    state: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        candidate = read_state(state_path)
+        if candidate is not None and isinstance(candidate.get("port"), int):
+            state = candidate
+            break
+        if process.poll() is not None:
+            raise ToolError(
+                f"the editor process exited with status {process.returncode} before "
+                f"binding; see the log at {log_path}"
+            )
+        time.sleep(0.05)
+    if state is None:
+        process.terminate()
+        raise ToolError(
+            f"the editor did not report a bound port within "
+            f"{_EDITOR_SPAWN_TIMEOUT:.0f}s; see the log at {log_path}"
+        )
+    return {
+        "url": f"http://127.0.0.1:{state['port']}/",
+        "port": state["port"],
+        "maps_dir": str(root),
+        "already_running": False,
+        "log": str(log_path),
+    }
+
+
+@server.tool()
+def map_editor_stop(maps_dir: str | None = None) -> dict[str, Any]:
+    """Stop the browser map editor for a maps directory, if one is running.
+
+    Asks it to shut down gracefully over its own API, falls back to SIGTERM
+    at the recorded pid, and clears the state file either way. ``was_running``
+    reports whether anything was there to stop.
+    """
+    root = _editor_maps_dir(maps_dir)
+    state_path = state_file_for(root)
+    state = read_state(state_path)
+    if state is None:
+        return {"stopped": False, "was_running": False}
+    port, token, pid = state.get("port"), state.get("token"), state.get("pid")
+    stopped = False
+    if isinstance(port, int) and isinstance(token, str):
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/shutdown",
+            method="POST",
+            headers={TOKEN_HEADER: token},
+            data=b"",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=2.0):
+                stopped = True
+        except (OSError, ValueError):
+            stopped = False
+    if not stopped and isinstance(pid, int):
+        try:
+            os.kill(pid, signal.SIGTERM)
+            stopped = True
+        except OSError:
+            stopped = False
+    if stopped:
+        # The exiting server removes its own state file; give it a moment so
+        # the record disappears with the process rather than being yanked
+        # from under it.
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline and state_path.exists():
+            time.sleep(0.05)
+    state_path.unlink(missing_ok=True)
+    for process in _EDITOR_PROCESSES:
+        if process.pid == pid and process.poll() is None:
+            try:
+                process.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                pass
+    return {"stopped": stopped, "was_running": stopped}
 
 
 # --- content ---------------------------------------------------------------

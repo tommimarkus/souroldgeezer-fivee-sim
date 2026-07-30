@@ -44,6 +44,8 @@ EXPECTED_TOOLS = {
     "map_render",
     "map_edit",
     "map_query",
+    "map_editor_serve",
+    "map_editor_stop",
     "simulate_rounds",
     "simulate_dpr",
     "content_status",
