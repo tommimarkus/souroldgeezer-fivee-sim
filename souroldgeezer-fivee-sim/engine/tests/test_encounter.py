@@ -319,6 +319,96 @@ class TestSpellcasting:
         assert also_near.hp < also_near.max_hp
         assert far.hp == far.max_hp
 
+    def test_an_area_spell_cannot_be_dropped_beyond_its_range(self) -> None:
+        # The point of origin is what the range applies to. This used to be checked
+        # for no spell with a radius at all, so a 150 ft Fireball would land at any
+        # distance whatsoever.
+        rng = Random(4)
+        wizard = caster(position=0)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=1000)
+        encounter = Encounter([wizard, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="beyond Fireball's 150 ft range"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=1000),
+                Random(2),
+            )
+
+    def test_an_area_spell_named_at_a_target_out_of_range_is_refused(self) -> None:
+        rng = Random(4)
+        wizard = caster(position=0)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=1000)
+        encounter = Encounter([wizard, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="beyond Fireball's 150 ft range"):
+            encounter.act(
+                Action(
+                    kind=ActionKind.CAST,
+                    spell="Fireball",
+                    slot_level=3,
+                    targets=("Goblin",),
+                ),
+                Random(2),
+            )
+
+    def test_a_creature_at_the_far_edge_of_a_blast_does_not_refuse_the_whole_spell(
+        self,
+    ) -> None:
+        # The origin is in range; a creature caught 20 ft further out is not, and
+        # must not veto a legal cast. This is why the range check is on the origin
+        # rather than on each creature the radius sweeps up.
+        rng = Random(4)
+        wizard = caster(position=0)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=160)
+        encounter = Encounter([wizard, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=150),
+            Random(2),
+        )
+        assert goblin.hp < goblin.max_hp
+
+    def test_an_area_spell_is_bounded_by_its_radius_not_by_max_targets(self) -> None:
+        # Every bundled area spell leaves max_targets at its default of 1. Enforcing
+        # that on an area would shrink a Fireball to a single creature.
+        rng = Random(4)
+        wizard = caster(position=0)
+        goblins = [
+            make_monster("Goblin Warrior", label=f"Goblin {letter}", position=100 + step)
+            for step, letter in enumerate("ABC")
+        ]
+        encounter = Encounter([wizard, *goblins], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=101),
+            Random(2),
+        )
+        assert all(goblin.hp < goblin.max_hp for goblin in goblins)
+
+    def test_naming_more_targets_than_a_spell_allows_is_refused(self) -> None:
+        # max_targets is a documented pack field. It used to be sliced with
+        # max(cap, len(named)), which can never truncate, so it did nothing at all.
+        rng = Random(4)
+        priest = caster(position=0)
+        priest.spells = ("Guiding Bolt",)
+        priest.spell_slots = {1: 4}
+        goblins = [
+            make_monster("Goblin Warrior", label=f"Goblin {letter}", position=20 + step)
+            for step, letter in enumerate("AB")
+        ]
+        encounter = Encounter([priest, *goblins], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="at most 1 creature"):
+            encounter.act(
+                Action(
+                    kind=ActionKind.CAST,
+                    spell="Guiding Bolt",
+                    slot_level=1,
+                    targets=("Goblin A", "Goblin B"),
+                ),
+                Random(2),
+            )
+
     def test_casting_an_unprepared_spell_is_refused(self) -> None:
         rng = Random(4)
         wizard = caster()
@@ -360,6 +450,48 @@ class TestTurnLegality:
         advance_to(encounter, "Held", rng)
         with pytest.raises(EncounterError, match="incapacitated"):
             encounter.act(Action(kind=ActionKind.ATTACK, target="Wolf"), rng)
+
+    def test_attacking_after_casting_is_refused(self) -> None:
+        # Casting spends the action, and starting an Attack action needs it. Only
+        # attacks_left was checked here, so a caster could cast *and* swing on the
+        # same turn — worth a fifth of a caster's measured damage per round.
+        rng = Random(4)
+        wizard = caster(position=0)
+        wizard.attacks = (
+            AttackOption(
+                name="Dagger",
+                attack_bonus=5,
+                damage=Dice.parse("1d4+2"),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.MELEE,
+            ),
+        )
+        # An Ogre, because a goblin dies to the Fireball and ends the fight before
+        # the second action can be refused.
+        ogre = make_monster("Ogre", label="Ogre", position=5)
+        encounter = Encounter([wizard, ogre], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3, center=25),
+            Random(2),
+        )
+        with pytest.raises(EncounterError, match="already taken an action"):
+            encounter.act(
+                Action(kind=ActionKind.ATTACK, target="Ogre", attack="Dagger"), rng
+            )
+
+    def test_a_multiattack_continues_after_its_first_swing_spends_the_action(
+        self,
+    ) -> None:
+        # The mirror of the above: later swings of a Multiattack must still land,
+        # which is why the check is "no attack taken yet" rather than "action used".
+        rng = Random(1)
+        brute = fighter(attacks_per_action=2)
+        encounter = Encounter([brute, make_monster("Wolf", position=5)], rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Wolf"), rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Wolf"), rng)
+        assert encounter.state()["turn_state"]["attacks_left"] == 0
 
     def test_two_actions_in_one_turn_are_refused(self) -> None:
         rng = Random(1)
