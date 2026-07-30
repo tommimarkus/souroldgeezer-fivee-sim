@@ -1056,6 +1056,19 @@ class Encounter:
         if spell.level > 0:
             actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
 
+        if spell.concentration:
+            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
+            # moment you start casting a spell that requires Concentration." The
+            # release sits exactly here: after every refusal, because a refused
+            # cast never starts and must not drop the hold — and before
+            # ``resolve_spell``, because the old spell's conditions must not
+            # shape the new one's resolution. Releasing after resolution let a
+            # caster recast at its own victim and have the victim auto-fail the
+            # new save through a paralysis the first cast was still holding. An
+            # unconditional release covers recasting the *same* spell on a new
+            # target, which comparing names could not see.
+            self._end_concentration(actor)
+
         resolution = resolve_spell(
             rng,
             spell,
@@ -1101,11 +1114,10 @@ class Encounter:
                    targets=[c.name for c in chosen])
 
         if spell.concentration:
-            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
-            # moment you start casting a spell that requires Concentration." An
-            # unconditional release covers recasting the *same* spell on a new
-            # target, which comparing names could not see.
-            self._end_concentration(actor)
+            # The old effect was released before ``resolve_spell``; the new one
+            # is recorded here, before the results are applied, so a caster
+            # caught in its own damaging area rolls the concentration save for
+            # the spell it just cast.
             actor.concentrating_on = spell.name
             self._emit("concentration", actor.name, detail=f"concentrating on {spell.name}",
                        spell=spell.name, held=True, started=True)
