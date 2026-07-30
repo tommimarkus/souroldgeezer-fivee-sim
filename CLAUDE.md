@@ -21,6 +21,30 @@ hooks.** Do not try to write them; the content silently goes to `/dev/null`.
 Local development hooks live in `scripts/hooks/` and are wired from the user's
 own `~/.claude/settings.json` — see "Local development hook" below.
 
+### Worktrees cannot be fully removed here
+
+The sandbox only permits writes inside the project, so implementation worktrees
+have to live at `.worktrees/<name>` — and the devcontainer replicates its
+character-device mounts *into* each one. `.worktrees/<name>/.claude/settings.json`
+and its siblings become live `devtmpfs` mounts, so:
+
+`git worktree remove` fails with **"Device or resource busy"**, and so does
+`rm -rf`, even after a clean merge.
+
+This is not a merge problem and not something to retry. Close out like this:
+
+```bash
+git worktree remove --force .worktrees/<name>   # fails on the mounts; expected
+git worktree prune                              # metadata cleanup does succeed
+git branch --merged                             # confirm before deleting
+git branch -d <branch>
+rm -rf .worktrees/<name>                        # removes everything unmounted
+```
+
+Git state ends up genuinely clean — `git worktree list` shows only the primary
+checkout. What survives is a few kilobytes of empty mount points. Leave them;
+they disappear when the container is recreated. Do not try to unmount them.
+
 ### Staging discipline
 
 Never `git add -A` or `git add .` in this repo. Staging a character device
