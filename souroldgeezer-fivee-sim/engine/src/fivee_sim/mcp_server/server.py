@@ -44,7 +44,7 @@ from ..content import validate as _validate_content
 from ..data import DataError, make_creature
 from ..kernel.actions import AttackKind
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
-from ..kernel.grid import TerrainEffect
+from ..kernel.grid import DiagonalRule, Point, TerrainEffect
 from ..kernel.rules import Ability, DamageType, make_d20_test
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
@@ -154,6 +154,27 @@ def _advantage(value: str | None) -> Advantage:
         raise ToolError(f"advantage must be one of: {allowed}") from error
 
 
+def _movement_rule(value: str) -> DiagonalRule:
+    try:
+        return DiagonalRule(value)
+    except ValueError as error:
+        allowed = ", ".join(rule.value for rule in DiagonalRule)
+        raise ToolError(f"movement_rule must be one of: {allowed}") from error
+
+
+def _point(value: int | list[int], what: str) -> Point | int:
+    """Accept a position as feet along the x-axis or as an ``[x, y]`` pair."""
+    if isinstance(value, int):
+        return value
+    if (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(isinstance(part, int) and not isinstance(part, bool) for part in value)
+    ):
+        return (value[0], value[1])
+    raise ToolError(f"{what} must be feet along the x-axis or an [x, y] pair of feet")
+
+
 def _session(encounter_id: str) -> _Session:
     session = _SESSIONS.get(encounter_id)
     if session is None:
@@ -193,7 +214,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
                 registry=registry,
                 label=spec.get("label"),
                 team=spec.get("team"),
-                position=int(spec.get("position", 0)),
+                position=_point(spec.get("position", 0), "position"),
             )
         except DataError as error:
             raise ToolError(str(error)) from error
@@ -229,7 +250,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             items={str(k): int(v) for k, v in spec.get("items", {}).items()},
             conditions={str(entry) for entry in spec.get("conditions", [])},
             condition_effects=registry.condition_effects,
-            position=int(spec.get("position", 0)),
+            position=_point(spec.get("position", 0), "position"),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -246,7 +267,11 @@ def _combatants(specs: list[dict[str, Any]], registry: ContentRegistry) -> list[
 
 
 def _new_encounter(
-    combatants: list[Creature], rng: Random, registry: ContentRegistry
+    combatants: list[Creature],
+    rng: Random,
+    registry: ContentRegistry,
+    *,
+    movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
 ) -> Encounter:
     """Build an encounter bound to ``registry``'s tables, captured by value."""
     return Encounter(
@@ -255,6 +280,7 @@ def _new_encounter(
         spellbook=registry.spells,
         items=registry.items,
         condition_effects=registry.condition_effects,
+        movement_rule=movement_rule,
     )
 
 
@@ -476,20 +502,25 @@ def lookup_rule(topic: str = "") -> dict[str, Any]:
 def encounter_create(
     combatants: list[dict[str, Any]],
     seed: int | None = None,
+    movement_rule: str = "5-5-5",
 ) -> dict[str, Any]:
     """Start an encounter and roll initiative.
 
     Each combatant is either ``{"monster": "Goblin Warrior", "label": "Goblin A",
-    "team": "monsters", "position": 15}`` for a bundled stat block, or an explicit
-    description with at least name, team, ac, and max_hp. Names must be unique —
-    they identify combatants in every later call. Positions are feet on one axis.
+    "team": "monsters", "position": [15, 0]}`` for a bundled stat block, or an
+    explicit description with at least name, team, ac, and max_hp. Names must be
+    unique — they identify combatants in every later call. A position is ``[x, y]``
+    in feet on a flat plane; a bare number is accepted and means feet along the
+    x-axis. ``movement_rule`` is how diagonals are measured: "5-5-5" (the default)
+    or "5-10-5" (every second diagonal costs double).
     """
     used = _resolve_seed(seed)
     rng = Random(used)
     content = _content()
     try:
         encounter = _new_encounter(
-            _combatants(combatants, content.registry), rng, content.registry
+            _combatants(combatants, content.registry), rng, content.registry,
+            movement_rule=_movement_rule(movement_rule),
         )
     except EncounterError as error:
         raise ToolError(str(error)) from error
@@ -515,7 +546,10 @@ def encounter_create(
 
 @server.tool()
 def encounter_state(encounter_id: str) -> dict[str, Any]:
-    """The authoritative state of an encounter. Narrate from this, not from memory."""
+    """The authoritative state of an encounter. Narrate from this, not from memory.
+
+    Each combatant's ``position`` is ``[x, y]`` in feet on the plane.
+    """
     return _session(encounter_id).encounter.state()
 
 
@@ -566,17 +600,19 @@ def encounter_act(
     item: str | None = None,
     spell: str | None = None,
     slot_level: int | None = None,
-    to_position: int | None = None,
+    to_position: int | list[int] | None = None,
     targets: list[str] | None = None,
-    center: int | None = None,
+    center: int | list[int] | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
     ``kind`` is attack, cast, use_item, move, dash, disengage, or dodge. Attacks need
     ``target``; casting needs ``spell`` plus either ``target``/``targets`` or a
     ``center`` for an area; using an item needs ``item``, and ``target`` unless the
-    item is self-directed; moving needs ``to_position``. Illegal actions are refused
-    with the reason rather than silently adjusted.
+    item is self-directed; moving needs ``to_position``. A position — ``to_position``
+    or ``center`` — is ``[x, y]`` in feet on the plane; a bare number is accepted and
+    means feet along the x-axis. Illegal actions are refused with the reason rather
+    than silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -591,9 +627,11 @@ def encounter_act(
         item=item,
         spell=spell,
         slot_level=slot_level,
-        to_position=to_position,
+        to_position=(
+            _point(to_position, "to_position") if to_position is not None else None
+        ),
         targets=tuple(targets or ()),
-        center=center,
+        center=_point(center, "center") if center is not None else None,
     )
     try:
         events = session.encounter.act(action, session.rng)

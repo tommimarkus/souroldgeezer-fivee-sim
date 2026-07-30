@@ -25,6 +25,7 @@ from ..content import ContentRegistry, builtin_registry
 from ..kernel.actions import AttackKind
 from ..kernel.conditions import ConditionTable
 from ..kernel.dice import Dice
+from ..kernel.grid import Point
 from ..kernel.items import ItemEffect
 from ..kernel.rules import Ability, DamageType
 from ..kernel.spells import Spell
@@ -61,7 +62,7 @@ def make_creature(
     registry: ContentRegistry | None = None,
     label: str | None = None,
     team: str | None = None,
-    position: int = 0,
+    position: Point | int = 0,
 ) -> Creature:
     """Build a fresh creature from a content record.
 
@@ -143,7 +144,7 @@ def make_monster(
     *,
     label: str | None = None,
     team: str | None = None,
-    position: int = 0,
+    position: Point | int = 0,
 ) -> Creature:
     """Build a creature from a *bundled* stat block. See :func:`make_creature`."""
     return make_creature(name, registry=builtin(), label=label, team=team, position=position)

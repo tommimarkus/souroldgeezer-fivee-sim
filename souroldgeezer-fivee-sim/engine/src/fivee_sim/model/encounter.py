@@ -35,7 +35,7 @@ from ..kernel.conditions import (
     speed_is_zero,
 )
 from ..kernel.dice import Advantage, roll_d20
-from ..kernel.grid import Point, as_point, distance_feet
+from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellTarget, resolve_spell
@@ -58,15 +58,28 @@ class ActionKind(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Action:
+    """One thing a combatant tries to do.
+
+    Positions are points in feet; a bare int is accepted anywhere a position goes
+    and means feet along the x-axis. ``path`` names explicit waypoints for a move
+    and only means something on a battle map; ``direction`` aims a cone (one of
+    the eight unit offsets); ``toward`` aims a line at a combatant by name or at
+    a point; ``feature`` names a map feature for an interaction.
+    """
+
     kind: ActionKind
     target: str | None = None
     attack: str | None = None
     item: str | None = None
     spell: str | None = None
     slot_level: int | None = None
-    to_position: int | None = None
+    to_position: int | Point | None = None
     targets: tuple[str, ...] = ()
-    center: int | None = None
+    center: int | Point | None = None
+    path: tuple[Point, ...] = ()
+    direction: Point | None = None
+    toward: str | Point | None = None
+    feature: str | None = None
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -134,12 +147,14 @@ class ActionRecord:
         if self.action is not None:
             action = {"kind": self.action.kind.value}
             for name in ("target", "attack", "item", "spell", "slot_level",
-                         "to_position", "center"):
+                         "to_position", "center", "direction", "toward", "feature"):
                 value = getattr(self.action, name)
                 if value is not None:
-                    action[name] = value
+                    action[name] = list(value) if isinstance(value, tuple) else value
             if self.action.targets:
                 action["targets"] = list(self.action.targets)
+            if self.action.path:
+                action["path"] = [list(point) for point in self.action.path]
         return {
             "index": self.index,
             "round": self.round,
@@ -172,6 +187,7 @@ class Encounter:
         spellbook: Mapping[str, Spell] | None = None,
         items: Mapping[str, ItemEffect] | None = None,
         condition_effects: ConditionTable | None = None,
+        movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
     ) -> None:
         if len(combatants) < 2:
             raise EncounterError("an encounter needs at least two combatants")
@@ -182,6 +198,8 @@ class Encounter:
                 "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
             )
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
+        #: How diagonals are measured, for every distance this fight takes.
+        self.movement_rule = movement_rule
         self.spellbook: dict[str, Spell] = dict(spellbook or {})
         self.items: dict[str, ItemEffect] = dict(items or {})
         # The content tables above are captured by value, so reconfiguring content
@@ -273,8 +291,7 @@ class Encounter:
             "hp": creature.hp,
             "max_hp": creature.max_hp,
             "ac": creature.ac,
-            # follow-up: [x, y] — the 2-D state break lands with the MCP/skill update.
-            "position": as_point(creature.position)[0],
+            "position": list(as_point(creature.position)),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
@@ -451,7 +468,7 @@ class Encounter:
             # yet rather than checking action_used alone.
             raise EncounterError(f"{actor.name} has already taken an action this turn")
         option = self._pick_attack(actor, action.attack)
-        distance = actor.distance_to(target)
+        distance = actor.distance_to(target, self.movement_rule)
         reach = option.max_distance()
         if distance > reach:
             self._emit("attack", actor.name, target.name,
@@ -495,7 +512,7 @@ class Encounter:
         A policy that re-derived advantage could quietly disagree with the stepper it
         is driving, so both ask this one function instead.
         """
-        distance = actor.distance_to(target)
+        distance = actor.distance_to(target, self.movement_rule)
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
@@ -513,7 +530,7 @@ class Encounter:
         return melee_hit_is_critical(
             target_conditions=target.conditions,
             kind=option.kind,
-            distance=actor.distance_to(target),
+            distance=actor.distance_to(target, self.movement_rule),
             condition_effects=self.condition_effects,
         )
 
@@ -546,7 +563,7 @@ class Encounter:
         else:
             target = actor
         if target is not actor:
-            distance = actor.distance_to(target)
+            distance = actor.distance_to(target, self.movement_rule)
             if distance > MELEE_THRESHOLD:
                 raise EncounterError(
                     f"{target.name} is {distance} ft away; an item can only be used on "
@@ -658,7 +675,7 @@ class Encounter:
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
-                   center=(action.center, 0) if action.center is not None else None,
+                   center=as_point(action.center) if action.center is not None else None,
                    targets=[c.name for c in chosen])
 
         if spell.concentration:
@@ -714,11 +731,12 @@ class Encounter:
                 self._require_in_range(actor, spell, creature.position, creature.name)
         elif spell.radius and action.center is not None:
             self._require_in_range(actor, spell, action.center, "the point of origin")
-            centre = (action.center, 0)  # the centre stays a scalar on the wire, for now
+            centre = as_point(action.center)
             chosen = [
                 c for c in self.creatures.values()
                 if c.conscious
-                and distance_feet(as_point(c.position), centre) <= spell.radius
+                and distance_feet(as_point(c.position), centre, self.movement_rule)
+                <= spell.radius
             ]
         elif action.target is not None:
             chosen = [self._resolve_target(action.target)]
@@ -747,7 +765,9 @@ class Encounter:
         """Refuse a spell whose range does not reach ``position``."""
         if not spell.range_feet:
             return
-        distance = distance_feet(as_point(position), as_point(actor.position))
+        distance = distance_feet(
+            as_point(position), as_point(actor.position), self.movement_rule
+        )
         if distance > spell.range_feet:
             raise EncounterError(
                 f"{what} is {distance} ft away, beyond {spell.name}'s "
@@ -757,12 +777,14 @@ class Encounter:
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.to_position is None:
             raise EncounterError("moving needs 'to_position'")
+        if action.path:
+            raise EncounterError("waypoints need a battle map; this fight has none")
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
         origin = as_point(actor.position)
-        destination = (action.to_position, 0)  # the action stays scalar, for now
-        distance = distance_feet(origin, destination)
+        destination = as_point(action.to_position)
+        distance = distance_feet(origin, destination, self.movement_rule)
         if distance > self._turn.movement_left:
             raise EncounterError(
                 f"{actor.name} has {self._turn.movement_left} ft of movement, needs {distance} ft"
@@ -770,18 +792,18 @@ class Encounter:
 
         threatening = [
             enemy for enemy in self.enemies_of(actor.name)
-            if actor.distance_to(enemy) <= MELEE_THRESHOLD
+            if actor.distance_to(enemy, self.movement_rule) <= MELEE_THRESHOLD
         ]
         actor.position = destination
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
-                   detail=f"{origin[0]} ft -> {destination[0]} ft ({distance} ft used)",
+                   detail=f"{origin} -> {destination} ({distance} ft used)",
                    origin=origin, destination=destination, cost=distance)
 
         if self._disengaged[actor.name]:
             return
         for enemy in threatening:
-            if enemy.distance_to(actor) <= MELEE_THRESHOLD:
+            if enemy.distance_to(actor, self.movement_rule) <= MELEE_THRESHOLD:
                 continue
             self._opportunity_attack(enemy, actor, rng)
 
@@ -876,6 +898,7 @@ def build_encounter(
     spellbook: Mapping[str, Spell] | None = None,
     items: Mapping[str, ItemEffect] | None = None,
     condition_effects: ConditionTable | None = None,
+    movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
 ) -> tuple[Encounter, Random]:
     """Create an encounter and the generator that drives it, from a seed alone."""
     rng = Random(seed)
@@ -885,5 +908,6 @@ def build_encounter(
         spellbook=spellbook,
         items=items,
         condition_effects=condition_effects,
+        movement_rule=movement_rule,
     )
     return encounter, rng

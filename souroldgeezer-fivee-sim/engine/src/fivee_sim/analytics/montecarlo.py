@@ -140,7 +140,7 @@ def _attack_options(
     for option in actor.attacks:
         reach = option.max_distance()
         for target in enemies:
-            if actor.distance_to(target) > reach:
+            if actor.distance_to(target, encounter.movement_rule) > reach:
                 continue
             expected = attack_damage_expectation(
                 attack_bonus=option.attack_bonus,
@@ -194,7 +194,9 @@ def _spell_options(
                     options.append(placed)
                 continue
             for target in enemies:
-                if spell.range_feet and actor.distance_to(target) > spell.range_feet:
+                if spell.range_feet and (
+                    actor.distance_to(target, encounter.movement_rule) > spell.range_feet
+                ):
                     continue
                 if spell.requires_attack_roll:
                     expected = attack_damage_expectation(
@@ -317,19 +319,26 @@ def _closing_move(
     desired = _threat_range(encounter, actor)
     if desired is None:
         return None
+    rule = encounter.movement_rule
     target = min(
-        enemies, key=lambda creature: (actor.distance_to(creature), creature.name)
+        enemies, key=lambda creature: (actor.distance_to(creature, rule), creature.name)
     )
-    distance = actor.distance_to(target)
+    distance = actor.distance_to(target, rule)
     if distance <= desired:
         return None
     step = min(turn["movement_left"], distance - desired)
     if step <= 0:
         return None
-    # Dominant-axis stepping on x: bit-identical to the scalar policy on y=0.
-    actor_x = as_point(actor.position)[0]
-    direction = 1 if as_point(target.position)[0] > actor_x else -1
-    return Action(kind=ActionKind.MOVE, to_position=actor_x + direction * step)
+    # Dominant-axis stepping: the step goes along the axis with the larger gap,
+    # which on y=0 is the x-axis — bit-identical to the scalar policy there. The
+    # dominant gap is at least ``step + desired``, so the step never overshoots.
+    ax, ay = as_point(actor.position)
+    tx, ty = as_point(target.position)
+    if abs(tx - ax) >= abs(ty - ay):
+        destination = (ax + (step if tx > ax else -step), ay)
+    else:
+        destination = (ax, ay + (step if ty > ay else -step))
+    return Action(kind=ActionKind.MOVE, to_position=destination)
 
 
 def _threat_range(encounter: Encounter, actor: Creature) -> int | None:

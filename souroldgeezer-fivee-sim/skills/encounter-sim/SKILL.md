@@ -29,9 +29,13 @@ narrating from memory puts it straight back.
 
 1. **`encounter_create`** with the combatants and a seed. Each is either a bundled
    stat block — `{"monster": "Goblin Warrior", "label": "Goblin A", "team":
-   "monsters", "position": 15}` — or an explicit build with at least `name`,
+   "monsters", "position": [15, 0]}` — or an explicit build with at least `name`,
    `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they identify
-   combatants in every later call. Positions are feet along one axis.
+   combatants in every later call. A position is `[x, y]` in feet on a flat plane
+   (a bare number still means feet along the x-axis), and `encounter_state`
+   reports positions in the same `[x, y]` form. Diagonals cost 5 ft by default;
+   pass `movement_rule: "5-10-5"` for the every-second-diagonal-costs-double
+   variant.
 2. **`encounter_state`** to see whose turn it is and what the situation is.
 3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
    `dash`, `disengage`, `dodge`. It returns the events it generated plus fresh
@@ -54,7 +58,7 @@ not narrate the action as though it happened.
 ## Aiming a spell
 
 `cast` takes `target` for one creature, `targets` for several, or **`center` for an
-area** — a point in feet along the axis, not a creature.
+area** — an `[x, y]` point in feet, not a creature.
 
 `center` is what makes a Fireball a Fireball. Named targets are each hit
 individually, so a 20-ft blast dropped with `target` catches exactly one creature
@@ -166,8 +170,9 @@ the precedence rules, and a worked example.
 
 State these when they bear on a ruling rather than papering over them:
 
-- **Geometry is one axis.** Distance, reach, ranged penalties, and spell radii all
-  work; flanking, cover, and difficult terrain do not exist.
+- **Geometry is a flat, featureless plane.** Positions are `[x, y]` feet; distance,
+  reach, ranged penalties, and spell radii all work; flanking, cover, and difficult
+  terrain do not exist.
 - **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
   `content_status` before concluding it does not exist. Either way, do not invent

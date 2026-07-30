@@ -177,6 +177,59 @@ class TestEncounterFlow:
             api.encounter_act(encounter_id, kind="attack", target="Nobody")
 
 
+class TestPlanarPositions:
+    """The two-dimensional wire format: [x, y] in state, accepted on input."""
+
+    def advance_to_thora(self, encounter_id: str) -> None:
+        for _ in range(6):
+            if api.encounter_state(encounter_id)["turn"] == "Thora":
+                return
+            api.encounter_advance(encounter_id)
+        raise AssertionError("Thora never got a turn")
+
+    def test_state_reports_positions_as_x_y_pairs(self) -> None:
+        created = api.encounter_create([HERO, GOBLIN], seed=11)
+        positions = {
+            entry["name"]: entry["position"]
+            for entry in created["state"]["combatants"]
+        }
+        assert positions == {"Thora": [0, 0], "Goblin": [5, 0]}
+
+    def test_a_combatant_may_be_placed_at_an_x_y_position(self) -> None:
+        goblin = {**GOBLIN, "position": [30, 40]}
+        created = api.encounter_create([HERO, goblin], seed=11)
+        placed = next(
+            entry for entry in created["state"]["combatants"]
+            if entry["name"] == "Goblin"
+        )
+        assert placed["position"] == [30, 40]
+
+    def test_a_move_accepts_an_x_y_destination(self) -> None:
+        created = api.encounter_create([HERO, {**GOBLIN, "position": 60}], seed=11)
+        encounter_id = str(created["encounter_id"])
+        self.advance_to_thora(encounter_id)
+        acted = api.encounter_act(encounter_id, kind="move", to_position=[10, 5])
+        moved = next(
+            entry for entry in acted["state"]["combatants"]
+            if entry["name"] == "Thora"
+        )
+        assert moved["position"] == [10, 5]
+
+    def test_a_bad_position_pair_is_refused(self) -> None:
+        with pytest.raises(api.ToolError, match=r"\[x, y\]"):
+            api.encounter_create(
+                [{**HERO, "position": [1, 2, 3]}, GOBLIN], seed=11
+            )
+
+    def test_an_unknown_movement_rule_lists_the_valid_ones(self) -> None:
+        with pytest.raises(api.ToolError, match="5-10-5"):
+            api.encounter_create([HERO, GOBLIN], seed=11, movement_rule="euclidean")
+
+    def test_the_variant_diagonal_rule_is_accepted(self) -> None:
+        created = api.encounter_create([HERO, GOBLIN], seed=11, movement_rule="5-10-5")
+        assert created["state"]["round"] == 1
+
+
 class TestEncounterLog:
     def start(self, seed: int = 11) -> str:
         created = api.encounter_create([HERO, GOBLIN], seed=seed)

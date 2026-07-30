@@ -35,7 +35,7 @@ FIXTURE = "synthetic test fixture, not SRD content"
 def fighter(
     name: str = "Thora",
     *,
-    position: int = 0,
+    position: int | tuple[int, int] = 0,
     hp: int | None = None,
     max_hp: int = 30,
     team: str = "party",
@@ -277,6 +277,58 @@ class TestMovementAndReactions:
             encounter.act(Action(kind=ActionKind.MOVE, to_position=20), rng)
 
 
+class TestPlanarMovement:
+    """Movement on the plane: two-dimensional destinations, diagonal rules."""
+
+    def test_a_diagonal_move_costs_the_longer_axis_under_the_default_rule(self) -> None:
+        rng = Random(1)
+        encounter = Encounter([fighter(), make_monster("Wolf", position=90)], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 15)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["origin"] == (0, 0)
+        assert move.data["destination"] == (20, 15)
+        assert move.data["cost"] == 20
+        assert encounter.creatures["Thora"].position == (20, 15)
+        assert encounter.state()["turn_state"]["movement_left"] == 10
+
+    def test_the_5_10_5_rule_charges_every_second_diagonal_double(self) -> None:
+        from fivee_sim.kernel.grid import DiagonalRule
+
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=90)], rng,
+            movement_rule=DiagonalRule.FIVE_TEN_FIVE,
+        )
+        advance_to(encounter, "Thora", rng)
+        # (25, 25) is 25 + 12 = 37 ft under 5-10-5, past a 30 ft speed.
+        with pytest.raises(EncounterError, match="movement"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(25, 25)), rng)
+        # (20, 20) is 20 + 10 = 30 ft: exactly the speed.
+        encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 20)), rng)
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
+    def test_state_reports_positions_as_x_y_pairs(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(position=(10, 20)), make_monster("Wolf", position=5)], rng
+        )
+        positions = {
+            entry["name"]: entry["position"]
+            for entry in encounter.state()["combatants"]
+        }
+        assert positions == {"Thora": [10, 20], "Wolf": [5, 0]}
+
+    def test_waypoints_are_refused_without_a_battle_map(self) -> None:
+        rng = Random(1)
+        encounter = Encounter([fighter(), make_monster("Wolf", position=90)], rng)
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="battle map"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0), path=((5, 0),)), rng
+            )
+
+
 class TestSpellcasting:
     def test_casting_spends_a_slot_of_the_chosen_level(self) -> None:
         rng = Random(4)
@@ -367,6 +419,21 @@ class TestSpellcasting:
             Random(2),
         )
         assert goblin.hp < goblin.max_hp
+
+    def test_an_area_spell_may_be_centred_off_the_x_axis(self) -> None:
+        rng = Random(4)
+        wizard = caster(position=0)
+        high = make_monster("Goblin Warrior", label="Goblin A", position=(100, 40))
+        low = make_monster("Goblin Warrior", label="Goblin B", position=100)
+        encounter = Encounter([wizard, high, low], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Fireball", slot_level=3,
+                   center=(100, 40)),
+            Random(2),
+        )
+        assert high.hp < high.max_hp
+        assert low.hp == low.max_hp
 
     def test_an_area_spell_is_bounded_by_its_radius_not_by_max_targets(self) -> None:
         # Every bundled area spell leaves max_targets at its default of 1. Enforcing
