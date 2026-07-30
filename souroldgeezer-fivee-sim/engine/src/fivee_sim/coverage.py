@@ -21,7 +21,9 @@ from typing import Any
 
 from .data import item_effects, monster_records, spell_records, spellbook
 from .kernel.conditions import Condition, effect_of
+from .kernel.grid import TERRAIN, CoverGrade, DiagonalRule, TerrainEffect
 from .kernel.rules import DamageType
+from .kernel.spells import Spell, SpellShape
 from .model.encounter import ActionKind
 
 #: Defined by SRD 5.2 and deliberately not implemented.
@@ -60,10 +62,14 @@ NOT_SUPPORTED = (
         "regenerate; an encounter begins and ends.",
     ),
     (
-        "Battlefield geometry",
-        "Positions are feet along a single axis. Reach, ranged bands, and spell radii "
-        "work; facing, flanking, cover, difficult terrain, elevation, and movement "
-        "around obstacles do not exist.",
+        "Battlefield geometry beyond a flat grid",
+        "The grid itself is real now — see the Battlefield section for the terrain "
+        "kinds, cover grades, line of sight, area shapes, the diagonal-cost knob, "
+        "and doors. What remains absent is the third dimension and body mechanics: "
+        "elevation and 3-D space, flying, creature size and squeezing (every "
+        "combatant occupies one square whatever its printed size), facing, "
+        "flanking, forced movement (nothing pushes, drags, or knocks a creature "
+        "through space), and climbing or swimming as movement modes.",
     ),
     (
         "Reactions other than opportunity attacks",
@@ -103,6 +109,37 @@ def _attack_summary(attacks: list[dict[str, Any]]) -> str:
 
 def _notes(record: dict[str, Any]) -> str:
     return "<br>".join(_md_escape(note) for note in record.get("unmodelled", [])) or "—"
+
+
+def _area_summary(spell: Spell) -> str:
+    match spell.effective_shape:
+        case SpellShape.SPHERE:
+            return f"{spell.radius} ft sphere"
+        case SpellShape.CONE:
+            return f"{spell.length} ft cone"
+        case SpellShape.LINE:
+            return f"{spell.length} ft line"
+        case SpellShape.CUBE:
+            return f"{spell.size} ft cube"
+        case _:
+            return "single target"
+
+
+def _grade_name(grade: CoverGrade) -> str:
+    return grade.name.replace("_", "-").lower()
+
+
+def _terrain_summary(effect: TerrainEffect) -> str:
+    parts: list[str] = []
+    if effect.move_cost_multiplier != 1:
+        parts.append(f"movement x{effect.move_cost_multiplier}")
+    if not effect.passable:
+        parts.append("impassable")
+    if effect.opaque:
+        parts.append("blocks sight")
+    if effect.cover:
+        parts.append(f"grants {_grade_name(CoverGrade(effect.cover))} cover")
+    return ", ".join(parts) or "ordinary ground"
 
 
 def render_markdown() -> str:
@@ -150,6 +187,7 @@ def render_markdown() -> str:
     add(f"| Damage types | {len(list(DamageType))} |")
     add(f"| Actions | {len(list(ActionKind))} |")
     add(f"| Usable items | {len(items)} bundled — the category is modelled, packs supply it |")
+    add(f"| Terrain kinds | {len(TERRAIN)} built in — packs may add more |")
     add("| Classes, species, backgrounds, feats | 0 — not modelled |")
     add("")
     add(
@@ -188,7 +226,7 @@ def render_markdown() -> str:
                 resolution += ", half on save" if spell.half_on_save else ", nothing on save"
         else:
             resolution = "automatic"
-        area = f"{spell.radius} ft radius" if spell.radius else "single target"
+        area = _area_summary(spell)
         add(
             f"| {name} | {spell.level} | {resolution} | "
             f"{spell.damage if spell.damage else '—'} | "
@@ -222,6 +260,10 @@ def render_markdown() -> str:
         "disengaging."
     )
     add("")
+    add("`interact` is the free object interaction: once per turn, without spending "
+        "the action, it opens or closes a map feature the actor stands on or next "
+        "to.")
+    add("")
     add("Also resolved: death saving throws, stabilising, instant death when damage "
         "past 0 hit points equals maximum hit points, damage resistance, vulnerability "
         "and immunity, and concentration checks when a concentrating creature is "
@@ -231,6 +273,40 @@ def render_markdown() -> str:
     add("## Damage types")
     add("")
     add(", ".join(damage.value for damage in DamageType) + ".")
+    add("")
+
+    add("## Battlefield")
+    add("")
+    add(
+        "Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight "
+        "may run mapless — an open, featureless plane — or on a battle map, supplied "
+        "inline to `encounter_create` and `simulate_rounds`, which adds terrain "
+        "movement costs, walls, line of sight, cover, pathfinding, and doors. Doors "
+        "are named map features flipped by the `interact` action; closed they are "
+        "impassable and block sight."
+    )
+    add("")
+    add(
+        "**Area shapes:** "
+        + ", ".join(
+            shape.value for shape in SpellShape if shape is not SpellShape.SINGLE
+        )
+        + ". **Cover grades:** "
+        + ", ".join(_grade_name(grade) for grade in CoverGrade)
+        + " — graded by corner-counted sight lines; half and three-quarters raise "
+        "the target's AC, total cover refuses the attack outright. **Diagonal "
+        "rules:** "
+        + ", ".join(f"`{rule.value}`" for rule in DiagonalRule)
+        + " — a per-encounter knob governing movement and areas alike; the default "
+        "prices every diagonal at 5 ft."
+    )
+    add("")
+    add("Built-in terrain kinds — content packs may define more:")
+    add("")
+    add("| Kind | Effects |")
+    add("| --- | --- |")
+    for name, effect in sorted(TERRAIN.items()):
+        add(f"| {name} | {_terrain_summary(effect)} |")
     add("")
 
     add("## Not supported")

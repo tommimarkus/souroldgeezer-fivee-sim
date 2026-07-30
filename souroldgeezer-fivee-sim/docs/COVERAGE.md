@@ -18,6 +18,7 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 | Damage types | 13 |
 | Actions | 8 |
 | Usable items | 0 bundled — the category is modelled, packs supply it |
+| Terrain kinds | 13 built in — packs may add more |
 | Classes, species, backgrounds, feats | 0 — not modelled |
 
 The creature and spell lists are a deliberately narrow starting slice, not an attempt at the whole SRD.
@@ -35,10 +36,10 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 | Name | Level | Resolution | Damage | Upcast | Area | Concentration | Not implemented |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Fireball | 3 | dexterity save, half on save | 8d6 | +1d6/level | 20 ft radius | no | Flammable objects in the area start burning |
+| Fireball | 3 | dexterity save, half on save | 8d6 | +1d6/level | 20 ft sphere | no | Flammable objects in the area start burning |
 | Guiding Bolt | 1 | spell attack roll | 4d6 | +1d6/level | single target | no | The next attack roll against a hit target before the end of your next turn has Advantage |
 | Hold Person | 2 | wisdom save | — | — | single target | yes | Targets Humanoids only; the engine does not track creature type<br>The target repeats the save at the end of each of its turns, ending the effect on a success<br>Upcasting targets one additional creature per slot level above 2 |
-| Shatter | 2 | constitution save, half on save | 3d8 | +1d8/level | 10 ft radius | no | A Construct has Disadvantage on the save<br>Unattended nonmagical objects in the area also take the damage |
+| Shatter | 2 | constitution save, half on save | 3d8 | +1d8/level | 10 ft sphere | no | A Construct has Disadvantage on the save<br>Unattended nonmagical objects in the area also take the damage |
 
 ## Conditions
 
@@ -65,11 +66,37 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
+`interact` is the free object interaction: once per turn, without spending the action, it opens or closes a map feature the actor stands on or next to.
+
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged.
 
 ## Damage types
 
 acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psychic, radiant, slashing, thunder.
+
+## Battlefield
+
+Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, and doors. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
+
+**Area shapes:** sphere, cone, line, cube. **Cover grades:** none, half, three-quarters, total — graded by corner-counted sight lines; half and three-quarters raise the target's AC, total cover refuses the attack outright. **Diagonal rules:** `5-5-5`, `5-10-5` — a per-encounter knob governing movement and areas alike; the default prices every diagonal at 5 ft.
+
+Built-in terrain kinds — content packs may define more:
+
+| Kind | Effects |
+| --- | --- |
+| difficult | movement x2 |
+| door-closed | impassable, blocks sight |
+| door-open | ordinary ground |
+| floor | ordinary ground |
+| forest | movement x2, grants half cover |
+| half-cover | grants half cover |
+| hill | movement x2 |
+| mountain | impassable |
+| normal | ordinary ground |
+| plain | ordinary ground |
+| three-quarters-cover | grants three-quarters cover |
+| wall | impassable, blocks sight |
+| water | movement x2 |
 
 ## Not supported
 
@@ -83,7 +110,7 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 **Anything outside a fight.** Exploration, travel, downtime, resting and recovery, skills and proficiencies as a system, social interaction, and the adventuring day. Resources do not regenerate; an encounter begins and ends.
 
-**Battlefield geometry.** Positions are feet along a single axis. Reach, ranged bands, and spell radii work; facing, flanking, cover, difficult terrain, elevation, and movement around obstacles do not exist.
+**Battlefield geometry beyond a flat grid.** The grid itself is real now — see the Battlefield section for the terrain kinds, cover grades, line of sight, area shapes, the diagonal-cost knob, and doors. What remains absent is the third dimension and body mechanics: elevation and 3-D space, flying, creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, forced movement (nothing pushes, drags, or knocks a creature through space), and climbing or swimming as movement modes.
 
 **Reactions other than opportunity attacks.** Readied actions, Shield and similar reaction spells, Parry, and legendary or lair actions. Each combatant has one reaction per round and only ever spends it on an opportunity attack.
 

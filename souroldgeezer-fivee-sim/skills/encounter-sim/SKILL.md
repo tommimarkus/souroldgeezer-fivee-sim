@@ -55,10 +55,28 @@ attacks remaining, none of that potion left, speed 0 while Grappled. Read the
 reason and adapt. Do not retry the same call hoping for a different answer, and do
 not narrate the action as though it happened.
 
+## Fighting on a map
+
+`encounter_create` takes an optional `map` of 5-ft squares: `{"width", "height",
+"rows": [".#..", ...], "legend": {".": "normal", "#": "wall"}, "features":
+[{"name": "door", "square": [1, 1]}]}` — rows top-first, one character per
+square. With a map the engine charges terrain for movement, routes moves around
+walls and enemies (pass-through opportunity attacks apply), grades cover
+(+2/+5 AC; total cover refuses the attack), and blocks sight. Positions snap to
+square centres, and `state["map"]` reports dimensions and door state.
+
+`encounter_act(kind="interact", feature="door")` opens or closes a door — free,
+once per turn, from the feature's square or one next to it. `simulate_rounds`
+accepts the same `map` and `movement_rule`, so batches fight on the terrain too.
+
 ## Aiming a spell
 
-`cast` takes `target` for one creature, `targets` for several, or **`center` for an
-area** — an `[x, y]` point in feet, not a creature.
+`cast` takes `target` for one creature, `targets` for several, or an area aim:
+**`center`** for a sphere (or a cube's minimum corner) — an `[x, y]` point in
+feet, not a creature — **`direction`** for a cone (one of the eight unit
+offsets, such as `[1, 0]` or `[-1, 1]`), **`toward`** for a line (a combatant
+name or a point). On a map, a sphere or cube also needs its point of origin in
+the caster's sight.
 
 `center` is what makes a Fireball a Fireball. Named targets are each hit
 individually, so a 20-ft blast dropped with `target` catches exactly one creature
@@ -170,9 +188,11 @@ the precedence rules, and a worked example.
 
 State these when they bear on a ruling rather than papering over them:
 
-- **Geometry is a flat, featureless plane.** Positions are `[x, y]` feet; distance,
-  reach, ranged penalties, and spell radii all work; flanking, cover, and difficult
-  terrain do not exist.
+- **Geometry is a flat grid.** Positions are `[x, y]` feet on 5-ft squares.
+  Terrain, walls, sight, cover, doors, and the area shapes all work — on a battle
+  map; without one the plane is open and featureless. Still absent either way:
+  elevation and 3-D space, flying, creature size and squeezing, flanking, and
+  forced movement.
 - **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
   `content_status` before concluding it does not exist. Either way, do not invent
