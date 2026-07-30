@@ -18,7 +18,7 @@ from fivee_sim.data import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
-from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square
+from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square, as_point
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
@@ -921,6 +921,46 @@ class TestMovementAndReactions:
             Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
         )
         assert "opportunity_attack" not in kinds(events)
+
+    def test_passing_straight_through_reach_provokes_without_a_map(self) -> None:
+        # The endpoint check never caught this: start and end both out of the
+        # goblin's reach, with the straight walk crossing it on the way.
+        rng = Random(6)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([fighter(), goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert kinds(events).count("opportunity_attack") == 1
+        assert encounter._reaction_available["Goblin"] is False
+
+    def test_a_disengaged_pass_through_does_not_provoke_without_a_map(self) -> None:
+        rng = Random(6)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([fighter(), goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.DISENGAGE), rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" not in kinds(events)
+
+    def test_a_mover_dropped_by_the_attack_stops_at_the_leave_point(self) -> None:
+        # The move event still declares the full 30 ft, but the state is the
+        # truth: Thora falls at (20, 0), the first sample beyond the goblin's
+        # reach, not at the destination she never got to.
+        rng = Random(6)
+        thora = fighter(hp=1)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=10)
+        encounter = Encounter([thora, goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" in kinds(events)
+        assert not thora.conscious
+        assert as_point(thora.position) == (20, 0)
 
     def test_moving_further_than_the_remaining_speed_is_refused(self) -> None:
         rng = Random(1)
