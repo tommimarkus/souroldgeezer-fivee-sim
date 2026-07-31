@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.kernel.grid import TERRAIN
-from fivee_sim.maps import MapDocument, MapError, parse_document, serialize
+from fivee_sim.map_document import MapDocument, MapError, parse_document, serialize
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
 from fivee_sim.service.errors import MapEditError

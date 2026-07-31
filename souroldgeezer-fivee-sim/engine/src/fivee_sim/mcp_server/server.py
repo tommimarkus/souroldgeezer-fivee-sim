@@ -63,8 +63,8 @@ from ..kernel.grid import (
     to_square,
 )
 from ..kernel.rules import Ability, DamageType, make_d20_test
-from ..maps import MapDocument, as_payload, to_grid
-from ..maps import serialize as _serialize_map
+from ..map_document import MapDocument, as_payload, to_grid
+from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError

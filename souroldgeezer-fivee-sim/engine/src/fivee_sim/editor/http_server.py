@@ -44,7 +44,7 @@ from urllib.parse import unquote
 
 from .. import __version__
 from ..kernel.grid import TerrainTable
-from ..maps import as_payload, serialize, validate_document
+from ..map_document import as_payload, serialize, validate_document
 from ..service import maps as map_service
 from ..service.common import resolve_seed, sha256_of, slugify
 from ..service.errors import MapEditError, MapError

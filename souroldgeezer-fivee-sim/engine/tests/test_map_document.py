@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.kernel.grid import TERRAIN
-from fivee_sim.maps import (
+from fivee_sim.map_document import (
     DEFAULT_LEGEND,
     MAX_MAP_BYTES,
     MAX_MAP_DIM,

@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.kernel.grid import TERRAIN
-from fivee_sim.maps import MapDocument, parse_document
+from fivee_sim.map_document import MapDocument, parse_document
 from fivee_sim.service.uvtt import (
     GRID_RGB,
     MAX_IMAGE_SIDE,

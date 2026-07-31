@@ -8,9 +8,9 @@ platform, which the exact-hash canary tests pin. Every terrain kind emitted
 exists in :data:`fivee_sim.kernel.grid.TERRAIN`.
 
 The output is a :class:`GeneratedMap` of terrain-kind strings;
-:func:`fivee_sim.maps.document_from` encodes one into a map document. All
-generated layouts are this engine's original content — nothing here derives
-from published game material.
+:func:`fivee_sim.map_document.document_from` encodes one into a map document.
+All generated layouts are this engine's original content — nothing here
+derives from published game material.
 """
 
 from ._types import GeneratedFeature, GeneratedMap
