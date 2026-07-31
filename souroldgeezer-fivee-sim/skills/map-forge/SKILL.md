@@ -37,7 +37,10 @@ session or file — is currently the truth.
    already stands on. It **writes the record whole**, so restate every field
    the feature is to keep — a key left out is a key removed. For a door's
    open/closed state alone, `toggle_door` is still the shortest thing that
-   works. `to_level` on a feature makes it a connector between storeys.
+   works. A linked double door names its adjacent mate reciprocally with
+   `linked_to`; both leaves must share state and interaction contract, and
+   toggling either moves both. `to_level` on a feature makes it a connector
+   between storeys.
 4. **`map_save`** writes canonical JSON and refuses to overwrite unless told
    to. Quote the path and the sha256.
 5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
@@ -180,6 +183,14 @@ rather than listed cell by cell, and change one with `set_feature`, which takes
 the same record and edits in place the fixture its `id` names. `set_feature`
 writes the record whole, so restate every key the fixture is to keep — dropping
 `affects` from the record is how a fixture stops affecting anything.
+
+A door may additionally carry its drawing mechanics: horizontal doors hinge
+west/east and swing north/south; vertical doors hinge north/south and swing
+west/east. Omitted fields preserve west/north for horizontal and north/west for
+vertical. Two adjacent, aligned leaves become one double door only when each
+has `linked_to` naming the other and both have the same authored state,
+`requires`, `costs_action`, and `check`. One interaction and one check operate
+the pair; hinge, swing, and terrain effects remain per leaf.
 
 **Say what a fixture does — and what it costs — before the party commits**,
 because the half that is missing is the half a user will assume:

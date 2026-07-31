@@ -706,6 +706,25 @@ class TestEditorFixturePreview:
         assert "Array.isArray(feature.affects)" in info
         assert "Array.isArray(feature.requires)" in info
 
+    def test_selected_doors_offer_orientation_hinge_swing_and_link_controls(self) -> None:
+        source = read("editor.html")
+        for control in (
+            "door-config",
+            "door-orientation",
+            "door-hinge",
+            "door-swing",
+            "door-linked",
+        ):
+            assert source.count(f'id="{control}"') == 1, control
+
+        info = source[
+            source.index("function renderFeatureInfo(") : source.index(
+                'byId("btn-delete-feature").addEventListener'
+            )
+        ]
+        assert 'feature.kind === "door"' in info
+        assert "renderDoorControls" in info
+
 
 class TestPagesParse:
     @pytest.mark.parametrize("page", PAGES)

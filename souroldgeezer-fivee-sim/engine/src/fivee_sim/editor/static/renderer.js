@@ -231,36 +231,48 @@ var FiveeRenderer = (function () {
     }
   }
 
-  /* A door hangs on hinges. Open, it is therefore one leaf that swung — whole,
-     the same length it was shut, standing a quarter turn from the doorway, with
-     a faint arc tracing the sweep. It used to be two stubs pulled back into both
-     jambs, which draws a pocket door sliding into the walls.
-
-     The hinge side is a fixed rule rather than something the document carries:
-     a horizontal door hangs on its west jamb and opens north, a vertical one on
-     its north jamb and opens west. So no map gains a field and none changes
-     meaning. The swung leaf reaches past its own square, which is where an open
-     door goes — a door sits in a wall run, so the squares it swings between are
-     the passage it interrupts, not more wall. */
-  function drawDoor(ctx, px, py, size, orientation, open, dark) {
+  /* A door hangs on the document's hinge and swings toward its document side.
+     Omitted metadata preserves the original drawing: horizontal west/north,
+     vertical north/west. The swung leaf reaches past its own square, which is
+     where an open door goes — a door sits in a wall run, so the squares it
+     swings between are the passage it interrupts, not more wall. */
+  function drawDoor(ctx, px, py, size, orientation, hinge, swing, open, dark) {
     var thick = Math.max(2, size * 0.22);
     var inset = size * 0.08;
     var span = size - 2 * inset;
     var ink = dark ? "#c9a86a" : "#6b4f2a";
     ctx.fillStyle = ink;
     if (orientation === "vertical") {
+      hinge = hinge === "south" ? "south" : "north";
+      swing = swing === "east" ? "east" : "west";
       var cx = px + (size - thick) / 2;
       if (open) {
-        ctx.fillRect(cx + thick - span, py + inset, span, thick);
-        drawSwing(ctx, cx + thick / 2, py + inset, span, Math.PI / 2, Math.PI, ink);
+        var vy = hinge === "north" ? py + inset : py + inset + span - thick;
+        var vx = swing === "west" ? cx + thick - span : cx;
+        ctx.fillRect(vx, vy, span, thick);
+        drawSwing(
+          ctx, cx + thick / 2,
+          hinge === "north" ? py + inset : py + inset + span,
+          span, hinge === "north" ? Math.PI / 2 : -Math.PI / 2,
+          swing === "west" ? Math.PI : 0, ink
+        );
       } else {
         ctx.fillRect(cx, py + inset, thick, span);
       }
     } else {
+      hinge = hinge === "east" ? "east" : "west";
+      swing = swing === "south" ? "south" : "north";
       var cy = py + (size - thick) / 2;
       if (open) {
-        ctx.fillRect(px + inset, cy + thick - span, thick, span);
-        drawSwing(ctx, px + inset, cy + thick / 2, span, -Math.PI / 2, 0, ink);
+        var hx = hinge === "west" ? px + inset : px + inset + span;
+        var doorX = hinge === "west" ? hx : hx - thick;
+        var doorY = swing === "north" ? cy + thick - span : cy;
+        ctx.fillRect(doorX, doorY, thick, span);
+        drawSwing(
+          ctx, hx, cy + thick / 2, span,
+          hinge === "west" ? 0 : Math.PI,
+          swing === "north" ? -Math.PI / 2 : Math.PI / 2, ink
+        );
       } else {
         ctx.fillRect(px + inset, cy, span, thick);
       }
@@ -279,7 +291,8 @@ var FiveeRenderer = (function () {
     ctx.strokeStyle = ink;
     ctx.lineWidth = Math.max(1, radius * 0.05);
     ctx.beginPath();
-    ctx.arc(hx, hy, radius, from, to);
+    var clockwiseSweep = (to - from + 2 * Math.PI) % (2 * Math.PI);
+    ctx.arc(hx, hy, radius, from, to, clockwiseSweep > Math.PI);
     ctx.stroke();
     ctx.restore();
   }
@@ -492,7 +505,10 @@ var FiveeRenderer = (function () {
         var open = Object.prototype.hasOwnProperty.call(states, feature.id)
           ? !!states[feature.id]
           : feature.state === "open";
-        drawDoor(ctx, fpx, fpy, s, feature.orientation || "horizontal", open, dark);
+        drawDoor(
+          ctx, fpx, fpy, s, feature.orientation || "horizontal",
+          feature.hinge, feature.swing, open, dark
+        );
       } else if (feature.kind === "stairs_up") {
         drawStairs(ctx, fpx, fpy, s, true, dark);
       } else if (feature.kind === "stairs_down") {

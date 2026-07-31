@@ -125,6 +125,7 @@ class MapFeature:
     name: str
     square: Square
     kind: str = "door"
+    orientation: str | None = None
     closed_terrain: str = "door-closed"
     open_terrain: str = "door-open"
     initially_open: bool = False
@@ -133,6 +134,7 @@ class MapFeature:
     requires: tuple[str, ...] = ()
     costs_action: bool = False
     check: FeatureCheck | None = None
+    linked_to: str | None = None
 
     def claims(self) -> Iterator[tuple[Square, SquareClaim]]:
         """Every square this fixture decides, and what it decides about it.

@@ -274,7 +274,11 @@ if (typeof FiveeRenderer === "undefined") {
       token = current.tokens[event.actor];
       if (token) { token.stable = true; }
     } else if (event.kind === "interact" && data.feature !== undefined) {
-      current.featureStates[data.feature] = !!data.open;
+      var operated = [data.feature];
+      if (Array.isArray(data.linked)) { operated = operated.concat(data.linked); }
+      operated.forEach(function (featureId) {
+        current.featureStates[featureId] = !!data.open;
+      });
       /* Re-derived here and in initialState(), which between them are every
          place the open set can move — not in redraw(), which runs on a bare
          resize and once per frame of a scrub drag that is already replaying

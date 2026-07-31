@@ -164,8 +164,10 @@ const viewerHtml = read("viewer.html");
 const EDITOR_IDS = [
   "map", "status", "fixture-list", "btn-preview", "feature-info", "level-select",
   "btn-download", "btn-save", "map-name", "elevation-default", "btn-heights",
+  "btn-delete-feature",
   "provenance", "dlg-resize", "dlg-resize-go", "rs-width", "rs-height", "rs-anchor",
-  "rs-fill",
+  "rs-fill", "door-config", "door-orientation", "door-hinge", "door-swing",
+  "door-linked",
 ];
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
@@ -606,23 +608,26 @@ const DOOR_AT = [3, 2];
 /* One door per document. The ink is shared by every door, so a second one in
  * the same frame could only be told from the first by the geometry these cases
  * exist to check. */
-function doorDoc(orientation, state) {
+function doorDoc(orientation, state, hinge, swing) {
+  const feature = {
+    id: "d", kind: "door", at: [DOOR_AT[0], DOOR_AT[1]],
+    orientation: orientation, state: state,
+  };
+  if (hinge !== undefined) { feature.hinge = hinge; }
+  if (swing !== undefined) { feature.swing = swing; }
   return {
     grid: { width: 8, height: 6 },
     legend: { ".": "floor", "#": "wall" },
     tiles: ["########", "#......#", "#......#", "#......#", "#......#", "########"],
-    features: [{
-      id: "d", kind: "door", at: [DOOR_AT[0], DOOR_AT[1]],
-      orientation: orientation, state: state,
-    }],
+    features: [feature],
   };
 }
 
 await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
   const page = makePage({ canvasIds: ["map"] });
   const R = page.renderer;
-  const leaves = (orientation, state) => {
-    R.render(page.context, doorDoc(orientation, state), DOOR_VIEW, {});
+  const leaves = (orientation, state, hinge, swing) => {
+    R.render(page.context, doorDoc(orientation, state, hinge, swing), DOOR_VIEW, {});
     return page.last().fills.filter((f) => f[4] === DOOR_INK);
   };
   const near = (a, b) => Math.abs(a - b) < 0.01;
@@ -677,7 +682,25 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
   check("out west, into its own passage",
     openV.length === 1 && openV[0][0] < px, show([openV[0][0], px]));
 
-  /* 4. The swing arc borrows alpha, and it has to give it back. The context
+  /* 4. Authored hinge and swing directions cover every jamb and side. The
+   *    omitted fields above remain the historical west/north and north/west
+   *    defaults, while these cases prove the document can override each axis. */
+  const eastH = leaves("horizontal", "open", "east", "north");
+  check("a horizontal door can hang on the east jamb",
+    eastH.length === 1 && near(eastH[0][0] + eastH[0][2], shutH[0][0] + shutH[0][2]),
+    show([eastH[0], shutH[0]]));
+  const southH = leaves("horizontal", "open", "west", "south");
+  check("a horizontal door can swing south",
+    southH.length === 1 && southH[0][1] > py, show([southH[0][1], py]));
+  const eastV = leaves("vertical", "open", "north", "east");
+  check("a vertical door can swing east",
+    eastV.length === 1 && eastV[0][0] > px, show([eastV[0][0], px]));
+  const southV = leaves("vertical", "open", "south", "west");
+  check("a vertical door can hang on the south jamb",
+    southV.length === 1 && near(southV[0][1] + southV[0][3],
+      shutV[0][1] + shutV[0][3]), show([southV[0], shutV[0]]));
+
+  /* 5. The swing arc borrows alpha, and it has to give it back. The context
    *    outlives the frame and render() never resets alpha, so a lost restore
    *    does not spoil one door — it leaves the whole map, and every frame after
    *    it, painted at three-tenths. Two frames, because the leak shows on
@@ -802,7 +825,25 @@ await suite("viewer.html: folding a replay's fixtures", "the page sandbox in mak
     check("and scrubbing back returns the earlier overrides",
       overridesOf(page.last())["1,4"] === "floor", show(page.last().overlays.terrainOverrides));
 
-    /* 5. Nothing to override hands the renderer nothing. The renderer guards
+    /* 5. A linked-door event names its mate explicitly. Folding it changes
+     *    both leaves as one state transition, including a rebuild by scrub. */
+    const linked = replayBundle([]);
+    linked.map.features = [
+      { id: "left", kind: "door", at: [2, 2], orientation: "horizontal",
+        state: "closed", linked_to: "right", terrain: { closed: "wall", open: "floor" } },
+      { id: "right", kind: "door", at: [3, 2], orientation: "horizontal",
+        state: "closed", linked_to: "left", terrain: { closed: "wall", open: "floor" } },
+    ];
+    linked.events = [{ kind: "interact", round: 1, turn: "Hero", actor: "Hero",
+      data: { feature: "left", linked: ["right"], open: true } }];
+    await page.drop(linked, "linked.json");
+    scrubTo(1);
+    check("a linked-door interaction folds both leaves together",
+      page.last().overlays.featureStates.left === true
+        && page.last().overlays.featureStates.right === true,
+      show(page.last().overlays.featureStates));
+
+    /* 6. Nothing to override hands the renderer nothing. The renderer guards
      *    its per-cell lookup on the channel's *presence*, so an empty map
      *    handed down would cost a concat and a miss per visible cell on every
      *    replay that has no fixtures at all. */
@@ -821,7 +862,7 @@ await suite("viewer.html: folding a replay's fixtures", "the page sandbox in mak
       page.last().overlays.terrainOverrides === undefined,
       show(page.last().overlays.terrainOverrides));
 
-    /* 6. Anything may be dropped on this page. */
+    /* 7. Anything may be dropped on this page. */
     await page.drop({ format: "not-a-replay" }, "wrong.json");
     check("a bundle that is not a replay is refused, not rendered",
       page.alerts.length === 1 && page.alerts[0].indexOf("fivee-sim-replay") !== -1,
@@ -1134,6 +1175,20 @@ const TOWER_MAP = {
   provenance: { generator: "hand", seed: 3, params: {}, edited: false, source: "test" },
 };
 
+const LINKED_DOOR_MAP = {
+  format: "fivee-sim-map",
+  format_version: 1,
+  name: "double doors",
+  grid: { width: 7, height: 6, cell_feet: 5 },
+  legend: { ".": "floor", "#": "wall" },
+  tiles: ["#######", "#.....#", "#.....#", "#.....#", "#.....#", "#######"],
+  features: [
+    { id: "left", kind: "door", at: [3, 3], orientation: "horizontal", state: "closed" },
+    { id: "right", kind: "door", at: [4, 3], orientation: "horizontal", state: "closed" },
+  ],
+  provenance: { generator: "hand", seed: 5, params: {}, edited: false, source: "test" },
+};
+
 /* The resize fixture carries a storey on purpose: the corruption path runs the
  * plane loop after snapshot(), so a throw on the second plane leaves the first
  * one rewritten and the grid still describing the old frame. */
@@ -1413,6 +1468,77 @@ await suite("editor.html: the inspector", "the page sandbox in makePage()", asyn
     show(partial));
 });
 
+await suite("editor.html: door configuration", "the page sandbox in makePage()", async () => {
+  const page = makeEditorPage();
+  const select = (x, y) => {
+    const view = page.last().view;
+    const event = {
+      clientX: (x - view.x) * view.scale + view.scale / 2,
+      clientY: (y - view.y) * view.scale + view.scale / 2,
+      button: 0, pointerId: 1,
+    };
+    page.element("map").dispatch("pointerdown", event);
+    page.element("map").dispatch("pointerup", event);
+  };
+  const saved = () => JSON.parse(page.downloaded());
+  const feature = (document_, id) => document_.features.find((each) => each.id === id);
+
+  await page.drop(copy(SLUICE_MAP));
+  select(5, 0);
+  check("selecting a door reveals its configuration controls",
+    page.element("door-config").hidden === false,
+    String(page.element("door-config").hidden));
+  check("omitted metadata is shown as the compatible historical defaults",
+    page.element("door-orientation").value === "vertical"
+      && page.element("door-hinge").value === "north"
+      && page.element("door-swing").value === "west",
+    show([page.element("door-orientation").value, page.element("door-hinge").value,
+      page.element("door-swing").value]));
+  page.element("door-orientation").value = "horizontal";
+  page.element("door-orientation").dispatch("change");
+  page.element("door-hinge").value = "east";
+  page.element("door-hinge").dispatch("change");
+  page.element("door-swing").value = "south";
+  page.element("door-swing").dispatch("change");
+  const configured = feature(saved(), "door-1");
+  check("orientation, hinge, and swing choices are written to the document",
+    configured.orientation === "horizontal" && configured.hinge === "east"
+      && configured.swing === "south", show(configured));
+
+  await page.drop(copy(LINKED_DOOR_MAP));
+  select(3, 3);
+  const options = page.element("door-linked").children.map((each) => each.value);
+  check("the link control offers the adjacent compatible door",
+    options.indexOf("right") !== -1, show(options));
+  page.element("door-linked").value = "right";
+  page.element("door-linked").dispatch("change");
+  const linked = saved();
+  check("linking writes one reciprocal pair with outer hinges",
+    feature(linked, "left").linked_to === "right"
+      && feature(linked, "right").linked_to === "left"
+      && feature(linked, "left").hinge === "west"
+      && feature(linked, "right").hinge === "east",
+    show(linked.features));
+  page.tickBox("left", true);
+  check("previewing either linked leaf opens both",
+    page.boxFor("left").checked === true && page.boxFor("right").checked === true,
+    show(page.last().overlays.featureStates));
+  page.element("btn-delete-feature").click();
+  const deleted = saved();
+  check("deleting either linked leaf removes the reciprocal pair",
+    feature(deleted, "left") === undefined && feature(deleted, "right") === undefined,
+    show(deleted.features));
+  await page.drop(copy(linked));
+  select(3, 3);
+  page.element("door-linked").value = "";
+  page.element("door-linked").dispatch("change");
+  const unlinked = saved();
+  check("unlinking clears both sides atomically",
+    feature(unlinked, "left").linked_to === undefined
+      && feature(unlinked, "right").linked_to === undefined,
+    show(unlinked.features));
+});
+
 await suite("editor.html: the resize dialog", "the page sandbox in makePage()", async () => {
   const page = makeEditorPage();
 
@@ -1492,7 +1618,21 @@ await suite("editor.html: the resize dialog", "the page sandbox in makePage()", 
     JSON.stringify(refused) === JSON.stringify(RESIZE_MAP),
     "the document moved under a refusal");
 
-  /* 4. The corruption path. Every one of these shapes reaches the plane loop,
+  /* 4. A linked door pair is another indivisible reference: keeping one leaf
+   *    while cropping its mate would leave a document that cannot be loaded. */
+  const linked = copy(LINKED_DOOR_MAP);
+  featureNamed(linked, "left").linked_to = "right";
+  featureNamed(linked, "right").linked_to = "left";
+  const linkedRefused = await resize(linked, 4, 6, "top-left");
+  check("dropping one linked door leaf is refused, naming both ends",
+    page.element("status").textContent.indexOf("linked door 'right'") !== -1
+      && page.element("status").textContent.indexOf("'left' survives") !== -1,
+    show(page.element("status").textContent));
+  check("and a linked-pair resize refusal changes nothing",
+    JSON.stringify(linkedRefused) === JSON.stringify(linked),
+    "the linked document moved under a refusal");
+
+  /* 5. The corruption path. Every one of these shapes reaches the plane loop,
    *    which runs after snapshot() and rewrites planes in order — so a throw
    *    leaves a half-resized document that the Download button writes out
    *    without the server ever seeing it. */

@@ -56,7 +56,7 @@ from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
 from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel, to_grid
-from .maps import ResolvedLevel
+from .maps import ResolvedLevel, linked_open_features
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
 
@@ -401,6 +401,8 @@ def to_uvtt(
         )
 
     open_names = None if open is None else frozenset(open)
+    if open_names is not None:
+        open_names = linked_open_features(to_grid(document).levels[level], open_names)
     kinds = _terrain_kinds(document, plane, level, open_names)
     walls = [
         [_point(corner[0], corner[1]) for corner in polyline]
