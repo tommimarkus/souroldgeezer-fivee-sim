@@ -29,7 +29,7 @@ live play uses.
 
 | Plugin | Version | Skill | Agent |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.07.20` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
+| `souroldgeezer-fivee-sim` | `2026.07.21` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
 
 ## Install
 
