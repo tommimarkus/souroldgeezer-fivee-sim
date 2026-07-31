@@ -22,7 +22,7 @@ __all__ = ["DEFAULT_OUTPUT", "SEED", "main", "sample_bundle", "write_sample"]
 
 SEED = 731204
 DEFAULT_OUTPUT = Path(".fivee-sim/replays/animated-replay-showcase.html")
-_NAME = "Animated Replay Showcase"
+_NAME = "Gatehouse Victory Showcase"
 _SOURCE = "Authored as 5E-compatible original content for the animated replay showcase"
 
 
@@ -261,6 +261,59 @@ def _events() -> list[dict[str, Any]]:
                 "completed": True,
             },
         ),
+        Event(
+            kind="turn_end",
+            actor="Mira",
+            detail="Mira ends her turn on the gallery.",
+            round=1,
+            turn="Mira",
+        ),
+        Event(
+            kind="round",
+            detail="Round 2 begins.",
+            round=2,
+            turn="Arin",
+        ),
+        Event(
+            kind="turn_start",
+            actor="Arin",
+            detail="Arin begins the decisive turn.",
+            round=2,
+            turn="Arin",
+        ),
+        Event(
+            kind="attack",
+            actor="Arin",
+            target="Gatehouse Brute",
+            detail="Long Blade: 8 slashing damage.",
+            round=2,
+            turn="Arin",
+            data={
+                "attack": "Long Blade",
+                "hit": True,
+                "critical": False,
+                "natural": 14,
+                "total": 19,
+                "advantage": "normal",
+                "damage": 8,
+                "cover": 0,
+            },
+        ),
+        Event(
+            kind="damage",
+            target="Gatehouse Brute",
+            detail="8 damage, 0/18 hit points left.",
+            round=2,
+            turn="Arin",
+            data={"amount": 8, "hp": 0, "max_hp": 18},
+        ),
+        Event(
+            kind="down",
+            actor="Gatehouse Brute",
+            detail="The gatehouse brute falls unconscious and is dying.",
+            round=2,
+            turn="Arin",
+        ),
     ]
     return [
         Event(
@@ -376,7 +429,7 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
             "conditions": [],
             "dodging": False,
             "concentrating_on": None,
-            "reaction_available": False if final else True,
+            "reaction_available": True,
             "disengaged": False,
             "conscious": True,
             "dead": False,
@@ -409,16 +462,16 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
             "name": "Gatehouse Brute",
             "team": "monsters",
             "position": [35, 15] if final else [45, 15],
-            "hp": 8 if final else 18,
+            "hp": 0 if final else 18,
             "max_hp": 18,
             "ac": 15,
             "level": 0,
-            "conditions": [],
+            "conditions": ["prone", "unconscious"] if final else [],
             "dodging": False,
             "concentrating_on": None,
             "reaction_available": True,
             "disengaged": False,
-            "conscious": True,
+            "conscious": not final,
             "dead": False,
             "stable": False,
             "death_saves": {"successes": 0, "failures": 0},
@@ -431,15 +484,15 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
 
 def _state(*, final: bool) -> dict[str, Any]:
     return {
-        "round": 1,
-        "turn": "Mira" if final else "Arin",
+        "round": 2 if final else 1,
+        "turn": "Arin",
         "order": ["Arin", "Gatehouse Brute", "Mira"],
-        "over": False,
-        "winner": None,
+        "over": final,
+        "winner": "party" if final else None,
         "movement_rule": "5-5-5",
-        "movement_left": 0 if final else 30,
+        "movement_left": 30,
         "action_available": not final,
-        "bonus_action_available": not final,
+        "bonus_action_available": True,
         "ongoing_effects": [],
         "combatants": _state_combatants(final=final),
         "map": {
@@ -455,7 +508,7 @@ def _state(*, final: bool) -> dict[str, Any]:
 
 
 def _actions() -> list[dict[str, Any]]:
-    return [
+    actions = [
         {
             "index": index,
             "round": 1,
@@ -493,6 +546,27 @@ def _actions() -> list[dict[str, Any]]:
             ]
         )
     ]
+    actions.extend(
+        [
+            {
+                "index": 10,
+                "round": 1,
+                "actor": "Mira",
+                "action": None,
+                "first_event": 13,
+                "event_count": 3,
+            },
+            {
+                "index": 11,
+                "round": 2,
+                "actor": "Arin",
+                "action": {"kind": "attack", "target": "Gatehouse Brute"},
+                "first_event": 16,
+                "event_count": 3,
+            },
+        ]
+    )
+    return actions
 
 
 def _attempts() -> list[dict[str, Any]]:
@@ -533,13 +607,26 @@ def _attempts() -> list[dict[str, Any]]:
         },
         {
             "index": 2,
-            "timestamp": "2026-08-01T12:00:15Z",
-            "started_at": "2026-08-01T12:00:15Z",
+            "timestamp": "2026-08-01T12:00:14Z",
+            "started_at": "2026-08-01T12:00:14Z",
             "operation": "encounter_act",
             "request_id": "sample-refusal",
             "arguments": {"kind": "interact", "feature": "inner-gate"},
             "status": "refused",
             "error": "Mira cannot reach inner-gate from gallery level 1",
+        },
+        {
+            "index": 3,
+            "timestamp": "2026-08-01T12:00:21Z",
+            "started_at": "2026-08-01T12:00:21Z",
+            "operation": "encounter_note",
+            "request_id": "sample-outcome",
+            "arguments": {
+                "category": "outcome",
+                "text": "Gatehouse secured. The party holds the inner gate.",
+            },
+            "status": "success",
+            "result": {"category": "outcome"},
         },
     ]
 
@@ -560,7 +647,7 @@ def sample_bundle() -> dict[str, Any]:
         },
         {
             "index": 1,
-            "timestamp": "2026-08-01T12:00:14Z",
+            "timestamp": "2026-08-01T12:00:20Z",
             "event_count": len(events),
             "state_hash": replay_service.canonical_sha256(latest_state),
             "state": latest_state,
