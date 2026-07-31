@@ -685,6 +685,41 @@ def serialize(document: MapDocument) -> str:
 
 
 # --- encoding generator output ---------------------------------------------
+def _elevation_from(generated: GeneratedMap, name: str) -> MapElevation:
+    """A generator's dense height grid as the document's datum-plus-sparse form.
+
+    A generator that emits no heights at all gets the flat default, which
+    :func:`as_payload` then omits from the file entirely.
+    """
+    if not generated.elevation:
+        return MapElevation()
+    if len(generated.elevation) != generated.height or any(
+        len(row) != generated.width for row in generated.elevation
+    ):
+        raise MapError(
+            [
+                Diagnostic(
+                    source=name, section="map", field="elevation",
+                    problem=(
+                        f"the height grid is not {generated.width}x{generated.height}; "
+                        f"a generator emits one height per cell or none at all"
+                    ),
+                )
+            ]
+        )
+    counts: Counter[int] = Counter(feet for row in generated.elevation for feet in row)
+    datum = min(counts, key=lambda feet: (-counts[feet], feet))
+    return MapElevation(
+        default=datum,
+        squares={
+            (x, y): feet
+            for y, row in enumerate(generated.elevation)
+            for x, feet in enumerate(row)
+            if feet != datum
+        },
+    )
+
+
 def document_from(
     generated: GeneratedMap, *, name: str, generator: str, seed: int, params: Any
 ) -> MapDocument:
@@ -697,6 +732,12 @@ def document_from(
     the generator's params dataclass (or an equivalent mapping), recorded
     fully resolved so the document alone reproduces the map; ``edited``
     starts false and ``source`` says the content is generated and original.
+
+    A generator's dense height grid is reduced here rather than in the
+    generator: the commonest height becomes the document's datum and only the
+    squares departing from it are written, which is the same choice
+    :func:`to_grid` makes for terrain and for the same reason — the file stays
+    small and a run of flat ground costs nothing to record.
     """
     glyph_of = {kind: glyph for glyph, kind in DEFAULT_LEGEND.items()}
     tiles: list[str] = []
@@ -727,6 +768,7 @@ def document_from(
         grid=MapGrid(width=generated.width, height=generated.height),
         legend=DEFAULT_LEGEND,
         tiles=tuple(tiles),
+        elevation=_elevation_from(generated, name),
         features=tuple(
             MapFeatureRecord(
                 id=feature.id, kind=feature.kind, at=feature.at,
