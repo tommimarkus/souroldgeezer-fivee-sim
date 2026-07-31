@@ -156,6 +156,20 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- folding the event log ------------------------------------------- */
+
+  /* What the fixtures standing open make of the ground, as the renderer's
+     generic per-square channel. The derivation is the renderer's, shared with
+     the editor and mirroring MapFeature.claims() server-side — three copies of
+     "which squares does this document decide" is how three answers drift.
+
+     Undefined rather than an empty map when nothing is overridden: the
+     renderer guards its per-cell lookup on the channel's presence, and most
+     replays — every mapless one included — decide no square this way. */
+  function overridesFor(states) {
+    var overrides = R.terrainOverridesFor(mapDoc, states);
+    return Object.keys(overrides).length ? overrides : undefined;
+  }
+
   function initialState() {
     var tokens = {};
     (bundle.initial.creatures || []).forEach(function (creature) {
@@ -174,13 +188,26 @@ if (typeof FiveeRenderer === "undefined") {
     if (bundle.map) {
       var openList = bundle.initial.map_open_features || [];
       (bundle.map.features || []).forEach(function (feature) {
-        if (feature.kind === "door") {
-          featureStates[feature.id] = openList.indexOf(feature.id) !== -1
-            || (openList.length === 0 && feature.state === "open");
-        }
+        /* Carrying a `state` is what makes a feature one the fight owns, not
+           being a door: a spawn hint and a drawn stairway have none, a lever
+           and a sluice gate do, and the log's interact events name any of
+           them. The document picks fixtures by exactly this test. Seeding
+           only the doors left every other fixture out of featureStates, so a
+           bundle whose live open-list disagreed with the document — the two
+           are independent fields, and this page opens any file dropped on
+           it — silently replayed the document instead. */
+        if (feature.state === undefined || feature.state === null) { return; }
+        featureStates[feature.id] = openList.indexOf(feature.id) !== -1
+          || (openList.length === 0 && feature.state === "open");
       });
     }
-    return { tokens: tokens, featureStates: featureStates, round: 0, turn: "" };
+    return {
+      tokens: tokens,
+      featureStates: featureStates,
+      terrainOverrides: overridesFor(featureStates),
+      round: 0,
+      turn: ""
+    };
   }
 
   function fold(current, event) {
@@ -208,6 +235,11 @@ if (typeof FiveeRenderer === "undefined") {
       if (token) { token.stable = true; }
     } else if (event.kind === "interact" && data.feature !== undefined) {
       current.featureStates[data.feature] = !!data.open;
+      /* Re-derived here and in initialState(), which between them are every
+         place the open set can move — not in redraw(), which runs on a bare
+         resize and once per frame of a scrub drag that is already replaying
+         the whole log. */
+      current.terrainOverrides = overridesFor(current.featureStates);
     }
     return current;
   }
@@ -260,6 +292,7 @@ if (typeof FiveeRenderer === "undefined") {
       R.render(ctx, mapDoc, view, {
         tokens: tokens,
         featureStates: state.featureStates,
+        terrainOverrides: state.terrainOverrides,
         marks: flashMarks()
       });
       drawTicks();
