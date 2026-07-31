@@ -49,7 +49,7 @@ from typing import Any
 
 from .kernel.grid import FEET_PER_SQUARE, Square, TerrainTable
 from .kernel.mapgen import GeneratedMap
-from .model.battlemap import BattleMap, MapFeature
+from .model.battlemap import BattleMap, MapFeature, MapPlane
 from .validation import Diagnostic, Reader, Severity
 
 __all__ = [
@@ -1010,37 +1010,36 @@ def document_from(
 
 
 # --- the bridge to the battle map ------------------------------------------
-def to_grid(document: MapDocument) -> BattleMap:
-    """The single bridge from a document to an encounter-facing battle map.
+def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
+    """One document level as the encounter-facing plane.
 
-    ``default_terrain`` is the most common kind on the tiles (ties broken by
-    kind name, so the choice is deterministic); only squares that differ enter
-    the sparse mapping. Ground height crosses as the document already holds it —
-    the author's default and the squares that depart from it — since there is
-    nothing to infer. Door features become :class:`MapFeature` rows with
-    ``initially_open`` read from the recorded default state. Non-door features
-    — stairs, spawn hints — stay document-level *on purpose*: the battle map
-    has no slot for them and a fight does not consult them; renderers and
-    placement logic read them from the document.
+    ``default_terrain`` is the most common kind on *this level's* tiles (ties
+    broken by kind name, so the choice is deterministic); only squares that
+    differ enter the sparse mapping. Each storey chooses its own, because a
+    gallery that is mostly floor should not pay for the ground being mostly
+    wall.
     """
     counts: Counter[str] = Counter()
-    for row in document.tiles:
+    for row in level.tiles:
         for char in row:
-            counts[document.legend[char]] += 1
+            counts[legend[char]] += 1
     if counts:
         default = min(counts, key=lambda kind: (-counts[kind], kind))
     else:  # pragma: no cover - dimensions are validated to at least 1x1
         default = "floor"
 
     terrain: dict[Square, str] = {}
-    for y, row in enumerate(document.tiles):
+    for y, row in enumerate(level.tiles):
         for x, char in enumerate(row):
-            kind = document.legend[char]
+            kind = legend[char]
             if kind != default:
                 terrain[(x, y)] = kind
 
     features: dict[str, MapFeature] = {}
-    for feature in document.features:
+    connectors: dict[Square, int] = {}
+    for feature in level.features:
+        if feature.to_level is not None:
+            connectors[feature.at] = feature.to_level
         if feature.kind != "door":
             continue
         features[feature.id] = MapFeature(
@@ -1049,14 +1048,40 @@ def to_grid(document: MapDocument) -> BattleMap:
             kind="door",
             initially_open=feature.state == "open",
         )
+    return MapPlane(
+        default_terrain=default,
+        terrain=terrain,
+        default_elevation=level.elevation.default,
+        elevation=dict(level.elevation.squares),
+        features=features,
+        connectors=connectors,
+    )
+
+
+def to_grid(document: MapDocument) -> BattleMap:
+    """The single bridge from a document to an encounter-facing battle map.
+
+    One :class:`~fivee_sim.model.battlemap.MapPlane` per level, each resolved by
+    :func:`_plane_of`. Ground height crosses as the document already holds it —
+    the level's own default and the squares that depart from it — since there is
+    nothing to infer. Door features become :class:`MapFeature` rows with
+    ``initially_open`` read from the recorded default state.
+
+    A feature carrying ``to_level`` also becomes a connector on its plane, which
+    is the one thing a fight consults a stairway for. Every other non-door
+    feature — a plain stairway drawn for the reader, a spawn hint — stays
+    document-level *on purpose*: the battle map has no slot for it and a fight
+    does not ask; renderers and placement logic read them from the document.
+    """
     return BattleMap(
         name=document.name,
         width=document.grid.width,
         height=document.grid.height,
-        default_terrain=default,
-        terrain=terrain,
-        default_elevation=document.elevation.default,
-        elevation=dict(document.elevation.squares),
-        features=features,
+        levels=MappingProxyType(
+            {
+                index: _plane_of(document.levels[index], document.legend)
+                for index in sorted(document.levels)
+            }
+        ),
         provenance=document.provenance.source,
     )

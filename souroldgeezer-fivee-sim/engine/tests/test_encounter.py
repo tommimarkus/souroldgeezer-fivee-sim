@@ -1033,7 +1033,7 @@ def strip(
     elevation: dict[Square, int] | None = None,
     features: tuple[MapFeature, ...] = (),
 ) -> BattleMap:
-    return BattleMap(
+    return BattleMap.flat(
         name="test map",
         width=width,
         height=height,

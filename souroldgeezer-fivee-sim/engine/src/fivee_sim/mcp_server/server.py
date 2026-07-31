@@ -586,7 +586,7 @@ def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             initially_open=initially_open,
         )
 
-    return BattleMap(
+    return BattleMap.flat(
         name=str(spec.get("name", "battle map")),
         width=width,
         height=height,

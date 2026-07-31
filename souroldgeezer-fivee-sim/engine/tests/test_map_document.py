@@ -441,14 +441,16 @@ class TestToGrid:
 def storey() -> dict[str, Any]:
     """One upper floor over the same footprint as :func:`document`."""
     return {
+        # Mostly open, where the ground below is mostly wall — so the two planes
+        # disagree about their majority terrain and the tests can tell.
         "index": 1,
         "name": "gallery",
         "tiles": [
-            "######",
-            "#....#",
-            "#....#",
-            "#....#",
-            "######",
+            "#.....",
+            "......",
+            "......",
+            "......",
+            "......",
         ],
         "elevation": {"default": 10, "squares": []},
         "features": [{"id": "stair-head", "kind": "stairs_down", "at": [3, 3],
@@ -487,7 +489,7 @@ class TestLevels:
         assert set(doc.levels) == {0, 1}
         upper = doc.levels[1]
         assert upper.name == "gallery"
-        assert upper.tiles[2] == "#....#"  # the ground's difficult square is not up here
+        assert upper.tiles[2] == "......"  # the ground's difficult square is not up here
         assert upper.elevation.at((1, 1)) == 10
 
     def test_a_storeys_datum_is_its_floor_height(self) -> None:
@@ -626,6 +628,58 @@ class TestLevelSerialize:
         payload["levels"].insert(0, basement)
         written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
         assert [level["index"] for level in written["levels"]] == [-1, 1]
+
+
+class TestToGridLevels:
+    def test_a_floorless_map_bridges_to_one_plane(self) -> None:
+        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
+        assert set(grid.levels) == {0}
+        assert grid.ground is grid.levels[0]
+
+    def test_every_storey_becomes_its_own_plane(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert set(grid.levels) == {0, 1}
+        upper = grid.levels[1]
+        assert upper.default_terrain == "floor"  # 29 floor to 1 wall up here
+        assert upper.default_elevation == 10
+        assert (2, 2) not in upper.terrain  # the ground's difficult square is not up here
+
+    def test_each_plane_picks_its_own_majority_terrain(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.ground.default_terrain == "wall"
+        assert grid.levels[1].default_terrain == "floor"
+
+    def test_the_ground_accessors_still_read_the_ground_plane(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.default_terrain == grid.ground.default_terrain
+        assert grid.terrain == grid.ground.terrain
+        assert grid.elevation == grid.ground.elevation
+        assert grid.default_elevation == grid.ground.default_elevation
+
+    def test_features_merge_across_planes_under_one_name_table(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "hatch", "kind": "door", "at": [1, 1],
+             "orientation": "horizontal", "state": "closed"}
+        )
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert set(grid.features) == {"door-1", "hatch"}
+        assert set(grid.ground.features) == {"door-1"}
+        assert set(grid.levels[1].features) == {"hatch"}
+
+    def test_a_connector_reaches_the_plane_it_stands_on(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.ground.connectors == {(3, 3): 1}
+        assert grid.levels[1].connectors == {(3, 3): 0}
+
+    def test_a_stairway_without_a_target_stays_decoration(self) -> None:
+        # Stairs have always been drawn and never walked; only `to_level` makes
+        # one a way between planes.
+        payload = document()
+        payload["features"].append({"id": "stair-1", "kind": "stairs_down", "at": [1, 3]})
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert grid.ground.connectors == {}
+        assert "stair-1" not in grid.features
 
 
 class TestHandEdited:
