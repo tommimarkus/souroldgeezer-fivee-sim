@@ -41,6 +41,20 @@ def _wait_for(predicate: Callable[[], bool], timeout: float = 10.0) -> bool:
     return False
 
 
+def _reaped_pid() -> int:
+    """A PID that is certainly not live: a child we spawned, waited for, and reaped.
+
+    Replaces a literal ``2**22 + 1``, which encoded Linux's *default* ``pid_max``
+    and would name a live process on a host with ``kernel.pid_max`` raised.
+    """
+    child = subprocess.Popen(
+        [sys.executable, "-c", ""], stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    child.wait()
+    return child.pid
+
+
 def _spawn_cli(arguments: list[str]) -> subprocess.Popen[str]:
     env = dict(os.environ)
     env["PYTHONPATH"] = str(ENGINE_SRC) + os.pathsep + env.get("PYTHONPATH", "")
@@ -149,8 +163,16 @@ class TestEditorTools:
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
         state_path = state_file_for(maps_dir)
         state_path.parent.mkdir(parents=True, exist_ok=True)
+        # What makes this record stale is the *port*: ``_live_editor_state`` pings
+        # the port with the token and only trusts a server that answers, so port 1
+        # — which nothing serves — is the whole reason the stale branch is taken.
+        # The pid is never consulted on this path; it is here so the record has the
+        # shape a real one does, and it is a reaped child's so it names nothing live.
         state_path.write_text(
-            json.dumps({"pid": 2**22 + 1, "port": 1, "token": "gone", "maps_dir": str(maps_dir)})
+            json.dumps({
+                "pid": _reaped_pid(), "port": 1, "token": "gone",
+                "maps_dir": str(maps_dir),
+            })
         )
         result = api.map_editor_serve()
         try:

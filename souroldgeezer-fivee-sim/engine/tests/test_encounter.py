@@ -21,7 +21,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square, as_point
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
-from fivee_sim.kernel.spells import Spell, SpellShape
+from fivee_sim.kernel.spells import Spell
 from fivee_sim.model.battlemap import BattleMap, MapFeature
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
@@ -32,80 +32,16 @@ from fivee_sim.model.encounter import (
     Event,
 )
 
-from .test_kernel import FixedRandom, ScriptedRandom
-
-FIXTURE = "synthetic test fixture, not SRD content"
-
-
-def fighter(
-    name: str = "Thora",
-    *,
-    position: int | tuple[int, int] = 0,
-    hp: int | None = None,
-    max_hp: int = 30,
-    team: str = "party",
-    attacks_per_action: int = 1,
-) -> Creature:
-    return Creature(
-        name=name,
-        team=team,
-        ac=16,
-        max_hp=max_hp,
-        hp=max_hp if hp is None else hp,
-        speed=30,
-        abilities={
-            Ability.STRENGTH: 16,
-            Ability.DEXTERITY: 14,
-            Ability.CONSTITUTION: 14,
-            Ability.INTELLIGENCE: 10,
-            Ability.WISDOM: 12,
-            Ability.CHARISMA: 8,
-        },
-        attacks=(
-            AttackOption(
-                name="Longsword",
-                attack_bonus=5,
-                damage=Dice(1, 8, 3),
-                damage_type=DamageType.SLASHING,
-                kind=AttackKind.MELEE,
-                provenance=FIXTURE,
-            ),
-        ),
-        attacks_per_action=attacks_per_action,
-        position=position,
-        provenance=FIXTURE,
-    )
-
-
-def caster(
-    name: str = "Wren", *, position: int | tuple[int, int] = 0, team: str = "party"
-) -> Creature:
-    return Creature(
-        name=name,
-        team=team,
-        ac=13,
-        max_hp=24,
-        speed=30,
-        abilities={
-            Ability.CONSTITUTION: 14,
-            Ability.DEXTERITY: 12,
-            Ability.INTELLIGENCE: 16,
-        },
-        spells=("Fireball", "Hold Person"),
-        spell_slots={2: 1, 3: 1},
-        spell_save_dc=15,
-        spell_attack_bonus=6,
-        position=position,
-        provenance=FIXTURE,
-    )
-
-
-def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) -> None:
-    for _ in range(limit):
-        if encounter.current_name == name:
-            return
-        encounter.advance(rng)
-    raise AssertionError(f"{name} never got a turn")
+from .conftest import (
+    FIXTURE,
+    FixedRandom,
+    ScriptedRandom,
+    advance_to,
+    caster,
+    fighter,
+    shaped_spellbook,
+    shaper,
+)
 
 
 def kinds(events: Sequence[Event]) -> list[str]:
@@ -948,7 +884,18 @@ class TestMovementAndReactions:
             Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
         )
         assert kinds(events).count("opportunity_attack") == 1
-        assert encounter._reaction_available["Goblin"] is False
+
+        # The reaction is spent, observed through the public surface rather than
+        # through _reaction_available: Dash buys enough movement to walk back
+        # across the goblin's reach in the same round, and that second provoking
+        # pass draws nothing. The goblin's reaction only refreshes when its own
+        # turn begins, which has not happened yet.
+        encounter.act(Action(kind=ActionKind.DASH), rng)
+        again = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=0), FixedRandom(20)
+        )
+        assert encounter.creatures["Thora"].position == (0, 0)
+        assert "opportunity_attack" not in kinds(again)
 
     def test_a_disengaged_pass_through_does_not_provoke_without_a_map(self) -> None:
         rng = Random(6)
@@ -1915,39 +1862,6 @@ class TestSpellcasting:
         wizard.concentrating_on = "Hold Person"
         wizard.take_damage(wizard.hp)
         assert wizard.concentrating_on is None
-
-
-def shaped_spellbook() -> dict[str, Spell]:
-    """One spell of each grid shape, small enough to reason about by hand."""
-    common: dict[str, Any] = {
-        "level": 1,
-        "save_ability": Ability.DEXTERITY,
-        "damage": Dice(3, 6, 0),
-        "damage_type": DamageType.FIRE,
-        "provenance": FIXTURE,
-    }
-    return {
-        "Flame Fan": Spell(name="Flame Fan", shape=SpellShape.CONE, length=15,
-                           **common),
-        "Spark Line": Spell(name="Spark Line", shape=SpellShape.LINE, length=30,
-                            **common),
-        "Stone Cube": Spell(name="Stone Cube", shape=SpellShape.CUBE, size=10,
-                            range_feet=60, **common),
-    }
-
-
-def shaper(position: int | tuple[int, int] = 0) -> Creature:
-    return Creature(
-        name="Vesna",
-        team="party",
-        ac=12,
-        max_hp=20,
-        spells=("Flame Fan", "Spark Line", "Stone Cube"),
-        spell_slots={1: 5},
-        spell_save_dc=13,
-        position=position,
-        provenance=FIXTURE,
-    )
 
 
 class TestAoeShapes2D:

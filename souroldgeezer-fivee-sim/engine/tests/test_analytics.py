@@ -34,7 +34,7 @@ from fivee_sim.model.battlemap import BattleMap
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import ActionKind, Encounter
 
-from .test_encounter import advance_to, caster, fighter, shaped_spellbook, shaper
+from .conftest import advance_to, caster, fighter, shaped_spellbook, shaper
 
 SEED = 20260730
 
@@ -688,23 +688,31 @@ class TestPolicyPlacesShapes:
         # catches them, so the policy must not propose the cast at all. Everyone
         # stands in interior rows — a corner on the map boundary could legally
         # graze along the edge, which is the sight policy, not the subject here.
-        rng = Random(SEED)
-        sealed = BattleMap(
-            name="sealed", width=10, height=5,
-            terrain={(3, row): "wall" for row in range(5)},
-            provenance=FIXTURE,
-        )
-        combatants = [
-            blaster(position=(0, 10)),
-            make_monster("Goblin Warrior", label="Hidden A", position=(40, 10)),
-            make_monster("Goblin Warrior", label="Hidden B", position=(40, 15)),
-        ]
-        encounter = Encounter(
-            combatants, rng, spellbook=spellbook(), battle_map=sealed
-        )
-        advance_to(encounter, "Ilva", rng)
-        action = auto_action(encounter)
-        assert action is None or action.kind is not ActionKind.CAST
+        def propose(terrain: dict[tuple[int, int], str]) -> Any:
+            rng = Random(SEED)
+            battle_map = BattleMap(
+                name="sealed", width=10, height=5, terrain=terrain, provenance=FIXTURE,
+            )
+            combatants = [
+                blaster(position=(0, 10)),
+                make_monster("Goblin Warrior", label="Hidden A", position=(40, 10)),
+                make_monster("Goblin Warrior", label="Hidden B", position=(40, 15)),
+            ]
+            encounter = Encounter(
+                combatants, rng, spellbook=spellbook(), battle_map=battle_map
+            )
+            advance_to(encounter, "Ilva", rng)
+            return auto_action(encounter)
+
+        # Sealed off, the policy declines to cast.
+        assert propose({(3, row): "wall" for row in range(5)}) is None
+
+        # The positive control, and the reason the None above means anything: the
+        # same geometry with the wall removed *does* propose the cast. Without it
+        # this test would pass against an auto_action() that returned None always.
+        unsealed = propose({})
+        assert unsealed is not None
+        assert unsealed.kind is ActionKind.CAST
 
 
 class TestRoundsReported:

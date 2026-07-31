@@ -45,6 +45,21 @@ HERO: dict[str, Any] = {
 }
 
 
+def advance_to_thora(encounter_id: str) -> None:
+    """Advance the wire-level encounter until Thora holds the turn.
+
+    The ``Encounter``-object equivalent is ``conftest.advance_to``; this one drives
+    the ``api.*`` tool surface, where there is no Encounter to hand it. Raises
+    rather than falling through, so a test whose subject never gets a turn fails
+    here instead of asserting against whoever does.
+    """
+    for _ in range(6):
+        if api.encounter_state(encounter_id)["turn"] == "Thora":
+            return
+        api.encounter_advance(encounter_id)
+    raise AssertionError("Thora never got a turn")
+
+
 class TestPrimitives:
     def test_a_seed_is_always_reported_so_any_roll_can_be_replayed(self) -> None:
         without = api.roll("2d6+3")
@@ -209,13 +224,6 @@ class TestEncounterFlow:
 class TestPlanarPositions:
     """The two-dimensional wire format: [x, y] in state, accepted on input."""
 
-    def advance_to_thora(self, encounter_id: str) -> None:
-        for _ in range(6):
-            if api.encounter_state(encounter_id)["turn"] == "Thora":
-                return
-            api.encounter_advance(encounter_id)
-        raise AssertionError("Thora never got a turn")
-
     def test_state_reports_positions_as_x_y_pairs(self) -> None:
         created = api.encounter_create([HERO, GOBLIN], seed=11)
         positions = {
@@ -236,7 +244,7 @@ class TestPlanarPositions:
     def test_a_move_accepts_an_x_y_destination(self) -> None:
         created = api.encounter_create([HERO, {**GOBLIN, "position": 60}], seed=11)
         encounter_id = str(created["encounter_id"])
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         acted = api.encounter_act(encounter_id, kind="move", to_position=[10, 5])
         moved = next(
             entry for entry in acted["state"]["combatants"]
@@ -277,13 +285,6 @@ class TestMapTools:
         )
         return str(created["encounter_id"])
 
-    def advance_to_thora(self, encounter_id: str) -> None:
-        for _ in range(6):
-            if api.encounter_state(encounter_id)["turn"] == "Thora":
-                return
-            api.encounter_advance(encounter_id)
-        raise AssertionError("Thora never got a turn")
-
     def test_a_created_map_appears_in_state(self) -> None:
         state = api.encounter_state(self.start())
         assert state["map"]["name"] == "corridor"
@@ -295,14 +296,14 @@ class TestMapTools:
 
     def test_interact_opens_the_door_over_the_wire(self) -> None:
         encounter_id = self.start()
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         api.encounter_act(encounter_id, kind="move", to_position=[0, 5])
         acted = api.encounter_act(encounter_id, kind="interact", feature="door")
         assert acted["state"]["map"]["features"]["door"]["open"] is True
 
     def test_a_wall_refuses_the_move_with_the_reason(self) -> None:
         encounter_id = self.start()
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         with pytest.raises(api.ToolError, match="no route"):
             api.encounter_act(encounter_id, kind="move", to_position=[10, 0])
 

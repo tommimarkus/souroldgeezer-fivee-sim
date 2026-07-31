@@ -32,11 +32,21 @@ from fivee_sim.content import (
     load_packs,
     validate,
 )
-from fivee_sim.data import make_creature
+from fivee_sim.data import make_creature, monster_records
 from fivee_sim.kernel.actions import compute_attack_advantage
+from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage
+from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.mcp_server import server as api
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
+
+from .conftest import advance_to
+
+# The bundled slice's own size, read from the data rather than written down. Both
+# are what ``docs/COVERAGE.md`` reports; deriving them means adding a monster or a
+# condition updates the expectation instead of breaking an unrelated tool test.
+BUNDLED_CREATURES = len(monster_records())
+BUNDLED_CONDITIONS = len(Condition)
 
 CAMPAIGN: dict[str, Any] = {
     "pack": "crimson-vale",
@@ -108,6 +118,16 @@ def write_pack(directory: Path, name: str, payload: dict[str, Any]) -> Path:
 
 def problems(diagnostics: list[Any], severity: Severity = Severity.ERROR) -> list[str]:
     return [d.problem for d in diagnostics if d.severity is severity]
+
+
+def fields(diagnostics: list[Any], severity: Severity = Severity.ERROR) -> list[str]:
+    """The record keys the diagnostics blame.
+
+    ``problem`` carries only the complaint ("must be text, got int"); the key it is
+    about lives in ``Diagnostic.field``. A test that wants to prove the *right* key
+    was caught has to look here.
+    """
+    return [d.field for d in diagnostics if d.severity is severity]
 
 
 @pytest.fixture
@@ -476,15 +496,24 @@ class TestDiagnostics:
         unvalidated breaks that: it passes ``content_validate`` and then raises a bare
         ``ValueError`` part-way into building an encounter. Parametrised over the
         allowed set so adding a key without validating it fails here.
+
+        The diagnostic has to *name* the key. Asserting only that something failed
+        would pass on a validator that rejected the record for an unrelated reason —
+        and would still pass if the key under test were silently ignored while some
+        other field complained.
         """
         record: dict[str, Any] = {
             "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test",
         }
         record[key] = wrong
-        found = self.check(tmp_path, {
+        path = write_pack(tmp_path, "bad.json", {
             "pack": "x", "provenance": "test", "creatures": [record],
         })
-        assert found, f"{key}={wrong!r} passed validation unchecked"
+        blamed = fields(validate([path], include_environment=False))
+        assert key in blamed, (
+            f"{key}={wrong!r} passed validation unchecked; "
+            f"diagnostics blamed {blamed or 'nothing'}"
+        )
 
     def test_a_creature_naming_an_undefined_spell_or_item_warns(
         self, tmp_path: Path
@@ -824,10 +853,7 @@ class TestCustomConditions:
             items=registry.items,
             condition_effects=registry.condition_effects,
         )
-        for _ in range(4):
-            if encounter.current_name == "B":
-                break
-            encounter.advance(rng)
+        advance_to(encounter, "B", rng)
         events = encounter.act(
             Action(kind=ActionKind.USE_ITEM, item="Cursed Needle", target="A"), rng
         )
@@ -894,10 +920,7 @@ class TestCustomConditions:
             items=registry.items,
             condition_effects=registry.condition_effects,
         )
-        for _ in range(4):
-            if encounter.current_name == "A":
-                break
-            encounter.advance(rng)
+        advance_to(encounter, "A", rng)
         encounter.act(
             Action(kind=ActionKind.CAST, spell="Vale Binding", target="B"), Random(3)
         )
@@ -988,10 +1011,7 @@ class TestCustomTerrain:
         )
         # cover: 1 — the thorns screen whoever stands behind them.
         assert encounter.cover_between("A", "B") is CoverGrade.HALF
-        for _ in range(4):
-            if encounter.current_name == "A":
-                break
-            encounter.advance(rng)
+        advance_to(encounter, "A", rng)
         # move_cost_multiplier: 2 — three squares, the thorny one at double.
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(15, 0)), rng)
         move = next(event for event in events if event.kind == "move")
@@ -1071,24 +1091,26 @@ class TestSpellShapeSchema:
         with pytest.raises(ContentError, match="a sphere needs a radius"):
             load_packs([path], include_environment=False)
 
-    def test_each_shape_loads_with_its_measurement(self, tmp_path: Path) -> None:
-        from fivee_sim.kernel.spells import SpellShape
-
-        for record, checks in (
+    @pytest.mark.parametrize(
+        ("record", "checks"),
+        [
             ({"shape": "cone", "length": 15},
              {"shape": SpellShape.CONE, "length": 15}),
             ({"shape": "line", "length": 30, "width": 5},
              {"shape": SpellShape.LINE, "length": 30}),
             ({"shape": "cube", "size": 10},
              {"shape": SpellShape.CUBE, "size": 10}),
-        ):
-            path = self.spell_pack(tmp_path, record)
-            spell = load_packs(
-                [path], include_environment=False
-            ).spells["Test Spell"]
-            assert spell.is_area
-            for field_name, expected in checks.items():
-                assert getattr(spell, field_name) == expected
+        ],
+        ids=["cone-has-a-length", "line-has-a-length", "cube-has-a-size"],
+    )
+    def test_each_shape_loads_with_its_measurement(
+        self, tmp_path: Path, record: dict[str, Any], checks: dict[str, Any]
+    ) -> None:
+        path = self.spell_pack(tmp_path, record)
+        spell = load_packs([path], include_environment=False).spells["Test Spell"]
+        assert spell.is_area
+        for field_name, expected in checks.items():
+            assert getattr(spell, field_name) == expected
 
     def test_a_legacy_radius_without_a_shape_still_resolves_as_a_sphere(
         self, tmp_path: Path
@@ -1136,20 +1158,14 @@ class TestDeterminism:
 
 
 class TestContentTools:
-    @pytest.fixture(autouse=True)
-    def isolate(self) -> Any:
-        before = api._CONTENT
-        api._CONTENT = None
-        api._SESSIONS.clear()
-        yield
-        api._CONTENT = before
-        api._SESSIONS.clear()
-
     def test_status_reports_the_bundled_slice_by_default(self) -> None:
         status = api.content_status()
         assert status["builtin"] == "include"
-        assert status["counts"]["creatures"] == 6
-        assert status["counts"]["conditions"] == 14
+        # Derived, not transcribed: the tool's job is to report what is actually
+        # bundled, so the expectation is read off the same data rather than from a
+        # literal that a new monster or condition would quietly falsify.
+        assert status["counts"]["creatures"] == BUNDLED_CREATURES
+        assert status["counts"]["conditions"] == BUNDLED_CONDITIONS
 
     def test_validate_reports_problems_without_loading_them(self, tmp_path: Path) -> None:
         path = write_pack(tmp_path, "bad.json", {"pack": "x", "creatures": []})
@@ -1157,7 +1173,7 @@ class TestContentTools:
         assert result["ok"] is False
         assert result["errors"]
         # And nothing was adopted.
-        assert api.content_status()["counts"]["creatures"] == 6
+        assert api.content_status()["counts"]["creatures"] == BUNDLED_CREATURES
 
     def test_validate_passes_a_good_pack(self, pack: Path) -> None:
         result = api.content_validate([str(pack)])
@@ -1230,15 +1246,6 @@ class TestContentTools:
 
 
 class TestReconfigurationAndLiveFights:
-    @pytest.fixture(autouse=True)
-    def isolate(self) -> Any:
-        before = api._CONTENT
-        api._CONTENT = None
-        api._SESSIONS.clear()
-        yield
-        api._CONTENT = before
-        api._SESSIONS.clear()
-
     def test_a_fight_in_progress_keeps_the_content_it_started_with(
         self, pack: Path
     ) -> None:
@@ -1319,6 +1326,8 @@ class TestReconfigurationAndLiveFights:
             if api.encounter_state(encounter_id)["turn"] == "Thora":
                 break
             api.encounter_advance(encounter_id)
+        else:
+            raise AssertionError("Thora never got a turn")
         result = api.encounter_act(encounter_id, "use_item", item="Vale Draught")
         thora = next(
             c for c in result["state"]["combatants"] if c["name"] == "Thora"

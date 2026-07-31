@@ -29,7 +29,7 @@ from fivee_sim.model.encounter import (
     build_encounter,
 )
 
-from .test_encounter import advance_to, caster, fighter
+from .conftest import advance_to, caster, fighter
 
 SEED = 20260730
 FIXTURE = "synthetic test fixture, not SRD content"

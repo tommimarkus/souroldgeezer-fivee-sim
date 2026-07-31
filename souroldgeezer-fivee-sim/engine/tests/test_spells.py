@@ -17,7 +17,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellTarget, resolve_spell
 
-from .test_kernel import FixedRandom
+from .conftest import FixedRandom
 
 
 def _fireball() -> Spell:
@@ -42,7 +42,11 @@ class TestAreaSpells:
         assert resolution.damage_roll is not None
         base = resolution.damage_roll.total
         failed, saved = resolution.results
-        assert not failed.affected or failed.damage_dealt == base
+        # Stated as two facts rather than "not affected *or* full damage": that
+        # disjunction is satisfied by a target the spell stopped affecting at all,
+        # so a regression that dropped the failing target would have passed it.
+        assert failed.affected
+        assert failed.damage_dealt == base
         assert saved.damage_dealt == base // 2
 
     def test_a_target_that_saves_takes_nothing_when_the_spell_has_no_half_effect(self) -> None:
