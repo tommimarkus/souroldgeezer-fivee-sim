@@ -617,6 +617,17 @@ viewer is also served live at `/viewer` by the editor process, where it takes
 a dropped bundle file. JSON and HTML results both report the SHA-256 of the
 exact bytes written, and replacement is atomic.
 
+To inspect the format without first playing an encounter, generate the shipped
+v2 showcase from the engine directory:
+
+```bash
+uv run fivee-sim-replay-sample --output .fivee-sim/replays/showcase.html
+```
+
+The command writes one offline HTML file containing a two-storey fight, full
+state checkpoints, a Persuasion check, a playtest note, a refused action, and
+the integrity metadata the viewer verifies before playback.
+
 ## Universal VTT export
 
 `uvtt_export` writes a loaded map as a Universal VTT JSON file (`format:
