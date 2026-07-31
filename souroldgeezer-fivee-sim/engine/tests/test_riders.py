@@ -291,6 +291,35 @@ class TestSizeGatedRiders:
         bite_and_advance_to_target(encounter, rng, "Centipede", "Thora")
         assert "poisoned" in target.conditions
 
+    def test_the_gate_refuses_before_any_save_is_rolled(self) -> None:
+        """The gate must precede the save, and the evidence is the RNG stream.
+
+        A save the gate has already made moot must not be rolled: the draw would
+        consume the stream and move every later roll in the fight, so the same
+        seed would stop meaning the same fight. That is invisible to an
+        assertion about ``conditions`` — refusing after the save looks identical
+        from the target's side — so this compares two runs at one seed whose
+        riders differ *only* in carrying a save. They can agree on the next draw
+        only if neither rolled one.
+        """
+
+        def stream_after_a_refused_bite(save_dc: int | None) -> float:
+            attacker = creature(
+                "Wolf", team="monsters",
+                attacks=(
+                    bite(condition="prone", save_dc=save_dc, max_size=Size.MEDIUM),
+                ),
+            )
+            target = creature("Ogre", team="party", position=5, size=Size.LARGE)
+            encounter, rng = build_encounter([attacker, target], seed=3)
+            bite_and_advance_to_target(encounter, rng, "Wolf", "Ogre")
+            assert "prone" not in target.conditions, "the gate must refuse either way"
+            return rng.random()
+
+        assert stream_after_a_refused_bite(None) == stream_after_a_refused_bite(15), (
+            "the gated rider rolled a saving throw it should never have reached"
+        )
+
     def test_the_gate_holds_on_the_opportunity_attack_path(self) -> None:
         # The reaction reaches the rider through the same choke point; if it did
         # not, this is where a second, ungated copy would show itself.
