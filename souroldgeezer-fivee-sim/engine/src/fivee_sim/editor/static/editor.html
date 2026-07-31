@@ -98,6 +98,16 @@ header .spacer { flex: 1; }
 #legend-add input:nth-child(2) { flex: 1; min-width: 0; }
 #ground-row { display: flex; gap: 4px; align-items: center; }
 #ground-row input { width: 5em; }
+/* The key that earns the right to drop the per-square numbers: the wash is
+   only readable as a height if something says which wash means what. */
+#elev-legend { margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px; }
+.elev-band { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+/* A neutral ground the script lays the wash over as a background-image, so the
+   swatch composites the same translucent colour the canvas does. */
+.elev-swatch {
+  width: 22px; height: 11px; flex: none; border: 1px solid var(--edge);
+  background-color: var(--terrain-floor);
+}
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
 footer {
@@ -169,6 +179,7 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <button id="btn-resize">Resize&#8230;</button>
     <button id="btn-fit">Fit view</button>
     <button id="btn-heights">Heights</button>
+    <button id="btn-heights-values" title="show the feet in every square">ft</button>
     <h3>History</h3>
     <button id="btn-undo">Undo</button>
     <button id="btn-redo">Redo</button>
@@ -190,6 +201,7 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <label for="elevation-default">datum</label>
       <input id="elevation-default" type="number" value="0"> ft
     </div>
+    <div id="elev-legend" hidden></div>
     <h3>Cursor</h3>
     <div id="readout">&#8212;</div>
   </aside>
@@ -288,9 +300,38 @@ if (typeof FiveeRenderer === "undefined") {
   var drag = null;
   var hoverCell = null;
   var heightsOn = false;  /* the elevation overlay toggle */
+  var heightValuesOn = false;  /* its per-square feet, which are off by default */
   var activeLevel = 0; /* the storey being edited; 0 is the ground */
   var elevSquares = null; /* cache of the active plane's elevation: "x,y" -> feet */
-  var elevEntries = null; /* the same squares as [{x, y, feet}] for the overlay */
+  var elevBands = null; /* {step, lo, hi}: the band size and the span it covers */
+
+  /* What the engine charges for a step between two squares, which is what the
+     relief overlay draws instead of a number. Over CLIMB_FEET the face is
+     climbed; from SLOPE_FEET up to it the square is a slope, and so Difficult
+     Terrain. Both are the movement rules in docs/MAPS.md, not decoration, so
+     an edge on the canvas means the same thing the mover will be charged. */
+  var CLIMB_FEET = 5;
+  var SLOPE_FEET = 2;
+  /* Both kinds of step edge wait for a zoom that can carry them. A climb
+     stroke is a fraction of a square wide, so below CLIMB_EDGE_SCALE it would
+     be wider than the square it borders and the strokes would become the map;
+     zoomed out that far the wash and its hillshade already carry the shape,
+     which is all an overview is being asked for. Slope hairlines wait longer
+     still: generated relief is quantised to five feet, so a sixth of all
+     boundaries are exactly one slope apart — drawn at any zoom that fits a
+     whole region they would be the new clutter rather than a reading of it. */
+  var CLIMB_EDGE_SCALE = 8;
+  var SLOPE_EDGE_SCALE = 20;
+  /* Below this a square is a few pixels across, and walking the ground one
+     square at a time stops paying for itself: a full-size map fitted to the
+     canvas is a hundred and fifty thousand of them, which costs a tenth of a
+     second a frame and makes panning stutter. So the wash is sampled on a
+     coarser lattice and drawn as blocks instead. The shape survives, because
+     at that zoom it is being averaged down to the same pixels either way, and
+     nothing else is affected: every step edge and every label needs a closer
+     zoom than this to be drawn at all. */
+  var DETAIL_SCALE = 6;
+  var VALUE_LABEL_SCALE = 16;  /* below this the feet will not fit a square */
 
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
@@ -466,6 +507,7 @@ if (typeof FiveeRenderer === "undefined") {
     rebuildElevationCache();
     heightsOn = !!payload.elevation;
     byId("btn-heights").classList.toggle("active", heightsOn);
+    renderElevationLegend();  /* the cache rebuilt before heightsOn was known */
     byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
     var box = canvas.getBoundingClientRect();
@@ -791,17 +833,28 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- ground height ---------------------------------------------------- */
-  /* plane().elevation is mirrored into two caches: elevSquares for lookups and
-     elevEntries for the overlay walk. Every write goes through
+  /* plane().elevation is mirrored into elevSquares for lookups, and summarised
+     into elevBands for the relief overlay's shading. Every write goes through
      writeElevation, which stores the server's canonical shape and rebuilds
-     both, so the caches can never drift from the document. */
+     both, so neither can drift from the document. */
   function elevationDefault() {
     var feet = doc && plane().elevation ? plane().elevation.default : 0;
     return Number.isInteger(feet) ? feet : 0;
   }
+  /* About six bands over the plane's own span, snapped to a step a reader can
+     hold in their head, so a ten-foot dungeon pit and a sixty-foot overland
+     range both resolve into legible steps. Floored at the generator's
+     five-foot quantisation: a finer band would only ever split ground the
+     document says is level. */
+  function reliefBandStep(span) {
+    var steps = [5, 10, 25, 50, 100, 250, 500, 1000];
+    for (var i = 0; i < steps.length; i++) {
+      if (span / steps[i] <= 6) { return steps[i]; }
+    }
+    return steps[steps.length - 1];
+  }
   function rebuildElevationCache() {
     elevSquares = {};
-    elevEntries = [];
     /* A hand-opened file is trusted like the rest of the document: a shape
        the server would refuse must not crash the load, so entries that are
        not [x, y, feet] whole numbers are ignored here and the Validate and
@@ -815,11 +868,19 @@ if (typeof FiveeRenderer === "undefined") {
       /* Last one wins, tolerating a hand-edited file that repeats a square. */
       elevSquares[square[0] + "," + square[1]] = square[2];
     });
+    /* The datum is always inside the span: every square the sparse list does
+       not name sits there, so a map with nothing but raised ground still has
+       its unraised ground to band against. */
+    var datum = elevationDefault();
+    var lo = 0;
+    var hi = 0;
     Object.keys(elevSquares).forEach(function (key) {
-      var at = key.split(",");
-      elevEntries.push({ x: Number(at[0]), y: Number(at[1]),
-        feet: elevSquares[key] });
+      var delta = elevSquares[key] - datum;
+      if (delta < lo) { lo = delta; }
+      if (delta > hi) { hi = delta; }
     });
+    elevBands = { step: reliefBandStep(hi - lo), lo: lo, hi: hi };
+    renderElevationLegend();
   }
   function heightAt(cell) {
     var feet = elevSquares ? elevSquares[cell[0] + "," + cell[1]] : undefined;
@@ -894,6 +955,209 @@ if (typeof FiveeRenderer === "undefined") {
     redraw();
   });
 
+  /* --- relief overlay --------------------------------------------------- */
+  /* Height is drawn, not written out. Three marks carry between them what a
+     number in every square used to carry badly: a banded wash with a hillshade
+     for the shape of the ground, strokes on the boundaries the movement rules
+     charge for, and a key in the panel to read the wash against. The feet
+     themselves stay available on the "ft" toggle and on the Cursor readout,
+     which already answers "how high is this one" for the square under the
+     pointer — which is the only square anyone was reading a number off.
+
+     Bands are washes of light and dark rather than of hue. Terrain colour
+     survives underneath, an authored content-pack palette is not fought, and
+     nothing competes with the gold hover mark. High ground darkens toward
+     sepia on the light theme, the way a printed relief map does, and lightens
+     on the dark one; water cools in both. */
+  var RELIEF_ABOVE = { light: [74, 58, 34], dark: [240, 226, 196] };
+  var RELIEF_BELOW = { light: [30, 74, 99], dark: [74, 127, 160] };
+  var RELIEF_TONES = 8;   /* band-intensity steps between the datum and the extreme */
+  var RELIEF_SHADES = 3;  /* hillshade steps either side of flat */
+  var reliefWashCache = {};
+
+  /* The wash for one square, as a css colour carrying its own alpha. Keyed on
+     the quantised inputs and memoised, because this is called once per visible
+     square: a full-size map zoomed out would otherwise build a quarter of a
+     million strings a frame. */
+  function reliefWash(above, tone, shade, dark) {
+    var key = (above ? "a" : "b") + tone + ":" + shade + (dark ? "d" : "l");
+    var hit = reliefWashCache[key];
+    if (hit) { return hit; }
+    var base = above ? RELIEF_ABOVE : RELIEF_BELOW;
+    var rgb = dark ? base.dark : base.light;
+    /* The hillshade tilts the band's colour toward white on a lit face and
+       toward black on a shaded one, and lends it a little more presence, so
+       relief still reads where a whole slope sits inside one band. */
+    var lit = shade > 0 ? 255 : 0;
+    var k = Math.abs(shade) / RELIEF_SHADES * 0.55;
+    var alpha = 0.05 + (tone / RELIEF_TONES) * 0.28
+      + Math.abs(shade) / RELIEF_SHADES * 0.10;
+    var css = "rgba(" + Math.round(rgb[0] * (1 - k) + lit * k)
+      + "," + Math.round(rgb[1] * (1 - k) + lit * k)
+      + "," + Math.round(rgb[2] * (1 - k) + lit * k)
+      + "," + alpha.toFixed(3) + ")";
+    reliefWashCache[key] = css;
+    return css;
+  }
+
+  /* How many bands the taller side of the span reaches, which is what a band
+     index is scaled against so the extreme always washes at full strength. */
+  function reliefReach() {
+    var step = elevBands.step;
+    return Math.max(1, Math.abs(Math.round(elevBands.lo / step)),
+      Math.abs(Math.round(elevBands.hi / step)));
+  }
+
+  function buildReliefOverlay(marks, edges, labels) {
+    var dark = R.isDark();
+    var datum = elevationDefault();
+    var step = elevBands.step;
+    var reach = reliefReach();
+    var bounds = R.visibleBounds(renderable(), view);
+    var showClimbs = view.scale >= CLIMB_EDGE_SCALE;
+    var showSlopes = view.scale >= SLOPE_EDGE_SCALE;
+    var showValues = heightValuesOn && view.scale >= VALUE_LABEL_SCALE;
+    var climbColor = dark ? "rgba(247,244,236,0.85)" : "rgba(26,22,16,0.85)";
+    var slopeColor = dark ? "rgba(247,244,236,0.30)" : "rgba(26,22,16,0.32)";
+    var climbWidth = Math.max(2, view.scale * 0.13);
+    /* Local, and by coordinate rather than by cell: heightAt allocates a pair
+       and re-reads the datum off the document on every call, and a full-size
+       map fitted to the canvas puts a hundred thousand squares through here. */
+    function feetAt(x, y) {
+      var feet = elevSquares[x + "," + y];
+      return feet === undefined ? datum : feet;
+    }
+    function stepEdge(x, y, side, drop) {
+      var rise = Math.abs(drop);
+      if (rise > CLIMB_FEET) {
+        if (showClimbs) {
+          edges.push({ at: [x, y], side: side, color: climbColor, width: climbWidth });
+        }
+      } else if (rise >= SLOPE_FEET && showSlopes) {
+        edges.push({ at: [x, y], side: side, color: slopeColor, width: 1 });
+      }
+    }
+    /* Both neighbours a square is compared against are squares this walk has
+       already looked up — the one to the west was the previous step of this
+       row, the one to the north is the row before. Carrying them costs a
+       number and an array of them, and takes the three keyed lookups a square
+       would otherwise need down to one. A null stands for ground off the map,
+       which the loop reads as "no step here": the map edge is not a cliff, so
+       nothing is shaded or stroked against ground the document never
+       described. Both edges of the window are seeded from the map rather than
+       from nothing, so panning does not invent a cliff at the viewport. */
+    /* One square per lattice point, drawn as a block that size. Edges compare
+       squares that touch, so they are only ever built on the fine lattice —
+       which costs nothing to guarantee, since both step thresholds already sit
+       above the zoom where the lattice coarsens. */
+    var lattice = Math.max(1, Math.ceil(DETAIL_SCALE / view.scale));
+    var showEdges = lattice === 1 && (showClimbs || showSlopes);
+    var span = Math.ceil((bounds.x1 - bounds.x0) / lattice);
+    var above = new Array(span);
+    var current = new Array(span);
+    for (var seed = 0; seed < span; seed++) {
+      above[seed] = bounds.y0 - lattice >= 0
+        ? feetAt(bounds.x0 + seed * lattice, bounds.y0 - lattice) : null;
+    }
+    /* Washes are emitted as horizontal runs rather than one per square. The
+       colours are memoised, so two squares that look alike are the identical
+       string and the comparison is a pointer test — and banded relief is made
+       of runs, since a band's interior is one colour until the ground steps.
+       On a full-size map fitted to the canvas this is the difference between
+       a hundred thousand marks and a few thousand, on both sides of the seam:
+       the renderer fills a rectangle per run rather than per cell. */
+    var runWash = null;
+    var runStart = bounds.x0;
+    for (var y = bounds.y0; y < bounds.y1; y += lattice) {
+      var west = bounds.x0 - lattice >= 0 ? feetAt(bounds.x0 - lattice, y) : null;
+      var depth = Math.min(lattice, bounds.y1 - y);
+      runWash = null;
+      runStart = bounds.x0;
+      for (var x = bounds.x0; x < bounds.x1; x += lattice) {
+        var column = (x - bounds.x0) / lattice;
+        var feet = feetAt(x, y);
+        current[column] = feet;
+        var westFeet = west === null ? feet : west;
+        var northFeet = above[column] === null ? feet : above[column];
+        west = feet;
+        var band = Math.round((feet - datum) / step);
+        /* Light from the north-west: a face is lit when the ground falls away
+           toward the light, which is when this square stands above the two
+           neighbours on that side. On a coarsened view the drop spans a whole
+           lattice step, so it is divided by one to stay a gradient rather than
+           read as a cliff that many times steeper. */
+        var shade = Math.max(-RELIEF_SHADES, Math.min(RELIEF_SHADES,
+          Math.round(((feet - westFeet) + (feet - northFeet))
+            / (step * lattice) * 1.5)));
+        var wash = band === 0 && shade === 0 ? null
+          : reliefWash(feet >= datum,
+            Math.min(RELIEF_TONES, Math.round(Math.abs(band) / reach * RELIEF_TONES)),
+            shade, dark);
+        if (wash !== runWash) {
+          if (runWash !== null) {
+            marks.push({ at: [runStart, y], w: x - runStart, h: depth,
+              color: runWash, alpha: 1 });
+          }
+          runWash = wash;
+          runStart = x;
+        }
+        if (showEdges) {
+          stepEdge(x, y, "w", feet - westFeet);
+          stepEdge(x, y, "n", feet - northFeet);
+        }
+        /* Only ground that departs from the datum is numbered, the way the
+           document itself only records that ground. Numbering the datum too
+           fills every unpainted square with the same figure, which is the
+           noise this overlay was rewritten to get rid of — and the datum is
+           already stated once, in the control beside the legend. */
+        if (showValues && feet !== datum) {
+          labels.push({ at: [x, y], text: String(feet) });
+        }
+      }
+      if (runWash !== null) {
+        marks.push({ at: [runStart, y], w: bounds.x1 - runStart, h: depth,
+          color: runWash, alpha: 1 });
+      }
+      var carried = above;
+      above = current;
+      current = carried;
+    }
+  }
+
+  function renderElevationLegend() {
+    var host = byId("elev-legend");
+    host.textContent = "";
+    if (!heightsOn || !elevBands || (elevBands.lo === 0 && elevBands.hi === 0)) {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    var dark = R.isDark();
+    var datum = elevationDefault();
+    var step = elevBands.step;
+    var reach = reliefReach();
+    var top = Math.round(elevBands.hi / step);
+    var bottom = Math.round(elevBands.lo / step);
+    for (var band = top; band >= bottom; band--) {
+      var row = document.createElement("div");
+      row.className = "elev-band";
+      var swatch = document.createElement("span");
+      swatch.className = "elev-swatch";
+      var wash = reliefWash(band >= 0,
+        Math.min(RELIEF_TONES, Math.round(Math.abs(band) / reach * RELIEF_TONES)),
+        0, dark);
+      /* As a background-image over the swatch's own colour, so the panel
+         composites the translucent wash exactly as the canvas does. */
+      swatch.style.backgroundImage = "linear-gradient(" + wash + "," + wash + ")";
+      var text = document.createElement("span");
+      text.textContent = (datum + Math.round((band - 0.5) * step)) + " to "
+        + (datum + Math.round((band + 0.5) * step)) + " ft";
+      row.appendChild(swatch);
+      row.appendChild(text);
+      host.appendChild(row);
+    }
+  }
+
   /* --- canvas ----------------------------------------------------------- */
   var framePending = false;
   function redraw() {
@@ -909,28 +1173,12 @@ if (typeof FiveeRenderer === "undefined") {
       view.width = box.width;
       view.height = box.height;
       var marks = [];
+      var edges = [];
       var labels = [];
-      if (heightsOn && elevEntries && elevEntries.length) {
-        /* Elevation tints go first so preview and hover washes sit on top.
-           Hues stay clear of the gold hover mark: earth above the datum,
-           water below. */
-        var dark = R.isDark();
-        var datum = elevationDefault();
-        var bounds = R.visibleBounds(renderable(), view);
-        elevEntries.forEach(function (entry) {
-          if (entry.x < bounds.x0 || entry.x >= bounds.x1
-            || entry.y < bounds.y0 || entry.y >= bounds.y1) { return; }
-          var delta = entry.feet - datum;
-          marks.push({
-            at: [entry.x, entry.y],
-            color: delta > 0 ? (dark ? "#c9a86a" : "#7a5c2e")
-              : (dark ? "#6fa8c9" : "#2e5f7a"),
-            alpha: Math.min(0.32, 0.06 + Math.abs(delta) * 0.004)
-          });
-          if (view.scale >= 16) {
-            labels.push({ at: [entry.x, entry.y], text: String(entry.feet) });
-          }
-        });
+      /* The relief goes down first so the preview and hover washes sit on top
+         of it rather than under. */
+      if (heightsOn && elevSquares && elevBands) {
+        buildReliefOverlay(marks, edges, labels);
       }
       if (drag && drag.preview) {
         drag.preview.forEach(function (cell) { marks.push({ at: cell }); });
@@ -938,7 +1186,8 @@ if (typeof FiveeRenderer === "undefined") {
       if (hoverCell && inBounds(hoverCell) && tool !== "pan") {
         marks.push({ at: hoverCell, alpha: 0.2 });
       }
-      R.render(ctx, renderable(), view, { marks: marks, labels: labels });
+      R.render(ctx, renderable(), view,
+        { marks: marks, edges: edges, labels: labels });
     });
   }
 
@@ -1086,6 +1335,7 @@ if (typeof FiveeRenderer === "undefined") {
         /* Painting height with the overlay off would be painting blind. */
         heightsOn = true;
         byId("btn-heights").classList.add("active");
+        renderElevationLegend();
         var feet = parseInt(byId("height-feet").value, 10);
         if (Number.isInteger(feet)) {
           setStatus("painting " + feet + " ft; paint the datum value ("
@@ -1107,6 +1357,21 @@ if (typeof FiveeRenderer === "undefined") {
   byId("btn-heights").addEventListener("click", function () {
     heightsOn = !heightsOn;
     byId("btn-heights").classList.toggle("active", heightsOn);
+    renderElevationLegend();
+    redraw();
+  });
+  /* Off by default: the numbers are for hand-tuning a plateau, and the Cursor
+     readout carries the exact feet for the square being pointed at either way.
+     Turning them on turns the overlay on, since numbering an unshaded map is
+     what this replaced. */
+  byId("btn-heights-values").addEventListener("click", function () {
+    heightValuesOn = !heightValuesOn;
+    byId("btn-heights-values").classList.toggle("active", heightValuesOn);
+    if (heightValuesOn && !heightsOn) {
+      heightsOn = true;
+      byId("btn-heights").classList.add("active");
+      renderElevationLegend();
+    }
     redraw();
   });
   document.addEventListener("keydown", function (event) {

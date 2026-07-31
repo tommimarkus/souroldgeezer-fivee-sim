@@ -135,6 +135,34 @@ class TestEditorGroundControls:
         assert "visibleBounds" in read("renderer.js")
         assert "R.visibleBounds(" in read("editor.html")
 
+    def test_the_renderer_knows_the_edges_overlay_channel(self) -> None:
+        # The cell-boundary stroke channel the relief overlay draws its
+        # climb and slope steps through. Anchored to the overlay access for
+        # the same reason as the labels channel above.
+        assert "overlays.edges" in read("renderer.js")
+
+    def test_the_edge_channel_stays_generic(self) -> None:
+        # The channel is a stroke on a named side of a cell, nothing more:
+        # the renderer must not learn what elevation is, or the viewer's
+        # synthesized mapless plane — which has no height layer at all —
+        # would stop being a document the renderer can draw.
+        assert "elevation" not in read("renderer.js")
+
+    def test_the_editor_carries_the_relief_legend_and_values_toggle(self) -> None:
+        # Exactly once apiece: byId() answers with the first of a duplicated
+        # id, so a copy-paste double would break the wiring silently.
+        assert read("editor.html").count('id="elev-legend"') == 1
+        assert read("editor.html").count('id="btn-heights-values"') == 1
+
+    def test_the_relief_overlay_draws_the_movement_thresholds(self) -> None:
+        # The step edges are keyed to what the engine charges for the step,
+        # not to arbitrary prettiness: over 5 feet is climbed, 2 feet and up
+        # is a slope and so Difficult Terrain. A refactor that loses these
+        # bounds turns a rules-bearing overlay back into decoration.
+        source = read("editor.html")
+        assert "CLIMB_FEET = 5" in source
+        assert "SLOPE_FEET = 2" in source
+
 
 class TestTerrainColors:
     # Presence and precedence as text, never a drawn pixel — the boundary in

@@ -256,6 +256,10 @@ var FiveeRenderer = (function () {
   }
 
   function drawStairs(ctx, px, py, size, up, dark) {
+    /* Saved because the round cap and join are this glyph's own: left on the
+       shared context they bleed into whatever strokes next, and the overlay
+       edges that follow are per-cell segments that would bead at every joint. */
+    ctx.save();
     ctx.strokeStyle = dark ? "#d8d4cc" : "#3a362e";
     ctx.lineWidth = Math.max(1.5, size * 0.09);
     ctx.lineCap = "round";
@@ -271,6 +275,7 @@ var FiveeRenderer = (function () {
       ctx.lineTo(base, mid + h);
       ctx.stroke();
     }
+    ctx.restore();
   }
 
   function drawSpawn(ctx, px, py, size, dark) {
@@ -337,7 +342,12 @@ var FiveeRenderer = (function () {
        no palette and every kind falls through to a computed color.
      overlays — all optional: {
        featureStates: {featureId: bool},  // live door state over the defaults
-       marks: [{at: [x, y], color, alpha}],  // translucent cell washes
+       marks: [{at: [x, y], w, h, color, alpha}],  // translucent cell washes;
+         // w/h are a span in cells, default 1, so a caller with a long run of
+         // one colour can hand down a rectangle instead of a mark per cell
+       edges: [{at: [x, y], side, color, width}],  // stroke on a cell boundary,
+         // side "n" (top) or "w" (left) — the two that name every interior
+         // boundary of a grid exactly once
        labels: [{at: [x, y], text, color}],  // small centered per-cell text
        tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable}]
      } */
@@ -398,13 +408,44 @@ var FiveeRenderer = (function () {
       }
     }
 
+    /* One save for the whole pass, not one per mark: the relief overlay hands
+       down a wash for every visible square, so a max-size map zoomed out puts
+       this loop into the hundreds of thousands of iterations. */
     var marks = overlays.marks || [];
-    for (var mi = 0; mi < marks.length; mi++) {
-      var mark = marks[mi];
+    if (marks.length) {
       ctx.save();
-      ctx.globalAlpha = typeof mark.alpha === "number" ? mark.alpha : 0.35;
-      ctx.fillStyle = mark.color || (dark ? "#e8c76a" : "#b98a1e");
-      ctx.fillRect((mark.at[0] - view.x) * s, (mark.at[1] - view.y) * s, s, s);
+      for (var mi = 0; mi < marks.length; mi++) {
+        var mark = marks[mi];
+        ctx.globalAlpha = typeof mark.alpha === "number" ? mark.alpha : 0.35;
+        ctx.fillStyle = mark.color || (dark ? "#e8c76a" : "#b98a1e");
+        ctx.fillRect((mark.at[0] - view.x) * s, (mark.at[1] - view.y) * s,
+          (mark.w || 1) * s + 0.5, (mark.h || 1) * s + 0.5);
+      }
+      ctx.restore();
+    }
+
+    var edges = overlays.edges || [];
+    if (edges.length) {
+      ctx.save();
+      /* Stated rather than inherited: these are per-cell segments that meet
+         end to end, and a round cap left behind by an earlier glyph would
+         bead every joint along what should read as one line. */
+      ctx.lineCap = "butt";
+      for (var ei = 0; ei < edges.length; ei++) {
+        var edge = edges[ei];
+        var ex = edge.at[0];
+        var ey = edge.at[1];
+        if (ex < x0 || ex > x1 || ey < y0 || ey > y1) { continue; }
+        var epx = (ex - view.x) * s;
+        var epy = (ey - view.y) * s;
+        ctx.strokeStyle = edge.color || (dark ? "#e3e0d8" : "#2b2925");
+        ctx.lineWidth = edge.width || 1;
+        ctx.beginPath();
+        ctx.moveTo(epx, epy);
+        if (edge.side === "w") { ctx.lineTo(epx, epy + s); }
+        else { ctx.lineTo(epx + s, epy); }
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
