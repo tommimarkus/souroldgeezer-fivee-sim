@@ -15,6 +15,7 @@ halving an expectation instead of the roll, moves these numbers well outside the
 from __future__ import annotations
 
 import statistics
+from inspect import signature
 from random import Random
 
 import pytest
@@ -38,6 +39,37 @@ SAMPLES = 40_000
 
 def empirical(values: list[int]) -> float:
     return statistics.fmean(values)
+
+
+class TestAttackSignatureParity:
+    """The closed form and the roller must accept the same attack.
+
+    Every other test here samples: it fixes a set of arguments and checks the
+    two agree on *those*. That cannot see a parameter one side grew and the
+    other did not — the sampling tests keep passing, because they never pass
+    the new argument to either. A rider added to :func:`resolve_attack` alone
+    would then be rolled in play and silently valued at zero by the policy
+    ranking its options, which is precisely the straight-faced wrongness this
+    module's docstring exists to prevent.
+    """
+
+    def test_the_closed_form_takes_every_argument_the_roller_does(self) -> None:
+        rolled = {
+            name: parameter
+            for name, parameter in signature(resolve_attack).parameters.items()
+            # The roller draws; the closed form integrates. That is the one
+            # difference between them, and the only one allowed.
+            if name != "rng"
+        }
+        closed = dict(signature(attack_damage_expectation).parameters)
+        assert set(closed) == set(rolled)
+
+    def test_the_two_agree_on_what_each_argument_defaults_to(self) -> None:
+        rolled = signature(resolve_attack).parameters
+        closed = signature(attack_damage_expectation).parameters
+        assert {name: rolled[name].default for name in closed} == {
+            name: parameter.default for name, parameter in closed.items()
+        }
 
 
 class TestExpectedDamage:

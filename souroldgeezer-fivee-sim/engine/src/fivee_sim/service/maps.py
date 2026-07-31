@@ -34,7 +34,7 @@ from pathlib import Path
 from random import Random
 from typing import Any, NoReturn
 
-from ..content import PROJECT_ENV
+from ..content import PROJECT_ENV, contained_json_files
 from ..kernel.grid import (
     DiagonalRule,
     Square,
@@ -64,6 +64,7 @@ from ..maps import (
     MapError,
     as_payload,
     document_from,
+    feature_payload,
     parse_document,
     serialize,
     to_grid,
@@ -699,19 +700,6 @@ def _feature_glyph(kind: str, state: str | None) -> str | None:
     return {"stairs_up": "<", "stairs_down": ">", "spawn": "@"}.get(kind)
 
 
-def _feature_entry(feature: Any) -> dict[str, Any]:
-    entry: dict[str, Any] = {
-        "id": feature.id, "kind": feature.kind, "at": [feature.at[0], feature.at[1]],
-    }
-    if feature.orientation is not None:
-        entry["orientation"] = feature.orientation
-    if feature.state is not None:
-        entry["state"] = feature.state
-    if feature.team is not None:
-        entry["team"] = feature.team
-    return entry
-
-
 def render_ascii(
     document: MapDocument,
     *,
@@ -807,7 +795,7 @@ def render_ascii(
         fx, fy = feature.at
         if not (x <= fx < x + width and y <= fy < y + height):
             continue
-        in_view.append(_feature_entry(feature))
+        in_view.append(feature_payload(feature))
         if not show_features:
             continue
         glyph_over = _feature_glyph(feature.kind, feature.state)
@@ -1048,18 +1036,7 @@ def _discover_files(roots: Sequence[str | Path]) -> list[Path]:
             if root.suffix.lower() == ".json":
                 found.append(root)
             continue
-        for directory, subdirectories, filenames in os.walk(root, followlinks=False):
-            subdirectories.sort()
-            for filename in sorted(filenames):
-                if not filename.lower().endswith(".json"):
-                    continue
-                candidate = Path(directory) / filename
-                try:
-                    resolved = candidate.resolve()
-                except OSError:
-                    continue
-                if resolved.is_relative_to(root):
-                    found.append(resolved)
+        found.extend(contained_json_files(root))
     return found
 
 

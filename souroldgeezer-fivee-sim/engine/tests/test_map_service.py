@@ -658,3 +658,25 @@ class TestFiles:
         assert first["generator"] == "caves"
         assert first["edited"] is False
         assert first["path"].endswith("a-caves.json")
+
+    def test_a_symlink_out_of_a_listed_directory_is_not_catalogued(
+        self, tmp_path: Path
+    ) -> None:
+        # The listing applies the content loader's containment rule, but unlike
+        # the loader it reports nothing — a refused file is simply absent. That
+        # silence is deliberate (a listing shows what is usable) and it is also
+        # why the rule needs pinning here: with no diagnostic to assert on,
+        # absence from the catalogue is the only evidence the check still runs.
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        service.save_file(document(), outside / "secret.json")
+        maps = tmp_path / "maps"
+        maps.mkdir()
+        try:
+            (maps / "escape.json").symlink_to(outside / "secret.json")
+        except OSError:  # pragma: no cover - platform without symlinks
+            pytest.skip("symlinks unavailable")
+        service.save_file(document(), maps / "own.json")
+
+        listed = service.list_maps([maps])
+        assert [Path(entry["path"]).name for entry in listed] == ["own.json"]
