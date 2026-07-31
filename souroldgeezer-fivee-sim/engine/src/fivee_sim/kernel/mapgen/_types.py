@@ -33,9 +33,17 @@ class GeneratedMap:
     ``cells`` is row-major — ``cells[y][x]`` — matching the tile rows of a map
     document (top row first, x rightward). Every kind emitted by a bundled
     generator exists in :data:`fivee_sim.kernel.grid.TERRAIN`, pinned by test.
+
+    ``elevation`` is ground height in feet, row-major on the same lattice: one
+    value per cell, dense, because a generator knows the height of every square
+    it made. Empty means the generator emits no relief at all, which is not the
+    same as a map that is deliberately flat at zero — the encoder turns the
+    dense grid into the document's datum-plus-sparse form, and has nothing to
+    write when there is no grid.
     """
 
     width: int
     height: int
     cells: tuple[tuple[str, ...], ...]
     features: tuple[GeneratedFeature, ...]
+    elevation: tuple[tuple[int, ...], ...] = ()

@@ -438,6 +438,250 @@ class TestToGrid:
         assert grid.features["door-1"].initially_open is True
 
 
+def storey() -> dict[str, Any]:
+    """One upper floor over the same footprint as :func:`document`."""
+    return {
+        # Mostly open, where the ground below is mostly wall — so the two planes
+        # disagree about their majority terrain and the tests can tell.
+        "index": 1,
+        "name": "gallery",
+        "tiles": [
+            "#.....",
+            "......",
+            "......",
+            "......",
+            "......",
+        ],
+        "elevation": {"default": 10, "squares": []},
+        "features": [{"id": "stair-head", "kind": "stairs_down", "at": [3, 3],
+                      "to_level": 0}],
+    }
+
+
+def with_storey() -> dict[str, Any]:
+    """The base document, plus a gallery reached by stairs from the ground."""
+    payload = document()
+    payload["features"].append(
+        {"id": "stair-foot", "kind": "stairs_up", "at": [3, 3], "to_level": 1}
+    )
+    payload["levels"] = [storey()]
+    return payload
+
+
+class TestLevels:
+    def test_a_document_without_levels_is_a_single_ground_plane(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert set(doc.levels) == {0}
+        assert doc.ground.index == 0
+        assert doc.ground.tiles == doc.tiles
+
+    def test_the_ground_accessors_still_read_the_ground_plane(self) -> None:
+        # 50-odd call sites read document.tiles/.features/.elevation and mean
+        # the ground; adding storeys must not quietly repoint them.
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert doc.tiles == doc.levels[0].tiles
+        assert doc.features == doc.levels[0].features
+        assert doc.elevation == doc.levels[0].elevation
+        assert doc.tiles != doc.levels[1].tiles
+
+    def test_a_storey_parses_over_the_same_footprint(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert set(doc.levels) == {0, 1}
+        upper = doc.levels[1]
+        assert upper.name == "gallery"
+        assert upper.tiles[2] == "......"  # the ground's difficult square is not up here
+        assert upper.elevation.at((1, 1)) == 10
+
+    def test_a_storeys_datum_is_its_floor_height(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        assert doc.levels[0].elevation.at((1, 1)) == 0
+        assert doc.levels[1].elevation.at((1, 1)) == 10
+
+    def test_a_storey_may_be_a_basement(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["index"] = -1
+        payload["levels"][0]["elevation"] = {"default": -10, "squares": []}
+        payload["features"][-1]["to_level"] = -1
+        payload["levels"][0]["features"][0]["to_level"] = 0
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert set(doc.levels) == {-1, 0}
+        assert doc.levels[-1].elevation.at((1, 1)) == -10
+
+    def test_the_default_storey_name_is_its_index(self) -> None:
+        payload = with_storey()
+        del payload["levels"][0]["name"]
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.levels[1].name == "level 1"
+
+    def test_two_levels_may_hold_a_door_at_the_same_square(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "door-2", "kind": "door", "at": [3, 4],
+             "orientation": "horizontal", "state": "closed"}
+        )
+        assert errors_of(payload) == []
+
+    def test_connectors_survive_the_round_trip(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        foot = next(f for f in doc.ground.features if f.id == "stair-foot")
+        assert (foot.kind, foot.at, foot.to_level) == ("stairs_up", (3, 3), 1)
+        head = next(f for f in doc.levels[1].features if f.id == "stair-head")
+        assert head.to_level == 0
+
+    def test_an_ordinary_feature_has_no_target_level(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert all(feature.to_level is None for feature in doc.features)
+
+
+class TestLevelDiagnostics:
+    def test_levels_must_be_a_list_of_objects(self) -> None:
+        payload = document()
+        payload["levels"] = {"index": 1}
+        assert any("must be a list" in problem for problem in errors_of(payload))
+
+    def test_index_zero_is_the_ground_and_cannot_be_redeclared(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["index"] = 0
+        assert any(
+            "0 is the ground plane" in problem for problem in errors_of(payload)
+        )
+
+    def test_two_levels_cannot_share_an_index(self) -> None:
+        payload = with_storey()
+        payload["levels"].append(storey())
+        assert any("already declared" in problem for problem in errors_of(payload))
+
+    def test_a_level_is_refused_without_an_index(self) -> None:
+        payload = with_storey()
+        del payload["levels"][0]["index"]
+        assert any("height order" in problem for problem in errors_of(payload))
+
+    def test_a_storey_must_match_the_grid(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["tiles"] = ["####", "####"]
+        problems_found = errors_of(payload)
+        assert any("rows" in problem for problem in problems_found)
+
+    def test_a_storey_glyph_must_be_in_the_legend(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["tiles"][1] = "#..?.#"
+        assert any("legend does not define" in problem for problem in errors_of(payload))
+
+    def test_a_storey_height_must_sit_on_the_grid(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["elevation"]["squares"] = [[9, 9, 15]]
+        assert any("outside the" in problem for problem in errors_of(payload))
+
+    def test_feature_ids_are_unique_across_every_level(self) -> None:
+        # The battle map keys features by name in one table, so two levels
+        # sharing an id would resolve to one feature, not two.
+        payload = with_storey()
+        payload["levels"][0]["features"][0]["id"] = "door-1"
+        assert any("ids must be unique" in problem for problem in errors_of(payload))
+
+    def test_a_connector_must_name_a_level_that_exists(self) -> None:
+        payload = with_storey()
+        payload["features"][-1]["to_level"] = 4
+        assert any("no level 4" in problem for problem in errors_of(payload))
+
+    def test_a_connector_cannot_lead_to_its_own_level(self) -> None:
+        payload = with_storey()
+        payload["features"][-1]["to_level"] = 0
+        assert any("its own level" in problem for problem in errors_of(payload))
+
+    def test_a_connector_target_must_be_an_integer(self) -> None:
+        payload = with_storey()
+        payload["features"][-1]["to_level"] = "up"
+        assert any("must name a level" in problem for problem in errors_of(payload))
+
+    def test_an_unknown_level_key_is_refused_with_the_valid_list(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["ceiling"] = 12
+        assert any(
+            "unknown key" in problem and "index, name, tiles" in problem
+            for problem in errors_of(payload)
+        )
+
+
+class TestLevelSerialize:
+    def test_a_floorless_document_writes_no_levels_key(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert "levels" not in json.loads(serialize(doc))
+
+    def test_the_ground_stays_in_the_top_level_keys(self) -> None:
+        written = json.loads(serialize(parse_document(with_storey(), source="t", terrain=TERRAIN)))
+        assert written["tiles"] == document()["tiles"]
+        assert [level["index"] for level in written["levels"]] == [1]
+
+    def test_storeys_round_trip_byte_stable(self) -> None:
+        doc = parse_document(with_storey(), source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+        assert again == doc
+
+    def test_storeys_are_written_in_index_order(self) -> None:
+        payload = with_storey()
+        basement = storey()
+        basement["index"] = -1
+        basement["features"] = []
+        payload["levels"].insert(0, basement)
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert [level["index"] for level in written["levels"]] == [-1, 1]
+
+
+class TestToGridLevels:
+    def test_a_floorless_map_bridges_to_one_plane(self) -> None:
+        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
+        assert set(grid.levels) == {0}
+        assert grid.ground is grid.levels[0]
+
+    def test_every_storey_becomes_its_own_plane(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert set(grid.levels) == {0, 1}
+        upper = grid.levels[1]
+        assert upper.default_terrain == "floor"  # 29 floor to 1 wall up here
+        assert upper.default_elevation == 10
+        assert (2, 2) not in upper.terrain  # the ground's difficult square is not up here
+
+    def test_each_plane_picks_its_own_majority_terrain(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.ground.default_terrain == "wall"
+        assert grid.levels[1].default_terrain == "floor"
+
+    def test_the_ground_accessors_still_read_the_ground_plane(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.default_terrain == grid.ground.default_terrain
+        assert grid.terrain == grid.ground.terrain
+        assert grid.elevation == grid.ground.elevation
+        assert grid.default_elevation == grid.ground.default_elevation
+
+    def test_features_merge_across_planes_under_one_name_table(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "hatch", "kind": "door", "at": [1, 1],
+             "orientation": "horizontal", "state": "closed"}
+        )
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert set(grid.features) == {"door-1", "hatch"}
+        assert set(grid.ground.features) == {"door-1"}
+        assert set(grid.levels[1].features) == {"hatch"}
+
+    def test_a_connector_reaches_the_plane_it_stands_on(self) -> None:
+        grid = to_grid(parse_document(with_storey(), source="test", terrain=TERRAIN))
+        assert grid.ground.connectors == {(3, 3): 1}
+        assert grid.levels[1].connectors == {(3, 3): 0}
+
+    def test_a_stairway_without_a_target_stays_decoration(self) -> None:
+        # Stairs have always been drawn and never walked; only `to_level` makes
+        # one a way between planes.
+        payload = document()
+        payload["features"].append({"id": "stair-1", "kind": "stairs_down", "at": [1, 3]})
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert grid.ground.connectors == {}
+        assert "stair-1" not in grid.features
+
+
 class TestHandEdited:
     def test_an_edited_document_still_validates_and_keeps_its_provenance(self) -> None:
         payload = document()

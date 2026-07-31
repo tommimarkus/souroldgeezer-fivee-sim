@@ -45,7 +45,7 @@ import zlib
 from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
-from ..map_document import MapDocument
+from ..map_document import GROUND_LEVEL, MapDocument, MapLevel
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
 
@@ -121,7 +121,7 @@ def _chunk(kind: bytes, data: bytes) -> bytes:
     )
 
 
-def _render_png(document: MapDocument, pixels_per_grid: int) -> bytes:
+def _render_png(document: MapDocument, plane: MapLevel, pixels_per_grid: int) -> bytes:
     """A flat-color truecolor PNG of the tiles, one cell per terrain fill.
 
     Grid lines: when a cell is at least ``_MIN_GRID_PPG`` pixels wide, the
@@ -134,7 +134,7 @@ def _render_png(document: MapDocument, pixels_per_grid: int) -> bytes:
     grid_row = grid_pixel * (width * pixels_per_grid)
 
     scanlines: list[bytes] = []
-    for row in document.tiles:
+    for row in plane.tiles:
         body = bytearray()
         for char in row:
             pixel = bytes(_rgb_of(document.legend[char]))
@@ -168,7 +168,9 @@ _Corner = tuple[int, int]
 _DIRECTIONS: tuple[tuple[int, int], ...] = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
-def _wall_edges(document: MapDocument, terrain: TerrainTable) -> set[frozenset[_Corner]]:
+def _wall_edges(
+    document: MapDocument, plane: MapLevel, terrain: TerrainTable
+) -> set[frozenset[_Corner]]:
     """Every interior cell-side where exactly one adjacent cell is opaque,
     as unit edges between integer corners.
 
@@ -180,7 +182,7 @@ def _wall_edges(document: MapDocument, terrain: TerrainTable) -> set[frozenset[_
     width, height = document.grid.width, document.grid.height
     opaque = [
         [terrain_effect_of(document.legend[char], terrain).opaque for char in row]
-        for row in document.tiles
+        for row in plane.tiles
     ]
     edges: set[frozenset[_Corner]] = set()
     for y in range(height):
@@ -250,9 +252,9 @@ def _point(x: float, y: float) -> dict[str, float]:
     return {"x": float(x), "y": float(y)}
 
 
-def _portals(document: MapDocument) -> list[dict[str, Any]]:
+def _portals(plane: MapLevel) -> list[dict[str, Any]]:
     portals: list[dict[str, Any]] = []
-    for feature in sorted(document.features, key=lambda feature: feature.id):
+    for feature in sorted(plane.features, key=lambda feature: feature.id):
         if feature.kind != "door":
             continue
         x, y = feature.at
@@ -278,6 +280,7 @@ def to_uvtt(
     terrain: TerrainTable,
     pixels_per_grid: int = 32,
     include_image: bool = True,
+    level: int = GROUND_LEVEL,
 ) -> dict[str, Any]:
     """The document as a Universal VTT payload, JSON-ready.
 
@@ -287,11 +290,19 @@ def to_uvtt(
     ``include_image`` is false — documented, because some importers require
     an image and an empty string is a deliberate choice, not an accident.
 
+    ``level`` names the storey to export. The format has one plane and no
+    notion of floors, so a map with storeys exports one of them per file rather
+    than flattening them into a picture that is true of neither.
+
     The image refuses to exceed :data:`MAX_IMAGE_SIDE` pixels on a side; the
     error says what ``pixels_per_grid`` would fit. The cap applies whether or
     not the image is rendered, because ``resolution.pixels_per_grid`` declares
     the raster geometry either way.
     """
+    if level not in document.levels:
+        declared = ", ".join(str(index) for index in sorted(document.levels))
+        raise ValueError(f"there is no level {level} on this map. Levels: {declared}")
+    plane = document.levels[level]
     width, height = document.grid.width, document.grid.height
     if pixels_per_grid < 1:
         raise ValueError(f"pixels_per_grid must be at least 1, got {pixels_per_grid}")
@@ -310,11 +321,13 @@ def to_uvtt(
 
     walls = [
         [_point(corner[0], corner[1]) for corner in polyline]
-        for polyline in _chain_edges(_wall_edges(document, terrain))
+        for polyline in _chain_edges(_wall_edges(document, plane, terrain))
     ]
     image = ""
     if include_image:
-        image = base64.b64encode(_render_png(document, pixels_per_grid)).decode("ascii")
+        image = base64.b64encode(
+            _render_png(document, plane, pixels_per_grid)
+        ).decode("ascii")
     return {
         "format": UVTT_FORMAT,
         "resolution": {
@@ -324,7 +337,7 @@ def to_uvtt(
         },
         "line_of_sight": walls,
         "objects_line_of_sight": [],
-        "portals": _portals(document),
+        "portals": _portals(plane),
         "environment": {"baked_lighting": False, "ambient_light": "ffffffff"},
         "lights": [],
         "image": image,

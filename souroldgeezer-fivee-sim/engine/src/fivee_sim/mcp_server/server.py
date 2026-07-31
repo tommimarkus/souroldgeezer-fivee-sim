@@ -257,6 +257,7 @@ def _map_summary(document: MapDocument) -> dict[str, Any]:
     return {
         "width": document.grid.width,
         "height": document.grid.height,
+        "levels": sorted(document.levels),
         "features": len(document.features),
         "terrain_counts": {kind: counts[kind] for kind in sorted(counts)},
         "elevation": {
@@ -586,7 +587,7 @@ def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             initially_open=initially_open,
         )
 
-    return BattleMap(
+    return BattleMap.flat(
         name=str(spec.get("name", "battle map")),
         width=width,
         height=height,
@@ -1006,6 +1007,7 @@ def encounter_act(
     toward: str | list[int] | None = None,
     path: list[list[int]] | None = None,
     feature: str | None = None,
+    to_level: int | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -1022,8 +1024,11 @@ def encounter_act(
     ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
     the plane; a bare number is accepted and means feet along the x-axis. On a
     battle map a move routes itself around walls and enemies; ``path`` optionally
-    pins the exact route as ``[x, y]`` waypoints, one per square. Illegal actions
-    are refused with the reason rather than silently adjusted.
+    pins the exact route as ``[x, y]`` waypoints, one per square. ``to_level``
+    ends a move on another storey: walk to a stairway on your own level — the
+    square named by ``to_position`` — and it carries you, charging the rise
+    between the two floors as a climb. Illegal actions are refused with the
+    reason rather than silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -1068,6 +1073,7 @@ def encounter_act(
         toward=aim_toward,
         path=tuple(waypoints),
         feature=feature,
+        to_level=to_level,
     )
     try:
         events = session.encounter.act(action, session.rng)
@@ -1399,6 +1405,7 @@ def map_render(
     downsample: int = 1,
     show_features: bool = True,
     show_elevation: bool = False,
+    level: int = 0,
     encounter_id: str | None = None,
 ) -> dict[str, Any]:
     """Render a viewport of a loaded map as rows of glyphs.
@@ -1426,7 +1433,7 @@ def map_render(
             session.document,
             x=x, y=y, width=width, height=height,
             downsample=downsample, show_features=show_features,
-            show_elevation=show_elevation,
+            show_elevation=show_elevation, level=level,
             tokens=tokens or None,
         )
     except ValueError as error:
@@ -1482,6 +1489,7 @@ def map_query(
     query: str,
     frm: list[int] | None = None,
     to: list[int] | None = None,
+    level: int = 0,
 ) -> dict[str, Any]:
     """Geometry over a loaded map: "distance", "line_of_sight", or "path".
 
@@ -1511,7 +1519,7 @@ def map_query(
     try:
         answer = _map_service.query(
             session.document, query, origin, target,
-            terrain=_registry().terrain_effects,
+            terrain=_registry().terrain_effects, level=level,
         )
     except (UnknownTerrain, ValueError) as error:
         raise ToolError(str(error)) from error
@@ -1524,6 +1532,7 @@ def uvtt_export(
     path: str | None = None,
     pixels_per_grid: int = 32,
     include_image: bool = True,
+    level: int = 0,
 ) -> dict[str, Any]:
     """Export a loaded map as a Universal VTT file another virtual tabletop can import.
 
@@ -1531,7 +1540,9 @@ def uvtt_export(
     door feature (with its recorded default open/closed state), and — unless
     ``include_image`` is false — a rendered PNG of the map, which some
     importers require. Lights, object line-of-sight, and elevation are
-    deliberately absent: the engine does not model them. The image side is
+    deliberately absent: the engine does not model them. The format has one
+    plane, so ``level`` picks the storey to export and a map with floors takes
+    one call per floor. The image side is
     capped at 4096 pixels; lower ``pixels_per_grid`` for large maps.
 
     The result is always written to disk — default
@@ -1546,6 +1557,7 @@ def uvtt_export(
             terrain=_registry().terrain_effects,
             pixels_per_grid=pixels_per_grid,
             include_image=include_image,
+            level=level,
         )
     except (UnknownTerrain, ValueError) as error:
         raise ToolError(str(error)) from error

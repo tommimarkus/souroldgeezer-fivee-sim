@@ -366,7 +366,7 @@ class TestReplayFromRecords:
         # BattleMap handed to the reconstruction.
         from fivee_sim.model.battlemap import BattleMap, MapFeature
 
-        door_map = BattleMap(
+        door_map = BattleMap.flat(
             name="crypt", width=6, height=2,
             terrain={(2, 0): "wall"},
             features={"door": MapFeature(name="door", square=(2, 1))},

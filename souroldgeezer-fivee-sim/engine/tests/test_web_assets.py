@@ -98,6 +98,30 @@ class TestEditorGroundControls:
         assert read("editor.html").count('id="btn-heights"') == 1
         assert read("editor.html").count('id="elevation-default"') == 1
 
+    def test_the_editor_carries_the_level_switcher_exactly_once(self) -> None:
+        assert read("editor.html").count('id="level-select"') == 1
+
+    def test_the_editor_lifecycle_carries_the_storeys(self) -> None:
+        # The layer-left-unwired failure, checked the only way this file can:
+        # every place that snapshots or replaces the document has to name
+        # `levels`, or an undo would delete the floors above the ground.
+        source = read("editor.html")
+        assert "elevation: payload.elevation, levels: payload.levels" in source
+        assert "doc.levels = previous.levels" in source
+
+    def test_the_editor_resize_walks_every_plane(self) -> None:
+        # A frame change is document-wide; resizing the ground alone would
+        # leave the storeys mislocated over it.
+        assert "var planes = [doc].concat(doc.levels || []);" in read("editor.html")
+
+    def test_the_renderer_is_never_handed_a_storey_it_must_understand(self) -> None:
+        # The renderer stays pure: it is given the active plane's tiles and
+        # features under the document's grid and legend, which is the shape it
+        # already draws, so it never learns that levels exist.
+        source = read("editor.html")
+        assert "R.render(ctx, renderable(), view," in source
+        assert "levels" not in read("renderer.js")
+
     def test_the_renderer_knows_the_labels_overlay_channel(self) -> None:
         # Anchored to the overlay access, not the bare word, which could
         # survive in a comment after the channel itself was renamed away.

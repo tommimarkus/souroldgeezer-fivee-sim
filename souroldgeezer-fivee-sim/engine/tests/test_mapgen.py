@@ -10,6 +10,7 @@ every emitted kind is real terrain.
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 from collections import deque
@@ -251,6 +252,101 @@ class TestOverlandProperties:
             )
 
 
+class TestOverlandRelief:
+    """Ground height comes from the same field the bands do, one value per cell.
+
+    The band a cell lands in and the feet it sits at are both monotonic in the
+    elevation field, which is what makes the ordering property below hold by
+    construction rather than by luck.
+    """
+
+    def test_every_cell_carries_its_own_height(self) -> None:
+        generated = generate_overland(Random(7), OverlandParams(width=32, height=24))
+        assert len(generated.elevation) == generated.height
+        assert all(len(row) == generated.width for row in generated.elevation)
+
+    def test_height_varies_inside_one_band(self) -> None:
+        # The point of the feature: relief is per tile, not per terrain band. If
+        # every plain square shared one height this would pass a band-uniform
+        # implementation too.
+        generated = generate_overland(Random(7), OverlandParams(width=32, height=24))
+        plains = {
+            generated.elevation[y][x]
+            for y, row in enumerate(generated.cells)
+            for x, kind in enumerate(row)
+            if kind == "plain"
+        }
+        assert len(plains) > 1
+
+    def test_the_bands_stack_in_height_order(self) -> None:
+        # 64x64 at seed 1 is the fixture because it is large enough to land
+        # cells in all five bands; a smaller one leaves gaps and the ordering
+        # would go unchecked where it matters most.
+        generated = generate_overland(Random(1), OverlandParams(width=64, height=64))
+        heights: dict[str, list[int]] = {}
+        for y, row in enumerate(generated.cells):
+            for x, kind in enumerate(row):
+                heights.setdefault(kind, []).append(generated.elevation[y][x])
+        assert set(heights) == {"water", "plain", "forest", "hill", "mountain"}
+        lowland = heights["plain"] + heights["forest"]
+        assert max(heights["water"]) <= min(lowland)
+        assert max(lowland) <= min(heights["hill"])
+        assert max(heights["hill"]) <= min(heights["mountain"])
+
+    def test_water_lies_below_the_datum_and_land_above_it(self) -> None:
+        generated = generate_overland(Random(7), OverlandParams(width=32, height=24))
+        for y, row in enumerate(generated.cells):
+            for x, kind in enumerate(row):
+                feet = generated.elevation[y][x]
+                assert feet <= 0 if kind == "water" else feet >= 0
+
+    def test_heights_land_on_the_five_foot_lattice(self) -> None:
+        # Below the 5-foot climb boundary every difference would be a gentle
+        # slope, and the relief would never cost a mover anything.
+        generated = generate_overland(Random(7), OverlandParams(width=32, height=24))
+        for row in generated.elevation:
+            for feet in row:
+                assert feet % 5 == 0
+
+    def test_the_relief_knobs_scale_the_range(self) -> None:
+        params = OverlandParams(width=32, height=24)
+        modest = generate_overland(Random(7), params)
+        alpine = generate_overland(
+            Random(7), dataclasses.replace(params, relief_feet=120, water_depth_feet=60)
+        )
+        assert max(map(max, alpine.elevation)) > max(map(max, modest.elevation))
+        assert min(map(min, alpine.elevation)) < min(map(min, modest.elevation))
+
+    def test_flat_relief_knobs_produce_a_flat_map(self) -> None:
+        generated = generate_overland(
+            Random(7),
+            OverlandParams(width=32, height=24, relief_feet=0, water_depth_feet=0),
+        )
+        assert {feet for row in generated.elevation for feet in row} == {0}
+
+    def test_the_terrain_bands_are_untouched_by_the_relief_knobs(self) -> None:
+        # Heights are read off the field the bands already used, so changing how
+        # far they scale must not move a single cell into another band.
+        params = OverlandParams(width=32, height=24)
+        assert (
+            generate_overland(Random(7), params).cells
+            == generate_overland(
+                Random(7), dataclasses.replace(params, relief_feet=120)
+            ).cells
+        )
+
+    @pytest.mark.parametrize("knob", ["relief_feet", "water_depth_feet"])
+    def test_negative_relief_is_refused(self, knob: str) -> None:
+        with pytest.raises(ValueError, match="cannot be negative"):
+            generate_overland(
+                Random(1), dataclasses.replace(OverlandParams(), **{knob: -5})
+            )
+
+    def test_the_other_generators_stay_flat(self) -> None:
+        assert generate_dungeon(Random(4), DungeonParams()).elevation == ()
+        assert generate_caves(Random(4), CaveParams()).elevation == ()
+
+
 class TestDocumentFrom:
     def test_each_generator_round_trips_with_zero_diagnostics(self) -> None:
         from fivee_sim.kernel.grid import TERRAIN as table
@@ -286,6 +382,51 @@ class TestDocumentFrom:
             "width": 24, "height": 16, "min_room": 4, "max_room": 12, "min_leaf": 8,
             "split_bias": 1.25, "door_chance": 0.75, "extra_connections": 2,
         }
+
+    def test_generated_relief_reaches_the_document(self) -> None:
+        params = OverlandParams(width=24, height=16)
+        generated = generate_overland(Random(4), params)
+        doc = document_from(
+            generated, name="o", generator="overland", seed=4, params=params
+        )
+        for y in range(generated.height):
+            for x in range(generated.width):
+                assert doc.elevation.at((x, y)) == generated.elevation[y][x]
+
+    def test_the_document_datum_is_the_commonest_height(self) -> None:
+        # Sparsity is the point: the height most squares share becomes the
+        # datum, so only the ones that depart from it reach the file.
+        generated = GeneratedMap(
+            width=3, height=1,
+            cells=(("floor", "floor", "floor"),),
+            features=(),
+            elevation=((10, 10, 25),),
+        )
+        doc = document_from(generated, name="h", generator="hand", seed=0, params={})
+        assert doc.elevation.default == 10
+        assert as_payload(doc)["elevation"] == {"default": 10, "squares": [[2, 0, 25]]}
+
+    def test_a_flat_generator_leaves_the_document_without_an_elevation_key(self) -> None:
+        params = DungeonParams(width=24, height=16)
+        doc = document_from(
+            generate_dungeon(Random(4), params),
+            name="d", generator="dungeon", seed=4, params=params,
+        )
+        assert doc.elevation.default == 0
+        assert doc.elevation.squares == {}
+        assert "elevation" not in as_payload(doc)
+
+    def test_a_ragged_height_grid_is_refused(self) -> None:
+        from fivee_sim.map_document import MapError
+
+        generated = GeneratedMap(
+            width=2, height=2,
+            cells=(("floor", "floor"), ("floor", "floor")),
+            features=(),
+            elevation=((0, 5),),
+        )
+        with pytest.raises(MapError, match="one height per cell"):
+            document_from(generated, name="ragged", generator="hand", seed=0, params={})
 
     def test_an_unencodable_kind_is_refused(self) -> None:
         from fivee_sim.map_document import MapError

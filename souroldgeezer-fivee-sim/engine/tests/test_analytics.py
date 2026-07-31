@@ -561,7 +561,7 @@ FIXTURE = "synthetic test fixture, not SRD content"
 
 def walled_arena() -> BattleMap:
     """A 6x3 arena with a wall stub: melee must walk around, sight is partial."""
-    return BattleMap(
+    return BattleMap.flat(
         name="arena", width=6, height=3,
         terrain={(2, 0): "wall", (2, 1): "wall"},
         provenance=FIXTURE,
@@ -690,7 +690,7 @@ class TestPolicyPlacesShapes:
         # graze along the edge, which is the sight policy, not the subject here.
         def propose(terrain: dict[tuple[int, int], str]) -> Any:
             rng = Random(SEED)
-            battle_map = BattleMap(
+            battle_map = BattleMap.flat(
                 name="sealed", width=10, height=5, terrain=terrain, provenance=FIXTURE,
             )
             combatants = [

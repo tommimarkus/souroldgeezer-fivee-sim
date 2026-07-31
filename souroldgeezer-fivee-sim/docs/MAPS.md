@@ -75,6 +75,7 @@ silently become a default.
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
 | `elevation` | Optional ground height — see below. Absent means flat. |
 | `features` | Doors, stairs, spawn hints — see below. |
+| `levels` | Optional storeys above and below the ground — see below. Absent means a single plane. |
 | `provenance` | `generator`, `seed`, fully resolved `params`, the `edited` flag, and a `source` string. |
 
 A document is refused past 4 MB or a 512-square side.
@@ -85,7 +86,9 @@ A document is refused past 4 MB or a 512-square side.
 doing mid-fight lives in the encounter's overlay, never in the file. Door
 squares are ordinary floor in `tiles`; the feature supplies the blocking.
 Other bundled kinds: `stairs_up`, `stairs_down`, `spawn` (placement hint,
-optionally with a `team`).
+optionally with a `team`). A feature may also carry `to_level`, which is what
+turns a drawn stairway into one a fight can actually walk — see **Levels**
+below. Ids are unique across the whole document, not per level.
 
 **Terrain kinds are strings**, resolved against loaded content exactly like
 conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
@@ -107,6 +110,13 @@ default are dropped and the rest sorted by row then column. The format version
 does **not** move for this. A reader that predates the key refuses the document
 as an unknown key, which is a loud failure rather than a map silently flattened.
 
+Overland generation fills this layer: every cell gets its own height, read off
+the same noise field the terrain bands come from, so relief varies *within* a
+band and a mountain is never lower than the hill beside it. The waterline is the
+datum — land rises to `relief_feet` (default 40) and water falls to
+`-water_depth_feet` (default 20), quantised to 5 feet. Set both to zero for the
+flat maps this generator used to produce. Dungeons and caves are flat.
+
 Height is charged to **movement only**. A rise of under 2 feet across a square
 is a gentle grade and free; from there up to 5 feet the square is a slope,
 which SRD 5.2 makes Difficult Terrain — once, since Difficult Terrain is not
@@ -115,6 +125,47 @@ cumulative. Above 5 feet the face is climbed, at the SRD's extra foot per foot
 down costs what climbing up costs. The 5-foot boundary and the step in cost
 across it are engine policy. Line of sight, cover, and area templates ignore
 height entirely.
+
+**Levels** are storeys over one footprint. Every level shares the document's
+`grid` and `legend` — floors of one building, not unrelated maps — so a level
+carries only what differs: its own `tiles`, `elevation`, and `features`.
+
+The ground is level `0`, and it stays in the document's own `tiles`,
+`elevation`, and `features` keys. `levels` holds only what is above or below
+it, each entry with a signed `index` (a basement is `-1`) and an optional
+`name`:
+
+```json
+"levels": [
+  {
+    "index": 1,
+    "name": "gallery",
+    "tiles": ["######", "#....#", "#....#", "#....#", "######"],
+    "elevation": { "default": 10, "squares": [] },
+    "features": [
+      { "id": "stair-head", "kind": "stairs_down", "at": [3, 3], "to_level": 0 }
+    ]
+  }
+]
+```
+
+A level's `elevation.default` **is** its floor height: the gallery above sits
+ten feet up because its unnamed squares do. There is no separate datum field to
+disagree with the heights beside it. As with `elevation`, the key is omitted
+entirely from a map with no storeys, so such a file writes back byte-for-byte
+and the format version does not move.
+
+`to_level` makes a connector: a creature standing on that square may step to
+the *same square* on the named level, paying the rise between the two planes
+through the ordinary slope-and-climb rules above — a ten-foot storey is a
+climb. A connector must name a level the map has, and never its own.
+
+What a level does to a fight is deliberately narrow. **A floor is opaque**:
+sight, cover, and area templates do not cross between levels, so a creature on
+another storey has total cover and cannot be attacked, caught in an area, or
+threatened with an opportunity attack. Movement crosses at connectors only, and
+routing is per level — the pathfinder will not plan a route that takes the
+stairs on the way, so cross-level movement is asked for a leg at a time.
 
 **Provenance** makes a map reproducible: `generator` + `seed` + resolved
 `params` regenerate it exactly, until `edited` flips true — from then on the
@@ -140,6 +191,13 @@ and nothing changes. Each operation is an object with an `op` key:
 | `set_name` | `name` |
 | `set_elevation` | `rect` **or** `cells`, plus `feet`; **or** `default` alone, which moves the height every unnamed square sits at |
 | `adjust_elevation` | `rect` **or** `cells`, plus `by` — relative to what is there |
+
+Every operation that acts on one storey also takes `level` (default `0`, the
+ground): `set_terrain`, `paint`, `line`, `carve_corridor`, `add_feature`,
+`remove_feature`, `toggle_door`, `set_elevation`, `adjust_elevation`. The other
+three are document-wide by nature and take no level — `set_name` and
+`set_legend` because a floor has neither of its own, and `resize` because every
+storey shares the grid, so it translates them all together.
 
 Terrain named in an operation must already have a glyph in the document's
 legend (`set_legend` first if not). A successful edit marks the document
@@ -179,6 +237,11 @@ Heights toggle overlays tints and per-square feet, switching itself on when a
 loaded map carries relief, and resizing translates and crops heights with the
 chosen anchor, exactly as the `resize` operation does. Relative adjustment is
 not in the page — that stays with the `adjust_elevation` edit operation.
+
+**Storeys.** The Level control picks the floor being edited; every tool paints
+the one selected, and the canvas draws it. The control is disabled on a map
+with no storeys. Undo, save, and resize carry the whole document, so editing
+the gallery never costs the ground below it.
 
 After saving in the editor, the file has moved on from any session copy:
 `map_load` (with `replace` to keep the same map id) re-reads it. Once
@@ -249,6 +312,10 @@ What is exported:
   deterministic hue hashed from its name using the same fallback formula the
   editor renderer documents — the PNG has exactly one theme, so pixel parity
   with the themed canvas is not promised.
+
+`uvtt_export` takes a `level` (default the ground). The format has one plane
+and no notion of storeys, so a map with floors exports one file per floor
+rather than a flattened picture true of neither.
 
 Deliberately omitted, because the engine does not model them and inventing
 values would misrepresent the map: `lights` and `objects_line_of_sight` ship

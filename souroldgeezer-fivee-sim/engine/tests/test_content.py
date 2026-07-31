@@ -1064,7 +1064,7 @@ class TestCustomTerrain:
 
         path = write_pack(tmp_path, "thorns.json", self.THORNS)
         registry = load_packs([path], include_environment=False)
-        battle_map = BattleMap(
+        battle_map = BattleMap.flat(
             name="thornfield", width=5, height=1,
             terrain={(2, 0): "vale-thornfield"},
             provenance="test fixture",

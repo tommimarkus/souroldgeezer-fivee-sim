@@ -333,6 +333,165 @@ class TestElevationEdits:
             edited(document(), {"op": "set_elevation", "rect": [4, 4, 9, 9], "feet": 5})
 
 
+def storeyed() -> MapDocument:
+    """The base document with a gallery over it, reached by a stair at (3, 3)."""
+    raw = payload()
+    # The doorway stands open, so the ground's one gap in the bottom wall is
+    # walkable and the gallery's solid row above it is the only thing blocking.
+    raw["features"][0]["state"] = "open"
+    raw["features"].append(
+        {"id": "stair-foot", "kind": "stairs_up", "at": [3, 3], "to_level": 1}
+    )
+    raw["levels"] = [
+        {
+            "index": 1,
+            "name": "gallery",
+            "tiles": ["######", "#....#", "#....#", "#....#", "######"],
+            "elevation": {"default": 10, "squares": []},
+            "features": [
+                {"id": "stair-head", "kind": "stairs_down", "at": [3, 3], "to_level": 0}
+            ],
+        }
+    ]
+    return parse_document(raw, source="storeyed", terrain=TERRAIN)
+
+
+class TestLevelEdits:
+    def test_an_edit_to_the_ground_leaves_the_storey_alone(self) -> None:
+        # The layer-left-unwired failure this format was designed against: the
+        # edit state rebuilds the whole document, so a storey it does not carry
+        # is a storey every unrelated edit deletes.
+        doc = storeyed()
+        after = edited(doc, {"op": "set_terrain", "rect": [1, 1, 2, 1], "terrain": "wall"})
+        assert set(after.levels) == {0, 1}
+        assert after.levels[1].tiles == doc.levels[1].tiles
+        assert after.levels[1].elevation.default == 10
+        assert [f.id for f in after.levels[1].features] == ["stair-head"]
+
+    def test_an_op_paints_the_level_it_names(self) -> None:
+        doc = storeyed()
+        after = edited(
+            doc, {"op": "set_terrain", "rect": [1, 1, 2, 1], "terrain": "wall", "level": 1}
+        )
+        assert after.levels[1].tiles[1] == "###..#"
+        assert after.levels[0].tiles == doc.levels[0].tiles
+
+    def test_an_op_without_a_level_means_the_ground(self) -> None:
+        doc = storeyed()
+        after = edited(doc, {"op": "set_terrain", "rect": [1, 1, 2, 1], "terrain": "wall"})
+        assert after.levels[0].tiles[1] == "###..#"
+        assert after.levels[1].tiles == doc.levels[1].tiles
+
+    def test_heights_are_painted_on_the_level_they_name(self) -> None:
+        doc = storeyed()
+        after = edited(
+            doc, {"op": "set_elevation", "cells": [[1, 1]], "feet": 25, "level": 1}
+        )
+        assert after.levels[1].elevation.at((1, 1)) == 25
+        assert after.levels[1].elevation.at((2, 1)) == 10  # the storey's own datum
+        assert after.levels[0].elevation.at((1, 1)) == 0
+
+    def test_a_feature_is_added_to_the_level_it_names(self) -> None:
+        doc = storeyed()
+        after = edited(
+            doc,
+            {
+                "op": "add_feature",
+                "level": 1,
+                "feature": {
+                    "id": "gallery-door", "kind": "door", "at": [1, 1],
+                    "orientation": "horizontal", "state": "closed",
+                },
+            },
+        )
+        assert [f.id for f in after.levels[1].features] == ["stair-head", "gallery-door"]
+        assert [f.id for f in after.levels[0].features] == [
+            "door-1", "spawn-party", "stair-foot",
+        ]
+
+    def test_resizing_moves_every_storey(self) -> None:
+        # A frame change is document-wide: a resize that translated only the
+        # ground would leave the storeys mislocated over it.
+        doc = storeyed()
+        after = edited(doc, {"op": "resize", "width": 8, "height": 5, "anchor": "top-right"})
+        assert after.grid.width == 8
+        assert len(after.levels[1].tiles) == 5
+        assert all(len(row) == 8 for row in after.levels[1].tiles)
+        assert after.levels[1].tiles[1] == "##" + "#....#"
+        head = next(f for f in after.levels[1].features if f.id == "stair-head")
+        assert head.at == (5, 3)
+
+    def test_a_feature_id_already_used_on_another_level_is_refused(self) -> None:
+        # Ids are unique document-wide, so the refusal has to look at every
+        # plane and not only the one being edited.
+        with pytest.raises(MapEditError, match="ids must be unique"):
+            edited(
+                storeyed(),
+                {
+                    "op": "add_feature",
+                    "level": 1,
+                    "feature": {"id": "door-1", "kind": "spawn", "at": [1, 1]},
+                },
+            )
+
+    def test_an_op_naming_a_level_the_map_lacks_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="no level 4"):
+            edited(storeyed(), {"op": "set_terrain", "rect": [1, 1, 1, 1],
+                                "terrain": "wall", "level": 4})
+
+    def test_a_level_must_be_named_by_a_whole_number(self) -> None:
+        with pytest.raises(MapEditError, match="whole number"):
+            edited(storeyed(), {"op": "set_terrain", "rect": [1, 1, 1, 1],
+                                "terrain": "wall", "level": "up"})
+
+    def test_a_document_wide_op_takes_no_level(self) -> None:
+        with pytest.raises(MapEditError, match="unknown key"):
+            edited(storeyed(), {"op": "set_name", "name": "keep", "level": 1})
+
+
+class TestLevelViews:
+    def test_rendering_shows_the_level_it_is_asked_for(self) -> None:
+        doc = storeyed()
+        ground = service.render_ascii(doc)
+        upper = service.render_ascii(doc, level=1)
+        assert ground["rows"][2] == "#.%..#"
+        assert upper["rows"][2] == "#....#"  # no difficult square on the gallery
+        assert upper["level"] == 1
+
+    def test_rendering_shows_the_levels_own_heights(self) -> None:
+        upper = service.render_ascii(storeyed(), level=1, show_elevation=True)
+        assert upper["elevation_legend"] == {"0": 10}  # the gallery's own datum
+        ground = service.render_ascii(storeyed(), show_elevation=True)
+        assert ground["elevation_legend"] == {"0": 0}
+
+    def test_rendering_shows_the_levels_own_features(self) -> None:
+        upper = service.render_ascii(storeyed(), level=1)
+        assert [f["id"] for f in upper["features_in_view"]] == ["stair-head"]
+
+    def test_rendering_lists_every_level_the_map_has(self) -> None:
+        assert service.render_ascii(storeyed())["levels"] == [0, 1]
+
+    def test_rendering_a_level_the_map_lacks_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="no level 4"):
+            service.render_ascii(storeyed(), level=4)
+
+    def test_a_query_runs_on_the_level_it_is_asked_for(self) -> None:
+        doc = storeyed()
+        # (3, 4) is the ground's doorway and solid wall on the gallery, so the
+        # same route is walkable downstairs and blocked upstairs.
+        assert service.query(doc, "path", (1, 3), (3, 4), terrain=TERRAIN)["reachable"]
+        above = service.query(doc, "path", (1, 3), (3, 4), terrain=TERRAIN, level=1)
+        assert above["reachable"] is False
+
+    def test_a_query_reports_the_levels_own_heights(self) -> None:
+        result = service.query(storeyed(), "path", (1, 1), (2, 1), terrain=TERRAIN, level=1)
+        assert (result["from_elevation"], result["to_elevation"]) == (10, 10)
+
+    def test_a_query_on_a_level_the_map_lacks_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="no level 4"):
+            service.query(storeyed(), "distance", (0, 0), (1, 1), terrain=TERRAIN, level=4)
+
+
 class TestEditAtomicity:
     def test_a_bad_op_names_its_index_and_applies_nothing(self) -> None:
         before = document()

@@ -291,7 +291,7 @@ class TestMapTools:
         assert state["map"]["width"] == 4
         assert state["map"]["height"] == 3
         assert state["map"]["features"]["door"] == {
-            "square": [1, 1], "kind": "door", "open": False,
+            "square": [1, 1], "kind": "door", "level": 0, "open": False,
         }
 
     def test_interact_opens_the_door_over_the_wire(self) -> None:
@@ -549,6 +549,111 @@ def map_document() -> dict[str, Any]:
             "source": "Authored for the test suite; 5E-compatible original content",
         },
     }
+
+
+def storeyed_document() -> dict[str, Any]:
+    """The adapter chamber with a solid-walled gallery over it."""
+    payload = map_document()
+    payload["features"] = [
+        {"id": "stair-foot", "kind": "stairs_up", "at": [0, 3], "to_level": 1}
+    ]
+    payload["levels"] = [
+        {
+            "index": 1,
+            "name": "gallery",
+            "tiles": [".....", ".....", ".....", "....."],
+            "elevation": {"default": 10, "squares": []},
+            "features": [
+                {"id": "stair-head", "kind": "stairs_down", "at": [0, 3], "to_level": 0}
+            ],
+        }
+    ]
+    return payload
+
+
+class TestMapLevelAdapters:
+    """The level rides through the adapters as a plain parameter, nothing more."""
+
+    def load(self) -> str:
+        return str(api.map_load(document=storeyed_document())["map_id"])
+
+    def test_the_summary_names_every_level(self) -> None:
+        loaded = api.map_load(document=storeyed_document())
+        assert loaded["summary"]["levels"] == [0, 1]
+
+    def test_render_draws_the_level_it_is_given(self) -> None:
+        map_id = self.load()
+        assert api.map_render(map_id)["rows"][0] == "..#.."
+        upper = api.map_render(map_id, level=1)
+        assert upper["rows"][0] == "....."
+        assert (upper["level"], upper["levels"]) == (1, [0, 1])
+
+    def test_query_answers_on_the_level_it_is_given(self) -> None:
+        map_id = self.load()
+        # The dividing wall is on the ground only, so a walk across it has to
+        # go the long way round while the gallery above crosses straight over.
+        assert api.map_query(map_id, "path", frm=[0, 0], to=[4, 0])["cost_feet"] == 30
+        assert api.map_query(map_id, "path", frm=[0, 0], to=[4, 0], level=1)[
+            "cost_feet"
+        ] == 20
+
+    def test_an_edit_names_its_level_and_leaves_the_others_alone(self) -> None:
+        map_id = self.load()
+        api.map_edit(map_id, [
+            {"op": "set_terrain", "rect": [0, 0, 2, 1], "terrain": "wall", "level": 1},
+        ])
+        assert api.map_render(map_id, level=1)["rows"][0] == "##..."
+        assert api.map_render(map_id)["rows"][0] == "..#.."
+
+    def test_a_level_the_map_lacks_is_refused_over_the_wire(self) -> None:
+        map_id = self.load()
+        with pytest.raises(api.ToolError, match="no level 4"):
+            api.map_render(map_id, level=4)
+        with pytest.raises(api.ToolError, match="no level 4"):
+            api.map_query(map_id, "distance", frm=[0, 0], to=[1, 1], level=4)
+
+    def test_a_fight_climbs_between_storeys_over_the_wire(self) -> None:
+        map_id = self.load()
+        created = api.encounter_create(
+            [dict(HERO, position=[0, 15]), dict(GOBLIN, position=[20, 15])],
+            seed=11, map_id=map_id,
+        )
+        encounter_id = str(created["encounter_id"])
+        advance_to_thora(encounter_id)
+        acted = api.encounter_act(
+            encounter_id, kind="move", to_position=[0, 15], to_level=1
+        )
+        move = next(event for event in acted["events"] if event["kind"] == "move")
+        assert move["data"]["to_level"] == 1
+        thora = next(c for c in acted["state"]["combatants"] if c["name"] == "Thora")
+        assert (thora["level"], thora["elevation"]) == (1, 10)
+
+    def test_a_move_to_a_storey_without_a_stairway_is_refused_over_the_wire(self) -> None:
+        map_id = self.load()
+        created = api.encounter_create(
+            [dict(HERO, position=[0, 15]), dict(GOBLIN, position=[20, 15])],
+            seed=11, map_id=map_id,
+        )
+        encounter_id = str(created["encounter_id"])
+        advance_to_thora(encounter_id)
+        with pytest.raises(api.ToolError, match="leads to level 1"):
+            api.encounter_act(
+                encounter_id, kind="move", to_position=[5, 15], to_level=1
+            )
+
+    def test_export_writes_the_level_it_is_given(self, tmp_path: Path) -> None:
+        map_id = self.load()
+        ground = api.uvtt_export(
+            map_id, path=str(tmp_path / "ground.uvtt"), pixels_per_grid=8,
+            include_image=False,
+        )
+        upper = api.uvtt_export(
+            map_id, path=str(tmp_path / "upper.uvtt"), pixels_per_grid=8,
+            include_image=False, level=1,
+        )
+        # The gallery has no dividing wall, so it exports no wall polyline.
+        assert ground["wall_polylines"] == 1
+        assert upper["wall_polylines"] == 0
 
 
 class TestMapAdapters:
