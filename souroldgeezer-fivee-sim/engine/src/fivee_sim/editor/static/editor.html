@@ -102,12 +102,18 @@ header .spacer { flex: 1; }
    only readable as a height if something says which wash means what. The
    storeys key is the same thing for the onion-skin, and shares the styling
    rather than restating it. */
-#elev-legend, #stack-legend {
+#elev-legend, #stack-legend, #fixture-list {
   margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px;
 }
 .elev-band, .stack-row {
   display: flex; gap: 6px; align-items: center; color: var(--muted);
 }
+/* The same row, but a control rather than a key, so it keeps the panel's
+   foreground and takes a pointer. The checkbox opts out of the blanket input
+   styling above, which would draw a box around the box. */
+.fixture-row { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.fixture-row input { flex: none; padding: 0; border: none; background: none; }
+.fixture-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* A neutral ground the script lays the wash over as a background-image, so the
    swatch composites the same translucent colour the canvas does. */
 .elev-swatch, .stack-swatch {
@@ -192,6 +198,8 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <label for="level-select">Level</label>
     <select id="level-select" aria-label="level"></select>
     <button id="btn-stack" title="show the other storeys through this one">Stack</button>
+    <button id="btn-preview"
+      title="draw the map as if the ticked fixtures stood open">Preview</button>
     <button id="btn-resize">Resize&#8230;</button>
     <button id="btn-fit">Fit view</button>
     <button id="btn-heights">Heights</button>
@@ -220,6 +228,8 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <div id="elev-legend" hidden></div>
     <h3>Storeys</h3>
     <div id="stack-legend">&#8212;</div>
+    <h3>Fixtures</h3>
+    <div id="fixture-list">&#8212;</div>
     <h3>Cursor</h3>
     <div id="readout">&#8212;</div>
   </aside>
@@ -324,6 +334,17 @@ if (typeof FiveeRenderer === "undefined") {
   var heightValuesOn = false;  /* its per-square feet, which are off by default */
   var activeLevel = 0; /* the storey being edited; 0 is the ground */
   var stackOn = false;    /* the onion-skin: the other storeys, printed through */
+  /* The fixture preview: a lens over what is drawn, and nothing else. It never
+     reaches doc, contentOf, the undo stack or the save — the editor authors a
+     fixture's *default* state, and what it looks like operated is a question
+     about drawing. previewOpen is {featureId: bool}; a fixture with no entry
+     draws the state the document authored, which is the fallback
+     terrainOverridesFor already applies, so the panel and the canvas cannot
+     answer differently. It has no prototype because feature ids come out of a
+     file a hand may have written, and `__proto__` must be a key here rather
+     than a write into Object.prototype. */
+  var previewOn = false;
+  var previewOpen = Object.create(null);
   var elevSquares = null; /* cache of the active plane's elevation: "x,y" -> feet */
   var elevBands = null; /* {step, lo, hi}: the band size and the span it covers */
 
@@ -533,6 +554,10 @@ if (typeof FiveeRenderer === "undefined") {
     if (previous.palette === undefined) { delete doc.palette; }
     else { doc.palette = previous.palette; }
     renderStackLegend();
+    /* An undo can take a fixture back out of the document, or bring one back;
+       the list is derived from the plane, so it is rebuilt with it. The
+       preview's own choices survive, being no part of what was undone. */
+    renderFixtureList();
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
@@ -571,8 +596,16 @@ if (typeof FiveeRenderer === "undefined") {
     selectedFeatureId = null;
     activeLevel = 0;
     stackOn = false;
+    /* The layer checklist's third entry, and the first page state to need it:
+       a lens left set across an open would draw the new map through the old
+       map's fixtures — and the two maps' ids may well collide, so it would
+       not even look like a mistake. Session restore comes through here like
+       every other opener, so it is reset by this line too. */
+    previewOn = false;
+    previewOpen = Object.create(null);
     renderLevels();
     renderStackLegend();
+    renderFixtureList();
     rebuildElevationCache();
     heightsOn = !!payload.elevation;
     byId("btn-heights").classList.toggle("active", heightsOn);
@@ -883,6 +916,10 @@ if (typeof FiveeRenderer === "undefined") {
       plane().features.splice(plane().features.indexOf(door), 1);
       setStatus("removed " + door.id);
     }
+    /* A door carries a `state`, so this tool is one of the two that add and
+       remove fixtures: the list would otherwise offer a checkbox for a door
+       that is gone, and none for the one just placed. */
+    renderFixtureList();
     redraw();
   }
   function placeOrRemoveFeature(cell) {
@@ -898,6 +935,10 @@ if (typeof FiveeRenderer === "undefined") {
       setStatus("placed " + id + " at [" + cell + "]");
     }
     renderFeatureInfo();
+    /* The kinds this tool places carry no `state`, so it adds no fixture — but
+       it removes any non-door feature under the cell, and a hand-authored file
+       may well have given a lever or a spike one. */
+    renderFixtureList();
     redraw();
   }
 
@@ -1010,8 +1051,48 @@ if (typeof FiveeRenderer === "undefined") {
     if (feature.orientation) { lines.push("orientation: " + feature.orientation); }
     if (feature.state) { lines.push("state: " + feature.state); }
     if (feature.team) { lines.push("team: " + feature.team); }
+    /* The six keys that make a feature a fixture. Without them the block
+       showed a `state` and stopped, so a loaded sluice read as a bare door and
+       nothing on the page said what operating it would do. Each line appears
+       only when the record carries the key, the way the document itself omits
+       them — and every shape is read defensively, because this runs on a plain
+       selection click and a throw here would leave the panel describing the
+       previously selected feature while the click looked like it missed. */
+    if (feature.terrain) { lines.push("terrain: " + pairText(feature.terrain)); }
+    if (feature.elevation) {
+      lines.push("elevation: " + pairText(feature.elevation) + " ft");
+    }
+    if (Array.isArray(feature.affects) && feature.affects.length) {
+      /* Counted, never listed: a fixture may govern a whole room, and this
+         block is a 230px column meant to be read at a glance. Which squares
+         they are is a question the canvas answers, with the preview on. */
+      var squares = 0;
+      feature.affects.forEach(function (group) {
+        squares += group && Array.isArray(group.cells) ? group.cells.length : 0;
+      });
+      lines.push("affects: " + feature.affects.length + " group(s), "
+        + squares + " square(s)");
+    }
+    if (Array.isArray(feature.requires) && feature.requires.length) {
+      lines.push("requires: " + feature.requires.join(", "));
+    }
+    /* Carried and false is not the same as absent: the document only writes
+       this key when it is true, so a `false` came from a hand and is worth
+       showing back. */
+    if (feature.costs_action !== undefined) {
+      lines.push("costs_action: " + (feature.costs_action ? "yes" : "no"));
+    }
+    if (feature.check && typeof feature.check === "object") {
+      lines.push("check: " + feature.check.ability + " DC " + feature.check.dc);
+    }
     info.textContent = lines.join("\n");
     remove.hidden = false;
+  }
+  /* One {closed, open} pair as the panel shows it: what the square is, and
+     what operating the fixture makes it. */
+  function pairText(pair) {
+    return pair && typeof pair === "object"
+      ? pair.closed + " → " + pair.open : String(pair);
   }
   byId("btn-delete-feature").addEventListener("click", function () {
     if (!doc || selectedFeatureId === null) { return; }
@@ -1021,6 +1102,8 @@ if (typeof FiveeRenderer === "undefined") {
     });
     selectedFeatureId = null;
     renderFeatureInfo();
+    /* The other tool that removes a fixture; see cycleDoor. */
+    renderFixtureList();
     redraw();
   });
 
@@ -1352,6 +1435,87 @@ if (typeof FiveeRenderer === "undefined") {
     }
   }
 
+  /* --- the fixture preview ---------------------------------------------- */
+  /* The editor draws a fixture in the state the document authored, which is
+     the right default for an authoring tool and useless for answering "what
+     does this one do". The preview answers it without touching the answer:
+     tick the fixtures, and the map draws as if they stood open.
+
+     It is drawing only. Nothing in this section writes to doc, calls
+     snapshot(), or moves the baseline — so a preview left on cannot stamp
+     provenance.edited, and cannot be saved by accident. */
+
+  /* A fixture is any feature carrying a `state`: that is the document's own
+     test for what a fight can operate — see map_document.py, where the same
+     one decides whether the six fixture keys are allowed. A kind check here
+     would preview doors and miss every lever and sluice gate. */
+  function fixturesOnPlane() {
+    return (plane().features || []).filter(function (f) {
+      return f && f.state !== undefined && f.state !== null;
+    });
+  }
+  /* Whether the preview stands one open. The same fallback the renderer's
+     derivation applies, spelt the same way, so a fixture nobody has ticked
+     shows in the list exactly as it draws on the canvas. */
+  function previewStateOf(feature) {
+    return Object.prototype.hasOwnProperty.call(previewOpen, feature.id)
+      ? !!previewOpen[feature.id]
+      : feature.state === "open";
+  }
+  function setPreview(on) {
+    previewOn = on;
+    byId("btn-preview").classList.toggle("active", previewOn);
+    /* Said on both paths into here, because one of them is a box being ticked
+       rather than the toggle being pressed: turning the lens on as a courtesy
+       and not saying so leaves the map looking wrong for reasons unstated. */
+    setStatus(previewOn
+      ? "preview: drawing the ticked fixtures open — the document is unchanged"
+      : "preview off: drawing every fixture as the document authors it");
+    redraw();
+  }
+  function renderFixtureList() {
+    var host = byId("fixture-list");
+    var button = byId("btn-preview");
+    host.textContent = "";
+    var fixtures = doc ? fixturesOnPlane() : [];
+    /* Nothing to preview on this plane, and a lens left on across a load or a
+       level switch that brought no fixtures would go on claiming to show
+       something — the same reason the Stack toggle stands down on a single
+       plane. */
+    if (!fixtures.length) { previewOn = false; }
+    button.disabled = !fixtures.length;
+    button.classList.toggle("active", previewOn);
+    if (!fixtures.length) {
+      host.textContent = doc ? "no fixtures on this level" : "—";
+      return;
+    }
+    fixtures.forEach(function (feature) {
+      var row = document.createElement("label");
+      row.className = "fixture-row";
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = previewStateOf(feature);
+      box.title = "draw " + feature.id + " open";
+      box.addEventListener("change", function () {
+        previewOpen[feature.id] = box.checked;
+        /* Ticking a box with the lens off would change nothing on the canvas,
+           so it turns the lens on — the courtesy the "ft" toggle already does
+           for the Heights overlay. */
+        if (!previewOn) { setPreview(true); return; }
+        redraw();
+      });
+      var text = document.createElement("span");
+      text.textContent = feature.id + " · " + feature.kind;
+      row.appendChild(box);
+      row.appendChild(text);
+      host.appendChild(row);
+    });
+  }
+  byId("btn-preview").addEventListener("click", function () {
+    if (!doc || byId("btn-preview").disabled) { return; }
+    setPreview(!previewOn);
+  });
+
   /* --- canvas ----------------------------------------------------------- */
   var framePending = false;
   function redraw() {
@@ -1386,8 +1550,25 @@ if (typeof FiveeRenderer === "undefined") {
       if (hoverCell && inBounds(hoverCell) && tool !== "pan") {
         marks.push({ at: hoverCell, alpha: 0.2 });
       }
-      R.render(ctx, renderable(), view,
-        { marks: marks, edges: edges, labels: labels });
+      var overlays = { marks: marks, edges: edges, labels: labels };
+      /* The preview travels on the two channels the renderer already carries a
+         fight's live state on — the door glyph's featureStates, the ground's
+         terrainOverrides — so previewing a fixture teaches the renderer
+         nothing new. Both are set only while the lens is on: an override map
+         handed down unconditionally would cost the tile loop the per-cell
+         lookup its fast path exists to skip, and a featureStates map left in
+         place would go on flipping door glyphs after the lens was switched
+         off.
+
+         renderable(), not doc: an override is keyed "x,y" with no level in
+         it, so handing over the document would recolour the storey being
+         edited with the ground floor's fixtures, and nothing downstream could
+         tell that it had. */
+      if (previewOn) {
+        overlays.featureStates = previewOpen;
+        overlays.terrainOverrides = R.terrainOverridesFor(renderable(), previewOpen);
+      }
+      R.render(ctx, renderable(), view, overlays);
     });
   }
 
@@ -1604,6 +1785,10 @@ if (typeof FiveeRenderer === "undefined") {
     /* Which storeys are ghosted is relative to the one selected, so the key
        and the ghosts both move when the selection does. */
     renderStackLegend();
+    /* The preview is derived from the plane being drawn, so its list has to
+       be too: the ground's fixtures left listed here would offer checkboxes
+       for squares this storey has never heard of. */
+    renderFixtureList();
     redraw();
   });
 
@@ -1744,6 +1929,9 @@ if (typeof FiveeRenderer === "undefined") {
       else { target.elevation = { "default": datum, squares: kept }; }
     });
     rebuildElevationCache();
+    /* A resize drops the fixtures it pushes off the map, so the list loses
+       them with the document. */
+    renderFixtureList();
     doc.grid.width = width;
     doc.grid.height = height;
     byId("dlg-resize").close();

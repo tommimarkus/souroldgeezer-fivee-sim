@@ -551,6 +551,33 @@ def map_document() -> dict[str, Any]:
     }
 
 
+def sluice_document() -> dict[str, Any]:
+    """The adapter chamber with a sluice gate that floods everything east of it.
+
+    The gate stands in the gap in the dividing wall, and the tiles east of it are
+    the same floor whether it is shut or open — only the gate's own record says
+    the room floods, which is what makes a render that reads tiles alone unable
+    to show the fight what it just did.
+    """
+    payload = map_document()
+    payload["name"] = "adapter sluice"
+    payload["legend"] = {".": "floor", "#": "wall", "~": "water"}
+    payload["features"] = [
+        {
+            "id": "sluice", "kind": "door", "at": [2, 3],
+            "orientation": "vertical", "state": "closed",
+            "affects": [
+                {
+                    "cells": [[3, 0], [4, 0], [3, 1], [4, 1], [3, 2], [4, 2]],
+                    "terrain": {"closed": "floor", "open": "water"},
+                    "elevation": {"closed": 0, "open": -5},
+                }
+            ],
+        }
+    ]
+    return payload
+
+
 def storeyed_document() -> dict[str, Any]:
     """The adapter chamber with a solid-walled gallery over it."""
     payload = map_document()
@@ -925,6 +952,59 @@ class TestEncountersOnLoadedMaps:
         row = rendered["rows"][0]
         assert {row[0], row[3]} == set(rendered["tokens"])
         assert row[2] == "#"
+
+    def sluice_fight(self) -> tuple[str, str]:
+        """A loaded sluice map and a fight on it, Thora within reach of the gate."""
+        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        # Positions are feet, so these are squares (1, 3) and (4, 3): Thora next
+        # to the gate at (2, 3), the goblin marooned on the far side of it and
+        # clear of the room that floods.
+        created = api.encounter_create(
+            [{**HERO, "position": [5, 15]}, {**GOBLIN, "position": [20, 15]}],
+            seed=11, map_id=map_id,
+        )
+        return map_id, str(created["encounter_id"])
+
+    def test_map_render_shows_the_flood_only_once_the_fight_opens_the_gate(
+        self,
+    ) -> None:
+        map_id, encounter_id = self.sluice_fight()
+        before = api.map_render(map_id, encounter_id=encounter_id)
+        assert before["rows"][0] == "..#.."
+        assert before["rows"][3][2] == "+"
+        assert "~" not in "".join(before["rows"])
+
+        advance_to_thora(encounter_id)
+        acted = api.encounter_act(encounter_id, kind="interact", feature="sluice")
+        assert acted["state"]["map"]["features"]["sluice"]["open"] is True
+
+        after = api.map_render(map_id, encounter_id=encounter_id)
+        assert after["rows"][0] == "..#~~"
+        assert after["rows"][3][2] == "/"
+        assert after["legend"]["~"] == "water"
+
+    def test_the_flood_carries_its_ground_height_through_the_adapter(self) -> None:
+        map_id, encounter_id = self.sluice_fight()
+        advance_to_thora(encounter_id)
+        api.encounter_act(encounter_id, kind="interact", feature="sluice")
+        rendered = api.map_render(map_id, encounter_id=encounter_id, show_elevation=True)
+        assert rendered["elevation_rows"][0] == "11100"
+        assert rendered["elevation_legend"] == {"0": -5, "1": 0}
+
+    def test_the_same_map_without_an_encounter_stays_as_authored(self) -> None:
+        # The flood belongs to the fight, not to the document: map_render with no
+        # encounter still answers about the file on disk.
+        map_id, encounter_id = self.sluice_fight()
+        advance_to_thora(encounter_id)
+        api.encounter_act(encounter_id, kind="interact", feature="sluice")
+        assert api.map_render(map_id)["rows"][0] == "..#.."
+
+    def test_a_mapless_fight_contributes_positions_and_no_fixture_states(self) -> None:
+        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        created = api.encounter_create([HERO, GOBLIN], seed=1)
+        rendered = api.map_render(map_id, encounter_id=str(created["encounter_id"]))
+        assert set(rendered["tokens"].values()) == {"Thora", "Goblin"}
+        assert "~" not in "".join(rendered["rows"])
 
     def test_simulate_rounds_accepts_a_map_id_and_reports_the_source(self) -> None:
         map_id = str(api.map_load(document=map_document())["map_id"])

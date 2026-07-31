@@ -335,6 +335,57 @@ var FiveeRenderer = (function () {
     }
   }
 
+  /* terrainOverridesFor(doc, states) — the squares this document's fixtures
+     decide, keyed "x,y" to the terrain kind each shows, resolved against which
+     fixtures stand open.
+
+     A feature carrying a `state` is a fixture: it decides its own square, and
+     any square named by one of its `affects` groups. `states` is the live
+     {featureId: bool} the viewer folds from the log and the editor's preview
+     sets; a fixture absent from it shows the state the document authored.
+
+     Shared rather than written per page on purpose. Server-side the same
+     question has exactly one answer — MapFeature.claims() — whose docstring
+     names deriving it twice as how two answers drift; a copy in each page
+     would make three. The ground-height half of an overlay is not here: the
+     renderer draws no relief, and what the pages do with height is their own
+     business.
+
+     It reports what it can read and skips what it cannot. A hand-opened file
+     may carry any shape at all, and a malformed group must cost that group,
+     not the frame. */
+  function terrainOverridesFor(doc, states) {
+    var out = {};
+    var features = (doc && doc.features) || [];
+    states = states || {};
+    for (var i = 0; i < features.length; i++) {
+      var feature = features[i];
+      if (!feature || typeof feature !== "object") { continue; }
+      if (feature.state === undefined || feature.state === null) { continue; }
+      var open = Object.prototype.hasOwnProperty.call(states, feature.id)
+        ? !!states[feature.id]
+        : feature.state === "open";
+      var side = open ? "open" : "closed";
+      if (Array.isArray(feature.at) && feature.at.length === 2
+        && feature.terrain && typeof feature.terrain[side] === "string") {
+        out[feature.at[0] + "," + feature.at[1]] = feature.terrain[side];
+      }
+      var groups = Array.isArray(feature.affects) ? feature.affects : [];
+      for (var g = 0; g < groups.length; g++) {
+        var group = groups[g];
+        if (!group || typeof group !== "object") { continue; }
+        if (!group.terrain || typeof group.terrain[side] !== "string") { continue; }
+        var cells = Array.isArray(group.cells) ? group.cells : [];
+        for (var c = 0; c < cells.length; c++) {
+          var cell = cells[c];
+          if (!Array.isArray(cell) || cell.length !== 2) { continue; }
+          out[cell[0] + "," + cell[1]] = group.terrain[side];
+        }
+      }
+    }
+    return out;
+  }
+
   /* render(ctx, doc, view, overlays)
      doc — a map document payload: {grid: {width, height}, legend, tiles,
        features}, plus an optional palette. Only those keys are consulted, so a
@@ -349,6 +400,9 @@ var FiveeRenderer = (function () {
          // side "n" (top) or "w" (left) — the two that name every interior
          // boundary of a grid exactly once
        labels: [{at: [x, y], text, color}],  // small centered per-cell text
+       terrainOverrides: {"x,y": kind},  // what a square is *now*, over its
+         // glyph — the channel a fixture's effect arrives through. Squares
+         // and kinds only: the renderer never learns what decided them
        tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable}]
      } */
   function render(ctx, doc, view, overlays) {
@@ -367,12 +421,23 @@ var FiveeRenderer = (function () {
     var x1 = bounds.x1;
     var y1 = bounds.y1;
 
+    /* Hoisted, and checked for presence once rather than per cell: a max-size
+       map zoomed out puts the loop below into the hundreds of thousands of
+       iterations, and most documents hand down no overrides at all. */
+    var overrides = overlays.terrainOverrides;
     for (var cy = y0; cy < y1; cy++) {
       var row = doc.tiles[cy] || "";
       for (var cx = x0; cx < x1; cx++) {
         var glyph = row.charAt(cx);
         var kind = doc.legend[glyph];
         if (kind === undefined) { kind = "unknown:" + glyph; }
+        if (overrides !== undefined) {
+          /* Before the fill *and* before the texture branches below, which
+             read `kind` again: a flooded square must stop hatching as
+             difficult terrain, not merely change colour. */
+          var over = overrides[cx + "," + cy];
+          if (over !== undefined) { kind = over; }
+        }
         var px = (cx - view.x) * s;
         var py = (cy - view.y) * s;
         ctx.fillStyle = terrainColor(kind, dark, styles, doc.palette);
@@ -482,6 +547,7 @@ var FiveeRenderer = (function () {
     zoomAt: zoomAt,
     fitView: fitView,
     visibleBounds: visibleBounds,
+    terrainOverridesFor: terrainOverridesFor,
     resizeCanvas: resizeCanvas,
     terrainColor: terrainColor,
     teamColor: teamColor,

@@ -453,6 +453,24 @@ legend does. A row with a color of its own grows a `×` that drops it back to th
 theme's. On a map whose file carries a `{light, dark}` pair, the picker speaks
 only for the theme the page is showing and leaves the other half alone.
 
+**Fixtures.** The side panel lists every fixture on the storey being edited —
+every feature carrying a `state` — with a checkbox each, and the Preview toggle
+draws the map as if the ticked ones stood open: their own squares and every
+square their overlays govern take the terrain of that state, and a ticked door
+draws open. It is a lens and nothing else. It writes nothing to the document,
+never marks it dirty, and a save after previewing does not stamp the map
+`edited`. Reopening a map switches the lens off and forgets the ticks, because a
+preview carried across an open would draw the new map through the old one's
+fixtures. Selecting a fixture shows what it carries — its terrain and height
+pairs, how many squares it governs, what it requires, what it costs and what it
+rolls.
+
+The preview shows **terrain only**. The Heights overlay reads the storey's own
+height layer, so a fixture that drops a water level five feet recolors the room
+without re-shading it, and the cursor readout reports the authored height there.
+A fight is the authority on that: `encounter_state` reports a creature's live
+elevation, and it is the number that governs movement.
+
 After saving in the editor, the file has moved on from any session copy:
 `map_load` (with `replace` to keep the same map id) re-reads it. Once
 hand-edited, the file is the source of truth — re-load, never assume.
@@ -485,6 +503,13 @@ hand-edited, the file is the source of truth — re-load, never assume.
 inline `map` spec carry `null` and replay on a neutral plane. Positions are
 `[x, y]` in feet; `events` is the structured log `encounter_log` pages, in
 full.
+
+The viewer replays what the fixtures did. `initial.map_open_features` says
+which stood open when the fight began — for every fixture, not only doors — and
+each `interact` event moves one, so stepping to the round the party opened the
+sluice floods the rooms it governs and turns the wheel. Scrubbing back drains
+them again: the viewer rebuilds from the start of the fight rather than undoing,
+so any point in the log shows the ground as it was at that moment.
 
 Small bundles come back inline; larger ones (or any call with `path`) are
 written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
