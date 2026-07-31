@@ -39,6 +39,8 @@ from mcp.server.mcpserver import MCPServer
 from .. import __version__
 from ..analytics.montecarlo import simulate_dpr as _simulate_dpr
 from ..analytics.montecarlo import simulate_rounds as _simulate_rounds
+from ..analytics.scenario import response_window as _response_window
+from ..analytics.scenario import travel_timing as _travel_timing
 from ..content import (
     BUILTIN_ENV,
     CONTENT_ENV,
@@ -906,6 +908,41 @@ def _audited_primitive(
 
 
 @server.tool()
+def scenario_timing(
+    distance_feet: int,
+    speed_feet: int,
+    dash: bool = False,
+    start_delay_rounds: int = 0,
+    response_after_rounds: int | None = None,
+) -> dict[str, Any]:
+    """Measure route arrival and, optionally, its lead over a timed response.
+
+    This is scenario evidence rather than combat state: supply the authored route
+    distance, movement speed, and response delay.  ``dash`` means the traveller
+    spends its action to move twice its speed every round.
+    """
+    try:
+        if response_after_rounds is None:
+            return {
+                "traveller": _travel_timing(
+                    distance_feet=distance_feet,
+                    speed_feet=speed_feet,
+                    dash=dash,
+                    start_delay_rounds=start_delay_rounds,
+                ).as_dict()
+            }
+        return _response_window(
+            distance_feet=distance_feet,
+            speed_feet=speed_feet,
+            dash=dash,
+            start_delay_rounds=start_delay_rounds,
+            response_after_rounds=response_after_rounds,
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+
+
+@server.tool()
 def roll(
     expression: str,
     advantage: str = "none",
@@ -1611,6 +1648,7 @@ def _execute_encounter_act(
     set_open: bool | None = None,
     to_level: int | None = None,
     movement_mode: str | None = None,
+    as_bonus_action: bool = False,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -1694,6 +1732,7 @@ def _execute_encounter_act(
         set_open=set_open,
         to_level=to_level,
         movement_mode=selected_mode,
+        as_bonus_action=as_bonus_action,
     )
     try:
         events = session.encounter.act(action, session.rng)

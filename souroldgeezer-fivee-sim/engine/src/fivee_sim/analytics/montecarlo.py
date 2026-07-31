@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from random import Random
 from typing import Any
 
+from ..kernel.actions import MELEE_THRESHOLD
 from ..kernel.conditions import ConditionTable
 from ..kernel.dice import Dice
 from ..kernel.grid import (
@@ -43,7 +44,7 @@ from ..kernel.grid import (
     square_center,
     to_square,
 )
-from ..kernel.items import ItemEffect
+from ..kernel.items import ActionCost, ItemEffect
 from ..kernel.spells import Spell, SpellShape
 from ..model.battlemap import BattleMap
 from ..model.creature import Creature
@@ -61,6 +62,7 @@ class Stats:
     samples: int
     mean: float
     median: float
+    p10: float
     p90: float
     minimum: float
     maximum: float
@@ -70,6 +72,7 @@ class Stats:
             "samples": self.samples,
             "mean": round(self.mean, 3),
             "median": self.median,
+            "p10": self.p10,
             "p90": self.p90,
             "min": self.minimum,
             "max": self.maximum,
@@ -78,14 +81,24 @@ class Stats:
 
 def summarise(values: Sequence[float]) -> Stats:
     if not values:
-        return Stats(samples=0, mean=0.0, median=0.0, p90=0.0, minimum=0.0, maximum=0.0)
+        return Stats(
+            samples=0,
+            mean=0.0,
+            median=0.0,
+            p10=0.0,
+            p90=0.0,
+            minimum=0.0,
+            maximum=0.0,
+        )
     ordered = sorted(values)
-    index = max(0, min(len(ordered) - 1, int(round(0.9 * (len(ordered) - 1)))))
+    p10_index = max(0, min(len(ordered) - 1, int(round(0.1 * (len(ordered) - 1)))))
+    p90_index = max(0, min(len(ordered) - 1, int(round(0.9 * (len(ordered) - 1)))))
     return Stats(
         samples=len(ordered),
         mean=statistics.fmean(ordered),
         median=statistics.median(ordered),
-        p90=ordered[index],
+        p10=ordered[p10_index],
+        p90=ordered[p90_index],
         minimum=ordered[0],
         maximum=ordered[-1],
     )
@@ -116,11 +129,12 @@ def auto_action(encounter: Encounter) -> Action | None:
     * **It does not husband spell slots.** The highest-value cast available is the
       one taken, so a caster spends its best slots first and fights on with a
       weapon once they are gone.
-    * **It never casts a spell that deals no damage.** Hold Person is loaded,
+    * **It never casts a non-healing spell that deals no damage.** Hold Person is loaded,
       implemented, and still never chosen here, because valuing a condition means
       modelling the turns it buys the rest of the party — which a one-turn greedy
       policy cannot see. A batch is a floor for a control build, not a measure of it.
-    * **It does not use items.** A potion is never drunk in a batch.
+    * **It uses healing items at half hit points or below.** It does not value
+      other item effects.
     * **It does not value an attack's on-hit condition rider.** The damage riders
       are priced exactly — the bonus pool against its own defenses, the Advantage
       dice under the resolved advantage state — but a poison the hit would apply
@@ -139,6 +153,13 @@ def auto_action(encounter: Encounter) -> Action | None:
     actor = encounter.current
     if not actor.active:
         return None
+    if actor.surrender_when_last and not any(
+        creature.team == actor.team
+        and creature.name != actor.name
+        and creature.combat_active
+        for creature in encounter.creatures.values()
+    ):
+        return Action(kind=ActionKind.SURRENDER)
     enemies = [c for c in encounter.enemies_of(actor.name) if c.conscious]
     if not enemies:
         return None
@@ -146,6 +167,9 @@ def auto_action(encounter: Encounter) -> Action | None:
         return Action(kind=ActionKind.STAND)
 
     turn = encounter.state()["turn_state"]
+    healing = _healing_action(encounter, actor, turn)
+    if healing is not None:
+        return healing
     options: list[_Option] = []
     # Starting an Attack action needs the action still in hand; continuing a
     # Multiattack already under way does not.
@@ -225,6 +249,86 @@ def _castable_slots(actor: Creature, spell: Spell) -> list[int]:
         for level, count in actor.spell_slots.items()
         if count > 0 and level >= spell.level
     )
+
+
+def _healing_action(
+    encounter: Encounter, actor: Creature, turn: dict[str, Any]
+) -> Action | None:
+    """Revive a downed ally, or shore up one at half hit points or below."""
+    allies = [
+        creature
+        for creature in encounter.creatures.values()
+        if creature.team == actor.team
+        and not creature.dead
+        and creature.hp < creature.max_hp
+        and (creature.hp == 0 or creature.hp * 2 <= creature.max_hp)
+    ]
+    if not allies:
+        return None
+    allies.sort(
+        key=lambda creature: (
+            creature.hp != 0,
+            creature.hp / creature.max_hp,
+            creature.name,
+        )
+    )
+    target = allies[0]
+    distance = actor.distance_to(target, encounter.movement_rule)
+    choices: list[tuple[float, str, Action]] = []
+
+    if not turn["action_used"]:
+        for name in actor.spells:
+            spell = encounter.spellbook.get(name)
+            if spell is None or spell.heal is None:
+                continue
+            if spell.range_feet and distance > spell.range_feet:
+                continue
+            for slot_level in _castable_slots(actor, spell):
+                dice = spell.healing_at(slot_level)
+                if dice is None:
+                    continue
+                value = dice.count * (dice.faces + 1) / 2 + dice.modifier
+                choices.append(
+                    (
+                        value,
+                        f"spell:{name}:{slot_level}",
+                        Action(
+                            kind=ActionKind.CAST,
+                            spell=name,
+                            slot_level=slot_level,
+                            target=target.name,
+                        ),
+                    )
+                )
+
+    for name, quantity in actor.items.items():
+        effect = encounter.items.get(name)
+        if quantity <= 0 or effect is None or effect.heal is None:
+            continue
+        if target is not actor and distance > MELEE_THRESHOLD:
+            continue
+        bonus = effect.action_cost is ActionCost.BONUS_ACTION
+        if bonus and turn["bonus_action_used"]:
+            continue
+        if not bonus and turn["action_used"]:
+            continue
+        dice = effect.heal
+        value = dice.count * (dice.faces + 1) / 2 + dice.modifier
+        choices.append(
+            (
+                value,
+                f"item:{name}",
+                Action(
+                    kind=ActionKind.USE_ITEM,
+                    item=name,
+                    target=target.name,
+                    as_bonus_action=bonus,
+                ),
+            )
+        )
+    if not choices:
+        return None
+    return max(choices, key=lambda entry: (entry[0], entry[1]))[2]
 
 
 def _spell_options(
@@ -701,10 +805,18 @@ def simulate_rounds(
     wins: dict[str, int] = {}
     round_counts: list[float] = []
     timeouts = 0
+    team_metrics: dict[str, dict[str, list[float]]] = {}
     for index in range(iterations):
         rng = Random(seed + index)
+        combatants = list(factory())
+        initial_slots = {
+            creature.name: sum(creature.spell_slots.values()) for creature in combatants
+        }
+        initial_items = {
+            creature.name: sum(creature.items.values()) for creature in combatants
+        }
         encounter = Encounter(
-            list(factory()),
+            combatants,
             rng,
             spellbook=spellbook,
             items=items,
@@ -719,6 +831,42 @@ def simulate_rounds(
         round_counts.append(float(outcome.rounds))
         if outcome.timed_out:
             timeouts += 1
+        for team in sorted({creature.team for creature in combatants}):
+            members = [creature for creature in combatants if creature.team == team]
+            hp = sum(creature.hp for creature in members)
+            maximum = sum(creature.max_hp for creature in members)
+            metrics = team_metrics.setdefault(
+                team,
+                {
+                    "hp_remaining": [],
+                    "hp_fraction": [],
+                    "conscious": [],
+                    "defeated": [],
+                    "spell_slots_spent": [],
+                    "items_spent": [],
+                },
+            )
+            metrics["hp_remaining"].append(float(hp))
+            metrics["hp_fraction"].append(hp / maximum if maximum else 0.0)
+            conscious = sum(creature.conscious for creature in members)
+            metrics["conscious"].append(float(conscious))
+            metrics["defeated"].append(float(len(members) - conscious))
+            metrics["spell_slots_spent"].append(
+                float(
+                    sum(
+                        initial_slots[creature.name] - sum(creature.spell_slots.values())
+                        for creature in members
+                    )
+                )
+            )
+            metrics["items_spent"].append(
+                float(
+                    sum(
+                        initial_items[creature.name] - sum(creature.items.values())
+                        for creature in members
+                    )
+                )
+            )
     return {
         "iterations": iterations,
         "seed": seed,
@@ -729,6 +877,13 @@ def simulate_rounds(
         },
         "rounds": summarise(round_counts).as_dict(),
         "timed_out": timeouts,
+        "teams": {
+            team: {
+                metric: summarise(samples).as_dict()
+                for metric, samples in metrics.items()
+            }
+            for team, metrics in sorted(team_metrics.items())
+        },
     }
 
 

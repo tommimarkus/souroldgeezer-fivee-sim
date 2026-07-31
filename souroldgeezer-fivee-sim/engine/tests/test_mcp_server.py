@@ -225,6 +225,20 @@ class TestEncounterFlow:
             api.encounter_act(encounter_id, kind="stand")
 
 
+class TestScenarioTiming:
+    def test_route_response_window_is_available_through_the_tool_surface(self) -> None:
+        result = api.scenario_timing(
+            distance_feet=105,
+            speed_feet=30,
+            dash=True,
+            response_after_rounds=3,
+        )
+
+        assert result["traveller"]["travel_rounds"] == 2
+        assert result["lead_rounds"] == 1
+        assert result["can_intercept"] is True
+
+
 class TestPlanarPositions:
     """The two-dimensional wire format: [x, y] in state, accepted on input."""
 

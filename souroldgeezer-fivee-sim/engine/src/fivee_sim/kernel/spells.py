@@ -58,6 +58,7 @@ class Spell:
     save_ability: Ability | None = None
     damage: Dice | None = None
     damage_type: DamageType | None = None
+    heal: Dice | None = None
     #: Default False because SRD 5.2 grants half damage per spell, in the spell's
     #: own text — Fireball says "half as much damage on a successful save", Sacred
     #: Flame says only "take 1d8 Radiant damage". So a record that omits this is a
@@ -66,6 +67,7 @@ class Spell:
     half_on_save: bool = False
     #: Dice added per slot level above the spell's base level.
     upcast_damage: Dice | None = None
+    upcast_heal: Dice | None = None
     shape: SpellShape = SpellShape.SINGLE
     radius: int = 0
     length: int = 0
@@ -107,6 +109,18 @@ class Spell:
             modifier=self.damage.modifier,
         )
 
+    def healing_at(self, slot_level: int) -> Dice | None:
+        if self.heal is None:
+            return None
+        if self.upcast_heal is None or slot_level <= self.level:
+            return self.heal
+        extra_levels = slot_level - self.level
+        return Dice(
+            count=self.heal.count + self.upcast_heal.count * extra_levels,
+            faces=self.heal.faces,
+            modifier=self.heal.modifier,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class SpellTarget:
@@ -139,11 +153,14 @@ class SpellTargetResult:
     attack: AttackRoll | None = None
     damage_dealt: int = 0
     condition_applied: str | None = None
+    healed: int = 0
 
     @property
     def affected(self) -> bool:
         if self.attack is not None:
             return self.attack.hit
+        if self.healed:
+            return True
         if self.save is not None:
             return not self.save.success
         return False
@@ -157,6 +174,8 @@ class SpellTargetResult:
             parts.append(f"{self.save.describe()} -> {saved}")
         if self.damage_dealt:
             parts.append(f"{self.damage_dealt} damage")
+        if self.healed:
+            parts.append(f"{self.healed} healing")
         if self.condition_applied is not None:
             parts.append(f"gains {self.condition_applied}")
         return f"{self.name}: " + "; ".join(parts) if parts else f"{self.name}: no effect"
@@ -167,6 +186,7 @@ class SpellResolution:
     spell: str
     slot_level: int
     damage_roll: DiceRoll | None = None
+    healing_roll: DiceRoll | None = None
     results: tuple[SpellTargetResult, ...] = field(default_factory=tuple)
     concentration_started: bool = False
 
@@ -187,6 +207,7 @@ def resolve_spell(
             f"level {slot_level} slot"
         )
     dice = spell.damage_at(slot_level)
+    healing_dice = spell.healing_at(slot_level)
 
     if spell.requires_attack_roll:
         results: list[SpellTargetResult] = []
@@ -224,6 +245,7 @@ def resolve_spell(
 
     # Save-based: one damage roll shared by every creature in the area.
     damage_roll = roll_dice(dice, rng) if dice is not None else None
+    healing_roll = roll_dice(healing_dice, rng) if healing_dice is not None else None
     results = []
     for target in targets:
         save: D20Test | None = None
@@ -256,12 +278,14 @@ def resolve_spell(
                 save=save,
                 damage_dealt=dealt,
                 condition_applied=spell.condition if failed else None,
+                healed=healing_roll.total if healing_roll is not None else 0,
             )
         )
     return SpellResolution(
         spell=spell.name,
         slot_level=slot_level,
         damage_roll=damage_roll,
+        healing_roll=healing_roll,
         results=tuple(results),
         concentration_started=spell.concentration,
     )

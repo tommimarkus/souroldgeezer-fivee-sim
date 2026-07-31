@@ -223,6 +223,13 @@ class Creature:
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
+    #: Action kinds this stat block may take as a Bonus Action.  The strings use
+    #: encounter action names but stay strings here to preserve the model's
+    #: one-way dependency: creatures do not import the encounter that owns them.
+    bonus_actions: frozenset[str] = frozenset()
+    #: A simple authored morale endpoint: give up when no conscious ally remains.
+    surrender_when_last: bool = False
+    surrendered: bool = False
     #: Pack Tactics, as a flag: the stat block prints it, the encounter resolves
     #: it, because whether a capable ally is within 5 feet of the target is a
     #: question about the whole fight, not about this creature.
@@ -317,6 +324,10 @@ class Creature:
                 AttackOption.from_record(entry) for entry in record.get("attacks", [])
             ),
             attacks_per_action=int(record.get("attacks_per_action", 1)),
+            bonus_actions=frozenset(
+                str(entry) for entry in record.get("bonus_actions", [])
+            ),
+            surrender_when_last=bool(record.get("surrender_when_last", False)),
             pack_tactics=bool(record.get("pack_tactics", False)),
             undead_fortitude=bool(record.get("undead_fortitude", False)),
             spells=tuple(str(entry) for entry in record.get("spells", [])),
@@ -359,13 +370,18 @@ class Creature:
         return not self.dead and self.hp > 0
 
     @property
+    def combat_active(self) -> bool:
+        """Still opposing the other teams, rather than dead, down, or yielded."""
+        return self.conscious and not self.surrendered
+
+    @property
     def dying(self) -> bool:
         return not self.dead and self.hp == 0 and not self.stable
 
     @property
     def active(self) -> bool:
         """Able to act: conscious and not held by an incapacitating condition."""
-        if not self.conscious:
+        if not self.combat_active:
             return False
         return not any(self._effect(condition).incapacitated for condition in self.conditions)
 

@@ -65,7 +65,7 @@ from ..kernel.grid import (
     to_square,
 )
 from ..kernel.grid import cover_between as grid_cover_between
-from ..kernel.items import ItemEffect, resolve_item_use
+from ..kernel.items import ActionCost, ItemEffect, resolve_item_use
 from ..kernel.rules import (
     Ability,
     D20Test,
@@ -103,6 +103,7 @@ class ActionKind(StrEnum):
     USE_ITEM = "use_item"
     INTERACT = "interact"
     STAND = "stand"
+    SURRENDER = "surrender"
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +142,9 @@ class Action:
     #: Which movement speed pays for this move. Omitted preserves the legacy
     #: walking default.
     movement_mode: MovementMode | None = None
+    #: Explicit intent for action kinds that can use either budget. Effects with
+    #: a fixed cost validate this against their declaration.
+    as_bonus_action: bool = False
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -150,7 +154,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
-    "attach", "attached_damage", "detach",
+    "attach", "attached_damage", "detach", "surrender",
     "turn_end", "turn_start", "undead_fortitude", "use_item",
 })
 
@@ -219,7 +223,7 @@ class ActionRecord:
             # how ``to_level`` went missing from every cross-storey move.
             for name in ("target", "attack", "item", "spell", "slot_level",
                          "to_position", "center", "direction", "toward", "feature",
-                         "set_open", "to_level", "movement_mode"):
+                         "set_open", "to_level", "movement_mode", "as_bonus_action"):
                 value = getattr(self.action, name)
                 if value is not None:
                     action[name] = (
@@ -250,6 +254,7 @@ class TurnState:
     action_used: bool = False
     attacks_left: int = 0
     interaction_used: bool = False
+    bonus_action_used: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -835,6 +840,14 @@ class Encounter:
     def current(self) -> Creature:
         return self.creatures[self.current_name]
 
+    @property
+    def action_available(self) -> bool:
+        return not self._turn.action_used
+
+    @property
+    def bonus_action_available(self) -> bool:
+        return not self._turn.bonus_action_used
+
     def teams(self) -> dict[str, list[str]]:
         grouped: dict[str, list[str]] = {}
         for creature in self.creatures.values():
@@ -842,7 +855,7 @@ class Encounter:
         return grouped
 
     def living_teams(self) -> set[str]:
-        return {c.team for c in self.creatures.values() if c.conscious}
+        return {c.team for c in self.creatures.values() if c.combat_active}
 
     @property
     def over(self) -> bool:
@@ -867,7 +880,7 @@ class Encounter:
             visible_levels.update(self._plane(actor.level).sight_links.get(origin, ()))
         return [
             c for c in self.creatures.values()
-            if c.team != actor.team and c.conscious and c.level in visible_levels
+            if c.team != actor.team and c.combat_active and c.level in visible_levels
         ]
 
     def state(self) -> dict[str, Any]:
@@ -883,6 +896,7 @@ class Encounter:
                 "action_used": self._turn.action_used,
                 "attacks_left": self._turn.attacks_left,
                 "interaction_used": self._turn.interaction_used,
+                "bonus_action_used": self._turn.bonus_action_used,
             },
             "map": self._map_state(),
             "ongoing_effects": [
@@ -1023,6 +1037,7 @@ class Encounter:
             "disengaged": self._disengaged[creature.name],
             "reaction_available": self._reaction_available[creature.name],
             "conscious": creature.conscious,
+            "surrendered": creature.surrendered,
             "dying": creature.dying,
             "dead": creature.dead,
             "stable": creature.stable,
@@ -1203,7 +1218,10 @@ class Encounter:
                     self.round += 1
                     self._emit("round", detail=f"round {self.round} begins",
                                round=self.round)
-                if not self.creatures[self.current_name].dead:
+                if (
+                    not self.creatures[self.current_name].dead
+                    and not self.creatures[self.current_name].surrendered
+                ):
                     break
                 # A dead creature's slot still passes: both its turn boundaries
                 # go by without it acting, and a rider anchored to either must
@@ -1242,20 +1260,23 @@ class Encounter:
             case ActionKind.MOVE:
                 self._do_move(actor, action, rng)
             case ActionKind.DASH:
-                self._require_action(actor)
+                self._spend_action_budget(actor, action, "dash")
                 dash_mode = action.movement_mode or MovementMode.WALK
                 dash_speed = self._movement_speed(actor, dash_mode)
-                self._turn.action_used = True
                 self._turn.movement_left += dash_speed
                 self._emit("dash", actor.name,
                            detail=f"movement now {self._turn.movement_left} ft",
                            movement_left=self._turn.movement_left,
-                           movement_mode=dash_mode.value)
+                           movement_mode=dash_mode.value,
+                           as_bonus_action=action.as_bonus_action)
             case ActionKind.DISENGAGE:
-                self._require_action(actor)
-                self._turn.action_used = True
+                self._spend_action_budget(actor, action, "disengage")
                 self._disengaged[actor.name] = True
-                self._emit("disengage", actor.name, detail="no opportunity attacks this turn")
+                self._emit(
+                    "disengage", actor.name,
+                    detail="no opportunity attacks this turn",
+                    as_bonus_action=action.as_bonus_action,
+                )
             case ActionKind.USE_ITEM:
                 self._do_use_item(actor, action, rng)
             case ActionKind.INTERACT:
@@ -1268,6 +1289,12 @@ class Encounter:
                 self._dodging[actor.name] = True
                 self._emit("dodge", actor.name,
                            detail="attacks against this creature have disadvantage")
+            case ActionKind.SURRENDER:
+                actor.surrendered = True
+                self._emit(
+                    "surrender", actor.name,
+                    detail=f"{actor.name} surrenders and leaves the fight",
+                )
         # The fourth route: an action can land an incapacitating condition on a
         # creature that is concentrating, and ``Creature.add_condition`` clears the
         # field from inside the model, where no release could be issued. A spell or
@@ -1286,6 +1313,24 @@ class Encounter:
     def _require_action(self, actor: Creature) -> None:
         if self._turn.action_used:
             raise EncounterError(f"{actor.name} has already taken an action this turn")
+
+    def _spend_action_budget(
+        self, actor: Creature, action: Action, action_name: str
+    ) -> None:
+        """Spend the ordinary or explicitly authored Bonus Action budget."""
+        if action.as_bonus_action:
+            if action_name not in actor.bonus_actions:
+                raise EncounterError(
+                    f"{actor.name} cannot {action_name} as a bonus action"
+                )
+            if self._turn.bonus_action_used:
+                raise EncounterError(
+                    f"{actor.name} has already taken a bonus action this turn"
+                )
+            self._turn.bonus_action_used = True
+            return
+        self._require_action(actor)
+        self._turn.action_used = True
 
     def _resolve_target(self, name: str | None) -> Creature:
         if name is None:
@@ -1638,7 +1683,6 @@ class Encounter:
         raise EncounterError(f"{actor.name} is not carrying {wanted!r}; has: {carrying}")
 
     def _do_use_item(self, actor: Creature, action: Action, rng: Random) -> None:
-        self._require_action(actor)
         if action.item is None:
             raise EncounterError("using an item needs 'item'")
         name = self._pick_item(actor, action.item)
@@ -1648,6 +1692,13 @@ class Encounter:
             raise EncounterError(
                 f"{name!r} is not defined by the loaded content; defined: {available}"
             )
+        if effect.action_cost is ActionCost.BONUS_ACTION:
+            if self._turn.bonus_action_used:
+                raise EncounterError(f"{actor.name} has already used a bonus action this turn")
+        else:
+            if action.as_bonus_action:
+                raise EncounterError(f"{name} takes an action, not a bonus action")
+            self._require_action(actor)
 
         if action.target is not None:
             target = self._resolve_target(action.target)
@@ -1664,7 +1715,10 @@ class Encounter:
                 )
         self._require_targetable(target)
 
-        self._turn.action_used = True
+        if effect.action_cost is ActionCost.BONUS_ACTION:
+            self._turn.bonus_action_used = True
+        else:
+            self._turn.action_used = True
         actor.items[name] -= 1
 
         resolution = resolve_item_use(
@@ -1694,6 +1748,7 @@ class Encounter:
             "use_item", actor.name, target.name,
             f"{resolution.describe()} ({actor.items[name]} left)",
             item=name, remaining=actor.items[name],
+            action_cost=effect.action_cost.value,
         )
         if resolution.healed:
             before = target.hp
@@ -1837,6 +1892,8 @@ class Encounter:
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
             detail += f", damage {resolution.damage_roll.describe()}"
+        if resolution.healing_roll is not None:
+            detail += f", healing {resolution.healing_roll.describe()}"
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
@@ -1878,6 +1935,20 @@ class Encounter:
                     damage_types=(
                         (spell.damage_type,) if spell.damage_type is not None else ()
                     ),
+                )
+            if result.healed:
+                before = target.hp
+                target.heal(result.healed)
+                self._emit(
+                    "heal",
+                    actor.name,
+                    target.name,
+                    detail=f"{target.hp - before} hit points restored, "
+                    f"{target.hp}/{target.max_hp}",
+                    spell=spell.name,
+                    amount=target.hp - before,
+                    hp=target.hp,
+                    max_hp=target.max_hp,
                 )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(

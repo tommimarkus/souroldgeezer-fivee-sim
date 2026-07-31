@@ -56,7 +56,7 @@ from typing import Any
 from .kernel.actions import AttackKind, RiderExpiry
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect, ConditionTable
 from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
-from .kernel.items import ItemEffect, ItemError
+from .kernel.items import ActionCost, ItemEffect, ItemError
 from .kernel.rules import Ability, DamageType, Size
 from .kernel.spells import Spell, SpellShape
 from .model.creature import Creature, DeathRule
@@ -103,7 +103,8 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
     "size", "abilities", "save_bonuses",
-    "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
+    "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
+    "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
@@ -116,8 +117,9 @@ _ATTACK_KEYS = frozenset({
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
-    "damage_type",
-    "half_on_save", "upcast_damage", "shape", "radius", "length", "size", "width",
+    "damage_type", "heal",
+    "half_on_save", "upcast_damage", "upcast_heal", "shape", "radius", "length",
+    "size", "width",
     "range_feet", "max_targets", "condition", "concentration",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -125,7 +127,7 @@ _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
 _USE_KEYS = frozenset({
     "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
-    "condition",
+    "condition", "action_cost",
 })
 
 
@@ -314,6 +316,16 @@ def _parse_creature(
     reader.enum("death_rule", DeathRule)
     reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
+    bonus_actions = reader.string_list("bonus_actions")
+    allowed_bonus_actions = {"dash", "disengage"}
+    for value in bonus_actions:
+        if value not in allowed_bonus_actions:
+            reader.fail(
+                "bonus_actions",
+                f"{value!r} is not supported. Valid values: "
+                f"{', '.join(sorted(allowed_bonus_actions))}",
+            )
+    reader.boolean("surrender_when_last")
     reader.boolean("pack_tactics")
     reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
@@ -442,8 +454,10 @@ def _parse_spell(
         save_ability=reader.enum("save_ability", Ability),
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),
+        heal=reader.dice("heal"),
         half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
+        upcast_heal=reader.dice("upcast_heal"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
         length=reader.integer("length", minimum=0),
@@ -585,6 +599,7 @@ def _parse_terrain(
                                             defaults.move_cost_multiplier)),
         passable=bool(values.get("passable", defaults.passable)),
         opaque=bool(values.get("opaque", defaults.opaque)),
+        underwater=bool(values.get("underwater", defaults.underwater)),
         cover=int(values.get("cover", defaults.cover)),
     )
     return effect, dict(record)
@@ -610,6 +625,7 @@ def _parse_item(
     save_dc = sub.integer("save_dc", minimum=1) if save_ability is not None else 0
     half_on_save = sub.boolean("half_on_save", default=False)
     condition = sub.string("condition") or None
+    action_cost = sub.enum("action_cost", ActionCost) or ActionCost.ACTION
     if not (reader.ok and sub.ok):
         return None
     try:
@@ -621,6 +637,7 @@ def _parse_item(
             save_dc=save_dc,
             half_on_save=half_on_save,
             condition=condition,
+            action_cost=action_cost,
             description=description,
             provenance=provenance,
         )

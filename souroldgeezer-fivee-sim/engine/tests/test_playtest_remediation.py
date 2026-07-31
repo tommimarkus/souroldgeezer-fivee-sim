@@ -7,10 +7,13 @@ authoritative encounter state so analytics cannot implement a different answer.
 
 from __future__ import annotations
 
+from fivee_sim.analytics.montecarlo import auto_action, simulate_rounds
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import TERRAIN, MovementMode, TerrainEffect
+from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import DamageType
+from fivee_sim.kernel.spells import Spell
 from fivee_sim.map_document import as_payload, parse_document, to_grid
 from fivee_sim.model.battlemap import BattleMap, MapPlane
 from fivee_sim.model.creature import AttackOption, Creature, DeathRule
@@ -292,6 +295,184 @@ class TestAttachment:
         assert drains[-1].data["damage"] == 8
         assert drains[-1].actor == "Stirge"
         assert drains[-1].target == "Harrow"
+
+
+class TestHealingAndActionEconomy:
+    def test_a_healing_spell_restores_hit_points_and_spends_its_slot(self) -> None:
+        cleric = fighter("Wren")
+        cleric.spells = ("Cure Wounds",)
+        cleric.spell_slots = {1: 1}
+        ally = fighter("Harrow", position=5, hp=0)
+        enemy = fighter("Marauder", team="monsters", position=30)
+        spell = Spell(
+            name="Cure Wounds",
+            level=1,
+            heal=Dice(2, 8, 3),
+            range_feet=5,
+            provenance=FIXTURE,
+        )
+        rng = FixedRandom(4)
+        encounter = Encounter([cleric, ally, enemy], rng, spellbook={spell.name: spell})
+        advance_to(encounter, "Wren", rng)
+
+        events = encounter.act(
+            Action(
+                kind=ActionKind.CAST,
+                spell="Cure Wounds",
+                slot_level=1,
+                target="Harrow",
+            ),
+            rng,
+        )
+
+        assert ally.hp == 11
+        assert ally.conscious
+        assert cleric.spell_slots == {1: 0}
+        assert next(event for event in events if event.kind == "heal").data["amount"] == 11
+
+    def test_a_bonus_action_heal_leaves_the_action_available(self) -> None:
+        fighter_with_wind = fighter("Harrow", hp=4)
+        fighter_with_wind.items = {"Second Wind": 1}
+        enemy = fighter("Goblin", team="monsters", position=5)
+        wind = ItemEffect(
+            heal=Dice(1, 10, 1),
+            action_cost=ActionCost.BONUS_ACTION,
+            provenance=FIXTURE,
+        )
+        rng = FixedRandom(5)
+        encounter = Encounter(
+            [fighter_with_wind, enemy], rng, items={"Second Wind": wind}
+        )
+        advance_to(encounter, "Harrow", rng)
+
+        encounter.act(
+            Action(
+                kind=ActionKind.USE_ITEM,
+                item="Second Wind",
+                as_bonus_action=True,
+            ),
+            rng,
+        )
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin", attack="Longsword"), rng
+        )
+
+        assert fighter_with_wind.hp == 10
+        assert any(event.kind == "attack" for event in events)
+
+    def test_batch_policy_revives_an_ally_before_choosing_damage(self) -> None:
+        cleric = fighter("Wren")
+        cleric.spells = ("Cure Wounds",)
+        cleric.spell_slots = {1: 1}
+        ally = fighter("Harrow", position=5, hp=0)
+        enemy = fighter("Marauder", team="monsters", position=10)
+        spell = Spell(
+            name="Cure Wounds",
+            level=1,
+            heal=Dice(2, 8, 3),
+            range_feet=5,
+            provenance=FIXTURE,
+        )
+        rng = FixedRandom(10)
+        encounter = Encounter(
+            [cleric, ally, enemy], rng, spellbook={spell.name: spell}
+        )
+        advance_to(encounter, "Wren", rng)
+
+        action = auto_action(encounter)
+
+        assert action is not None
+        assert action.kind is ActionKind.CAST
+        assert action.spell == "Cure Wounds"
+        assert action.target == "Harrow"
+
+    def test_an_authored_bonus_action_disengage_leaves_the_action_available(self) -> None:
+        rogue = fighter("Tansy")
+        rogue.bonus_actions = frozenset({"dash", "disengage"})
+        enemy = fighter("Goblin", team="monsters", position=5)
+        rng = FixedRandom(10)
+        encounter = Encounter([rogue, enemy], rng)
+        advance_to(encounter, "Tansy", rng)
+
+        encounter.act(
+            Action(kind=ActionKind.DISENGAGE, as_bonus_action=True), rng
+        )
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin", attack="Longsword"),
+            rng,
+        )
+
+        assert encounter.state()["turn_state"] == {
+            "movement_left": 30,
+            "action_used": True,
+            "attacks_left": 0,
+            "interaction_used": False,
+            "bonus_action_used": True,
+        }
+        assert any(event.kind == "attack" for event in events)
+
+
+class TestMorale:
+    def test_the_last_authored_holdout_surrenders_and_ends_the_encounter(self) -> None:
+        whip = fighter("Whip", team="monsters", hp=5)
+        whip.surrender_when_last = True
+        fallen = fighter("Goblin", team="monsters", hp=0)
+        fallen.death_rule = DeathRule.INSTANT
+        fallen.dead = True
+        party = fighter("Harrow", position=5)
+        rng = FixedRandom(10)
+        encounter = Encounter([whip, fallen, party], rng)
+        advance_to(encounter, "Whip", rng)
+
+        action = auto_action(encounter)
+
+        assert action is not None
+        assert action.kind is ActionKind.SURRENDER
+        events = encounter.act(action, rng)
+        assert [event.kind for event in events] == ["surrender"]
+        assert encounter.over is True
+        assert encounter.winner == "party"
+        state = next(
+            creature
+            for creature in encounter.state()["combatants"]
+            if creature["name"] == "Whip"
+        )
+        assert state["surrendered"] is True
+
+
+class TestDistributionEvidence:
+    def test_batch_reports_team_hp_casualty_and_resource_distributions(self) -> None:
+        def combatants() -> list[Creature]:
+            cleric = fighter("Wren", max_hp=12)
+            cleric.spells = ("Cure Wounds",)
+            cleric.spell_slots = {1: 1}
+            cleric.items = {"Potion": 1}
+            foe = fighter("Skeleton", team="monsters", position=10, max_hp=13)
+            return [cleric, foe]
+
+        result = simulate_rounds(
+            combatants,
+            iterations=20,
+            seed=2026073120,
+            max_rounds=10,
+            spellbook={
+                "Cure Wounds": Spell(
+                    name="Cure Wounds",
+                    level=1,
+                    heal=Dice(2, 8, 3),
+                    range_feet=5,
+                    provenance=FIXTURE,
+                )
+            },
+            items={"Potion": ItemEffect(heal=Dice(2, 4, 2), provenance=FIXTURE)},
+        )
+
+        party = result["teams"]["party"]
+        assert party["hp_fraction"]["samples"] == 20
+        assert 0 <= party["hp_fraction"]["p10"] <= party["hp_fraction"]["p90"] <= 1
+        assert party["defeated"]["max"] >= 0
+        assert party["spell_slots_spent"]["max"] >= 0
+        assert party["items_spent"]["max"] >= 0
 
 
 def _authored_map() -> dict[str, object]:
