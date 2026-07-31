@@ -230,8 +230,8 @@ thin. `mcp_server/server.py` maps those errors onto `ToolError`,
 that and serialisation. A tool body written into an adapter belongs here instead.
 
 **Four modules sit beside the packages, and that tier is deliberate.**
-`content.py`, `maps.py`, `validation.py`, and `coverage.py` live directly in
-`src/fivee_sim/` — 2,757 lines, about a fifth of the engine. What belongs there
+`content.py`, `map_document.py`, `validation.py`, and `coverage.py` live directly
+in `src/fivee_sim/` — 2,757 lines, about a fifth of the engine. What belongs there
 is a cross-cutting concern that is neither a rules primitive nor creature state:
 how content enters the engine and how any file it reads is validated, the on-disk
 map document format, and the generated coverage report. Nothing in `kernel/`,
