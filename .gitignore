@@ -36,3 +36,6 @@ dist/
 
 # Tool caches
 .cache/
+
+# 5E simulation runtime state (maps, replays, editor metadata, and logs)
+.fivee-sim/
