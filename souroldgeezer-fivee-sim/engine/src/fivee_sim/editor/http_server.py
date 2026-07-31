@@ -260,7 +260,11 @@ class _Handler(BaseHTTPRequestHandler):
     def _check_host(self) -> None:
         host = self.headers.get("Host", "")
         name = host.rsplit(":", 1)[0] if ":" in host else host
-        if name not in ("127.0.0.1", "localhost"):
+        # RFC 9110 §7.2 inherits URI host semantics, where the host is
+        # case-insensitive, so LOCALHOST is this editor. Accepting it costs
+        # nothing defensively: the guard is here to stop DNS rebinding, and an
+        # attacker who can set Host arbitrarily would simply send lowercase.
+        if name.lower() not in ("127.0.0.1", "localhost"):
             raise _Problem(
                 HTTPStatus.FORBIDDEN,
                 f"host {host!r} is not this editor; it answers only as "
