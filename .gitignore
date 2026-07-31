@@ -20,6 +20,9 @@
 # is also a /dev/null mount, so nothing here is storable or meaningful.
 .claude/
 
+# Codex per-project hooks are workstation-local.
+/.codex/hooks.json
+
 # Git worktrees used for implementation branches.
 .worktrees/
 
