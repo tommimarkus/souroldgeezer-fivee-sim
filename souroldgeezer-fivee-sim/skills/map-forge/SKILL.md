@@ -26,11 +26,18 @@ session or file — is currently the truth.
    legend giving each its feet.
 3. **Verbal tweaks are `map_edit`** — the user says "wall off the north
    passage" and you translate it into operations: `set_terrain` (a rect),
-   `paint` (cells), `line`, `carve_corridor`, `add_feature`,
+   `paint` (cells), `line`, `carve_corridor`, `add_feature`, `set_feature`,
    `remove_feature`, `toggle_door`, `resize`, `set_legend`, `set_name`,
    `set_palette`, `set_elevation`, `adjust_elevation`. The whole list applies
    atomically; a bad operation names its index and changes nothing. Render the
    result back so the user sees what changed.
+
+   Changing an existing feature is `set_feature`, not a remove-and-re-add: it
+   edits the feature its record's `id` names, in place and on the storey it
+   already stands on. It **writes the record whole**, so restate every field
+   the feature is to keep — a key left out is a key removed. For a door's
+   open/closed state alone, `toggle_door` is still the shortest thing that
+   works. `to_level` on a feature makes it a connector between storeys.
 4. **`map_save`** writes canonical JSON and refuses to overwrite unless told
    to. Quote the path and the sha256.
 5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
@@ -58,8 +65,12 @@ session or file — is currently the truth.
 9. **Hand a map to another virtual tabletop with `uvtt_export`.** It writes
    the loaded map as a Universal VTT JSON file (default
    `<maps root>/uvtt/<slug>.uvtt`, replaced on re-export) carrying wall
-   polylines derived from the tiles, one portal per door, and a rendered PNG
-   of the map — always a file, never inline; quote the path. Lights and
+   polylines derived from the terrain, one portal per door, and a rendered PNG
+   of the map — always a file, never inline; quote the path. To hand over the
+   map a fight is on rather than the map on disk, pass `open_features` with
+   the fixtures standing open (`encounter_state`'s map block lists them): a
+   raised portcullis stops being a wall and a flooded room exports as water.
+   Lights and
    elevation are not exported: the format has no place for the ground heights
    the engine now models, and nothing here models lights. The
    image side is capped at 4096 pixels: lower `pixels_per_grid` for very
@@ -131,14 +142,18 @@ floor sits at.
 Every op that acts on one floor takes a `level` (default the ground), as do
 `map_render`, `map_query`, and `uvtt_export` — the last exports one file per
 floor, because the format has no notion of storeys. `set_name`, `set_legend`,
-and `resize` take none: they are document-wide, and a resize moves every floor
-together.
+`set_palette` and `resize` take none: they are document-wide, and a resize moves
+every floor together. `set_feature` takes none either, for the opposite reason —
+it edits the feature wherever it stands, so it can never move one between
+floors.
 
 In the browser editor the Level control picks the floor being edited, and
 **Stack** ghosts the storeys either side of it through the one on screen — the
 way to line a stair head up with the stair foot below without editing blind.
 
-A stairway becomes walkable when its feature carries `to_level`. **Say what a
+A stairway becomes walkable when its feature carries `to_level`, which
+`add_feature` and `set_feature` both write — a stairway drawn without one is a
+glyph nobody can climb. **Say what a
 floor does**, as with height: a floor is opaque, so creatures on different
 levels cannot see, target, or threaten each other at all, and a move between
 them ends on a connector square and pays the climb. Routing is per level — ask
@@ -157,8 +172,10 @@ Six optional keys are what a fixture may carry, all of them needing that
 further squares and what they become in each state, `requires` naming fixtures
 that must stand open first, `costs_action`, and `check` (`{"ability", "dc"}`).
 Build one with `add_feature`, whose overlay squares may be given as a `rect`
-rather than listed cell by cell. There is no operation for editing overlays —
-`remove_feature` plus `add_feature` in one atomic call replaces the fixture.
+rather than listed cell by cell, and change one with `set_feature`, which takes
+the same record and edits in place the fixture its `id` names. `set_feature`
+writes the record whole, so restate every key the fixture is to keep — dropping
+`affects` from the record is how a fixture stops affecting anything.
 
 **Say what a fixture does — and what it costs — before the party commits**,
 because the half that is missing is the half a user will assume:

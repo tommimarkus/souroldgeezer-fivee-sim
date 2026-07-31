@@ -221,37 +221,192 @@ class TestPortals:
         assert [portal["position"]["x"] for portal in portals] == [4.5, 2.5]
 
 
+def decode(image: str) -> tuple[int, int, bytes]:
+    png = base64.b64decode(image)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    width, height = struct.unpack(">II", png[16:24])
+    assert png[24] == 8 and png[25] == 2  # 8-bit truecolor
+    offset, idat = 8, b""
+    while offset < len(png):
+        (length,) = struct.unpack(">I", png[offset:offset + 4])
+        kind = png[offset + 4:offset + 8]
+        if kind == b"IDAT":
+            idat += png[offset + 8:offset + 8 + length]
+        offset += 12 + length
+    return width, height, zlib.decompress(idat)
+
+
+def pixel(raw: bytes, width: int, px: int, py: int) -> tuple[int, int, int]:
+    stride = 1 + width * 3
+    row = raw[py * stride:(py + 1) * stride]
+    assert row[0] == 0  # filter type: none
+    return (row[1 + px * 3], row[2 + px * 3], row[3 + px * 3])
+
+
+def square(raw: bytes, width: int, cell: tuple[int, int], ppg: int = 8) -> tuple[int, int, int]:
+    """The fill of one grid square, sampled clear of its grid line."""
+    return pixel(raw, width, cell[0] * ppg + ppg // 2, cell[1] * ppg + ppg // 2)
+
+
+def gated_payload() -> dict[str, Any]:
+    """A 4x3 room whose only wall is a portcullis, and a puddle beside it.
+
+    Every tile is floor. The gate is a wall while it is shut and floor once it
+    is raised, and the square east of it is dry floor until the same gate lets
+    the water in — and nothing but the gate's own record says either, which is
+    what makes an export that reads the tiles alone unable to show it.
+    """
+    raw = payload()
+    raw["name"] = "portcullis room"
+    raw["grid"] = {"width": 4, "height": 3, "cell_feet": 5}
+    raw["tiles"] = ["....", "....", "...."]
+    raw["features"] = [
+        {
+            "id": "portcullis", "kind": "portcullis", "at": [1, 1], "state": "closed",
+            "terrain": {"closed": "wall", "open": "floor"},
+            "affects": [
+                {"cells": [[2, 1]], "terrain": {"closed": "floor", "open": "water"}},
+            ],
+        }
+    ]
+    return raw
+
+
+#: The four unit edges around the single opaque square at (1, 1), all interior.
+GATE_SHUT_EDGES = {
+    frozenset({(1, 1), (1, 2)}),
+    frozenset({(2, 1), (2, 2)}),
+    frozenset({(1, 1), (2, 1)}),
+    frozenset({(1, 2), (2, 2)}),
+}
+
+
+class TestFixtureStates:
+    """``open``: export the map a fight is on, not only the map as authored.
+
+    The same argument ``render_ascii`` takes, and the same two-way distinction:
+    ``None`` resolves nothing and reads the tiles, ``[]`` says every fixture is
+    shut — which is a different answer for a map that authored one open.
+    """
+
+    def gated(self, **kwargs: Any) -> dict[str, Any]:
+        kwargs.setdefault("include_image", False)
+        return to_uvtt(document(gated_payload()), terrain=TERRAIN, **kwargs)
+
+    def test_a_shut_fixture_puts_its_wall_on_the_map(self) -> None:
+        assert rasterize(self.gated(open=[])["line_of_sight"]) == GATE_SHUT_EDGES
+
+    def test_an_open_fixture_takes_its_wall_off(self) -> None:
+        assert self.gated(open=["portcullis"])["line_of_sight"] == []
+
+    def test_open_none_reads_the_tiles_and_resolves_nothing(self) -> None:
+        # The gate is authored shut, and this answer is still no wall: None is
+        # "do not ask", not "ask about the authored state".
+        assert self.gated()["line_of_sight"] == []
+
+    def test_a_name_this_map_has_no_fixture_for_is_ignored(self) -> None:
+        # A fight's open set spans every storey, and this export is one level.
+        assert self.gated(open=["portcullis", "the cellar hatch"])["line_of_sight"] == []
+
+    def test_a_fixture_moves_the_png_fill_with_it(self) -> None:
+        doc = document(gated_payload())
+        width, _, shut = decode(
+            to_uvtt(doc, terrain=TERRAIN, pixels_per_grid=8, open=[])["image"]
+        )
+        _, _, raised = decode(
+            to_uvtt(doc, terrain=TERRAIN, pixels_per_grid=8, open=["portcullis"])["image"]
+        )
+        # The gate's own square, and then the square its overlay governs.
+        assert square(shut, width, (1, 1)) == PALETTE["wall"]
+        assert square(raised, width, (1, 1)) == PALETTE["floor"]
+        assert square(shut, width, (2, 1)) == PALETTE["floor"]
+        assert square(raised, width, (2, 1)) == PALETTE["water"]
+
+    def test_a_portal_takes_its_state_from_the_argument(self) -> None:
+        doc = document()  # door-1, authored closed
+        def closed(**kwargs: Any) -> bool:
+            portal = to_uvtt(doc, terrain=TERRAIN, include_image=False, **kwargs)["portals"][0]
+            return bool(portal["closed"])
+
+        assert closed() is True  # the recorded default
+        assert closed(open=["door-1"]) is False
+        assert closed(open=[]) is True
+
+    def test_a_shut_door_stays_a_gap_in_the_wall_rather_than_sealing_it(self) -> None:
+        # The one square resolution deliberately does not touch. A door travels
+        # as a portal here, and a portal buried in solid wall is a door the
+        # importer cannot open — but a shut door's own square resolves to
+        # 'door-closed', which is opaque. So the tile under a door is what the
+        # walls and the picture both read, exactly as before ``open`` existed.
+        edges = rasterize(export(include_image=False, open=[])["line_of_sight"])
+        assert edges == interior_boundary_edges(payload()["tiles"])
+        assert frozenset({(2, 2), (2, 3)}) not in edges
+        width, _, image = decode(export(pixels_per_grid=8, open=[])["image"])
+        assert square(image, width, (2, 2)) == PALETTE["floor"]
+
+    def test_a_doors_overlay_resolves_like_any_other_fixtures(self) -> None:
+        # Only the door's *own* square is spared: what it reaches past itself is
+        # ordinary fixture business, which is what a sluice gate is.
+        raw = payload()
+        raw["features"][0]["affects"] = [
+            {"cells": [[4, 0]], "terrain": {"closed": "floor", "open": "wall"}},
+        ]
+        doc = document(raw)
+        shut = rasterize(
+            to_uvtt(doc, terrain=TERRAIN, include_image=False, open=[])["line_of_sight"]
+        )
+        opened = rasterize(
+            to_uvtt(doc, terrain=TERRAIN, include_image=False, open=["door-1"])[
+                "line_of_sight"
+            ]
+        )
+        assert shut == interior_boundary_edges(payload()["tiles"])
+        assert opened - shut == {
+            frozenset({(4, 0), (4, 1)}),
+            frozenset({(5, 0), (5, 1)}),
+            frozenset({(4, 1), (5, 1)}),
+        }
+        assert shut - opened == set()
+
+    def test_the_named_storey_is_the_one_resolved(self) -> None:
+        # The plane a fixture stands on is the plane its claims land on, so a
+        # level-1 export must not be resolved against the ground's fixtures.
+        raw = gated_payload()
+        raw["levels"] = [
+            {
+                "index": 1,
+                "name": "gallery",
+                "tiles": ["....", "....", "...."],
+                "features": [
+                    {"id": "gallery gate", "kind": "portcullis", "at": [2, 1],
+                     "state": "closed", "terrain": {"closed": "wall", "open": "floor"}},
+                ],
+            }
+        ]
+        doc = document(raw)
+        upper = to_uvtt(
+            doc, terrain=TERRAIN, include_image=False, level=1, open=["portcullis"]
+        )
+        # The ground's gate is open and irrelevant; the gallery's is shut.
+        assert rasterize(upper["line_of_sight"]) == {
+            frozenset({(2, 1), (2, 2)}),
+            frozenset({(3, 1), (3, 2)}),
+            frozenset({(2, 1), (3, 1)}),
+            frozenset({(2, 2), (3, 2)}),
+        }
+
+
 class TestImage:
-    def decode(self, image: str) -> tuple[int, int, bytes]:
-        png = base64.b64decode(image)
-        assert png[:8] == b"\x89PNG\r\n\x1a\n"
-        width, height = struct.unpack(">II", png[16:24])
-        assert png[24] == 8 and png[25] == 2  # 8-bit truecolor
-        offset, idat = 8, b""
-        while offset < len(png):
-            (length,) = struct.unpack(">I", png[offset:offset + 4])
-            kind = png[offset + 4:offset + 8]
-            if kind == b"IDAT":
-                idat += png[offset + 8:offset + 8 + length]
-            offset += 12 + length
-        return width, height, zlib.decompress(idat)
-
-    def pixel(self, raw: bytes, width: int, px: int, py: int) -> tuple[int, int, int]:
-        stride = 1 + width * 3
-        row = raw[py * stride:(py + 1) * stride]
-        assert row[0] == 0  # filter type: none
-        return (row[1 + px * 3], row[2 + px * 3], row[3 + px * 3])
-
     def test_dimensions_follow_pixels_per_grid(self) -> None:
-        width, height, raw = self.decode(export(pixels_per_grid=8)["image"])
+        width, height, raw = decode(export(pixels_per_grid=8)["image"])
         assert (width, height) == (48, 48)
         assert len(raw) == 48 * (1 + 48 * 3)
 
     def test_terrain_fills_and_the_grid_line(self) -> None:
-        width, _, raw = self.decode(export(pixels_per_grid=8)["image"])
-        assert self.pixel(raw, width, 4, 4) == PALETTE["floor"]  # cell (0, 0)
-        assert self.pixel(raw, width, 2 * 8 + 4, 4) == PALETTE["wall"]  # cell (2, 0)
-        assert self.pixel(raw, width, 8, 4) == GRID_RGB  # first column of cell (1, 0)
+        width, _, raw = decode(export(pixels_per_grid=8)["image"])
+        assert pixel(raw, width, 4, 4) == PALETTE["floor"]  # cell (0, 0)
+        assert pixel(raw, width, 2 * 8 + 4, 4) == PALETTE["wall"]  # cell (2, 0)
+        assert pixel(raw, width, 8, 4) == GRID_RGB  # first column of cell (1, 0)
 
     def test_a_pack_kind_gets_the_renderers_hash_hue(self) -> None:
         # h = h * 31 + code over a uint32, hue = h mod 360 — renderer.js's
@@ -264,31 +419,31 @@ class TestImage:
     def test_the_documents_palette_outranks_the_engine_table(self) -> None:
         raw = payload()
         raw["palette"] = {"floor": "#d2440f"}
-        width, _, image = self.decode(
+        width, _, image = decode(
             to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
         )
-        assert self.pixel(image, width, 4, 4) == (0xD2, 0x44, 0x0F)
-        assert self.pixel(image, width, 2 * 8 + 4, 4) == PALETTE["wall"]  # uncolored
+        assert pixel(image, width, 4, 4) == (0xD2, 0x44, 0x0F)
+        assert pixel(image, width, 2 * 8 + 4, 4) == PALETTE["wall"]  # uncolored
 
     def test_a_theme_pair_exports_its_light_color(self) -> None:
         # The PNG has exactly one theme, and the light one is what the engine
         # table already follows.
         raw = payload()
         raw["palette"] = {"floor": {"light": "#a9c6ce", "dark": "#1f3a44"}}
-        width, _, image = self.decode(
+        width, _, image = decode(
             to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
         )
-        assert self.pixel(image, width, 4, 4) == (0xA9, 0xC6, 0xCE)
+        assert pixel(image, width, 4, 4) == (0xA9, 0xC6, 0xCE)
 
     def test_a_pack_kind_can_be_colored_instead_of_hashed(self) -> None:
         raw = payload()
         raw["legend"]["~"] = "water"
         raw["tiles"][0] = "~.#..."
         raw["palette"] = {"water": "#010203"}
-        width, _, image = self.decode(
+        width, _, image = decode(
             to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
         )
-        assert self.pixel(image, width, 4, 4) == (0x01, 0x02, 0x03)
+        assert pixel(image, width, 4, 4) == (0x01, 0x02, 0x03)
 
     def test_include_image_false_is_an_empty_string(self) -> None:
         assert export(include_image=False)["image"] == ""

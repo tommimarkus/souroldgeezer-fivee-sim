@@ -1549,7 +1549,10 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     Each operation is an object with an ``op`` key: ``set_terrain`` {rect:
     [x, y, w, h], terrain}, ``paint`` {cells: [[x, y], ...], terrain},
     ``line`` {from, to, terrain}, ``carve_corridor`` {from, to, terrain?,
-    horizontal_first?}, ``add_feature`` {feature}, ``remove_feature`` {id},
+    horizontal_first?}, ``add_feature`` {feature}, ``set_feature`` {feature} to
+    edit one in place by the id in its record — it keeps the feature's position
+    in the array and the storey it stands on, and **writes the record whole**, so
+    a key left out is a key removed rather than kept — ``remove_feature`` {id},
     ``toggle_door`` {at}, ``resize`` {width, height, anchor?, fill?},
     ``set_legend`` {glyph, terrain}, ``set_name`` {name},
     ``set_palette`` {terrain, color} to color a terrain kind in this document —
@@ -1557,8 +1560,15 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     color the renderers compute —
     ``set_elevation`` {rect | cells, feet} or {default} to move the height every
     unnamed square sits at, ``adjust_elevation`` {rect | cells, by} to raise or
-    lower what is already there. Heights are feet and may be negative. A bad
-    operation is refused with its index and changes nothing. A successful edit bumps the
+    lower what is already there. Heights are feet and may be negative.
+
+    The ``feature`` both feature ops take is {id, kind, at, orientation?,
+    state?, team?, to_level?} plus, for a fixture, terrain, elevation, affects,
+    requires, costs_action and check. ``to_level`` makes the feature a
+    connector — the square a creature may step between storeys on, which is what
+    turns a drawn stairway into a walkable one.
+
+    A bad operation is refused with its index and changes nothing. A successful edit bumps the
     map's generation, marks it edited, and returns a render covering what
     changed. Fights already created from this map keep the version they
     captured — their encounter_state reports ``stale`` instead.
@@ -1634,10 +1644,11 @@ def uvtt_export(
     pixels_per_grid: int = 32,
     include_image: bool = True,
     level: int = 0,
+    open_features: list[str] | None = None,
 ) -> dict[str, Any]:
     """Export a loaded map as a Universal VTT file another virtual tabletop can import.
 
-    The payload carries wall polylines derived from the tiles, one portal per
+    The payload carries wall polylines derived from the terrain, one portal per
     door feature (with its recorded default open/closed state), and — unless
     ``include_image`` is false — a rendered PNG of the map, which some
     importers require. Lights, object line-of-sight, and elevation are
@@ -1645,6 +1656,14 @@ def uvtt_export(
     plane, so ``level`` picks the storey to export and a map with floors takes
     one call per floor. The image side is
     capped at 4096 pixels; lower ``pixels_per_grid`` for large maps.
+
+    ``open_features`` names the fixtures to export as open — a fight's live
+    set, which ``encounter_state``'s map block reports. Given it, the walls,
+    the image and the portals all show the map *that fight is on*: a raised
+    portcullis stops being a wall and a sluice's flooded room exports as water.
+    Omit it and the export is the map as the file has it. A door's own square is
+    the one thing that does not change either way: a door travels as a portal
+    here, and a portal in solid wall is a door the importer cannot open.
 
     The result is always written to disk — default
     ``<maps root>/uvtt/<slug-of-name>.uvtt`` — never inlined, because the
@@ -1659,6 +1678,7 @@ def uvtt_export(
             pixels_per_grid=pixels_per_grid,
             include_image=include_image,
             level=level,
+            open=open_features,
         )
     except (UnknownTerrain, ValueError) as error:
         raise ToolError(str(error)) from error

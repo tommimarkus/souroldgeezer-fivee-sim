@@ -330,7 +330,8 @@ and nothing changes. Each operation is an object with an `op` key:
 | `paint` | `cells: [[x, y], ...]`, `terrain` |
 | `line` | `from`, `to`, `terrain` — Bresenham raster |
 | `carve_corridor` | `from`, `to`, `terrain?` (default floor), `horizontal_first?` |
-| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?}`, plus the fixture keys — an overlay may be given as a `rect` instead of `cells` |
+| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?, to_level?}`, plus the fixture keys — an overlay may be given as a `rect` instead of `cells` |
+| `set_feature` | `feature` — the same record, editing in place the feature its `id` names; **writes the record whole** |
 | `remove_feature` | `id` |
 | `toggle_door` | `at` — flips the recorded default state |
 | `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
@@ -343,9 +344,12 @@ and nothing changes. Each operation is an object with an `op` key:
 Every operation that acts on one storey also takes `level` (default `0`, the
 ground): `set_terrain`, `paint`, `line`, `carve_corridor`, `add_feature`,
 `remove_feature`, `toggle_door`, `set_elevation`, `adjust_elevation`. The other
-four are document-wide by nature and take no level — `set_name`, `set_legend`
+five are document-wide by nature and take no level — `set_name`, `set_legend`
 and `set_palette` because a floor has none of the three of its own, and `resize`
 because every storey shares the grid, so it translates them all together.
+`set_feature` is the fifth for a different reason: it edits the feature its
+record's `id` names wherever that feature stands, and a `level` would be the
+power to rehouse a fixture one storey up.
 
 Terrain named in an operation that *paints* must already have a glyph in the
 document's legend (`set_legend` first if not); `set_legend` and `set_palette`
@@ -353,12 +357,48 @@ merely name a kind, so they check it against loaded content instead and a
 colored kind need never appear on the map. A successful edit marks the document
 `edited` and, in the session, bumps the map's generation.
 
-There is no edit operation for a fixture's overlays: changing what a sluice
-floods is `remove_feature` then `add_feature` in one call, which applies
-atomically like any other pair. `add_feature` accepts an overlay's squares as a
-`rect: [x, y, w, h]` as well as a list of `cells`, and expands it to cells
-before the document is written — the file keeps one shape, so a later `resize`
-translates and crops those squares with the frame exactly as it does heights.
+### Editing a feature
+
+`set_feature` is how any of a feature's fields change after it is written —
+what a sluice floods, which way a door hangs, where a lever stands, whether a
+stairway leads anywhere. It finds the feature by the `id` in the record it is
+given, and keeps two things: the feature's **position** in the features array,
+and the **storey** it stands on. That is the whole reason it exists; the
+`remove_feature` + `add_feature` pair it replaces reorders the array, and
+`add_feature` takes a `level`, so the pair could quietly move a fixture to
+another floor.
+
+**It writes the record whole.** A key the call does not name is a key the
+feature no longer has — not a key it keeps. So a `set_feature` that means to
+change a door's orientation must still name its `state`, and one that means to
+keep a gate's `affects` must name the overlay again:
+
+```json
+{ "op": "set_feature", "feature": {
+    "id": "sluice gate", "kind": "door", "at": [3, 2],
+    "orientation": "vertical", "state": "closed",
+    "affects": [ { "rect": [4, 1, 2, 3],
+                   "terrain": { "closed": "floor", "open": "water" } } ] } }
+```
+
+Replacement is the choice because it makes the result a function of the call
+alone: a merge would depend on state the call never mentions, and there is no
+delete convention among the feature keys, so a fixture's `affects`, `requires`
+or `check` could never be cleared at all. The price is paid where it is
+cheapest to notice — every merge-shaped call omits `kind` or `at`, so every
+merge-shaped call is refused, and the refusal says which semantics it got.
+`toggle_door` stays for the one-key case it was already good at: flipping a
+door's recorded state, by square, without restating anything.
+
+Both feature operations accept an overlay's squares as a `rect: [x, y, w, h]`
+as well as a list of `cells`, and expand it to cells before the document is
+written — the file keeps one shape, so a later `resize` translates and crops
+those squares with the frame exactly as it does heights.
+
+`to_level` is settable by both, which is what makes a connector authorable
+without hand-editing the file. Which level it may name — one the map has, never
+its own — stays the document's refusal, so a bad connector is reported by the
+format rather than by the operation.
 
 ## The interactive editor
 
@@ -530,7 +570,7 @@ is derived from the session's map, not an original.
 What is exported:
 
 - **Walls** (`line_of_sight`): polylines in grid-square units, derived from
-  the tiles — every interior cell-side where an opaque terrain kind meets a
+  the terrain — every interior cell-side where an opaque terrain kind meets a
   non-opaque one becomes a unit edge, and the edges are chained and merged
   into runs, deterministically. Door squares are ordinary floor in `tiles`,
   so wall runs break at doorways by construction. The map boundary emits
@@ -538,8 +578,8 @@ What is exported:
   contributes only its interior-facing edge.
 - **Portals**: one per door feature, ordered by feature id, spanning the
   door's square along its orientation, `closed` taken from the recorded
-  default state.
-- **Image**: a flat-color PNG of the tiles at `pixels_per_grid` pixels per
+  default state or from `open_features` below.
+- **Image**: a flat-color PNG of the terrain at `pixels_per_grid` pixels per
   square (default 32), one fill per terrain kind plus a one-pixel grid line
   between cells. Some importers require an image; `include_image: false`
   writes `"image": ""` instead, deliberately. A kind the document's own
@@ -552,6 +592,22 @@ What is exported:
 `uvtt_export` takes a `level` (default the ground). The format has one plane
 and no notion of storeys, so a map with floors exports one file per floor
 rather than a flattened picture true of neither.
+
+`open_features` names the fixtures to export **as open** — a fight's live set,
+which `encounter_state`'s map block reports. Given it, the walls, the image and
+the portals all show the map that fight is on rather than the map on disk: a
+raised portcullis stops being a wall, a sluice's flooded room exports as water,
+and a door the party opened exports as an open portal. Omit it and the export is
+the map exactly as the file has it — omitting it and passing an empty list are
+different answers, because `[]` says every fixture is shut and so shuts one the
+document authored open.
+
+One square never changes either way: **a door's own**. A door travels here as a
+portal, and a portal buried in solid wall is a door the importer cannot open —
+so the tile under a door is what both the walls and the image read, whatever
+state the door is in. What a door reaches *past* itself is spared nothing: a
+sluice gate is a door whose overlay floods a room, and that room resolves like
+any other fixture's.
 
 Deliberately omitted, because the engine does not model them and inventing
 values would misrepresent the map: `lights` and `objects_line_of_sight` ship
