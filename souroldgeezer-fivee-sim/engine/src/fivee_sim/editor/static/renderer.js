@@ -231,28 +231,57 @@ var FiveeRenderer = (function () {
     }
   }
 
+  /* A door hangs on hinges. Open, it is therefore one leaf that swung — whole,
+     the same length it was shut, standing a quarter turn from the doorway, with
+     a faint arc tracing the sweep. It used to be two stubs pulled back into both
+     jambs, which draws a pocket door sliding into the walls.
+
+     The hinge side is a fixed rule rather than something the document carries:
+     a horizontal door hangs on its west jamb and opens north, a vertical one on
+     its north jamb and opens west. So no map gains a field and none changes
+     meaning. The swung leaf reaches past its own square, which is where an open
+     door goes — a door sits in a wall run, so the squares it swings between are
+     the passage it interrupts, not more wall. */
   function drawDoor(ctx, px, py, size, orientation, open, dark) {
     var thick = Math.max(2, size * 0.22);
     var inset = size * 0.08;
     var span = size - 2 * inset;
-    ctx.fillStyle = dark ? "#c9a86a" : "#6b4f2a";
+    var ink = dark ? "#c9a86a" : "#6b4f2a";
+    ctx.fillStyle = ink;
     if (orientation === "vertical") {
       var cx = px + (size - thick) / 2;
       if (open) {
-        ctx.fillRect(cx, py + inset, thick, span * 0.28);
-        ctx.fillRect(cx, py + size - inset - span * 0.28, thick, span * 0.28);
+        ctx.fillRect(cx + thick - span, py + inset, span, thick);
+        drawSwing(ctx, cx + thick / 2, py + inset, span, Math.PI / 2, Math.PI, ink);
       } else {
         ctx.fillRect(cx, py + inset, thick, span);
       }
     } else {
       var cy = py + (size - thick) / 2;
       if (open) {
-        ctx.fillRect(px + inset, cy, span * 0.28, thick);
-        ctx.fillRect(px + size - inset - span * 0.28, cy, span * 0.28, thick);
+        ctx.fillRect(px + inset, cy + thick - span, thick, span);
+        drawSwing(ctx, px + inset, cy + thick / 2, span, -Math.PI / 2, 0, ink);
       } else {
         ctx.fillRect(px + inset, cy, span, thick);
       }
     }
+  }
+
+  /* The quarter circle the leaf swept, centred on the hinge and running from the
+     open leaf's tip to where the shut one's tip was. Saved and restored like
+     drawStairs, since it sets alpha and stroke state the glyphs after it would
+     otherwise inherit. It is the one part of this glyph the behaviour harness
+     cannot see — `arc` and `stroke` are no-ops on its fake canvas — so it stays
+     decoration, and the leaf above carries every claim the checks make. */
+  function drawSwing(ctx, hx, hy, radius, from, to, ink) {
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = Math.max(1, radius * 0.05);
+    ctx.beginPath();
+    ctx.arc(hx, hy, radius, from, to);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawStairs(ctx, px, py, size, up, dark) {
