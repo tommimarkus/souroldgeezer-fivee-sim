@@ -175,6 +175,10 @@ def _rider_summary(attack: dict[str, Any]) -> str:
         )
     if attack.get("on_hit_condition"):
         text += f", on hit: {attack['on_hit_condition']}"
+        if attack.get("on_hit_max_size"):
+            # Without this the row reads as an unconditional rider, which is
+            # precisely what the Wolf's Bite is not.
+            text += f" against a {attack['on_hit_max_size'].capitalize()} or smaller target"
         if attack.get("on_hit_save_ability"):
             text += (
                 f" (DC {attack['on_hit_save_dc']} "

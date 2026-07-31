@@ -27,6 +27,7 @@ from fivee_sim.analytics.montecarlo import auto_action, run_encounter, simulate_
 from fivee_sim.content import make_monster, monster_records, spellbook
 from fivee_sim.kernel.actions import RiderExpiry
 from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.rules import Size, fits_within
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -240,15 +241,31 @@ class TestWolfData:
         assert bite.on_hit_expiry is RiderExpiry.NONE
 
     def test_the_record_owns_the_size_gate_and_claims_no_save(self) -> None:
+        # This assertion used to read the other way round: the gate was
+        # unenforced, and the test pinned the ``unmodelled`` note admitting it.
+        # The gate is real now, so the record must carry it rather than apologise
+        # for its absence — and must still not invent a saving throw.
         record = monster_records()["Wolf"]
         attack = record["attacks"][0]
         assert attack["on_hit_condition"] == "prone"
+        assert attack["on_hit_max_size"] == "medium", (
+            "SRD 5.2.1 gates the Prone rider at Medium or smaller"
+        )
         assert "on_hit_save_ability" not in attack
         assert "on_hit_save_dc" not in attack
-        notes = record["unmodelled"]
-        assert any("Medium or smaller" in note for note in notes), (
-            "the unenforced size gate must stay visible in the record"
+        notes = record.get("unmodelled", [])
+        assert not any("Medium or smaller" in note for note in notes), (
+            "the size gate is enforced; the record must not still call it unmodelled"
         )
         assert all("save" not in note.lower() for note in notes), (
             "SRD 5.2.1 gives the Bite no saving throw; the note must not invent one"
         )
+
+    def test_the_bundled_wolf_refuses_the_rider_against_the_bundled_ogre(self) -> None:
+        # The end-to-end shape of the divergence this gate closed, built only
+        # from bundled records: before it, a wolf knocked a Large ogre Prone.
+        wolf = make_monster("Wolf")
+        assert wolf.size is Size.MEDIUM
+        ogre = make_monster("Ogre", team="party")
+        assert ogre.size is Size.LARGE
+        assert not fits_within(ogre.size, wolf.attacks[0].on_hit_max_size or Size.GARGANTUAN)

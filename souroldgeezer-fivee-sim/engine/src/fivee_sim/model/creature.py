@@ -49,7 +49,7 @@ from ..kernel.conditions import (
 )
 from ..kernel.dice import Dice
 from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
-from ..kernel.rules import Ability, DamageType, ability_modifier
+from ..kernel.rules import Ability, DamageType, Size, ability_modifier
 
 __all__ = ["AttackKind", "AttackOption", "Creature", "RiderExpiry"]
 
@@ -72,6 +72,11 @@ class AttackOption:
     given — that ``on_hit_expiry`` may end on a turn boundary. The condition is
     a plain string on purpose: a pack-defined condition works here exactly as an
     SRD one does.
+
+    ``on_hit_max_size`` gates that condition on how big the target is — the
+    Wolf's "if the target is a Medium or smaller creature, it has the Prone
+    condition". Unset means the rider is ungated, which is what every other
+    printed form in this engine is.
     """
 
     name: str
@@ -89,6 +94,7 @@ class AttackOption:
     on_hit_save_ability: Ability | None = None
     on_hit_save_dc: int = 0
     on_hit_expiry: RiderExpiry = RiderExpiry.NONE
+    on_hit_max_size: Size | None = None
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
@@ -106,12 +112,18 @@ class AttackOption:
                 f"{self.name}: on_hit_save_ability needs an on_hit_save_dc of 1 "
                 f"or more"
             )
+        if self.on_hit_max_size is not None and self.on_hit_condition is None:
+            raise ValueError(
+                f"{self.name}: on_hit_max_size needs on_hit_condition — there is "
+                f"no condition to ride the hit"
+            )
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> AttackOption:
         """Build one attack from a validated content record."""
         bonus_type = record.get("bonus_damage_type")
         save_ability = record.get("on_hit_save_ability")
+        max_size = record.get("on_hit_max_size")
         return cls(
             name=str(record["name"]),
             attack_bonus=int(record["attack_bonus"]),
@@ -137,6 +149,7 @@ class AttackOption:
             on_hit_save_ability=Ability(save_ability) if save_ability is not None else None,
             on_hit_save_dc=int(record.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(record.get("on_hit_expiry", "none")),
+            on_hit_max_size=Size(max_size) if max_size is not None else None,
             provenance=str(record.get("provenance", "SRD 5.2")),
         )
 
@@ -161,6 +174,12 @@ class Creature:
     max_hp: int
     speed: int = 30
     hp: int = -1
+    #: Size category. Defaults to Medium, which is what every record written
+    #: before the field existed means — and what a character is unless its
+    #: species says otherwise. Read by the rules that gate on how big a target
+    #: is; it is *not* consulted for movement cost, because Difficult Terrain is
+    #: a property of the square and Small and Medium occupy the same one.
+    size: Size = Size.MEDIUM
     abilities: dict[Ability, int] = field(default_factory=dict)
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
@@ -237,6 +256,7 @@ class Creature:
             ac=int(record["ac"]),
             max_hp=int(record["max_hp"]),
             speed=int(record.get("speed", 30)),
+            size=Size(record.get("size", Size.MEDIUM)),
             abilities={
                 Ability(key): int(value)
                 for key, value in record.get("abilities", {}).items()
