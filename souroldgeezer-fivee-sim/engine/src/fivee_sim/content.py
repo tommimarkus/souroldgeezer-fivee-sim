@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from importlib import resources
@@ -661,6 +661,47 @@ def _parse_pack(
 
 
 # --- finding packs on disk -------------------------------------------------
+def contained_json_files(
+    root: Path, refused: Callable[[Path, str], None] | None = None
+) -> list[Path]:
+    """Every ``*.json`` under ``root`` that does not escape it, in walk order.
+
+    The containment rule is the point: a directory the caller configured does
+    not authorise whatever a symlink inside it happens to point at, so each
+    candidate is resolved and checked back against ``root``.
+
+    ``refused`` receives every candidate the rule turns away and why. It is
+    optional because the two callers differ deliberately in what they do with a
+    refusal, not in the rule itself — the pack loader names each one so an
+    author can fix it, while the map listing in :mod:`fivee_sim.service.maps`
+    stays silent because a listing's job is to show what is usable. Sharing the
+    rule and parameterising the reporting is what keeps the two from drifting.
+    """
+    found: list[Path] = []
+    for directory, subdirectories, filenames in os.walk(root, followlinks=False):
+        subdirectories.sort()
+        for filename in sorted(filenames):
+            if not filename.lower().endswith(".json"):
+                continue
+            candidate = Path(directory) / filename
+            try:
+                resolved = candidate.resolve()
+            except OSError as error:
+                if refused is not None:
+                    refused(candidate, f"cannot be resolved: {error}")
+                continue
+            if not resolved.is_relative_to(root):
+                if refused is not None:
+                    refused(
+                        candidate,
+                        f"resolves to {resolved}, outside the content directory that "
+                        f"was configured; it is not read",
+                    )
+                continue
+            found.append(resolved)
+    return found
+
+
 def _discover(entry: str | Path, diagnostics: list[Diagnostic]) -> list[Path]:
     """Every ``*.json`` an entry names, refusing anything that escapes it.
 
@@ -684,33 +725,12 @@ def _discover(entry: str | Path, diagnostics: list[Diagnostic]) -> list[Path]:
             return []
         return [root]
 
-    found: list[Path] = []
-    for directory, subdirectories, filenames in os.walk(root, followlinks=False):
-        subdirectories.sort()
-        for filename in sorted(filenames):
-            if not filename.lower().endswith(".json"):
-                continue
-            candidate = Path(directory) / filename
-            try:
-                resolved = candidate.resolve()
-            except OSError as error:
-                diagnostics.append(
-                    Diagnostic(source=str(candidate), problem=f"cannot be resolved: {error}")
-                )
-                continue
-            if not resolved.is_relative_to(root):
-                diagnostics.append(
-                    Diagnostic(
-                        source=str(candidate),
-                        problem=(
-                            f"resolves to {resolved}, outside the content directory that "
-                            f"was configured; it is not read"
-                        ),
-                    )
-                )
-                continue
-            found.append(resolved)
-    return found
+    return contained_json_files(
+        root,
+        lambda candidate, problem: diagnostics.append(
+            Diagnostic(source=str(candidate), problem=problem)
+        ),
+    )
 
 
 def _read_pack(path: Path, diagnostics: list[Diagnostic]) -> Mapping[str, Any] | None:

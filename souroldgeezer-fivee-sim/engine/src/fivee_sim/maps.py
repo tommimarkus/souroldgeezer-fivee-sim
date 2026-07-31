@@ -68,6 +68,7 @@ __all__ = [
     "MapProvenance",
     "as_payload",
     "document_from",
+    "feature_payload",
     "parse_document",
     "serialize",
     "to_grid",
@@ -603,6 +604,28 @@ def validate_document(
 
 
 # --- serialization ---------------------------------------------------------
+def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
+    """One feature as JSON-ready primitives, omitting the fields it does not carry.
+
+    The omission is what makes :func:`serialize` byte-stable across a parse
+    round-trip, so this shape is the document's, not a caller's convenience —
+    the render overlay in :mod:`fivee_sim.service.maps` reports features through
+    it too, and a second copy would be free to drift from the written form.
+    """
+    entry: dict[str, Any] = {
+        "id": feature.id,
+        "kind": feature.kind,
+        "at": [feature.at[0], feature.at[1]],
+    }
+    if feature.orientation is not None:
+        entry["orientation"] = feature.orientation
+    if feature.state is not None:
+        entry["state"] = feature.state
+    if feature.team is not None:
+        entry["team"] = feature.team
+    return entry
+
+
 def as_payload(document: MapDocument) -> dict[str, Any]:
     """The document as JSON-ready primitives, in the canonical key order.
 
@@ -613,20 +636,7 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
     written before heights existed writes back byte-for-byte. This is what makes
     :func:`serialize` byte-stable across a parse round-trip.
     """
-    features: list[dict[str, Any]] = []
-    for feature in document.features:
-        entry: dict[str, Any] = {
-            "id": feature.id,
-            "kind": feature.kind,
-            "at": [feature.at[0], feature.at[1]],
-        }
-        if feature.orientation is not None:
-            entry["orientation"] = feature.orientation
-        if feature.state is not None:
-            entry["state"] = feature.state
-        if feature.team is not None:
-            entry["team"] = feature.team
-        features.append(entry)
+    features = [feature_payload(feature) for feature in document.features]
     elevation = document.elevation
     raised = {
         square: feet for square, feet in elevation.squares.items() if feet != elevation.default
