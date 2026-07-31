@@ -817,10 +817,17 @@ class TestAnalyticsTools:
         # The oracle is the engine's own closed form, read off the same fixture
         # the run uses so the two cannot drift apart. The tight bound belongs to
         # test_analytics, which pins simulate_dpr against this arithmetic at
-        # 6,000 iterations; 500 places the mean inside 5%, which is enough for
-        # the adapter's job — that the spec, the AC, and the round count reach
-        # the batch intact. "> 0" would have passed a wrong divisor, a dropped
-        # round, or a lost attack bonus.
+        # 6,000 iterations; this is the adapter's job only — that the spec, the
+        # AC, and the round count reach the batch intact. "> 0" would have passed
+        # a wrong divisor, a dropped round, or a lost attack bonus.
+        #
+        # 8% is measured, not chosen: over 20 runs at independent seeds (spaced
+        # by the iteration count, because iteration i draws seed + i) the mean
+        # has sd 0.0885, i.e. 2.0% of the expectation, so 8% is 4 sd. 5% would be
+        # 2.5 sd — a spurious failure about one run in eighty. Raising iterations
+        # is not the fix: 2,000 only brings sd to 0.0705 for four times the
+        # runtime. Every error this guards against is structural and far larger —
+        # a wrong divisor is 3x, a dropped round 33%, a lost attack bonus ~20%.
         weapon = HERO["attacks"][0]
         expected = attack_damage_expectation(
             attack_bonus=int(weapon["attack_bonus"]),
@@ -828,7 +835,7 @@ class TestAnalyticsTools:
             damage=Dice.parse(str(weapon["damage"])),
         )
         result = api.simulate_dpr(HERO, target_ac=15, rounds=3, iterations=500, seed=7)
-        assert result["damage_per_round"] == pytest.approx(expected, rel=0.05)
+        assert result["damage_per_round"] == pytest.approx(expected, rel=0.08)
         # And the two reported figures describe the same run; Stats.as_dict
         # rounds the mean to three decimals, so they agree to within that.
         assert result["damage_per_round"] == pytest.approx(
