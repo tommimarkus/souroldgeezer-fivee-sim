@@ -273,8 +273,9 @@ State these when they bear on a ruling rather than papering over them:
   empty unless their author filled it in. Pack Tactics and Undead Fortitude are
   modelled now, as `pack_tactics` and `undead_fortitude` flags on the stat
   block, so they fire on their own — do not re-apply them by hand.
-- **Frightened always applies** its disadvantage; there is no visibility model to
-  condition it on line of sight.
+- **Frightened always applies** its disadvantage. The encounter can answer simple
+  sight questions, but a condition does not record which creature caused the fear,
+  so it cannot test whether that particular source remains in line of sight.
 - **Exhaustion is not implemented.** SRD 5.2 defines it; this engine models the
   other fourteen conditions only. Do not apply exhaustion effects by hand — say it
   is unsupported. A pack could define an exhaustion-like condition, but only out of

@@ -336,7 +336,7 @@ def render_markdown() -> str:
     for name in sorted(spells):
         spell = spells[name]
         if spell.requires_attack_roll:
-            resolution = "spell attack roll"
+            resolution = f"{spell.attack_kind.value} spell attack roll"
         elif spell.save_ability is not None:
             resolution = f"{spell.save_ability.value} save"
             # Only meaningful for a spell that deals damage; a save-or-suffer spell
@@ -384,6 +384,7 @@ def render_markdown() -> str:
         "without spending the action. A fixture may cost the action instead, may "
         "wait on other fixtures standing open before it will open, and may take an "
         "ability check — a failed check spends the budget and moves nothing. It "
+        "reads condition-based Advantage and Disadvantage just like initiative. It "
         "toggles unless the action names `set_open`, which drives the fixture to "
         "the state asked for rather than flipping whatever it finds.")
     add("")
@@ -411,6 +412,11 @@ def render_markdown() -> str:
         "next turn — and the expiry fires when that turn slot passes, even if the "
         "attacker has died; it never strips a condition something else is still "
         "imposing.")
+    add("")
+    add("A ranged weapon or ranged spell attack has Disadvantage when a capable "
+        "enemy within 5 feet can see the attacker. Allies, Incapacitated enemies, "
+        "an unseen attacker, and an enemy without a sight line do not impose it. "
+        "This is one ordinary Disadvantage source, so any Advantage cancels it.")
     add("")
     add("Two printed creature traits are modelled as stat-block flags. Pack Tactics "
         "grants a creature's attack rolls — weapon and spell alike, opportunity "

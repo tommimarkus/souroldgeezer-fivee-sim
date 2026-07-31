@@ -12,6 +12,7 @@ from random import Random
 
 import pytest
 
+from fivee_sim.kernel import conditions as condition_rules
 from fivee_sim.kernel.actions import (
     MELEE_THRESHOLD,
     compute_attack_advantage,
@@ -241,6 +242,39 @@ class TestCreatureSize:
 
 
 class TestConditionInteractions:
+    @pytest.mark.parametrize("condition", [Condition.POISONED, Condition.FRIGHTENED])
+    def test_conditions_that_hinder_ability_checks_impose_disadvantage(
+        self, condition: Condition
+    ) -> None:
+        assert (
+            condition_rules.compute_ability_check_advantage(conditions=(condition,))
+            is Advantage.DISADVANTAGE
+        )
+
+    def test_an_external_ability_check_advantage_cancels_condition_disadvantage(
+        self,
+    ) -> None:
+        assert (
+            condition_rules.compute_ability_check_advantage(
+                conditions=(Condition.POISONED,), extra_advantage=1
+            )
+            is Advantage.NONE
+        )
+
+    def test_a_custom_condition_can_grant_ability_check_advantage(self) -> None:
+        table = {
+            **condition_rules.EFFECTS,
+            "focused": condition_rules.ConditionEffect(
+                own_ability_checks_have_advantage=True
+            ),
+        }
+        assert (
+            condition_rules.compute_ability_check_advantage(
+                conditions=("focused",), condition_effects=table
+            )
+            is Advantage.ADVANTAGE
+        )
+
     def test_prone_advantage_is_scoped_by_distance_not_by_weapon(self) -> None:
         # SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "You have Disadvantage
         # on attack rolls. An attack roll against you has Advantage if the attacker

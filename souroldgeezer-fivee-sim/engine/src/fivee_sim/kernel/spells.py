@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from random import Random
 
+from .actions import AttackKind
 from .dice import Advantage, Dice, DiceRoll, roll_dice
 from .rules import (
     Ability,
@@ -51,6 +52,9 @@ class Spell:
     level: int
     school: str = ""
     requires_attack_roll: bool = False
+    #: Ranged by default for compatibility with packs written before attack spells
+    #: declared their kind. Melee spell attacks opt in explicitly.
+    attack_kind: AttackKind = AttackKind.RANGED
     save_ability: Ability | None = None
     damage: Dice | None = None
     damage_type: DamageType | None = None

@@ -25,10 +25,12 @@ from typing import Any
 
 from fivee_sim.analytics.montecarlo import auto_action
 from fivee_sim.content import load_packs, make_creature
+from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect, ConditionTable
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.kernel.spells import Spell
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import Action, ActionKind, Encounter, Event, build_encounter
 
@@ -177,10 +179,20 @@ class TestPackTactics:
         assert encounter.attack_advantage(alpha, thora, alpha.attacks[0]) is Advantage.NONE
 
     def test_a_spell_attack_reads_the_same_advantage(self) -> None:
+        spell = Spell(
+            name="Pack Claw",
+            level=1,
+            requires_attack_roll=True,
+            attack_kind=AttackKind.MELEE,
+            provenance=FIXTURE,
+        )
         encounter, alpha, thora = self.pack()
-        assert encounter.spell_attack_advantage(alpha, thora) is Advantage.ADVANTAGE
+        assert (
+            encounter.spell_attack_advantage(alpha, thora, spell)
+            is Advantage.ADVANTAGE
+        )
         far, alpha, thora = self.pack(ally_position=(30, 0))
-        assert far.spell_attack_advantage(alpha, thora) is Advantage.NONE
+        assert far.spell_attack_advantage(alpha, thora, spell) is Advantage.NONE
 
     def _policy_choice(self, *, pack_tactics: bool) -> str:
         """Which target the greedy policy picks for Alpha, flanked Zed or not."""

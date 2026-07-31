@@ -32,6 +32,7 @@ from ..kernel.conditions import (
     EFFECTS,
     Condition,
     ConditionTable,
+    compute_ability_check_advantage,
     compute_save_advantage,
     effect_of,
     is_incapacitated,
@@ -357,7 +358,13 @@ class Encounter:
 
         self.initiative: dict[str, int] = {}
         for creature in combatants:
-            roll = roll_d20(rng)
+            roll = roll_d20(
+                rng,
+                compute_ability_check_advantage(
+                    conditions=creature.conditions,
+                    condition_effects=self.condition_effects,
+                ),
+            )
             self.initiative[creature.name] = roll.natural + creature.ability_mod(Ability.DEXTERITY)
         self.order: list[str] = sorted(
             names,
@@ -1240,8 +1247,39 @@ class Encounter:
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
             extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
-            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
+            extra_disadvantage=(
+                int(self._dodge_benefits(target))
+                + int(
+                    option.kind is AttackKind.RANGED
+                    and self._ranged_close_combat_penalty(actor)
+                )
+            ),
             condition_effects=self.condition_effects,
+        )
+
+    def _can_see(self, observer: Creature, subject: Creature) -> bool:
+        """Whether ``observer`` can see ``subject`` for a rule that requires sight."""
+        if any(
+            effect_of(condition, self.condition_effects).cannot_see
+            for condition in observer.conditions
+        ):
+            return False
+        if any(
+            effect_of(condition, self.condition_effects).unseen
+            for condition in subject.conditions
+        ):
+            return False
+        return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
+
+    def _ranged_close_combat_penalty(self, actor: Creature) -> bool:
+        """Whether a capable, nearby enemy can see a ranged attacker."""
+        return any(
+            enemy is not actor
+            and enemy.team != actor.team
+            and enemy.active
+            and enemy.distance_to(actor, self.movement_rule) <= MELEE_THRESHOLD
+            and self._can_see(enemy, actor)
+            for enemy in self.creatures.values()
         )
 
     def _pack_tactics_applies(self, actor: Creature, target: Creature) -> bool:
@@ -1284,7 +1322,9 @@ class Encounter:
             condition_effects=self.condition_effects,
         )
 
-    def spell_attack_advantage(self, actor: Creature, target: Creature) -> Advantage:
+    def spell_attack_advantage(
+        self, actor: Creature, target: Creature, spell: Spell
+    ) -> Advantage:
         """Advantage a spell attack against ``target`` would resolve under.
 
         The cast path's counterpart to :meth:`attack_advantage`, and deliberately
@@ -1295,14 +1335,8 @@ class Encounter:
         have to read the same either way, which they cannot if two functions decide
         it.
 
-        **There is nothing left to classify.** A spell has a ``range_feet``, not a
-        melee/ranged kind, and inventing one would be a data field every pack author
-        had to set. It is not needed:
-        :func:`~fivee_sim.kernel.actions.compute_attack_advantage` now reads only
-        the distance, so this passes the same arguments the swing path does and the
-        question of what kind of attack a spell is never arises.
-        ``TestSpellAttackAdvantage`` pins both halves of the Prone clause so the
-        point survives editing.
+        The spell's attack kind matters only for the stateful close-combat source.
+        Existing packs default to ranged; melee spell attacks opt in explicitly.
 
         Pack Tactics rides along for the same reason the call is shared: the
         trait names "an attack roll", and a spell attack is one.
@@ -1312,7 +1346,13 @@ class Encounter:
             target_conditions=target.conditions,
             distance=actor.distance_to(target, self.movement_rule),
             extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
-            extra_disadvantage=1 if self._dodge_benefits(target) else 0,
+            extra_disadvantage=(
+                int(self._dodge_benefits(target))
+                + int(
+                    spell.attack_kind is AttackKind.RANGED
+                    and self._ranged_close_combat_penalty(actor)
+                )
+            ),
             condition_effects=self.condition_effects,
         )
 
@@ -1506,7 +1546,7 @@ class Encounter:
                     # of an attack-roll one. Both are cheap, neither consumes
                     # randomness, and ``resolve_spell`` reads each pair only on the
                     # branch it belongs to.
-                    attack_advantage=self.spell_attack_advantage(actor, c),
+                    attack_advantage=self.spell_attack_advantage(actor, c, spell),
                     forced_critical=self.attack_forced_critical(actor, c),
                     resisted=(
                         c.resists(spell.damage_type) if spell.damage_type is not None else False
@@ -2149,6 +2189,10 @@ class Encounter:
                 rng,
                 modifier=actor.ability_mod(feature.check.ability),
                 dc=feature.check.dc,
+                advantage=compute_ability_check_advantage(
+                    conditions=actor.conditions,
+                    condition_effects=self.condition_effects,
+                ),
             )
             extras = {"success": test.success, "check": test.describe()}
             if not test.success:

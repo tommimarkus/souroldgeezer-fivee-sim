@@ -179,6 +179,7 @@
       "description": "House version: the creature attacks badly and is easier to hit, because our table found the printed condition too cheap.",
       "effects": {
         "own_attacks_have_disadvantage": true,
+        "own_ability_checks_have_disadvantage": true,
         "attacked_with_advantage": true
       },
       "overrides": true,

@@ -68,6 +68,13 @@ class ConditionEffect:
     #: The afflicted creature's own attack rolls.
     own_attacks_have_advantage: bool = False
     own_attacks_have_disadvantage: bool = False
+    #: The afflicted creature's own ability checks. Initiative is one.
+    own_ability_checks_have_advantage: bool = False
+    own_ability_checks_have_disadvantage: bool = False
+    #: Sight consequences consumed by stateful model-layer rules. ``cannot_see``
+    #: belongs to the observer; ``unseen`` belongs to the possible subject.
+    cannot_see: bool = False
+    unseen: bool = False
     auto_fail_strength_saves: bool = False
     auto_fail_dexterity_saves: bool = False
     #: Weighting a Dexterity save rather than deciding it. Restrained is the SRD
@@ -95,6 +102,7 @@ EFFECTS: dict[str, ConditionEffect] = {
     Condition.BLINDED: ConditionEffect(
         attacked_with_advantage=True,
         own_attacks_have_disadvantage=True,
+        cannot_see=True,
     ),
     # Charmed and Deafened carry no combat-roll consequences; they are tracked so
     # narration and targeting restrictions can see them.
@@ -102,6 +110,7 @@ EFFECTS: dict[str, ConditionEffect] = {
     Condition.DEAFENED: _NO_EFFECT,
     Condition.FRIGHTENED: ConditionEffect(
         own_attacks_have_disadvantage=True,
+        own_ability_checks_have_disadvantage=True,
     ),
     Condition.GRAPPLED: ConditionEffect(
         speed_zero=True,
@@ -113,6 +122,7 @@ EFFECTS: dict[str, ConditionEffect] = {
     Condition.INVISIBLE: ConditionEffect(
         attacked_with_disadvantage=True,
         own_attacks_have_advantage=True,
+        unseen=True,
     ),
     Condition.PARALYZED: ConditionEffect(
         incapacitated=True,
@@ -132,6 +142,7 @@ EFFECTS: dict[str, ConditionEffect] = {
     ),
     Condition.POISONED: ConditionEffect(
         own_attacks_have_disadvantage=True,
+        own_ability_checks_have_disadvantage=True,
     ),
     Condition.PRONE: ConditionEffect(
         own_attacks_have_disadvantage=True,
@@ -196,6 +207,28 @@ def is_incapacitated(conditions: Iterable[str], table: ConditionTable = EFFECTS)
 
 def speed_is_zero(conditions: Iterable[str], table: ConditionTable = EFFECTS) -> bool:
     return any(effect.speed_zero for effect in effects_of(conditions, table))
+
+
+def compute_ability_check_advantage(
+    *,
+    conditions: Iterable[str],
+    extra_advantage: int = 0,
+    extra_disadvantage: int = 0,
+    condition_effects: ConditionTable = EFFECTS,
+) -> Advantage:
+    """Collect every source of Advantage and Disadvantage on an ability check."""
+    advantage_sources = extra_advantage
+    disadvantage_sources = extra_disadvantage
+    for condition in conditions:
+        effect = effect_of(condition, condition_effects)
+        if effect.own_ability_checks_have_advantage:
+            advantage_sources += 1
+        if effect.own_ability_checks_have_disadvantage:
+            disadvantage_sources += 1
+    return resolve_advantage(
+        advantage_sources=advantage_sources,
+        disadvantage_sources=disadvantage_sources,
+    )
 
 
 def compute_save_advantage(

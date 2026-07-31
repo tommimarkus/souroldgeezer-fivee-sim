@@ -93,6 +93,17 @@ class TestInitiative:
         second = Encounter([fighter(), make_monster("Wolf")], Random(7))
         assert first.order == second.order
 
+    def test_a_poisoned_creature_rolls_initiative_with_disadvantage(self) -> None:
+        poisoned = fighter()
+        poisoned.add_condition(Condition.POISONED)
+        observer = fighter("Observer", team="foes")
+        encounter = Encounter(
+            [poisoned, observer],
+            # Poisoned keeps 1 from 20/1; Observer then rolls 10 normally.
+            ScriptedRandom([20, 1, 10]),
+        )
+        assert encounter.initiative == {"Thora": 3, "Observer": 12}
+
     def test_ties_break_on_name_when_dexterity_matches(self) -> None:
         # A forced generator gives everyone the same d20, and identical Dexterity
         # leaves only the name to separate them — never randomness.
@@ -153,15 +164,52 @@ class TestAttacking:
         events = encounter.act(Action(kind=ActionKind.ATTACK, target="Goblin"), Random(4))
         assert "disadvantage" in events[0].detail
 
-    def test_a_shot_from_5_feet_at_a_prone_target_has_advantage(self) -> None:
+    def test_a_visible_enemy_within_5_feet_hinders_a_ranged_attack(self) -> None:
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        shooter = fighter("Shooter")
+        shooter.attacks = (bow,)
+        nearby = fighter("Nearby", team="foes", position=5)
+        target = fighter("Target", team="foes", position=30)
+        encounter = Encounter([shooter, nearby, target], Random(1))
+        assert encounter.attack_advantage(shooter, target, bow) is Advantage.DISADVANTAGE
+
+    def test_an_incapacitated_enemy_does_not_hinder_a_ranged_attack(self) -> None:
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        shooter = fighter("Shooter")
+        shooter.attacks = (bow,)
+        nearby = fighter("Nearby", team="foes", position=5)
+        nearby.add_condition(Condition.INCAPACITATED)
+        target = fighter("Target", team="foes", position=30)
+        encounter = Encounter([shooter, nearby, target], Random(1))
+        assert encounter.attack_advantage(shooter, target, bow) is Advantage.NONE
+
+    def test_point_blank_and_prone_cancel_for_a_ranged_attack(self) -> None:
         """SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "An attack roll
         against you has Advantage if the attacker is within 5 feet of you.
         Otherwise, that attack roll has Disadvantage."
 
         The clause names a distance and no weapon, exactly as the
-        Paralyzed/Unconscious automatic critical does. The engine used to gate it on
-        ``AttackKind``, so a bow loosed point-blank at a Prone creature came out
-        with Disadvantage where the rule gives Advantage.
+        Paralyzed/Unconscious automatic critical does. A ranged attack also has
+        Disadvantage when a capable enemy can see the attacker within 5 feet, so
+        the two sources cancel here.
         """
         rng = Random(2)
         archer = fighter("Archer")
@@ -180,7 +228,7 @@ class TestAttacking:
         target.add_condition(Condition.PRONE)
         encounter = Encounter([archer, target], rng)
         assert (
-            encounter.attack_advantage(archer, target, shortbow) is Advantage.ADVANTAGE
+            encounter.attack_advantage(archer, target, shortbow) is Advantage.NONE
         )
         # The other half of the same clause is likewise the distance: the same bow
         # from across the room still gets Disadvantage, and no long-range penalty is
@@ -190,6 +238,88 @@ class TestAttacking:
             encounter.attack_advantage(archer, target, shortbow)
             is Advantage.DISADVANTAGE
         )
+
+    def test_a_nearby_ally_does_not_hinder_a_ranged_attack(self) -> None:
+        archer = fighter("Archer")
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        archer.attacks = (bow,)
+        ally = fighter("Ally", position=5)
+        target = fighter("Target", team="foes", position=30)
+        encounter = Encounter([archer, ally, target], Random(1))
+        assert encounter.attack_advantage(archer, target, bow) is Advantage.NONE
+
+    def test_an_enemy_on_another_storey_cannot_hinder_a_ranged_attack(self) -> None:
+        archer = fighter("Archer")
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        archer.attacks = (bow,)
+        nearby = fighter("Nearby", team="foes", position=5)
+        nearby.level = 1
+        target = fighter("Target", team="foes", position=15)
+        encounter = Encounter(
+            [archer, nearby, target], Random(1), battle_map=tower()
+        )
+        assert encounter.cover_between("Nearby", "Archer") is CoverGrade.TOTAL
+        assert encounter.attack_advantage(archer, target, bow) is Advantage.NONE
+
+    def test_an_enemy_that_cannot_see_the_attacker_does_not_hinder_the_shot(
+        self,
+    ) -> None:
+        archer = fighter("Archer")
+        archer.add_condition(Condition.INVISIBLE)
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        archer.attacks = (bow,)
+        nearby = fighter("Nearby", team="foes", position=5)
+        target = fighter("Target", team="foes", position=30)
+        encounter = Encounter([archer, nearby, target], Random(1))
+        # Invisible still grants its ordinary attack Advantage; no point-blank
+        # Disadvantage cancels it because the nearby enemy cannot see the archer.
+        assert encounter.attack_advantage(archer, target, bow) is Advantage.ADVANTAGE
+
+    def test_a_blinded_nearby_enemy_does_not_hinder_a_ranged_attack(self) -> None:
+        archer = fighter("Archer")
+        bow = AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 2),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            provenance=FIXTURE,
+        )
+        archer.attacks = (bow,)
+        nearby = fighter("Nearby", team="foes", position=5)
+        nearby.add_condition(Condition.BLINDED)
+        target = fighter("Target", team="foes", position=30)
+        encounter = Encounter([archer, nearby, target], Random(1))
+        assert encounter.attack_advantage(archer, target, bow) is Advantage.NONE
 
     def test_a_reach_weapon_beyond_5_feet_gets_the_prone_disadvantage(self) -> None:
         # The mirror case, and the one the old gate got right by accident: a melee
@@ -2674,6 +2804,18 @@ class TestMapFixtures:
         }
         assert "d20 [15]" in events[0].detail
 
+    def test_poisoned_imposes_disadvantage_on_a_fixture_check(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        encounter.current.add_condition(Condition.POISONED)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"),
+            ScriptedRandom([18, 2]),
+        )
+        assert events[0].data["check"] == (
+            "d20 [18/2] disadvantage -> 2 +3 = 5 vs DC 15"
+        )
+
     def test_a_fixture_with_no_check_reports_no_roll(self) -> None:
         """The common case's event dict stays exactly what it was."""
         encounter, rng = self.fight()
@@ -3387,7 +3529,7 @@ class TestSpellAttackAdvantage:
         *,
         target_conditions: Sequence[str] = (),
         caster_conditions: Sequence[str] = (),
-        distance: int = 5,
+        distance: int = 30,
         dodging: bool = False,
         rng: Random | None = None,
     ) -> Event:
@@ -3413,6 +3555,29 @@ class TestSpellAttackAdvantage:
 
     def test_an_unhindered_target_is_attacked_straight(self) -> None:
         assert rolled_with(self.bolt()) == "none"
+
+    def test_a_point_blank_ranged_spell_attack_has_disadvantage(self) -> None:
+        assert rolled_with(self.bolt(distance=5)) == "disadvantage"
+
+    def test_a_point_blank_melee_spell_attack_is_not_hindered(self) -> None:
+        blade = Spell(
+            name="Spell Blade",
+            level=1,
+            requires_attack_roll=True,
+            attack_kind=AttackKind.MELEE,
+            damage=Dice(1, 8),
+            damage_type=DamageType.FORCE,
+            range_feet=5,
+            provenance=FIXTURE,
+        )
+        wren = self.bolt_caster()
+        target = self.mark(position=5)
+        encounter = Encounter(
+            [wren, target], Random(4), spellbook={blade.name: blade}
+        )
+        assert encounter.spell_attack_advantage(
+            wren, target, blade
+        ) is Advantage.NONE
 
     def test_a_paralyzed_target_grants_advantage(self) -> None:
         event = self.bolt(target_conditions=(Condition.PARALYZED,))
@@ -3461,17 +3626,17 @@ class TestSpellAttackAdvantage:
         # condition grants applies at any range.
         assert rolled_with(event) == "advantage"
 
-    def test_a_prone_target_is_advantaged_within_5_feet_and_disadvantaged_beyond(
+    def test_point_blank_and_prone_cancel_for_a_ranged_spell_attack(
         self,
     ) -> None:
         # SRD 5.2, Prone: "An attack roll against you has Advantage if the
         # attacker is within 5 feet of you. Otherwise, that attack roll has
         # Disadvantage." The clause names a distance and no weapon, so a spell
-        # attack reads it exactly as a weapon does — nothing here needs to decide
-        # what kind of attack a spell is.
+        # attack reads it exactly as a weapon does. Guiding Bolt is a ranged spell
+        # attack, so its close-combat Disadvantage cancels that near Advantage.
         near = self.bolt(target_conditions=(Condition.PRONE,), distance=5)
         far = self.bolt(target_conditions=(Condition.PRONE,), distance=30)
-        assert rolled_with(near) == "advantage"
+        assert rolled_with(near) == "none"
         assert rolled_with(far) == "disadvantage"
 
     def test_the_cast_path_and_the_swing_path_agree_about_advantage(self) -> None:
@@ -3481,13 +3646,16 @@ class TestSpellAttackAdvantage:
         # same answer.
         rng = Random(4)
         wren = self.bolt_caster()
-        target = self.mark(position=5, conditions=(Condition.PARALYZED,))
+        target = self.mark(position=30, conditions=(Condition.PARALYZED,))
         encounter = Encounter([wren, target], rng, spellbook=spellbook())
         dagger = wren.attacks[0]
-        assert encounter.spell_attack_advantage(wren, target) == encounter.attack_advantage(
+        bolt = spellbook()["Guiding Bolt"]
+        assert encounter.spell_attack_advantage(
+            wren, target, bolt
+        ) == encounter.attack_advantage(
             wren, target, dagger
         )
-        assert encounter.spell_attack_advantage(wren, target) is Advantage.ADVANTAGE
+        assert encounter.spell_attack_advantage(wren, target, bolt) is Advantage.ADVANTAGE
 
     def test_one_forced_critical_rule_serves_both_paths(self) -> None:
         # There is deliberately no spell-specific counterpart to compare against:
@@ -3520,10 +3688,13 @@ class TestSpellAttackAdvantage:
             movement_rule=DiagonalRule.FIVE_TEN_FIVE,
         )
         dagger = wren.attacks[0]
-        assert encounter.spell_attack_advantage(wren, target) == encounter.attack_advantage(
+        bolt = spellbook()["Guiding Bolt"]
+        assert encounter.spell_attack_advantage(
+            wren, target, bolt
+        ) == encounter.attack_advantage(
             wren, target, dagger
         )
-        assert encounter.spell_attack_advantage(wren, target) is Advantage.DISADVANTAGE
+        assert encounter.spell_attack_advantage(wren, target, bolt) is Advantage.DISADVANTAGE
 
 
 class TestTurnLegality:

@@ -58,6 +58,7 @@
       "level": 1,
       "school": "Evocation",
       "requires_attack_roll": true,
+      "attack_kind": "ranged",
       "damage": "4d6",
       "damage_type": "radiant",
       "upcast_damage": "1d6",
