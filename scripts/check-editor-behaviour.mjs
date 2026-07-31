@@ -548,6 +548,86 @@ await suite("renderer.js: the override channel", "the renderer sandbox", async (
     show([page.fillAt(3, 2, dryFrame), page.fillAt(3, 2, wetFrame)]));
 });
 
+/* --- the door glyph -------------------------------------------------------
+ * A door is a leaf on hinges, and an open one has to read as a leaf that swung.
+ * The shape shipped wrong for as long as nothing asserted it: the open branch
+ * drew two stubs pulled back into both jambs, which is a pocket door sliding
+ * into the walls, and every door case in this file until now asserted state or
+ * terrain and never geometry.
+ *
+ * The leaf is a fillRect, so the fake canvas can see it — this is a claim about
+ * what the page *decided* to paint, which is the kind this harness can make.
+ * The swing arc drawn beside it is not: `arc` and `stroke` are no-ops here, and
+ * no case below pretends otherwise. */
+
+const DOOR_INK = "#6b4f2a";  /* the leaf's light-theme ink; the matchMedia stub says light */
+const DOOR_VIEW = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
+const DOOR_AT = [3, 2];
+
+/* One door per document. The ink is shared by every door, so a second one in
+ * the same frame could only be told from the first by the geometry these cases
+ * exist to check. */
+function doorDoc(orientation, state) {
+  return {
+    grid: { width: 8, height: 6 },
+    legend: { ".": "floor", "#": "wall" },
+    tiles: ["########", "#......#", "#......#", "#......#", "#......#", "########"],
+    features: [{
+      id: "d", kind: "door", at: [DOOR_AT[0], DOOR_AT[1]],
+      orientation: orientation, state: state,
+    }],
+  };
+}
+
+await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
+  const page = makePage({ canvasIds: ["map"] });
+  const R = page.renderer;
+  const leaves = (orientation, state) => {
+    R.render(page.context, doorDoc(orientation, state), DOOR_VIEW, {});
+    return page.last().fills.filter((f) => f[4] === DOOR_INK);
+  };
+  const near = (a, b) => Math.abs(a - b) < 0.01;
+  const px = DOOR_AT[0] * DOOR_VIEW.scale;
+  const py = DOOR_AT[1] * DOOR_VIEW.scale;
+
+  /* 1. Closed is the half that was always right, and it is what "swung" is
+   *    measured against, so it is pinned first. */
+  const shutH = leaves("horizontal", "closed");
+  check("a closed door is one leaf, lying along the wall run it fills",
+    shutH.length === 1 && shutH[0][2] > shutH[0][3], show(shutH));
+  const shutV = leaves("vertical", "closed");
+  check("and a closed vertical door is that same leaf, turned",
+    shutV.length === 1 && shutV[0][3] > shutV[0][2], show(shutV));
+
+  /* 2. Open is one leaf that swung, not two that slid apart. */
+  const openH = leaves("horizontal", "open");
+  check("an open door is one leaf, not two stubs retracted into the jambs",
+    openH.length === 1, show(openH));
+  check("and the leaf has swung a quarter turn, across the doorway",
+    openH.length === 1 && openH[0][3] > openH[0][2], show(openH));
+  check("it is the same leaf, rotated rather than redrawn",
+    openH.length === 1 && near(openH[0][3], shutH[0][2]) && near(openH[0][2], shutH[0][3]),
+    show([openH[0], shutH[0]]));
+
+  /* 3. Which jamb it hangs on, and which way it opens. Fixed rules, so a later
+   *    change cannot flip a door silently. */
+  check("hinged at the west jamb: the leaf pivots, it does not slide",
+    openH.length === 1 && near(openH[0][0], shutH[0][0])
+      && near(openH[0][1] + openH[0][3], shutH[0][1] + shutH[0][3]),
+    show([openH[0], shutH[0]]));
+  check("and swings north, out into the passage the door interrupts",
+    openH.length === 1 && openH[0][1] < py, show([openH[0][1], py]));
+
+  const openV = leaves("vertical", "open");
+  check("a vertical door swings the same way about its north jamb",
+    openV.length === 1 && openV[0][2] > openV[0][3]
+      && near(openV[0][1], shutV[0][1]) && near(openV[0][0] + openV[0][2],
+        shutV[0][0] + shutV[0][2]),
+    show([openV[0], shutV[0]]));
+  check("out west, into its own passage",
+    openV.length === 1 && openV[0][0] < px, show([openV[0][0], px]));
+});
+
 /* --- viewer.html ---------------------------------------------------------- */
 
 function replayMap() {
