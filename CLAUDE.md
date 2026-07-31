@@ -271,7 +271,26 @@ oddly, `rm -rf` the venv rather than debugging it.
 
 ## Conventions
 
-Mirrors the sibling `souroldgeezer` marketplace at `../skills`:
-date-based plugin versions (`2026.07.1`); `plugin.json` carrying `name`,
-`version`, `description`, `author`, `license`; `AGENTS.md` as a pointer to this
-file rather than a second copy of it.
+planning-policy: default — before new feature or build work, brainstorm the
+approach in plan mode and get it approved (`ExitPlanMode`) before implementing.
+Scope: new feature, build, or creative work. Exceptions (logged): trivial edits,
+hotfixes, spikes/throwaway, work a domain skill owns end to end. Opt out per
+task by saying "skip planning" (logged). Enforcement model.
+
+tdd-policy: test-first — a failing test precedes implementation;
+RED→GREEN→REFACTOR; shipped behavior stays covered by a test that fails on
+regression. Scope `souroldgeezer-fivee-sim/engine/src/**` and `scripts/**`. Exceptions
+(logged): spikes/throwaway code; generated `docs/COVERAGE.md`; SRD data pack
+records under `engine/src/fivee_sim/data/`, which are instead schema-validated
+on load and pinned by coverage regeneration. Enforcement model.
+
+release-policy: calver `YYYY.0M.build` (`2026.07.1`); the version source is the
+`version` field of `souroldgeezer-fivee-sim/.claude-plugin/plugin.json`, mirrored by the
+plugin table in [README.md](README.md); publication only through the
+`souroldgeezer-audit:ip-hygiene` release gate described under "Licence boundary"
+above. No git tags or provider releases exist yet — creating the first is an
+explicit decision, not routine release work.
+
+Otherwise mirrors the sibling `souroldgeezer` marketplace at `../skills`:
+`plugin.json` carrying `name`, `version`, `description`, `author`, `license`;
+`AGENTS.md` as a pointer to this file rather than a second copy of it.
