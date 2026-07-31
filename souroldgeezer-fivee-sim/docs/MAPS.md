@@ -260,11 +260,31 @@ and saves the keeper with `PUT`, exactly as `map_generate` hands off to
 **Ground height.** The Height tool paints absolute feet with the same brush
 sizes as terrain, and the datum control in the side panel moves the height
 every unpainted square sits at. The document stays sparse against the datum:
-painting a square to the datum value clears it rather than recording it. The
-Heights toggle overlays tints and per-square feet, switching itself on when a
-loaded map carries relief, and resizing translates and crops heights with the
-chosen anchor, exactly as the `resize` operation does. Relative adjustment is
-not in the page — that stays with the `adjust_elevation` edit operation.
+painting a square to the datum value clears it rather than recording it.
+Resizing translates and crops heights with the chosen anchor, exactly as the
+`resize` operation does. Relative adjustment is not in the page — that stays
+with the `adjust_elevation` edit operation.
+
+The **Heights** toggle draws the ground as relief rather than as figures,
+switching itself on when a loaded map carries any. Three marks, and each is
+worth reading for something different:
+
+- A **shaded band** on every square: about six bands across whatever range the
+  plane covers, washing lighter above the datum and darker and cooler below,
+  with a north-west hillshade over the top. This is the shape of the ground.
+- A **step edge** on a boundary the movement rules charge for — bold where the
+  face is climbed, over 5 feet, and a hairline where it is a slope, 2 feet and
+  up. This is where a mover's cost changes, so it is the tactical read; the
+  hairlines wait for a closer zoom, since generated relief steps by 5 feet
+  almost everywhere and drawn at every zoom they would bury the map.
+- A **key** under the datum control, naming the feet each band covers.
+
+Exact feet are still one hover away — the Cursor readout names the height of
+the square under the pointer, overlay or no overlay. The **ft** toggle beside
+Heights puts the figure back in every square that departs from the datum, for
+hand-tuning a plateau; it is off by default, because a number in every square
+buries the terrain it annotates and a generated overland map gives every
+square one.
 
 **Storeys.** The Level control picks the floor being edited; every tool paints
 the one selected, and the canvas draws it. The control is disabled on a map
