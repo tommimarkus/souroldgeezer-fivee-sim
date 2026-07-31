@@ -1216,6 +1216,85 @@ def validate(
     return diagnostics
 
 
+def registry_from_snapshot(snapshot: Mapping[str, Any]) -> ContentRegistry:
+    """Rebuild the rules tables embedded in a durable encounter snapshot.
+
+    Combatants are normalized separately by the journal; this snapshot owns
+    the spell, condition, terrain, and item records they may use while the
+    encounter continues. It goes through the ordinary pack parser so captured
+    data is held to the same strict contract as a file loaded today.
+    """
+    diagnostics: list[Diagnostic] = []
+    raw_records = snapshot.get("records")
+    if not isinstance(raw_records, Mapping):
+        raise ContentError(
+            [Diagnostic(source="encounter snapshot", problem="records must be an object")]
+        )
+    payload: dict[str, Any] = {
+        "pack": "captured-encounter-content",
+        "version": "1",
+        "provenance": "Captured by fivee-sim when the encounter was created",
+    }
+    sources: dict[tuple[str, str], str] = {}
+    for section in ("spells", "conditions", "terrain", "items"):
+        section_entries = raw_records.get(section, {})
+        if not isinstance(section_entries, Mapping):
+            diagnostics.append(
+                Diagnostic(
+                    source="encounter snapshot",
+                    section=section,
+                    problem="must be an object",
+                )
+            )
+            continue
+        rows = []
+        for name, wrapped in section_entries.items():
+            if not isinstance(wrapped, Mapping) or not isinstance(
+                wrapped.get("record"), Mapping
+            ):
+                diagnostics.append(
+                    Diagnostic(
+                        source="encounter snapshot",
+                        section=section,
+                        record=str(name),
+                        problem="must carry a record object",
+                    )
+                )
+                continue
+            rows.append(dict(wrapped["record"]))
+            sources[(section, str(name))] = str(wrapped.get("source", "snapshot"))
+        payload[section] = rows
+    parsed = _parse_pack(
+        payload,
+        diagnostics,
+        label="encounter snapshot",
+        level="snapshot",
+        path="",
+    )
+    errors = [item for item in diagnostics if item.severity is Severity.ERROR]
+    if parsed is None or errors:
+        raise ContentError(diagnostics)
+    try:
+        mode = BuiltinMode(snapshot.get("builtin", BuiltinMode.EXCLUDE))
+    except ValueError:
+        mode = BuiltinMode.EXCLUDE
+    return ContentRegistry(
+        builtin=mode,
+        spells=parsed.spells,
+        spell_records=parsed.spell_records,
+        condition_effects=parsed.condition_effects,
+        condition_records=parsed.condition_records,
+        terrain_effects=parsed.terrain_effects,
+        terrain_records=parsed.terrain_records,
+        items=parsed.items,
+        item_records=parsed.item_records,
+        packs=(parsed.info,),
+        sources=sources,
+        warnings=tuple(item for item in diagnostics if item.severity is Severity.WARNING),
+        retained_conditions=tuple(str(item) for item in snapshot.get("retained_conditions", [])),
+    )
+
+
 def builtin_registry() -> ContentRegistry:
     """The bundled SRD slice alone, with nothing from the environment."""
     return load_packs(builtin=BuiltinMode.INCLUDE, include_environment=False)

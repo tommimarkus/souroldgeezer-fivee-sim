@@ -35,6 +35,7 @@
  * that names it fails. Every other run must read the shipped path.
  */
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -155,6 +156,10 @@ function inlineScript(html, source, marker) {
 const rendererSrc = read("renderer.js");
 const editorHtml = read("editor.html");
 const viewerHtml = read("viewer.html");
+const replayInvalidCorpus = JSON.parse(readFileSync(path.join(
+  REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
+  "replay-invalid.json"
+), "utf8"));
 
 /* --- preflight ------------------------------------------------------------
  * Everything below drives the pages through named element ids and named
@@ -171,7 +176,8 @@ const EDITOR_IDS = [
 ];
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
-  "btn-play", "btn-back", "btn-forward", "speed", "embedded-data",
+  "btn-play", "btn-back", "btn-forward", "speed", "embedded-data", "level-select",
+  "follow-level", "combatant-state",
 ];
 const RENDERER_EXPORTS = [
   "render", "fitView", "resizeCanvas", "visibleBounds", "terrainOverridesFor",
@@ -756,6 +762,110 @@ function replayBundle(openList) {
   };
 }
 
+function compareCodePoints(left, right) {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const length = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = leftPoints[index].codePointAt(0) - rightPoints[index].codePointAt(0);
+    if (difference) { return difference; }
+  }
+  return leftPoints.length - rightPoints.length;
+}
+
+function canonicalJson(value) {
+  if (value === null || typeof value !== "object") { return JSON.stringify(value); }
+  if (Array.isArray(value)) { return "[" + value.map(canonicalJson).join(",") + "]"; }
+  return "{" + Object.keys(value).sort(compareCodePoints).map((key) => (
+    JSON.stringify(key) + ":" + canonicalJson(value[key])
+  )).join(",") + "}";
+}
+
+function canonicalHash(value) {
+  return createHash("sha256").update(canonicalJson(value), "utf8").digest("hex");
+}
+
+function sealReplayV2(bundle) {
+  bundle.checkpoints.forEach((checkpoint) => {
+    checkpoint.state_hash = canonicalHash(checkpoint.state);
+  });
+  const unhashedContent = {};
+  Object.keys(bundle.content).forEach((key) => {
+    if (key !== "sha256") { unhashedContent[key] = bundle.content[key]; }
+  });
+  bundle.content.sha256 = canonicalHash(unhashedContent);
+  bundle.integrity = {
+    algorithm: "sha256",
+    map: canonicalHash(bundle.map),
+    initial: canonicalHash(bundle.initial),
+    events: canonicalHash(bundle.events),
+    actions: canonicalHash(bundle.actions),
+    checkpoints: canonicalHash(bundle.checkpoints),
+    latest_state: canonicalHash(bundle.latest_state),
+    content: bundle.content.sha256,
+  };
+  return bundle;
+}
+
+function replayV2() {
+  const bundle = replayBundle([]);
+  bundle.format_version = 2;
+  bundle.map.levels = [{
+    index: 1, name: "gallery",
+    tiles: ["........", "........", "........", "........", "........", "........"],
+    features: [], elevation: { default: 10, squares: [] },
+  }];
+  const hero = {
+    name: "Hero", team: "party", position: [10, 10], hp: 9, max_hp: 9, ac: 17,
+    level: 0, conditions: ["Prone"], concentrating_on: "Ward", dodging: true,
+    disengaged: false, reaction_available: false, conscious: true, dead: false,
+    stable: false, death_saves: { successes: 1, failures: 2 },
+    spell_slots: { 1: 2 }, items: { Potion: 1 },
+  };
+  bundle.initial.state = { round: 1, turn: "Hero", combatants: [hero] };
+  bundle.initial.combatants = [copy(hero)];
+  bundle.events = [{
+    seq: 0, kind: "move", round: 1, turn: "Hero", actor: "Hero", target: "",
+    timestamp: "2026-01-01T00:00:02Z",
+    data: {
+      origin: [10, 10], destination: [20, 10], from_level: 0, to_level: 1,
+      completed: true,
+    },
+  }];
+  const upstairs = copy(hero);
+  upstairs.position = [20, 10];
+  upstairs.level = 1;
+  upstairs.conditions = [];
+  bundle.checkpoints = [{
+    index: 1, event_count: 1, timestamp: "2026-01-01T00:00:02Z",
+    state: { round: 1, turn: "Hero", combatants: [upstairs] }, state_hash: "test",
+  }];
+  bundle.attempts = [
+    {
+      index: 0, operation: "check", status: "refused",
+      timestamp: "2026-01-01T00:00:00Z", arguments: { skill: "intimidation" },
+      error: "the sentry is already hostile",
+    },
+    {
+      index: 1, operation: "encounter_note", status: "success",
+      timestamp: "2026-01-01T00:00:01Z",
+      arguments: { category: "negotiation", text: "The bridge is unsafe." }, result: {},
+    },
+  ];
+  bundle.actions = [];
+  bundle.latest_state = copy(bundle.checkpoints[0].state);
+  bundle.content = { "\ue000": 1, "😀": 2 };
+  bundle.encounter = { id: "enc-test", seed: 7, movement_rule: "5-5-5" };
+  return sealReplayV2(bundle);
+}
+
+function setPath(target, dotted, value) {
+  const path = dotted.split(".");
+  let cursor = target;
+  path.slice(0, -1).forEach((key) => { cursor = cursor[key]; });
+  cursor[path[path.length - 1]] = value;
+}
+
 await suite("viewer.html: folding a replay's fixtures", "the page sandbox in makePage()",
   async () => {
     const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
@@ -867,6 +977,69 @@ await suite("viewer.html: folding a replay's fixtures", "the page sandbox in mak
     check("a bundle that is not a replay is refused, not rendered",
       page.alerts.length === 1 && page.alerts[0].indexOf("fivee-sim-replay") !== -1,
       show(page.alerts));
+  });
+
+await suite("viewer.html: replay v2 state and validation", "the page sandbox in makePage()",
+  async () => {
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    page.element("follow-level").checked = true;
+    const bundle = replayV2();
+    await page.drop(bundle, "v2.json");
+    check("v2 exposes full combatant state instead of only hit points",
+      page.element("combatant-state").textContent.indexOf("AC 17") !== -1
+        && page.element("combatant-state").textContent.indexOf("1✓/2✗") !== -1
+        && page.element("combatant-state").textContent.indexOf("concentrating: Ward") !== -1,
+      page.element("combatant-state").textContent);
+    check("refusals and notes share the audit timeline",
+      page.element("ticker").textContent.indexOf("intimidation refused") !== -1
+        && page.element("ticker").textContent.indexOf("The bridge is unsafe") !== -1,
+      page.element("ticker").textContent);
+
+    page.element("scrub").value = "1";
+    page.element("scrub").dispatch("input");
+    check("a cross-storey checkpoint follows the actor to its resulting plane",
+      page.element("level-select").value === "1"
+        && page.last().overlays.tokens.length === 1
+        && show(page.last().overlays.tokens[0].at) === show([4, 2]),
+      show([page.element("level-select").value, page.last().overlays.tokens]));
+    check("the selected storey is the plane handed to the renderer",
+      page.last().doc.elevation.default === 10, show(page.last().doc.elevation));
+
+    const tampered = replayV2();
+    tampered.latest_state.round = 99;
+    const beforeTamper = page.alerts.length;
+    await page.drop(tampered, "tampered-v2.json");
+    check("v2 rejects state whose integrity hash no longer matches",
+      page.alerts.length === beforeTamper + 1
+        && page.alerts[page.alerts.length - 1].indexOf("integrity.latest_state") !== -1,
+      show(page.alerts.slice(beforeTamper)));
+
+    const specialNames = replayV2();
+    const namedLikeAPrototype = copy(specialNames.initial.state.combatants[0]);
+    namedLikeAPrototype.name = "__proto__";
+    namedLikeAPrototype.position = [25, 10];
+    specialNames.initial.state.combatants.push(copy(namedLikeAPrototype));
+    specialNames.initial.combatants.push(copy(namedLikeAPrototype));
+    specialNames.checkpoints[0].state.combatants.push(copy(namedLikeAPrototype));
+    specialNames.latest_state.combatants.push(copy(namedLikeAPrototype));
+    sealReplayV2(specialNames);
+    await page.drop(specialNames, "special-names-v2.json");
+    check("combatant names that resemble prototype keys remain ordinary replay data",
+      page.element("combatant-state").textContent.indexOf("__proto__") !== -1
+        && page.last().overlays.tokens.length === 2,
+      show([page.element("combatant-state").textContent, page.last().overlays.tokens]));
+
+    for (const invalid of replayInvalidCorpus) {
+      const broken = replayV2();
+      setPath(broken, invalid.path, invalid.value);
+      const before = page.alerts.length;
+      await page.drop(broken, invalid.name + ".json");
+      check("shared invalid corpus: " + invalid.name,
+        page.alerts.length === before + 1
+          && page.alerts[page.alerts.length - 1].indexOf(invalid.diagnostic_path) !== -1,
+        show(page.alerts.slice(before)));
+    }
   });
 
 await suite("viewer.html: animated playback", "the manual animation clock in makePage()",

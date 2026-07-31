@@ -248,6 +248,30 @@ class TestStructuredPayloads:
             payload = json.dumps(event.as_dict())
             assert json.loads(payload)["kind"] == event.kind
 
+    def test_an_interrupted_move_records_where_the_mover_actually_stopped(self) -> None:
+        mover = fighter("Mover", position=5, hp=1)
+        mover.ac = 1
+        sentinel = fighter("Sentinel", position=0)
+        sentinel.team = "monsters"
+        sentinel.attacks = (
+            sentinel.attacks[0].__class__(
+                name="Certain blow",
+                attack_bonus=100,
+                damage=Dice.parse("1d1"),
+                damage_type=sentinel.attacks[0].damage_type,
+            ),
+        )
+        encounter, rng = build_encounter([mover, sentinel], seed=SEED)
+        advance_to(encounter, "Mover", rng)
+
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=25), rng)
+
+        move = next(event for event in events if event.kind == "move")
+        assert not mover.conscious
+        assert move.data["planned_destination"] == (25, 0)
+        assert move.data["destination"] == mover.position
+        assert move.data["completed"] is False
+
 
 def replayed(original: Encounter, fresh: Encounter, rng: Random) -> Encounter:
     """Apply ``original``'s action records to a freshly built ``fresh``."""

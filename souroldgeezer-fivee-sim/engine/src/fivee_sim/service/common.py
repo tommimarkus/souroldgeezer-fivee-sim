@@ -12,6 +12,11 @@ __all__ = ["resolve_seed", "sha256_of", "slugify"]
 def resolve_seed(seed: int | None) -> int:
     """Use the given seed, or pick one and report it so the result stays replayable."""
     if seed is not None:
+        if not -(2**53 - 1) <= seed <= 2**53 - 1:
+            raise ValueError(
+                "seed must be a JavaScript safe integer "
+                f"between {-(2**53 - 1)} and {2**53 - 1}"
+            )
         return seed
     return random.SystemRandom().randrange(2**31)
 

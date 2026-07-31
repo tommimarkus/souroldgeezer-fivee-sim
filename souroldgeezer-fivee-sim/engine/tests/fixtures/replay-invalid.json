@@ -1,0 +1,72 @@
+[
+  {
+    "name": "unsupported version",
+    "path": "format_version",
+    "value": 17,
+    "diagnostic_path": "format_version"
+  },
+  {
+    "name": "events must be an array",
+    "path": "events",
+    "value": {},
+    "diagnostic_path": "events"
+  },
+  {
+    "name": "seed must survive JavaScript JSON",
+    "path": "seed",
+    "value": 9007199254740992,
+    "diagnostic_path": "seed"
+  },
+  {
+    "name": "v2 needs an encounter id",
+    "path": "encounter.id",
+    "value": "",
+    "diagnostic_path": "encounter.id"
+  },
+  {
+    "name": "integrity algorithm is fixed",
+    "path": "integrity.algorithm",
+    "value": "md5",
+    "diagnostic_path": "integrity.algorithm"
+  },
+  {
+    "name": "initial creature positions are coordinate pairs",
+    "path": "initial.creatures.0.position",
+    "value": [5],
+    "diagnostic_path": "initial.creatures.0.position"
+  },
+  {
+    "name": "authoritative combatant positions are coordinate pairs",
+    "path": "initial.state.combatants.0.position",
+    "value": "near the door",
+    "diagnostic_path": "initial.state.combatants.0.position"
+  },
+  {
+    "name": "events need a kind",
+    "path": "events.0.kind",
+    "value": null,
+    "diagnostic_path": "events.0.kind"
+  },
+  {
+    "name": "attempts are records",
+    "path": "attempts",
+    "value": [null],
+    "diagnostic_path": "attempts.0"
+  },
+  {
+    "name": "checkpoint hit points are numeric",
+    "path": "checkpoints.0.state.combatants.0.hp",
+    "value": "healthy",
+    "diagnostic_path": "checkpoints.0.state.combatants.0.hp"
+  },
+  {
+    "name": "map width must be positive",
+    "path": "map",
+    "value": {
+      "grid": {"width": 0, "height": 4, "cell_feet": 5},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.grid.width"
+  }
+]
