@@ -181,6 +181,39 @@ class TestEditorGroundControls:
         # the same reason as the labels channel above.
         assert "overlays.edges" in read("renderer.js")
 
+    def test_the_renderer_knows_the_terrain_override_channel(self) -> None:
+        # What a fixture does to the ground reaches the canvas as one generic
+        # per-square channel. Anchored on the overlay access, per the labels
+        # and edges channels above.
+        assert "overlays.terrainOverrides" in read("renderer.js")
+
+    def test_an_override_is_applied_before_the_colour_and_the_texture(self) -> None:
+        # Load-bearing placement: `kind` is read again for the hatch and notch
+        # branches, so an override taken after the fill would recolour a
+        # flooded square while leaving it hatched as difficult terrain.
+        source = read("renderer.js")
+        override = source.index("overlays.terrainOverrides")
+        assert override < source.index("ctx.fillStyle = terrainColor(")
+        assert override < source.index('if (kind === "difficult")')
+
+    def test_the_override_derivation_is_exported_once_for_both_pages(self) -> None:
+        # The editor and the viewer both need "which squares does this
+        # document's fixtures decide, given which stand open". Server-side that
+        # derivation is MapFeature.claims(), which names drift as its risk; a
+        # copy per page would make three.
+        source = read("renderer.js")
+        assert "function terrainOverridesFor(doc, states)" in source
+        assert "terrainOverridesFor: terrainOverridesFor" in source
+
+    def test_the_override_channel_stays_generic(self) -> None:
+        # Same rule the edge channel is held to: the renderer is handed squares
+        # and kinds, never fixtures. It must not learn what `affects` is, or
+        # the viewer's synthesized mapless plane stops being a document it can
+        # draw. The derivation helper may know; the drawing loop may not.
+        source = read("renderer.js")
+        loop = source.index("for (var cy = y0; cy < y1; cy++)")
+        assert "affects" not in source[loop:]
+
     def test_the_edge_channel_stays_generic(self) -> None:
         # The channel is a stroke on a named side of a cell, nothing more:
         # the renderer must not learn what elevation is, or the viewer's
