@@ -332,6 +332,39 @@ class TestFixtureStates:
         assert closed(open=["door-1"]) is False
         assert closed(open=[]) is True
 
+    def test_linked_door_portals_always_export_one_shared_state(self) -> None:
+        raw = payload()
+        raw["features"] = [
+            {
+                "id": "left",
+                "kind": "door",
+                "at": [2, 2],
+                "orientation": "horizontal",
+                "hinge": "west",
+                "swing": "north",
+                "state": "closed",
+                "linked_to": "right",
+            },
+            {
+                "id": "right",
+                "kind": "door",
+                "at": [3, 2],
+                "orientation": "horizontal",
+                "hinge": "east",
+                "swing": "north",
+                "state": "closed",
+                "linked_to": "left",
+            },
+        ]
+        doc = document(raw)
+
+        for named in (["left"], ["right"]):
+            portals = to_uvtt(doc, terrain=TERRAIN, include_image=False, open=named)["portals"]
+            assert [portal["closed"] for portal in portals] == [False, False]
+
+        shut = to_uvtt(doc, terrain=TERRAIN, include_image=False, open=[])["portals"]
+        assert [portal["closed"] for portal in shut] == [True, True]
+
     def test_a_shut_door_stays_a_gap_in_the_wall_rather_than_sealing_it(self) -> None:
         # The one square resolution deliberately does not touch. A door travels
         # as a portal here, and a portal buried in solid wall is a door the

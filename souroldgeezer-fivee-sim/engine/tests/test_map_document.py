@@ -68,6 +68,35 @@ def document() -> dict[str, Any]:
     }
 
 
+def double_doors() -> dict[str, Any]:
+    """A valid reciprocal horizontal pair, rebuilt for mutation by each test."""
+    payload = document()
+    payload["features"][0] = {
+        "id": "door-left",
+        "kind": "door",
+        "at": [3, 4],
+        "orientation": "horizontal",
+        "hinge": "west",
+        "swing": "north",
+        "state": "closed",
+        "linked_to": "door-right",
+    }
+    payload["features"].insert(
+        1,
+        {
+            "id": "door-right",
+            "kind": "door",
+            "at": [4, 4],
+            "orientation": "horizontal",
+            "hinge": "east",
+            "swing": "north",
+            "state": "closed",
+            "linked_to": "door-left",
+        },
+    )
+    return payload
+
+
 def problems(
     diagnostics: list[Diagnostic], severity: Severity = Severity.ERROR
 ) -> list[str]:
@@ -262,6 +291,62 @@ class TestFeatureDiagnostics:
         payload = document()
         payload["features"][0]["orientation"] = "diagonal"
         assert any("horizontal, vertical" in p for p in errors_of(payload))
+
+    def test_door_swing_metadata_is_orientation_specific(self) -> None:
+        payload = document()
+        payload["features"][0].update({"hinge": "east", "swing": "south"})
+        door = parse_document(payload, source="test", terrain=TERRAIN).features[0]
+        assert (door.hinge, door.swing, door.linked_to) == ("east", "south", None)
+
+        payload["features"][0].update(
+            {"orientation": "vertical", "hinge": "south", "swing": "east"}
+        )
+        assert errors_of(payload) == []
+
+        payload["features"][0]["hinge"] = "west"
+        assert any("vertical door hinge" in p for p in errors_of(payload))
+        payload["features"][0].update({"hinge": "south", "swing": "north"})
+        assert any("vertical door swing" in p for p in errors_of(payload))
+
+    def test_only_doors_may_carry_swing_or_link_metadata(self) -> None:
+        payload = document()
+        payload["features"][1].update(
+            {"hinge": "west", "swing": "north", "linked_to": "door-1"}
+        )
+        found = errors_of(payload)
+        assert any("only a door may carry 'hinge'" in p for p in found)
+        assert any("only a door may carry 'swing'" in p for p in found)
+        assert any("only a door may carry 'linked_to'" in p for p in found)
+
+    def test_a_reciprocal_aligned_pair_parses(self) -> None:
+        doc = parse_document(double_doors(), source="test", terrain=TERRAIN)
+        left, right = doc.features[:2]
+        assert left.linked_to == "door-right"
+        assert right.linked_to == "door-left"
+
+    @pytest.mark.parametrize(
+        ("change", "message"),
+        [
+            ((1, "linked_to", "door-missing"), "has no feature with that id"),
+            ((1, "linked_to", None), "must link back"),
+            ((1, "orientation", "vertical"), "same orientation"),
+            ((1, "at", [3, 3]), "adjacent along their shared orientation"),
+            ((1, "state", "open"), "same state"),
+            ((1, "costs_action", True), "same interaction contract"),
+        ],
+    )
+    def test_linked_door_invariants(
+        self, change: tuple[int, str, Any], message: str
+    ) -> None:
+        payload = double_doors()
+        index, key, value = change
+        if value is None:
+            del payload["features"][index][key]
+        else:
+            payload["features"][index][key] = value
+        if key == "orientation":
+            payload["features"][index].update({"hinge": "south", "swing": "east"})
+        assert any(message in p for p in errors_of(payload))
 
     def test_bad_state(self) -> None:
         payload = document()
@@ -927,6 +1012,14 @@ class TestFeatureFixtures:
         ]
         assert list(gate["affects"][0]) == ["cells", "terrain", "elevation"]
 
+    def test_door_swing_and_link_keys_have_a_canonical_order(self) -> None:
+        written = json.loads(
+            serialize(parse_document(double_doors(), source="test", terrain=TERRAIN))
+        )
+        assert list(written["features"][0]) == [
+            "id", "kind", "at", "orientation", "hinge", "swing", "state", "linked_to",
+        ]
+
     def test_an_overlay_may_move_only_the_height(self) -> None:
         # Either pair alone is a whole overlay: a floodgate draining a cistern
         # lowers the water without changing what the squares are.
@@ -979,6 +1072,13 @@ class TestFixturesCrossToTheBattleMap:
         grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
         door = grid.features["door-1"]
         assert (door.closed_terrain, door.open_terrain) == ("door-closed", "door-open")
+
+    def test_link_and_orientation_cross_to_the_runtime_map(self) -> None:
+        battle = to_grid(parse_document(double_doors(), source="test", terrain=TERRAIN))
+        assert battle.features["door-left"].linked_to == "door-right"
+        assert battle.features["door-right"].linked_to == "door-left"
+        assert battle.features["door-left"].orientation == "horizontal"
+        assert battle.features["door-right"].orientation == "horizontal"
 
     def test_an_authored_pair_overrides_the_default(self) -> None:
         gate = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["gate"]

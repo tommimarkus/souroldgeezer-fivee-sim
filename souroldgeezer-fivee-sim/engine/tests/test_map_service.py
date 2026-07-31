@@ -69,6 +69,34 @@ def document() -> MapDocument:
     return parse_document(payload(), source="test", terrain=TERRAIN)
 
 
+def linked_document() -> MapDocument:
+    raw = payload()
+    raw["features"] = [
+        {
+            "id": "door-1",
+            "kind": "door",
+            "at": [3, 4],
+            "orientation": "horizontal",
+            "hinge": "east",
+            "swing": "north",
+            "state": "closed",
+            "linked_to": "door-2",
+        },
+        {
+            "id": "door-2",
+            "kind": "door",
+            "at": [2, 4],
+            "orientation": "horizontal",
+            "hinge": "west",
+            "swing": "north",
+            "state": "closed",
+            "linked_to": "door-1",
+        },
+        {"id": "spawn-party", "kind": "spawn", "at": [1, 1], "team": "party"},
+    ]
+    return parse_document(raw, source="test", terrain=TERRAIN)
+
+
 def edited(doc: MapDocument, *operations: dict[str, Any]) -> MapDocument:
     return service.apply_edits(doc, list(operations), terrain=TERRAIN)
 
@@ -208,6 +236,26 @@ class TestEditOps:
         assert doc.features[0].state == "open"
         again = edited(doc, {"op": "toggle_door", "at": [3, 4]})
         assert again.features[0].state == "closed"
+
+    def test_toggle_door_flips_both_linked_defaults(self) -> None:
+        doc = edited(linked_document(), {"op": "toggle_door", "at": [3, 4]})
+        assert {
+            feature.id: feature.state for feature in doc.features if feature.kind == "door"
+        } == {
+            "door-1": "open",
+            "door-2": "open",
+        }
+
+    def test_removing_one_linked_leaf_is_refused_at_the_operation(self) -> None:
+        with pytest.raises(MapEditError, match="linked to 'door-2'.*unlink"):
+            edited(linked_document(), {"op": "remove_feature", "id": "door-1"})
+
+    def test_resize_cannot_drop_only_one_linked_leaf(self) -> None:
+        with pytest.raises(MapEditError, match="push 'door-1' off.*'door-2' is linked"):
+            edited(
+                linked_document(),
+                {"op": "resize", "width": 3, "height": 5, "anchor": "top-left"},
+            )
 
     def test_toggle_door_without_a_door_names_the_doors(self) -> None:
         with pytest.raises(MapEditError, match=r"no door at \[1, 1\].*\[3, 4\]"):
@@ -940,10 +988,10 @@ class TestSetFeature:
                 "orientation": "vertical", "state": "open"}})
 
     def test_an_unknown_feature_key_names_the_valid_ones(self) -> None:
-        with pytest.raises(MapEditError, match=r"unknown key\(s\): 'hinge'.*to_level"):
+        with pytest.raises(MapEditError, match=r"unknown key\(s\): 'latch'.*to_level"):
             edited(document(), {"op": "set_feature", "feature": {
                 "id": "door-1", "kind": "door", "at": [3, 4],
-                "orientation": "vertical", "state": "open", "hinge": "left"}})
+                "orientation": "vertical", "state": "open", "latch": "left"}})
 
     def test_set_feature_takes_no_level_so_it_cannot_move_a_storey(self) -> None:
         # The relocation hazard the re-add pair carries: add_feature takes a
@@ -1275,6 +1323,15 @@ class TestRenderFixtureStates:
         rendered = service.render_ascii(self.legended("open"), open=[])
         assert rendered["rows"][1] == "#..#..#"
         assert rendered["rows"][2] == "#..+..#"
+
+    def test_naming_either_linked_door_opens_both_leaves(self) -> None:
+        left = service.render_ascii(linked_document(), open=["door-2"])
+        right = service.render_ascii(linked_document(), open=["door-1"])
+        shut = service.render_ascii(linked_document(), open=[])
+
+        assert left["rows"][4] == "##//##"
+        assert right["rows"][4] == "##//##"
+        assert shut["rows"][4] == "##++##"
 
     def test_a_fixtures_own_square_resolves_through_the_state_it_is_given(self) -> None:
         # Under show_features the reserved glyph covers the gate's square either

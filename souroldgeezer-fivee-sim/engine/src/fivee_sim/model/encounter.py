@@ -468,6 +468,48 @@ class Encounter:
                     f"{', '.join(repr(wanted) for wanted in missing)}, which this map "
                     f"does not have; the map has: {available}"
                 )
+            if feature.linked_to is None:
+                continue
+            partner = catalogue.get(feature.linked_to)
+            if partner is None:
+                raise EncounterError(
+                    f"feature {name!r} links to {feature.linked_to!r}, which this map "
+                    "does not have"
+                )
+            if feature.kind != "door" or partner.kind != "door":
+                raise EncounterError("only doors may be linked")
+            if partner.linked_to != name:
+                raise EncounterError(
+                    f"feature {name!r} links to {partner.name!r}; that door must link "
+                    f"back to {name!r}"
+                )
+            if battle_map.level_of(name) != battle_map.level_of(partner.name):
+                raise EncounterError("linked doors must stand on the same level")
+            dx = abs(feature.square[0] - partner.square[0])
+            dy = abs(feature.square[1] - partner.square[1])
+            if dx + dy != 1:
+                raise EncounterError("linked doors must stand on adjacent squares")
+            if feature.orientation != partner.orientation or feature.orientation not in {
+                "horizontal", "vertical",
+            }:
+                raise EncounterError(
+                    "linked doors must share a horizontal or vertical orientation"
+                )
+            aligned = (feature.orientation == "horizontal" and dx == 1) or (
+                feature.orientation == "vertical" and dy == 1
+            )
+            if not aligned:
+                raise EncounterError(
+                    f"linked doors must be aligned with their {feature.orientation} orientation"
+                )
+            if feature.initially_open != partner.initially_open:
+                raise EncounterError("linked doors must start in the same state")
+            contract = (feature.requires, feature.costs_action, feature.check)
+            partner_contract = (partner.requires, partner.costs_action, partner.check)
+            if contract != partner_contract:
+                raise EncounterError(
+                    "linked doors must have the same requires, costs_action, and check"
+                )
         self.map_state = MapState(open_features={
             name for name, feature in battle_map.features.items()
             if feature.initially_open
@@ -829,6 +871,8 @@ class Encounter:
                 "ability": feature.check.ability.value,
                 "dc": feature.check.dc,
             }
+        if feature.linked_to is not None:
+            summary["linked_to"] = feature.linked_to
         return summary
 
     def _level_summary(self, level: int) -> dict[str, Any]:
@@ -2157,6 +2201,8 @@ class Encounter:
 
         was_open = feature.name in self.map_state.open_features
         wants_open = (not was_open) if action.set_open is None else action.set_open
+        linked = [feature.linked_to] if feature.linked_to is not None else []
+        operated = [feature.name, *linked]
         # Prerequisites gate *opening* only. Held as an invariant they would also
         # bar closing the gate once a spike went back in, which is not the
         # fiction: a thing that opened can always be shut again.
@@ -2181,7 +2227,7 @@ class Encounter:
             self._turn.interaction_used = True
 
         verb = "open" if wants_open else "close"
-        extras: dict[str, Any] = {}
+        extras: dict[str, Any] = {"linked": linked} if linked else {}
         if feature.check is not None:
             # A raw ability check: creatures carry no skill proficiencies, so a
             # DC here was set as if untrained.
@@ -2194,7 +2240,7 @@ class Encounter:
                     condition_effects=self.condition_effects,
                 ),
             )
-            extras = {"success": test.success, "check": test.describe()}
+            extras.update({"success": test.success, "check": test.describe()})
             if not test.success:
                 # ``open`` is always the state *after* the attempt, so a replay
                 # reading it needs to know nothing about checks.
@@ -2209,11 +2255,12 @@ class Encounter:
             note = ""
 
         if wants_open:
-            self.map_state.open_features.add(feature.name)
+            self.map_state.open_features.update(operated)
         else:
-            self.map_state.open_features.discard(feature.name)
+            self.map_state.open_features.difference_update(operated)
+        subjects = feature.name if not linked else f"{feature.name} and {linked[0]}"
         self._emit("interact", actor.name,
-                   detail=f"{'opens' if wants_open else 'closes'} {feature.name}{note}",
+                   detail=f"{'opens' if wants_open else 'closes'} {subjects}{note}",
                    feature=feature.name, open=wants_open, **extras)
 
     def stand_cost(self, actor_name: str) -> int:

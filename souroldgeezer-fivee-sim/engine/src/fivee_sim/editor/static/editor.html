@@ -122,6 +122,12 @@ header .spacer { flex: 1; }
 }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
+#door-config {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 8px;
+  align-items: center; margin: 8px 0;
+}
+#door-config[hidden] { display: none; }
+#door-config select { min-width: 0; width: 100%; }
 /* The scroll lives on the status, not the footer: a long refusal scrolls
    inside its own column and the version stays pinned in the corner. */
 footer {
@@ -219,6 +225,19 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     </div>
     <h3>Selected feature</h3>
     <div id="feature-info">none</div>
+    <div id="door-config" hidden>
+      <label for="door-orientation">orientation</label>
+      <select id="door-orientation">
+        <option value="horizontal">horizontal</option>
+        <option value="vertical">vertical</option>
+      </select>
+      <label for="door-hinge">hinge</label>
+      <select id="door-hinge"></select>
+      <label for="door-swing">opens</label>
+      <select id="door-swing"></select>
+      <label for="door-linked">linked door</label>
+      <select id="door-linked"></select>
+    </div>
     <button id="btn-delete-feature" hidden>Delete feature</button>
     <h3>Ground</h3>
     <div id="ground-row">
@@ -877,6 +896,13 @@ if (typeof FiveeRenderer === "undefined") {
     }
     return null;
   }
+  function featureById(id) {
+    var features = plane().features || [];
+    for (var i = 0; i < features.length; i++) {
+      if (features[i] && features[i].id === id) { return features[i]; }
+    }
+    return null;
+  }
   function nextFeatureId(prefix) {
     var used = {};
     plane().features.forEach(function (f) { used[f.id] = true; });
@@ -911,15 +937,30 @@ if (typeof FiveeRenderer === "undefined") {
       setStatus("placed a closed door at [" + cell + "]; click again to open, again to remove");
     } else if (door.state === "closed") {
       door.state = "open";
-      setStatus("door " + door.id + " now stands open by default");
+      var openedMate = featureById(door.linked_to);
+      if (openedMate && openedMate.linked_to === door.id) {
+        openedMate.state = "open";
+      } else {
+        openedMate = null;
+      }
+      setStatus("door " + door.id
+        + (openedMate ? " and " + openedMate.id : "") + " now stands open by default");
     } else {
-      plane().features.splice(plane().features.indexOf(door), 1);
-      setStatus("removed " + door.id);
+      var removed = [door.id];
+      var removedMate = featureById(door.linked_to);
+      if (removedMate && removedMate.linked_to === door.id) { removed.push(removedMate.id); }
+      plane().features = plane().features.filter(function (feature) {
+        return removed.indexOf(feature.id) === -1;
+      });
+      removed.forEach(function (id) { delete previewOpen[id]; });
+      if (removed.indexOf(selectedFeatureId) !== -1) { selectedFeatureId = null; }
+      setStatus("removed " + removed.join(" and "));
     }
     /* A door carries a `state`, so this tool is one of the two that add and
        remove fixtures: the list would otherwise offer a checkbox for a door
        that is gone, and none for the one just placed. */
     renderFixtureList();
+    renderFeatureInfo();
     redraw();
   }
   function placeOrRemoveFeature(cell) {
@@ -1044,12 +1085,16 @@ if (typeof FiveeRenderer === "undefined") {
     if (feature === null) {
       info.textContent = "none";
       remove.hidden = true;
+      renderDoorControls(null);
       return;
     }
     var lines = ["id: " + feature.id, "kind: " + feature.kind,
       "at: [" + feature.at + "]"];
     if (feature.orientation) { lines.push("orientation: " + feature.orientation); }
+    if (feature.hinge) { lines.push("hinge: " + feature.hinge); }
+    if (feature.swing) { lines.push("swing: " + feature.swing); }
     if (feature.state) { lines.push("state: " + feature.state); }
+    if (feature.linked_to) { lines.push("linked_to: " + feature.linked_to); }
     if (feature.team) { lines.push("team: " + feature.team); }
     /* The six keys that make a feature a fixture. Without them the block
        showed a `state` and stopped, so a loaded sluice read as a bare door and
@@ -1087,6 +1132,7 @@ if (typeof FiveeRenderer === "undefined") {
     }
     info.textContent = lines.join("\n");
     remove.hidden = false;
+    renderDoorControls(feature.kind === "door" ? feature : null);
   }
   /* One {closed, open} pair as the panel shows it: what the square is, and
      what operating the fixture makes it. */
@@ -1094,12 +1140,157 @@ if (typeof FiveeRenderer === "undefined") {
     return pair && typeof pair === "object"
       ? pair.closed + " → " + pair.open : String(pair);
   }
+  function doorDefaults(orientation) {
+    return orientation === "vertical"
+      ? { hinge: "north", swing: "west" }
+      : { hinge: "west", swing: "north" };
+  }
+  function setSelectChoices(select, choices, value) {
+    select.textContent = "";
+    choices.forEach(function (choice) {
+      var option = document.createElement("option");
+      option.value = choice.value;
+      option.textContent = choice.label;
+      select.appendChild(option);
+    });
+    select.value = value;
+  }
+  function doorAxisBetween(left, right) {
+    var dx = Math.abs(left.at[0] - right.at[0]);
+    var dy = Math.abs(left.at[1] - right.at[1]);
+    if (dx === 1 && dy === 0) { return "horizontal"; }
+    if (dx === 0 && dy === 1) { return "vertical"; }
+    return null;
+  }
+  function sameDoorContract(left, right) {
+    var leftNeeds = Array.isArray(left.requires) ? left.requires : [];
+    var rightNeeds = Array.isArray(right.requires) ? right.requires : [];
+    if (JSON.stringify(leftNeeds) !== JSON.stringify(rightNeeds)) { return false; }
+    if (!!left.costs_action !== !!right.costs_action) { return false; }
+    var leftCheck = left.check && typeof left.check === "object" ? left.check : null;
+    var rightCheck = right.check && typeof right.check === "object" ? right.check : null;
+    if (leftCheck === null || rightCheck === null) { return leftCheck === rightCheck; }
+    return leftCheck.ability === rightCheck.ability && leftCheck.dc === rightCheck.dc;
+  }
+  function linkableDoor(feature, candidate) {
+    var axis = doorAxisBetween(feature, candidate);
+    return candidate.kind === "door" && candidate.id !== feature.id
+      && axis !== null && feature.orientation === axis && candidate.orientation === axis
+      && feature.state === candidate.state
+      && (!candidate.linked_to || candidate.linked_to === feature.id)
+      && sameDoorContract(feature, candidate);
+  }
+  function unlinkDoor(feature) {
+    var mate = featureById(feature.linked_to);
+    if (mate && mate.linked_to === feature.id) { delete mate.linked_to; }
+    delete feature.linked_to;
+  }
+  function selectedDoor() {
+    var feature = selectedFeatureId === null ? null : featureById(selectedFeatureId);
+    return feature && feature.kind === "door" ? feature : null;
+  }
+  function renderDoorControls(feature) {
+    var host = byId("door-config");
+    host.hidden = feature === null;
+    if (feature === null) { return; }
+    var orientation = feature.orientation || "horizontal";
+    var defaults = doorDefaults(orientation);
+    var orientationSelect = byId("door-orientation");
+    orientationSelect.value = orientation;
+    orientationSelect.disabled = !!feature.linked_to;
+    setSelectChoices(byId("door-hinge"),
+      (orientation === "vertical" ? ["north", "south"] : ["west", "east"])
+        .map(function (value) { return { value: value, label: value }; }),
+      feature.hinge || defaults.hinge);
+    setSelectChoices(byId("door-swing"),
+      (orientation === "vertical" ? ["west", "east"] : ["north", "south"])
+        .map(function (value) { return { value: value, label: value }; }),
+      feature.swing || defaults.swing);
+    var links = [{ value: "", label: "not linked" }];
+    (plane().features || []).forEach(function (candidate) {
+      if (candidate && linkableDoor(feature, candidate)) {
+        links.push({ value: candidate.id, label: candidate.id });
+      }
+    });
+    setSelectChoices(byId("door-linked"), links, feature.linked_to || "");
+  }
+  byId("door-orientation").addEventListener("change", function () {
+    var feature = selectedDoor();
+    if (!feature || feature.linked_to) { renderFeatureInfo(); return; }
+    snapshot();
+    feature.orientation = byId("door-orientation").value;
+    var defaults = doorDefaults(feature.orientation);
+    feature.hinge = defaults.hinge;
+    feature.swing = defaults.swing;
+    renderFeatureInfo();
+    redraw();
+  });
+  byId("door-hinge").addEventListener("change", function () {
+    var feature = selectedDoor();
+    if (!feature) { return; }
+    snapshot();
+    feature.hinge = byId("door-hinge").value;
+    renderFeatureInfo();
+    redraw();
+  });
+  byId("door-swing").addEventListener("change", function () {
+    var feature = selectedDoor();
+    if (!feature) { return; }
+    snapshot();
+    feature.swing = byId("door-swing").value;
+    renderFeatureInfo();
+    redraw();
+  });
+  byId("door-linked").addEventListener("change", function () {
+    var feature = selectedDoor();
+    if (!feature) { return; }
+    var targetId = byId("door-linked").value;
+    if (!targetId) {
+      if (!feature.linked_to) { return; }
+      var former = feature.linked_to;
+      snapshot();
+      unlinkDoor(feature);
+      setStatus("unlinked " + feature.id + " and " + former);
+    } else {
+      var mate = featureById(targetId);
+      if (!mate || !linkableDoor(feature, mate)) {
+        setStatus("that door is no longer an adjacent compatible partner", "error");
+        renderFeatureInfo();
+        return;
+      }
+      if (feature.linked_to === mate.id) { return; }
+      snapshot();
+      unlinkDoor(feature);
+      feature.linked_to = mate.id;
+      mate.linked_to = feature.id;
+      var horizontal = feature.orientation === "horizontal";
+      var featureFirst = horizontal
+        ? feature.at[0] < mate.at[0] : feature.at[1] < mate.at[1];
+      feature.hinge = featureFirst
+        ? (horizontal ? "west" : "north") : (horizontal ? "east" : "south");
+      mate.hinge = featureFirst
+        ? (horizontal ? "east" : "south") : (horizontal ? "west" : "north");
+      var defaults = doorDefaults(feature.orientation);
+      feature.swing = feature.swing || defaults.swing;
+      mate.swing = mate.swing || defaults.swing;
+      setStatus("linked " + feature.id + " and " + mate.id
+        + "; either interaction now operates both");
+    }
+    renderFeatureInfo();
+    renderFixtureList();
+    redraw();
+  });
   byId("btn-delete-feature").addEventListener("click", function () {
     if (!doc || selectedFeatureId === null) { return; }
+    var selected = featureById(selectedFeatureId);
+    var removed = [selectedFeatureId];
+    var mate = selected ? featureById(selected.linked_to) : null;
+    if (mate && mate.linked_to === selected.id) { removed.push(mate.id); }
     snapshot();
     plane().features = plane().features.filter(function (f) {
-      return f.id !== selectedFeatureId;
+      return removed.indexOf(f.id) === -1;
     });
+    removed.forEach(function (id) { delete previewOpen[id]; });
     selectedFeatureId = null;
     renderFeatureInfo();
     /* The other tool that removes a fixture; see cycleDoor. */
@@ -1458,9 +1649,14 @@ if (typeof FiveeRenderer === "undefined") {
      derivation applies, spelt the same way, so a fixture nobody has ticked
      shows in the list exactly as it draws on the canvas. */
   function previewStateOf(feature) {
-    return Object.prototype.hasOwnProperty.call(previewOpen, feature.id)
-      ? !!previewOpen[feature.id]
-      : feature.state === "open";
+    if (Object.prototype.hasOwnProperty.call(previewOpen, feature.id)) {
+      return !!previewOpen[feature.id];
+    }
+    if (feature.linked_to
+      && Object.prototype.hasOwnProperty.call(previewOpen, feature.linked_to)) {
+      return !!previewOpen[feature.linked_to];
+    }
+    return feature.state === "open";
   }
   function setPreview(on) {
     previewOn = on;
@@ -1498,6 +1694,11 @@ if (typeof FiveeRenderer === "undefined") {
       box.title = "draw " + feature.id + " open";
       box.addEventListener("change", function () {
         previewOpen[feature.id] = box.checked;
+        var mate = featureById(feature.linked_to);
+        if (mate && mate.linked_to === feature.id) {
+          previewOpen[mate.id] = box.checked;
+          renderFixtureList();
+        }
         /* Ticking a box with the lens off would change nothing on the canvas,
            so it turns the lens on — the courtesy the "ft" toggle already does
            for the Heights overlay. */
@@ -1856,10 +2057,17 @@ if (typeof FiveeRenderer === "undefined") {
         var other = featureById.get(id);
         if (other && !survives(other)) { blocked = { needs: id, by: f.id }; }
       });
+      if (!blocked && f.linked_to) {
+        var mate = featureById.get(f.linked_to);
+        if (mate && !survives(mate)) { blocked = { linked: mate.id, by: f.id }; }
+      }
     });
     if (blocked) {
-      setStatus("resizing would push '" + blocked.needs + "' off the map, and '"
-        + blocked.by + "' requires it; move or remove it first", "error");
+      setStatus(blocked.linked
+        ? "resizing would push linked door '" + blocked.linked
+          + "' off the map while '" + blocked.by + "' survives; unlink or move the pair first"
+        : "resizing would push '" + blocked.needs + "' off the map, and '"
+          + blocked.by + "' requires it; move or remove it first", "error");
       return;
     }
     snapshot();

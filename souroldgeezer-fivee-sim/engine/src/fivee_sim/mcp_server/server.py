@@ -1604,8 +1604,11 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     lower what is already there. Heights are feet and may be negative.
 
     The ``feature`` both feature ops take is {id, kind, at, orientation?,
-    state?, team?, to_level?} plus, for a fixture, terrain, elevation, affects,
-    requires, costs_action and check. ``to_level`` makes the feature a
+    hinge?, swing?, state?, linked_to?, team?, to_level?} plus, for a fixture,
+    terrain, elevation, affects, requires, costs_action and check. A door's
+    hinge and swing use the cardinal directions valid for its orientation.
+    ``linked_to`` must name one reciprocal adjacent door with the same state and
+    interaction contract; toggling either leaf toggles both. ``to_level`` makes the feature a
     connector — the square a creature may step between storeys on, which is what
     turns a drawn stairway into a walkable one.
 

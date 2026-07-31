@@ -87,6 +87,7 @@ __all__ = [
     "apply_edits",
     "environment_roots",
     "generate",
+    "linked_open_features",
     "list_maps",
     "load_file",
     "maps_root",
@@ -357,13 +358,15 @@ _OP_KEYS = {
 #: its own, stays the document's to refuse.
 _FEATURE_FIELDS = frozenset(
     {
-        "id", "kind", "at", "orientation", "state", "team", "to_level",
+        "id", "kind", "at", "orientation", "hinge", "swing", "state",
+        "linked_to", "team", "to_level",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
     }
 )
 #: The keys that need no shaping at all: copied across as written.
 _PASSED_THROUGH = (
-    "to_level", "terrain", "elevation", "requires", "costs_action", "check",
+    "hinge", "swing", "linked_to", "to_level", "terrain", "elevation",
+    "requires", "costs_action", "check",
 )
 #: Said on every ``set_feature`` refusal a merge-shaped call trips, because the
 #: difference is otherwise silent: a caller who believes the op merges writes
@@ -684,6 +687,12 @@ def _op_remove_feature(state: _EditState, op: Mapping[str, Any], terrain: Terrai
         _refuse("'id' must name the feature to remove")
     for index, entry in enumerate(state.features):
         if entry["id"] == feature_id:
+            linked_to = entry.get("linked_to")
+            if linked_to is not None:
+                _refuse(
+                    f"{feature_id!r} is linked to {str(linked_to)!r}; unlink both doors "
+                    "with set_feature before removing either leaf"
+                )
             del state.features[index]
             return
     known = ", ".join(entry["id"] for entry in state.features) or "none"
@@ -694,7 +703,14 @@ def _op_toggle_door(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
     at = _square_value(op.get("at"), "'at'", state)
     for entry in state.features:
         if entry.get("kind") == "door" and entry.get("at") == [at[0], at[1]]:
-            entry["state"] = "closed" if entry.get("state") == "open" else "open"
+            new_state = "closed" if entry.get("state") == "open" else "open"
+            entry["state"] = new_state
+            linked_to = entry.get("linked_to")
+            if linked_to is not None:
+                for partner in state.features:
+                    if partner.get("id") == linked_to:
+                        partner["state"] = new_state
+                        break
             return
     doors = ", ".join(
         str(entry["at"]) for entry in state.features if entry.get("kind") == "door"
@@ -751,6 +767,13 @@ def _refuse_orphaned_prerequisites(
     for entry in features:
         if not survives(entry):
             continue
+        linked_to = entry.get("linked_to")
+        linked = by_id.get(str(linked_to)) if linked_to is not None else None
+        if linked is not None and not survives(linked):
+            _refuse(
+                f"resizing would push {str(linked_to)!r} off the map, and "
+                f"{str(entry['id'])!r} is linked to it; unlink or move the pair first"
+            )
         for wanted in entry.get("requires") or ():
             other = by_id.get(str(wanted))
             if other is not None and not survives(other):
@@ -1071,6 +1094,24 @@ def apply_edits(
 
 
 # --- what the fixtures make of a square -------------------------------------
+def linked_open_features(
+    plane: MapPlane, open_features: Collection[str]
+) -> frozenset[str]:
+    """Expand either leaf of a linked door pair to their shared live state.
+
+    Unknown names and names belonging to another level stay untouched: an
+    encounter owns one map-wide set, while this resolver deliberately knows
+    about one plane. The document and encounter validators guarantee that a
+    link is reciprocal and has exactly two leaves.
+    """
+    resolved = set(open_features)
+    for feature_id in tuple(resolved):
+        feature = plane.features.get(feature_id)
+        if feature is not None and feature.linked_to is not None:
+            resolved.add(feature.linked_to)
+    return frozenset(resolved)
+
+
 @dataclass(frozen=True, slots=True)
 class ResolvedLevel:
     """One storey's squares as a given set of open fixtures leaves them.
@@ -1118,7 +1159,7 @@ class ResolvedLevel:
                 for feature in plane.features.values()
                 for square, claim in feature.claims()
             },
-            open_features=frozenset(open_features),
+            open_features=linked_open_features(plane, open_features),
         )
 
     def terrain_at(self, square: Square) -> str:
@@ -1402,8 +1443,8 @@ def render_ascii(
         # A fixture draws the state it is *in*; one carrying no state has none to
         # be in, and stays the annotation the document drew.
         state = feature.state
-        if open_names is not None and state is not None:
-            state = "open" if feature.id in open_names else "closed"
+        if live is not None and state is not None:
+            state = "open" if feature.id in live.open_features else "closed"
         glyph_over = _feature_glyph(feature.kind, state)
         if glyph_over is None:
             continue

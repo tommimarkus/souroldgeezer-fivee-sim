@@ -2203,6 +2203,45 @@ class TestInteract:
         advance_to(encounter, "Sylvi", rng)
         return encounter, rng
 
+    def double_corridor(
+        self, *, actor_position: Point = (0, 5), checked: bool = False
+    ) -> tuple[Encounter, Random]:
+        """Two adjacent door leaves with one interaction contract and state."""
+        check = FeatureCheck(ability=Ability.DEXTERITY, dc=10) if checked else None
+        left = MapFeature(
+            name="door-left",
+            square=(1, 1),
+            orientation="horizontal",
+            linked_to="door-right",
+            costs_action=checked,
+            check=check,
+        )
+        right = MapFeature(
+            name="door-right",
+            square=(2, 1),
+            orientation="horizontal",
+            linked_to="door-left",
+            costs_action=checked,
+            check=check,
+        )
+        opponent = (20, 5) if actor_position == (0, 5) else (0, 5)
+        rng = Random(3)
+        encounter = Encounter(
+            [
+                archer(position=actor_position),
+                make_monster("Goblin Warrior", label="Goblin", position=opponent),
+            ],
+            rng,
+            battle_map=strip(
+                5,
+                3,
+                terrain={(1, 0): "wall", (1, 2): "wall", (2, 0): "wall", (2, 2): "wall"},
+                features=(left, right),
+            ),
+        )
+        advance_to(encounter, "Sylvi", rng)
+        return encounter, rng
+
     def test_a_closed_door_blocks_sight_and_passage_until_opened(self) -> None:
         encounter, rng = self.corridor()
         assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.TOTAL
@@ -2216,6 +2255,79 @@ class TestInteract:
         assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.NONE
         encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 5)), rng)
         assert encounter.creatures["Sylvi"].position == (10, 5)
+
+    @pytest.mark.parametrize(
+        ("feature", "other", "position"),
+        [
+            ("door-left", "door-right", (0, 5)),
+            ("door-right", "door-left", (15, 5)),
+        ],
+    )
+    def test_either_leaf_operates_both_linked_doors(
+        self, feature: str, other: str, position: Point
+    ) -> None:
+        encounter, rng = self.double_corridor(actor_position=position)
+        events = encounter.act(Action(kind=ActionKind.INTERACT, feature=feature), rng)
+
+        assert events[0].data == {"feature": feature, "open": True, "linked": [other]}
+        features = encounter.state()["map"]["features"]
+        assert features[feature]["open"] is True
+        assert features[other]["open"] is True
+        assert features[feature]["linked_to"] == other
+        assert features[other]["linked_to"] == feature
+        assert encounter.state()["turn_state"]["interaction_used"] is True
+
+    def test_a_linked_pair_shares_one_action_and_one_check(self) -> None:
+        encounter, _ = self.double_corridor(checked=True)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="door-left"), FixedRandom(10)
+        )
+
+        assert events[0].data == {
+            "feature": "door-left",
+            "open": True,
+            "linked": ["door-right"],
+            "success": True,
+            "check": "d20 [10] +0 = 10 vs DC 10",
+        }
+        assert encounter.state()["turn_state"]["action_used"] is True
+        assert encounter.map_state is not None
+        assert encounter.map_state.open_features == {"door-left", "door-right"}
+
+    def test_a_malformed_runtime_link_is_refused_before_combat(self) -> None:
+        left = MapFeature(
+            name="door-left",
+            square=(1, 0),
+            orientation="horizontal",
+            linked_to="door-right",
+        )
+        right = MapFeature(name="door-right", square=(2, 0), orientation="horizontal")
+        with pytest.raises(EncounterError, match="must link back to 'door-left'"):
+            Encounter(
+                [archer(), make_monster("Goblin Warrior", label="Goblin", position=20)],
+                Random(3),
+                battle_map=strip(5, features=(left, right)),
+            )
+
+    def test_a_runtime_link_must_follow_the_shared_door_orientation(self) -> None:
+        upper = MapFeature(
+            name="door-upper",
+            square=(1, 0),
+            orientation="horizontal",
+            linked_to="door-lower",
+        )
+        lower = MapFeature(
+            name="door-lower",
+            square=(1, 1),
+            orientation="horizontal",
+            linked_to="door-upper",
+        )
+        with pytest.raises(EncounterError, match="aligned with their horizontal orientation"):
+            Encounter(
+                [archer(), make_monster("Goblin Warrior", label="Goblin", position=20)],
+                Random(3),
+                battle_map=strip(5, 3, features=(upper, lower)),
+            )
 
     def test_interacting_is_free_but_only_once_per_turn(self) -> None:
         encounter, rng = self.corridor()

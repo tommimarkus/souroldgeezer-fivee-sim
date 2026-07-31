@@ -162,7 +162,8 @@ _ELEVATION_KEYS = frozenset({"default", "squares"})
 _LEVEL_KEYS = frozenset({"index", "name", "tiles", "elevation", "features"})
 _FEATURE_KEYS = frozenset(
     {
-        "id", "kind", "at", "orientation", "state", "team", "to_level",
+        "id", "kind", "at", "orientation", "hinge", "swing", "state",
+        "linked_to", "team", "to_level",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
     }
 )
@@ -186,6 +187,14 @@ GROUND_LEVEL = 0
 _PROVENANCE_KEYS = frozenset({"generator", "seed", "params", "edited", "source"})
 _DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
+_DOOR_HINGES = {
+    "horizontal": ("west", "east"),
+    "vertical": ("north", "south"),
+}
+_DOOR_SWINGS = {
+    "horizontal": ("north", "south"),
+    "vertical": ("west", "east"),
+}
 
 
 class MapError(ValueError):
@@ -275,7 +284,10 @@ class MapFeatureRecord:
     kind: str
     at: Square
     orientation: str | None = None
+    hinge: str | None = None
+    swing: str | None = None
     state: str | None = None
+    linked_to: str | None = None
     team: str | None = None
     to_level: int | None = None
     terrain: TerrainPair | None = None
@@ -916,6 +928,8 @@ def _parse_features(
                 "orientation",
                 f"must be one of: {', '.join(_DOOR_ORIENTATIONS)}; got {orientation!r}",
             )
+        hinge = sub.string("hinge") or None
+        swing = sub.string("swing") or None
         state = sub.string("state") or None
         if state is not None and state not in _DOOR_STATES:
             sub.fail("state", f"must be one of: {', '.join(_DOOR_STATES)}; got {state!r}")
@@ -949,6 +963,21 @@ def _parse_features(
                 sub.fail("orientation", "required for a door")
             if state is None:
                 sub.fail("state", "required for a door; the document stores the default")
+            if orientation in _DOOR_HINGES:
+                allowed_hinges = _DOOR_HINGES[orientation]
+                if hinge is not None and hinge not in allowed_hinges:
+                    sub.fail(
+                        "hinge",
+                        f"a {orientation} door hinge must be one of: "
+                        f"{', '.join(allowed_hinges)}; got {hinge!r}",
+                    )
+                allowed_swings = _DOOR_SWINGS[orientation]
+                if swing is not None and swing not in allowed_swings:
+                    sub.fail(
+                        "swing",
+                        f"a {orientation} door swing must be one of: "
+                        f"{', '.join(allowed_swings)}; got {swing!r}",
+                    )
             # One door per square: the encounter refuses a map whose doors
             # collide, so the document must refuse it first — a battle map
             # resolves a square to one feature state, never two. Annotations
@@ -962,6 +991,18 @@ def _parse_features(
                     )
                 else:
                     door_squares[at] = label
+        else:
+            if hinge is not None:
+                sub.fail("hinge", "only a door may carry 'hinge'")
+            if swing is not None:
+                sub.fail("swing", "only a door may carry 'swing'")
+
+        raw_linked_to = entry.get("linked_to")
+        linked_to = sub.string("linked_to") or None
+        if isinstance(raw_linked_to, str) and not raw_linked_to.strip():
+            sub.fail("linked_to", "must name another door with non-empty text")
+        if linked_to is not None and kind != "door":
+            sub.fail("linked_to", "only a door may carry 'linked_to'")
 
         if feature_id.strip():
             if feature_id in claimed:
@@ -1011,7 +1052,8 @@ def _parse_features(
             features.append(
                 MapFeatureRecord(
                     id=feature_id, kind=kind, at=at,
-                    orientation=orientation, state=state, team=team, to_level=to_level,
+                    orientation=orientation, hinge=hinge, swing=swing, state=state,
+                    linked_to=linked_to, team=team, to_level=to_level,
                     terrain=own_terrain, elevation=own_height, affects=overlays or (),
                     requires=requires, costs_action=costs_action, check=check,
                 )
@@ -1262,6 +1304,70 @@ def _check_requires(document_levels: Mapping[int, MapLevel], reader: Reader) -> 
         )
 
 
+def _check_linked_doors(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
+    """A linked door is one reciprocal, adjacent, interaction-compatible pair."""
+    catalogue = {
+        feature.id: (level, feature)
+        for level in sorted(document_levels)
+        for feature in document_levels[level].features
+    }
+    checked: set[frozenset[str]] = set()
+    for feature_id in sorted(catalogue):
+        level, feature = catalogue[feature_id]
+        if feature.linked_to is None:
+            continue
+        partner_entry = catalogue.get(feature.linked_to)
+        if partner_entry is None:
+            reader.fail(
+                "features",
+                f"door '{feature.id}' links to {feature.linked_to!r}, but this map has no "
+                f"feature with that id",
+            )
+            continue
+        partner_level, partner = partner_entry
+        if partner.kind != "door":
+            reader.fail(
+                "features",
+                f"door '{feature.id}' links to {partner.id!r}, which is not a door",
+            )
+            continue
+        if partner.linked_to != feature.id:
+            reader.fail(
+                "features",
+                f"door '{feature.id}' links to {partner.id!r}; that door must link back "
+                f"to {feature.id!r}",
+            )
+            continue
+        pair = frozenset((feature.id, partner.id))
+        if pair in checked:
+            continue
+        checked.add(pair)
+        if level != partner_level:
+            reader.fail("features", "linked doors must stand on the same level")
+        if feature.orientation != partner.orientation:
+            reader.fail("features", "linked doors must have the same orientation")
+        dx = abs(feature.at[0] - partner.at[0])
+        dy = abs(feature.at[1] - partner.at[1])
+        aligned = (feature.orientation == "horizontal" and (dx, dy) == (1, 0)) or (
+            feature.orientation == "vertical" and (dx, dy) == (0, 1)
+        )
+        if not aligned:
+            reader.fail(
+                "features",
+                "linked doors must be adjacent along their shared orientation",
+            )
+        if feature.state != partner.state:
+            reader.fail("features", "linked doors must have the same state")
+        contract = (feature.requires, feature.costs_action, feature.check)
+        partner_contract = (partner.requires, partner.costs_action, partner.check)
+        if contract != partner_contract:
+            reader.fail(
+                "features",
+                "linked doors must have the same interaction contract: requires, "
+                "costs_action, and check",
+            )
+
+
 def _parse_provenance(
     payload: Mapping[str, Any], reader: Reader, diagnostics: list[Diagnostic], source: str
 ) -> MapProvenance | None:
@@ -1359,6 +1465,7 @@ def _parse(
     _check_connectors(levels, reader)
     _check_claims(levels, reader)
     _check_requires(levels, reader)
+    _check_linked_doors(levels, reader)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
     if (
@@ -1420,8 +1527,14 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
     }
     if feature.orientation is not None:
         entry["orientation"] = feature.orientation
+    if feature.hinge is not None:
+        entry["hinge"] = feature.hinge
+    if feature.swing is not None:
+        entry["swing"] = feature.swing
     if feature.state is not None:
         entry["state"] = feature.state
+    if feature.linked_to is not None:
+        entry["linked_to"] = feature.linked_to
     if feature.team is not None:
         entry["team"] = feature.team
     if feature.to_level is not None:
@@ -1742,6 +1855,7 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
             name=feature.id,
             square=feature.at,
             kind=feature.kind,
+            orientation=feature.orientation,
             closed_terrain=own.closed,
             open_terrain=own.open,
             initially_open=feature.state == "open",
@@ -1757,6 +1871,7 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
             requires=feature.requires,
             costs_action=feature.costs_action,
             check=feature.check,
+            linked_to=feature.linked_to,
         )
     return MapPlane(
         default_terrain=default,

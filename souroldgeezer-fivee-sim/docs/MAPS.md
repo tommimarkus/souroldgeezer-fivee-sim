@@ -85,7 +85,13 @@ A document is refused past 4 MB or a 512-square side.
 **Features** carry `id` (unique), `kind`, `at`, and optionally `orientation`,
 `state`, `team`. A `door` requires `orientation` (`horizontal`/`vertical`) and
 `state` (`open`/`closed`) — that state is the door's *default*; what a door is
-doing mid-fight lives in the encounter's overlay, never in the file. Door
+doing mid-fight lives in the encounter's overlay, never in the file. A door may
+also say where it is hinged and where it opens: a horizontal door takes
+`hinge: west|east` and `swing: north|south`; a vertical one takes
+`hinge: north|south` and `swing: west|east`. Omitting them preserves the
+historical drawing — horizontal west/north, vertical north/west. These fields
+describe the leaf on the map; an open leaf does not occupy another combat
+square. Door
 squares are ordinary floor in `tiles`; the feature supplies the blocking.
 Other bundled kinds: `stairs_up`, `stairs_down`, `spawn` (placement hint,
 optionally with a `team`). A feature may also carry `to_level`, which is what
@@ -93,6 +99,23 @@ turns a drawn stairway into one a fight can actually walk — see **Levels**
 below. Ids are unique across the whole document, not per level. A feature
 carrying a `state` is a **fixture** the fight can operate, and a door is only
 the common case of one — see **Fixtures** below.
+
+Two doors may form one double door by naming each other with reciprocal
+`linked_to` fields. The leaves must be adjacent along their common orientation,
+on the same level, authored in the same state, and carry the same `requires`,
+`costs_action`, and `check`. A link is exactly one pair, never a chain. Operating
+either leaf makes one check, spends at most one action or interaction, and moves
+both leaves together; their hinge, swing, terrain, elevation, and overlay
+effects remain individual. For example:
+
+```json
+{ "id": "west leaf", "kind": "door", "at": [4, 3],
+  "orientation": "horizontal", "hinge": "west", "swing": "north",
+  "state": "closed", "linked_to": "east leaf" },
+{ "id": "east leaf", "kind": "door", "at": [5, 3],
+  "orientation": "horizontal", "hinge": "east", "swing": "north",
+  "state": "closed", "linked_to": "west leaf" }
+```
 
 **Terrain kinds are strings**, resolved against loaded content exactly like
 conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
@@ -331,10 +354,10 @@ and nothing changes. Each operation is an object with an `op` key:
 | `paint` | `cells: [[x, y], ...]`, `terrain` |
 | `line` | `from`, `to`, `terrain` — Bresenham raster |
 | `carve_corridor` | `from`, `to`, `terrain?` (default floor), `horizontal_first?` |
-| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?, to_level?}`, plus the fixture keys — an overlay may be given as a `rect` instead of `cells` |
+| `add_feature` | `feature: {id, kind, at, orientation?, hinge?, swing?, state?, linked_to?, team?, to_level?}`, plus the fixture keys — an overlay may be given as a `rect` instead of `cells` |
 | `set_feature` | `feature` — the same record, editing in place the feature its `id` names; **writes the record whole** |
 | `remove_feature` | `id` |
-| `toggle_door` | `at` — flips the recorded default state |
+| `toggle_door` | `at` — flips the recorded default state; a linked pair flips together |
 | `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
 | `set_legend` | `glyph`, `terrain` — reserved glyphs refused |
 | `set_name` | `name` |
@@ -389,7 +412,8 @@ or `check` could never be cleared at all. The price is paid where it is
 cheapest to notice — every merge-shaped call omits `kind` or `at`, so every
 merge-shaped call is refused, and the refusal says which semantics it got.
 `toggle_door` stays for the one-key case it was already good at: flipping a
-door's recorded state, by square, without restating anything.
+door's recorded state, by square, without restating anything. For a linked
+double door it updates both reciprocal leaves in the same atomic edit.
 
 Both feature operations accept an overlay's squares as a `rect: [x, y, w, h]`
 as well as a list of `cells`, and expand it to cells before the document is
@@ -504,7 +528,10 @@ never marks it dirty, and a save after previewing does not stamp the map
 preview carried across an open would draw the new map through the old one's
 fixtures. Selecting a fixture shows what it carries — its terrain and height
 pairs, how many squares it governs, what it requires, what it costs and what it
-rolls.
+rolls. Selecting a door also exposes orientation, hinge, opening side, and a
+linked-door selector. Only an adjacent compatible leaf is offered; linking
+writes both reciprocal records and assigns the outer hinges, while unlinking
+clears both records. Previewing either linked leaf previews both.
 
 The preview shows **terrain only**. The Heights overlay reads the storey's own
 height layer, so a fixture that drops a water level five feet recolors the room
@@ -550,7 +577,9 @@ which stood open when the fight began — for every fixture, not only doors — 
 each `interact` event moves one, so stepping to the round the party opened the
 sluice floods the rooms it governs and turns the wheel. Scrubbing back drains
 them again: the viewer rebuilds from the start of the fight rather than undoing,
-so any point in the log shows the ground as it was at that moment.
+so any point in the log shows the ground as it was at that moment. A linked-door
+event carries the other leaf in `data.linked`; the viewer folds both into the
+same state at the same event.
 
 Small bundles come back inline; larger ones (or any call with `path`) are
 written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
@@ -579,7 +608,9 @@ What is exported:
   contributes only its interior-facing edge.
 - **Portals**: one per door feature, ordered by feature id, spanning the
   door's square along its orientation, `closed` taken from the recorded
-  default state or from `open_features` below.
+  default state or from `open_features` below. Naming either linked leaf open
+  exports both portals open. Universal VTT has no hinge/swing fields, so that
+  drawing metadata does not travel in this export.
 - **Image**: a flat-color PNG of the terrain at `pixels_per_grid` pixels per
   square (default 32), one fill per terrain kind plus a one-pixel grid line
   between cells. Some importers require an image; `include_image: false`
