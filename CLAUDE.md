@@ -19,7 +19,7 @@ committable.
 a real consequence: **this repo cannot host project-level Claude settings or
 hooks.** Do not try to write them; the content silently goes to `/dev/null`.
 Local development hooks live in `scripts/hooks/` and are wired from the user's
-own `~/.claude/settings.json` — see "Local development hook" below.
+own `~/.claude/settings.json` — see "Local development hooks" below.
 
 ### Worktrees: only `add` is special
 
@@ -137,7 +137,7 @@ Before publishing, run the `souroldgeezer-audit:ip-hygiene` skill over the
 plugin surface as the release gate. The local hook is a tripwire, not a
 substitute for it.
 
-## Local development hook
+## Local development hooks
 
 `scripts/hooks/ip-hygiene-check.sh` is a fast `PostToolUse` tripwire for the
 three rules above. It is **activated by the presence of
@@ -158,6 +158,16 @@ Scope is the subtle part, so it is pinned by tests — run
 conf. The negative cases matter most: they assert that this file, which has to
 quote every forbidden string, and rules data naming SRD-present creatures do
 **not** trip the tripwire.
+
+`scripts/hooks/stop-audit-check.sh` is a companion `Stop` hook, activated the
+same way by `.stop-audit-local.conf`. At most once per session, when the
+session has touched surfaces listed in `STOP_AUDIT_GLOBS` — derived from the
+session transcript, with git-dirty state as the fallback — it blocks the stop
+with instructions to run the `souroldgeezer-audit:test-quality-audit` and
+`souroldgeezer-audit:devsecops-audit` skills scoped to the touched files.
+Silence means allow. Its wiring lives in the developer's
+`~/.claude/settings.json` like the ip-hygiene tripwire's; test with
+`bash scripts/hooks/test-stop-audit-check.sh`.
 
 ## Architecture
 
@@ -232,6 +242,7 @@ uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
 # From the repo root: real JSON-RPC against the real launcher.
 python3 scripts/check-mcp-handshake.py
 bash scripts/hooks/test-ip-hygiene-check.sh
+bash scripts/hooks/test-stop-audit-check.sh
 ```
 
 **`docs/COVERAGE.md` is generated, never hand-edited.** Adding a creature, spell,
