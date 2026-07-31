@@ -409,8 +409,8 @@ class TestMapsRoundTrip:
         assert listing["maps"][0]["name"] == "editor chamber"
 
     def test_ground_height_survives_a_fetch_and_save(self, editor: Editor) -> None:
-        # The page cannot paint heights, but it PUTs back the document it was
-        # given — so a map with relief must not come home flat.
+        # The page paints heights now, but the older promise still stands: a
+        # map loaded and saved untouched round-trips its relief byte-for-byte.
         raised = payload()
         raised["elevation"] = {"default": 0, "squares": [[2, 2, 20]]}
         sha256 = editor.put_map("editor-chamber", raised).json()["sha256"]
@@ -423,6 +423,22 @@ class TestMapsRoundTrip:
         assert editor.request("GET", "/api/maps/editor-chamber").json()["elevation"] == (
             {"default": 0, "squares": [[2, 2, 20]]}
         )
+
+    def test_a_canonical_height_layer_is_a_server_fixed_point(self, editor: Editor) -> None:
+        # Characterization of the server contract the client canonicalizer
+        # mirrors: a height layer already in canonical shape — non-zero datum,
+        # negative feet, squares sorted row then column, none equal to the
+        # datum — comes back verbatim and re-saves to the identical digest.
+        # GREEN by design; it pins the shape the page must emit.
+        terraced = payload()
+        terraced["elevation"] = {"default": 5, "squares": [[3, 1, 20], [1, 2, -10]]}
+        sha256 = editor.put_map("editor-chamber", terraced).json()["sha256"]
+        fetched = editor.request("GET", "/api/maps/editor-chamber").json()
+        assert fetched["elevation"] == {"default": 5, "squares": [[3, 1, 20], [1, 2, -10]]}
+
+        saved = editor.put_map("editor-chamber", fetched, if_match=f'"{sha256}"')
+        assert saved.status == 200
+        assert saved.json()["sha256"] == sha256  # a fixed point: same bytes, same digest
 
     def test_an_edit_does_not_flatten_ground_height(self, editor: Editor) -> None:
         raised = payload()

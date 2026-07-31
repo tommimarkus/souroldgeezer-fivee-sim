@@ -81,6 +81,29 @@ class TestInjectionContracts:
         assert "var FiveeRenderer" in read("renderer.js")
 
 
+class TestEditorGroundControls:
+    # Presence only, behaviour never — the text-only boundary in the module
+    # docstring applies here as everywhere else in this file.
+
+    def test_the_editor_offers_the_height_tool_exactly_once(self) -> None:
+        assert read("editor.html").count('data-tool="height"') == 1
+
+    def test_the_editor_carries_the_height_feet_input(self) -> None:
+        assert 'id="height-feet"' in read("editor.html")
+
+    def test_the_editor_carries_the_heights_toggle_and_datum_field(self) -> None:
+        assert 'id="btn-heights"' in read("editor.html")
+        assert 'id="elevation-default"' in read("editor.html")
+
+    def test_the_renderer_knows_the_labels_overlay_channel(self) -> None:
+        assert "labels" in read("renderer.js")
+
+    def test_the_renderer_defines_the_shared_culling_helper(self) -> None:
+        # The editor's overlay builder culls to the viewport with the same
+        # helper the renderer draws by, so the name is shared surface.
+        assert "visibleBounds" in read("renderer.js")
+
+
 class TestOfflineGuarantee:
     @pytest.mark.parametrize("asset", ASSETS)
     def test_no_asset_references_an_external_url(self, asset: str) -> None:
