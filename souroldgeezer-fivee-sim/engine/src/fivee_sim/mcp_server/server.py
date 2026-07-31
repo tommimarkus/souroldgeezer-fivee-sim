@@ -64,7 +64,7 @@ from ..kernel.grid import (
     as_point,
     to_square,
 )
-from ..kernel.rules import Ability, DamageType, make_d20_test
+from ..kernel.rules import Ability, DamageType, Size, make_d20_test
 from ..map_document import GROUND_LEVEL, MapDocument, MapLevel, as_payload, to_grid
 from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
@@ -393,6 +393,35 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
         raise ToolError(f"attack spec is invalid: {error}") from error
 
 
+#: The two combatant spec shapes, kept apart because the lookup branch returns
+#: before the constructor is reached and so reads none of the description keys —
+#: folding them into one set would accept ``{"monster": "...", "ac": 22}`` and
+#: silently ignore the AC, which is the very failure this guard exists to stop.
+_LOOKUP_SPEC_KEYS = frozenset({"creature", "monster", "label", "team", "position", "level"})
+_DESCRIBED_SPEC_KEYS = frozenset({
+    "name", "team", "ac", "max_hp", "hp", "speed", "size", "abilities", "save_bonuses",
+    "attacks", "attacks_per_action", "pack_tactics", "undead_fortitude", "spells",
+    "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
+    "vulnerabilities", "items", "conditions", "position", "level", "provenance",
+})
+
+
+def _reject_unknown_keys(spec: dict[str, Any], allowed: frozenset[str]) -> None:
+    """Refuse a combatant key nothing reads, the way every other spec already does.
+
+    ``content.py`` refuses an unknown pack key and ``_map_from_spec`` an unknown
+    map key, both for one reason: a key read with ``.get`` and a default cannot
+    tell "omitted" from "misspelled", so the caller gets a creature that is not the
+    one they described and nothing says so. An inline ``fly_speed`` produced a
+    stirge that walked 10 feet with no flight and no warning; ``speeed`` would have
+    produced the default 30 just as quietly.
+    """
+    for key in sorted(set(spec) - allowed):
+        raise ToolError(
+            f"unknown combatant key {key!r}. Valid keys: {', '.join(sorted(allowed))}"
+        )
+
+
 def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -400,6 +429,10 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
     looked up in ``registry``, so which names resolve depends on what is loaded.
     """
     named = spec.get("creature", spec.get("monster"))
+    if named is not None:
+        _reject_unknown_keys(spec, _LOOKUP_SPEC_KEYS)
+    else:
+        _reject_unknown_keys(spec, _DESCRIBED_SPEC_KEYS)
     if named is not None:
         try:
             return make_creature(
@@ -420,6 +453,10 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             max_hp=int(spec["max_hp"]),
             hp=int(spec.get("hp", -1)),
             speed=int(spec.get("speed", 30)),
+            # Read here rather than only accepted above: a key on the allow-list
+            # that no constructor consumes is the same silent drop by another
+            # route. Size gates attack riders like the Wolf's Prone.
+            size=Size(spec["size"]) if "size" in spec else Size.MEDIUM,
             abilities={
                 Ability(key): int(value)
                 for key, value in spec.get("abilities", {}).items()
@@ -904,7 +941,11 @@ def encounter_create(
 
     Each combatant is either ``{"monster": "Goblin Warrior", "label": "Goblin A",
     "team": "monsters", "position": [15, 0]}`` for a bundled stat block, or an
-    explicit description with at least name, team, ac, and max_hp. Names must be
+    explicit description with at least name, team, ac, and max_hp. A key the spec
+    does not define is refused rather than ignored, so a misspelling or an
+    unmodelled field such as ``fly_speed`` is reported instead of silently
+    dropped; the two forms take different keys, and the refusal lists the ones
+    that would have worked. Names must be
     unique — they identify combatants in every later call. A position is ``[x, y]``
     in feet on a flat plane; a bare number is accepted and means feet along the
     x-axis. ``movement_rule`` is how diagonals are measured: "5-5-5" (the default)

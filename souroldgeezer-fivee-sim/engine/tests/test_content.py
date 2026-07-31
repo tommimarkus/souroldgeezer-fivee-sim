@@ -1272,6 +1272,68 @@ class TestSpellShapeSchema:
         assert any("resolves as a sphere" in d.problem for d in diagnostics)
 
 
+class TestHalfDamageOnSaveIsOptedInto:
+    """A damage spell halves on a successful save only when its record says so.
+
+    SRD 5.2 states the half-damage clause per spell — Fireball has "half as much
+    damage on a successful save", Sacred Flame (p. 159) has no such clause and
+    deals nothing. So the *absence* of the field has to mean all-or-nothing: a
+    default of half makes every faithfully-transcribed cantrip quietly generous,
+    and the record looks correct while playing wrong. This is the same reasoning
+    the loader already applies to an unknown key.
+    """
+
+    def spell_pack(self, tmp_path: Path, record: dict[str, Any]) -> Path:
+        return write_pack(tmp_path, "flames.json", {
+            "pack": "flames", "provenance": "test",
+            "spells": [{
+                "name": "Test Flame", "provenance": "test", "level": 0,
+                "save_ability": "dexterity", "damage": "1d8",
+                "damage_type": "radiant", **record,
+            }],
+        })
+
+    def test_a_spell_that_says_nothing_does_not_halve(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.spell_pack(tmp_path, {})], include_environment=False
+        )
+        assert registry.spells["Test Flame"].half_on_save is False
+
+    def test_a_spell_may_still_opt_in(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.spell_pack(tmp_path, {"half_on_save": True})],
+            include_environment=False,
+        )
+        assert registry.spells["Test Flame"].half_on_save is True
+
+    def test_an_item_use_follows_the_same_default(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "flask.json", {
+            "pack": "flask", "provenance": "test",
+            "items": [{
+                "name": "Blast Flask", "provenance": "test",
+                "use": {
+                    "damage": "2d6", "damage_type": "fire",
+                    "save_ability": "dexterity", "save_dc": 13,
+                },
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.items["Blast Flask"].half_on_save is False
+
+    def test_every_bundled_spell_that_halves_declares_it(self) -> None:
+        """The bundled slice must not be relying on the default in either direction.
+
+        Guards the flip itself: were a bundled record leaning on the old default,
+        this change would silently halve or unhalve it.
+        """
+        from fivee_sim.content import load_packs as _load
+        registry = _load([], include_environment=False)
+        halving = {
+            name for name, spell in registry.spells.items() if spell.half_on_save
+        }
+        assert halving == {"Fireball", "Shatter"}
+
+
 class TestDeterminism:
     def test_the_same_seed_gives_the_same_fight_with_packs_loaded(
         self, pack: Path

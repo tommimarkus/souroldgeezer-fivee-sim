@@ -1819,6 +1819,193 @@ class TestCoverShieldsSaves:
         assert sealed.hp == sealed.max_hp
 
 
+class TestCoverReachesNamedTargetSpells:
+    """Cover on a spell aimed at a named creature, measured from the caster.
+
+    SRD 5.2, "Cover" (p. 179): Half Cover is "+2 bonus to AC and Dexterity saving
+    throws", Three-Quarters Cover "+5", and Total Cover "can't be targeted
+    directly" — *directly* being the word that separates this from an area, which
+    reaches whoever its template catches. The rule names no attack/spell split, so
+    a spell aimed at a creature is shielded exactly as an arrow is.
+
+    ``TestCoverShieldsSaves`` covers the area branch; this is the named one, which
+    used to consult cover nowhere at all.
+    """
+
+    WALL_COLUMN = TestCoverChangesTheAttack.WALL_COLUMN
+
+    def duel(self, terrain: dict[Square, str], *, spell: str = "Guiding Bolt",
+             book: dict[str, Spell] | None = None) -> Encounter:
+        rng = Random(3)
+        wren = caster(position=(0, 5))
+        wren.spells = (spell,)
+        wren.spell_slots = {1: 1}
+        encounter = Encounter(
+            [wren, make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
+            rng,
+            spellbook=spellbook() if book is None else book,
+            battle_map=strip(5, 3, terrain=terrain),
+        )
+        advance_to(encounter, "Wren", rng)
+        return encounter
+
+    def test_total_cover_refuses_a_named_target_spell(self) -> None:
+        sealed = self.duel(self.WALL_COLUMN)
+        before = sealed.state()["turn_state"]
+        with pytest.raises(EncounterError, match="total cover"):
+            sealed.act(
+                Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                       target="Goblin"),
+                FixedRandom(20),
+            )
+        goblin = sealed.creatures["Goblin"]
+        assert goblin.hp == goblin.max_hp
+        # Refused before anything is spent, exactly as an out-of-range cast is.
+        assert sealed.creatures["Wren"].spell_slots[1] == 1
+        assert sealed.state()["turn_state"] == before
+
+    def test_half_cover_raises_ac_against_a_spell_attack_roll(self) -> None:
+        # Natural 9 + 6 = 15: a hit against the goblin's AC 15 in the open, a
+        # miss against 15 + 2 behind the pillar. Same roll, same seed.
+        in_the_open = self.duel({}).act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                   target="Goblin"),
+            FixedRandom(9),
+        )
+        struck = next(e for e in in_the_open if e.kind == "spell_effect")
+        assert struck.data["affected"] and struck.data["damage"]
+        assert "vs AC 15 -> hit" in struck.detail
+
+        behind_cover = self.duel({(2, 1): "half-cover"}).act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                   target="Goblin"),
+            FixedRandom(9),
+        )
+        shielded = next(e for e in behind_cover if e.kind == "spell_effect")
+        assert not shielded.data["affected"] and shielded.data["damage"] == 0
+        assert shielded.data["cover"] == 1
+        # The raised AC is in the log, not just the outcome: a bare "miss" would
+        # pass against a build that rolled worse rather than one that applied +2.
+        assert "vs AC 17 -> miss" in shielded.detail
+
+    def test_half_cover_shields_a_named_dexterity_save(self) -> None:
+        # No bundled spell aims a Dexterity save at a named creature, so this
+        # needs a fixture. Natural 12 + 2 (Dex) = 14 fails DC 15; the +2 for half
+        # cover makes the same roll a 16 and a save.
+        ray = Spell(
+            name="Searing Ray",
+            level=1,
+            save_ability=Ability.DEXTERITY,
+            damage=Dice(3, 6, 0),
+            damage_type=DamageType.FIRE,
+            range_feet=120,
+            provenance=FIXTURE,
+        )
+        book = {"Searing Ray": ray}
+        in_the_open = self.duel({}, spell="Searing Ray", book=book).act(
+            Action(kind=ActionKind.CAST, spell="Searing Ray", slot_level=1,
+                   target="Goblin"),
+            FixedRandom(12),
+        )
+        assert next(
+            e for e in in_the_open if e.kind == "spell_effect"
+        ).data["saved"] is False
+
+        behind_cover = self.duel(
+            {(2, 1): "half-cover"}, spell="Searing Ray", book=book
+        ).act(
+            Action(kind=ActionKind.CAST, spell="Searing Ray", slot_level=1,
+                   target="Goblin"),
+            FixedRandom(12),
+        )
+        shielded = next(e for e in behind_cover if e.kind == "spell_effect")
+        assert shielded.data["saved"] is True
+        assert shielded.data["cover"] == 1
+
+    def test_a_non_dexterity_named_save_gets_no_cover_bonus(self) -> None:
+        # Hold Person saves on Wisdom. The goblin's half cover is reported but
+        # grants nothing: natural 12 + 1 (Wis) = 13 still fails DC 15, where a
+        # wrongly-applied +2 would save at 15.
+        covered = self.duel({(2, 1): "half-cover"}, spell="Hold Person")
+        covered.creatures["Wren"].spell_slots = {2: 1}
+        events = covered.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", slot_level=2,
+                   target="Goblin"),
+            FixedRandom(12),
+        )
+        effect = next(e for e in events if e.kind == "spell_effect")
+        assert effect.data["cover"] == 1
+        assert effect.data["saved"] is False
+
+    def test_a_storey_seals_a_spell_as_it_seals_an_arrow(self) -> None:
+        """The field symptom, named: a floor stopped weapons and not spells.
+
+        ``_cover_from_square`` has always returned TOTAL across levels, but only
+        the weapon path consulted it — so a cleric could shoot anything on any
+        storey from anywhere while the archer beside her could not, and a map
+        author reading "levels give total cover" was told something true of half
+        the actions.
+        """
+        rng = Random(3)
+        wren = caster(position=(0, 0))
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 1}
+        upstairs = make_monster("Goblin Warrior", label="Upstairs", position=(15, 0))
+        upstairs.level = 1
+        encounter = Encounter(
+            [wren, upstairs], rng, spellbook=spellbook(), battle_map=tower()
+        )
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="Upstairs.*total cover"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                       target="Upstairs"),
+                FixedRandom(20),
+            )
+        assert upstairs.hp == upstairs.max_hp
+        assert wren.spell_slots[1] == 1
+
+    def test_the_refusal_names_which_of_several_targets_is_sealed(self) -> None:
+        """A multi-target cast says *who* it cannot reach, not just that it failed.
+
+        The whole cast is refused rather than quietly shrinking to the reachable
+        names: a caller who aimed at three creatures and silently hit two has been
+        given a wrong answer, not a partial one.
+        """
+        twin = Spell(
+            name="Twin Bolt",
+            level=1,
+            requires_attack_roll=True,
+            damage=Dice(1, 6, 0),
+            damage_type=DamageType.RADIANT,
+            range_feet=120,
+            max_targets=2,
+            provenance=FIXTURE,
+        )
+        rng = Random(3)
+        wren = caster(position=(0, 5))
+        wren.spells = ("Twin Bolt",)
+        wren.spell_slots = {1: 1}
+        encounter = Encounter(
+            [
+                wren,
+                make_monster("Goblin Warrior", label="Open", position=(5, 5)),
+                make_monster("Goblin Warrior", label="Sealed", position=(20, 5)),
+            ],
+            rng,
+            spellbook={"Twin Bolt": twin},
+            battle_map=strip(5, 3, terrain=self.WALL_COLUMN),
+        )
+        advance_to(encounter, "Wren", rng)
+        with pytest.raises(EncounterError, match="Sealed.*total cover"):
+            encounter.act(
+                Action(kind=ActionKind.CAST, spell="Twin Bolt", slot_level=1,
+                       targets=("Open", "Sealed")),
+                FixedRandom(20),
+            )
+        assert wren.spell_slots[1] == 1
+
+
 class TestInteract:
     def corridor(self) -> tuple[Encounter, Random]:
         """A doorway in an otherwise solid wall: walls above and below, door in

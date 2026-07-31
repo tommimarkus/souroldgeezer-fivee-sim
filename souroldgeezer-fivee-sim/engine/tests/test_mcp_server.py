@@ -530,6 +530,37 @@ class TestSpecValidation:
         with pytest.raises(api.ToolError, match="attack spec is missing"):
             api.encounter_create([broken, GOBLIN])
 
+    def test_an_unknown_combatant_key_is_refused_rather_than_dropped(self) -> None:
+        """The same rule the inline map spec and every content pack already keep.
+
+        A silently-dropped key is a wrong answer that looks like a right one: a
+        stat block written with ``fly_speed`` got a creature that moved 10 feet
+        and no warning that flight had been ignored, and a misspelled ``speeed``
+        is indistinguishable from asking for the default.
+        """
+        winged = dict(GOBLIN)
+        winged["fly_speed"] = 40
+        with pytest.raises(api.ToolError, match="unknown combatant key 'fly_speed'"):
+            api.encounter_create([HERO, winged])
+
+    def test_the_refusal_lists_the_keys_that_would_have_worked(self) -> None:
+        # A described spec, so the long vocabulary is the one offered back: the
+        # near-miss the caller wants to see is 'speed', which the lookup branch
+        # does not even accept.
+        typo = dict(HERO)
+        typo["speeed"] = 40
+        with pytest.raises(api.ToolError, match="Valid keys:.*speed"):
+            api.encounter_create([typo, GOBLIN])
+
+    def test_a_stat_block_lookup_spec_keeps_its_own_smaller_vocabulary(self) -> None:
+        # The 'creature'/'monster' branch reads five keys and never reaches the
+        # explicit-description constructor, so its unknown keys need their own
+        # guard rather than inheriting the long list.
+        with pytest.raises(api.ToolError, match="unknown combatant key 'ac'"):
+            api.encounter_create(
+                [HERO, {"monster": "Goblin Warrior", "ac": 22}]
+            )
+
 
 def map_document() -> dict[str, Any]:
     """A 5x4 room split by a wall, open along the bottom row."""

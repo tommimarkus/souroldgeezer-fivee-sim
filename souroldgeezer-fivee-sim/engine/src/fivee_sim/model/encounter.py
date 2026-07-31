@@ -1440,16 +1440,25 @@ class Encounter:
         if not chosen:
             raise EncounterError(f"{spell.name} has no valid targets")
 
-        # Cover shields Dexterity saves against areas exactly as it shields AC
-        # against attacks: +2 behind half cover, +5 behind three-quarters,
-        # measured from the effect's point of origin. Total cover never appears
-        # here — area_targets already excludes anyone sealed off from the origin.
-        cover_grades: dict[str, CoverGrade] = {}
-        if area_origin is not None:
-            cover_grades = {
-                c.name: self._cover_from_square(actor.level, area_origin, c.name)
-                for c in chosen
-            }
+        # Cover shields a spell exactly as it shields a weapon swing: +2 behind
+        # half cover, +5 behind three-quarters, on AC and on Dexterity saves
+        # alike (SRD 5.2, "Cover"). Only the origin differs between the branches
+        # — an area measures from its point of origin, a named cast from the
+        # caster's own square — so both go through one dictionary rather than the
+        # area alone, which is how named targets came to consult cover nowhere.
+        #
+        # Total cover never appears here: ``area_targets`` drops anyone sealed
+        # off from the origin, and ``_spell_targets`` refuses a named one. That
+        # is load-bearing rather than incidental — ``cover_ac_bonus`` raises on
+        # TOTAL rather than inventing a number for "cannot be hit at all".
+        origin = (
+            area_origin if area_origin is not None
+            else to_square(as_point(actor.position))
+        )
+        cover_grades: dict[str, CoverGrade] = {
+            c.name: self._cover_from_square(actor.level, origin, c.name)
+            for c in chosen
+        }
 
         def save_modifier(creature: Creature) -> int:
             if spell.save_ability is None:
@@ -1486,7 +1495,9 @@ class Encounter:
             targets=tuple(
                 SpellTarget(
                     name=c.name,
-                    ac=c.ac,
+                    ac=c.ac + cover_ac_bonus(
+                        cover_grades.get(c.name, CoverGrade.NONE)
+                    ),
                     save_modifier=save_modifier(c),
                     auto_fail_save=self.auto_fails_save(c, spell.save_ability),
                     save_advantage=self.save_advantage(c, spell.save_ability),
@@ -1756,6 +1767,7 @@ class Encounter:
             for creature in chosen:
                 self._require_targetable(creature)
                 self._require_in_range(actor, spell, creature.position, creature.name)
+                self._require_line_to(actor, spell, creature)
         elif spell.is_area and (
             action.center is not None
             or action.direction is not None
@@ -1789,6 +1801,7 @@ class Encounter:
             chosen = [self._resolve_target(action.target)]
             self._require_targetable(chosen[0])
             self._require_in_range(actor, spell, chosen[0].position, chosen[0].name)
+            self._require_line_to(actor, spell, chosen[0])
         else:
             raise EncounterError(
                 f"{spell.name} needs 'target', 'targets', or an area aim — "
@@ -1808,6 +1821,30 @@ class Encounter:
                 f"{len(chosen)} were named"
             )
         return chosen, area_origin
+
+    def _require_line_to(
+        self, actor: Creature, spell: Spell, target: Creature
+    ) -> None:
+        """Refuse a named target the caster cannot see past total cover.
+
+        SRD 5.2, "Cover": a target with Total Cover "can't be targeted directly".
+        *Directly* is the word that keeps this out of the area branch — a blast
+        reaches whoever its template catches, and ``area_targets`` drops the
+        sealed ones without comment because nobody named them. Someone who names
+        a creature behind a wall is told instead, the way naming one out of range
+        is told.
+
+        Raising rather than emitting is the spell path's own idiom: every other
+        refusal here — range, a corpse, a slot too small — raises, and all of them
+        run before the action or the slot is spent. The weapon path emits for the
+        same case because a refused swing is one of several in a Multiattack and
+        the log has to show which.
+        """
+        if self.cover_between(actor.name, target.name) is CoverGrade.TOTAL:
+            raise EncounterError(
+                f"{actor.name} has no line to {target.name} (total cover), "
+                f"so {spell.name} cannot target it"
+            )
 
     def _require_in_range(
         self, actor: Creature, spell: Spell, position: Point | int, what: str

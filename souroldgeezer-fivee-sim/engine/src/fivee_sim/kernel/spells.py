@@ -54,7 +54,12 @@ class Spell:
     save_ability: Ability | None = None
     damage: Dice | None = None
     damage_type: DamageType | None = None
-    half_on_save: bool = True
+    #: Default False because SRD 5.2 grants half damage per spell, in the spell's
+    #: own text — Fireball says "half as much damage on a successful save", Sacred
+    #: Flame says only "take 1d8 Radiant damage". So a record that omits this is a
+    #: transcription of a spell with no such clause, and defaulting to True made
+    #: every one of them quietly generous while the record still read correctly.
+    half_on_save: bool = False
     #: Dice added per slot level above the spell's base level.
     upcast_damage: Dice | None = None
     shape: SpellShape = SpellShape.SINGLE
