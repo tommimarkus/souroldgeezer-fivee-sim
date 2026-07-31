@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from fivee_sim.content import monster_records, spellbook
 from fivee_sim.coverage import UNIMPLEMENTED_CONDITIONS, render_markdown
-from fivee_sim.data import monster_records, spellbook
 from fivee_sim.kernel.conditions import Condition
 
 # tests/ -> engine/ -> plugin root

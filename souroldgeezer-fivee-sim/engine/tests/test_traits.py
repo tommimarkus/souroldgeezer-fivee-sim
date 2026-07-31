@@ -24,8 +24,7 @@ from random import Random
 from typing import Any
 
 from fivee_sim.analytics.montecarlo import auto_action
-from fivee_sim.content import load_packs
-from fivee_sim.data import make_creature
+from fivee_sim.content import load_packs, make_creature
 from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect, ConditionTable
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.items import ItemEffect

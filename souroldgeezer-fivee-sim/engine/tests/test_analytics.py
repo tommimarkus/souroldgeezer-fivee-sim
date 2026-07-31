@@ -24,7 +24,7 @@ from fivee_sim.analytics.montecarlo import (
     simulate_rounds,
     summarise,
 )
-from fivee_sim.data import make_monster, spellbook
+from fivee_sim.content import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice

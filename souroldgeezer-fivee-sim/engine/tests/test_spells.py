@@ -11,7 +11,7 @@ from random import Random
 
 import pytest
 
-from fivee_sim.data import spellbook
+from fivee_sim.content import spellbook
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType

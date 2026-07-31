@@ -30,14 +30,16 @@ from fivee_sim.content import (
     ContentError,
     Severity,
     load_packs,
+    make_creature,
+    monster_records,
     validate,
 )
-from fivee_sim.data import make_creature, monster_records
 from fivee_sim.kernel.actions import compute_attack_advantage
-from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.mcp_server import server as api
+from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 
 from .conftest import advance_to
@@ -186,7 +188,7 @@ class TestExcludeMode:
         self, pack: Path
     ) -> None:
         registry = load_packs([pack], builtin="exclude", include_environment=False)
-        from fivee_sim.data import DataError
+        from fivee_sim.content import DataError
 
         with pytest.raises(DataError, match="excluded"):
             make_creature("Goblin Warrior", registry=registry)
@@ -632,6 +634,76 @@ class TestAttackRiderValidation:
         assert option.on_hit_save_ability is Ability.CONSTITUTION
         assert option.on_hit_save_dc == 11
         assert option.on_hit_expiry is RiderExpiry.START_OF_ATTACKER_NEXT_TURN
+
+
+class TestConstructionSeam:
+    """``Creature.from_record`` takes what a registry would otherwise be asked for.
+
+    Construction lives in ``model`` because ``model`` owns creatures, but a
+    ``ContentRegistry`` is ``content``'s concept and importing it there would
+    invert the layering. So the two values construction cannot derive from the
+    record alone — the condition table the creature reads its conditions
+    against, and the provenance to fall back on — arrive as arguments.
+    ``make_creature`` is the caller that pulls both off a registry.
+
+    These pin the seam itself. Field-by-field mapping is covered above through
+    ``make_creature``, which is the same code path.
+    """
+
+    def record(self, **overrides: Any) -> dict[str, Any]:
+        base: dict[str, Any] = {
+            "name": "Vale Stalker", "ac": 14, "max_hp": 22, "provenance": "test",
+        }
+        base.update(overrides)
+        return base
+
+    def test_the_record_provenance_wins_when_it_has_one(self) -> None:
+        creature = Creature.from_record(
+            self.record(provenance="Original content"),
+            condition_effects=EFFECTS,
+            source="bundled:monsters.json",
+        )
+        assert creature.provenance == "Original content"
+
+    def test_the_source_is_the_fallback_when_the_record_omits_provenance(self) -> None:
+        # Content validation makes provenance required, so this only fires for a
+        # record built in code. It still has to name where the creature came
+        # from: the licence boundary turns on every creature carrying one.
+        bare = self.record()
+        del bare["provenance"]
+        creature = Creature.from_record(
+            bare, condition_effects=EFFECTS, source="bundled:monsters.json"
+        )
+        assert creature.provenance == "bundled:monsters.json"
+
+    def test_the_given_condition_table_is_what_the_creature_reads(self) -> None:
+        # A pack-defined condition is a plain str with no entry in EFFECTS. If
+        # construction consulted a module-level table instead of this argument,
+        # the creature would be carrying a condition nothing could resolve.
+        table = {**EFFECTS, "vale-cursed": ConditionEffect(incapacitated=True)}
+        creature = Creature.from_record(
+            self.record(conditions=["vale-cursed"]),
+            condition_effects=table,
+            source="test",
+        )
+        assert creature.conditions == {"vale-cursed"}
+        assert not creature.active
+
+    def test_label_and_team_rename_the_instance(self) -> None:
+        # Two of a kind in one fight need distinct names: combatant names are
+        # how the encounter identifies them.
+        creature = Creature.from_record(
+            self.record(), condition_effects=EFFECTS, source="test",
+            label="Stalker A", team="party",
+        )
+        assert creature.name == "Stalker A"
+        assert creature.team == "party"
+        # And the record's own values stand when nothing overrides them.
+        default = Creature.from_record(
+            self.record(), condition_effects=EFFECTS, source="test"
+        )
+        assert default.name == "Vale Stalker"
+        assert default.team == "monsters"
 
 
 class TestAreaDeclaration:

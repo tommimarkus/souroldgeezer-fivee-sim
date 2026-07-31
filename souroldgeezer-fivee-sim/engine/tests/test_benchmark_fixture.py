@@ -45,8 +45,7 @@ from typing import NamedTuple
 import pytest
 
 from fivee_sim.analytics.montecarlo import run_encounter
-from fivee_sim.content import ContentRegistry, load_packs
-from fivee_sim.data import make_creature
+from fivee_sim.content import ContentRegistry, load_packs, make_creature
 from fivee_sim.kernel.grid import Point
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import Encounter

@@ -24,7 +24,7 @@ from random import Random
 import pytest
 
 from fivee_sim.analytics.montecarlo import auto_action, run_encounter, simulate_rounds
-from fivee_sim.data import make_monster, monster_records, spellbook
+from fivee_sim.content import make_monster, monster_records, spellbook
 from fivee_sim.kernel.actions import RiderExpiry
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.model.creature import Creature

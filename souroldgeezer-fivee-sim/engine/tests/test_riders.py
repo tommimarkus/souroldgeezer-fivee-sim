@@ -22,8 +22,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.content import load_packs
-from fivee_sim.data import make_creature
+from fivee_sim.content import load_packs, make_creature
 from fivee_sim.kernel.actions import RiderExpiry, resolve_attack
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType
@@ -426,7 +425,7 @@ class TestBundledGoblinRider:
             assert option.advantage_bonus_damage == Dice(1, 4)
 
     def test_the_unmodelled_list_keeps_nimble_escape_and_drops_the_rider(self) -> None:
-        from fivee_sim.data import monster_records
+        from fivee_sim.content import monster_records
 
         notes = monster_records()["Goblin Warrior"]["unmodelled"]
         assert any("Nimble Escape" in note for note in notes)
