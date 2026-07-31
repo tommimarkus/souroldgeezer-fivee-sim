@@ -52,8 +52,9 @@ In precedence order:
 
 1. **`FIVEE_SIM_MAPS`** — an `os.pathsep`-separated list of files or
    directories. When set, it wins outright.
-2. **`$CLAUDE_PROJECT_DIR/.fivee-sim/maps/`**, used only when the variable is
-   unset — the maps analogue of the content-pack convention.
+2. **`$FIVEE_SIM_PROJECT_DIR/.fivee-sim/maps/`**, with
+   `$CLAUDE_PROJECT_DIR/.fivee-sim/maps/` as a compatibility fallback, used only
+   when the variable is unset — the maps analogue of the content-pack convention.
 3. The same `.fivee-sim/maps/` under the current directory, as a last resort.
 
 The first configured root is also where `map_save` writes by default

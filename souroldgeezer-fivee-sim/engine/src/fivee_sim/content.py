@@ -75,9 +75,11 @@ from .validation import Severity as Severity
 CONTENT_ENV = "FIVEE_SIM_CONTENT"
 #: Environment variable selecting whether the bundled SRD slice is loaded.
 BUILTIN_ENV = "FIVEE_SIM_BUILTIN"
-#: Claude Code exports this; a campaign keeping content in its own repo needs no
-#: configuration beyond putting files in the directory below.
-PROJECT_ENV = "CLAUDE_PROJECT_DIR"
+#: Host-neutral project root. Plugin skills set this when the host does not export
+#: a native project-directory variable.
+PROJECT_ENV = "FIVEE_SIM_PROJECT_DIR"
+#: Claude Code's native project root, retained as a compatibility fallback.
+CLAUDE_PROJECT_ENV = "CLAUDE_PROJECT_DIR"
 PROJECT_SUBDIR = Path(".fivee-sim") / "content"
 
 _BUILTIN_PACKAGE = "fivee_sim.data.srd"
@@ -886,7 +888,10 @@ def environment_paths(env: Mapping[str, str] | None = None) -> list[str]:
     configured = environ.get(CONTENT_ENV, "").strip()
     if configured:
         return [part for part in configured.split(os.pathsep) if part.strip()]
-    project = environ.get(PROJECT_ENV, "").strip()
+    project = (
+        environ.get(PROJECT_ENV, "").strip()
+        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
+    )
     if project:
         candidate = Path(project) / PROJECT_SUBDIR
         if candidate.is_dir():

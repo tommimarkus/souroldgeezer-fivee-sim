@@ -35,7 +35,7 @@ from pathlib import Path
 from random import Random
 from typing import Any, NoReturn
 
-from ..content import PROJECT_ENV, contained_json_files
+from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV, contained_json_files
 from ..kernel.grid import (
     DiagonalRule,
     Square,
@@ -1547,7 +1547,10 @@ def environment_roots(env: Mapping[str, str] | None = None) -> list[str]:
     configured = environ.get(MAPS_ENV, "").strip()
     if configured:
         return [part for part in configured.split(os.pathsep) if part.strip()]
-    project = environ.get(PROJECT_ENV, "").strip()
+    project = (
+        environ.get(PROJECT_ENV, "").strip()
+        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
+    )
     if project:
         return [str(Path(project) / MAPS_SUBDIR)]
     return []

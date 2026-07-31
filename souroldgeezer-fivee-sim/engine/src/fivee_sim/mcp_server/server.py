@@ -884,7 +884,7 @@ def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
     record = registry.creatures[name]
     entry: dict[str, Any] = {"kind": "creature", **record}
     entry["source"] = registry.source_of("creatures", name)
-    # ``unmodelled`` is present even when empty. The skill tells Claude to check it
+    # ``unmodelled`` is present even when empty. The skill tells the assistant to check it
     # before promising a trait will fire, and that instruction has to stay true for a
     # campaign's own creature rather than hitting a missing key.
     entry.setdefault("unmodelled", [])

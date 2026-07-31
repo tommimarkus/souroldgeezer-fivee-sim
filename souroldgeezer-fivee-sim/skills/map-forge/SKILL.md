@@ -106,8 +106,12 @@ image a UVTT export carries — and a kind need not be on the map to be colored.
 
 ## Files
 
-Maps live at `$CLAUDE_PROJECT_DIR/.fivee-sim/maps/` by default, or wherever
-`FIVEE_SIM_MAPS` points; replays are written under `replays/` beside them.
+Maps live at `$FIVEE_SIM_PROJECT_DIR/.fivee-sim/maps/` by default, with
+`$CLAUDE_PROJECT_DIR` as a compatibility fallback, or wherever `FIVEE_SIM_MAPS`
+points; replays are written under `replays/` beside them. On a host without a
+project-root variable, pass an absolute path under the current workspace's
+`.fivee-sim/maps/` to file-writing or file-loading tools; never resolve a relative
+path against the installed plugin directory.
 `map_query` answers distance, line-of-sight, and path questions over a bare
 map without starting a fight.
 

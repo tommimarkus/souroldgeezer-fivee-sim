@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Launcher for the bundled fivee-sim Model Context Protocol (MCP) stdio server.
 #
-# Declared as the plugin's `mcpServers.fivee_sim` command (plugin.json). Claude Code
-# spawns and owns this process when the plugin is enabled.
+# Declared as the plugin's `fivee_sim` MCP command. The active plugin host spawns
+# and owns this process when the plugin is enabled.
 #
 # stdout carries JSON-RPC only. Every diagnostic here is deliberately routed to
 # stderr — a single stray line on stdout corrupts the protocol stream and the
@@ -14,17 +14,18 @@
 # one process and needs uv present only when the environment has to be built.
 #
 # Resolve-on-demand, bounded. A stdio server that exits at spawn gets no auto-retry:
-# it stays dead until the next session or `/reload-plugins`. So the sync runs only
+# it stays dead until the next session or a plugin reload. So the sync runs only
 # when the venv is missing, unusable, or built from a different engine, is bounded
 # so it can never hang session start, and on failure reports once and exits rather
 # than looping. Session start is non-blocking, so only a turn that actually needs a
 # tool waits on a cold build.
 #
-# plugin.json points UV_PROJECT_ENVIRONMENT and UV_CACHE_DIR at ${CLAUDE_PLUGIN_DATA},
-# because the installed plugin directory is a shared, versioned cache that must not
-# be written into. That split is also this script's main hazard, and the reason for
-# the build stamp below: ${CLAUDE_PLUGIN_DATA} is durable, while ${CLAUDE_PLUGIN_ROOT}
-# carries the version in its path — so the venv outlives the engine it was built from.
+# An explicit uv location wins; otherwise the launcher derives durable storage from
+# ${PLUGIN_DATA} (Codex), then ${CLAUDE_PLUGIN_DATA} (Claude Code), and finally the
+# checkout for direct development. Installed plugin roots are versioned caches that
+# must not be written into. That split is also this script's main hazard, and the
+# reason for the build stamp below: host data is durable while the plugin root can
+# change on upgrade, so the venv may outlive the engine it was built from.
 set -euo pipefail
 
 log() { printf 'fivee-sim-mcp: %s\n' "$1" >&2; }
@@ -40,7 +41,18 @@ fi
 # Absolute from here on: this path goes into the build stamp and is compared
 # against on the next start, so it has to be the same string every time.
 engine_dir="$(cd "$engine_dir" && pwd)"
-venv_dir="${UV_PROJECT_ENVIRONMENT:-$engine_dir/.venv}"
+plugin_data="${PLUGIN_DATA:-${CLAUDE_PLUGIN_DATA:-}}"
+if [ -z "${UV_PROJECT_ENVIRONMENT:-}" ]; then
+  if [ -n "$plugin_data" ]; then
+    export UV_PROJECT_ENVIRONMENT="$plugin_data/venv"
+  else
+    export UV_PROJECT_ENVIRONMENT="$engine_dir/.venv"
+  fi
+fi
+if [ -z "${UV_CACHE_DIR:-}" ] && [ -n "$plugin_data" ]; then
+  export UV_CACHE_DIR="$plugin_data/uv-cache"
+fi
+venv_dir="$UV_PROJECT_ENVIRONMENT"
 server_bin="$venv_dir/bin/fivee-sim-mcp"
 stamp_file="$venv_dir/.fivee-sim-build-stamp"
 
