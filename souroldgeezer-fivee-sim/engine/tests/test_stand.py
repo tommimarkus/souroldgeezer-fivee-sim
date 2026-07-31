@@ -36,7 +36,7 @@ from fivee_sim.model.encounter import (
     build_encounter,
 )
 
-from .test_encounter import advance_to, fighter
+from .conftest import advance_to, fighter
 
 FIXTURE = "synthetic test fixture, not SRD content"
 

@@ -21,7 +21,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square, as_point
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
-from fivee_sim.kernel.spells import Spell, SpellShape
+from fivee_sim.kernel.spells import Spell
 from fivee_sim.model.battlemap import BattleMap, MapFeature
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
@@ -32,80 +32,16 @@ from fivee_sim.model.encounter import (
     Event,
 )
 
-from .test_kernel import FixedRandom, ScriptedRandom
-
-FIXTURE = "synthetic test fixture, not SRD content"
-
-
-def fighter(
-    name: str = "Thora",
-    *,
-    position: int | tuple[int, int] = 0,
-    hp: int | None = None,
-    max_hp: int = 30,
-    team: str = "party",
-    attacks_per_action: int = 1,
-) -> Creature:
-    return Creature(
-        name=name,
-        team=team,
-        ac=16,
-        max_hp=max_hp,
-        hp=max_hp if hp is None else hp,
-        speed=30,
-        abilities={
-            Ability.STRENGTH: 16,
-            Ability.DEXTERITY: 14,
-            Ability.CONSTITUTION: 14,
-            Ability.INTELLIGENCE: 10,
-            Ability.WISDOM: 12,
-            Ability.CHARISMA: 8,
-        },
-        attacks=(
-            AttackOption(
-                name="Longsword",
-                attack_bonus=5,
-                damage=Dice(1, 8, 3),
-                damage_type=DamageType.SLASHING,
-                kind=AttackKind.MELEE,
-                provenance=FIXTURE,
-            ),
-        ),
-        attacks_per_action=attacks_per_action,
-        position=position,
-        provenance=FIXTURE,
-    )
-
-
-def caster(
-    name: str = "Wren", *, position: int | tuple[int, int] = 0, team: str = "party"
-) -> Creature:
-    return Creature(
-        name=name,
-        team=team,
-        ac=13,
-        max_hp=24,
-        speed=30,
-        abilities={
-            Ability.CONSTITUTION: 14,
-            Ability.DEXTERITY: 12,
-            Ability.INTELLIGENCE: 16,
-        },
-        spells=("Fireball", "Hold Person"),
-        spell_slots={2: 1, 3: 1},
-        spell_save_dc=15,
-        spell_attack_bonus=6,
-        position=position,
-        provenance=FIXTURE,
-    )
-
-
-def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) -> None:
-    for _ in range(limit):
-        if encounter.current_name == name:
-            return
-        encounter.advance(rng)
-    raise AssertionError(f"{name} never got a turn")
+from .conftest import (
+    FIXTURE,
+    FixedRandom,
+    ScriptedRandom,
+    advance_to,
+    caster,
+    fighter,
+    shaped_spellbook,
+    shaper,
+)
 
 
 def kinds(events: Sequence[Event]) -> list[str]:
@@ -117,6 +53,21 @@ def detail_of(events: Sequence[Event], kind: str) -> str:
     matching = [event for event in events if event.kind == kind]
     assert len(matching) == 1, f"expected one {kind!r} event, got {len(matching)}"
     return matching[0].detail
+
+
+def rolled_with(event: Event) -> str:
+    """The Advantage state the d20 in this event was rolled under.
+
+    Matched on the ``describe()`` token rather than by substring, because
+    ``"advantage" in "disadvantage"`` is true and a substring test would pass
+    whichever way the roll actually went. Every assertion about the state a d20
+    was rolled under goes through here — attack rolls and saving throws alike,
+    since both render the same ``[faces] <state> ->`` shape.
+    """
+    for state in ("disadvantage", "advantage"):
+        if f"] {state} ->" in event.detail:
+            return state
+    return "none"
 
 
 class TestInitiative:
@@ -933,7 +884,18 @@ class TestMovementAndReactions:
             Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
         )
         assert kinds(events).count("opportunity_attack") == 1
-        assert encounter._reaction_available["Goblin"] is False
+
+        # The reaction is spent, observed through the public surface rather than
+        # through _reaction_available: Dash buys enough movement to walk back
+        # across the goblin's reach in the same round, and that second provoking
+        # pass draws nothing. The goblin's reaction only refreshes when its own
+        # turn begins, which has not happened yet.
+        encounter.act(Action(kind=ActionKind.DASH), rng)
+        again = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=0), FixedRandom(20)
+        )
+        assert encounter.creatures["Thora"].position == (0, 0)
+        assert "opportunity_attack" not in kinds(again)
 
     def test_a_disengaged_pass_through_does_not_provoke_without_a_map(self) -> None:
         rng = Random(6)
@@ -1902,39 +1864,6 @@ class TestSpellcasting:
         assert wizard.concentrating_on is None
 
 
-def shaped_spellbook() -> dict[str, Spell]:
-    """One spell of each grid shape, small enough to reason about by hand."""
-    common: dict[str, Any] = {
-        "level": 1,
-        "save_ability": Ability.DEXTERITY,
-        "damage": Dice(3, 6, 0),
-        "damage_type": DamageType.FIRE,
-        "provenance": FIXTURE,
-    }
-    return {
-        "Flame Fan": Spell(name="Flame Fan", shape=SpellShape.CONE, length=15,
-                           **common),
-        "Spark Line": Spell(name="Spark Line", shape=SpellShape.LINE, length=30,
-                            **common),
-        "Stone Cube": Spell(name="Stone Cube", shape=SpellShape.CUBE, size=10,
-                            range_feet=60, **common),
-    }
-
-
-def shaper(position: int | tuple[int, int] = 0) -> Creature:
-    return Creature(
-        name="Vesna",
-        team="party",
-        ac=12,
-        max_hp=20,
-        spells=("Flame Fan", "Spark Line", "Stone Cube"),
-        spell_slots={1: 5},
-        spell_save_dc=13,
-        position=position,
-        provenance=FIXTURE,
-    )
-
-
 class TestAoeShapes2D:
     """Golden shape resolutions through the stepper: who is caught is the test."""
 
@@ -2097,29 +2026,25 @@ class TestSavingThrowAdvantage:
     def test_a_restrained_target_saves_with_disadvantage_rather_than_failing(
         self,
     ) -> None:
-        detail = self.fireball_save(conditions=(Condition.RESTRAINED,)).detail
-        assert "disadvantage" in detail
-        assert "auto-fail" not in detail
+        event = self.fireball_save(conditions=(Condition.RESTRAINED,))
+        assert rolled_with(event) == "disadvantage"
+        assert "auto-fail" not in event.detail
 
     def test_an_unhindered_target_saves_straight(self) -> None:
-        detail = self.fireball_save().detail
-        assert "disadvantage" not in detail
-        assert "advantage" not in detail
+        assert rolled_with(self.fireball_save()) == "none"
 
     def test_a_paralyzed_target_still_fails_outright(self) -> None:
         assert "auto-fail" in self.fireball_save(conditions=(Condition.PARALYZED,)).detail
 
     def test_dodging_gives_advantage_on_a_dexterity_save(self) -> None:
-        assert "advantage" in self.fireball_save(dodging=True).detail
+        assert rolled_with(self.fireball_save(dodging=True)) == "advantage"
 
     def test_a_restrained_dodger_loses_the_benefit_rather_than_cancelling(self) -> None:
         # Dodge's benefits are lost while Speed is 0, and Restrained sets Speed 0.
         # Treating the Dodge as a live source of Advantage would cancel the
         # Disadvantage and hand the creature a straight roll it has not earned.
-        detail = self.fireball_save(
-            conditions=(Condition.RESTRAINED,), dodging=True
-        ).detail
-        assert "disadvantage" in detail
+        event = self.fireball_save(conditions=(Condition.RESTRAINED,), dodging=True)
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_forced_failure_and_disadvantage_are_decided_independently(self) -> None:
         rng = Random(4)
@@ -2222,49 +2147,37 @@ class TestSpellAttackAdvantage:
         )
         return next(event for event in events if event.kind == "spell_effect")
 
-    @staticmethod
-    def rolled_with(event: Event) -> str:
-        """The Advantage state the d20 in this event was rolled under.
-
-        Matched on the describe() token rather than by substring, because
-        ``"advantage" in "disadvantage"`` is true and would pass either way.
-        """
-        for state in ("disadvantage", "advantage"):
-            if f"] {state} ->" in event.detail:
-                return state
-        return "none"
-
     def test_an_unhindered_target_is_attacked_straight(self) -> None:
-        assert self.rolled_with(self.bolt()) == "none"
+        assert rolled_with(self.bolt()) == "none"
 
     def test_a_paralyzed_target_grants_advantage(self) -> None:
         event = self.bolt(target_conditions=(Condition.PARALYZED,))
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_restrained_target_grants_advantage(self) -> None:
         event = self.bolt(target_conditions=(Condition.RESTRAINED,))
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_blinded_caster_attacks_with_disadvantage(self) -> None:
         event = self.bolt(caster_conditions=(Condition.BLINDED,))
-        assert self.rolled_with(event) == "disadvantage"
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_frightened_caster_attacks_with_disadvantage(self) -> None:
         event = self.bolt(caster_conditions=(Condition.FRIGHTENED,))
-        assert self.rolled_with(event) == "disadvantage"
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_dodging_target_imposes_disadvantage(self) -> None:
         # SRD 5.2, Dodge: "any attack roll made against you has Disadvantage if
         # you can see the attacker". The _dodging map was never consulted on the
         # cast path, so a Dodge bought nothing against a spell.
-        assert self.rolled_with(self.bolt(dodging=True)) == "disadvantage"
+        assert rolled_with(self.bolt(dodging=True)) == "disadvantage"
 
     def test_a_blinded_caster_on_a_paralyzed_target_cancels_to_neither(self) -> None:
         event = self.bolt(
             caster_conditions=(Condition.BLINDED,),
             target_conditions=(Condition.PARALYZED,),
         )
-        assert self.rolled_with(event) == "none"
+        assert rolled_with(event) == "none"
 
     def test_a_hit_on_a_paralyzed_target_within_5_feet_is_a_critical(self) -> None:
         # SRD 5.2, Paralyzed: "Any attack roll that hits you is a Critical Hit if
@@ -2282,7 +2195,7 @@ class TestSpellAttackAdvantage:
         assert "-> hit" in event.detail
         # Only the automatic critical is distance-scoped; the Advantage the
         # condition grants applies at any range.
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_prone_target_is_advantaged_within_5_feet_and_disadvantaged_beyond(
         self,
@@ -2294,8 +2207,8 @@ class TestSpellAttackAdvantage:
         # what kind of attack a spell is.
         near = self.bolt(target_conditions=(Condition.PRONE,), distance=5)
         far = self.bolt(target_conditions=(Condition.PRONE,), distance=30)
-        assert self.rolled_with(near) == "advantage"
-        assert self.rolled_with(far) == "disadvantage"
+        assert rolled_with(near) == "advantage"
+        assert rolled_with(far) == "disadvantage"
 
     def test_the_cast_path_and_the_swing_path_agree_about_advantage(self) -> None:
         # The drift guard, and the half of it that still has two code paths to

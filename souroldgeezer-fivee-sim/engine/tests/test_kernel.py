@@ -7,7 +7,6 @@ Resistance rounding — rather than restating what the code obviously does.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from inspect import signature
 from random import Random
 
@@ -46,39 +45,7 @@ from fivee_sim.kernel.rules import (
     resolve_attack_roll,
 )
 
-
-class FixedRandom(Random):
-    """A generator that forces a chosen d20 face, for pinning edge cases.
-
-    The value is clamped to each die's own maximum, so ``FixedRandom(20)`` yields a
-    natural 20 on a d20 *and* a 6 on every d6 of the damage that follows. Without
-    the clamp a d6 would come back as 20 and damage assertions would be nonsense.
-    """
-
-    def __init__(self, natural: int) -> None:
-        super().__init__(0)
-        self._natural = natural
-
-    def randint(self, a: int, b: int) -> int:
-        return min(self._natural, b)
-
-
-class ScriptedRandom(Random):
-    """A generator that plays a written sequence of faces, then falls back to the max.
-
-    :class:`FixedRandom` cannot express a sequence where the rolls must differ — an
-    attack that *hits* and then a Constitution save that *fails* need a high face
-    and a low one out of the same call. Each face is clamped into the die's own
-    range, so a script written for d20s stays sane when a damage die is drawn.
-    """
-
-    def __init__(self, script: Sequence[int]) -> None:
-        super().__init__(0)
-        self._script = list(script)
-
-    def randint(self, a: int, b: int) -> int:
-        face = self._script.pop(0) if self._script else b
-        return max(a, min(face, b))
+from .conftest import FixedRandom
 
 
 class TestDiceParsing:

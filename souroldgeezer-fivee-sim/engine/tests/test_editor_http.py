@@ -138,12 +138,53 @@ class Editor:
 def editor(tmp_path: Path) -> Iterator[Editor]:
     log = io.StringIO()
     server = EditorServer(maps_dir=tmp_path / "maps", terrain=TERRAIN, log=log)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    # A short poll interval, because shutdown() blocks until the serve loop next
+    # wakes: at the stdlib default this fixture spent half a second per test
+    # dying, which was most of the file's runtime and most of the suite's.
+    thread = threading.Thread(
+        target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
+    )
     thread.start()
     yield Editor(server=server, thread=thread, maps_dir=tmp_path / "maps", log=log)
     server.shutdown()
     server.close()
     thread.join(timeout=5)
+
+
+def test_the_server_serves_and_stops_under_a_short_poll_interval(tmp_path: Path) -> None:
+    """``serve_forever`` takes the interval its shutdown latency is bound by.
+
+    ``ThreadingHTTPServer`` polls at half a second by default and ``shutdown()``
+    blocks until the loop next wakes, so every test using the ``editor`` fixture
+    spent that half second dying — 21 of this file's 22 seconds. The parameter
+    exists for the fixture above; ``editor/cli.py`` keeps the stdlib default,
+    where a shutdown happens once and its latency is nobody's problem.
+    """
+    log = io.StringIO()
+    server = EditorServer(maps_dir=tmp_path / "maps", terrain=TERRAIN, log=log)
+    thread = threading.Thread(
+        target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
+    )
+    thread.start()
+    try:
+        connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=10)
+        try:
+            connection.request("GET", "/api/ping", headers={TOKEN_HEADER: server.token})
+            response = connection.getresponse()
+            assert response.status == 200
+            assert json.loads(response.read())["ok"] is True
+        finally:
+            connection.close()
+    finally:
+        # Only a running loop can be shut down: BaseServer.shutdown() waits on an
+        # event that serve_forever sets on its way out, so calling it after the
+        # thread has died blocks for ever. Guarding it keeps a regression here a
+        # failure rather than a hang.
+        if thread.is_alive():
+            server.shutdown()
+        server.close()
+        thread.join(timeout=5)
+    assert not thread.is_alive(), "a short poll interval must still stop the server"
 
 
 def assert_problem(response: Response, status: int, fragment: str = "") -> dict[str, Any]:
@@ -181,6 +222,33 @@ class TestGuards:
 
     def test_a_local_host_header_with_port_passes(self, editor: Editor) -> None:
         response = editor.request("GET", "/api/ping", host=f"localhost:{editor.server.port}")
+        assert response.status == 200
+
+    def test_a_missing_host_header_is_403(self, editor: Editor) -> None:
+        # HTTP/1.1 requires Host, so its absence is already a broken request;
+        # the guard treats it as the empty name and refuses it like any other
+        # host that is not ours, rather than defaulting to trust.
+        connection = http.client.HTTPConnection("127.0.0.1", editor.server.port, timeout=10)
+        try:
+            connection.putrequest("GET", "/api/ping", skip_host=True)
+            connection.putheader(TOKEN_HEADER, editor.server.token)
+            connection.endheaders()
+            response = connection.getresponse()
+            wrapped = Response(
+                status=response.status,
+                headers=dict(response.getheaders()),
+                body=response.read(),
+            )
+        finally:
+            connection.close()
+        assert_problem(wrapped, 403, "host '' is not this editor")
+
+    def test_a_differently_cased_host_header_passes(self, editor: Editor) -> None:
+        # RFC 9110 §7.2 inherits URI host semantics, in which the host is
+        # case-insensitive, so LOCALHOST names this editor exactly as localhost
+        # does and a browser is free to send either.
+        assert editor.request("GET", "/api/ping", host="LOCALHOST").status == 200
+        response = editor.request("GET", "/api/ping", host=f"LocalHost:{editor.server.port}")
         assert response.status == 200
 
     def test_an_unknown_route_is_404(self, editor: Editor) -> None:
@@ -223,6 +291,54 @@ class TestGuards:
             connection.close()
         assert response.status == 413
         assert body["status"] == 413
+
+    def test_a_non_numeric_content_length_is_400(self, editor: Editor) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", editor.server.port, timeout=10)
+        try:
+            connection.putrequest("POST", "/api/validate")
+            connection.putheader(TOKEN_HEADER, editor.server.token)
+            connection.putheader("Content-Length", "twelve")
+            connection.endheaders()
+            response = connection.getresponse()
+            wrapped = Response(
+                status=response.status,
+                headers=dict(response.getheaders()),
+                body=response.read(),
+            )
+        finally:
+            connection.close()
+        assert_problem(wrapped, 400, "Content-Length is not a number")
+
+    def test_a_negative_content_length_is_400(self, editor: Editor) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", editor.server.port, timeout=10)
+        try:
+            connection.putrequest("POST", "/api/validate")
+            connection.putheader(TOKEN_HEADER, editor.server.token)
+            connection.putheader("Content-Length", "-1")
+            connection.endheaders()
+            response = connection.getresponse()
+            wrapped = Response(
+                status=response.status,
+                headers=dict(response.getheaders()),
+                body=response.read(),
+            )
+        finally:
+            connection.close()
+        assert_problem(wrapped, 400, "Content-Length is negative")
+
+    def test_a_body_that_is_not_an_object_is_400_naming_the_valid_keys(
+        self, editor: Editor
+    ) -> None:
+        response = editor.request("POST", "/api/generate", json_body=["caves"])
+        problem = assert_problem(response, 400, "request body must be a JSON object")
+        assert "kind, name, params, seed" in problem["detail"]
+
+    def test_an_unknown_key_is_400_naming_it_and_the_valid_keys(self, editor: Editor) -> None:
+        response = editor.request(
+            "POST", "/api/generate", json_body={"kind": "caves", "kinds": "caves"}
+        )
+        problem = assert_problem(response, 400, "unknown key(s): 'kinds'")
+        assert "Valid keys: kind, name, params, seed" in problem["detail"]
 
 
 class TestStaticPages:
@@ -400,6 +516,17 @@ class TestEdits:
         )
         assert_problem(response, 404)
 
+    def test_a_non_list_operations_value_is_400(self, editor: Editor) -> None:
+        editor.put_map("editor-chamber", payload())
+        before = editor.file_of("editor-chamber").read_bytes()
+        response = editor.request(
+            "POST",
+            "/api/maps/editor-chamber/edits",
+            json_body={"operations": {"op": "set_name", "name": "renamed"}},
+        )
+        assert_problem(response, 400, "'operations' must be a list of edit operations")
+        assert editor.file_of("editor-chamber").read_bytes() == before
+
 
 class TestGenerateAndValidate:
     def test_generate_reports_its_seed_and_persists_nothing(self, editor: Editor) -> None:
@@ -426,6 +553,38 @@ class TestGenerateAndValidate:
     def test_an_unknown_kind_is_400_with_the_valid_list(self, editor: Editor) -> None:
         response = editor.request("POST", "/api/generate", json_body={"kind": "maze"})
         assert_problem(response, 400, "caves, dungeon, overland")
+
+    def test_a_non_string_kind_is_400_before_the_service_sees_it(self, editor: Editor) -> None:
+        # A string kind reaches the service and comes back as its ValueError; a
+        # kind that is not text is refused here, so the two are distinguished by
+        # their detail rather than by the status they share.
+        response = editor.request("POST", "/api/generate", json_body={"kind": 7})
+        assert_problem(response, 400, "'kind' must name a generator")
+
+    def test_a_non_object_params_value_is_400(self, editor: Editor) -> None:
+        response = editor.request(
+            "POST", "/api/generate", json_body={"kind": "caves", "params": "wide"}
+        )
+        assert_problem(response, 400, "'params' must be an object")
+
+    def test_a_seed_that_is_not_a_whole_number_is_400(self, editor: Editor) -> None:
+        # true is an int in Python, so a bare isinstance(seed, int) would accept
+        # it and seed the generator with 1; the boolean case is the one that
+        # proves the guard, not the string one.
+        boolean = editor.request(
+            "POST", "/api/generate", json_body={"kind": "caves", "seed": True}
+        )
+        assert_problem(boolean, 400, "'seed' must be a whole number")
+        text = editor.request(
+            "POST", "/api/generate", json_body={"kind": "caves", "seed": "eleven"}
+        )
+        assert_problem(text, 400, "'seed' must be a whole number")
+
+    def test_a_name_that_is_not_text_is_400(self, editor: Editor) -> None:
+        response = editor.request(
+            "POST", "/api/generate", json_body={"kind": "caves", "name": 7}
+        )
+        assert_problem(response, 400, "'name' must be text")
 
     def test_validate_answers_ok_for_a_good_document(self, editor: Editor) -> None:
         response = editor.request("POST", "/api/validate", json_body=payload())

@@ -33,7 +33,7 @@ from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import Action, ActionKind, Encounter, Event, build_encounter
 
-from .test_kernel import FixedRandom
+from .conftest import FixedRandom, advance_to
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
@@ -95,14 +95,6 @@ def creature(
         position=position,
         provenance=FIXTURE,
     )
-
-
-def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 8) -> None:
-    for _ in range(limit):
-        if encounter.current_name == name:
-            return
-        encounter.advance(rng)
-    raise AssertionError(f"{name} never got a turn")
 
 
 class TestPackTactics:

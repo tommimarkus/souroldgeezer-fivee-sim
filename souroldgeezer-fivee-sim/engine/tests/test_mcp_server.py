@@ -14,6 +14,8 @@ from typing import Any
 
 import pytest
 
+from fivee_sim.analytics.expectation import attack_damage_expectation
+from fivee_sim.kernel.dice import Dice
 from fivee_sim.maps import parse_document
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import maps as map_service
@@ -41,6 +43,21 @@ HERO: dict[str, Any] = {
         }
     ],
 }
+
+
+def advance_to_thora(encounter_id: str) -> None:
+    """Advance the wire-level encounter until Thora holds the turn.
+
+    The ``Encounter``-object equivalent is ``conftest.advance_to``; this one drives
+    the ``api.*`` tool surface, where there is no Encounter to hand it. Raises
+    rather than falling through, so a test whose subject never gets a turn fails
+    here instead of asserting against whoever does.
+    """
+    for _ in range(6):
+        if api.encounter_state(encounter_id)["turn"] == "Thora":
+            return
+        api.encounter_advance(encounter_id)
+    raise AssertionError("Thora never got a turn")
 
 
 class TestPrimitives:
@@ -145,20 +162,20 @@ class TestEncounterFlow:
         encounter_id = str(created["encounter_id"])
         assert created["seed"] == 11
         assert created["state"]["round"] == 1
+        # The seed fixes initiative, so the sequence below is not a guess: the
+        # goblin wins the roll and swings first. Branching on whoever's turn it
+        # is would leave the assertions unable to say which outcome was right.
+        assert created["state"]["order"] == ["Goblin", "Thora"]
 
-        # Walk to whoever's turn it is, then attack the other side.
-        state = api.encounter_state(encounter_id)
-        actor = str(state["turn"])
-        opponent = "Goblin" if actor == "Thora" else "Thora"
-        attack = "Longsword" if actor == "Thora" else "Scimitar"
         acted = api.encounter_act(
-            encounter_id, kind="attack", target=opponent, attack=attack
+            encounter_id, kind="attack", target="Thora", attack="Scimitar"
         )
-        assert acted["events"]
-        assert acted["state"]["turn"] == actor
+        assert [event["kind"] for event in acted["events"]] == ["attack", "damage"]
+        assert acted["state"]["turn"] == "Goblin"  # acting does not end the turn
 
         advanced = api.encounter_advance(encounter_id)
-        assert advanced["state"]["turn"] != actor or advanced["state"]["over"]
+        assert advanced["state"]["turn"] == "Thora"
+        assert advanced["state"]["over"] is False
 
     def test_state_is_the_authoritative_view(self) -> None:
         created = api.encounter_create([HERO, GOBLIN], seed=3)
@@ -207,13 +224,6 @@ class TestEncounterFlow:
 class TestPlanarPositions:
     """The two-dimensional wire format: [x, y] in state, accepted on input."""
 
-    def advance_to_thora(self, encounter_id: str) -> None:
-        for _ in range(6):
-            if api.encounter_state(encounter_id)["turn"] == "Thora":
-                return
-            api.encounter_advance(encounter_id)
-        raise AssertionError("Thora never got a turn")
-
     def test_state_reports_positions_as_x_y_pairs(self) -> None:
         created = api.encounter_create([HERO, GOBLIN], seed=11)
         positions = {
@@ -234,7 +244,7 @@ class TestPlanarPositions:
     def test_a_move_accepts_an_x_y_destination(self) -> None:
         created = api.encounter_create([HERO, {**GOBLIN, "position": 60}], seed=11)
         encounter_id = str(created["encounter_id"])
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         acted = api.encounter_act(encounter_id, kind="move", to_position=[10, 5])
         moved = next(
             entry for entry in acted["state"]["combatants"]
@@ -275,13 +285,6 @@ class TestMapTools:
         )
         return str(created["encounter_id"])
 
-    def advance_to_thora(self, encounter_id: str) -> None:
-        for _ in range(6):
-            if api.encounter_state(encounter_id)["turn"] == "Thora":
-                return
-            api.encounter_advance(encounter_id)
-        raise AssertionError("Thora never got a turn")
-
     def test_a_created_map_appears_in_state(self) -> None:
         state = api.encounter_state(self.start())
         assert state["map"]["name"] == "corridor"
@@ -293,14 +296,14 @@ class TestMapTools:
 
     def test_interact_opens_the_door_over_the_wire(self) -> None:
         encounter_id = self.start()
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         api.encounter_act(encounter_id, kind="move", to_position=[0, 5])
         acted = api.encounter_act(encounter_id, kind="interact", feature="door")
         assert acted["state"]["map"]["features"]["door"]["open"] is True
 
     def test_a_wall_refuses_the_move_with_the_reason(self) -> None:
         encounter_id = self.start()
-        self.advance_to_thora(encounter_id)
+        advance_to_thora(encounter_id)
         with pytest.raises(api.ToolError, match="no route"):
             api.encounter_act(encounter_id, kind="move", to_position=[10, 0])
 
@@ -811,9 +814,26 @@ class TestAnalyticsTools:
         assert pytest.approx(sum(result["win_rate"].values()), abs=1e-6) == 1.0
 
     def test_simulate_dpr_reports_damage_per_round(self) -> None:
-        result = api.simulate_dpr(HERO, target_ac=15, rounds=3, iterations=100, seed=7)
-        assert result["damage"]["mean"] > 0
-        assert result["damage_per_round"] > 0
+        # The oracle is the engine's own closed form, read off the same fixture
+        # the run uses so the two cannot drift apart. The tight bound belongs to
+        # test_analytics, which pins simulate_dpr against this arithmetic at
+        # 6,000 iterations; 500 places the mean inside 5%, which is enough for
+        # the adapter's job — that the spec, the AC, and the round count reach
+        # the batch intact. "> 0" would have passed a wrong divisor, a dropped
+        # round, or a lost attack bonus.
+        weapon = HERO["attacks"][0]
+        expected = attack_damage_expectation(
+            attack_bonus=int(weapon["attack_bonus"]),
+            target_ac=15,
+            damage=Dice.parse(str(weapon["damage"])),
+        )
+        result = api.simulate_dpr(HERO, target_ac=15, rounds=3, iterations=500, seed=7)
+        assert result["damage_per_round"] == pytest.approx(expected, rel=0.05)
+        # And the two reported figures describe the same run; Stats.as_dict
+        # rounds the mean to three decimals, so they agree to within that.
+        assert result["damage_per_round"] == pytest.approx(
+            result["damage"]["mean"] / 3, abs=1e-3
+        )
 
     def test_bad_iteration_counts_are_refused(self) -> None:
         with pytest.raises(api.ToolError, match="at least 1"):
