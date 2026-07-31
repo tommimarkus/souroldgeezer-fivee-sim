@@ -12,7 +12,7 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 
 | Category | Supported |
 | --- | --- |
-| Creatures (stat blocks) | 4 |
+| Creatures (stat blocks) | 6 |
 | Spells | 4 |
 | Conditions | 14 |
 | Damage types | 13 |
@@ -27,8 +27,10 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 | Name | AC | HP | Speed | Attacks and traits | Printed features not implemented |
 | --- | --- | --- | --- | --- | --- |
+| Goblin Boss | 17 | 21 (6d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing plus 1d4 if the attack roll had advantage; Shortbow +4, range 80/320 ft, 1d6+2 piercing plus 1d4 if the attack roll had advantage | Nimble Escape: Bonus Action Disengage or Hide<br>Redirect Attack: Reaction to swap places with an ally within 5 feet, which becomes the target instead |
 | Goblin Warrior | 15 | 10 (3d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing plus 1d4 if the attack roll had advantage; Shortbow +4, range 80/320 ft, 1d6+2 piercing plus 1d4 if the attack roll had advantage | Nimble Escape: Bonus Action Disengage or Hide |
 | Ogre | 11 | 68 (8d10+24) | 40 ft | Greatclub +6, reach 5 ft, 2d8+4 bludgeoning | Javelin ranged attack option from its listed gear |
+| Skeleton | 14 | 13 (2d8+4) | 30 ft | Shortsword +5, reach 5 ft, 1d6+3 piercing; Shortbow +5, range 80/320 ft, 1d6+3 piercing | Immunity to the Exhaustion and Poisoned conditions |
 | Wolf | 12 | 11 (2d8+2) | 40 ft | Bite +4, reach 5 ft, 1d6+2 piercing, on hit: prone<br>Traits: Pack Tactics — Advantage while a capable ally is within 5 ft of the target | Bite's Prone rider ignores the printed size gate: the SRD applies it only to a Medium or smaller target, and this engine does not model creature size |
 | Zombie | 8 | 15 (2d8+6) | 20 ft | Slam +3, reach 5 ft, 1d8+1 bludgeoning<br>Traits: Undead Fortitude — on a drop to 0 HP, a Constitution save (DC 5 + damage taken) leaves 1 HP instead, unless the damage was Radiant, a Critical Hit, or enough to kill outright | Immunity to the Exhaustion and Poisoned conditions |
 
