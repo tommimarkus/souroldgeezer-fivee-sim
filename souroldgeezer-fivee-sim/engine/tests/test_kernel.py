@@ -37,9 +37,11 @@ from fivee_sim.kernel.dice import (
 from fivee_sim.kernel.rules import (
     Ability,
     AttackRoll,
+    Size,
     ability_modifier,
     concentration_dc,
     effective_damage,
+    fits_within,
     make_d20_test,
     proficiency_bonus,
     resolve_attack_roll,
@@ -184,6 +186,58 @@ class TestDerivedNumbers:
     @pytest.mark.parametrize(("damage", "dc"), [(1, 10), (19, 10), (20, 10), (22, 11), (50, 25)])
     def test_concentration_dc_is_half_damage_minimum_ten(self, damage: int, dc: int) -> None:
         assert concentration_dc(damage) == dc
+
+
+class TestCreatureSize:
+    """Size ordering, which a ``StrEnum`` does not give for free.
+
+    Compared as strings these sort gargantuan < huge < large < medium < small <
+    tiny — alphabetical, and the exact opposite of the answer "Medium or smaller"
+    needs at both ends. Every case below would pass against a lexicographic
+    comparison only by accident, so the pairs are checked in both directions.
+    """
+
+    def test_declaration_order_runs_smallest_to_largest(self) -> None:
+        assert list(Size) == [
+            Size.TINY,
+            Size.SMALL,
+            Size.MEDIUM,
+            Size.LARGE,
+            Size.HUGE,
+            Size.GARGANTUAN,
+        ]
+
+    @pytest.mark.parametrize(
+        ("size", "limit"),
+        [
+            (Size.TINY, Size.MEDIUM),
+            (Size.SMALL, Size.MEDIUM),
+            (Size.MEDIUM, Size.MEDIUM),
+            (Size.TINY, Size.GARGANTUAN),
+            (Size.GARGANTUAN, Size.GARGANTUAN),
+        ],
+    )
+    def test_a_size_at_or_below_the_limit_fits(self, size: Size, limit: Size) -> None:
+        assert fits_within(size, limit)
+
+    @pytest.mark.parametrize(
+        ("size", "limit"),
+        [
+            (Size.LARGE, Size.MEDIUM),
+            (Size.HUGE, Size.MEDIUM),
+            (Size.GARGANTUAN, Size.MEDIUM),
+            (Size.GARGANTUAN, Size.TINY),
+            (Size.SMALL, Size.TINY),
+        ],
+    )
+    def test_a_size_above_the_limit_does_not_fit(self, size: Size, limit: Size) -> None:
+        assert not fits_within(size, limit)
+
+    def test_the_comparison_is_not_the_string_comparison(self) -> None:
+        # The guard against someone "simplifying" fits_within to ``size <= limit``:
+        # as strings that expression is True here, and the rule says otherwise.
+        assert "large" <= "medium"
+        assert not fits_within(Size.LARGE, Size.MEDIUM)
 
 
 class TestConditionInteractions:

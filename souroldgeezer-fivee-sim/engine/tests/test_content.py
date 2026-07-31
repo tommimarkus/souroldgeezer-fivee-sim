@@ -37,6 +37,7 @@ from fivee_sim.content import (
 from fivee_sim.kernel.actions import compute_attack_advantage
 from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect
 from fivee_sim.kernel.dice import Advantage
+from fivee_sim.kernel.rules import Size
 from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.mcp_server import server as api
 from fivee_sim.model.creature import Creature
@@ -634,6 +635,77 @@ class TestAttackRiderValidation:
         assert option.on_hit_save_ability is Ability.CONSTITUTION
         assert option.on_hit_save_dc == 11
         assert option.on_hit_expiry is RiderExpiry.START_OF_ATTACKER_NEXT_TURN
+
+
+class TestCreatureSizeSchema:
+    """``size`` on a creature and ``on_hit_max_size`` on its attack.
+
+    Both are closed enums, unlike ``conditions`` and ``terrain``: ``SECTIONS``
+    lets a pack *define* those two and nothing else, so a size can be referenced
+    but never invented. These pin that a pack goes through the same enum path
+    every other closed taxonomy uses.
+    """
+
+    def creature_pack(self, tmp_path: Path, **record: Any) -> Path:
+        payload = {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10, "provenance": "test", **record,
+            }],
+        }
+        return write_pack(tmp_path, "sizes.json", payload)
+
+    def test_a_declared_size_reaches_the_creature(self, tmp_path: Path) -> None:
+        path = self.creature_pack(tmp_path, size="large")
+        registry = load_packs([path], include_environment=False)
+        thing = make_creature("Thing", registry=registry)
+        assert thing.size is Size.LARGE
+
+    def test_an_omitted_size_defaults_to_medium(self, tmp_path: Path) -> None:
+        # Every bundled record predates this field; the default is what keeps
+        # them, and any pack written before it, loading unchanged.
+        path = self.creature_pack(tmp_path)
+        registry = load_packs([path], include_environment=False)
+        assert make_creature("Thing", registry=registry).size is Size.MEDIUM
+
+    def test_an_unknown_size_is_refused_by_name(self, tmp_path: Path) -> None:
+        path = self.creature_pack(tmp_path, size="colossal")
+        found = problems(validate([path], include_environment=False))
+        assert found == [
+            "'colossal' is not valid; must be one of: "
+            "tiny, small, medium, large, huge, gargantuan"
+        ], found
+
+    def test_an_unknown_size_blames_the_size_key(self, tmp_path: Path) -> None:
+        path = self.creature_pack(tmp_path, size="colossal")
+        assert fields(validate([path], include_environment=False)) == ["size"]
+
+    def test_a_riders_size_gate_reaches_the_attack_option(self, tmp_path: Path) -> None:
+        path = self.creature_pack(tmp_path, attacks=[{
+            "name": "Bite", "attack_bonus": 4, "damage": "1d6", "damage_type": "piercing",
+            "on_hit_condition": "prone", "on_hit_max_size": "medium",
+        }])
+        registry = load_packs([path], include_environment=False)
+        bite = make_creature("Thing", registry=registry).attacks[0]
+        assert bite.on_hit_max_size is Size.MEDIUM
+
+    def test_a_rider_without_a_gate_leaves_it_unset(self, tmp_path: Path) -> None:
+        path = self.creature_pack(tmp_path, attacks=[{
+            "name": "Bite", "attack_bonus": 4, "damage": "1d6", "damage_type": "piercing",
+            "on_hit_condition": "prone",
+        }])
+        registry = load_packs([path], include_environment=False)
+        assert make_creature("Thing", registry=registry).attacks[0].on_hit_max_size is None
+
+    def test_a_size_gate_with_no_condition_to_ride_is_refused(self, tmp_path: Path) -> None:
+        # Same pairing rule the other rider keys follow: a gate on nothing is a
+        # record whose author meant something the engine cannot guess.
+        path = self.creature_pack(tmp_path, attacks=[{
+            "name": "Bite", "attack_bonus": 4, "damage": "1d6", "damage_type": "piercing",
+            "on_hit_max_size": "medium",
+        }])
+        found = problems(validate([path], include_environment=False))
+        assert any("there is no condition to ride the hit" in p for p in found), found
 
 
 class TestConstructionSeam:

@@ -25,7 +25,7 @@ import pytest
 from fivee_sim.content import load_packs, make_creature
 from fivee_sim.kernel.actions import RiderExpiry, resolve_attack
 from fivee_sim.kernel.dice import Advantage, Dice
-from fivee_sim.kernel.rules import Ability, DamageType
+from fivee_sim.kernel.rules import Ability, DamageType, Size
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
     EVENT_KINDS,
@@ -47,6 +47,7 @@ def bite(
     condition: str = "poisoned",
     save_dc: int | None = None,
     expiry: RiderExpiry = RiderExpiry.START_OF_ATTACKER_NEXT_TURN,
+    max_size: Size | None = None,
 ) -> AttackOption:
     return AttackOption(
         name="Bite",
@@ -57,6 +58,7 @@ def bite(
         on_hit_save_ability=Ability.CONSTITUTION if save_dc is not None else None,
         on_hit_save_dc=save_dc or 0,
         on_hit_expiry=expiry,
+        on_hit_max_size=max_size,
         provenance=FIXTURE,
     )
 
@@ -69,6 +71,7 @@ def creature(
     attacks: tuple[AttackOption, ...] = (),
     conditions: set[str] | None = None,
     max_hp: int = 60,
+    size: Size = Size.MEDIUM,
 ) -> Creature:
     return Creature(
         name=name,
@@ -79,6 +82,7 @@ def creature(
         attacks=attacks,
         conditions=conditions or set(),
         position=position,
+        size=size,
         provenance=FIXTURE,
     )
 
@@ -232,6 +236,77 @@ class TestOnHitConditionRiders:
         assert reaction.data["hit"], "the seed must land the reaction hit"
         assert "poisoned" in runner.conditions
         assert any(event.kind == "effect_apply" for event in events)
+
+
+class TestSizeGatedRiders:
+    """A rider the stat block gates on target size — SRD 5.2's Wolf.
+
+    "If the target is a Medium or smaller creature, it has the Prone condition."
+    The pair of a refused case and an applied case is the point: a test that only
+    asserts the Large target stays upright passes just as well against a rider
+    that was deleted outright, and a test that only asserts the Medium target
+    falls passes against a gate that never fires.
+    """
+
+    def test_a_gated_rider_is_refused_against_a_larger_target(self) -> None:
+        attacker = creature(
+            "Wolf", team="monsters", attacks=(bite(condition="prone", max_size=Size.MEDIUM),)
+        )
+        target = creature("Ogre", team="party", position=5, size=Size.LARGE)
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        events = bite_and_advance_to_target(encounter, rng, "Wolf", "Ogre")
+        assert "prone" not in target.conditions
+        assert target.hp < target.max_hp, "the bite must still deal its damage"
+        refused = next(event for event in events if event.kind == "effect_apply")
+        assert refused.data["applied"] is False
+        assert refused.data["condition"] == "prone"
+        assert "large" in refused.detail
+
+    def test_the_same_rider_lands_on_a_target_at_the_limit(self) -> None:
+        attacker = creature(
+            "Wolf", team="monsters", attacks=(bite(condition="prone", max_size=Size.MEDIUM),)
+        )
+        target = creature("Thora", team="party", position=5, size=Size.MEDIUM)
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        events = bite_and_advance_to_target(encounter, rng, "Wolf", "Thora")
+        assert "prone" in target.conditions
+        applied = next(event for event in events if event.kind == "effect_apply")
+        assert applied.data["applied"] is True
+
+    def test_the_gate_admits_a_target_below_the_limit(self) -> None:
+        attacker = creature(
+            "Wolf", team="monsters", attacks=(bite(condition="prone", max_size=Size.MEDIUM),)
+        )
+        target = creature("Snik", team="party", position=5, size=Size.SMALL)
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        bite_and_advance_to_target(encounter, rng, "Wolf", "Snik")
+        assert "prone" in target.conditions
+
+    def test_an_ungated_rider_ignores_size_entirely(self) -> None:
+        # The default path every other rider in this file takes: no gate, so a
+        # Gargantuan target is as susceptible as any other.
+        attacker = creature("Centipede", team="monsters", attacks=(bite(),))
+        target = creature("Thora", team="party", position=5, size=Size.GARGANTUAN)
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        bite_and_advance_to_target(encounter, rng, "Centipede", "Thora")
+        assert "poisoned" in target.conditions
+
+    def test_the_gate_holds_on_the_opportunity_attack_path(self) -> None:
+        # The reaction reaches the rider through the same choke point; if it did
+        # not, this is where a second, ungated copy would show itself.
+        attacker = creature(
+            "Wolf", team="monsters", attacks=(bite(condition="prone", max_size=Size.MEDIUM),)
+        )
+        runner = creature("Ogre", team="party", position=5, size=Size.LARGE)
+        encounter, rng = build_encounter([attacker, runner], seed=3)
+        for _ in range(4):
+            if encounter.current_name == "Ogre":
+                break
+            encounter.advance(rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=30), rng)
+        reaction = next(event for event in events if event.kind == "opportunity_attack")
+        assert reaction.data["hit"], "the seed must land the reaction hit"
+        assert "prone" not in runner.conditions
 
 
 class TestTimedExpiry:

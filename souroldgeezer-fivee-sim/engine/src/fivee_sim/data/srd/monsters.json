@@ -12,6 +12,7 @@
       "max_hp": 10,
       "hit_dice": "3d6",
       "speed": 30,
+      "size": "small",
       "abilities": {
         "strength": 8,
         "dexterity": 15,
@@ -53,6 +54,7 @@
       "max_hp": 21,
       "hit_dice": "6d6",
       "speed": 30,
+      "size": "small",
       "abilities": {
         "strength": 10,
         "dexterity": 15,
@@ -96,6 +98,7 @@
       "max_hp": 11,
       "hit_dice": "2d8+2",
       "speed": 40,
+      "size": "medium",
       "abilities": {
         "strength": 14,
         "dexterity": 15,
@@ -113,13 +116,11 @@
           "damage_type": "piercing",
           "kind": "melee",
           "reach": 5,
-          "on_hit_condition": "prone"
+          "on_hit_condition": "prone",
+          "on_hit_max_size": "medium"
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Bite's Prone rider ignores the printed size gate: the SRD applies it only to a Medium or smaller target, and this engine does not model creature size"
-      ]
+      "provenance": "SRD 5.2"
     },
     {
       "name": "Zombie",
@@ -128,6 +129,7 @@
       "max_hp": 15,
       "hit_dice": "2d8+6",
       "speed": 20,
+      "size": "medium",
       "abilities": {
         "strength": 13,
         "dexterity": 6,
@@ -163,6 +165,7 @@
       "max_hp": 13,
       "hit_dice": "2d8+4",
       "speed": 30,
+      "size": "medium",
       "abilities": {
         "strength": 10,
         "dexterity": 16,
@@ -204,6 +207,7 @@
       "max_hp": 68,
       "hit_dice": "8d10+24",
       "speed": 40,
+      "size": "large",
       "abilities": {
         "strength": 19,
         "dexterity": 8,

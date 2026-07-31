@@ -57,7 +57,7 @@ from .kernel.actions import AttackKind, RiderExpiry
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect, ConditionTable
 from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
 from .kernel.items import ItemEffect, ItemError
-from .kernel.rules import Ability, DamageType
+from .kernel.rules import Ability, DamageType, Size
 from .kernel.spells import Spell, SpellShape
 from .model.creature import Creature
 
@@ -98,7 +98,7 @@ SECTIONS = ("creatures", "spells", "conditions", "terrain", "items")
 _PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
 _COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
-    "team", "ac", "max_hp", "hit_dice", "speed", "abilities", "save_bonuses",
+    "team", "ac", "max_hp", "hit_dice", "speed", "size", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
@@ -107,7 +107,7 @@ _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
     "long_range", "bonus_damage", "bonus_damage_type", "advantage_bonus_damage",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
-    "provenance",
+    "on_hit_max_size", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "save_ability", "damage", "damage_type",
@@ -299,6 +299,7 @@ def _parse_creature(
     reader.integer("ac", required=True, minimum=0)
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
+    reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
     reader.boolean("pack_tactics")
     reader.boolean("undead_fortitude")
@@ -365,8 +366,11 @@ def _parse_creature(
         sub.enum("on_hit_save_ability", Ability)
         sub.integer("on_hit_save_dc", minimum=1)
         sub.enum("on_hit_expiry", RiderExpiry)
+        sub.enum("on_hit_max_size", Size)
         if attack.get("on_hit_condition") is None:
-            for dependent in ("on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry"):
+            for dependent in (
+                "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry", "on_hit_max_size",
+            ):
                 if attack.get(dependent) is not None:
                     sub.fail(
                         dependent,

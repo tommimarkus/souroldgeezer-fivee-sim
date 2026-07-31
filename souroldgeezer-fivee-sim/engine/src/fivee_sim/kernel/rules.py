@@ -42,6 +42,47 @@ class DamageType(StrEnum):
     THUNDER = "thunder"
 
 
+class Size(StrEnum):
+    """A creature's size category, declared smallest to largest.
+
+    Closed, unlike :class:`~fivee_sim.kernel.conditions.Condition`, and the
+    difference is structural rather than a judgement call: ``content.SECTIONS``
+    names the taxonomies a pack may add members to — creatures, spells,
+    conditions, terrain, items — and size is not among them. A pack references a
+    size; it cannot invent one. That makes this a closed enum like
+    :class:`DamageType`, and the members are safe to compare by identity.
+
+    Declaration order *is* the rules order, so ``list(Size)`` runs Tiny to
+    Gargantuan and :func:`fits_within` reads its ranks from it.
+
+    Provenance: SRD 5.2 Creature Size and Space.
+    """
+
+    TINY = "tiny"
+    SMALL = "small"
+    MEDIUM = "medium"
+    LARGE = "large"
+    HUGE = "huge"
+    GARGANTUAN = "gargantuan"
+
+
+#: Rank by declaration order. Private because callers want the comparison, not
+#: the number: a rank leaking into a record or an event would be a second, weaker
+#: spelling of the size itself.
+_SIZE_RANK: dict[Size, int] = {size: rank for rank, size in enumerate(Size)}
+
+
+def fits_within(size: Size, limit: Size) -> bool:
+    """Whether ``size`` is ``limit`` or smaller — the "Medium or smaller" test.
+
+    Not ``size <= limit``. These are ``StrEnum`` members, so that expression is a
+    *string* comparison, which sorts alphabetically: it calls Large smaller than
+    Medium and Small larger than Tiny, wrong at both ends of the range a stat
+    block actually gates on.
+    """
+    return _SIZE_RANK[size] <= _SIZE_RANK[limit]
+
+
 def ability_modifier(score: int) -> int:
     """Ability modifier for a score, floor-dividing so 9 gives -1 rather than 0."""
     return (score - 10) // 2

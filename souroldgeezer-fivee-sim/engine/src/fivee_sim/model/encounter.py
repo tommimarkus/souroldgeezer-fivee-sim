@@ -64,7 +64,14 @@ from ..kernel.grid import (
 )
 from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
-from ..kernel.rules import Ability, D20Test, DamageType, concentration_dc, make_d20_test
+from ..kernel.rules import (
+    Ability,
+    D20Test,
+    DamageType,
+    concentration_dc,
+    fits_within,
+    make_d20_test,
+)
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
 from .battlemap import GROUND_LEVEL, BattleMap, MapFeature, MapPlane, MapState, SquareClaim
 from .creature import AttackOption, Creature
@@ -2284,10 +2291,30 @@ class Encounter:
         target's own advantage and auto-fail circumstances, exactly as an item's
         save is. The timed forms register their anchor here; :meth:`advance`
         fires them when the pointer reaches that turn boundary.
+
+        A size gate is checked *before* the save, and the order is load-bearing
+        twice over: a save the gate has already made moot must not be rolled,
+        because rolling it would consume the stream and move every later roll in
+        the fight; and the refusal is emitted rather than silent, because "why am
+        I still standing" is exactly the question the log exists to answer.
+
+        Both call sites — the attack action and the opportunity attack — reach
+        the rider through here, so the gate covers the reaction without a second
+        copy. ``tests/test_riders.py::TestSizeGatedRiders`` pins that.
         """
         condition = option.on_hit_condition
         assert condition is not None
         if not target.conscious:
+            return
+        if option.on_hit_max_size is not None and not fits_within(
+            target.size, option.on_hit_max_size
+        ):
+            self._emit(
+                "effect_apply", actor.name, target.name,
+                f"{option.name}: {target.name} is {target.size} and the rider "
+                f"reaches {option.on_hit_max_size} or smaller",
+                attack=option.name, condition=condition, applied=False, saved=None,
+            )
             return
         save: D20Test | None = None
         if option.on_hit_save_ability is not None:

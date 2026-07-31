@@ -54,6 +54,22 @@ class TestReportContents:
         for subject in ("Classes", "backgrounds", "potions", "flanking", "multiclassing"):
             assert subject in report, f"{subject!r} not addressed in the report"
 
+    def test_a_size_gated_rider_says_what_it_is_gated_on(self) -> None:
+        # "on hit: prone" alone would describe the Wolf's Bite as unconditional,
+        # which is the reading the record carried before the gate existed. The
+        # report's whole job is to not say that.
+        report = render_markdown()
+        wolf_row = next(line for line in report.splitlines() if line.startswith("| Wolf "))
+        assert "on hit: prone" in wolf_row
+        assert "medium or smaller" in wolf_row.lower(), wolf_row
+
+    def test_an_ungated_rider_claims_no_size_limit(self) -> None:
+        # The negative half: every other bundled rider is unconditional, and the
+        # renderer must not decorate one that has no gate.
+        report = render_markdown()
+        zombie_row = next(line for line in report.splitlines() if line.startswith("| Zombie "))
+        assert "or smaller" not in zombie_row, zombie_row
+
     def test_a_spell_without_damage_does_not_claim_half_on_save(self) -> None:
         report = render_markdown()
         hold_person_row = next(
