@@ -29,7 +29,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from random import Random
@@ -56,6 +56,7 @@ from ..kernel.mapgen import (
     generate_overland,
 )
 from ..map_document import (
+    DEFAULT_LEGEND,
     FORMAT,
     FORMAT_VERSION,
     GROUND_LEVEL,
@@ -74,6 +75,7 @@ from ..map_document import (
     to_grid,
     validate_document,
 )
+from ..model.battlemap import MapPlane, SquareClaim
 from ..validation import Diagnostic, Severity
 from .common import sha256_of
 from .errors import MapEditError
@@ -981,6 +983,67 @@ def apply_edits(
     )
 
 
+# --- what the fixtures make of a square -------------------------------------
+@dataclass(frozen=True, slots=True)
+class _ResolvedLevel:
+    """One storey's squares as a given set of open fixtures leaves them.
+
+    The single reader-side answer to "given a plane and which fixtures stand
+    open, what is each square": :func:`query` asks it of the states the document
+    authored, :func:`render_ascii` of the states a fight is in, and they share
+    this so the two cannot answer differently. The claims come from
+    :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, whose own docstring
+    names deriving them twice as how answers drift, and
+    ``Encounter._adopt_map`` builds the live index from that same call.
+
+    The exactly-one-fixture-per-square rule is what makes the index total: with
+    no precedence to settle there is no document order to consult and no history
+    to replay, so a reader cannot disagree with a fight about a square.
+
+    These mirror ``Encounter``'s composers (``_terrain_at``, ``_elevation_at``)
+    minus the encounter-only parts — nobody occupies anything here. A claim
+    missing a pair falls through as an unclaimed square does: a fixture that
+    only moves a water level leaves the ground it finds, and one that only
+    floods a room leaves the height it finds.
+    """
+
+    plane: MapPlane
+    claims: Mapping[Square, SquareClaim]
+    open_features: frozenset[str]
+
+    @classmethod
+    def of(cls, plane: MapPlane, open_features: Collection[str]) -> _ResolvedLevel:
+        """The plane resolved through the fixtures named open.
+
+        Names the plane has no fixture for are ignored rather than refused: a
+        fight's set spans every storey, and which floor a fixture stands on is
+        not this level's business.
+        """
+        return cls(
+            plane=plane,
+            claims={
+                square: claim
+                for feature in plane.features.values()
+                for square, claim in feature.claims()
+            },
+            open_features=frozenset(open_features),
+        )
+
+    def terrain_at(self, square: Square) -> str:
+        claim = self.claims.get(square)
+        if claim is not None and claim.terrain is not None:
+            pair = claim.terrain
+            return pair.open if claim.feature in self.open_features else pair.closed
+        return self.plane.terrain.get(square, self.plane.default_terrain)
+
+    def height_at(self, square: Square) -> int:
+        claim = self.claims.get(square)
+        if claim is not None and claim.elevation is not None:
+            feet = claim.elevation
+            return feet.open if claim.feature in self.open_features else feet.closed
+        return self.plane.elevation.get(square, self.plane.default_elevation)
+
+
 # --- rendering --------------------------------------------------------------
 def _majority(counts: Mapping[str, int], order_of: Mapping[str, int]) -> str:
     """The most common kind; ties go to the kind first named in the legend."""
@@ -1022,6 +1085,88 @@ def _feature_glyph(kind: str, state: str | None) -> str | None:
     return None
 
 
+#: Characters a render may borrow, in order, for a terrain kind that a fixture
+#: puts on the map and neither the document's legend nor :data:`DEFAULT_LEGEND`
+#: gives a free glyph. Punctuation only, and none of it reserved: an adapter's
+#: combatant marks are letters, so a borrowed glyph can never be read as a token.
+SPARE_GLYPHS = "=&$*!?:;,'()[]{}|-_"
+
+#: :data:`DEFAULT_LEGEND` the way a render asks it — kind to glyph. The format's
+#: own legend names each kind once, so the reversal is lossless.
+_FORMAT_GLYPH_OF: Mapping[str, str] = {
+    kind: glyph for glyph, kind in DEFAULT_LEGEND.items()
+}
+
+
+def _kind_glyphs(
+    document: MapDocument,
+    live: _ResolvedLevel | None,
+    taken: Collection[str],
+) -> tuple[dict[str, str], dict[str, int]]:
+    """A glyph and a tie-break rank for every terrain kind a render can draw.
+
+    The document's legend, reversed, comes first and always wins: a kind the map
+    is already read in keeps the glyph it is read in. That covers every square
+    when no fixture state is in force, which is why ``live is None`` returns here.
+
+    A fixture's terrain kinds are resolved against **loaded content, not this
+    document's legend** — the documented rule, the same one ``set_palette``
+    follows — so an override may name a kind the legend has no glyph for. Two
+    further tiers keep the render honest rather than silently drawing the
+    authored tile, which is the one thing ``open`` exists to stop:
+
+    1. the glyph :data:`DEFAULT_LEGEND` gives that kind, when the document has
+       not spent that character on something else — so a flood reads as ``~``
+       the way it does on every generated map;
+    2. otherwise the next free :data:`SPARE_GLYPHS` character.
+
+    Either way the result's ``legend`` names what it landed on, like every other
+    glyph, so nothing is undecodable and no sixth reserved glyph is invented:
+    :data:`RESERVED_GLYPHS` is closed, a legend claiming one is a validation
+    error, and widening it would retroactively invalidate documents that legend
+    that character today. ``taken`` is whatever else the render will draw —
+    the caller's token marks — because a borrowed glyph that collides with one
+    is a square the reader cannot resolve.
+
+    A map that has left no character free is refused with the remedy. Refusing
+    every such render instead would be worse: the terrain kinds are legal, the
+    fight is running on them, and the render is how anyone sees it.
+    """
+    glyph_of: dict[str, str] = {}
+    order_of: dict[str, int] = {}
+    for position, (glyph, kind) in enumerate(document.legend.items()):
+        if kind not in glyph_of:
+            glyph_of[kind] = glyph
+            order_of[kind] = position
+    if live is None:
+        return glyph_of, order_of
+
+    wanted = sorted({live.terrain_at(square) for square in live.claims} - set(glyph_of))
+    spent = set(document.legend) | set(RESERVED_GLYPHS) | set(taken)
+    for kind in wanted:
+        preferred = _FORMAT_GLYPH_OF.get(kind)
+        if preferred is not None and preferred not in spent:
+            glyph_of[kind] = preferred
+            spent.add(preferred)
+    spare = (glyph for glyph in SPARE_GLYPHS if glyph not in spent)
+    # Ranked after every legend kind, so a downsampled tie still falls to what
+    # the document itself names first.
+    for position, kind in enumerate(wanted, start=len(document.legend)):
+        order_of[kind] = position
+        if kind in glyph_of:
+            continue
+        borrowed = next(spare, None)
+        if borrowed is None:
+            raise ValueError(
+                f"a fixture puts {kind!r} on this map and there is no free glyph "
+                f"left to draw it with: this document's legend already spends "
+                f"every character a render may borrow. Give {kind!r} a glyph of "
+                f"its own with set_legend"
+            )
+        glyph_of[kind] = borrowed
+    return glyph_of, order_of
+
+
 def _level_or_refuse(document: MapDocument, level: int) -> MapLevel:
     """The named storey, or a refusal listing the ones the map has."""
     if level not in document.levels:
@@ -1042,6 +1187,7 @@ def render_ascii(
     show_elevation: bool = False,
     level: int = GROUND_LEVEL,
     tokens: Mapping[Square, str] | None = None,
+    open: Collection[str] | None = None,
 ) -> dict[str, Any]:
     """Rows of glyphs for a viewport of the document, through its own legend.
 
@@ -1063,6 +1209,26 @@ def render_ascii(
     lowest ground in view upward through :data:`HEIGHT_GLYPHS`, so the picture
     reads as a contour; a downsampled block takes its block's majority height,
     ties to the lower ground.
+
+    ``open`` names the fixtures standing open — a fight's live set, straight
+    from ``fight.map_state.open_features``. Given one, all three channels
+    resolve through it rather than through the file: terrain and ground height
+    come from what those fixtures claim (:class:`_ResolvedLevel`, shared with
+    :func:`query`), and a fixture's glyph is the state it is *in* rather than
+    the state it was authored in. So a sluice a fight has opened floods the room
+    its overlay governs, drops that room's ground, and draws ``/``.
+
+    Left ``None`` nothing resolves and the render is the map exactly as
+    authored, byte for byte as it always was. ``None`` and an empty collection
+    are different answers: ``[]`` says every fixture is shut, and shuts one the
+    document authored open.
+
+    One consequence worth expecting: ``legend`` reports what the *terrain* layer
+    resolved, as it always has, so a door's own square contributes
+    ``door-closed`` even though the ``+`` covering it is what the reader sees.
+    That entry is true — under the glyph the square really is impassable rather
+    than the floor the tiles record — and it is the same square ``show_features``
+    turned off would show.
     """
     plane = _level_or_refuse(document, level)
     map_w, map_h = document.grid.width, document.grid.height
@@ -1086,12 +1252,13 @@ def render_ascii(
             f"smaller viewport (x, y, width, height) or raise downsample"
         )
 
-    glyph_of: dict[str, str] = {}
-    order_of: dict[str, int] = {}
-    for position, (glyph, kind) in enumerate(document.legend.items()):
-        if kind not in glyph_of:
-            glyph_of[kind] = glyph
-            order_of[kind] = position
+    marks = dict(tokens or {})
+    open_names = None if open is None else frozenset(open)
+    live = (
+        None if open_names is None
+        else _ResolvedLevel.of(to_grid(document).levels[level], open_names)
+    )
+    glyph_of, order_of = _kind_glyphs(document, live, marks.values())
 
     rows: list[list[str]] = []
     used: dict[str, str] = {}
@@ -1109,10 +1276,16 @@ def render_ascii(
             for yy in range(y0, y1):
                 tile_row = plane.tiles[yy]
                 for xx in range(x0, x1):
-                    kind = document.legend[tile_row[xx]]
+                    if live is None:
+                        kind = document.legend[tile_row[xx]]
+                    else:
+                        kind = live.terrain_at((xx, yy))
                     counts[kind] = counts.get(kind, 0) + 1
                     if show_elevation:
-                        feet = plane.elevation.at((xx, yy))
+                        feet = (
+                            plane.elevation.at((xx, yy)) if live is None
+                            else live.height_at((xx, yy))
+                        )
                         feet_counts[feet] = feet_counts.get(feet, 0) + 1
             best = _majority(counts, order_of)
             glyph = glyph_of[best]
@@ -1133,7 +1306,12 @@ def render_ascii(
         in_view.append(feature_payload(feature))
         if not show_features:
             continue
-        glyph_over = _feature_glyph(feature.kind, feature.state)
+        # A fixture draws the state it is *in*; one carrying no state has none to
+        # be in, and stays the annotation the document drew.
+        state = feature.state
+        if open_names is not None and state is not None:
+            state = "open" if feature.id in open_names else "closed"
+        glyph_over = _feature_glyph(feature.kind, state)
         if glyph_over is None:
             continue
         cell = ((fx - x) // downsample, (fy - y) // downsample)
@@ -1142,7 +1320,6 @@ def render_ascii(
         feature_cells.add(cell)
         rows[cell[1]][cell[0]] = glyph_over
 
-    marks = dict(tokens or {})
     token_cells: set[tuple[int, int]] = set()
     for square in sorted(marks):
         sx, sy = square
@@ -1223,63 +1400,40 @@ def query(
 
     battle = to_grid(document)
     plane = battle.levels[level]
-    # Every square a fixture governs, asked of the fixture rather than derived
-    # again here — ``MapFeature.claims`` is the one answer to that question, and
-    # ``Encounter._adopt_map`` builds its live index from the same call. The
-    # exactly-one-fixture-per-square rule is what makes this total: with no
-    # precedence to settle there is no document order to consult and no history
-    # to replay, so this reader cannot disagree with a fight about a square.
-    claims = {
-        square: claim
-        for feature in plane.features.values()
-        for square, claim in feature.claims()
-    }
-    standing_open = {
-        name for name, feature in plane.features.items() if feature.initially_open
-    }
-
-    # These mirror Encounter's composers (_terrain_at, _elevation_at, _opaque),
-    # minus the encounter-only parts: a fixture stands in the state the document
-    # authored rather than one a MapState overlay has moved since, and nobody
-    # occupies anything. A claim missing a pair falls through as an unclaimed
-    # square does — a fixture that only moves a water level leaves the ground it
-    # finds, and one that only floods a room leaves the height it finds.
-    def terrain_at(square: Square) -> str:
-        claim = claims.get(square)
-        if claim is not None and claim.terrain is not None:
-            pair = claim.terrain
-            return pair.open if claim.feature in standing_open else pair.closed
-        return plane.terrain.get(square, plane.default_terrain)
+    # A fixture stands in the state the document authored rather than one a
+    # MapState overlay has moved since, because there is no fight in progress to
+    # have moved it — the one difference from what render_ascii asks of the same
+    # derivation. Everything below then mirrors Encounter's composers
+    # (_terrain_at, _elevation_at, _opaque) minus the occupancy.
+    live = _ResolvedLevel.of(
+        plane,
+        [name for name, feature in plane.features.items() if feature.initially_open],
+    )
 
     def on_map(square: Square) -> bool:
         return 0 <= square[0] < map_w and 0 <= square[1] < map_h
-
-    def height_at(square: Square) -> int:
-        claim = claims.get(square)
-        if claim is not None and claim.elevation is not None:
-            feet = claim.elevation
-            return feet.open if claim.feature in standing_open else feet.closed
-        return plane.elevation.get(square, plane.default_elevation)
 
     def step_cost(origin: Square, step_to: Square, doubled_diagonal: bool) -> int | None:
         if not on_map(step_to):
             return None
         return step_cost_feet(
-            terrain_effect_of(terrain_at(step_to), terrain),
-            height_at(step_to) - height_at(origin),
+            terrain_effect_of(live.terrain_at(step_to), terrain),
+            live.height_at(step_to) - live.height_at(origin),
             doubled_diagonal=doubled_diagonal,
         )
 
     def opaque(square: Square) -> bool:
-        return on_map(square) and terrain_effect_of(terrain_at(square), terrain).opaque
+        return on_map(square) and terrain_effect_of(
+            live.terrain_at(square), terrain
+        ).opaque
 
     if kind == "line_of_sight":
         result["line_of_sight"] = has_line_of_sight(frm, to, opaque=opaque)
         return result
 
     path = find_path(frm, to, step_cost=step_cost, rule=rule, bounds=(map_w, map_h))
-    result["from_elevation"] = height_at(frm)
-    result["to_elevation"] = height_at(to)
+    result["from_elevation"] = live.height_at(frm)
+    result["to_elevation"] = live.height_at(to)
     if path is None:
         result["reachable"] = False
         return result

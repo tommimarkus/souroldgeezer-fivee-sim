@@ -1429,6 +1429,13 @@ def map_render(
     and downed ones as ``x`` — positions come from that encounter's state, so
     render after acting, not before.
 
+    ``encounter_id`` also shows the map *that fight is on* rather than the map
+    as authored: a fixture the fight has opened draws open, floods whatever its
+    overlay governs, and drops that ground with it. A terrain kind a fixture
+    introduces that the document's legend has no glyph for borrows one, and
+    ``legend`` names what it borrowed like any other glyph. Without an
+    ``encounter_id`` the render is the file on disk, fixtures included.
+
     ``show_elevation`` adds ``elevation_rows`` and ``elevation_legend`` beside
     the terrain rows: one glyph per square, lettered from the lowest ground in
     view upward, with the legend giving each its height in feet.
@@ -1436,15 +1443,23 @@ def map_render(
     session = _map_session(map_id)
     tokens: dict[Square, str] = {}
     letters: dict[str, str] = {}
+    open_features: list[str] | None = None
     if encounter_id is not None:
         tokens, letters = _encounter_tokens(session.document, encounter_id)
+        # The fight's live fixture states. A mapless fight has none, and a fight
+        # on some other map contributes names this document simply does not
+        # have — the same leniency the token overlay already takes with a
+        # position that lands off the map.
+        map_state = _session(encounter_id).encounter.map_state
+        if map_state is not None:
+            open_features = sorted(map_state.open_features)
     try:
         rendered = _map_service.render_ascii(
             session.document,
             x=x, y=y, width=width, height=height,
             downsample=downsample, show_features=show_features,
             show_elevation=show_elevation, level=level,
-            tokens=tokens or None,
+            tokens=tokens or None, open=open_features,
         )
     except ValueError as error:
         raise ToolError(str(error)) from error

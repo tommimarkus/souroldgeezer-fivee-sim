@@ -17,6 +17,7 @@ import pytest
 
 from fivee_sim.kernel.grid import TERRAIN, Square
 from fivee_sim.map_document import (
+    RESERVED_GLYPHS,
     MapColor,
     MapDocument,
     MapError,
@@ -1021,6 +1022,148 @@ class TestRenderAscii:
     def test_a_bad_downsample_is_refused(self) -> None:
         with pytest.raises(ValueError, match="downsample"):
             service.render_ascii(document(), downsample=0)
+
+
+class TestRenderFixtureStates:
+    """``render_ascii(open=…)``: the map a fight is on, not the map as authored.
+
+    Every assertion here is about one document rendered twice, because the whole
+    point is that nothing in the file changes: the sluice map's tiles are floor
+    on both sides of the gate, and only the gate's own record says the far room
+    floods. A render that reads tiles alone cannot tell the two apart.
+    """
+
+    def legended(self, state: str = "closed") -> MapDocument:
+        """The sluice map, drawing water with a glyph of the document's choosing.
+
+        Deliberately not ``~``: that is the glyph the format's default legend
+        gives water, so a render that reached for it anyway would still pass a
+        document that spends its own.
+        """
+        raw = sluice_payload()
+        raw["features"][0]["state"] = state
+        raw["legend"] = {**raw["legend"], "w": "water"}
+        return parse_document(raw, source="sluice", terrain=TERRAIN)
+
+    def trapdoor(self, state: str = "closed") -> MapDocument:
+        """A fixture whose only overlay is the ground dropping out from under it."""
+        raw = sluice_payload()
+        raw["features"][0] = {
+            "id": "trapdoor", "kind": "hatch", "at": [3, 2], "state": state,
+            "affects": [
+                {"cells": [[4, 2], [5, 2]], "elevation": {"closed": 0, "open": -10}}
+            ],
+        }
+        return parse_document(raw, source="trapdoor", terrain=TERRAIN)
+
+    def test_a_render_naming_no_fixture_is_the_map_exactly_as_authored(self) -> None:
+        # The pin on the default: every channel below resolves through fixture
+        # state, and a caller that names none must see the render it saw before,
+        # glyph for glyph and legend entry for legend entry.
+        rendered = service.render_ascii(sluiced(), show_elevation=True)
+        assert rendered["rows"] == [
+            "#######", "#..#..#", "#..+..#", "#..#..#", "#.....#", "#######",
+        ]
+        assert rendered["legend"] == {"#": "wall", ".": "floor"}
+        assert rendered["elevation_rows"] == ["0000000"] * 6
+        assert rendered["elevation_legend"] == {"0": 0}
+        assert [entry["id"] for entry in rendered["features_in_view"]] == ["sluice gate"]
+
+    def test_naming_a_fixture_open_floods_the_room_and_flips_its_glyph(self) -> None:
+        rendered = service.render_ascii(self.legended(), open=["sluice gate"])
+        assert rendered["rows"] == [
+            "#######", "#..#ww#", "#../ww#", "#..#ww#", "#.....#", "#######",
+        ]
+        assert rendered["legend"]["w"] == "water"
+
+    def test_an_empty_set_shuts_a_fixture_the_document_authored_open(self) -> None:
+        # `open=[]` is a set, not an absence: it says every fixture is shut. A
+        # truthiness test here would read it as "nothing given" and hand back the
+        # authored open gate, which is the state the fight has just left.
+        rendered = service.render_ascii(self.legended("open"), open=[])
+        assert rendered["rows"][1] == "#..#..#"
+        assert rendered["rows"][2] == "#..+..#"
+
+    def test_a_fixtures_own_square_resolves_through_the_state_it_is_given(self) -> None:
+        # Under show_features the reserved glyph covers the gate's square either
+        # way, so the terrain layer is only visible with the overlay off — and it
+        # has to move too, or a downsampled block votes on the authored tile.
+        shut = service.render_ascii(self.legended(), open=[], show_features=False)
+        ajar = service.render_ascii(self.legended(), open=["sluice gate"],
+                                    show_features=False)
+        assert shut["rows"][2] == "#..=..#"
+        assert ajar["rows"][2] == "#..=ww#"
+        assert shut["legend"]["="] == "door-closed"
+        assert ajar["legend"]["="] == "door-open"
+
+    def test_an_overlay_that_only_moves_the_ground_moves_only_the_contour(
+        self,
+    ) -> None:
+        shut = service.render_ascii(self.trapdoor(), open=[], show_elevation=True)
+        dropped = service.render_ascii(
+            self.trapdoor(), open=["trapdoor"], show_elevation=True
+        )
+        assert dropped["rows"] == shut["rows"][:2] + ["#../..#"] + shut["rows"][3:]
+        assert shut["elevation_rows"] == ["0000000"] * 6
+        assert dropped["elevation_rows"] == [
+            "1111111", "1111111", "1111001", "1111111", "1111111", "1111111",
+        ]
+        assert dropped["elevation_legend"] == {"0": -10, "1": 0}
+
+    def test_a_kind_the_document_legends_keeps_the_documents_own_glyph(self) -> None:
+        # The first tier, and the one that keeps a render readable: this document
+        # draws water as 'w', so the flood does too rather than borrowing.
+        rendered = service.render_ascii(self.legended(), open=["sluice gate"])
+        assert "~" not in "".join(rendered["rows"])
+        assert rendered["legend"]["w"] == "water"
+
+    def test_a_kind_with_no_glyph_borrows_the_formats_before_a_spare(self) -> None:
+        # sluiced() legends floor, wall and difficult and nothing else, so both
+        # of the kinds its gate introduces need a glyph. Water has one in the
+        # format's default legend and this document leaves it free, so the flood
+        # reads as it does on every generated map; door-open has none anywhere
+        # and falls to the first spare.
+        rendered = service.render_ascii(sluiced(), open=["sluice gate"])
+        assert rendered["rows"][1] == "#..#~~#"
+        assert rendered["legend"]["~"] == "water"
+        assert rendered["legend"][service.SPARE_GLYPHS[0]] == "door-open"
+
+    def test_a_borrowed_glyph_is_never_reserved_and_never_the_documents(self) -> None:
+        rendered = service.render_ascii(sluiced(), open=["sluice gate"])
+        borrowed = set(rendered["legend"]) - set(sluiced().legend)
+        assert borrowed == {"~", service.SPARE_GLYPHS[0]}
+        assert not (borrowed & RESERVED_GLYPHS)
+
+    def test_a_map_with_no_character_left_to_borrow_is_refused(self) -> None:
+        raw = sluice_payload()
+        crowded = {**raw["legend"], "~": "floor"}
+        crowded.update({glyph: "floor" for glyph in service.SPARE_GLYPHS})
+        raw["legend"] = crowded
+        with pytest.raises(ValueError, match="no free glyph left.*set_legend"):
+            service.render_ascii(
+                parse_document(raw, source="crowded", terrain=TERRAIN),
+                open=["sluice gate"],
+            )
+
+    def test_a_name_no_fixture_here_answers_to_is_ignored(self) -> None:
+        # `open` is a fight's whole set and fixture names are unique map-wide, so
+        # a ground-floor render is routinely handed names belonging upstairs.
+        # Refusing them would make an ordinary multi-storey fight unrenderable.
+        rendered = service.render_ascii(sluiced(), open=["hatch on the gallery"])
+        assert rendered["rows"][1] == "#..#..#"
+        assert rendered["rows"][2] == "#..+..#"
+
+    def test_the_flood_survives_downsampling_as_a_majority(self) -> None:
+        # Proof the terrain layer moved rather than one cell being overdrawn:
+        # the third block of the middle row holds no feature glyph at all and
+        # still votes itself water, four squares to nothing.
+        rendered = service.render_ascii(
+            self.legended(), open=["sluice gate"], downsample=2
+        )
+        assert rendered["rows"] == ["####", "#/w#", "####"]
+        assert service.render_ascii(
+            self.legended(), open=[], downsample=2
+        )["rows"] == ["####", "#+.#", "####"]
 
 
 class TestQuery:
