@@ -302,6 +302,21 @@ the one selected, and the canvas draws it. The control is disabled on a map
 with no storeys. Undo, save, and resize carry the whole document, so editing
 the gallery never costs the ground below it.
 
+**Stack** prints the other storeys *through* the one being edited, so a floor
+can be laid out against its neighbours instead of by memory — where the stair
+head above lands, whether a shaft lines up, which walls disagree. Each ghosted
+floor is washed in its own terrain colors, the nearer storey more strongly than
+the one beyond it, and its doors, stairs and spawns are marked with the glyphs
+the format reserves (`+` `<` `>` `@`) once the zoom can carry them. It reaches
+two storeys either way, because past that the washes stop reading as a building;
+a floor outside that reach is named as **not drawn** in the Storeys key beside
+the map, which also lists what *is* ghosted and how strongly. Where a basement
+and a gallery are equally far, the upper one prints over the lower.
+
+The stack is a view and nothing more: it is off by default, every tool still
+paints the selected storey alone, and a map saved with it on is byte-identical
+to the same map saved with it off.
+
 **Terrain color.** Each legend row's swatch is a color picker: change it and
 that terrain kind is colored in the document itself, for this map everywhere it
 is drawn — every storey included, since one palette serves the document as one
