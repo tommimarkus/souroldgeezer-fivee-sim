@@ -523,9 +523,12 @@ if (typeof FiveeRenderer === "undefined") {
     }));
   }
   function restoreSession() {
-    var stored = readSession();
-    if (!stored) { return false; }
     try {
+      /* Inside the try, not before it: readSession guards its own access, but
+         a boot that dies here would take the serverless editor with it, so the
+         call site does not depend on that guard staying correct. */
+      var stored = readSession();
+      if (!stored) { return false; }
       var state = JSON.parse(stored);
       /* The fields loadDocument dereferences. A payload missing one is not a
          document this editor can open, whatever else it holds. */

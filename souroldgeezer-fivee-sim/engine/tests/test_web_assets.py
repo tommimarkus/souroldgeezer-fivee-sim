@@ -183,11 +183,13 @@ class TestSessionRestore:
         # to "what is open".
         assert read("editor.html").count('"fivee-editor-open-map-v1"') == 1
 
-    def test_every_storage_access_sits_in_the_guarded_helpers(self) -> None:
+    def test_every_storage_access_sits_behind_a_guard(self) -> None:
         # The page also runs from file://, where a browser may refuse storage
         # outright, and the serverless mode has to keep working. So storage is
-        # reached only through the two try/catch helpers — an access that
-        # escaped them would throw on boot and take the editor with it.
+        # reached only through the two helpers, and in each one the `try` opens
+        # *before* the access — counting two try blocks in the region would not
+        # say that, and a bare access ahead of the guard throws on boot and
+        # takes the whole editor with it.
         # Counted with the dot, which is what an access looks like — the bare
         # word also appears in the prose explaining why the guard is there.
         source = read("editor.html")
@@ -195,15 +197,22 @@ class TestSessionRestore:
             source.index("function readSession") : source.index("function rememberSession")
         ]
         assert source.count("sessionStorage.") == accessors.count("sessionStorage.")
-        assert accessors.count("try {") == 2
+        for helper in ("function readSession", "function writeSession"):
+            body = source[source.index(helper) :]
+            body = body[: body.index("\n  }\n")]
+            assert body.index("try {") < body.index("sessionStorage."), helper
 
     def test_the_editor_restores_before_the_ping_reports_status(self) -> None:
         # /ping answers asynchronously and calls setStatus, so the restore has
         # to run first *and* the handler has to stand down when it did —
         # either half alone leaves the "reopened" line silently overwritten.
+        # Anchored on the call site, not on `restoreSession()` alone: that
+        # substring also matches the function's own declaration, which always
+        # precedes /ping, so the comparison could never have failed.
         source = read("editor.html")
-        assert "var restored = restoreSession();" in source
-        assert source.index("restoreSession()") < source.index('request("GET", "/ping")')
+        call = "var restored = restoreSession();"
+        assert call in source
+        assert source.index(call) < source.index('request("GET", "/ping")')
         assert "response.json.ok && !restored" in source
 
     def test_the_editor_persists_the_open_map_when_the_page_goes_away(self) -> None:
