@@ -25,8 +25,9 @@ can use, because a floor blocks what is above and below it anyway.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 from types import MappingProxyType
 
 from ..kernel.grid import Square
@@ -37,12 +38,14 @@ __all__ = [
     "BattleMap",
     "FeatureCheck",
     "FeatureOverlay",
+    "FeatureTrigger",
     "HeightPair",
     "MapFeature",
     "MapPlane",
     "MapState",
     "SquareClaim",
     "TerrainPair",
+    "TriggerMode",
 ]
 
 #: The level every fight starts on, and the only one a map without storeys has.
@@ -97,6 +100,29 @@ class FeatureCheck:
     dc: int
 
 
+class TriggerMode(StrEnum):
+    """When an active fixture predicate applies its configured state."""
+
+    EDGE = "edge"
+    MAINTAINED = "maintained"
+
+
+@dataclass(frozen=True, slots=True)
+class FeatureTrigger:
+    """A target-local AND predicate over fixture states.
+
+    ``when`` is sorted by fixture name at the document boundary. A tuple keeps
+    the runtime definition immutable and makes linked-door equality structural.
+    """
+
+    when: tuple[tuple[str, bool], ...]
+    set_open: bool
+    mode: TriggerMode
+
+    def active(self, open_features: Collection[str]) -> bool:
+        return all((name in open_features) is expected for name, expected in self.when)
+
+
 @dataclass(frozen=True, slots=True)
 class SquareClaim:
     """What one square is, in either state, and which fixture decides it."""
@@ -132,6 +158,7 @@ class MapFeature:
     elevation: HeightPair | None = None
     affects: tuple[FeatureOverlay, ...] = ()
     requires: tuple[str, ...] = ()
+    trigger: FeatureTrigger | None = None
     costs_action: bool = False
     check: FeatureCheck | None = None
     linked_to: str | None = None

@@ -1514,6 +1514,9 @@ def encounter_state(encounter_id: str) -> dict[str, Any]:
     Each combatant's ``position`` is ``[x, y]`` in feet on the plane. For a
     fight created from a ``map_id``, ``map_source`` reports the map generation
     it captured and whether the live map has been edited since (``stale``).
+    A map fixture reports its live state and optional trigger definition; an
+    automatic transition is an ordinary interact event with an empty actor,
+    ``automatic: true``, and ``triggered_by``.
     """
     session = _session(encounter_id)
     state = session.encounter.state()
@@ -1625,7 +1628,9 @@ def _execute_encounter_act(
     prerequisites that must stand open first, may cost the action rather than
     the free interaction, and may take an ability check; a fixture that reaches
     past its own square changes that ground the moment it moves, under whoever
-    is standing on it;
+    is standing on it. A fixture trigger may move other fixtures automatically;
+    maintained triggers refuse contrary manual interactions before spending,
+    and automatic transitions bypass the target's reach, cost, and check;
     ``stand`` takes nothing and gets a Prone creature up, spending half its Speed
     from this turn's movement and no action. A position —
     ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
@@ -2417,7 +2422,10 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
 
     The ``feature`` both feature ops take is {id, kind, at, orientation?,
     hinge?, swing?, state?, linked_to?, team?, to_level?} plus, for a fixture,
-    terrain, elevation, affects, requires, costs_action and check. A door's
+    terrain, elevation, affects, requires, trigger, costs_action and check. A
+    trigger is {when: {fixture_id: open|closed, ...}, set: open|closed,
+    mode: edge|maintained}; its predicate is AND and dependencies must be
+    acyclic. A door's
     hinge and swing use the cardinal directions valid for its orientation.
     ``linked_to`` must name one reciprocal adjacent door with the same state and
     interaction contract; toggling either leaf toggles both. ``to_level`` makes the feature a

@@ -756,8 +756,8 @@ function replayBundle(openList) {
       { kind: "turn_start", round: 1, turn: "Hero", actor: "Hero", data: {} },
       { kind: "interact", round: 1, turn: "Hero", actor: "Hero",
         data: { feature: "sluice", open: false } },
-      { kind: "interact", round: 1, turn: "Hero", actor: "Hero",
-        data: { feature: "sluice", open: true } },
+      { kind: "interact", round: 1, turn: "Hero", actor: "",
+        data: { feature: "sluice", open: true, automatic: true, triggered_by: "lever" } },
     ],
   };
 }
@@ -1298,6 +1298,7 @@ const SLUICE_MAP = {
         { cells: [[6, 4]], terrain: { closed: "difficult", open: "wall" } },
       ],
       requires: ["lever"],
+      trigger: { when: { lever: "open" }, set: "open", mode: "edge" },
       costs_action: true,
       check: { ability: "strength", dc: 15 },
     },
@@ -1609,6 +1610,7 @@ await suite("editor.html: the inspector", "the page sandbox in makePage()", asyn
     "id: sluice", "kind: door", "at: [4,3]", "orientation: horizontal",
     "state: closed", "terrain: wall → water", "elevation: 0 → -5 ft",
     "affects: 2 group(s), 4 square(s)", "requires: lever",
+    "trigger: edge → open when lever=open",
     "costs_action: yes", "check: strength DC 15",
   ].join("\n");
   const info = select(4, 3);
@@ -1791,6 +1793,20 @@ await suite("editor.html: the resize dialog", "the page sandbox in makePage()", 
     JSON.stringify(refused) === JSON.stringify(RESIZE_MAP),
     "the document moved under a refusal");
 
+  const triggered = copy(RESIZE_MAP);
+  delete featureNamed(triggered, "gate").requires;
+  featureNamed(triggered, "gate").trigger = {
+    when: { spike: "open" }, set: "open", mode: "maintained",
+  };
+  const triggerRefused = await resize(triggered, 3, 3, "bottom-right");
+  check("dropping a trigger dependency is refused, naming both ends",
+    page.element("status").textContent.indexOf("trigger that observes it") !== -1
+      && page.element("status").textContent.indexOf("spike") !== -1,
+    show(page.element("status").textContent));
+  check("and a trigger-dependency refusal changes nothing",
+    JSON.stringify(triggerRefused) === JSON.stringify(triggered),
+    "the trigger document moved under a refusal");
+
   /* 4. A linked door pair is another indivisible reference: keeping one leaf
    *    while cropping its mate would leave a document that cannot be loaded. */
   const linked = copy(LINKED_DOOR_MAP);
@@ -1815,6 +1831,8 @@ await suite("editor.html: the resize dialog", "the page sandbox in makePage()", 
     ["cells that are not an array", (d) => { d.features[1].affects = [{ cells: "1,2" }]; }],
     ["string coordinates", (d) => { d.features[1].affects = [{ cells: [["5", 3]] }]; }],
     ["requires as a bare string", (d) => { d.features[1].requires = "spike"; }],
+    ["trigger when as a bare string",
+      (d) => { d.features[1].trigger = { when: "spike", set: "open", mode: "edge" }; }],
     ["a malformed overlay on a storey, not the ground",
       (d) => { d.levels[0].features[0].affects = [{ cells: [[1]] }]; }],
     ["a __proto__ key on a feature record", (d) => {

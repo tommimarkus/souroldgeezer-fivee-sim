@@ -103,10 +103,10 @@ the common case of one — see **Fixtures** below.
 Two doors may form one double door by naming each other with reciprocal
 `linked_to` fields. The leaves must be adjacent along their common orientation,
 on the same level, authored in the same state, and carry the same `requires`,
-`costs_action`, and `check`. A link is exactly one pair, never a chain. Operating
-either leaf makes one check, spends at most one action or interaction, and moves
-both leaves together; their hinge, swing, terrain, elevation, and overlay
-effects remain individual. For example:
+`trigger`, `costs_action`, and `check`. A link is exactly one pair, never a
+chain. Operating either leaf makes one check, spends at most one action or
+interaction, and moves both leaves together; their hinge, swing, terrain,
+elevation, and overlay effects remain individual. For example:
 
 ```json
 { "id": "west leaf", "kind": "door", "at": [4, 3],
@@ -128,7 +128,7 @@ whole test. A door has always had one; a lever, a spike, or a sluice gate may
 have one too. A feature without a state — a drawn stairway, a spawn hint —
 stays document-level exactly as before: renderers and placement logic read it,
 and a fight never asks about it. A state is `open` or `closed` and nothing else:
-fixtures are two-valued, and the file records the one it is authored in. Six
+fixtures are two-valued, and the file records the one it is authored in. Seven
 optional keys say what operating a fixture does and what it costs, and every one
 of them requires a `state`, because a fixture nothing can operate would flip
 nothing, silently:
@@ -139,6 +139,7 @@ nothing, silently:
 | `elevation` | `{"closed", "open"}` ground height in feet for that same square. Absent: the plane's height, unmoved. |
 | `affects` | Overlay groups, each naming the `cells` it governs plus a `terrain` pair, an `elevation` pair, or both. Cells are squares on the fixture's own level. |
 | `requires` | Ids of other fixtures that must stand **open** before this one may be opened. |
+| `trigger` | Target-local automation: `{"when": {fixture-id: "open"|"closed", ...}, "set": "open"|"closed", "mode": "edge"|"maintained"}`. |
 | `costs_action` | `true` spends the action; absent is the free object interaction. |
 | `check` | `{"ability", "dc"}` — an ability check the operator must pass to move it. |
 
@@ -207,6 +208,35 @@ opened a gate could never shut it: driving the spikes back in would bar the
 gate's own lever. It is checked when the fixture is operated rather than held as
 an invariant, so re-driving a spike later does not slam the gate shut.
 
+### Fixture-state triggers
+
+A fixture may carry one target-local `trigger`. Its non-empty `when` object is
+an AND predicate over other fixtures' live `open` or `closed` states; `set`
+names the target's resulting state. Every referenced feature must exist and
+carry a state, trigger dependencies must be acyclic, and linked door leaves
+must carry identical triggers. If a trigger opens a fixture with `requires`,
+its predicate must include every requirement as `open`, so automation cannot
+bypass a physical prerequisite.
+
+`mode: "edge"` fires when its predicate changes from false to true, then rearms
+only after the predicate becomes false. A predicate already true when an
+encounter starts does not fire. `mode: "maintained"` forces the configured
+state while its predicate is true; a contrary manual interaction is refused
+before an action, interaction, or check is spent. When the predicate becomes
+false the target keeps its current state rather than reversing automatically.
+An initially true maintained trigger must agree with the fixture's authored
+state.
+
+After a successful direct interaction, the encounter drains resulting trigger
+chains in dependency order, using fixture id as the tie-breaker. Automatic
+transitions bypass the target's reach, cost, and check because no creature is
+operating it. Each is still an ordinary `interact` event after the event that
+caused it, with an empty actor and `automatic: true`, `triggered_by`, `feature`,
+and `open` in its data; linked leaves also retain `linked`. The usual
+`open_features` overlay and replay folding therefore remain the only live map
+state machinery. `map_query` stays a snapshot resolver: an explicitly supplied
+open-state set is authoritative and it never runs triggers.
+
 **The check is a raw ability check.** Creatures here carry ability modifiers and
 no skill proficiencies anywhere in the model — there is no Athletics, no
 proficiency bonus, no Expertise, and no Help — so **set the DC as if the
@@ -234,10 +264,11 @@ nothing.
 The refusals collect like every other diagnostic: an overlay group with neither
 pair, cells off the grid, a terrain kind nothing defines (naming what is
 available), a square claimed twice, a `requires` naming nothing, naming itself,
-or naming a feature with no state, a requirement cycle reported as its path, and
-a `dc` below 1.
+or naming a feature with no state, a requirement cycle reported as its path, a
+malformed trigger, a missing or stateless trigger reference, a trigger cycle,
+an inconsistent linked or maintained trigger, and a `dc` below 1.
 
-**`format_version` stays 1.** All six keys are omitted from a feature that does
+**`format_version` stays 1.** All seven keys are omitted from a feature that does
 not carry them, so a file written before fixtures existed writes back
 byte-for-byte. A reader that predates them refuses the document as an unknown
 key — the loud failure this format prefers over a map that loads with its sluice
@@ -407,9 +438,9 @@ keep a gate's `affects` must name the overlay again:
 
 Replacement is the choice because it makes the result a function of the call
 alone: a merge would depend on state the call never mentions, and there is no
-delete convention among the feature keys, so a fixture's `affects`, `requires`
-or `check` could never be cleared at all. The price is paid where it is
-cheapest to notice — every merge-shaped call omits `kind` or `at`, so every
+delete convention among the feature keys, so a fixture's `affects`, `requires`,
+`trigger`, or `check` could never be cleared at all. The price is paid where it
+is cheapest to notice — every merge-shaped call omits `kind` or `at`, so every
 merge-shaped call is refused, and the refusal says which semantics it got.
 `toggle_door` stays for the one-key case it was already good at: flipping a
 door's recorded state, by square, without restating anything. For a linked
@@ -528,10 +559,12 @@ never marks it dirty, and a save after previewing does not stamp the map
 preview carried across an open would draw the new map through the old one's
 fixtures. Selecting a fixture shows what it carries — its terrain and height
 pairs, how many squares it governs, what it requires, what it costs and what it
-rolls. Selecting a door also exposes orientation, hinge, opening side, and a
-linked-door selector. Only an adjacent compatible leaf is offered; linking
-writes both reciprocal records and assigns the outer hinges, while unlinking
-clears both records. Previewing either linked leaf previews both.
+rolls, and its authored trigger. Selecting a door also exposes orientation,
+hinge, opening side, and a linked-door selector. Only an adjacent compatible
+leaf is offered; linking writes both reciprocal records and assigns the outer
+hinges, while unlinking clears both records. Previewing either linked leaf
+previews both. The editor previews authored or selected live states but does not
+execute triggers; the encounter remains the owner of automation.
 
 The preview shows **terrain only**. The Heights overlay reads the storey's own
 height layer, so a fixture that drops a water level five feet recolors the room
@@ -604,7 +637,10 @@ sluice floods the rooms it governs and turns the wheel. Scrubbing back drains
 them again: the viewer rebuilds from the start of the fight rather than undoing,
 so any point in the log shows the ground as it was at that moment. A linked-door
 event carries the other leaf in `data.linked`; the viewer folds both into the
-same state at the same event. For v2 it also follows movement between storeys,
+same state at the same event. Replay map capture keeps fixture trigger
+definitions, and automatic transitions arrive as the same `interact` events
+with an empty actor, `automatic: true`, and `triggered_by`, so the viewer needs
+no separate trigger executor. For v2 it also follows movement between storeys,
 can pin a selected storey, applies authoritative checkpoints, shows full
 combatant resources and conditions, and
 places checks, notes, and refusals in the timestamped audit timeline.
