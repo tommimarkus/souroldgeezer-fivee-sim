@@ -288,6 +288,15 @@ Scope: new feature, build, or creative work. Exceptions (logged): trivial edits,
 hotfixes, spikes/throwaway, work a domain skill owns end to end. Opt out per
 task by saying "skip planning" (logged). Enforcement model.
 
+software-design: when work shapes code or module structure — a new module or
+layer, the kernel/model/content/MCP seams, dependency direction, coupling,
+ownership of state, principle/pattern tradeoffs, or non-functional targets —
+load the `souroldgeezer-design:software-design` skill (it pulls its python
+extension) and do the design or review under it before writing the code. Not
+needed for mechanical edits, SRD data pack records, or doc-only changes. It
+composes with the lines around it: plan first, design under the skill, then
+test-first implementation.
+
 tdd-policy: test-first — a failing test precedes implementation;
 RED→GREEN→REFACTOR; shipped behavior stays covered by a test that fails on
 regression. Scope `souroldgeezer-fivee-sim/engine/src/**` and `scripts/**`. Exceptions
@@ -297,10 +306,18 @@ on load and pinned by coverage regeneration. Enforcement model.
 
 release-policy: calver `YYYY.0M.build` (`2026.07.1`); the version source is the
 `version` field of `souroldgeezer-fivee-sim/.claude-plugin/plugin.json`, mirrored by the
-plugin table in [README.md](README.md); publication only through the
-`souroldgeezer-audit:ip-hygiene` release gate described under "Licence boundary"
-above. No git tags or provider releases exist yet — creating the first is an
-explicit decision, not routine release work.
+plugin table in [README.md](README.md), by `engine/pyproject.toml`, and by
+`fivee_sim.__version__` (PEP 440 strips the month's zero-padding in the Python
+pair; `engine/tests/test_version.py` pins all four to one number). Bumping is
+automatic and `main`-only: when integration lands plugin-surface changes
+(`souroldgeezer-fivee-sim/**`) on `main`, bump the source and every mirror directly on
+`main` after the repo's documented verification; a new month restarts the build
+at `.1`, and a commit that only aligns or bumps version surfaces does not
+re-bump. Worktrees and feature branches never touch the version — parallel
+agents bumping before integration is how versions collide. Publication only
+through the `souroldgeezer-audit:ip-hygiene` release gate described under
+"Licence boundary" above. No git tags or provider releases exist yet — creating
+the first is an explicit decision, not routine release work.
 
 Otherwise mirrors the sibling `souroldgeezer` marketplace at `../skills`:
 `plugin.json` carrying `name`, `version`, `description`, `author`, `license`;
