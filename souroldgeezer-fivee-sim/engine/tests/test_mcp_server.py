@@ -634,6 +634,79 @@ class TestMapLevelAdapters:
         assert api.map_render(map_id, level=1)["rows"][0] == "##..."
         assert api.map_render(map_id)["rows"][0] == "..#.."
 
+    # --- the summary describes the map, not the floor of it ----------------
+    def test_the_summary_counts_the_terrain_of_every_storey(self) -> None:
+        """The ground is 17 floor and 3 wall; the gallery is 20 of floor."""
+        summary = api.map_load(document=storeyed_document())["summary"]
+        assert summary["terrain_counts"] == {"floor": 37, "wall": 3}
+
+    def test_the_summary_counts_the_fixtures_of_every_storey(self) -> None:
+        """A stair is two records — a foot downstairs and a head upstairs."""
+        summary = api.map_load(document=storeyed_document())["summary"]
+        assert summary["features"] == 2
+
+    def test_the_summary_elevation_spans_the_storeys_and_names_no_shared_datum(
+        self,
+    ) -> None:
+        """The gallery sits 10 ft up, so the map's ground runs 0 to 10.
+
+        ``default`` is a plane's datum and these two do not share one, so
+        the document-wide answer is ``None`` and the two live in ``by_level``.
+        """
+        summary = api.map_load(document=storeyed_document())["summary"]
+        assert summary["elevation"] == {
+            "default": None, "min": 0, "max": 10, "raised_squares": 0,
+        }
+
+    def test_the_summary_still_breaks_out_one_storey_at_a_time(self) -> None:
+        summary = api.map_load(document=storeyed_document())["summary"]
+        assert [level["index"] for level in summary["by_level"]] == [0, 1]
+        ground, gallery = summary["by_level"]
+        assert (ground["name"], gallery["name"]) == ("ground", "gallery")
+        assert ground["terrain_counts"] == {"floor": 17, "wall": 3}
+        assert gallery["terrain_counts"] == {"floor": 20}
+        assert (ground["features"], gallery["features"]) == (1, 1)
+        assert gallery["elevation"] == {
+            "default": 10, "min": 10, "max": 10, "raised_squares": 0,
+        }
+
+    def test_an_edit_on_a_storey_moves_the_summary_it_reports(self) -> None:
+        """Two squares of the gallery turn to wall, and the summary says so.
+
+        Reading the ground alias returned the untouched ground counts here.
+        """
+        map_id = self.load()
+        result = api.map_edit(map_id, [
+            {"op": "set_terrain", "rect": [0, 0, 2, 1], "terrain": "wall", "level": 1},
+        ])
+        assert result["summary"]["terrain_counts"] == {"floor": 35, "wall": 5}
+        assert result["summary"]["by_level"][1]["terrain_counts"] == {
+            "floor": 18, "wall": 2,
+        }
+
+    # --- the edit render draws the storey the edit touched -----------------
+    def test_an_edit_on_a_storey_renders_that_storey(self) -> None:
+        map_id = self.load()
+        result = api.map_edit(map_id, [
+            {"op": "set_terrain", "rect": [0, 0, 2, 1], "terrain": "wall", "level": 1},
+        ])
+        assert result["render"]["level"] == 1
+        assert result["render"]["rows"][0] == "##..."
+
+    def test_an_edit_on_the_ground_still_renders_the_ground(self) -> None:
+        map_id = self.load()
+        result = api.map_edit(map_id, [
+            {"op": "paint", "cells": [[0, 0]], "terrain": "wall"},
+        ])
+        assert result["render"]["level"] == 0
+        assert result["render"]["rows"][0] == "#.#.."
+
+    def test_an_edit_that_changes_no_square_renders_the_ground(self) -> None:
+        map_id = self.load()
+        result = api.map_edit(map_id, [{"op": "set_name", "name": "renamed"}])
+        assert result["render"]["level"] == 0
+        assert result["render"]["rows"][0] == "..#.."
+
     def test_a_level_the_map_lacks_is_refused_over_the_wire(self) -> None:
         map_id = self.load()
         with pytest.raises(api.ToolError, match="no level 4"):
@@ -829,6 +902,33 @@ class TestMapAdapters:
         assert result["summary"]["terrain_counts"] == counts
         assert result["render"]["rows"] == map_service.render_ascii(expected)["rows"]
 
+    def wide_map(self) -> str:
+        """A 100x50 floor: 5000 squares, past the inline render budget."""
+        payload = map_document()
+        payload["name"] = "wide floor"
+        payload["grid"] = {"width": 100, "height": 50, "cell_feet": 5}
+        payload["tiles"] = ["." * 100] * 50
+        return str(api.map_load(document=payload)["map_id"])
+
+    def test_an_edit_render_boxes_the_squares_an_elevation_op_raised(self) -> None:
+        """A raised square is a changed square, so the box must hold it.
+
+        Height contributed no cells to the bounding box, so an edit that
+        moved nothing else fell through to rendering all 5000 squares.
+        """
+        result = api.map_edit(self.wide_map(), [
+            {"op": "set_elevation", "rect": [40, 20, 2, 2], "feet": 15},
+        ])
+        assert result["render"]["viewport"] == {
+            "x": 40, "y": 20, "width": 2, "height": 2, "downsample": 1,
+        }
+
+    def test_an_edit_render_still_shows_the_whole_map_when_nothing_changed(self) -> None:
+        result = api.map_edit(self.wide_map(), [{"op": "set_name", "name": "renamed"}])
+        assert result["render"]["viewport"] == {
+            "x": 0, "y": 0, "width": 100, "height": 50, "downsample": 1,
+        }
+
     def test_map_query_answers_distance_sight_and_path(self) -> None:
         map_id = self.load()
         distance = api.map_query(map_id, "distance", frm=[0, 1], to=[4, 1])
@@ -990,6 +1090,18 @@ class TestEncountersOnLoadedMaps:
         rendered = api.map_render(map_id, encounter_id=encounter_id, show_elevation=True)
         assert rendered["elevation_rows"][0] == "11100"
         assert rendered["elevation_legend"] == {"0": -5, "1": 0}
+
+    def test_the_flood_moves_the_ground_the_state_block_reports(self) -> None:
+        """The fight's own payload cannot say the gate is open and the floor is not."""
+        _, encounter_id = self.sluice_fight()
+        assert api.encounter_state(encounter_id)["map"]["elevation"]["min"] == 0
+
+        advance_to_thora(encounter_id)
+        acted = api.encounter_act(encounter_id, kind="interact", feature="sluice")
+
+        elevation = acted["state"]["map"]["elevation"]
+        assert (elevation["min"], elevation["max"]) == (-5, 0)
+        assert elevation["flat"] is False
 
     def test_the_same_map_without_an_encounter_stays_as_authored(self) -> None:
         # The flood belongs to the fight, not to the document: map_render with no

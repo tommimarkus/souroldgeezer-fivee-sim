@@ -2567,6 +2567,119 @@ class TestMapFixtures:
         assert gate["requires"] == ["north spike", "south spike"]
         assert "blocked_by" not in gate
 
+    # --- what the state block says about the ground ------------------------
+    def test_the_map_elevation_summary_falls_with_the_flood(self) -> None:
+        """One payload cannot be half live: ``features[…].open`` already is.
+
+        The creature standing in the flooded room reports −5 through
+        ``_creature_state``; a block reading the authored plane alone would
+        say in the same breath that the map's lowest ground is 0.
+        """
+        encounter, rng = self.fight()
+        assert encounter.state()["map"]["elevation"]["flat"] is True
+
+        self.open_the_sluice(encounter, rng)
+
+        elevation = encounter.state()["map"]["elevation"]
+        assert (elevation["min"], elevation["max"]) == (-5, 0)
+        assert elevation["flat"] is False
+        assert self.elevation_of(encounter, "Wader") == elevation["min"]
+
+    def test_a_claim_decides_a_square_the_plane_never_raised(self) -> None:
+        """A claimed square never falls back, so it covers the plane too.
+
+        The file raises three of the four squares; the gate decides the
+        fourth in both its states, so nothing is left to read the default.
+        0 ft, which no square stands at, must stay out of the range.
+        """
+        gate = MapFeature(
+            name="floodgate",
+            square=(1, 0),
+            initially_open=True,
+            elevation=HeightPair(closed=20, open=15),
+        )
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(0, 5))],
+            Random(1),
+            battle_map=strip(
+                2, 2, elevation={(0, 0): 10, (0, 1): 10, (1, 1): 10}, features=(gate,)
+            ),
+        )
+        elevation = encounter.state()["map"]["elevation"]
+        assert (elevation["default"], elevation["min"], elevation["max"]) == (0, 10, 15)
+
+    def test_a_claim_does_not_let_the_default_back_into_a_covered_plane(self) -> None:
+        """The ``covered`` shortcut has to survive a claim moving a height.
+
+        Every square is raised to 10 by the file and the gate lowers its own
+        to 5, so the map's range is 5 to 10. The default of 0 is still what
+        no square falls back to.
+        """
+        gate = MapFeature(
+            name="floodgate",
+            square=(2, 0),
+            initially_open=True,
+            elevation=HeightPair(closed=10, open=5),
+        )
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(5, 0))],
+            Random(1),
+            battle_map=strip(
+                3,
+                elevation={(0, 0): 10, (1, 0): 10, (2, 0): 10},
+                features=(gate,),
+            ),
+        )
+        elevation = encounter.state()["map"]["elevation"]
+        assert (elevation["default"], elevation["min"], elevation["max"]) == (0, 5, 10)
+        assert elevation["flat"] is False
+
+    def test_a_claim_moves_only_its_own_storeys_summary(self) -> None:
+        """``_feature_squares`` is keyed by ``(level, square)``, and read so.
+
+        The gate is on the ground, and the gallery over it is untouched by
+        it. A summary that matched on the square alone would drag −5 upstairs.
+        """
+        gate = MapFeature(
+            name="floodgate",
+            square=(2, 0),
+            initially_open=True,
+            affects=(
+                FeatureOverlay(
+                    squares=((0, 0),), elevation=HeightPair(closed=0, open=-5)
+                ),
+            ),
+        )
+        battle_map = BattleMap(
+            name="flooded tower",
+            width=4,
+            height=1,
+            levels=MappingProxyType(
+                {
+                    0: MapPlane(
+                        default_terrain="floor",
+                        features={gate.name: gate},
+                        connectors={(1, 0): 1},
+                    ),
+                    1: MapPlane(
+                        default_terrain="floor",
+                        default_elevation=10,
+                        connectors={(1, 0): 0},
+                    ),
+                }
+            ),
+            provenance=FIXTURE,
+        )
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))],
+            Random(1),
+            battle_map=battle_map,
+        )
+        ground, gallery = encounter.state()["map"]["levels"]
+        assert (ground["elevation"]["min"], ground["elevation"]["max"]) == (-5, 0)
+        assert (gallery["elevation"]["min"], gallery["elevation"]["max"]) == (10, 10)
+        assert gallery["elevation"]["flat"] is True
+
 
 class TestSpellcasting:
     def test_casting_spends_a_slot_of_the_chosen_level(self) -> None:

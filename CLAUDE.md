@@ -266,12 +266,35 @@ can pass a table.
 **Every tool reports its seed.** A tool called without one picks a seed and
 returns it, so no result is ever irreproducible.
 
-**The browser assets are checked as text, not driven.** `editor.html`,
-`viewer.html`, and `renderer.js` ship to users, but `tests/test_web_assets.py`
-asserts over their source — injection slots, balanced tags, and the offline
-guarantee — and nothing ever executes them. A renderer defect ships green. That
-is deliberate for a localhost single-user tool, and the reasoning is recorded in
-that file's docstring; treat it as a known boundary rather than an oversight.
+**The browser assets are checked in two halves, and the split is the point.**
+This paragraph used to read "checked as text, not driven … a renderer defect
+ships green. That is deliberate." That posture is reversed, and it was reversed
+for cause: during the fixtures work it let three real `editor.html` defects
+through, one of them a document-corruption path where a malformed `affects`
+array threw mid-resize — after `snapshot()`, after earlier planes had been
+rewritten — leaving a half-resized document that `btn-download` writes to disk
+without the server ever validating it.
+
+So `editor.html`, `viewer.html` and `renderer.js` are now checked twice, and
+each half owns one kind of claim. **Text contracts stay in
+`tests/test_web_assets.py`**: injection slots, balanced tags, the offline
+guarantee — properties of the source, asserted as source. **Behaviour lives in
+`scripts/check-editor-behaviour.mjs`**, outside pytest. It reads the shipped
+assets — never a copy — runs `renderer.js` in a `node:vm` context, runs each
+page's own inline script in that context against a stub DOM, and then drops a
+document on the page and clicks its buttons. The assertions read what the fake
+canvas was painted and what the Download button would have written, so the
+resize corruption above is now a named failing case rather than a defect nobody
+can see.
+
+**What neither half covers, stated because it is invisible from a green run.**
+There is no browser anywhere in this. No DOM layout, no CSS, no real canvas, no
+pixels, no `file://`, no network, no event ordering a real page would impose —
+the script drives stubs this repo defines. It can tell you what a page
+*decided*; it cannot tell you what a page *looks like*. That is still a
+boundary. It is a much narrower one than "nothing ever executes them", and it is
+the one to keep in mind when a case here passes and the editor still looks
+wrong.
 
 **An error-branch test names the refusal, not just its status.** A status code or
 an exception type alone does not identify a branch: when nine
@@ -298,7 +321,26 @@ python3 scripts/check-mcp-handshake.py
 bash scripts/test-launcher-freshness.sh
 bash scripts/hooks/test-ip-hygiene-check.sh
 bash scripts/hooks/test-stop-audit-check.sh
+
+# The browser assets, driven rather than read. Needs node — see below.
+node scripts/check-editor-behaviour.mjs
 ```
+
+**`node` is a dependency of exactly one check.**
+`scripts/check-editor-behaviour.mjs` is the only thing in the repo that wants
+it: Node 20 or newer, builtins only, no `package.json` and no `npm install`.
+That constraint is the price of admission — a browser toolchain has no business
+in a Python repository, and the moment this check needs one it should be
+argued for rather than installed. **The Python suite is unaffected**: it neither
+imports nor spawns `node`, so an environment without it runs `ruff`, `mypy`,
+`pytest` and the handshake check exactly as before, and only this one command is
+unavailable. Run it after touching anything under
+`engine/src/fivee_sim/editor/static/`.
+
+It takes an optional static-directory argument, and that argument is its own
+self-check: copy the static directory somewhere scratch, delete a guard, and
+confirm the case that names the guard fails. Every other run reads the shipped
+path, because verifying a copy would verify nothing.
 
 **`docs/COVERAGE.md` is generated, never hand-edited.** Adding a creature, spell,
 condition, or action means regenerating it; `tests/test_coverage.py` fails
