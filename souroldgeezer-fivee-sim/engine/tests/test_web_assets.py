@@ -154,6 +154,24 @@ class TestEditorGroundControls:
         assert read("editor.html").count('id="elev-legend"') == 1
         assert read("editor.html").count('id="btn-heights-values"') == 1
 
+    def test_the_editor_shows_the_running_version_persistently(self) -> None:
+        # Exactly once for the byId() reason above. Anchored to the slot and
+        # to the write into it, because a slot nothing fills is a blank
+        # corner of the footer rather than a visible failure — and the
+        # version was previously announced only in a status line that the
+        # next message overwrote.
+        source = read("editor.html")
+        assert source.count('id="version-note"') == 1
+        assert 'byId("version-note").textContent' in source
+
+    def test_the_version_shown_comes_from_the_serving_engine(self) -> None:
+        # Read off the injected launch config, not a literal in the page: the
+        # page is a static asset that no release step rewrites, so a hardcoded
+        # version would be wrong the moment it shipped.
+        source = read("editor.html")
+        assert "CONFIG.version" in source
+        assert not re.search(r'version-note"\)\.textContent\s*=\s*"[0-9]', source)
+
     def test_the_relief_overlay_draws_the_movement_thresholds(self) -> None:
         # The step edges are keyed to what the engine charges for the step,
         # not to arbitrary prettiness: over 5 feet is climbed, 2 feet and up

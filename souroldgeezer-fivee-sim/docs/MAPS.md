@@ -241,6 +241,17 @@ Two ways to start it, one server either way:
 - **CLI**: `fivee-sim-editor [--maps-dir DIR] [--port N]` from the engine's
   environment, for development.
 
+**Which engine you are looking at.** The footer's right corner names the
+serving engine's version, and keeps naming it — the status line beside it is
+for the last thing that happened. It arrives in the injected launch
+configuration rather than over `/api/ping`, so it is on screen before any
+request finishes; a page opened from disk has no server to have been told by,
+and says nothing there rather than guessing. This is the cheapest way to see
+that an install is serving the engine you think it is — the failure recorded
+under "A venv also outlives the engine it was built from" in
+[CLAUDE.md](../../CLAUDE.md) reached users precisely because a stale engine
+looks identical to a fresh one from the outside.
+
 **Token model.** The server binds `127.0.0.1` only and mints a fresh token per
 launch. Every `/api/*` request must carry it in `X-Fivee-Editor-Token`; the
 token reaches the browser only by being injected into the served page, and it

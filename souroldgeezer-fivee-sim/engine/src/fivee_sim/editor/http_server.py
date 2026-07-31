@@ -411,9 +411,14 @@ class _Handler(BaseHTTPRequestHandler):
             encoding="utf-8"
         )
         if inject and CONFIG_MARKER in text:
+            # The version travels with the launch configuration rather than
+            # being fetched: it is a fact about this launch, it is wanted
+            # before any request completes, and the page is a static asset no
+            # release step rewrites, so being told is the only way it can know.
             config = (
                 f"window.__FIVEE_EDITOR__ = "
-                f'{{token: {json.dumps(self.editor.token)}, apiBase: "/api"}};'
+                f"{{token: {json.dumps(self.editor.token)}, apiBase: \"/api\", "
+                f"version: {json.dumps(__version__)}}};"
             )
             text = text.replace(CONFIG_MARKER, config)
         self._send_bytes(HTTPStatus.OK, text.encode("utf-8"), content_type)

@@ -110,11 +110,20 @@ header .spacer { flex: 1; }
 }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
+/* The scroll lives on the status, not the footer: a long refusal scrolls
+   inside its own column and the version stays pinned in the corner. */
 footer {
   border-top: 1px solid var(--edge); background: var(--panel);
-  padding: 4px 10px; max-height: 130px; overflow-y: auto;
+  padding: 4px 10px; display: flex; align-items: flex-start; gap: 12px;
 }
-#status { white-space: pre-wrap; font-family: ui-monospace, monospace; }
+#status {
+  flex: 1; min-width: 0; max-height: 130px; overflow-y: auto;
+  white-space: pre-wrap; font-family: ui-monospace, monospace;
+}
+#version-note {
+  flex: none; color: var(--muted); font-size: 12px;
+  font-family: ui-monospace, monospace; white-space: nowrap;
+}
 #status.error { color: var(--error); }
 #status.ok { color: var(--ok); }
 dialog {
@@ -206,7 +215,10 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <div id="readout">&#8212;</div>
   </aside>
 </div>
-<footer><div id="status">No map loaded. Open one, open a file, or generate.</div></footer>
+<footer>
+  <div id="status">No map loaded. Open one, open a file, or generate.</div>
+  <div id="version-note" title="the engine serving this page"></div>
+</footer>
 
 <dialog id="dlg-open">
   <h2>Open a map from the server</h2>
@@ -1749,6 +1761,13 @@ if (typeof FiveeRenderer === "undefined") {
   /* Before the mode branch: a restored document needs no API, so it comes back
      in the serverless mode too. Before /ping as well, whose answer arrives
      later and would otherwise overwrite the line reporting the reopened map. */
+  /* Stated once and left there, unlike the status line underneath it, which
+     the next message overwrites — and which skipped the version entirely
+     whenever a restored session had something better to say. Opened from
+     disk there is no server to have been told by, and the mode note beside
+     it already says so, so the corner stays empty rather than guessing. */
+  byId("version-note").textContent = CONFIG && CONFIG.version
+    ? "engine " + CONFIG.version : "";
   var restored = restoreSession();
   if (!CONFIG) {
     /* Opened from disk with no server behind it: editing, file open, and
@@ -1761,8 +1780,10 @@ if (typeof FiveeRenderer === "undefined") {
   } else {
     request("GET", "/ping").then(function (response) {
       if (response.json && response.json.ok && !restored) {
-        setStatus("editor server " + response.json.version + " · maps in "
-          + response.json.maps_dir);
+        /* The version is not repeated here: the footer's corner carries it
+           permanently now, and both come from the one __version__ in the one
+           process answering, so they could never disagree usefully. */
+        setStatus("maps in " + response.json.maps_dir);
       }
     });
   }
