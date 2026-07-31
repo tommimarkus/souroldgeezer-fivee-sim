@@ -138,7 +138,7 @@ class TestLookup:
             entry = api.lookup_rule(topic)
             assert entry["source"].startswith("bundled:"), entry["source"]
             assert entry["provenance"] == "SRD 5.2"
-            assert "unmodelled" in entry, "the skill tells Claude to check this field"
+            assert "unmodelled" in entry, "the skill tells the assistant to check this field"
 
     def test_a_terrain_kind_resolves_and_is_listed(self) -> None:
         listing = api.lookup_rule()

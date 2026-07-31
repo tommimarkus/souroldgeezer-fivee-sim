@@ -28,8 +28,8 @@ nothing has shipped and nothing has been explained.
 
 Worth stating plainly, because it shapes what counts as a vulnerability here.
 
-- **The MCP server speaks stdio, not a socket.** Claude Code spawns it as a child
-  process and owns both ends of the pipe. It listens on no port.
+- **The MCP server speaks stdio, not a socket.** The active plugin host spawns it
+  as a child process and owns both ends of the pipe. It listens on no port.
 - **The map editor is the one thing that binds a port.** It is a single-user
   localhost tool, and the controls it does have are listed in the module
   docstring of `souroldgeezer-fivee-sim/engine/src/fivee_sim/editor/http_server.py`:
@@ -53,11 +53,12 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   over `http://127.0.0.1:<port>`, with the launch token attached. Loopback only,
   hardcoded — there is no other outbound call in the tree.
 
-Out of scope: the security of Claude Code itself (report those to Anthropic),
-`uv` and the Python packages in `uv.lock` (report upstream, though a note here is
-welcome if we are pinning something known-vulnerable), and findings that require
-an attacker who already has local code execution as your user — at that point the
-engine is not the weakest thing on the machine.
+Out of scope: the security of Claude Code or Codex itself (report those to the
+respective host vendor), `uv` and the Python packages in `uv.lock` (report
+upstream, though a note here is welcome if we are pinning something
+known-vulnerable), and findings that require an attacker who already has local
+code execution as your user — at that point the engine is not the weakest thing
+on the machine.
 
 ## Bundled dependencies
 

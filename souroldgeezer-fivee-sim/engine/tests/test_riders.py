@@ -499,7 +499,7 @@ class TestPackDefinedRiderConditions:
         )
         events = bite_and_advance_to_target(encounter, rng, "Biter", "Victim")
         assert "vale-toxin" in target.conditions
-        # The event detail is what Claude narrates from, so it must render.
+        # The event detail is what the assistant narrates from, so it must render.
         assert any("vale-toxin" in event.detail for event in events)
         state = encounter.state()
         held = next(c for c in state["combatants"] if c["name"] == "Victim")

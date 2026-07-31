@@ -36,8 +36,10 @@ Put a file in `.fivee-sim/content/` at the root of your campaign repository:
 }
 ```
 
-That is enough. The engine finds it with no configuration, because Claude Code
-exports `CLAUDE_PROJECT_DIR` and the engine looks in `.fivee-sim/content/` under it.
+That is enough in an installed plugin. Claude Code exports `CLAUDE_PROJECT_DIR`;
+on hosts without a project-root variable, the bundled skill detects the workspace
+directory and loads it with `content_configure`. For a direct server launch, set
+`FIVEE_SIM_PROJECT_DIR` to the campaign repository root.
 
 Then, in a session:
 
@@ -53,9 +55,11 @@ In precedence order, lowest first:
 1. **the bundled SRD 5.2 slice**, unless the mode is `exclude`;
 2. **`FIVEE_SIM_CONTENT`** — an `os.pathsep`-separated list of files or
    directories. A directory is scanned for `*.json`, in sorted order;
-3. **`$CLAUDE_PROJECT_DIR/.fivee-sim/content/`**, used only when
-   `FIVEE_SIM_CONTENT` is unset — so exporting the variable does not silently also
-   load whatever sits in the repository you happen to be standing in;
+3. **`$FIVEE_SIM_PROJECT_DIR/.fivee-sim/content/`**, with
+   `$CLAUDE_PROJECT_DIR/.fivee-sim/content/` as a compatibility fallback, used
+   only when `FIVEE_SIM_CONTENT` is unset — so exporting the variable does not
+   silently also load whatever sits in the repository you happen to be standing
+   in;
 4. **paths given to `content_configure`** during the session.
 
 `FIVEE_SIM_BUILTIN` is `include` (the default) or `exclude`.
@@ -120,7 +124,7 @@ and on a success it stands at 1 hit point instead — unless any of that damage 
 Radiant, the hit was a critical, or the overflow was enough to kill it outright.
 
 `unmodelled` is where you name printed features the engine does not implement. It
-is not decoration: Claude is instructed to check it before promising a trait will
+is not decoration: the assistant is instructed to check it before promising a trait will
 fire, so a trait you list is a trait nobody will be surprised by.
 
 ### `spells`

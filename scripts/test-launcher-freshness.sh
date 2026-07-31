@@ -2,8 +2,8 @@
 # Tests for the venv freshness decision in fivee-sim-mcp.sh.
 #
 # The launcher straddles two directories with different lifetimes:
-# ${CLAUDE_PLUGIN_ROOT} is replaced per version, while ${CLAUDE_PLUGIN_DATA} —
-# where plugin.json puts the venv — is durable. Because `uv sync` installs the
+# The plugin root is replaced per version, while the host's plugin-data directory
+# — where the launcher puts the venv — is durable. Because `uv sync` installs the
 # engine editable, the venv pins a version-specific source path, so an upgrade
 # leaves a venv that works perfectly and answers from the *previous* version.
 # The cases below are mostly about that: what the launcher must notice, and what
@@ -40,7 +40,8 @@ cat > "$tmp/bin/uv" <<'FAKE_UV'
 # resolved here so a test can compare it whether the launcher passed an absolute
 # path or one still carrying `..`.
 set -uo pipefail
-printf '%s\n' "$*" >> "${UV_LOG:?}"
+printf 'args=%s cache=%s venv=%s\n' \
+  "$*" "${UV_CACHE_DIR:-}" "${UV_PROJECT_ENVIRONMENT:-}" >> "${UV_LOG:?}"
 if [ "${FAKE_UV_FAIL:-0}" = "1" ]; then
   printf 'fake uv: refusing to sync\n' >&2
   exit 1
@@ -101,6 +102,21 @@ launch() { # launch <label> <venv-name> [VAR=value ...]
   uvcalls="$(grep -c . "$uvlog")"
 }
 
+launch_with_host_data() { # launch_with_host_data <label> [VAR=value ...]
+  local root="$tmp/$1"
+  shift
+  : > "$uvlog"
+  out="$(env -u UV_PROJECT_ENVIRONMENT -u UV_CACHE_DIR \
+      -u PLUGIN_DATA -u CLAUDE_PLUGIN_DATA \
+      "$@" \
+      PATH="${LAUNCH_PATH:-$tmp/bin:$PATH}" \
+      UV_LOG="$uvlog" \
+      bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
+  rc=$?
+  err="$(cat "$tmp/stderr")"
+  uvcalls="$(grep -c . "$uvlog")"
+}
+
 report() { # report <ok?> <label> <detail>
   if [ "$1" = "0" ]; then
     pass=$((pass + 1))
@@ -136,9 +152,67 @@ stderr: ${err:-<empty>}"
   fi
 }
 
+want_uv_args() { # want_uv_args <label> <substring>
+  if grep -Fq -- "$2" "$uvlog"; then report 0 "$1" ""; else
+    report 1 "$1" "uv invocation did not contain: $2
+invocation: $(cat "$uvlog")"
+  fi
+}
+
 mkdir -p "$tmp/venvs"
 V1="$(plant v1)"
 V2="$(plant v2)"
+
+# --- host-managed durable storage ----------------------------------------
+codex_data="$tmp/codex-data"
+launch_with_host_data v1 PLUGIN_DATA="$codex_data"
+want_rc    "Codex plugin data builds successfully" 0
+want_syncs "Codex plugin data syncs once" 1
+want_uv_args "Codex plugin data owns the uv cache" "cache=$codex_data/uv-cache"
+if [ -x "$codex_data/venv/bin/fivee-sim-mcp" ]; then
+  report 0 "Codex plugin data owns the venv" ""
+else
+  report 1 "Codex plugin data owns the venv" "missing: $codex_data/venv/bin/fivee-sim-mcp"
+fi
+
+claude_data="$tmp/claude-data"
+launch_with_host_data v1 CLAUDE_PLUGIN_DATA="$claude_data"
+want_rc    "Claude plugin data still builds successfully" 0
+want_syncs "Claude plugin data still syncs once" 1
+want_uv_args "Claude plugin data owns the uv cache" "cache=$claude_data/uv-cache"
+if [ -x "$claude_data/venv/bin/fivee-sim-mcp" ]; then
+  report 0 "Claude plugin data owns the venv" ""
+else
+  report 1 "Claude plugin data owns the venv" "missing: $claude_data/venv/bin/fivee-sim-mcp"
+fi
+
+preferred_data="$tmp/preferred-data"
+fallback_data="$tmp/fallback-data"
+launch_with_host_data v1 \
+  PLUGIN_DATA="$preferred_data" CLAUDE_PLUGIN_DATA="$fallback_data"
+want_rc "Codex data wins when both host variables exist" 0
+if [ -x "$preferred_data/venv/bin/fivee-sim-mcp" ] && [ ! -e "$fallback_data/venv" ]; then
+  report 0 "Codex data precedes the Claude fallback" ""
+else
+  report 1 "Codex data precedes the Claude fallback" \
+    "preferred venv missing or fallback venv unexpectedly created"
+fi
+
+explicit_data="$tmp/explicit-data"
+launch v1 explicit PLUGIN_DATA="$explicit_data"
+want_rc "an explicit UV environment wins over host plugin data" 0
+if [ -x "$tmp/venvs/explicit/bin/fivee-sim-mcp" ] && [ ! -e "$explicit_data/venv" ]; then
+  report 0 "explicit UV storage precedes host storage" ""
+else
+  report 1 "explicit UV storage precedes host storage" \
+    "explicit venv missing or host venv unexpectedly created"
+fi
+
+explicit_cache="$tmp/explicit-cache"
+launch v1 explicit-cache \
+  PLUGIN_DATA="$explicit_data" UV_CACHE_DIR="$explicit_cache"
+want_rc "an explicit UV cache wins over host plugin data" 0
+want_uv_args "explicit UV cache precedes host storage" "cache=$explicit_cache"
 
 # Cases that share a venv name run in sequence and each one's end state is the
 # next one's precondition — that is the subject matter, not an accident: the

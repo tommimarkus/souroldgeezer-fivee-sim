@@ -225,6 +225,13 @@ cannot show you: there is no entry for a class or a feat to miss on.
 creatures, spells, conditions, and items as content packs, and can exclude the
 bundled SRD content entirely to run on its own material.
 
+At first use in a workspace, check whether `.fivee-sim/content/` exists under the
+workspace root. Call `content_status`; if that resolved directory is not already
+represented in the loaded packs, call `content_configure` with its **absolute**
+path and `add=true` before looking up content or starting an encounter. This is
+the portable fallback for hosts that do not export a project-root variable;
+repeating an already loaded path is harmless but unnecessary.
+
 - **`content_status`** — what is loaded, from where, under which mode. Call this
   before telling anyone what the engine supports, and whenever a name you expected
   is missing. It also flags any encounter still running on content from before the

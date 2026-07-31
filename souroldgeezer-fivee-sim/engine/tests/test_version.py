@@ -1,11 +1,11 @@
-"""One release number wears four coats, and they must agree.
+"""One release number wears five coats, and they must agree.
 
 The source of truth is the ``version`` field of ``.claude-plugin/plugin.json``
-(calver ``YYYY.0M.build``). Its mirrors are the README plugin table, the
-engine's ``pyproject.toml``, and ``fivee_sim.__version__`` — the value every
-MCP client sees in the ``initialize`` handshake's ``serverInfo``. PEP 440
-strips the month's zero-padding in the Python pair, so agreement is checked
-numerically, not textually.
+(calver ``YYYY.0M.build``). Its mirrors are the strict-semver Codex manifest,
+the README plugin table, the engine's ``pyproject.toml``, and
+``fivee_sim.__version__`` — the value every MCP client sees in the ``initialize``
+handshake's ``serverInfo``. PEP 440 and semver strip the month's zero-padding,
+so agreement is checked numerically, not textually.
 """
 
 import json
@@ -32,8 +32,25 @@ def _plugin_version() -> str:
     return version
 
 
+def _codex_plugin_version() -> str:
+    manifest = json.loads(
+        (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    version = manifest["version"]
+    assert isinstance(version, str)
+    return version
+
+
 def test_plugin_version_is_calver() -> None:
     assert re.fullmatch(r"\d{4}\.\d{2}\.\d+", _plugin_version())
+
+
+def test_codex_plugin_version_is_strict_semver() -> None:
+    assert re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", _codex_plugin_version())
+
+
+def test_codex_plugin_version_matches_release_source() -> None:
+    assert _numeric(_codex_plugin_version()) == _numeric(_plugin_version())
 
 
 def test_package_version_matches_plugin() -> None:

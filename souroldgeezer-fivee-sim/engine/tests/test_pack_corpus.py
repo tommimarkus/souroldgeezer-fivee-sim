@@ -19,8 +19,9 @@ pack could be edited or deleted and the coverage would degrade silently. Each cl
 below is now a test.
 
 Every loader call passes ``include_environment=False``. The default reads
-``FIVEE_SIM_CONTENT`` and ``CLAUDE_PROJECT_DIR``, which would make results depend on
-whether the developer running the suite happens to have a campaign exported.
+``FIVEE_SIM_CONTENT``, ``FIVEE_SIM_PROJECT_DIR``, and the Claude Code project-root
+fallback, which would make results depend on whether the developer running the
+suite happens to have a campaign exported.
 """
 
 from __future__ import annotations

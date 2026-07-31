@@ -1,8 +1,9 @@
 # Repository guidance
 
-A Claude Code marketplace + plugin providing a 5E-compatible simulation engine:
-a pure Python rules kernel exposed over MCP, plus the skill that teaches Claude
-to drive it. See [README.md](README.md) for the project overview.
+A Claude Code and Codex marketplace plugin providing a 5E-compatible simulation
+engine: a pure Python rules kernel exposed over MCP, plus the skills that teach
+the active assistant to drive it. See [README.md](README.md) for the project
+overview.
 
 ## Environment hazards — read before any `git add`
 
@@ -129,8 +130,9 @@ affiliates other than that provided above. You may, however, include a statement
 on your work indicating that it is 'compatible with fifth edition' or '5E
 compatible.'"*
 
-So the `name` and `description` fields of `plugin.json`, `marketplace.json`, and
-every skill/agent frontmatter use **5E-compatible** wording only — never
+So the `name` and `description` fields of both host manifests,
+`marketplace.json`, and every skill/agent frontmatter use **5E-compatible**
+wording only — never
 "Dungeons & Dragons", "D&D", "DnD", "5.5e", or "Wizards of the Coast". The
 local checkout's directory name is local to this machine and is never published.
 
@@ -187,8 +189,8 @@ Silence means allow. Its wiring lives in the developer's
 
 ## Architecture
 
-**The engine lives under the plugin root**, at `souroldgeezer-fivee-sim/engine/`. This is not
-cosmetic: `${CLAUDE_PLUGIN_ROOT}` resolves to the plugin directory, so an engine
+**The engine lives under the plugin root**, at `souroldgeezer-fivee-sim/engine/`.
+This is not cosmetic: each host packages only the plugin directory, so an engine
 at the repository root would not ship to installs.
 
 **The kernel is pure.** `fivee_sim.kernel` performs no I/O, reads no clock, and
@@ -378,9 +380,10 @@ still resolves, and rebuilds. If you relocate the repo and something behaves
 oddly, `rm -rf` the venv rather than debugging it.
 
 **A venv also outlives the engine it was built from**, and that failure is quiet
-rather than loud. `plugin.json` puts the venv in `${CLAUDE_PLUGIN_DATA}`, which is
-durable, while `${CLAUDE_PLUGIN_ROOT}` carries the version in its path — and `uv
-sync` installs the engine *editable*, so the venv pins one version's `src`. After
+rather than loud. The launcher puts the venv in the active host's durable plugin
+data directory (`${PLUGIN_DATA}` for Codex, `${CLAUDE_PLUGIN_DATA}` for Claude
+Code), while the installed plugin root changes by version — and `uv sync`
+installs the engine *editable*, so the venv pins one version's `src`. After
 an upgrade every file the portability check looks at is still perfectly valid, the
 previous version is still on disk because installs are retained per version, and
 the server starts cleanly and answers from the old engine. It reached users: an
@@ -424,9 +427,10 @@ on load and pinned by coverage regeneration. Enforcement model.
 
 release-policy: calver `YYYY.0M.build` (`2026.07.1`); the version source is the
 `version` field of `souroldgeezer-fivee-sim/.claude-plugin/plugin.json`, mirrored by the
-plugin table in [README.md](README.md), by `engine/pyproject.toml`, and by
-`fivee_sim.__version__` (PEP 440 strips the month's zero-padding in the Python
-pair; `engine/tests/test_version.py` pins all four to one number). Bumping is
+strict-semver `souroldgeezer-fivee-sim/.codex-plugin/plugin.json`, the plugin
+table in [README.md](README.md), `engine/pyproject.toml`, and
+`fivee_sim.__version__` (PEP 440 and semver strip the month's zero-padding in
+their mirrors; `engine/tests/test_version.py` pins all five to one number). Bumping is
 automatic and `main`-only: when integration lands plugin-surface changes
 (`souroldgeezer-fivee-sim/**`) on `main`, bump the source and every mirror directly on
 `main` after the repo's documented verification; a new month restarts the build
@@ -438,5 +442,7 @@ through the `souroldgeezer-audit:ip-hygiene` release gate described under
 the first is an explicit decision, not routine release work.
 
 Otherwise mirrors the sibling `souroldgeezer` marketplace at `../skills`:
-`plugin.json` carrying `name`, `version`, `description`, `author`, `license`;
+both host `plugin.json` files carrying `name`, `version`, `description`, `author`,
+and `license`; the Codex manifest uses the same numeric release without CalVer's
+month padding because its validator requires strict semver;
 `AGENTS.md` as a pointer to this file rather than a second copy of it.

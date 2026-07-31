@@ -1,0 +1,29 @@
+{
+  "name": "souroldgeezer-fivee-sim",
+  "version": "2026.7.26",
+  "description": "5E-compatible combat simulation over a single seeded rules kernel, exposed as MCP tools. Stateful encounters whose hit points, initiative, and conditions the engine owns so they cannot be misremembered, plus Monte Carlo damage and win-rate analytics replayed through the same stepper. Covers weapon attacks, movement and reactions, conditions, death saves, and a curated spell set with saving throws, areas, and concentration.",
+  "author": {
+    "name": "Sour Old Geezer",
+    "email": "claude-marketplace-a.varsity439@passmail.net"
+  },
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Sour Old Geezer 5E Sim",
+    "shortDescription": "Seeded 5E-compatible combat simulation",
+    "longDescription": "Run reproducible 5E-compatible encounters, narrate engine-owned combat state, compare builds, and generate battle maps through one MCP rules kernel.",
+    "developerName": "Sour Old Geezer",
+    "category": "Entertainment",
+    "capabilities": [
+      "Run seeded combat encounters",
+      "Analyse damage and win rates",
+      "Create and refine battle maps"
+    ],
+    "defaultPrompt": [
+      "Run a seeded 5E-compatible combat encounter.",
+      "Compare two combat builds with seeded DPR analysis.",
+      "Generate and refine a battle map for an encounter."
+    ]
+  }
+}

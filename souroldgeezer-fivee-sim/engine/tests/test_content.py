@@ -935,6 +935,30 @@ class TestEnvironment:
         registry = load_packs(env={"CLAUDE_PROJECT_DIR": str(tmp_path)})
         assert "Vale Stalker" in registry.creatures
 
+    def test_the_host_neutral_project_directory_is_used(
+        self, tmp_path: Path
+    ) -> None:
+        write_pack(tmp_path / ".fivee-sim" / "content", "vale.json", CAMPAIGN)
+        registry = load_packs(env={"FIVEE_SIM_PROJECT_DIR": str(tmp_path)})
+        assert "Vale Stalker" in registry.creatures
+
+    def test_the_host_neutral_project_directory_wins_over_the_claude_fallback(
+        self, tmp_path: Path
+    ) -> None:
+        neutral = tmp_path / "neutral"
+        claude = tmp_path / "claude"
+        write_pack(neutral / ".fivee-sim" / "content", "vale.json", CAMPAIGN)
+        write_pack(claude / ".fivee-sim" / "content", "rope.json", {
+            "pack": "b", "provenance": "test",
+            "items": [{"name": "Rope", "use": {"heal": "1d1"}, "provenance": "test"}],
+        })
+        registry = load_packs(env={
+            "FIVEE_SIM_PROJECT_DIR": str(neutral),
+            "CLAUDE_PROJECT_DIR": str(claude),
+        })
+        assert "Vale Stalker" in registry.creatures
+        assert "Rope" not in registry.items
+
     def test_the_variable_wins_over_the_project_directory(self, tmp_path: Path) -> None:
         # Someone who exported the variable should not silently also load whatever sits
         # in the repository they happen to be standing in.
@@ -945,6 +969,7 @@ class TestEnvironment:
         })
         registry = load_packs(env={
             "FIVEE_SIM_CONTENT": str(other),
+            "FIVEE_SIM_PROJECT_DIR": str(tmp_path),
             "CLAUDE_PROJECT_DIR": str(tmp_path),
         })
         assert "Rope" in registry.items
@@ -1001,7 +1026,7 @@ class TestCustomConditions:
         events = encounter.act(
             Action(kind=ActionKind.USE_ITEM, item="Cursed Needle", target="A"), rng
         )
-        # The event detail is what Claude narrates from, so it must render.
+        # The event detail is what the assistant narrates from, so it must render.
         assert any("vale-cursed" in event.detail for event in events)
         assert "vale-cursed" in hero.conditions
         state = encounter.state()

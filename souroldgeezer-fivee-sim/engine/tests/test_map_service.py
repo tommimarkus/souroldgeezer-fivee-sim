@@ -1504,9 +1504,16 @@ class TestFiles:
         assert service.maps_root({"FIVEE_SIM_MAPS": "/somewhere/maps"}) == Path(
             "/somewhere/maps"
         )
+        assert service.maps_root({"FIVEE_SIM_PROJECT_DIR": "/neutral"}) == Path(
+            "/neutral/.fivee-sim/maps"
+        )
         assert service.maps_root({"CLAUDE_PROJECT_DIR": "/repo"}) == Path(
             "/repo/.fivee-sim/maps"
         )
+        assert service.maps_root({
+            "FIVEE_SIM_PROJECT_DIR": "/neutral",
+            "CLAUDE_PROJECT_DIR": "/claude",
+        }) == Path("/neutral/.fivee-sim/maps")
         assert service.maps_root({}) == Path.cwd() / ".fivee-sim" / "maps"
 
     def test_environment_roots_split_on_the_path_separator(self) -> None:

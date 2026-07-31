@@ -26,9 +26,9 @@ dev = [
 ]
 
 # Keep uv's cache inside the project: the default (~/.cache/uv) is read-only in
-# the sandboxed development environment, and at runtime the plugin redirects both
-# cache and venv into ${CLAUDE_PLUGIN_DATA} so nothing is written into the
-# versioned, shared plugin directory.
+# the sandboxed development environment, and at runtime the launcher redirects
+# both cache and venv into the active host's durable plugin-data directory so
+# nothing is written into the versioned, shared plugin directory.
 [tool.uv]
 cache-dir = ".cache/uv"
 

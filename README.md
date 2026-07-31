@@ -1,7 +1,7 @@
 # souroldgeezer-fivee-sim
 
-A 5E-compatible combat simulation engine for Claude Code™, by Sour Old Geezer.
-This repository is the marketplace source and the plugin tree.
+A 5E-compatible combat simulation engine for Claude Code™ and Codex, by Sour Old
+Geezer. This repository is the marketplace source and the shared plugin tree.
 
 Compatible with fifth edition (2024 rules).
 
@@ -20,14 +20,14 @@ fight twice.
 One kernel answers two questions:
 
 - **"What happens in this fight?"** — stateful tools step an encounter round by
-  round, and Claude narrates what the engine reports.
+  round, and the assistant narrates what the engine reports.
 - **"Is this build actually good?"** — analytics tools replay that same stepper
   across thousands of seeded iterations and report a distribution.
 
 Because both run on the one kernel, the statistics cannot drift from the rules
 live play uses.
 
-| Plugin | Version | Skill | Agent |
+| Plugin | Version | Skill | Claude agent |
 |---|---:|---|---|
 | `souroldgeezer-fivee-sim` | `2026.07.26` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
 
@@ -37,7 +37,26 @@ Needs Python 3.11+ and [`uv`](https://docs.astral.sh/uv/). The MCP launcher buil
 its own `uv`-managed environment on first run, so there is nothing to install
 globally.
 
-The marketplace is not published yet, so point Claude at a clone:
+The marketplace is not published yet, so point either host at a clone.
+
+### Codex
+
+```text
+codex plugin marketplace add /absolute/path/to/this/repo
+codex plugin add souroldgeezer-fivee-sim@souroldgeezer-tabletop
+```
+
+Start a new Codex session after installation so the bundled skills and MCP
+server are loaded.
+
+Once published, use the repository source instead of the local path:
+
+```text
+codex plugin marketplace add tommimarkus/souroldgeezer-fivee-sim
+codex plugin add souroldgeezer-fivee-sim@souroldgeezer-tabletop
+```
+
+### Claude Code
 
 ```json
 // ~/.claude/settings.json
@@ -61,7 +80,7 @@ Once it is published, the same thing is two commands:
 ```
 
 From a clone, `python3 scripts/check-mcp-handshake.py` verifies the MCP server
-independently of Claude.
+independently of either host.
 
 ## Tools
 
@@ -120,8 +139,9 @@ format, the precedence rules, and a worked example.
 
 ## Contributing
 
-[CLAUDE.md](CLAUDE.md) is the contributor guide — layer boundaries, the determinism
-rules the kernel holds to, and the test and lint commands.
+[CLAUDE.md](CLAUDE.md), routed to Codex by [AGENTS.md](AGENTS.md), is the contributor
+guide — layer boundaries, the determinism rules the kernel holds to, and the test
+and lint commands.
 
 ## Licence
 
