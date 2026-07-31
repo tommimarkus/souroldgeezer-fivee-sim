@@ -60,6 +60,15 @@ class DiagonalRule(StrEnum):
     FIVE_TEN_FIVE = "5-10-5"
 
 
+class MovementMode(StrEnum):
+    """The speed a creature elects to spend for one move."""
+
+    WALK = "walk"
+    CLIMB = "climb"
+    SWIM = "swim"
+    FLY = "fly"
+
+
 class CoverGrade(IntEnum):
     NONE = 0
     HALF = 1
@@ -91,6 +100,8 @@ class TerrainEffect:
     passable: bool = True
     #: Blocks sight lines outright — see :func:`has_line_of_sight`.
     opaque: bool = False
+    #: The square is deep enough for the underwater combat rules to apply.
+    underwater: bool = False
     #: The :class:`CoverGrade` value granted when the square sits on a sight line.
     #: Opacity is not folded in here; a caller composing a ``cover_of`` callable
     #: should treat an opaque square as granting ``TOTAL``.
@@ -117,7 +128,7 @@ TERRAIN: dict[str, TerrainEffect] = {
     "door-open": TerrainEffect(),
     "door-closed": TerrainEffect(passable=False, opaque=True),
     "plain": TerrainEffect(),
-    "water": TerrainEffect(move_cost_multiplier=2),
+    "water": TerrainEffect(move_cost_multiplier=2, underwater=True),
     "forest": TerrainEffect(move_cost_multiplier=2, cover=1),
     "hill": TerrainEffect(move_cost_multiplier=2),
     # A mountain cannot be entered but can be seen over: impassable, not opaque.

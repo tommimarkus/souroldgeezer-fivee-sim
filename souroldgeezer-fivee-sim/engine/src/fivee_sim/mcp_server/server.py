@@ -57,6 +57,7 @@ from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import (
     DiagonalRule,
+    MovementMode,
     Point,
     Square,
     TerrainEffect,
@@ -1089,6 +1090,7 @@ def encounter_act(
     feature: str | None = None,
     set_open: bool | None = None,
     to_level: int | None = None,
+    movement_mode: str | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -1114,7 +1116,9 @@ def encounter_act(
     pins the exact route as ``[x, y]`` waypoints, one per square. ``to_level``
     ends a move on another storey: walk to a stairway on your own level — the
     square named by ``to_position`` — and it carries you, charging the rise
-    between the two floors as a climb. Illegal actions are refused with the
+    between the two floors as a climb. ``movement_mode`` selects walk, climb,
+    swim, or fly; the creature must have that speed, and flight does not need a
+    connector. Illegal actions are refused with the
     reason rather than silently adjusted.
     """
     session = _session(encounter_id)
@@ -1123,6 +1127,13 @@ def encounter_act(
     except ValueError as error:
         allowed = ", ".join(item.value for item in ActionKind)
         raise ToolError(f"kind must be one of: {allowed}") from error
+    selected_mode: MovementMode | None = None
+    if movement_mode is not None:
+        try:
+            selected_mode = MovementMode(movement_mode)
+        except ValueError as error:
+            allowed = ", ".join(mode.value for mode in MovementMode)
+            raise ToolError(f"movement_mode must be one of: {allowed}") from error
     waypoints: list[tuple[int, int]] = []
     for step in path or []:
         point = _point(step, "each path waypoint")
@@ -1162,6 +1173,7 @@ def encounter_act(
         feature=feature,
         set_open=set_open,
         to_level=to_level,
+        movement_mode=selected_mode,
     )
     try:
         events = session.encounter.act(action, session.rng)

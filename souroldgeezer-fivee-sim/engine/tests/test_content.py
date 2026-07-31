@@ -45,7 +45,7 @@ from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.rules import Size
 from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.mcp_server import server as api
-from fivee_sim.model.creature import Creature
+from fivee_sim.model.creature import Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 
 from .conftest import advance_to
@@ -223,6 +223,7 @@ class TestExcludeMode:
         victim = make_creature("Vale Stalker", registry=registry, label="B", team="b")
         victim.max_hp = 1
         victim.hp = 1
+        victim.death_rule = DeathRule.DEATH_SAVES
         rng = Random(3)
         encounter = Encounter(
             [attacker, victim], rng,

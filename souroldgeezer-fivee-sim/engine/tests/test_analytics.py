@@ -31,7 +31,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.battlemap import BattleMap
-from fivee_sim.model.creature import AttackOption, Creature
+from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import ActionKind, Encounter
 
 from .conftest import advance_to, caster, fighter, shaped_spellbook, shaper
@@ -756,6 +756,7 @@ class TestPolicyLeavesDownedCreaturesAlone:
         rng = Random(SEED)
         thora = fighter("Thora", position=0)
         downed = make_monster("Goblin Warrior", label="Downed", team="foes", position=5)
+        downed.death_rule = DeathRule.DEATH_SAVES
         upright = make_monster(
             "Goblin Warrior", label="Upright", team="foes", position=10
         )
@@ -783,6 +784,7 @@ class TestPolicyLeavesDownedCreaturesAlone:
         thora = fighter("Thora", position=0)
         ally = fighter("Bern", position=5)  # keeps ``over`` from firing on the team
         foe = make_monster("Goblin Warrior", label="Goblin", team="foes", position=10)
+        foe.death_rule = DeathRule.DEATH_SAVES
         encounter = Encounter([thora, ally, foe], rng, spellbook=spellbook())
         advance_to(encounter, "Thora", rng)
         foe.take_damage(foe.hp)

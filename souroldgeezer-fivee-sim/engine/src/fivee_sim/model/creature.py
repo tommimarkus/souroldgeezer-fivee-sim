@@ -37,6 +37,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any
 
 from ..kernel.actions import AttackKind, RiderExpiry
@@ -51,12 +52,19 @@ from ..kernel.dice import Dice
 from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, Size, ability_modifier
 
-__all__ = ["AttackKind", "AttackOption", "Creature", "RiderExpiry"]
+__all__ = ["AttackKind", "AttackOption", "Creature", "DeathRule", "RiderExpiry"]
 
 #: Failures that kill. Duplicated from ``model.encounter``, which owns the death
 #: save *roll* but cannot be imported here — it imports this module. Damage taken
 #: at 0 hit points accrues a failure too, so the threshold is needed on both sides.
 DEATH_SAVES_TO_DIE = 3
+
+
+class DeathRule(StrEnum):
+    """What reaching 0 hit points means for this combatant."""
+
+    DEATH_SAVES = "death_saves"
+    INSTANT = "instant"
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +103,13 @@ class AttackOption:
     on_hit_save_dc: int = 0
     on_hit_expiry: RiderExpiry = RiderExpiry.NONE
     on_hit_max_size: Size | None = None
+    #: Attachment riders such as a blood-draining parasite.  The first damage
+    #: pool still lands on the hit; ``attached_damage`` repeats at the start of
+    #: the attacker's turns until detached.
+    on_hit_attach: bool = False
+    attached_damage: Dice | None = None
+    attached_damage_type: DamageType | None = None
+    detach_after_damage: int = 0
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
@@ -116,6 +131,13 @@ class AttackOption:
             raise ValueError(
                 f"{self.name}: on_hit_max_size needs on_hit_condition — there is "
                 f"no condition to ride the hit"
+            )
+        if self.on_hit_attach and (
+            self.attached_damage is None or self.attached_damage_type is None
+        ):
+            raise ValueError(
+                f"{self.name}: on_hit_attach needs attached_damage and "
+                "attached_damage_type"
             )
 
     @classmethod
@@ -150,6 +172,16 @@ class AttackOption:
             on_hit_save_dc=int(record.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(record.get("on_hit_expiry", "none")),
             on_hit_max_size=Size(max_size) if max_size is not None else None,
+            on_hit_attach=bool(record.get("on_hit_attach", False)),
+            attached_damage=(
+                Dice.parse(str(record["attached_damage"]))
+                if record.get("attached_damage") is not None else None
+            ),
+            attached_damage_type=(
+                DamageType(record["attached_damage_type"])
+                if record.get("attached_damage_type") is not None else None
+            ),
+            detach_after_damage=int(record.get("detach_after_damage", 0)),
             provenance=str(record.get("provenance", "SRD 5.2")),
         )
 
@@ -173,6 +205,13 @@ class Creature:
     ac: int
     max_hp: int
     speed: int = 30
+    climb_speed: int = 0
+    swim_speed: int = 0
+    fly_speed: int = 0
+    #: Terrain names whose extra movement cost this creature ignores.
+    terrain_cost_overrides: frozenset[str] = frozenset()
+    darkvision: int = 0
+    blindsight: int = 0
     hp: int = -1
     #: Size category. Defaults to Medium, which is what every record written
     #: before the field existed means — and what a character is unless its
@@ -220,6 +259,7 @@ class Creature:
     death_save_failures: int = 0
     stable: bool = False
     dead: bool = False
+    death_rule: DeathRule = DeathRule.DEATH_SAVES
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
@@ -256,6 +296,14 @@ class Creature:
             ac=int(record["ac"]),
             max_hp=int(record["max_hp"]),
             speed=int(record.get("speed", 30)),
+            climb_speed=int(record.get("climb_speed", 0)),
+            swim_speed=int(record.get("swim_speed", 0)),
+            fly_speed=int(record.get("fly_speed", 0)),
+            terrain_cost_overrides=frozenset(
+                str(entry) for entry in record.get("terrain_cost_overrides", [])
+            ),
+            darkvision=int(record.get("darkvision", 0)),
+            blindsight=int(record.get("blindsight", 0)),
             size=Size(record.get("size", Size.MEDIUM)),
             abilities={
                 Ability(key): int(value)
@@ -290,6 +338,7 @@ class Creature:
             position=position,
             level=level,
             provenance=str(record.get("provenance", source)),
+            death_rule=DeathRule(record.get("death_rule", DeathRule.INSTANT)),
         )
 
     # --- derived values ---------------------------------------------------
@@ -366,6 +415,11 @@ class Creature:
         overflow = amount - self.hp
         self.hp = max(0, self.hp - amount)
         if self.hp > 0:
+            return
+        if self.death_rule is DeathRule.INSTANT:
+            self.dead = True
+            self.concentrating_on = None
+            self.conditions.discard(Condition.UNCONSCIOUS)
             return
         if overflow >= self.max_hp:
             self.dead = True

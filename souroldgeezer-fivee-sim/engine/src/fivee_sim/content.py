@@ -59,7 +59,7 @@ from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
 from .kernel.items import ItemEffect, ItemError
 from .kernel.rules import Ability, DamageType, Size
 from .kernel.spells import Spell, SpellShape
-from .model.creature import Creature
+from .model.creature import Creature, DeathRule
 
 # Re-exported under their historical home: the diagnostic machinery grew up in
 # this module and every import site — packs, tests, the server — still reads it
@@ -100,7 +100,9 @@ SECTIONS = ("creatures", "spells", "conditions", "terrain", "items")
 _PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
 _COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
-    "team", "ac", "max_hp", "hit_dice", "speed", "size", "abilities", "save_bonuses",
+    "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
+    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "size", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
@@ -109,7 +111,8 @@ _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
     "long_range", "bonus_damage", "bonus_damage_type", "advantage_bonus_damage",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
-    "on_hit_max_size", "provenance",
+    "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
+    "detach_after_damage", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
@@ -302,6 +305,13 @@ def _parse_creature(
     reader.integer("ac", required=True, minimum=0)
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
+    reader.integer("climb_speed", default=0, minimum=0)
+    reader.integer("swim_speed", default=0, minimum=0)
+    reader.integer("fly_speed", default=0, minimum=0)
+    reader.string_list("terrain_cost_overrides")
+    reader.integer("darkvision", default=0, minimum=0)
+    reader.integer("blindsight", default=0, minimum=0)
+    reader.enum("death_rule", DeathRule)
     reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
     reader.boolean("pack_tactics")
@@ -370,6 +380,23 @@ def _parse_creature(
         sub.integer("on_hit_save_dc", minimum=1)
         sub.enum("on_hit_expiry", RiderExpiry)
         sub.enum("on_hit_max_size", Size)
+        sub.boolean("on_hit_attach")
+        sub.dice("attached_damage")
+        sub.enum("attached_damage_type", DamageType)
+        sub.integer("detach_after_damage", minimum=0)
+        if attack.get("on_hit_attach"):
+            if attack.get("attached_damage") is None:
+                sub.fail("attached_damage", "required when on_hit_attach is true")
+            if attack.get("attached_damage_type") is None:
+                sub.fail("attached_damage_type", "required when on_hit_attach is true")
+        elif any(
+            attack.get(key) is not None
+            for key in ("attached_damage", "attached_damage_type", "detach_after_damage")
+        ):
+            sub.fail(
+                "on_hit_attach",
+                "must be true when attachment damage or a detach threshold is declared",
+            )
         if attack.get("on_hit_condition") is None:
             for dependent in (
                 "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry", "on_hit_max_size",
@@ -528,7 +555,7 @@ def _parse_terrain(
                 f"{', '.join(TERRAIN_FLAGS)}",
             )
             continue
-        if flag in ("passable", "opaque"):
+        if flag in ("passable", "opaque", "underwater"):
             if not isinstance(value, bool):
                 reader.fail("effects", f"{flag} must be true or false, got {value!r}")
                 continue
