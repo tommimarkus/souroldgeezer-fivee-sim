@@ -134,6 +134,10 @@ floor, because the format has no notion of storeys. `set_name`, `set_legend`,
 and `resize` take none: they are document-wide, and a resize moves every floor
 together.
 
+In the browser editor the Level control picks the floor being edited, and
+**Stack** ghosts the storeys either side of it through the one on screen — the
+way to line a stair head up with the stair foot below without editing blind.
+
 A stairway becomes walkable when its feature carries `to_level`. **Say what a
 floor does**, as with height: a floor is opaque, so creatures on different
 levels cannot see, target, or threaten each other at all, and a move between
