@@ -1009,6 +1009,7 @@ def encounter_act(
     toward: str | list[int] | None = None,
     path: list[list[int]] | None = None,
     feature: str | None = None,
+    set_open: bool | None = None,
     to_level: int | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
@@ -1020,7 +1021,13 @@ def encounter_act(
     offsets, such as ``[1, 0]`` or ``[-1, 1]``), ``toward`` for a line (a
     combatant name or a point). Using an item needs ``item``, and ``target``
     unless the item is self-directed; moving needs ``to_position``; interacting —
-    opening or closing a map feature, free once per turn — needs ``feature``;
+    working a map fixture from adjacency — needs ``feature``, and optionally
+    ``set_open`` to say which way rather than flipping whatever it finds, which
+    is what to use when driving a fixture to a known state. A fixture may carry
+    prerequisites that must stand open first, may cost the action rather than
+    the free interaction, and may take an ability check; a fixture that reaches
+    past its own square changes that ground the moment it moves, under whoever
+    is standing on it;
     ``stand`` takes nothing and gets a Prone creature up, spending half its Speed
     from this turn's movement and no action. A position —
     ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
@@ -1075,6 +1082,7 @@ def encounter_act(
         toward=aim_toward,
         path=tuple(waypoints),
         feature=feature,
+        set_open=set_open,
         to_level=to_level,
     )
     try:

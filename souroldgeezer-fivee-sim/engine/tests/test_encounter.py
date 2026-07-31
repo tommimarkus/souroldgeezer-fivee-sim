@@ -25,12 +25,21 @@ from fivee_sim.kernel.grid import (
     Point,
     Square,
     as_point,
+    square_center,
     to_square,
 )
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell
-from fivee_sim.model.battlemap import BattleMap, MapFeature, MapPlane
+from fivee_sim.model.battlemap import (
+    BattleMap,
+    FeatureCheck,
+    FeatureOverlay,
+    HeightPair,
+    MapFeature,
+    MapPlane,
+    TerrainPair,
+)
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -1882,6 +1891,681 @@ class TestInteract:
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="no battle map"):
             encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+
+
+class TestReachAcrossStoreys:
+    """A fixture is reached on its own storey, not merely at its own square.
+
+    ``Encounter.battle_map.features`` merges every plane into one name table,
+    so a reach test that compares squares alone lets a creature on the ground
+    work a hatch directly above its head.
+    """
+
+    def two_storeys(self) -> tuple[Encounter, Random]:
+        rng = Random(3)
+        hatch = MapFeature(name="hatch", square=(0, 0))
+        battle_map = BattleMap(
+            name="tower",
+            width=4,
+            height=1,
+            levels=MappingProxyType(
+                {
+                    0: MapPlane(default_terrain="floor", connectors={(1, 0): 1}),
+                    1: MapPlane(
+                        default_terrain="floor",
+                        default_elevation=10,
+                        features={"hatch": hatch},
+                        connectors={(1, 0): 0},
+                    ),
+                }
+            ),
+            provenance=FIXTURE,
+        )
+        encounter = Encounter(
+            [fighter(position=(0, 0)),
+             make_monster("Goblin Warrior", label="Goblin", position=(15, 0))],
+            rng,
+            battle_map=battle_map,
+        )
+        advance_to(encounter, "Thora", rng)
+        return encounter, rng
+
+    def test_a_fixture_one_storey_up_is_out_of_reach(self) -> None:
+        encounter, rng = self.two_storeys()
+        assert encounter.creatures["Thora"].level == 0
+        assert encounter.battle_map is not None
+        assert encounter.battle_map.level_of("hatch") == 1
+        with pytest.raises(EncounterError, match="cannot reach it from another storey"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="hatch"), rng)
+        assert encounter.state()["map"]["features"]["hatch"]["open"] is False
+
+    def test_climbing_to_its_storey_brings_it_into_reach(self) -> None:
+        encounter, rng = self.two_storeys()
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng
+        )
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="hatch"), rng)
+        assert encounter.state()["map"]["features"]["hatch"]["open"] is True
+
+
+class TestActionRecordsReplayEverything:
+    """``ActionRecord.as_dict`` must carry every field ``act`` was given.
+
+    The record is the unit of replay, and its field list is written out by
+    hand — so a field added to :class:`Action` and forgotten here is silently
+    dropped from a log that promises to reproduce the fight exactly.
+    """
+
+    def test_a_cross_storey_move_records_the_level_it_ended_on(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng
+        )
+        assert encounter.creatures["Thora"].level == 1
+        action = encounter.actions[-1].as_dict()["action"]
+        assert action["to_level"] == 1
+
+    def test_a_move_that_stays_put_records_no_level(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0)), rng)
+        assert "to_level" not in encounter.actions[-1].as_dict()["action"]
+
+
+#: A metal spike takes a raw Strength check — creatures have no skill training,
+#: so the DC is set as if untrained. ``fighter`` has Strength 16, a +3 modifier:
+#: ``FixedRandom(15)`` clears this and ``FixedRandom(5)`` does not.
+SPIKE_CHECK = FeatureCheck(ability=Ability.STRENGTH, dc=15)
+
+
+def spike(name: str, square: Square) -> MapFeature:
+    """One of the two spikes pinning the sluice gate.
+
+    Its own square reads the same in both states, which is the case a fixture
+    that changes nothing where it stands has to get right: pulling it moves
+    terrain nowhere, only the gate's prerequisites.
+    """
+    return MapFeature(
+        name=name,
+        square=square,
+        kind="spike",
+        closed_terrain="floor",
+        open_terrain="floor",
+        costs_action=True,
+        check=SPIKE_CHECK,
+    )
+
+
+def sluice(
+    *,
+    requires: tuple[str, ...] = ("north spike", "south spike"),
+    gate_check: FeatureCheck | None = None,
+) -> BattleMap:
+    """The driving fixture: a gate that floods a room and starts a wheel turning.
+
+    Eight by three of floor. The two spikes flank the gate at ``(2, 1)``; east
+    of it ``(4, 1)`` and ``(5, 1)`` become water five feet lower, and ``(6, 1)``
+    is the mill wheel, difficult ground that turns impassable. One flip, three
+    kinds of change.
+    """
+    gate = MapFeature(
+        name="sluice gate",
+        square=(2, 1),
+        requires=requires,
+        costs_action=True,
+        check=gate_check,
+        affects=(
+            FeatureOverlay(
+                squares=((4, 1), (5, 1)),
+                terrain=TerrainPair(closed="floor", open="water"),
+                elevation=HeightPair(closed=0, open=-5),
+            ),
+            FeatureOverlay(
+                squares=((6, 1),),
+                terrain=TerrainPair(closed="difficult", open="mountain"),
+            ),
+        ),
+    )
+    return BattleMap.flat(
+        name="sluice",
+        width=8,
+        height=3,
+        default_terrain="floor",
+        features={
+            feature.name: feature
+            for feature in (
+                spike("north spike", (2, 0)),
+                spike("south spike", (2, 2)),
+                gate,
+            )
+        },
+        provenance=FIXTURE,
+    )
+
+
+class TestMapFixtures:
+    """Operable fixtures that move the ground under a running fight."""
+
+    def fight(self, battle_map: BattleMap | None = None) -> tuple[Encounter, Random]:
+        """Two at the spikes, two in the room the sluice floods."""
+        rng = Random(3)
+        encounter = Encounter(
+            [
+                fighter("Thora", position=square_center((1, 0))),
+                fighter("Brute", position=square_center((1, 2))),
+                fighter("Wader", team="foes", position=square_center((4, 1))),
+                fighter("Miller", team="foes", position=square_center((6, 1))),
+            ],
+            rng,
+            battle_map=sluice() if battle_map is None else battle_map,
+        )
+        return encounter, rng
+
+    def pull_both_spikes(self, encounter: Encounter, rng: Random) -> None:
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(15)
+        )
+        advance_to(encounter, "Brute", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="south spike"), FixedRandom(15)
+        )
+
+    def open_the_sluice(self, encounter: Encounter, rng: Random) -> None:
+        self.pull_both_spikes(encounter, rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="sluice gate"), rng)
+
+    def route_cost(self, encounter: Encounter, name: str, goal: Square) -> int | None:
+        path = encounter.route(name, goal)
+        return None if path is None else path.cost_feet
+
+    def elevation_of(self, encounter: Encounter, name: str) -> int:
+        state = next(
+            c for c in encounter.state()["combatants"] if c["name"] == name
+        )
+        return int(state["elevation"])
+
+    # --- the driving scenario ---------------------------------------------
+    def test_the_gate_floods_the_room_once_both_spikes_are_out(self) -> None:
+        encounter, rng = self.fight()
+        assert self.route_cost(encounter, "Wader", (5, 1)) == 5
+        assert self.elevation_of(encounter, "Wader") == 0
+        # Floor then difficult ground: the wheel is walkable while it is still.
+        assert self.route_cost(encounter, "Wader", (6, 1)) == 5 + 10
+
+        self.open_the_sluice(encounter, rng)
+
+        # Terrain: the room walks like water, at twice the price.
+        assert self.route_cost(encounter, "Wader", (5, 1)) == 10
+        # Height: the water sits five feet below the floor it replaced.
+        assert self.elevation_of(encounter, "Wader") == -5
+        # And the wheel, on the same flip, is no longer ground at all.
+        assert self.route_cost(encounter, "Wader", (6, 1)) is None
+        # The wheel overlay carries no height pair, so its square keeps the
+        # plane's own: an absent pair falls through rather than reading zero.
+        assert self.elevation_of(encounter, "Miller") == 0
+
+    def test_the_gate_refuses_until_both_spikes_are_out(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(
+            EncounterError, match="until north spike, south spike are open"
+        ):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="sluice gate"), rng)
+        # Refused before the spend: the party learns why without paying.
+        assert not encounter.state()["turn_state"]["action_used"]
+
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(15)
+        )
+        advance_to(encounter, "Brute", rng)
+        with pytest.raises(EncounterError, match="until south spike is open"):
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="sluice gate"), rng)
+
+    def test_a_creature_standing_where_the_ground_turns_impassable_stays(self) -> None:
+        """Entry cost governs entering, not remaining. No forced move exists."""
+        encounter, rng = self.fight()
+        self.open_the_sluice(encounter, rng)
+        miller = encounter.creatures["Miller"]
+        # Nothing shoved it and nothing refused the flip on its account.
+        assert miller.position == square_center((6, 1))
+        assert self.route_cost(encounter, "Miller", (6, 1)) == 0
+
+        advance_to(encounter, "Miller", rng)
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=square_center((7, 1))), rng
+        )
+        assert miller.position == square_center((7, 1))
+        # And having stepped off it, it may not step back on.
+        assert self.route_cost(encounter, "Miller", (6, 1)) is None
+
+    def test_two_fights_over_one_map_do_not_share_its_state(self) -> None:
+        """A ``BattleMap`` is frozen but its planes hold plain dicts.
+
+        ``simulate_rounds`` hands one map to every iteration, so a fixture
+        that wrote through to the map would leak the first fight's flood into
+        the second.
+        """
+        battle_map = sluice()
+        first, first_rng = self.fight(battle_map)
+        second, _ = self.fight(battle_map)
+        self.open_the_sluice(first, first_rng)
+
+        assert first.state()["map"]["features"]["sluice gate"]["open"] is True
+        assert second.state()["map"]["features"]["sluice gate"]["open"] is False
+        assert self.route_cost(second, "Wader", (5, 1)) == 5
+        assert self.elevation_of(second, "Wader") == 0
+
+    # --- what a claim does and does not decide ----------------------------
+    def test_an_overlay_without_terrain_leaves_the_ground_it_finds(self) -> None:
+        """An absent terrain pair falls through to the plane's own sparse layer.
+
+        The riser only lifts ``(3, 0)``. That square is authored difficult, and
+        it must still walk like difficult ground in both states — closed it
+        costs the doubled 10 ft, open it costs the doubled 10 ft plus a 10-foot
+        climb charged at the *difficult* rate of 3 ft per foot.
+        """
+        riser = MapFeature(
+            name="riser",
+            square=(1, 0),
+            closed_terrain="floor",
+            open_terrain="floor",
+            affects=(
+                FeatureOverlay(
+                    squares=((3, 0),), elevation=HeightPair(closed=0, open=10)
+                ),
+            ),
+        )
+        rng = Random(3)
+        encounter = Encounter(
+            [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))],
+            rng,
+            battle_map=strip(6, terrain={(3, 0): "difficult"}, features=(riser,)),
+        )
+        assert self.route_cost(encounter, "Thora", (3, 0)) == 5 + 5 + 10
+
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="riser"), rng)
+        assert self.route_cost(encounter, "Thora", (3, 0)) == 5 + 5 + (10 + 30)
+
+    def test_a_square_no_fixture_claims_keeps_the_plane_underneath(self) -> None:
+        """Row 0 lies outside every overlay, and the spike changes nothing.
+
+        Six squares of plain floor at 5 ft each, before the flood and after it.
+        The walk crosses the north spike's own square, which is the case a
+        fixture that changes no ground has to get right.
+        """
+        encounter, rng = self.fight()
+        assert self.route_cost(encounter, "Thora", (7, 0)) == 6 * 5
+        self.open_the_sluice(encounter, rng)
+        assert self.route_cost(encounter, "Thora", (7, 0)) == 6 * 5
+
+    # --- what the map may not say -----------------------------------------
+    def two_fighters(self) -> list[Creature]:
+        return [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))]
+
+    def test_an_overlay_naming_unknown_terrain_is_refused(self) -> None:
+        gate = MapFeature(
+            name="gate",
+            square=(1, 0),
+            affects=(
+                FeatureOverlay(
+                    squares=((3, 0),),
+                    terrain=TerrainPair(closed="floor", open="vale-lava"),
+                ),
+            ),
+        )
+        with pytest.raises(EncounterError, match="does not define: vale-lava"):
+            Encounter(
+                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+            )
+
+    def test_an_overlay_cell_off_the_map_is_refused(self) -> None:
+        gate = MapFeature(
+            name="gate",
+            square=(1, 0),
+            affects=(
+                FeatureOverlay(
+                    squares=((9, 0),),
+                    terrain=TerrainPair(closed="floor", open="water"),
+                ),
+            ),
+        )
+        with pytest.raises(
+            EncounterError, match=r"feature 'gate' reaches \(9, 0\), off the 6x1 map"
+        ):
+            Encounter(
+                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+            )
+
+    def test_two_plain_features_on_one_square_are_still_refused(self) -> None:
+        with pytest.raises(
+            EncounterError,
+            match=r"features 'north door' and 'south door' share square \(2, 0\)",
+        ):
+            Encounter(
+                self.two_fighters(),
+                Random(1),
+                battle_map=strip(
+                    6,
+                    features=(
+                        MapFeature(name="north door", square=(2, 0)),
+                        MapFeature(name="south door", square=(2, 0)),
+                    ),
+                ),
+            )
+
+    def test_an_overlay_reaching_another_fixtures_square_is_refused(self) -> None:
+        gate = MapFeature(
+            name="gate",
+            square=(1, 0),
+            affects=(
+                FeatureOverlay(
+                    squares=((3, 0),),
+                    terrain=TerrainPair(closed="floor", open="water"),
+                ),
+            ),
+        )
+        lever = MapFeature(name="lever", square=(3, 0))
+        with pytest.raises(
+            EncounterError, match=r"features 'gate' and 'lever' share square \(3, 0\)"
+        ):
+            Encounter(
+                self.two_fighters(),
+                Random(1),
+                battle_map=strip(6, features=(gate, lever)),
+            )
+
+    def test_a_fixture_claiming_its_own_square_twice_is_refused(self) -> None:
+        gate = MapFeature(
+            name="gate",
+            square=(1, 0),
+            affects=(
+                FeatureOverlay(
+                    squares=((1, 0),),
+                    terrain=TerrainPair(closed="floor", open="water"),
+                ),
+            ),
+        )
+        with pytest.raises(
+            EncounterError, match=r"feature 'gate' claims square \(1, 0\) twice"
+        ):
+            Encounter(
+                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+            )
+
+    def test_one_square_may_be_claimed_once_on_each_storey(self) -> None:
+        """The rule is one claim per square *per level*, not per footprint."""
+        battle_map = BattleMap(
+            name="tower",
+            width=4,
+            height=1,
+            levels=MappingProxyType(
+                {
+                    0: MapPlane(
+                        default_terrain="floor",
+                        features={"ground door": MapFeature("ground door", (0, 0))},
+                        connectors={(1, 0): 1},
+                    ),
+                    1: MapPlane(
+                        default_terrain="floor",
+                        features={"upper door": MapFeature("upper door", (0, 0))},
+                        connectors={(1, 0): 0},
+                    ),
+                }
+            ),
+            provenance=FIXTURE,
+        )
+        encounter = Encounter(
+            [fighter(position=square_center((2, 0))),
+             fighter("Brute", team="foes", position=square_center((3, 0)))],
+            Random(1),
+            battle_map=battle_map,
+        )
+        assert sorted(encounter.state()["map"]["features"]) == [
+            "ground door", "upper door"
+        ]
+
+    def test_a_prerequisite_the_map_does_not_have_is_refused(self) -> None:
+        gate = MapFeature(name="gate", square=(1, 0), requires=("ghost lever",))
+        lever = MapFeature(name="lever", square=(3, 0))
+        with pytest.raises(
+            EncounterError,
+            match=(
+                r"feature 'gate' requires 'ghost lever', which this map does not "
+                r"have; the map has: gate, lever"
+            ),
+        ):
+            Encounter(
+                self.two_fighters(),
+                Random(1),
+                battle_map=strip(6, features=(gate, lever)),
+            )
+
+    def test_a_prerequisite_on_another_storey_resolves(self) -> None:
+        """``requires`` is a prerequisite, not a reach: it may cross a floor."""
+        battle_map = BattleMap(
+            name="tower",
+            width=4,
+            height=1,
+            levels=MappingProxyType(
+                {
+                    0: MapPlane(
+                        default_terrain="floor",
+                        features={
+                            "gate": MapFeature(
+                                "gate", (0, 0), requires=("upper lever",)
+                            )
+                        },
+                        connectors={(1, 0): 1},
+                    ),
+                    1: MapPlane(
+                        default_terrain="floor",
+                        features={"upper lever": MapFeature("upper lever", (3, 0))},
+                        connectors={(1, 0): 0},
+                    ),
+                }
+            ),
+            provenance=FIXTURE,
+        )
+        encounter = Encounter(
+            [fighter(position=square_center((2, 0))),
+             fighter("Brute", team="foes", position=square_center((3, 0)))],
+            Random(1),
+            battle_map=battle_map,
+        )
+        assert encounter.state()["map"]["features"]["gate"]["blocked_by"] == [
+            "upper lever"
+        ]
+
+    # --- what operating one costs -----------------------------------------
+    def test_a_fixture_that_costs_an_action_spends_the_action(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(15)
+        )
+        turn = encounter.state()["turn_state"]
+        assert turn["action_used"] is True
+        # It spends the action *instead of* the free interaction, not as well.
+        assert turn["interaction_used"] is False
+
+    def test_a_fixture_that_costs_an_action_is_refused_without_one(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        encounter.act(Action(kind=ActionKind.DODGE), rng)
+        with pytest.raises(EncounterError, match="already taken an action this turn"):
+            encounter.act(
+                Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(15)
+            )
+
+    def test_a_failed_check_spends_the_action_and_moves_nothing(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(5)
+        )
+        assert events[0].kind == "interact"
+        assert events[0].data == {
+            "feature": "north spike",
+            "open": False,
+            "success": False,
+            "check": "d20 [5] +3 = 8 vs DC 15",
+        }
+        assert encounter.state()["map"]["features"]["north spike"]["open"] is False
+        assert encounter.state()["turn_state"]["action_used"] is True
+
+    def test_a_passed_check_reports_the_roll_beside_the_result(self) -> None:
+        encounter, rng = self.fight()
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"), FixedRandom(15)
+        )
+        assert events[0].data == {
+            "feature": "north spike",
+            "open": True,
+            "success": True,
+            "check": "d20 [15] +3 = 18 vs DC 15",
+        }
+        assert "d20 [15]" in events[0].detail
+
+    def test_a_fixture_with_no_check_reports_no_roll(self) -> None:
+        """The common case's event dict stays exactly what it was."""
+        encounter, rng = self.fight()
+        self.pull_both_spikes(encounter, rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="sluice gate"), rng
+        )
+        assert events[0].data == {"feature": "sluice gate", "open": True}
+
+    # --- saying which way to move it --------------------------------------
+    def test_set_open_makes_it_so_rather_than_toggling(self) -> None:
+        encounter, rng = self.fight()
+        self.pull_both_spikes(encounter, rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="sluice gate", set_open=True), rng
+        )
+        assert encounter.state()["map"]["features"]["sluice gate"]["open"] is True
+
+    def test_set_open_matching_the_current_state_is_refused(self) -> None:
+        encounter, rng = self.fight()
+        self.open_the_sluice(encounter, rng)
+        advance_to(encounter, "Brute", rng)
+        with pytest.raises(EncounterError, match="sluice gate is already open"):
+            encounter.act(
+                Action(kind=ActionKind.INTERACT, feature="sluice gate", set_open=True),
+                rng,
+            )
+        turn = encounter.state()["turn_state"]
+        assert turn["action_used"] is False
+        assert turn["interaction_used"] is False
+
+    def test_closing_something_already_closed_is_refused(self) -> None:
+        encounter, rng = self.corridor_fight()
+        with pytest.raises(EncounterError, match="door is already closed"):
+            encounter.act(
+                Action(kind=ActionKind.INTERACT, feature="door", set_open=False), rng
+            )
+        assert encounter.state()["turn_state"]["interaction_used"] is False
+
+    def corridor_fight(self) -> tuple[Encounter, Random]:
+        rng = Random(3)
+        door = MapFeature(name="door", square=(1, 0))
+        encounter = Encounter(
+            [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))],
+            rng,
+            battle_map=strip(6, features=(door,)),
+        )
+        advance_to(encounter, "Thora", rng)
+        return encounter, rng
+
+    def test_the_record_carries_which_way_it_was_asked_to_move(self) -> None:
+        encounter, rng = self.fight()
+        self.pull_both_spikes(encounter, rng)
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="sluice gate", set_open=True), rng
+        )
+        action = encounter.actions[-1].as_dict()["action"]
+        assert action["set_open"] is True
+        assert action["feature"] == "sluice gate"
+
+    def test_a_toggle_records_no_direction(self) -> None:
+        encounter, rng = self.corridor_fight()
+        encounter.act(Action(kind=ActionKind.INTERACT, feature="door"), rng)
+        assert "set_open" not in encounter.actions[-1].as_dict()["action"]
+
+    # --- closing is never gated -------------------------------------------
+    def test_driving_a_spike_back_in_does_not_shut_the_gate(self) -> None:
+        encounter, rng = self.fight()
+        self.open_the_sluice(encounter, rng)
+        advance_to(encounter, "Brute", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="south spike", set_open=False),
+            FixedRandom(15),
+        )
+        features = encounter.state()["map"]["features"]
+        assert features["south spike"]["open"] is False
+        assert features["sluice gate"]["open"] is True
+        assert self.route_cost(encounter, "Wader", (5, 1)) == 10
+
+    def test_the_gate_may_be_closed_with_its_prerequisites_unmet(self) -> None:
+        encounter, rng = self.fight()
+        self.open_the_sluice(encounter, rng)
+        advance_to(encounter, "Brute", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="south spike", set_open=False),
+            FixedRandom(15),
+        )
+        advance_to(encounter, "Wader", rng)
+        # Wader is not next to the gate; Miller is not either. Come round to
+        # Brute, whose spike is back in and whose action is fresh.
+        advance_to(encounter, "Brute", rng)
+        encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="sluice gate", set_open=False), rng
+        )
+        assert encounter.state()["map"]["features"]["sluice gate"]["open"] is False
+        assert self.route_cost(encounter, "Wader", (5, 1)) == 5
+
+    # --- what the state block says ----------------------------------------
+    def test_the_state_block_describes_a_fixture_beyond_a_plain_door(self) -> None:
+        encounter, rng = self.fight()
+        features = encounter.state()["map"]["features"]
+        assert features["north spike"] == {
+            "square": [2, 0],
+            "kind": "spike",
+            "level": 0,
+            "open": False,
+            "costs_action": True,
+            "check": {"ability": "strength", "dc": 15},
+        }
+        assert features["sluice gate"] == {
+            "square": [2, 1],
+            "kind": "door",
+            "level": 0,
+            "open": False,
+            "affects": [[4, 1], [5, 1], [6, 1]],
+            "requires": ["north spike", "south spike"],
+            "blocked_by": ["north spike", "south spike"],
+            "costs_action": True,
+        }
+
+    def test_what_is_blocking_it_narrows_as_the_spikes_come_out(self) -> None:
+        encounter, rng = self.fight()
+        self.pull_both_spikes(encounter, rng)
+        gate = encounter.state()["map"]["features"]["sluice gate"]
+        assert gate["requires"] == ["north spike", "south spike"]
+        assert "blocked_by" not in gate
 
 
 class TestSpellcasting:

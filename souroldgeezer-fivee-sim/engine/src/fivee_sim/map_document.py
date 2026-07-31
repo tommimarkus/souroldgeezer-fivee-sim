@@ -29,10 +29,26 @@ The format, ``fivee-sim-map`` version 1:
   to the same bytes. A reader that predates the key refuses the document as an
   unknown key rather than silently flattening it, which is why the format
   version does not move.
-- ``features`` — doors, stairs, spawn hints. A door records its *default*
-  open/closed state and an orientation; live state belongs to the encounter
-  overlay, never the document. Door cells are ordinary floor in ``tiles`` —
-  the feature supplies the blocking.
+- ``features`` — doors, stairs, spawn hints, and anything else a fight can
+  operate. A feature records its *default* state; live state belongs to the
+  encounter overlay, never the document. Door cells are ordinary floor in
+  ``tiles`` — the feature supplies the blocking.
+
+  **Carrying ``state`` is what makes a feature a fixture the fight owns**, and
+  not being a door: a spawn hint and a drawn stairway have none and stay
+  document-level, while a spike, a lever and a sluice gate have one and cross
+  to the battle map. Six optional keys say what operating one does and costs —
+  ``terrain`` and ``elevation`` for its own square, ``affects`` for the squares
+  it reaches past it, ``requires`` for what must already stand open,
+  ``costs_action`` and ``check`` for what the attempt spends and rolls. All six
+  are omitted on write when absent, so the format version does not move and a
+  file written before fixtures existed round-trips to the same bytes.
+
+  Every square a fixture governs — its own plus every overlay cell — is
+  governed by **exactly one** fixture per level. That is what leaves the format
+  with no precedence question: no document order to consult, no history to
+  replay, and so no way for a live fight and a stateless query to disagree
+  about what a square is.
 - ``provenance`` — generator, seed, fully-resolved params (defaults included,
   so the document alone reproduces the map), the ``edited`` flag, and a
   source string. Editing a map flips ``edited`` and leaves the rest alone.
@@ -51,15 +67,24 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
-from collections import Counter
-from collections.abc import Mapping
+from collections import Counter, deque
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
 from .kernel.grid import FEET_PER_SQUARE, Square, TerrainTable
 from .kernel.mapgen import GeneratedMap
-from .model.battlemap import BattleMap, MapFeature, MapPlane
+from .kernel.rules import Ability
+from .model.battlemap import (
+    BattleMap,
+    FeatureCheck,
+    FeatureOverlay,
+    HeightPair,
+    MapFeature,
+    MapPlane,
+    TerrainPair,
+)
 from .validation import Diagnostic, Reader, Severity
 
 __all__ = [
@@ -77,6 +102,7 @@ __all__ = [
     "MapFeatureRecord",
     "MapGrid",
     "MapLevel",
+    "MapOverlayRecord",
     "MapProvenance",
     "as_payload",
     "document_from",
@@ -135,8 +161,22 @@ _GRID_KEYS = frozenset({"width", "height", "cell_feet"})
 _ELEVATION_KEYS = frozenset({"default", "squares"})
 _LEVEL_KEYS = frozenset({"index", "name", "tiles", "elevation", "features"})
 _FEATURE_KEYS = frozenset(
-    {"id", "kind", "at", "orientation", "state", "team", "to_level"}
+    {
+        "id", "kind", "at", "orientation", "state", "team", "to_level",
+        "terrain", "elevation", "affects", "requires", "costs_action", "check",
+    }
 )
+#: The keys the six fixture keys add on top of a plain annotation. A feature
+#: carrying any of them without a ``state`` is refused: a fixture nothing can
+#: operate would flip nothing, silently.
+_FIXTURE_KEYS = ("affects", "check", "costs_action", "elevation", "requires", "terrain")
+_OVERLAY_KEYS = frozenset({"cells", "terrain", "elevation"})
+_CHECK_KEYS = frozenset({"ability", "dc"})
+#: A fixture's two states, and so the two keys of every pair in the format.
+_PAIR_STATES = frozenset({"closed", "open"})
+#: The same two, in the order they are read and written — closed first, because
+#: closed is the state a fixture is authored in.
+_PAIR_ORDER = ("closed", "open")
 
 #: The index of the ground plane. It is the one level the file keeps in its
 #: top-level ``tiles``/``elevation``/``features`` keys rather than in ``levels``,
@@ -198,12 +238,37 @@ class MapColor:
 
 
 @dataclass(frozen=True, slots=True)
+class MapOverlayRecord:
+    """Squares a fixture governs beyond its own, as the document records them.
+
+    Deliberately not the runtime
+    :class:`~fivee_sim.model.battlemap.FeatureOverlay`: the file wants a
+    canonically-sorted list it can write back byte-for-byte, and a fight wants a
+    square-to-kind index it can read inside a pathfinding loop. The flattening
+    between the two is translation, and it lives in :func:`_plane_of` beside the
+    rest of it.
+    """
+
+    cells: tuple[Square, ...]
+    terrain: TerrainPair | None = None
+    elevation: HeightPair | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class MapFeatureRecord:
     """One feature as the document records it — defaults, not live state.
 
     ``to_level`` is what makes a stairway more than a drawn glyph: it names the
     level the feature leads to, and the square it lands on is the one it stands
     on. A feature without it is an ordinary fixture that goes nowhere.
+
+    ``state`` is what makes a feature something the fight can *operate*, and the
+    six keys after it are what operating it does and costs: what its own square
+    becomes (``terrain``, ``elevation``), what else changes with it
+    (``affects``), what must already stand open (``requires``), and what the
+    attempt spends and rolls (``costs_action``, ``check``). All six are optional
+    and all six are omitted on write, so a file that predates them is unchanged
+    by a round trip.
     """
 
     id: str
@@ -213,6 +278,12 @@ class MapFeatureRecord:
     state: str | None = None
     team: str | None = None
     to_level: int | None = None
+    terrain: TerrainPair | None = None
+    elevation: HeightPair | None = None
+    affects: tuple[MapOverlayRecord, ...] = ()
+    requires: tuple[str, ...] = ()
+    costs_action: bool = False
+    check: FeatureCheck | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -565,6 +636,216 @@ def _parse_elevation(
     return MapElevation(default=default, squares=MappingProxyType(squares))
 
 
+def _terrain_pair(
+    raw: Any,
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    source: str,
+    *,
+    field: str,
+    name: str,
+    terrain: TerrainTable,
+) -> TerrainPair | None:
+    """A ``{"closed", "open"}`` pair of terrain kinds, or ``None`` if unusable.
+
+    Kinds are checked against the *loaded content*, never against this
+    document's legend: a fixture may turn its square into a kind the map paints
+    nowhere, which is the licence the palette already has and for the same
+    reason — what a square becomes is not a drawing question.
+    """
+    if not isinstance(raw, Mapping):
+        reader.fail(
+            field,
+            "must be an object naming the terrain kind in each state, such as "
+            '{"closed": "door-closed", "open": "door-open"}',
+        )
+        return None
+    sub = Reader(raw, diagnostics, source=source, section="map", name=f"{name}.{field}")
+    sub.unknown_keys(_PAIR_STATES)
+    available = ", ".join(sorted(terrain)) or "none"
+    kinds: dict[str, str] = {}
+    for state in _PAIR_ORDER:
+        value = raw.get(state)
+        if value is None:
+            sub.fail(state, 'must give both "closed" and "open" terrain kinds')
+            continue
+        if not isinstance(value, str) or not value.strip():
+            sub.fail(state, f"must name a terrain kind, got {value!r}")
+            continue
+        if value not in terrain:
+            sub.fail(
+                state,
+                f"names terrain {value!r}, which the active content does not define. "
+                f"Available: {available}",
+            )
+            continue
+        kinds[state] = value
+    if not sub.ok:
+        return None
+    return TerrainPair(closed=kinds["closed"], open=kinds["open"])
+
+
+def _height_pair(
+    raw: Any,
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    source: str,
+    *,
+    field: str,
+    name: str,
+) -> HeightPair | None:
+    """A ``{"closed", "open"}`` pair of ground heights in feet."""
+    if not isinstance(raw, Mapping):
+        reader.fail(
+            field,
+            "must be an object naming the ground height in feet in each state, "
+            'such as {"closed": 0, "open": -5}',
+        )
+        return None
+    sub = Reader(raw, diagnostics, source=source, section="map", name=f"{name}.{field}")
+    sub.unknown_keys(_PAIR_STATES)
+    feet: dict[str, int] = {}
+    for state in _PAIR_ORDER:
+        if raw.get(state) is None:
+            sub.fail(state, 'must give both "closed" and "open" heights in feet')
+            continue
+        feet[state] = sub.integer(state)
+    if not sub.ok:
+        return None
+    return HeightPair(closed=feet["closed"], open=feet["open"])
+
+
+def _feature_check(
+    raw: Any, reader: Reader, diagnostics: list[Diagnostic], source: str, *, name: str
+) -> FeatureCheck | None:
+    """The ability check operating a fixture takes, if it takes one.
+
+    A raw ability check: creatures carry no skill proficiencies, so a DC here is
+    set as if untrained, and the format has no place to say otherwise.
+    """
+    if not isinstance(raw, Mapping):
+        reader.fail(
+            "check",
+            "must be an object naming an ability and a DC, such as "
+            '{"ability": "strength", "dc": 15}',
+        )
+        return None
+    sub = Reader(raw, diagnostics, source=source, section="map", name=f"{name}.check")
+    sub.unknown_keys(_CHECK_KEYS)
+    if raw.get("ability") is None:
+        sub.fail(
+            "ability",
+            f"required: the ability the check rolls; one of "
+            f"{', '.join(member.value for member in Ability)}",
+        )
+    ability = sub.enum("ability", Ability)
+    if raw.get("dc") is None:
+        sub.fail("dc", "required: the difficulty class the check is made against")
+    dc = sub.integer("dc", minimum=1)
+    if not sub.ok or ability is None:
+        return None
+    return FeatureCheck(ability=ability, dc=dc)
+
+
+def _overlay_cells(raw: Any, reader: Reader, grid: MapGrid | None) -> tuple[Square, ...] | None:
+    """One overlay's squares: at least one, on the grid, sorted row then column."""
+    if raw is None:
+        reader.fail("cells", "required: the squares this overlay governs, as a list of [x, y]")
+        return None
+    if not isinstance(raw, list):
+        reader.fail("cells", f"must be a list of [x, y] squares, got {raw!r}")
+        return None
+    if not raw:
+        reader.fail("cells", "must name at least one square")
+        return None
+    cells: list[Square] = []
+    malformed = False
+    for index, cell in enumerate(raw):
+        if (
+            not isinstance(cell, (list, tuple))
+            or len(cell) != 2
+            or any(isinstance(value, bool) or not isinstance(value, int) for value in cell)
+        ):
+            reader.fail("cells", f"cell #{index} must be [x, y] square indices, got {cell!r}")
+            malformed = True
+            continue
+        square = (int(cell[0]), int(cell[1]))
+        if grid is not None and not (
+            0 <= square[0] < grid.width and 0 <= square[1] < grid.height
+        ):
+            reader.fail(
+                "cells",
+                f"cell #{index} is at ({square[0]}, {square[1]}), outside the "
+                f"{grid.width}x{grid.height} grid",
+            )
+            malformed = True
+            continue
+        cells.append(square)
+    if malformed:
+        return None
+    return tuple(sorted(cells, key=lambda square: (square[1], square[0])))
+
+
+def _parse_overlays(
+    raw: Any,
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    grid: MapGrid | None,
+    source: str,
+    *,
+    name: str,
+    terrain: TerrainTable,
+) -> tuple[MapOverlayRecord, ...] | None:
+    """The squares a fixture reaches past its own, or ``None`` if any is unusable.
+
+    The document stores **cells and never a rect**. A rect is an edit-op
+    convenience for the author who would rather type one than forty pairs; by
+    the time it reaches the file it has been expanded, so the format has one
+    shape — which is what lets a resize translate an overlay square by square.
+    """
+    if not isinstance(raw, list):
+        reader.fail(
+            "affects",
+            "must be a list of overlay objects, each naming the cells it governs "
+            "and what they are in each state",
+        )
+        return None
+    overlays: list[MapOverlayRecord] = []
+    usable = True
+    for index, entry in enumerate(raw):
+        if not isinstance(entry, Mapping):
+            reader.fail("affects", f"entry #{index} must be an object")
+            usable = False
+            continue
+        where = f"{name} overlay #{index}"
+        sub = Reader(entry, diagnostics, source=source, section="map", name=where)
+        sub.unknown_keys(_OVERLAY_KEYS)
+        cells = _overlay_cells(entry.get("cells"), sub, grid)
+        pair: TerrainPair | None = None
+        if entry.get("terrain") is not None:
+            pair = _terrain_pair(
+                entry["terrain"], sub, diagnostics, source,
+                field="terrain", name=where, terrain=terrain,
+            )
+        heights: HeightPair | None = None
+        if entry.get("elevation") is not None:
+            heights = _height_pair(
+                entry["elevation"], sub, diagnostics, source, field="elevation", name=where
+            )
+        if entry.get("terrain") is None and entry.get("elevation") is None:
+            reader.fail(
+                "affects",
+                f"entry #{index} needs 'terrain', 'elevation', or both; an overlay "
+                f"that moves neither governs nothing",
+            )
+            usable = False
+        if cells is None or not sub.ok:
+            usable = False
+            continue
+        overlays.append(MapOverlayRecord(cells=cells, terrain=pair, elevation=heights))
+    return tuple(overlays) if usable else None
+
+
 def _parse_features(
     raw: Any,
     reader: Reader,
@@ -573,6 +854,7 @@ def _parse_features(
     source: str,
     *,
     claimed: dict[str, str],
+    terrain: TerrainTable,
     where: str = "",
 ) -> tuple[MapFeatureRecord, ...]:
     """One level's features. ``claimed`` spans the document, ``where`` locates it.
@@ -581,6 +863,11 @@ def _parse_features(
     features by name in a single table, so two storeys sharing an id would
     resolve to one feature rather than two. Doors, by contrast, collide only
     within a level — two floors may each hang one over the same square.
+
+    That door check stays here, where it can name the door it collided with;
+    the wider rule that every square a fixture governs is governed by exactly
+    one is :func:`_check_claims`, a second pass, because an overlay may name a
+    square a fixture further down the list claims.
     """
     if not isinstance(raw, list):
         reader.fail("features", "must be a list of feature objects")
@@ -632,6 +919,16 @@ def _parse_features(
         state = sub.string("state") or None
         if state is not None and state not in _DOOR_STATES:
             sub.fail("state", f"must be one of: {', '.join(_DOOR_STATES)}; got {state!r}")
+        # Carrying a state is what makes a feature one a fight can operate, so a
+        # feature that says what operating it costs but carries no state would
+        # never be operated at all — a silent no-op, refused instead.
+        carried = [key for key in _FIXTURE_KEYS if key in entry]
+        if carried and state is None:
+            sub.fail(
+                "state",
+                f"required for a feature carrying {', '.join(carried)}; only a "
+                f"feature with a state is one a fight can operate",
+            )
         team = sub.string("team") or None
 
         to_level: int | None = None
@@ -674,11 +971,49 @@ def _parse_features(
                 )
             else:
                 claimed[feature_id] = position
-        if sub.ok and at is not None:
+        # The fixture keys, each parsed whether or not the ones before it were:
+        # a feature with three mistakes reports three. A key that is present and
+        # unusable drops the record, so the second passes below never walk a
+        # half-read fixture.
+        own_terrain: TerrainPair | None = None
+        if entry.get("terrain") is not None:
+            own_terrain = _terrain_pair(
+                entry["terrain"], sub, diagnostics, source,
+                field="terrain", name=label, terrain=terrain,
+            )
+        own_height: HeightPair | None = None
+        if entry.get("elevation") is not None:
+            own_height = _height_pair(
+                entry["elevation"], sub, diagnostics, source, field="elevation", name=label
+            )
+        overlays: tuple[MapOverlayRecord, ...] | None = ()
+        if entry.get("affects") is not None:
+            overlays = _parse_overlays(
+                entry["affects"], sub, diagnostics, grid, source,
+                name=label, terrain=terrain,
+            )
+        requires = tuple(sub.string_list("requires"))
+        costs_action = sub.boolean("costs_action")
+        check: FeatureCheck | None = None
+        if entry.get("check") is not None:
+            check = _feature_check(entry["check"], sub, diagnostics, source, name=label)
+        unusable = any(
+            parsed is None and entry.get(key) is not None
+            for key, parsed in (
+                ("terrain", own_terrain),
+                ("elevation", own_height),
+                ("affects", overlays),
+                ("check", check),
+            )
+        )
+
+        if sub.ok and not unusable and at is not None:
             features.append(
                 MapFeatureRecord(
                     id=feature_id, kind=kind, at=at,
                     orientation=orientation, state=state, team=team, to_level=to_level,
+                    terrain=own_terrain, elevation=own_height, affects=overlays or (),
+                    requires=requires, costs_action=costs_action, check=check,
                 )
             )
     return tuple(features)
@@ -692,6 +1027,7 @@ def _parse_levels(
     legend: dict[str, str] | None,
     source: str,
     claimed: dict[str, str],
+    terrain: TerrainTable,
 ) -> dict[int, MapLevel]:
     """The storeys above and below the ground, keyed by index.
 
@@ -739,7 +1075,7 @@ def _parse_levels(
         elevation = _parse_elevation(entry, sub, diagnostics, grid, source)
         features = _parse_features(
             entry.get("features", []), sub, diagnostics, grid, source,
-            claimed=claimed, where=f" on level {index}",
+            claimed=claimed, terrain=terrain, where=f" on level {index}",
         )
         levels[index] = MapLevel(
             index=index,
@@ -777,6 +1113,153 @@ def _check_connectors(
                     f"feature '{feature.id}' leads to level {feature.to_level}, but "
                     f"there is no level {feature.to_level} in this map. Declared: {available}",
                 )
+
+
+def _claimed_squares(feature: MapFeatureRecord) -> Iterator[Square]:
+    """Every square a fixture decides — the record side of ``MapFeature.claims``.
+
+    The same walk, deliberately: the own square, then every overlay cell. The
+    runtime asks the battle-map feature itself, which does not exist until the
+    document is known good, so the question has to be answerable here too — and
+    the two answers must be the same one.
+    """
+    yield feature.at
+    for overlay in feature.affects:
+        yield from overlay.cells
+
+
+def _check_claims(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
+    """Each square a fixture governs is governed by exactly one, per level.
+
+    A second pass for the same reason as :func:`_check_connectors`: an overlay
+    may name a square a fixture further down the list claims. Enforcing it buys
+    the format its precedence question outright — there is no document order to
+    consult and no history to replay, so a live fight and a stateless
+    ``maps.query`` cannot disagree about what a square is.
+
+    Only a fixture claims anything. A spawn hint and a drawn stairway carry no
+    state, decide nothing, and may share any square they like.
+    """
+    for index in sorted(document_levels):
+        owner: dict[Square, str] = {}
+        for feature in document_levels[index].features:
+            if feature.state is None:
+                continue
+            for square in _claimed_squares(feature):
+                held = owner.get(square)
+                if held is None:
+                    owner[square] = feature.id
+                elif held == feature.id:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' claims square ({square[0]}, {square[1]}) "
+                        f"twice; a fixture decides each square once",
+                    )
+                else:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' claims square ({square[0]}, {square[1]}), "
+                        f"which feature '{held}' already governs; one fixture per square",
+                    )
+
+
+def _reachable(edges: Mapping[str, tuple[str, ...]], start: str) -> set[str]:
+    """Every id reachable from ``start`` by following requirements."""
+    seen: set[str] = set()
+    stack = list(edges.get(start, ()))
+    while stack:
+        node = stack.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        stack.extend(edges.get(node, ()))
+    return seen
+
+
+def _shortest_cycle(
+    edges: Mapping[str, tuple[str, ...]], start: str, component: set[str]
+) -> tuple[str, ...]:
+    """The shortest path from ``start`` back to itself, ties broken by name."""
+    queue: deque[tuple[str, ...]] = deque([(start,)])
+    seen = {start}
+    while queue:
+        path = queue.popleft()
+        for node in edges.get(path[-1], ()):
+            if node == start:
+                return (*path, start)
+            if node in component and node not in seen:
+                seen.add(node)
+                queue.append((*path, node))
+    return (start, start)  # pragma: no cover - only called where a cycle exists
+
+
+def _requirement_cycles(edges: Mapping[str, tuple[str, ...]]) -> list[tuple[str, ...]]:
+    """One path per requirement cycle, each starting at its smallest id.
+
+    Attaching the report to the lexicographically smallest id in the cycle is
+    what makes it deterministic — which fixture the author edited last does not
+    change what comes back — and reports a cycle once rather than once per
+    fixture caught in it.
+    """
+    reach = {node: _reachable(edges, node) for node in edges}
+    cycles: list[tuple[str, ...]] = []
+    for node in sorted(edges):
+        if node not in reach[node]:
+            continue
+        component = {other for other in reach[node] if node in reach.get(other, set())}
+        if node != min(component):
+            continue
+        cycles.append(_shortest_cycle(edges, node, component))
+    return cycles
+
+
+def _check_requires(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
+    """Every ``requires`` names another fixture that can stand open, and no cycle.
+
+    A second pass beside :func:`_check_connectors` and :func:`_check_claims`,
+    and for the same reason twice over: a prerequisite may be authored after the
+    fixture waiting on it, and may stand on another storey.
+    """
+    states: dict[str, str | None] = {}
+    for index in sorted(document_levels):
+        for feature in document_levels[index].features:
+            states[feature.id] = feature.state
+    declared = ", ".join(sorted(states)) or "none"
+
+    edges: dict[str, tuple[str, ...]] = {}
+    for index in sorted(document_levels):
+        for feature in document_levels[index].features:
+            satisfiable: list[str] = []
+            for required in feature.requires:
+                if required == feature.id:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' requires itself; a prerequisite is "
+                        f"another fixture",
+                    )
+                elif required not in states:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' requires {required!r}, but there is no "
+                        f"feature {required!r} in this map. Declared: {declared}",
+                    )
+                elif states[required] is None:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' requires {required!r}, which carries no "
+                        f"state and so is never open; only a feature with a state can be "
+                        f"a prerequisite",
+                    )
+                else:
+                    satisfiable.append(required)
+            if satisfiable:
+                edges[feature.id] = tuple(sorted(set(satisfiable)))
+    for path in _requirement_cycles(edges):
+        reader.fail(
+            "features",
+            f"feature '{path[0]}' is in a requirement cycle: {' -> '.join(path)}; "
+            f"nothing in it could ever be opened first",
+        )
 
 
 def _parse_provenance(
@@ -860,9 +1343,12 @@ def _parse(
     elevation = _parse_elevation(payload, reader, diagnostics, grid, source)
     claimed: dict[str, str] = {}
     features = _parse_features(
-        payload.get("features", []), reader, diagnostics, grid, source, claimed=claimed
+        payload.get("features", []), reader, diagnostics, grid, source,
+        claimed=claimed, terrain=terrain,
     )
-    levels = _parse_levels(payload, reader, diagnostics, grid, legend, source, claimed)
+    levels = _parse_levels(
+        payload, reader, diagnostics, grid, legend, source, claimed, terrain
+    )
     levels[GROUND_LEVEL] = MapLevel(
         index=GROUND_LEVEL,
         name="ground",
@@ -871,6 +1357,8 @@ def _parse(
         elevation=elevation if elevation is not None else MapElevation(),
     )
     _check_connectors(levels, reader)
+    _check_claims(levels, reader)
+    _check_requires(levels, reader)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
     if (
@@ -938,6 +1426,44 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
         entry["team"] = feature.team
     if feature.to_level is not None:
         entry["to_level"] = feature.to_level
+    if feature.terrain is not None:
+        entry["terrain"] = _pair_payload(feature.terrain)
+    if feature.elevation is not None:
+        entry["elevation"] = _pair_payload(feature.elevation)
+    if feature.affects:
+        entry["affects"] = [_overlay_payload(overlay) for overlay in feature.affects]
+    if feature.requires:
+        entry["requires"] = list(feature.requires)
+    if feature.costs_action:
+        entry["costs_action"] = True
+    if feature.check is not None:
+        entry["check"] = {"ability": feature.check.ability.value, "dc": feature.check.dc}
+    return entry
+
+
+def _pair_payload(pair: TerrainPair | HeightPair) -> dict[str, Any]:
+    """One ``{"closed", "open"}`` pair, closed first because that is the default."""
+    return {"closed": pair.closed, "open": pair.open}
+
+
+def _overlay_payload(overlay: MapOverlayRecord) -> dict[str, Any]:
+    """One overlay group, its cells sorted by row then column.
+
+    The same canonicalisation the height layer applies to its squares, and for
+    the same reason: the service layer may hand a rect's worth of cells over in
+    whatever order it expanded them, and painting a flood and painting it back
+    should write the bytes it started with.
+    """
+    entry: dict[str, Any] = {
+        "cells": [
+            [square[0], square[1]]
+            for square in sorted(overlay.cells, key=lambda s: (s[1], s[0]))
+        ]
+    }
+    if overlay.terrain is not None:
+        entry["terrain"] = _pair_payload(overlay.terrain)
+    if overlay.elevation is not None:
+        entry["elevation"] = _pair_payload(overlay.elevation)
     return entry
 
 
@@ -1158,6 +1684,24 @@ def document_from(
 
 
 # --- the bridge to the battle map ------------------------------------------
+def _own_terrain(
+    feature: MapFeatureRecord, level: MapLevel, legend: Mapping[str, str]
+) -> TerrainPair:
+    """What a fixture's own square is in each state, when the file does not say.
+
+    A door is what a door has always been — the hardcoded pair, now merely
+    expressible. Anything else is the tile it stands on, in *both* states, so a
+    lever driven into a wall leaves a wall behind it whichever way it is thrown.
+    """
+    if feature.terrain is not None:
+        return feature.terrain
+    if feature.kind == "door":
+        return TerrainPair(closed="door-closed", open="door-open")
+    x, y = feature.at
+    kind = legend[level.tiles[y][x]]
+    return TerrainPair(closed=kind, open=kind)
+
+
 def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
     """One document level as the encounter-facing plane.
 
@@ -1188,13 +1732,31 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
     for feature in level.features:
         if feature.to_level is not None:
             connectors[feature.at] = feature.to_level
-        if feature.kind != "door":
+        # Carrying a state is what makes a feature one the fight owns — not
+        # being a door. A spawn hint and a drawn stairway have none and stay
+        # document-level; a spike, a lever and a sluice gate have one.
+        if feature.state is None:
             continue
+        own = _own_terrain(feature, level, legend)
         features[feature.id] = MapFeature(
             name=feature.id,
             square=feature.at,
-            kind="door",
+            kind=feature.kind,
+            closed_terrain=own.closed,
+            open_terrain=own.open,
             initially_open=feature.state == "open",
+            elevation=feature.elevation,
+            affects=tuple(
+                FeatureOverlay(
+                    squares=overlay.cells,
+                    terrain=overlay.terrain,
+                    elevation=overlay.elevation,
+                )
+                for overlay in feature.affects
+            ),
+            requires=feature.requires,
+            costs_action=feature.costs_action,
+            check=feature.check,
         )
     return MapPlane(
         default_terrain=default,
@@ -1212,14 +1774,15 @@ def to_grid(document: MapDocument) -> BattleMap:
     One :class:`~fivee_sim.model.battlemap.MapPlane` per level, each resolved by
     :func:`_plane_of`. Ground height crosses as the document already holds it —
     the level's own default and the squares that depart from it — since there is
-    nothing to infer. Door features become :class:`MapFeature` rows with
-    ``initially_open`` read from the recorded default state.
+    nothing to infer. Every feature carrying a ``state`` becomes a
+    :class:`MapFeature` row with ``initially_open`` read from that state, and
+    the overlay records flattened into the runtime form beside it.
 
     A feature carrying ``to_level`` also becomes a connector on its plane, which
-    is the one thing a fight consults a stairway for. Every other non-door
-    feature — a plain stairway drawn for the reader, a spawn hint — stays
-    document-level *on purpose*: the battle map has no slot for it and a fight
-    does not ask; renderers and placement logic read them from the document.
+    is the one thing a fight consults a stairway for. A feature carrying neither
+    — a plain stairway drawn for the reader, a spawn hint — stays document-level
+    *on purpose*: the battle map has no slot for it and a fight does not ask;
+    renderers and placement logic read them from the document.
     """
     return BattleMap(
         name=document.name,

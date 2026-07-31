@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.kernel.rules import Ability
 from fivee_sim.map_document import (
     DEFAULT_LEGEND,
     MAX_MAP_BYTES,
@@ -22,11 +23,13 @@ from fivee_sim.map_document import (
     MapColor,
     MapElevation,
     MapError,
+    MapOverlayRecord,
     parse_document,
     serialize,
     to_grid,
     validate_document,
 )
+from fivee_sim.model.battlemap import FeatureCheck, FeatureOverlay, HeightPair, TerrainPair
 from fivee_sim.validation import Diagnostic, Severity
 
 
@@ -820,3 +823,482 @@ class TestHandEdited:
         grid = to_grid(doc)
         assert grid.terrain[(3, 2)] == "difficult"
         assert grid.features["door-1"].initially_open is True
+
+
+def sluice() -> dict[str, Any]:
+    """A gate that floods the chamber, and the spike that holds it shut.
+
+    The spike stands on a wall square and names no terrain of its own, which is
+    the case that pins a fixture taking its own tile's kind in both states — a
+    lever on a wall stays a wall.
+    """
+    payload = document()
+    payload["features"] = [
+        {
+            "id": "spike",
+            "kind": "spike",
+            "at": [0, 4],
+            "state": "closed",
+            "costs_action": True,
+            "check": {"ability": "strength", "dc": 15},
+        },
+        {
+            "id": "gate",
+            "kind": "door",
+            "at": [3, 4],
+            "orientation": "horizontal",
+            "state": "closed",
+            "requires": ["spike"],
+            "costs_action": True,
+            "terrain": {"closed": "door-closed", "open": "water"},
+            "elevation": {"closed": 0, "open": -5},
+            "affects": [
+                {
+                    "cells": [[2, 3], [1, 3]],
+                    "terrain": {"closed": "floor", "open": "water"},
+                    "elevation": {"closed": 0, "open": -5},
+                },
+                {"cells": [[4, 1]], "terrain": {"closed": "floor", "open": "difficult"}},
+            ],
+        },
+        {"id": "spawn-party", "kind": "spawn", "at": [1, 1], "team": "party"},
+    ]
+    return payload
+
+
+class TestFeatureFixtures:
+    """The six optional keys that make a feature something a fight can operate."""
+
+    def test_a_document_with_no_fixture_keys_writes_the_bytes_it_always_did(self) -> None:
+        # The additive-optional-key promise: format_version stays 1 because every
+        # file written before fixtures existed writes back byte-for-byte.
+        written = json.loads(serialize(parse_document(document(), source="t", terrain=TERRAIN)))
+        assert written["features"] == document()["features"]
+        assert list(written["features"][0]) == ["id", "kind", "at", "orientation", "state"]
+        assert list(written["features"][1]) == ["id", "kind", "at", "team"]
+
+    def test_the_six_keys_parse_onto_the_record(self) -> None:
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        gate = next(f for f in doc.features if f.id == "gate")
+        assert gate.terrain == TerrainPair(closed="door-closed", open="water")
+        assert gate.elevation == HeightPair(closed=0, open=-5)
+        assert gate.requires == ("spike",)
+        assert gate.costs_action is True
+        spike = next(f for f in doc.features if f.id == "spike")
+        assert spike.check == FeatureCheck(ability=Ability.STRENGTH, dc=15)
+        assert gate.affects == (
+            MapOverlayRecord(
+                cells=((1, 3), (2, 3)),
+                terrain=TerrainPair(closed="floor", open="water"),
+                elevation=HeightPair(closed=0, open=-5),
+            ),
+            MapOverlayRecord(
+                cells=((4, 1),),
+                terrain=TerrainPair(closed="floor", open="difficult"),
+            ),
+        )
+
+    def test_a_feature_that_carries_none_of_them_carries_none_of_them(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        spawn = next(f for f in doc.features if f.id == "spawn-party")
+        assert (spawn.terrain, spawn.elevation, spawn.check) == (None, None, None)
+        assert (spawn.affects, spawn.requires, spawn.costs_action) == ((), (), False)
+
+    def test_a_fixture_document_round_trips_byte_stably(self) -> None:
+        doc = parse_document(sluice(), source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+        assert again == doc
+
+    def test_cells_are_written_in_row_then_column_order(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][0]["cells"] = [[2, 3], [3, 2], [1, 3]]
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        gate = next(f for f in written["features"] if f["id"] == "gate")
+        assert gate["affects"][0]["cells"] == [[3, 2], [1, 3], [2, 3]]
+
+    def test_the_keys_are_written_in_the_documents_own_order(self) -> None:
+        written = json.loads(serialize(parse_document(sluice(), source="t", terrain=TERRAIN)))
+        gate = next(f for f in written["features"] if f["id"] == "gate")
+        assert list(gate) == [
+            "id", "kind", "at", "orientation", "state",
+            "terrain", "elevation", "affects", "requires", "costs_action",
+        ]
+        assert list(gate["affects"][0]) == ["cells", "terrain", "elevation"]
+
+    def test_an_overlay_may_move_only_the_height(self) -> None:
+        # Either pair alone is a whole overlay: a floodgate draining a cistern
+        # lowers the water without changing what the squares are.
+        payload = sluice()
+        payload["features"][1]["affects"][1] = {
+            "cells": [[4, 1]],
+            "elevation": {"closed": 0, "open": -5},
+        }
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        gate = next(f for f in doc.features if f.id == "gate")
+        assert gate.affects[1] == MapOverlayRecord(
+            cells=((4, 1),), elevation=HeightPair(closed=0, open=-5)
+        )
+        written = json.loads(serialize(doc))
+        entry = next(f for f in written["features"] if f["id"] == "gate")["affects"][1]
+        assert list(entry) == ["cells", "elevation"]
+
+    def test_a_fixture_that_costs_nothing_writes_no_costs_action_key(self) -> None:
+        payload = sluice()
+        payload["features"][1]["costs_action"] = False
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        gate = next(f for f in written["features"] if f["id"] == "gate")
+        assert "costs_action" not in gate
+
+
+class TestFixturesCrossToTheBattleMap:
+    """``state``, not ``kind``, is what makes a feature one the fight owns."""
+
+    def test_a_non_door_carrying_a_state_becomes_a_feature(self) -> None:
+        grid = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN))
+        assert set(grid.features) == {"spike", "gate"}
+        assert grid.features["spike"].kind == "spike"
+
+    def test_a_non_door_carrying_no_state_stays_document_level(self) -> None:
+        # The other side of the same rule: a spawn hint is an annotation, and a
+        # drawn stairway goes on being drawn rather than operated.
+        payload = sluice()
+        payload["features"].append({"id": "stair-1", "kind": "stairs_down", "at": [4, 3]})
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert "stair-1" not in grid.features
+        assert "spawn-party" not in grid.features
+
+    def test_a_fixture_without_terrain_takes_its_own_tile_in_both_states(self) -> None:
+        # The regression guard for a hand-written file that already carries a
+        # state on a non-door: a spike driven into a wall stays a wall.
+        spike = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["spike"]
+        assert (spike.closed_terrain, spike.open_terrain) == ("wall", "wall")
+
+    def test_a_door_without_terrain_keeps_the_door_pair(self) -> None:
+        grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
+        door = grid.features["door-1"]
+        assert (door.closed_terrain, door.open_terrain) == ("door-closed", "door-open")
+
+    def test_an_authored_pair_overrides_the_default(self) -> None:
+        gate = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["gate"]
+        assert (gate.closed_terrain, gate.open_terrain) == ("door-closed", "water")
+        assert gate.elevation == HeightPair(closed=0, open=-5)
+
+    def test_overlays_cross_as_runtime_overlays(self) -> None:
+        gate = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["gate"]
+        assert gate.affects == (
+            FeatureOverlay(
+                squares=((1, 3), (2, 3)),
+                terrain=TerrainPair(closed="floor", open="water"),
+                elevation=HeightPair(closed=0, open=-5),
+            ),
+            FeatureOverlay(
+                squares=((4, 1),),
+                terrain=TerrainPair(closed="floor", open="difficult"),
+            ),
+        )
+
+    def test_what_operating_it_costs_and_takes_crosses_too(self) -> None:
+        grid = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN))
+        assert grid.features["gate"].requires == ("spike",)
+        assert grid.features["gate"].costs_action is True
+        assert grid.features["spike"].check == FeatureCheck(ability=Ability.STRENGTH, dc=15)
+
+    def test_a_fixture_on_a_storey_lands_on_its_own_plane(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "lever", "kind": "lever", "at": [1, 1], "state": "closed"}
+        )
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert set(grid.levels[1].features) == {"lever"}
+        assert "lever" not in grid.ground.features
+
+
+class TestFixturePairDiagnostics:
+    def test_a_terrain_pair_must_be_an_object(self) -> None:
+        payload = sluice()
+        payload["features"][1]["terrain"] = "water"
+        assert any("naming the terrain kind in each state" in p for p in errors_of(payload))
+
+    def test_a_terrain_pair_needs_both_states(self) -> None:
+        payload = sluice()
+        del payload["features"][1]["terrain"]["closed"]
+        assert any(
+            'must give both "closed" and "open" terrain kinds' in p for p in errors_of(payload)
+        )
+
+    def test_a_terrain_pair_refuses_a_kind_the_content_does_not_define(self) -> None:
+        payload = sluice()
+        payload["features"][1]["terrain"]["open"] = "lava"
+        found = errors_of(payload)
+        assert any(
+            "names terrain 'lava', which the active content does not define" in p for p in found
+        )
+        assert any("Available:" in p for p in found)
+
+    def test_a_terrain_kind_is_checked_against_content_not_this_legend(self) -> None:
+        # `water` has no glyph in this document, and that is fine: a fixture may
+        # turn its square into any kind the loaded content defines, exactly as a
+        # palette may color one this map never paints.
+        payload = sluice()
+        assert "water" not in payload["legend"].values()
+        assert errors_of(payload) == []
+
+    def test_a_terrain_pair_must_name_kinds_as_text(self) -> None:
+        payload = sluice()
+        payload["features"][1]["terrain"]["open"] = 7
+        assert any("must name a terrain kind, got 7" in p for p in errors_of(payload))
+
+    def test_an_unknown_key_in_a_pair_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][1]["terrain"]["ajar"] = "water"
+        assert any(
+            "unknown key" in p and "Valid keys: closed, open" in p for p in errors_of(payload)
+        )
+
+    def test_an_elevation_pair_must_be_an_object(self) -> None:
+        payload = sluice()
+        payload["features"][1]["elevation"] = [0, -5]
+        assert any("ground height in feet in each state" in p for p in errors_of(payload))
+
+    def test_an_elevation_pair_needs_both_states(self) -> None:
+        payload = sluice()
+        del payload["features"][1]["elevation"]["open"]
+        assert any(
+            'must give both "closed" and "open" heights in feet' in p for p in errors_of(payload)
+        )
+
+    def test_an_elevation_pair_must_be_whole_feet(self) -> None:
+        payload = sluice()
+        payload["features"][1]["elevation"]["open"] = "deep"
+        assert any("must be a whole number, got 'deep'" in p for p in errors_of(payload))
+
+
+class TestOverlayDiagnostics:
+    def test_affects_must_be_a_list(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"] = {"cells": [[1, 3]]}
+        assert any("must be a list of overlay objects" in p for p in errors_of(payload))
+
+    def test_an_overlay_must_be_an_object(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"] = [[1, 3]]
+        assert any("entry #0 must be an object" in p for p in errors_of(payload))
+
+    def test_an_overlay_needs_cells(self) -> None:
+        payload = sluice()
+        del payload["features"][1]["affects"][0]["cells"]
+        assert any("the squares this overlay governs" in p for p in errors_of(payload))
+
+    def test_an_overlay_needs_at_least_one_cell(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][0]["cells"] = []
+        assert any("must name at least one square" in p for p in errors_of(payload))
+
+    def test_cells_must_be_a_list(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][0]["cells"] = "1,3"
+        assert any("must be a list of [x, y] squares" in p for p in errors_of(payload))
+
+    def test_a_malformed_cell_names_its_index(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][0]["cells"] = [[1, 3], [2]]
+        assert any("cell #1 must be [x, y] square indices" in p for p in errors_of(payload))
+
+    def test_a_cell_off_the_grid_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][0]["cells"] = [[9, 9]]
+        assert any("cell #0 is at (9, 9), outside the 6x5 grid" in p for p in errors_of(payload))
+
+    def test_an_overlay_that_moves_neither_layer_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][1] = {"cells": [[4, 1]]}
+        assert any("needs 'terrain', 'elevation', or both" in p for p in errors_of(payload))
+
+    def test_an_overlay_takes_cells_and_never_a_rect(self) -> None:
+        # A rect is an edit-op convenience; the document stores the squares it
+        # expanded to, so one file has one shape and a resize can translate it.
+        payload = sluice()
+        payload["features"][1]["affects"][0]["rect"] = [1, 3, 2, 1]
+        assert any(
+            "unknown key" in p and "Valid keys: cells, elevation, terrain" in p
+            for p in errors_of(payload)
+        )
+
+
+class TestClaimDiagnostics:
+    """Every square a fixture governs is governed by exactly one, per level."""
+
+    def test_two_fixtures_cannot_claim_one_square(self) -> None:
+        payload = sluice()
+        payload["features"][0]["at"] = [1, 3]  # the spike, standing in the flood
+        assert any(
+            "feature 'gate' claims square (1, 3), which feature 'spike' already governs; "
+            "one fixture per square" in p
+            for p in errors_of(payload)
+        )
+
+    def test_two_overlays_cannot_claim_one_square(self) -> None:
+        payload = sluice()
+        payload["features"][0]["affects"] = [
+            {"cells": [[2, 3]], "terrain": {"closed": "floor", "open": "water"}}
+        ]
+        assert any(
+            "feature 'gate' claims square (2, 3), which feature 'spike' already governs" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_fixture_cannot_claim_a_square_twice(self) -> None:
+        payload = sluice()
+        payload["features"][1]["affects"][1]["cells"] = [[3, 4]]  # the gate's own square
+        assert any(
+            "feature 'gate' claims square (3, 4) twice; a fixture decides each square once" in p
+            for p in errors_of(payload)
+        )
+
+    def test_two_levels_may_hold_a_fixture_on_the_same_square(self) -> None:
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "lever", "kind": "lever", "at": [3, 4], "state": "closed"}
+        )
+        assert errors_of(payload) == []
+
+    def test_an_annotation_may_stand_in_a_governed_square(self) -> None:
+        # Spawns and drawn stairs claim nothing: they carry no state, so no
+        # fixture is contradicted by one sitting in a room that floods.
+        payload = sluice()
+        payload["features"][2]["at"] = [1, 3]
+        assert errors_of(payload) == []
+
+
+class TestRequiresDiagnostics:
+    def test_requires_must_be_a_list_of_names(self) -> None:
+        payload = sluice()
+        payload["features"][1]["requires"] = "spike"
+        assert any("must be a list of names" in p for p in errors_of(payload))
+
+    def test_a_requirement_must_name_a_feature_the_map_has(self) -> None:
+        payload = sluice()
+        payload["features"][1]["requires"] = ["south spike"]
+        found = errors_of(payload)
+        assert any(
+            "feature 'gate' requires 'south spike', but there is no feature "
+            "'south spike' in this map" in p
+            for p in found
+        )
+        assert any("Declared: gate, spawn-party, spike" in p for p in found)
+
+    def test_a_fixture_cannot_require_itself(self) -> None:
+        payload = sluice()
+        payload["features"][1]["requires"] = ["gate"]
+        assert any(
+            "feature 'gate' requires itself; a prerequisite is another fixture" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_requirement_must_name_something_that_can_stand_open(self) -> None:
+        payload = sluice()
+        payload["features"][1]["requires"] = ["spawn-party"]
+        assert any(
+            "requires 'spawn-party', which carries no state and so is never open" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_requirement_cycle_is_reported_once_from_its_smallest_id(self) -> None:
+        # Attached to the lexicographically smallest id in the cycle, so which
+        # of the two the author edited last does not change the report.
+        payload = sluice()
+        payload["features"][0]["requires"] = ["gate"]  # the spike now waits on the gate
+        found = [p for p in errors_of(payload) if "requirement cycle" in p]
+        assert found == [
+            "feature 'gate' is in a requirement cycle: gate -> spike -> gate; "
+            "nothing in it could ever be opened first"
+        ]
+
+    def test_a_longer_cycle_is_reported_with_its_whole_path(self) -> None:
+        payload = sluice()
+        payload["features"].append(
+            {"id": "chain", "kind": "chain", "at": [4, 3], "state": "closed",
+             "requires": ["gate"]}
+        )
+        payload["features"][0]["requires"] = ["chain"]  # gate -> spike -> chain -> gate
+        assert any(
+            "requirement cycle: chain -> gate -> spike -> chain" in p for p in errors_of(payload)
+        )
+
+    def test_a_requirement_may_name_a_fixture_on_another_storey(self) -> None:
+        payload = with_storey()
+        payload["features"][0]["requires"] = ["hatch"]
+        payload["levels"][0]["features"].append(
+            {"id": "hatch", "kind": "door", "at": [1, 1],
+             "orientation": "horizontal", "state": "closed"}
+        )
+        assert errors_of(payload) == []
+
+
+class TestCheckDiagnostics:
+    def test_a_check_must_be_an_object(self) -> None:
+        payload = sluice()
+        payload["features"][0]["check"] = "strength 15"
+        assert any("naming an ability and a DC" in p for p in errors_of(payload))
+
+    def test_a_check_needs_an_ability(self) -> None:
+        payload = sluice()
+        del payload["features"][0]["check"]["ability"]
+        assert any("the ability the check rolls" in p for p in errors_of(payload))
+
+    def test_an_ability_outside_the_six_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][0]["check"]["ability"] = "luck"
+        assert any(
+            "'luck' is not valid; must be one of: strength" in p for p in errors_of(payload)
+        )
+
+    def test_a_check_needs_a_dc(self) -> None:
+        payload = sluice()
+        del payload["features"][0]["check"]["dc"]
+        assert any(
+            "the difficulty class the check is made against" in p for p in errors_of(payload)
+        )
+
+    def test_a_dc_below_one_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][0]["check"]["dc"] = 0
+        assert any("must be at least 1, got 0" in p for p in errors_of(payload))
+
+    def test_an_unknown_key_in_a_check_is_refused(self) -> None:
+        payload = sluice()
+        payload["features"][0]["check"]["advantage"] = True
+        assert any(
+            "unknown key" in p and "Valid keys: ability, dc" in p for p in errors_of(payload)
+        )
+
+
+class TestFixtureStateDiagnostics:
+    def test_costs_action_must_be_true_or_false(self) -> None:
+        payload = sluice()
+        payload["features"][1]["costs_action"] = "yes"
+        assert any("must be true or false, got 'yes'" in p for p in errors_of(payload))
+
+    def test_a_fixture_key_without_a_state_is_refused(self) -> None:
+        # Carrying a state is what makes a feature one the fight owns, so a
+        # feature that says what operating it costs but cannot be operated is a
+        # silent no-op — refused rather than dropped on the way to the grid.
+        payload = sluice()
+        del payload["features"][0]["state"]
+        found = errors_of(payload)
+        assert any(
+            "required for a feature carrying check, costs_action; only a feature with "
+            "a state is one a fight can operate" in p
+            for p in found
+        )
+
+    def test_every_fixture_problem_comes_back_from_one_call(self) -> None:
+        # The house rule: a file with four mistakes reports four, not the first.
+        payload = sluice()
+        payload["features"][0]["check"]["dc"] = 0
+        payload["features"][0]["costs_action"] = "yes"
+        payload["features"][1]["terrain"]["open"] = "lava"
+        payload["features"][1]["affects"][0]["cells"] = [[9, 9]]
+        assert len(errors_of(payload)) == 4

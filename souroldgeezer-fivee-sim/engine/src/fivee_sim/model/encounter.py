@@ -66,7 +66,7 @@ from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, D20Test, DamageType, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
-from .battlemap import GROUND_LEVEL, BattleMap, MapPlane, MapState
+from .battlemap import GROUND_LEVEL, BattleMap, MapFeature, MapPlane, MapState, SquareClaim
 from .creature import AttackOption, Creature
 
 DEATH_SAVE_DC = 10
@@ -96,7 +96,8 @@ class Action:
     and means feet along the x-axis. ``path`` names explicit waypoints for a move
     and only means something on a battle map; ``direction`` aims a cone (one of
     the eight unit offsets); ``toward`` aims a line at a combatant by name or at
-    a point; ``feature`` names a map feature for an interaction.
+    a point; ``feature`` names a map feature for an interaction, and ``set_open``
+    says which way that interaction should move it.
     """
 
     kind: ActionKind
@@ -112,6 +113,11 @@ class Action:
     direction: Point | None = None
     toward: str | Point | None = None
     feature: str | None = None
+    #: Which state to leave a feature in, rather than flipping whatever it is
+    #: now. ``None`` toggles, which is what an interaction has always done; a
+    #: bool refuses when the feature is already there, so a caller driving a
+    #: chain of fixtures cannot close one by asking twice for it to open.
+    set_open: bool | None = None
     #: The storey a move ends on. Only meaningful for a move, and only over a
     #: connector: walk to the stairway on your own level, and it carries you.
     to_level: int | None = None
@@ -185,8 +191,14 @@ class ActionRecord:
         action: dict[str, Any] | None = None
         if self.action is not None:
             action = {"kind": self.action.kind.value}
+            # Every optional scalar :class:`Action` carries. The list is written
+            # out rather than derived so a field can be deliberately withheld —
+            # but a field added above and forgotten here is silently dropped
+            # from a record that promises to replay the call exactly, which is
+            # how ``to_level`` went missing from every cross-storey move.
             for name in ("target", "attack", "item", "spell", "slot_level",
-                         "to_position", "center", "direction", "toward", "feature"):
+                         "to_position", "center", "direction", "toward", "feature",
+                         "set_open", "to_level"):
                 value = getattr(self.action, name)
                 if value is not None:
                     action[name] = list(value) if isinstance(value, tuple) else value
@@ -311,7 +323,10 @@ class Encounter:
         )
         self.battle_map = battle_map
         self.map_state: MapState | None = None
-        self._feature_squares: dict[tuple[int, Square], str] = {}
+        # Every square any fixture decides, flattened once at adoption: the two
+        # resolvers below sit inside pathfinding loops, so what they need is an
+        # index, not a list of features to scan.
+        self._feature_squares: dict[tuple[int, Square], SquareClaim] = {}
         if battle_map is not None:
             self._adopt_map(battle_map, combatants)
         # Combatants are handed the encounter's table rather than trusted to carry
@@ -364,9 +379,17 @@ class Encounter:
 
         Everything a map can get wrong is refused here, before the first roll:
         a terrain kind the captured table does not define, a feature off the map
-        or doubled up on a square, a combatant off the map, inside a wall, or on
-        another combatant. Positions are snapped to the centre of their square —
-        on a grid, the square is the position.
+        or doubled up on a square, a prerequisite naming nothing, a combatant off
+        the map, inside a wall, or on another combatant. Positions are snapped to
+        the centre of their square — on a grid, the square is the position.
+
+        A ``BattleMap`` can be hand-built with no document behind it, so these
+        refusals are not a second opinion on the parser's — they are the only
+        ones such a map ever meets. **Every square a fixture governs is claimed
+        by exactly one fixture per level**, which is what makes the resolvers
+        below total: there is no precedence question to answer, so a stateless
+        reader of the same map cannot disagree with this fight about what a
+        square is.
         """
         if battle_map.width < 1 or battle_map.height < 1:
             raise EncounterError(
@@ -379,6 +402,10 @@ class Encounter:
             for feature in plane.features.values():
                 named.add(feature.closed_terrain)
                 named.add(feature.open_terrain)
+                for overlay in feature.affects:
+                    if overlay.terrain is not None:
+                        named.add(overlay.terrain.closed)
+                        named.add(overlay.terrain.open)
         unknown = sorted(kind for kind in named if kind not in self.terrain_effects)
         if unknown:
             defined = ", ".join(sorted(self.terrain_effects)) or "none"
@@ -389,23 +416,44 @@ class Encounter:
         for level in sorted(battle_map.levels):
             plane = battle_map.levels[level]
             for name, feature in plane.features.items():
-                if not self._on_map(feature.square):
-                    raise EncounterError(
-                        f"feature {name!r} sits at {feature.square}, off the "
-                        f"{battle_map.width}x{battle_map.height} map"
-                    )
-                other = self._feature_squares.get((level, feature.square))
-                if other is not None:
-                    raise EncounterError(
-                        f"features {other!r} and {name!r} share square {feature.square}"
-                    )
-                self._feature_squares[(level, feature.square)] = name
+                for square, claim in feature.claims():
+                    if not self._on_map(square):
+                        # The own square and an overlay cell are both off the
+                        # same map, but they are different authoring mistakes.
+                        reach = "sits at" if square == feature.square else "reaches"
+                        raise EncounterError(
+                            f"feature {name!r} {reach} {square}, off the "
+                            f"{battle_map.width}x{battle_map.height} map"
+                        )
+                    other = self._feature_squares.get((level, square))
+                    if other is not None and other.feature == name:
+                        raise EncounterError(
+                            f"feature {name!r} claims square {square} twice"
+                        )
+                    if other is not None:
+                        raise EncounterError(
+                            f"features {other.feature!r} and {name!r} share square {square}"
+                        )
+                    self._feature_squares[(level, square)] = claim
             for square, target in plane.connectors.items():
                 if target not in battle_map.levels:
                     raise EncounterError(
                         f"the connector at {square} on level {level} leads to level "
                         f"{target}, which this map does not have"
                     )
+        # A second pass, because a prerequisite may point forward — and across a
+        # floor. ``requires`` is a prerequisite, not a reach: which storey the
+        # thing it names sits on is nobody's business but the fiction's.
+        catalogue = battle_map.features
+        for name, feature in sorted(catalogue.items()):
+            missing = [wanted for wanted in feature.requires if wanted not in catalogue]
+            if missing:
+                available = ", ".join(sorted(catalogue)) or "none"
+                raise EncounterError(
+                    f"feature {name!r} requires "
+                    f"{', '.join(repr(wanted) for wanted in missing)}, which this map "
+                    f"does not have; the map has: {available}"
+                )
         self.map_state = MapState(open_features={
             name for name, feature in battle_map.features.items()
             if feature.initially_open
@@ -430,10 +478,10 @@ class Encounter:
                     f"{creature.name} starts on impassable "
                     f"{self._terrain_at_level(creature.level, square)!r} at {square}"
                 )
-            other = placed.get((creature.level, square))
-            if other is not None:
+            neighbour = placed.get((creature.level, square))
+            if neighbour is not None:
                 raise EncounterError(
-                    f"{creature.name} and {other} both start in square {square}"
+                    f"{creature.name} and {neighbour} both start in square {square}"
                 )
             placed[(creature.level, square)] = creature.name
             creature.position = square_center(square)
@@ -449,16 +497,28 @@ class Encounter:
         assert self.battle_map is not None
         return self.battle_map.levels[level]
 
+    def _is_open(self, feature_name: str) -> bool:
+        assert self.map_state is not None
+        return feature_name in self.map_state.open_features
+
     def _terrain_at_level(self, level: int, square: Square) -> str:
-        """What one square of one storey is right now: feature state, then the map."""
+        """What one square of one storey is right now: feature state, then the map.
+
+        One of the two choke points every movement, sight, cover and placement
+        query goes through, and neither caches. That is what makes a fixture
+        change land live mid-fight for the price of one dict lookup rather than
+        an invalidation scheme.
+
+        A claim carrying no terrain pair falls through as an unclaimed square
+        does: a fixture that only moves a water level leaves the ground it finds.
+        """
         assert self.battle_map is not None and self.map_state is not None
         plane = self._plane(level)
-        feature_name = self._feature_squares.get((level, square))
-        if feature_name is not None:
-            feature = plane.features[feature_name]
-            if feature_name in self.map_state.open_features:
-                return feature.open_terrain
-            return feature.closed_terrain
+        claim = self._feature_squares.get((level, square))
+        if claim is not None and claim.terrain is not None:
+            if self._is_open(claim.feature):
+                return claim.terrain.open
+            return claim.terrain.closed
         return plane.terrain.get(square, plane.default_terrain)
 
     def _terrain_at(self, square: Square) -> str:
@@ -469,8 +529,19 @@ class Encounter:
         return terrain_effect_of(self._terrain_at_level(level, square), self.terrain_effects)
 
     def _elevation_at(self, level: int, square: Square) -> int:
-        """The ground height of a square in feet. Off-map ground is the default."""
+        """The ground height of a square in feet. Off-map ground is the default.
+
+        The other choke point, and it answers a fixture the same way: a sluice
+        that floods a room also drops what the room sits at, so height moves
+        under a fight exactly as terrain does. A claim with no height pair falls
+        through — most fixtures change what a square *is* without moving it.
+        """
         plane = self._plane(level)
+        claim = self._feature_squares.get((level, square))
+        if claim is not None and claim.elevation is not None:
+            if self._is_open(claim.feature):
+                return claim.elevation.open
+            return claim.elevation.closed
         return plane.elevation.get(square, plane.default_elevation)
 
     def _entry_cost(self, level: int, square: Square) -> int | None:
@@ -703,15 +774,48 @@ class Encounter:
                 self._level_summary(index) for index in sorted(self.battle_map.levels)
             ],
             "features": {
-                name: {
-                    "square": list(feature.square),
-                    "kind": feature.kind,
-                    "level": self.battle_map.level_of(name),
-                    "open": name in self.map_state.open_features,
-                }
+                name: self._feature_summary(name, feature)
                 for name, feature in sorted(self.battle_map.features.items())
             },
         }
+
+    def _feature_summary(self, name: str, feature: MapFeature) -> dict[str, Any]:
+        """One fixture, reporting only what it actually carries.
+
+        A plain door says the four things a door has always said. Everything
+        below is omitted at its default, so the common case stays exactly as
+        wide as it was and the keys that do appear are the ones a caller has to
+        act on: what else moves with it, what it waits for, what is still
+        missing, and what operating it costs.
+        """
+        assert self.battle_map is not None and self.map_state is not None
+        summary: dict[str, Any] = {
+            "square": list(feature.square),
+            "kind": feature.kind,
+            "level": self.battle_map.level_of(name),
+            "open": name in self.map_state.open_features,
+        }
+        beyond = sorted(
+            square for overlay in feature.affects for square in overlay.squares
+        )
+        if beyond:
+            summary["affects"] = [list(square) for square in beyond]
+        if feature.requires:
+            summary["requires"] = list(feature.requires)
+            unmet = [
+                wanted for wanted in feature.requires
+                if wanted not in self.map_state.open_features
+            ]
+            if unmet:
+                summary["blocked_by"] = unmet
+        if feature.costs_action:
+            summary["costs_action"] = True
+        if feature.check is not None:
+            summary["check"] = {
+                "ability": feature.check.ability.value,
+                "dc": feature.check.dc,
+            }
+        return summary
 
     def _level_summary(self, level: int) -> dict[str, Any]:
         """One storey: its heights and the squares that lead off it."""
@@ -918,7 +1022,7 @@ class Encounter:
             case ActionKind.USE_ITEM:
                 self._do_use_item(actor, action, rng)
             case ActionKind.INTERACT:
-                self._do_interact(actor, action)
+                self._do_interact(actor, action, rng)
             case ActionKind.STAND:
                 self._do_stand(actor)
             case ActionKind.DODGE:
@@ -1902,8 +2006,18 @@ class Encounter:
         if to_level != level:
             actor.level = to_level
 
-    def _do_interact(self, actor: Creature, action: Action) -> None:
-        """Open or close a named map feature. Free, once per turn, from adjacency."""
+    def _do_interact(self, actor: Creature, action: Action, rng: Random) -> None:
+        """Operate a named map fixture — a door, in the common case.
+
+        Every gate before the spend is free, so a party learns *why* a thing
+        will not move without paying for the lesson. In order: the fixture must
+        exist, the actor must have the budget it costs, must be able to reach it
+        on its own storey, must have met whatever it waits for, and must not be
+        asking for the state it is already in.
+
+        Only then is the action or the interaction spent, and only then is any
+        check rolled — a failed check spends the budget and moves nothing.
+        """
         if self.battle_map is None or self.map_state is None:
             raise EncounterError(
                 "there is no battle map, so there is nothing to interact with"
@@ -1916,9 +2030,22 @@ class Encounter:
             raise EncounterError(
                 f"no feature named {action.feature!r}; the map has: {available}"
             )
-        if self._turn.interaction_used:
+
+        if feature.costs_action:
+            self._require_action(actor)
+        elif self._turn.interaction_used:
             raise EncounterError(
                 f"{actor.name} has already interacted with a feature this turn"
+            )
+
+        # Reach is a question about a storey, not only about a square. The
+        # feature table merges every plane under one set of names, so comparing
+        # squares alone let a creature work a hatch directly above its head.
+        level = self.battle_map.level_of(feature.name)
+        if level != actor.level:
+            raise EncounterError(
+                f"{feature.name} is on level {level}; {actor.name} is on level "
+                f"{actor.level} and cannot reach it from another storey"
             )
         actor_sq = to_square(as_point(actor.position))
         apart = max(
@@ -1929,15 +2056,63 @@ class Encounter:
                 f"{feature.name} is at {feature.square}, out of reach from "
                 f"{actor_sq}; stand on or next to it"
             )
-        self._turn.interaction_used = True
-        now_open = feature.name not in self.map_state.open_features
-        if now_open:
+
+        was_open = feature.name in self.map_state.open_features
+        wants_open = (not was_open) if action.set_open is None else action.set_open
+        # Prerequisites gate *opening* only. Held as an invariant they would also
+        # bar closing the gate once a spike went back in, which is not the
+        # fiction: a thing that opened can always be shut again.
+        if wants_open and feature.requires:
+            unmet = [
+                wanted for wanted in feature.requires
+                if wanted not in self.map_state.open_features
+            ]
+            if unmet:
+                raise EncounterError(
+                    f"{feature.name} will not move until {', '.join(unmet)} "
+                    f"{'is' if len(unmet) == 1 else 'are'} open"
+                )
+        if action.set_open is not None and action.set_open == was_open:
+            raise EncounterError(
+                f"{feature.name} is already {'open' if was_open else 'closed'}"
+            )
+
+        if feature.costs_action:
+            self._turn.action_used = True
+        else:
+            self._turn.interaction_used = True
+
+        verb = "open" if wants_open else "close"
+        extras: dict[str, Any] = {}
+        if feature.check is not None:
+            # A raw ability check: creatures carry no skill proficiencies, so a
+            # DC here was set as if untrained.
+            test = make_d20_test(
+                rng,
+                modifier=actor.ability_mod(feature.check.ability),
+                dc=feature.check.dc,
+            )
+            extras = {"success": test.success, "check": test.describe()}
+            if not test.success:
+                # ``open`` is always the state *after* the attempt, so a replay
+                # reading it needs to know nothing about checks.
+                self._emit("interact", actor.name,
+                           detail=(
+                               f"fails to {verb} {feature.name} ({test.describe()})"
+                           ),
+                           feature=feature.name, open=was_open, **extras)
+                return
+            note = f" ({test.describe()})"
+        else:
+            note = ""
+
+        if wants_open:
             self.map_state.open_features.add(feature.name)
         else:
             self.map_state.open_features.discard(feature.name)
         self._emit("interact", actor.name,
-                   detail=f"{'opens' if now_open else 'closes'} {feature.name}",
-                   feature=feature.name, open=now_open)
+                   detail=f"{'opens' if wants_open else 'closes'} {feature.name}{note}",
+                   feature=feature.name, open=wants_open, **extras)
 
     def stand_cost(self, actor_name: str) -> int:
         """Feet of movement standing from Prone costs the named creature.
