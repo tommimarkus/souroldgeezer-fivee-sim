@@ -349,6 +349,13 @@ def render_markdown() -> str:
         "the action, it opens or closes a map feature the actor stands on or next "
         "to.")
     add("")
+    add("`stand` gets a Prone creature back on its feet: no action, but movement "
+        "equal to half the creature's Speed, rounded down. It is refused when the "
+        "creature is not Prone, when its Speed is 0 — from the stat block or from a "
+        "condition such as Grappled — or when the movement left this turn is less "
+        "than the cost. The auto-play policy behind the batch tools stands a Prone "
+        "creature at its first legal opportunity each turn.")
+    add("")
     add("Also resolved: death saving throws, stabilising, instant death when damage "
         "past 0 hit points equals maximum hit points, damage resistance, vulnerability "
         "and immunity, and concentration checks when a concentrating creature is "

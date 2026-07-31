@@ -1,0 +1,129 @@
+{
+  "pack": "benchmark-fixture",
+  "version": "1.0",
+  "provenance": "Benchmark regression fixture: SRD 5.2.1 transcriptions plus battlecast.gg level-1 benchmark pregens normalized to stat blocks. Test data only — never shipped.",
+  "creatures": [
+    {
+      "name": "Giant Venomous Snake",
+      "team": "monsters",
+      "ac": 14,
+      "max_hp": 11,
+      "hit_dice": "2d8+2",
+      "speed": 40,
+      "abilities": { "strength": 18, "dexterity": 18, "constitution": 12 },
+      "attacks": [
+        { "name": "Bite", "attack_bonus": 6, "damage": "1d4+4", "damage_type": "piercing", "kind": "melee", "reach": 10,
+          "bonus_damage": "1d8", "bonus_damage_type": "poison" }
+      ],
+      "unmodelled": ["Swim 40 ft."],
+      "provenance": "SRD 5.2.1 p.354"
+    },
+    {
+      "name": "Giant Wasp",
+      "team": "monsters",
+      "ac": 13,
+      "max_hp": 22,
+      "hit_dice": "5d8",
+      "speed": 50,
+      "abilities": { "strength": 10, "dexterity": 14, "constitution": 10 },
+      "attacks": [
+        { "name": "Sting", "attack_bonus": 4, "damage": "1d6+2", "damage_type": "piercing", "kind": "melee", "reach": 5,
+          "bonus_damage": "2d4", "bonus_damage_type": "poison" }
+      ],
+      "unmodelled": ["Flight (fly 50 ft. treated as ground speed; walk is 10 ft.)", "Flyby"],
+      "provenance": "SRD 5.2.1 pp.354-355"
+    },
+    {
+      "name": "Benchmark Fighter",
+      "team": "party",
+      "ac": 19,
+      "max_hp": 12,
+      "speed": 30,
+      "abilities": { "strength": 16, "dexterity": 12, "constitution": 16 },
+      "save_bonuses": { "strength": 5, "constitution": 5 },
+      "attacks": [
+        { "name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee", "reach": 5 }
+      ],
+      "unmodelled": ["Second Wind", "Fighting Style specifics beyond the listed AC and damage"],
+      "provenance": "battlecast.gg level-1 benchmark pregen (12 HP, AC 19), normalized to a stat block"
+    },
+    {
+      "name": "Benchmark Cleric",
+      "team": "party",
+      "ac": 18,
+      "max_hp": 10,
+      "speed": 30,
+      "abilities": { "strength": 14, "dexterity": 10, "constitution": 14, "wisdom": 16 },
+      "save_bonuses": { "wisdom": 5, "charisma": 3 },
+      "attacks": [
+        { "name": "Mace", "attack_bonus": 4, "damage": "1d6+2", "damage_type": "bludgeoning", "kind": "melee", "reach": 5 }
+      ],
+      "spells": ["Guiding Bolt"],
+      "spell_slots": { "1": 2 },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "unmodelled": ["Healing Word / Cure Wounds (batch auto-play cannot value healing)", "Bless"],
+      "provenance": "battlecast.gg level-1 benchmark pregen (10 HP, AC 18), normalized to a stat block"
+    },
+    {
+      "name": "Benchmark Rogue",
+      "team": "party",
+      "ac": 15,
+      "max_hp": 10,
+      "speed": 30,
+      "abilities": { "strength": 10, "dexterity": 16, "constitution": 12 },
+      "save_bonuses": { "dexterity": 5, "intelligence": 3 },
+      "attacks": [
+        { "name": "Shortbow (Sneak folded)", "attack_bonus": 5, "damage": "2d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320 },
+        { "name": "Rapier (Sneak folded)", "attack_bonus": 5, "damage": "2d6+4", "damage_type": "piercing", "kind": "melee", "reach": 5 }
+      ],
+      "unmodelled": [
+        "Sneak Attack folded into every attack as +1d6 mean damage; assumes a qualifying target each turn",
+        "Cunning Action"
+      ],
+      "provenance": "battlecast.gg level-1 benchmark pregen (10 HP, AC 15), normalized to a stat block"
+    },
+    {
+      "name": "Benchmark Wizard",
+      "team": "party",
+      "ac": 12,
+      "max_hp": 8,
+      "speed": 30,
+      "abilities": { "strength": 8, "dexterity": 14, "constitution": 12, "intelligence": 16 },
+      "save_bonuses": { "intelligence": 5, "wisdom": 3 },
+      "attacks": [
+        { "name": "Dagger", "attack_bonus": 4, "damage": "1d4+2", "damage_type": "piercing", "kind": "melee", "reach": 5 }
+      ],
+      "spells": ["Magic Missile", "Fire Bolt"],
+      "spell_slots": { "1": 2 },
+      "spell_save_dc": 13,
+      "spell_attack_bonus": 5,
+      "unmodelled": ["Shield reaction", "Sleep (no hit-point-pool mechanic in the engine)", "Mage Armor assumed not cast"],
+      "provenance": "battlecast.gg level-1 benchmark pregen (8 HP, AC 12), normalized to a stat block"
+    }
+  ],
+  "spells": [
+    {
+      "name": "Magic Missile",
+      "level": 1,
+      "school": "evocation",
+      "damage": "3d4+3",
+      "damage_type": "force",
+      "range_feet": 120,
+      "upcast_damage": "1d4+1",
+      "unmodelled": ["Darts are separately targetable in print; modelled as one packet at a single target"],
+      "provenance": "SRD 5.2.1 transcription (benchmark fixture)"
+    },
+    {
+      "name": "Fire Bolt",
+      "level": 0,
+      "school": "evocation",
+      "requires_attack_roll": true,
+      "damage": "1d10",
+      "damage_type": "fire",
+      "range_feet": 120,
+      "unmodelled": ["Cantrip damage scaling by character level (level 1 assumed)"],
+      "provenance": "SRD 5.2.1 transcription (benchmark fixture)"
+    }
+  ]
+}

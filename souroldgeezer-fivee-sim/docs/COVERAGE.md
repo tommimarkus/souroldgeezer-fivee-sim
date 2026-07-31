@@ -12,11 +12,11 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 
 | Category | Supported |
 | --- | --- |
-| Creatures (stat blocks) | 4 |
+| Creatures (stat blocks) | 6 |
 | Spells | 4 |
 | Conditions | 14 |
 | Damage types | 13 |
-| Actions | 8 |
+| Actions | 9 |
 | Usable items | 0 bundled — the category is modelled, packs supply it |
 | Terrain kinds | 13 built in — packs may add more |
 | Classes, species, backgrounds, feats | 0 — not modelled |
@@ -27,9 +27,11 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 | Name | AC | HP | Speed | Attacks and traits | Printed features not implemented |
 | --- | --- | --- | --- | --- | --- |
+| Goblin Boss | 17 | 21 (6d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing plus 1d4 if the attack roll had advantage; Shortbow +4, range 80/320 ft, 1d6+2 piercing plus 1d4 if the attack roll had advantage | Nimble Escape: Bonus Action Disengage or Hide<br>Redirect Attack: Reaction to swap places with an ally within 5 feet, which becomes the target instead |
 | Goblin Warrior | 15 | 10 (3d6) | 30 ft | Scimitar +4, reach 5 ft, 1d6+2 slashing plus 1d4 if the attack roll had advantage; Shortbow +4, range 80/320 ft, 1d6+2 piercing plus 1d4 if the attack roll had advantage | Nimble Escape: Bonus Action Disengage or Hide |
 | Ogre | 11 | 68 (8d10+24) | 40 ft | Greatclub +6, reach 5 ft, 2d8+4 bludgeoning | Javelin ranged attack option from its listed gear |
-| Wolf | 12 | 11 (2d8+2) | 40 ft | Bite +4, reach 5 ft, 1d6+2 piercing<br>Traits: Pack Tactics — Advantage while a capable ally is within 5 ft of the target | Bite knocks a Medium or smaller target Prone on a failed Strength save |
+| Skeleton | 14 | 13 (2d8+4) | 30 ft | Shortsword +5, reach 5 ft, 1d6+3 piercing; Shortbow +5, range 80/320 ft, 1d6+3 piercing | Immunity to the Exhaustion and Poisoned conditions |
+| Wolf | 12 | 11 (2d8+2) | 40 ft | Bite +4, reach 5 ft, 1d6+2 piercing, on hit: prone<br>Traits: Pack Tactics — Advantage while a capable ally is within 5 ft of the target | Bite's Prone rider ignores the printed size gate: the SRD applies it only to a Medium or smaller target, and this engine does not model creature size |
 | Zombie | 8 | 15 (2d8+6) | 20 ft | Slam +3, reach 5 ft, 1d8+1 bludgeoning<br>Traits: Undead Fortitude — on a drop to 0 HP, a Constitution save (DC 5 + damage taken) leaves 1 HP instead, unless the damage was Radiant, a Critical Hit, or enough to kill outright | Immunity to the Exhaustion and Poisoned conditions |
 
 ## Spells
@@ -64,9 +66,11 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 ## Actions
 
-Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
+Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`, `stand`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
 `interact` is the free object interaction: once per turn, without spending the action, it opens or closes a map feature the actor stands on or next to.
+
+`stand` gets a Prone creature back on its feet: no action, but movement equal to half the creature's Speed, rounded down. It is refused when the creature is not Prone, when its Speed is 0 — from the stat block or from a condition such as Grappled — or when the movement left this turn is less than the cost. The auto-play policy behind the batch tools stands a Prone creature at its first legal opportunity each turn.
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged. A condition a concentration spell imposed is lifted when that concentration ends — by a failed check, by the caster being incapacitated or killed, or by the caster beginning another concentration spell — unless another effect is still imposing it.
 

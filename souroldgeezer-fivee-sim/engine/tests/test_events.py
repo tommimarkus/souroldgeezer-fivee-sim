@@ -136,7 +136,7 @@ class TestEventIndexing:
         assert all(event.round == 1 and event.turn == "Thora" for event in opening)
 
     def test_every_emitted_kind_is_a_declared_kind(self) -> None:
-        assert len(EVENT_KINDS) == 23
+        assert len(EVENT_KINDS) == 24
         encounter, _ = played_out()
         seen = {event.kind for event in encounter.log}
         assert seen <= EVENT_KINDS, f"undeclared kinds: {sorted(seen - EVENT_KINDS)}"

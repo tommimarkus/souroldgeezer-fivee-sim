@@ -84,6 +84,7 @@ class ActionKind(StrEnum):
     DODGE = "dodge"
     USE_ITEM = "use_item"
     INTERACT = "interact"
+    STAND = "stand"
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,8 +119,8 @@ class Action:
 EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
-    "move", "opportunity_attack", "round", "spell_effect", "stabilised", "turn_end",
-    "turn_start", "undead_fortitude", "use_item",
+    "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
+    "turn_end", "turn_start", "undead_fortitude", "use_item",
 })
 
 
@@ -770,6 +771,8 @@ class Encounter:
                 self._do_use_item(actor, action, rng)
             case ActionKind.INTERACT:
                 self._do_interact(actor, action)
+            case ActionKind.STAND:
+                self._do_stand(actor)
             case ActionKind.DODGE:
                 self._require_action(actor)
                 self._turn.action_used = True
@@ -1750,6 +1753,68 @@ class Encounter:
         self._emit("interact", actor.name,
                    detail=f"{'opens' if now_open else 'closes'} {feature.name}",
                    feature=feature.name, open=now_open)
+
+    def stand_cost(self, actor_name: str) -> int:
+        """Feet of movement standing from Prone costs the named creature.
+
+        SRD 5.2, Rules Glossary, "Prone": the condition ends when the creature
+        stands, "which costs an amount of movement equal to half your Speed."
+        Movement is tracked in whole feet, so an odd Speed rounds the cost down.
+        Public because the auto-play policy prices the act before taking it.
+        """
+        return self.creatures[actor_name].speed // 2
+
+    def can_stand(self, actor_name: str) -> bool:
+        """Whether the named creature could legally take the stand act right now.
+
+        Public for the auto-play policy, which must decide with the same eyes
+        the stepper refuses with rather than re-derive the rule. Reads the
+        current turn's movement budget, so the answer is only meaningful for
+        the creature whose turn it is — the only creature that can act at all.
+        """
+        creature = self.creatures[actor_name]
+        return (
+            Condition.PRONE in creature.conditions
+            and creature.conscious
+            and creature.speed > 0
+            and not speed_is_zero(creature.conditions, self.condition_effects)
+            and self._turn.movement_left >= self.stand_cost(actor_name)
+        )
+
+    def _do_stand(self, actor: Creature) -> None:
+        """Stand from Prone: no action, half the actor's Speed in movement.
+
+        The refusals mirror the SRD's own gates — you cannot stand if your
+        Speed is 0 or if the movement left is less than the cost. Standing
+        ends Prone outright, whatever imposed it, so any ledger entry holding
+        Prone on this creature is dropped with it: a rider's later timed
+        expiry must not report lifting a condition the creature already shed,
+        and a fresh knockdown must not read a stale holder. The purge emits
+        nothing — the stand event itself is the record of the condition ending.
+        """
+        if Condition.PRONE not in actor.conditions:
+            raise EncounterError(f"{actor.name} is not prone")
+        if actor.speed == 0:
+            raise EncounterError(f"{actor.name} has a speed of 0 and cannot stand")
+        if speed_is_zero(actor.conditions, self.condition_effects):
+            held = ", ".join(sorted(actor.conditions))
+            raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot stand")
+        cost = self.stand_cost(actor.name)
+        if cost > self._turn.movement_left:
+            raise EncounterError(
+                f"{actor.name} has {self._turn.movement_left} ft of movement, "
+                f"needs {cost} ft to stand"
+            )
+        self._turn.movement_left -= cost
+        actor.remove_condition(Condition.PRONE)
+        self._effects = [
+            effect for effect in self._effects
+            if not (effect.target == actor.name and effect.condition == Condition.PRONE)
+        ]
+        self._emit("stand", actor.name,
+                   detail=f"stands up ({cost} ft used, "
+                          f"{self._turn.movement_left} ft left)",
+                   cost=cost, movement_left=self._turn.movement_left)
 
     def _opportunity_attack(self, attacker: Creature, mover: Creature, rng: Random) -> None:
         if not self._reaction_available.get(attacker.name, False) or not attacker.active:
