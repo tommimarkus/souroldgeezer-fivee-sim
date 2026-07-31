@@ -27,7 +27,7 @@ from fivee_sim.analytics.montecarlo import auto_action, run_encounter, simulate_
 from fivee_sim.content import make_monster, monster_records, spellbook
 from fivee_sim.kernel.actions import RiderExpiry
 from fivee_sim.kernel.conditions import Condition
-from fivee_sim.kernel.rules import Size, fits_within
+from fivee_sim.kernel.rules import Size
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -262,10 +262,40 @@ class TestWolfData:
         )
 
     def test_the_bundled_wolf_refuses_the_rider_against_the_bundled_ogre(self) -> None:
-        # The end-to-end shape of the divergence this gate closed, built only
-        # from bundled records: before it, a wolf knocked a Large ogre Prone.
-        wolf = make_monster("Wolf")
-        assert wolf.size is Size.MEDIUM
-        ogre = make_monster("Ogre", team="party")
-        assert ogre.size is Size.LARGE
-        assert not fits_within(ogre.size, wolf.attacks[0].on_hit_max_size or Size.GARGANTUAN)
+        """The divergence this gate closed, run rather than recomputed.
+
+        An earlier version of this test asked ``fits_within`` whether the ogre
+        fit — which is the gate's own comparison, so it agreed with the gate by
+        construction and stayed green with the gate deleted. It has to *bite the
+        ogre*: bundled records, a landed hit, and the condition observed on the
+        target. Damage must still land, because the gate refuses the rider and
+        not the attack.
+        """
+        wolf = make_monster("Wolf", team="monsters", position=0)
+        ogre = make_monster("Ogre", team="party", label="Ogre", position=5)
+        assert (wolf.size, ogre.size) == (Size.MEDIUM, Size.LARGE), "bundled sizes"
+        encounter, rng = build_encounter([wolf, ogre], seed=3)
+        advance_to(encounter, "Wolf", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Ogre", attack="Bite"), rng
+        )
+        attack = next(event for event in events if event.kind == "attack")
+        assert attack.data["hit"], "seed 3 must land the bite for this test to mean anything"
+        assert ogre.hp < ogre.max_hp, "the gate refuses the rider, not the attack"
+        assert Condition.PRONE not in ogre.conditions, (
+            "a Large target is outside the Bite's printed Medium-or-smaller gate"
+        )
+
+    def test_the_bundled_wolf_still_floors_a_medium_target(self) -> None:
+        # The other half of the pair: the gate must not have simply disabled the
+        # rider. Same wolf, same seed, a Medium target — Prone lands.
+        wolf = make_monster("Wolf", team="monsters", position=0)
+        skeleton = make_monster("Skeleton", team="party", label="Skeleton", position=5)
+        assert skeleton.size is Size.MEDIUM
+        encounter, rng = build_encounter([wolf, skeleton], seed=3)
+        advance_to(encounter, "Wolf", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Skeleton", attack="Bite"), rng
+        )
+        assert next(event for event in events if event.kind == "attack").data["hit"]
+        assert Condition.PRONE in skeleton.conditions
