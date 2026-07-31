@@ -104,7 +104,9 @@ couple of feet across a square is a slope, which costs difficult terrain; a
 rise over five feet is a cliff face, climbed at an extra foot per foot, and
 climbing down costs the same. Sight, cover, and area templates are measured
 flat, so a ridge blocks nothing and standing on a tower is no advantage in
-itself. Generated maps are flat; height is something you or the user adds.
+itself. Generated maps are flat; height is something you or the user adds —
+with these operations, or painted by hand in the browser editor's Height tool
+(step 5).
 
 For the document format, the editor's API model, and the replay bundle
 schema, read [`../../docs/MAPS.md`](../../docs/MAPS.md).

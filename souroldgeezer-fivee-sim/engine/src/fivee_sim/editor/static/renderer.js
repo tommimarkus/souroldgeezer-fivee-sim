@@ -116,6 +116,18 @@ var FiveeRenderer = (function () {
     };
   }
 
+  /* The visible cell window; overlay builders (in editor.html) share this
+     window with the tile loop so nothing draws blind off-screen. */
+  function visibleBounds(doc, view) {
+    var s = view.scale;
+    return {
+      x0: Math.max(0, Math.floor(view.x)),
+      y0: Math.max(0, Math.floor(view.y)),
+      x1: Math.min(doc.grid.width, Math.ceil(view.x + view.width / s)),
+      y1: Math.min(doc.grid.height, Math.ceil(view.y + view.height / s))
+    };
+  }
+
   /* devicePixelRatio-correct sizing: the backing store follows the CSS size,
      and the context is scaled so all drawing happens in CSS pixels. */
   function resizeCanvas(canvas, ctx) {
@@ -301,6 +313,7 @@ var FiveeRenderer = (function () {
      overlays — all optional: {
        featureStates: {featureId: bool},  // live door state over the defaults
        marks: [{at: [x, y], color, alpha}],  // translucent cell washes
+       labels: [{at: [x, y], text, color}],  // small centered per-cell text
        tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable}]
      } */
   function render(ctx, doc, view, overlays) {
@@ -313,10 +326,11 @@ var FiveeRenderer = (function () {
       ? background.trim() : (dark ? "#191b1e" : "#f4f1ea");
     ctx.fillRect(0, 0, view.width, view.height);
 
-    var x0 = Math.max(0, Math.floor(view.x));
-    var y0 = Math.max(0, Math.floor(view.y));
-    var x1 = Math.min(doc.grid.width, Math.ceil(view.x + view.width / s));
-    var y1 = Math.min(doc.grid.height, Math.ceil(view.y + view.height / s));
+    var bounds = visibleBounds(doc, view);
+    var x0 = bounds.x0;
+    var y0 = bounds.y0;
+    var x1 = bounds.x1;
+    var y1 = bounds.y1;
 
     for (var cy = y0; cy < y1; cy++) {
       var row = doc.tiles[cy] || "";
@@ -369,6 +383,24 @@ var FiveeRenderer = (function () {
       ctx.restore();
     }
 
+    var labels = overlays.labels || [];
+    for (var li = 0; li < labels.length; li++) {
+      var label = labels[li];
+      if (label.at[0] < x0 || label.at[0] >= x1
+        || label.at[1] < y0 || label.at[1] >= y1) { continue; }
+      var text = String(label.text);
+      var fontPx = Math.max(8, Math.min(Math.round(s * 0.34),
+        Math.floor((s * 0.92) / (0.62 * text.length))));
+      ctx.save();
+      ctx.fillStyle = label.color || (dark ? "#e3e0d8" : "#2b2925");
+      ctx.font = "bold " + fontPx + "px ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, (label.at[0] - view.x) * s + s / 2,
+        (label.at[1] - view.y) * s + s / 2);
+      ctx.restore();
+    }
+
     var tokens = overlays.tokens || [];
     for (var ti = 0; ti < tokens.length; ti++) {
       var token = tokens[ti];
@@ -383,6 +415,7 @@ var FiveeRenderer = (function () {
     panBy: panBy,
     zoomAt: zoomAt,
     fitView: fitView,
+    visibleBounds: visibleBounds,
     resizeCanvas: resizeCanvas,
     terrainColor: terrainColor,
     teamColor: teamColor,

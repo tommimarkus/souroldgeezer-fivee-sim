@@ -67,6 +67,7 @@ header .spacer { flex: 1; }
   letter-spacing: 0.06em; color: var(--muted);
 }
 #toolbar h3:first-child { margin-top: 0; }
+#toolbar input[type="number"] { width: 100%; }
 #canvas-wrap { flex: 1; position: relative; min-width: 0; }
 #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #panel {
@@ -87,6 +88,8 @@ header .spacer { flex: 1; }
 #legend-add { display: flex; gap: 4px; margin-top: 6px; }
 #legend-add input:first-child { width: 32px; text-align: center; }
 #legend-add input:nth-child(2) { flex: 1; min-width: 0; }
+#ground-row { display: flex; gap: 4px; align-items: center; }
+#ground-row input { width: 5em; }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
 footer {
@@ -150,9 +153,12 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <option value="spawn">spawn</option>
     </select>
     <button class="tool" data-tool="erase">Eraser</button>
+    <button class="tool" data-tool="height">Height</button>
+    <input id="height-feet" type="number" step="5" value="10" aria-label="height in feet">
     <h3>Map</h3>
     <button id="btn-resize">Resize&#8230;</button>
     <button id="btn-fit">Fit view</button>
+    <button id="btn-heights">Heights</button>
     <h3>History</h3>
     <button id="btn-undo">Undo</button>
     <button id="btn-redo">Redo</button>
@@ -169,6 +175,11 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <h3>Selected feature</h3>
     <div id="feature-info">none</div>
     <button id="btn-delete-feature" hidden>Delete feature</button>
+    <h3>Ground</h3>
+    <div id="ground-row">
+      <label for="elevation-default">datum</label>
+      <input id="elevation-default" type="number" value="0"> ft
+    </div>
     <h3>Cursor</h3>
     <div id="readout">&#8212;</div>
   </aside>
@@ -266,6 +277,9 @@ if (typeof FiveeRenderer === "undefined") {
   var selectedFeatureId = null;
   var drag = null;
   var hoverCell = null;
+  var heightsOn = false;  /* the elevation overlay toggle */
+  var elevSquares = null; /* cache of doc.elevation: "x,y" -> feet */
+  var elevEntries = null; /* the same squares as [{x, y, feet}] for the overlay */
 
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
@@ -314,9 +328,10 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- document plumbing ------------------------------------------------ */
-  /* Every layer the document carries, including ones this page cannot paint:
-     ground elevation rides through a save untouched, and counting it here keeps
-     undo and the dirty check honest if the page ever learns to edit it. */
+  /* Every layer the document carries. The page paints ground elevation now,
+     and keeps that layer in the server's canonical shape — sparse against the
+     datum, sorted row then column — so undo, the dirty check, and byte-stable
+     round-trips stay honest. */
   function contentOf(payload) {
     return JSON.stringify({
       name: payload.name, grid: payload.grid, legend: payload.legend,
@@ -338,6 +353,8 @@ if (typeof FiveeRenderer === "undefined") {
     doc.features = previous.features;
     if (previous.elevation === undefined) { delete doc.elevation; }
     else { doc.elevation = previous.elevation; }
+    rebuildElevationCache();
+    byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
     renderLegend();
     redraw();
@@ -368,6 +385,10 @@ if (typeof FiveeRenderer === "undefined") {
     undoStack = [];
     redoStack = [];
     selectedFeatureId = null;
+    rebuildElevationCache();
+    heightsOn = !!payload.elevation;
+    byId("btn-heights").classList.toggle("active", heightsOn);
+    byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
     var box = canvas.getBoundingClientRect();
     view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
@@ -570,6 +591,68 @@ if (typeof FiveeRenderer === "undefined") {
     redraw();
   }
 
+  /* --- ground height ---------------------------------------------------- */
+  /* doc.elevation is mirrored into two caches: elevSquares for lookups and
+     elevEntries for the overlay walk. Every write goes through
+     writeElevation, which stores the server's canonical shape and rebuilds
+     both, so the caches can never drift from the document. */
+  function elevationDefault() {
+    return doc && doc.elevation ? doc.elevation.default : 0;
+  }
+  function rebuildElevationCache() {
+    elevSquares = {};
+    elevEntries = [];
+    var squares = doc && doc.elevation ? doc.elevation.squares : [];
+    squares.forEach(function (square) {
+      /* Last one wins, tolerating a hand-edited file that repeats a square. */
+      elevSquares[square[0] + "," + square[1]] = square[2];
+    });
+    Object.keys(elevSquares).forEach(function (key) {
+      var at = key.split(",");
+      elevEntries.push({ x: Number(at[0]), y: Number(at[1]),
+        feet: elevSquares[key] });
+    });
+  }
+  function heightAt(cell) {
+    var feet = elevSquares ? elevSquares[cell[0] + "," + cell[1]] : undefined;
+    return feet === undefined ? elevationDefault() : feet;
+  }
+  function writeElevation(defaultFeet) {
+    /* Canonicalize the cache the way the server stores it: squares at the
+       datum are dropped, survivors sort row then column, and a datum of 0
+       with nothing raised means no elevation key at all. */
+    var squares = [];
+    Object.keys(elevSquares).forEach(function (key) {
+      if (elevSquares[key] === defaultFeet) { return; }
+      var at = key.split(",");
+      squares.push([Number(at[0]), Number(at[1]), elevSquares[key]]);
+    });
+    squares.sort(function (a, b) { return (a[1] - b[1]) || (a[0] - b[0]); });
+    if (!squares.length && defaultFeet === 0) { delete doc.elevation; }
+    else { doc.elevation = { "default": defaultFeet, squares: squares }; }
+    rebuildElevationCache();
+  }
+  function setHeightCells(cells, feet) {
+    cells.forEach(function (cell) {
+      if (inBounds(cell)) { elevSquares[cell[0] + "," + cell[1]] = feet; }
+    });
+    writeElevation(elevationDefault());
+  }
+  byId("elevation-default").addEventListener("change", function () {
+    if (!doc) { return; }
+    var feet = parseInt(byId("elevation-default").value, 10);
+    if (!Number.isInteger(feet)) {
+      setStatus("the datum must be a whole number of feet", "error");
+      byId("elevation-default").value = elevationDefault();
+      return;
+    }
+    snapshot();
+    /* The server's re-drop semantics: squares now equal to the new datum
+       vanish; the rest keep their absolute feet. */
+    writeElevation(feet);
+    redraw();
+  });
+
   function renderFeatureInfo() {
     var info = byId("feature-info");
     var remove = byId("btn-delete-feature");
@@ -618,13 +701,36 @@ if (typeof FiveeRenderer === "undefined") {
       view.width = box.width;
       view.height = box.height;
       var marks = [];
+      var labels = [];
+      if (heightsOn && elevEntries && elevEntries.length) {
+        /* Elevation tints go first so preview and hover washes sit on top.
+           Hues stay clear of the gold hover mark: earth above the datum,
+           water below. */
+        var dark = R.isDark();
+        var datum = elevationDefault();
+        var bounds = R.visibleBounds(doc, view);
+        elevEntries.forEach(function (entry) {
+          if (entry.x < bounds.x0 || entry.x >= bounds.x1
+            || entry.y < bounds.y0 || entry.y >= bounds.y1) { return; }
+          var delta = entry.feet - datum;
+          marks.push({
+            at: [entry.x, entry.y],
+            color: delta > 0 ? (dark ? "#c9a86a" : "#7a5c2e")
+              : (dark ? "#6fa8c9" : "#2e5f7a"),
+            alpha: Math.min(0.32, 0.06 + Math.abs(delta) * 0.004)
+          });
+          if (view.scale >= 16) {
+            labels.push({ at: [entry.x, entry.y], text: String(entry.feet) });
+          }
+        });
+      }
       if (drag && drag.preview) {
         drag.preview.forEach(function (cell) { marks.push({ at: cell }); });
       }
       if (hoverCell && inBounds(hoverCell) && tool !== "pan") {
         marks.push({ at: hoverCell, alpha: 0.2 });
       }
-      R.render(ctx, doc, view, { marks: marks });
+      R.render(ctx, doc, view, { marks: marks, labels: labels });
     });
   }
 
@@ -660,6 +766,17 @@ if (typeof FiveeRenderer === "undefined") {
         paintCell(c[0], c[1], drag.glyph);
       });
       redraw();
+    } else if (tool === "height") {
+      var feet = parseInt(byId("height-feet").value, 10);
+      if (!Number.isInteger(feet)) {
+        setStatus("height must be a whole number of feet", "error");
+        drag = null;
+        return;
+      }
+      snapshot();
+      drag = { kind: "height", feet: feet };
+      setHeightCells(brushCells(cell, Number(byId("brush-size").value)), feet);
+      redraw();
     } else if (tool === "rect" || tool === "line") {
       drag = { kind: tool, start: cell, preview: [cell] };
       redraw();
@@ -677,6 +794,7 @@ if (typeof FiveeRenderer === "undefined") {
     var parts = [];
     if (inBounds(cell)) {
       parts.push("[" + cell[0] + ", " + cell[1] + "] " + kindAt(cell));
+      parts.push(heightAt(cell) + " ft");
       var feature = featureAt(cell);
       if (feature) { parts.push(feature.kind + " " + feature.id); }
     } else {
@@ -695,6 +813,8 @@ if (typeof FiveeRenderer === "undefined") {
       brushCells(cell, Number(byId("brush-size").value)).forEach(function (c) {
         paintCell(c[0], c[1], drag.glyph);
       });
+    } else if (drag.kind === "height") {
+      setHeightCells(brushCells(cell, Number(byId("brush-size").value)), drag.feet);
     } else if (drag.kind === "rect") {
       drag.preview = rectCells(drag.start, clampCell(cell));
     } else if (drag.kind === "line") {
@@ -754,6 +874,17 @@ if (typeof FiveeRenderer === "undefined") {
       toolButtons.forEach(function (b) {
         b.classList.toggle("active", b === button);
       });
+      if (tool === "height") {
+        /* Painting height with the overlay off would be painting blind. */
+        heightsOn = true;
+        byId("btn-heights").classList.add("active");
+        var feet = parseInt(byId("height-feet").value, 10);
+        if (Number.isInteger(feet)) {
+          setStatus("painting " + feet + " ft; paint the datum value ("
+            + elevationDefault() + " ft) to clear");
+        }
+        redraw();
+      }
     });
   });
   document.querySelector('[data-tool="pan"]').classList.add("active");
@@ -763,6 +894,11 @@ if (typeof FiveeRenderer === "undefined") {
     if (!doc) { return; }
     var box = canvas.getBoundingClientRect();
     view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
+    redraw();
+  });
+  byId("btn-heights").addEventListener("click", function () {
+    heightsOn = !heightsOn;
+    byId("btn-heights").classList.toggle("active", heightsOn);
     redraw();
   });
   document.addEventListener("keydown", function (event) {
@@ -828,6 +964,19 @@ if (typeof FiveeRenderer === "undefined") {
     }).filter(function (f) {
       return f.at[0] >= 0 && f.at[0] < width && f.at[1] >= 0 && f.at[1] < height;
     });
+    /* Elevation moves with the anchor like the features do; squares pushed
+       off the map are dropped, and new ground comes in at the datum. */
+    var translated = {};
+    Object.keys(elevSquares).forEach(function (key) {
+      var at = key.split(",");
+      var nx = Number(at[0]) + offX;
+      var ny = Number(at[1]) + offY;
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+        translated[nx + "," + ny] = elevSquares[key];
+      }
+    });
+    elevSquares = translated;
+    writeElevation(elevationDefault());
     doc.grid.width = width;
     doc.grid.height = height;
     byId("dlg-resize").close();

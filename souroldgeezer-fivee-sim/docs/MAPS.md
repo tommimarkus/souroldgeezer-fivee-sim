@@ -171,6 +171,15 @@ prints. `POST /api/generate` **never persists** — the page reviews the result
 and saves the keeper with `PUT`, exactly as `map_generate` hands off to
 `map_save`.
 
+**Ground height.** The Height tool paints absolute feet with the same brush
+sizes as terrain, and the datum control in the side panel moves the height
+every unpainted square sits at. The document stays sparse against the datum:
+painting a square to the datum value clears it rather than recording it. The
+Heights toggle overlays tints and per-square feet, switching itself on when a
+loaded map carries relief, and resizing translates and crops heights with the
+chosen anchor, exactly as the `resize` operation does. Relative adjustment is
+not in the page — that stays with the `adjust_elevation` edit operation.
+
 After saving in the editor, the file has moved on from any session copy:
 `map_load` (with `replace` to keep the same map id) re-reads it. Once
 hand-edited, the file is the source of truth — re-load, never assume.
