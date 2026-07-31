@@ -81,6 +81,37 @@ class TestInjectionContracts:
         assert "var FiveeRenderer" in read("renderer.js")
 
 
+class TestViewerFeatureVisibility:
+    # The one place the two pages deliberately disagree about what to draw.
+    # Presence only, like every assertion in this file — see the module
+    # docstring for why nothing here executes.
+
+    def test_the_viewer_hides_spawn_hints_from_a_replay_audience(self) -> None:
+        # A spawn hint is authoring furniture: it claims no square, no fight
+        # ever operates it, and by the time a replay plays the tokens it was
+        # placed for are already on the map. The shared renderer draws every
+        # feature it is handed, so the filter has to sit on the viewer's side
+        # of the call rather than in renderer.js.
+        source = read("viewer.html")
+        assert 'HIDDEN_FEATURE_KINDS = ["spawn"]' in source
+        assert "mapDoc = displayDoc(" in source
+
+    def test_the_door_replay_reads_the_unfiltered_bundle(self) -> None:
+        # The filter shapes what is *drawn*; it must not shape what is
+        # *replayed*. Door open/closed state is seeded from the bundle's own
+        # feature list, so that lookup stays on bundle.map — pointing it at
+        # the filtered document would couple every future hidden kind to the
+        # correctness of the door timeline.
+        assert "(bundle.map.features || [])" in read("viewer.html")
+
+    def test_the_shared_renderer_still_draws_spawn_hints(self) -> None:
+        # The editor is where you place them, so the capability stays put.
+        # This is what makes the filter above the viewer's *policy* rather
+        # than a feature deleted from both pages at once.
+        assert 'feature.kind === "spawn"' in read("renderer.js")
+        assert '<option value="spawn">' in read("editor.html")
+
+
 class TestEditorGroundControls:
     # Presence only, behaviour never — the text-only boundary in the module
     # docstring applies here as everywhere else in this file.

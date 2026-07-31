@@ -131,8 +131,19 @@ if (typeof FiveeRenderer === "undefined") {
   var R = FiveeRenderer;
   var FLASH_KINDS = { attack: 1, opportunity_attack: 1, cast: 1, spell_effect: 1 };
 
+  /* Feature kinds this page draws nothing for. The renderer is shared with
+     the editor and draws every feature it is handed, which is right there —
+     a spawn hint is the thing you opened the editor to place. Here it is
+     stale authoring furniture: it claims no square, no fight ever operates
+     it, and by the time a replay plays, the tokens it was placed for are
+     already standing on the map. Doors and stairs stay, because those are
+     furniture the room really has. The list is a denylist by name so that
+     hiding a future kind stays a decision someone writes down. */
+  var HIDDEN_FEATURE_KINDS = ["spawn"];
+
   var bundle = null;
-  var mapDoc = null;      /* the map payload, or a synthesized neutral plane */
+  var mapDoc = null;      /* what is drawn: the map payload or a synthesized
+                             neutral plane, minus the hidden kinds above */
   var offset = [0, 0];    /* cell shift applied on the neutral plane */
   var cellFeet = 5;
   var cursor = 0;         /* how many events are applied: 0..events.length */
@@ -418,6 +429,24 @@ if (typeof FiveeRenderer === "undefined") {
     };
   }
 
+  /* A shallow copy with the hidden kinds dropped, or the document itself
+     when there is nothing to drop — the bundle stays untouched either way,
+     because the door timeline reads its own feature list out of it. */
+  function displayDoc(doc) {
+    var features = doc.features || [];
+    var kept = [];
+    for (var i = 0; i < features.length; i++) {
+      if (HIDDEN_FEATURE_KINDS.indexOf(features[i].kind) === -1) {
+        kept.push(features[i]);
+      }
+    }
+    if (kept.length === features.length) { return doc; }
+    var copy = {};
+    Object.keys(doc).forEach(function (key) { copy[key] = doc[key]; });
+    copy.features = kept;
+    return copy;
+  }
+
   function loadBundle(payload, sourceName) {
     if (!payload || payload.format !== "fivee-sim-replay") {
       window.alert((sourceName || "that") + " is not a fivee-sim-replay bundle");
@@ -427,7 +456,7 @@ if (typeof FiveeRenderer === "undefined") {
     bundle = payload;
     offset = [0, 0];
     cellFeet = (payload.map && payload.map.grid && payload.map.grid.cell_feet) || 5;
-    mapDoc = payload.map ? payload.map : neutralPlane();
+    mapDoc = displayDoc(payload.map ? payload.map : neutralPlane());
     byId("title").textContent = payload.name || "replay";
     byId("seed").textContent = "seed " + payload.seed;
     byId("empty-note").hidden = true;
