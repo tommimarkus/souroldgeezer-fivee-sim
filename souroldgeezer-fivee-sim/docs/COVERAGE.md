@@ -39,7 +39,7 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 | Name | Level | Resolution | Damage | Upcast | Area | Concentration | Not implemented |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Fireball | 3 | dexterity save, half on save | 8d6 | +1d6/level | 20 ft sphere | no | Flammable objects in the area start burning |
-| Guiding Bolt | 1 | spell attack roll | 4d6 | +1d6/level | single target | no | The next attack roll against a hit target before the end of your next turn has Advantage |
+| Guiding Bolt | 1 | ranged spell attack roll | 4d6 | +1d6/level | single target | no | The next attack roll against a hit target before the end of your next turn has Advantage |
 | Hold Person | 2 | wisdom save | — | — | single target | yes | Targets Humanoids only; the engine does not track creature type<br>The target repeats the save at the end of each of its turns, ending the effect on a success<br>Upcasting targets one additional creature per slot level above 2 |
 | Shatter | 2 | constitution save, half on save | 3d8 | +1d8/level | 10 ft sphere | no | A Construct has Disadvantage on the save<br>Unattended nonmagical objects in the area also take the damage |
 
@@ -47,16 +47,16 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 | Condition | Mechanical effect |
 | --- | --- |
-| blinded | attacked with advantage, own attacks have disadvantage |
+| blinded | attacked with advantage, own attacks have disadvantage, cannot see |
 | charmed | tracked; no combat-roll consequences |
 | deafened | tracked; no combat-roll consequences |
-| frightened | own attacks have disadvantage |
+| frightened | own attacks have disadvantage, own ability checks have disadvantage |
 | grappled | speed zero, own attacks have disadvantage |
 | incapacitated | incapacitated |
-| invisible | attacked with disadvantage, own attacks have advantage |
+| invisible | attacked with disadvantage, own attacks have advantage, unseen |
 | paralyzed | incapacitated, speed zero, attacked with advantage, auto fail strength saves, auto fail dexterity saves, melee hits are critical |
 | petrified | incapacitated, speed zero, attacked with advantage, auto fail strength saves, auto fail dexterity saves, resists all damage |
-| poisoned | own attacks have disadvantage |
+| poisoned | own attacks have disadvantage, own ability checks have disadvantage |
 | prone | attacked with advantage in melee, attacked with disadvantage at range, own attacks have disadvantage |
 | restrained | speed zero, attacked with advantage, own attacks have disadvantage, disadvantage on dexterity saves |
 | stunned | incapacitated, attacked with advantage, auto fail strength saves, auto fail dexterity saves |
@@ -68,13 +68,15 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`, `stand`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
-`interact` works a map fixture the actor stands on or next to, on its own storey. By default it is the free object interaction: once per turn, without spending the action. A fixture may cost the action instead, may wait on other fixtures standing open before it will open, and may take an ability check — a failed check spends the budget and moves nothing. It toggles unless the action names `set_open`, which drives the fixture to the state asked for rather than flipping whatever it finds.
+`interact` works a map fixture the actor stands on or next to, on its own storey. By default it is the free object interaction: once per turn, without spending the action. A fixture may cost the action instead, may wait on other fixtures standing open before it will open, and may take an ability check — a failed check spends the budget and moves nothing. It reads condition-based Advantage and Disadvantage just like initiative. It toggles unless the action names `set_open`, which drives the fixture to the state asked for rather than flipping whatever it finds.
 
 `stand` gets a Prone creature back on its feet: no action, but movement equal to half the creature's Speed, rounded down. It is refused when the creature is not Prone, when its Speed is 0 — from the stat block or from a condition such as Grappled — or when the movement left this turn is less than the cost. The auto-play policy behind the batch tools stands a Prone creature at its first legal opportunity each turn.
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged. A condition a concentration spell imposed is lifted when that concentration ends — by a failed check, by the caster being incapacitated or killed, or by the caster beginning another concentration spell — unless another effect is still imposing it.
 
 An attack may carry riders, straight from its stat block: bonus damage of a second type on every hit, defended against its own type; extra dice added only when the attack roll actually resolved with Advantage; and an on-hit condition, automatic or applied on a failed save. Rider dice double on a critical hit like any damage dice. An on-hit condition may expire on its own — at the start of the attacker's next turn or the end of the target's next turn — and the expiry fires when that turn slot passes, even if the attacker has died; it never strips a condition something else is still imposing.
+
+A ranged weapon or ranged spell attack has Disadvantage when a capable enemy within 5 feet can see the attacker. Allies, Incapacitated enemies, an unseen attacker, and an enemy without a sight line do not impose it. This is one ordinary Disadvantage source, so any Advantage cancels it.
 
 Two printed creature traits are modelled as stat-block flags. Pack Tactics grants a creature's attack rolls — weapon and spell alike, opportunity attacks included — Advantage while another member of its team is within 5 feet of the target, conscious, and free of incapacitating conditions; it counts as one Advantage source and cancels against Disadvantage like any other. Undead Fortitude turns damage that would drop the creature to 0 hit points into a Constitution saving throw at DC 5 plus the damage taken, and a success leaves it standing at 1 hit point — bypassed when any of the damage was Radiant, the hit was a critical, or the overflow was enough to kill outright.
 

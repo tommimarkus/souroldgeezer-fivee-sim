@@ -69,17 +69,13 @@ def compute_attack_advantage(
     beyond it takes the Disadvantage half. An argument the rule does not consult is
     an invitation to reintroduce a check the rule never had.
 
-    The engine models no offsetting penalty for shooting at close quarters. SRD
-    5.2, "Ranged Attacks in Close Combat", gives Disadvantage to a ranged attack
-    made "within 5 feet of an enemy who can see you and doesn't have the
-    Incapacitated condition" — a rule this engine does not represent, because it
-    turns on visibility and on who counts as an enemy of whom. It is unmodelled
-    either way; gating Prone on the weapon was not an approximation of it, since it
-    fired against Prone allies and never against a non-Prone target.
+    Close-combat penalties are supplied through ``extra_disadvantage``. They turn
+    on teams, positions, sight and incapacitation, which belong to the encounter
+    model rather than this plain-value kernel.
 
     Frightened is treated as always applying. The rule conditions it on the source
-    of fear being in line of sight, which a one-dimensional battlefield with no
-    visibility model cannot represent.
+    of fear being in line of sight; the engine tracks neither fear sources nor
+    which source imposed a condition, so that qualifier cannot yet be evaluated.
     """
     advantage_sources = extra_advantage
     disadvantage_sources = extra_disadvantage

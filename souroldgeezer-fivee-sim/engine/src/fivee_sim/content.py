@@ -112,7 +112,8 @@ _ATTACK_KEYS = frozenset({
     "on_hit_max_size", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
-    "level", "school", "requires_attack_roll", "save_ability", "damage", "damage_type",
+    "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
+    "damage_type",
     "half_on_save", "upcast_damage", "shape", "radius", "length", "size", "width",
     "range_feet", "max_targets", "condition", "concentration",
 }
@@ -410,6 +411,7 @@ def _parse_spell(
         level=level,
         school=reader.string("school"),
         requires_attack_roll=reader.boolean("requires_attack_roll"),
+        attack_kind=reader.enum("attack_kind", AttackKind) or AttackKind.RANGED,
         save_ability=reader.enum("save_ability", Ability),
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),

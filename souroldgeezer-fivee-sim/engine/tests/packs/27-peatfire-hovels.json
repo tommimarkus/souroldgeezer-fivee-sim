@@ -86,7 +86,12 @@
     {
       "name": "peatfire-smoke-blind",
       "description": "Thick peat smoke. Eyes stream and nothing can be aimed at.",
-      "effects": { "own_attacks_have_disadvantage": true, "attacked_with_disadvantage": true },
+      "effects": {
+        "own_attacks_have_disadvantage": true,
+        "attacked_with_disadvantage": true,
+        "cannot_see": true,
+        "unseen": true
+      },
       "provenance": "Original content — Peatfire Hovels"
     }
   ],

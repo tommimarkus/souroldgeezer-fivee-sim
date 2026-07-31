@@ -259,7 +259,7 @@ def _spell_options(
                         attack_bonus=actor.spell_attack_bonus,
                         target_ac=target.ac,
                         damage=dice,
-                        advantage=encounter.spell_attack_advantage(actor, target),
+                        advantage=encounter.spell_attack_advantage(actor, target, spell),
                         forced_critical=encounter.attack_forced_critical(actor, target),
                         resisted=_resists(target, spell),
                         vulnerable=_vulnerable(target, spell),

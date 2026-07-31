@@ -34,8 +34,13 @@ from fivee_sim.content import (
     monster_records,
     validate,
 )
-from fivee_sim.kernel.actions import compute_attack_advantage
-from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect
+from fivee_sim.kernel.actions import AttackKind, compute_attack_advantage
+from fivee_sim.kernel.conditions import (
+    EFFECTS,
+    Condition,
+    ConditionEffect,
+    compute_ability_check_advantage,
+)
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.rules import Size
 from fivee_sim.kernel.spells import SpellShape
@@ -637,6 +642,45 @@ class TestAttackRiderValidation:
         assert option.on_hit_expiry is RiderExpiry.START_OF_ATTACKER_NEXT_TURN
 
 
+class TestSpellAttackKindSchema:
+    def pack(self, tmp_path: Path, **spell_fields: Any) -> Path:
+        spell = {
+            "name": "Vale Arc",
+            "level": 1,
+            "requires_attack_roll": True,
+            "damage": "1d8",
+            "damage_type": "force",
+            "range_feet": 60,
+            "provenance": "test",
+            **spell_fields,
+        }
+        return write_pack(tmp_path, "arc.json", {
+            "pack": "x", "provenance": "test", "spells": [spell],
+        })
+
+    def test_a_melee_spell_attack_kind_loads(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.pack(tmp_path, attack_kind="melee")],
+            builtin="exclude",
+            include_environment=False,
+        )
+        assert registry.spells["Vale Arc"].attack_kind is AttackKind.MELEE
+
+    def test_an_omitted_attack_kind_defaults_to_ranged(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        assert registry.spells["Vale Arc"].attack_kind is AttackKind.RANGED
+
+    def test_an_invalid_attack_kind_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.pack(tmp_path, attack_kind="eldritch")],
+            builtin="exclude",
+            include_environment=False,
+        )
+        assert "attack_kind" in fields(diagnostics)
+
+
 class TestCreatureSizeSchema:
     """``size`` on a creature and ``on_hit_max_size`` on its attack.
 
@@ -992,6 +1036,23 @@ class TestCustomConditions:
             attacker_conditions=["vale-cursed"],
             target_conditions=[],
             distance=5,
+            condition_effects=registry.condition_effects,
+        ) is Advantage.DISADVANTAGE
+
+    def test_a_custom_condition_changes_an_ability_check(self, tmp_path: Path) -> None:
+        payload = {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "vale-addled", "provenance": "test",
+                "effects": {"own_ability_checks_have_disadvantage": True},
+            }],
+        }
+        path = write_pack(tmp_path, "addled.json", payload)
+        registry = load_packs(
+            [path], builtin="exclude", include_environment=False
+        )
+        assert compute_ability_check_advantage(
+            conditions=["vale-addled"],
             condition_effects=registry.condition_effects,
         ) is Advantage.DISADVANTAGE
 

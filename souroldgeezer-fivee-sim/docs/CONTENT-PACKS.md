@@ -130,13 +130,19 @@ fire, so a trait you list is a trait nobody will be surprised by.
 ### `spells`
 
 Required: `name`, `level`, `provenance`. Optional: `school`,
-`requires_attack_roll`, `save_ability`, `damage`, `damage_type`, `half_on_save`,
-`upcast_damage`, `shape`, `radius`, `range_feet`, `max_targets`, `condition`,
-`concentration`, `unmodelled`, `overrides`.
+`requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
+`half_on_save`, `upcast_damage`, `shape`, `radius`, `range_feet`, `max_targets`,
+`condition`, `concentration`, `unmodelled`, `overrides`.
 
 A spell cannot both require an attack roll and offer a saving throw. Set `radius`
 together with `"shape": "sphere"` for an area spell; an area rolls its damage once
 and compares every creature's save against that single total.
+
+An attack-roll spell may set `attack_kind` to `"melee"` or `"ranged"`. It defaults
+to `"ranged"` so packs written before this field existed keep their behaviour. The
+kind matters when a capable enemy is within 5 ft and can see the caster: ranged
+spell attacks take the same close-combat Disadvantage as ranged weapon attacks;
+melee spell attacks do not.
 
 `max_targets` caps how many creatures may be **named** on one cast, and naming more
 is refused rather than quietly trimmed. It does not apply to an area spell: there,
@@ -162,10 +168,21 @@ consequences the rules engine already knows how to apply:
 `incapacitated`, `speed_zero`, `attacked_with_advantage`,
 `attacked_with_disadvantage`, `attacked_with_advantage_in_melee`,
 `attacked_with_disadvantage_at_range`, `own_attacks_have_advantage`,
-`own_attacks_have_disadvantage`, `auto_fail_strength_saves`,
-`auto_fail_dexterity_saves`, `advantage_on_dexterity_saves`,
-`disadvantage_on_dexterity_saves`, `melee_hits_are_critical`,
-`resists_all_damage`.
+`own_attacks_have_disadvantage`, `own_ability_checks_have_advantage`,
+`own_ability_checks_have_disadvantage`, `cannot_see`, `unseen`,
+`auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
+`advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
+`melee_hits_are_critical`, `resists_all_damage`.
+
+Ability-check flags apply to initiative and to checks made while interacting with
+a map fixture. The standalone `check` tool takes only a caller-supplied modifier,
+not a combatant, so it has no creature conditions to read.
+
+`cannot_see` marks a condition that stops its bearer seeing; `unseen` marks one
+that stops others seeing its bearer. The encounter currently consumes those sight
+flags when deciding whether a nearby enemy imposes close-combat Disadvantage on a
+ranged attack. Total cover, another storey, allies, and Incapacitated enemies also
+do not impose that penalty.
 
 Failing a save and being bad at one are different flags on purpose.
 `auto_fail_dexterity_saves` decides the outcome; `disadvantage_on_dexterity_saves`
@@ -184,8 +201,9 @@ names are historical too, and kept so packs that set them keep working.
 `attacked_with_disadvantage_at_range` applies to any attack made from beyond it. Set
 both together for the Prone shape SRD 5.2 states: "An attack roll against you has
 Advantage if the attacker is within 5 feet of you. Otherwise, that attack roll has
-Disadvantage." A bow drawn point-blank on such a creature therefore gets Advantage,
-and a reach weapon swung from 10 ft gets Disadvantage.
+Disadvantage." A ranged attack drawn point-blank on a capable, seeing enemy also
+has close-combat Disadvantage, so that source cancels Prone's Advantage. A reach
+weapon swung from 10 ft gets Disadvantage from Prone.
 
 The three flags that read on attack rolls — `attacked_with_advantage`,
 `own_attacks_have_disadvantage`, and their siblings — apply to spell attack rolls
