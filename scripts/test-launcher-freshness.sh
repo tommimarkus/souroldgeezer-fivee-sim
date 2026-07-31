@@ -140,6 +140,11 @@ mkdir -p "$tmp/venvs"
 V1="$(plant v1)"
 V2="$(plant v2)"
 
+# Cases that share a venv name run in sequence and each one's end state is the
+# next one's precondition — that is the subject matter, not an accident: the
+# whole bug is about a venv persisting across launches. The cost is that an early
+# failure cascades, so read the FIRST failure in a block and ignore the rest.
+
 # --- cold: nothing built yet ----------------------------------------------
 launch v1 upgrade
 want_rc     "cold build exits 0" 0
@@ -176,6 +181,7 @@ want_syncs  "a changed lock re-syncs" 1
 
 printf '[project]\nname = "fivee-sim"\nversion = "0.0.1"\n' > "$V2/engine/pyproject.toml"
 launch v2 upgrade
+want_rc     "a changed pyproject exits 0" 0
 want_syncs  "a changed pyproject re-syncs" 1
 
 launch v2 upgrade
@@ -193,6 +199,25 @@ launch v3 moved
 want_rc     "an unusable venv is rebuilt, not run" 0
 want_syncs  "an unusable venv re-syncs" 1
 want_stdout "the rebuilt venv runs the engine" "engine=$V3/engine"
+
+# --- a venv built before the stamp existed --------------------------------
+# The state every existing install is in on its first start after this change:
+# the venv is usable and its engine has not moved, but the launcher that built it
+# left no stamp. This is the path that makes the fix self-healing, so it is
+# pinned rather than assumed. Naming the stamp file is deliberate coupling — it
+# is the one implementation detail that defines "built by the old launcher", and
+# only the arrange block touches it; the assertions stay behavioural.
+V5="$(plant v5)"
+launch v5 premigration
+want_rc "a fresh venv for the pre-stamp case" 0
+rm -f "$tmp/venvs/premigration/.fivee-sim-build-stamp"
+launch v5 premigration
+want_rc     "a venv with no stamp exits 0" 0
+want_syncs  "a venv with no stamp re-syncs" 1
+want_stdout "and then runs the engine" "engine=$V5/engine"
+
+launch v5 premigration
+want_syncs  "and is warm on the start after that" 0
 
 # --- stale, and the environment cannot be rebuilt -------------------------
 # Running the wrong engine is the failure this whole file is about, so a
