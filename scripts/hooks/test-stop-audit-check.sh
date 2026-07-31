@@ -207,7 +207,7 @@ check_block "a worktree edit matches, reported under its real path" "$W" \
 X="$(make_root absout)"
 tr_absout="$tmp/t-absout.jsonl"
 {
-  t_edit "/home/souroldgeezer/.claude/plans/x.md"
+  t_edit "/home/dev/.claude/plans/x.md"
   t_write "/etc/hostname"
 } > "$tr_absout"
 check_silent "only out-of-project absolute paths" \

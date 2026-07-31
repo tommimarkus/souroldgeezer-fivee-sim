@@ -45,7 +45,11 @@ keep passing the variable to `uv run` in that worktree:
 
 ```bash
 cd .worktrees/<name>/souroldgeezer-fivee-sim/engine
-export UV_CACHE_DIR=/home/souroldgeezer/repos/souroldgeezer-fivee-sim/souroldgeezer-fivee-sim/engine/.cache/uv
+# The primary checkout's cache, wherever this clone lives — from inside a
+# worktree `--git-common-dir` resolves to the primary checkout's `.git`.
+# Never hard-code an absolute path here: this file is published.
+primary="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+export UV_CACHE_DIR="$primary/souroldgeezer-fivee-sim/engine/.cache/uv"
 uv sync
 ```
 
