@@ -350,6 +350,10 @@ def _feature_payload(feature: MapFeature) -> dict[str, Any]:
             "open": feature.open_terrain,
         },
     }
+    if feature.orientation is not None:
+        payload["orientation"] = feature.orientation
+    if feature.linked_to is not None:
+        payload["linked_to"] = feature.linked_to
     if feature.elevation is not None:
         payload["elevation"] = {
             "closed": feature.elevation.closed,
@@ -359,6 +363,15 @@ def _feature_payload(feature: MapFeature) -> dict[str, Any]:
         payload["affects"] = [_overlay_payload(overlay) for overlay in feature.affects]
     if feature.requires:
         payload["requires"] = list(feature.requires)
+    if feature.trigger is not None:
+        payload["trigger"] = {
+            "when": {
+                name: "open" if expected else "closed"
+                for name, expected in feature.trigger.when
+            },
+            "set": "open" if feature.trigger.set_open else "closed",
+            "mode": feature.trigger.mode.value,
+        }
     if feature.costs_action:
         payload["costs_action"] = True
     if feature.check is not None:

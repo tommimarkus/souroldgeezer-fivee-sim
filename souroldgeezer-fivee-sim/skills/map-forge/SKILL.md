@@ -181,22 +181,36 @@ mid-combat. A door is the ordinary case; a lever, a spike, or a sluice gate is
 the same record with more on it. A feature without a state is just an
 annotation: a drawn stairway or a spawn hint, which no fight ever operates.
 
-Six optional keys are what a fixture may carry, all of them needing that
+Seven optional keys are what a fixture may carry, all of them needing that
 `state`: `terrain` and `elevation` pairs for its own square, `affects` naming
 further squares and what they become in each state, `requires` naming fixtures
-that must stand open first, `costs_action`, and `check` (`{"ability", "dc"}`).
+that must stand open first, one `trigger`, `costs_action`, and `check`
+(`{"ability", "dc"}`). A trigger is target-local:
+`{"when": {"lever": "open"}, "set": "open", "mode": "edge"}`; mode is either
+`edge` or `maintained`. `when` is a non-empty AND predicate. References must be
+stateful, dependencies acyclic, and linked leaves must carry identical
+triggers. An opening trigger must include every `requires` fixture as open.
 Build one with `add_feature`, whose overlay squares may be given as a `rect`
 rather than listed cell by cell, and change one with `set_feature`, which takes
 the same record and edits in place the fixture its `id` names. `set_feature`
 writes the record whole, so restate every key the fixture is to keep — dropping
 `affects` from the record is how a fixture stops affecting anything.
 
+The editor inspector shows a fixture's trigger but does not run it; Preview is
+an authored/live-state lens. Trigger execution belongs to a running encounter.
+`edge` fires only on false→true (not merely because the fight starts true) and
+rearms after false. `maintained` holds its configured state while true, refuses
+a contrary manual interaction before cost or check, and does not reverse when
+the predicate becomes false. Automatic transitions bypass the target's reach,
+cost, and check, then appear as ordinary `interact` events with an empty actor,
+`automatic: true`, and `triggered_by`, so replays fold them normally.
+
 A door may additionally carry its drawing mechanics: horizontal doors hinge
 west/east and swing north/south; vertical doors hinge north/south and swing
 west/east. Omitted fields preserve west/north for horizontal and north/west for
 vertical. Two adjacent, aligned leaves become one double door only when each
 has `linked_to` naming the other and both have the same authored state,
-`requires`, `costs_action`, and `check`. One interaction and one check operate
+`requires`, `trigger`, `costs_action`, and `check`. One interaction and one check operate
 the pair; hinge, swing, and terrain effects remain per leaf.
 
 **Say what a fixture does — and what it costs — before the party commits**,

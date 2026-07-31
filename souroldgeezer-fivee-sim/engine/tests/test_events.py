@@ -18,6 +18,7 @@ from fivee_sim.analytics.montecarlo import run_encounter
 from fivee_sim.content import ContentRegistry, load_packs, make_creature, make_monster, spellbook
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.items import ItemEffect
+from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import (
     EVENT_KINDS,
@@ -421,6 +422,53 @@ class TestReplayFromRecords:
         assert [e.as_dict() for e in rebuilt.log] == [e.as_dict() for e in original.log]
         assert [r.as_dict() for r in rebuilt.actions] == [
             r.as_dict() for r in original.actions
+        ]
+
+    def test_automatic_fixture_events_replay_exactly_from_the_direct_action(self) -> None:
+        trigger_map = BattleMap.flat(
+            name="trigger hall",
+            width=6,
+            height=2,
+            default_terrain="floor",
+            features={
+                "lever": MapFeature(
+                    name="lever", square=(1, 1), kind="lever",
+                    closed_terrain="floor", open_terrain="floor",
+                ),
+                "gate": MapFeature(
+                    name="gate", square=(4, 1), kind="gate",
+                    closed_terrain="floor", open_terrain="floor",
+                    trigger=FeatureTrigger(
+                        when=(("lever", True),), set_open=True,
+                        mode=TriggerMode.MAINTAINED,
+                    ),
+                ),
+            },
+            provenance=FIXTURE,
+        )
+
+        def combatants() -> list[Creature]:
+            return [
+                fighter("Thora", position=(0, 5)),
+                make_monster("Goblin Warrior", label="Goblin", position=(25, 5)),
+            ]
+
+        def build() -> tuple[Encounter, Random]:
+            return build_encounter(combatants(), seed=SEED, battle_map=trigger_map)
+
+        original, rng = build()
+        advance_to(original, "Thora", rng)
+        events = original.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+        assert [event.data["feature"] for event in events] == ["lever", "gate"]
+        assert events[-1].data["automatic"] is True
+
+        rebuilt, fresh_rng = build()
+        replayed(original, rebuilt, fresh_rng)
+        assert [event.as_dict() for event in rebuilt.log] == [
+            event.as_dict() for event in original.log
+        ]
+        assert [record.as_dict() for record in rebuilt.actions] == [
+            record.as_dict() for record in original.actions
         ]
 
     def test_custom_pack_content_rides_through_replay(

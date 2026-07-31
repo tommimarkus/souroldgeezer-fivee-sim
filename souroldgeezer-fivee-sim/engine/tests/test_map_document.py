@@ -951,8 +951,19 @@ def sluice() -> dict[str, Any]:
     return payload
 
 
+def triggered_sluice(*, mode: str = "maintained") -> dict[str, Any]:
+    """The sluice opens when its spike is pulled."""
+    payload = sluice()
+    payload["features"][1]["trigger"] = {
+        "when": {"spike": "open"},
+        "set": "open",
+        "mode": mode,
+    }
+    return payload
+
+
 class TestFeatureFixtures:
-    """The six optional keys that make a feature something a fight can operate."""
+    """The seven optional keys that make a feature something a fight can operate."""
 
     def test_a_document_with_no_fixture_keys_writes_the_bytes_it_always_did(self) -> None:
         # The additive-optional-key promise: format_version stays 1 because every
@@ -1043,6 +1054,145 @@ class TestFeatureFixtures:
         written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
         gate = next(f for f in written["features"] if f["id"] == "gate")
         assert "costs_action" not in gate
+
+
+class TestFeatureTriggers:
+    def test_a_trigger_parses_and_round_trips_canonically(self) -> None:
+        payload = triggered_sluice()
+        payload["features"].append(
+            {"id": "alarm", "kind": "lever", "at": [4, 4], "state": "closed"}
+        )
+        payload["features"][1]["trigger"]["when"] = {
+            "spike": "open",
+            "alarm": "closed",
+        }
+
+        document = parse_document(payload, source="test", terrain=TERRAIN)
+        gate = next(feature for feature in document.features if feature.id == "gate")
+
+        assert gate.trigger is not None
+        assert gate.trigger.when == (("alarm", False), ("spike", True))
+        assert gate.trigger.set_open is True
+        assert gate.trigger.mode.value == "maintained"
+        written = json.loads(serialize(document))
+        written_gate = next(feature for feature in written["features"] if feature["id"] == "gate")
+        assert written_gate["trigger"] == {
+            "when": {"alarm": "closed", "spike": "open"},
+            "set": "open",
+            "mode": "maintained",
+        }
+        assert list(written_gate).index("trigger") == list(written_gate).index("requires") + 1
+        assert serialize(
+            parse_document(written, source="round-trip", terrain=TERRAIN)
+        ) == serialize(document)
+
+    @pytest.mark.parametrize(
+        ("trigger", "message"),
+        [
+            (None, "trigger must be an object"),
+            ([], "trigger must be an object"),
+            ({"set": "open", "mode": "edge"}, "when is required"),
+            ({"when": [], "set": "open", "mode": "edge"}, "when must be an object"),
+            ({"when": {}, "set": "open", "mode": "edge"}, "at least one fixture"),
+            (
+                {"when": {"spike": "ajar"}, "set": "open", "mode": "edge"},
+                "must be one of: open, closed",
+            ),
+            ({"when": {"spike": "open"}, "mode": "edge"}, "set is required"),
+            (
+                {"when": {"spike": "open"}, "set": "ajar", "mode": "edge"},
+                "set must be one of: open, closed",
+            ),
+            (
+                {"when": {"spike": "open"}, "set": "open", "mode": "pulse"},
+                "mode must be one of: edge, maintained",
+            ),
+        ],
+    )
+    def test_malformed_triggers_are_refused(
+        self, trigger: Any, message: str
+    ) -> None:
+        payload = sluice()
+        payload["features"][1]["trigger"] = trigger
+        assert any(message in problem for problem in errors_of(payload))
+
+    def test_a_trigger_reference_must_exist(self) -> None:
+        missing = triggered_sluice()
+        missing["features"][1]["trigger"]["when"] = {"ghost": "open"}
+        assert any(
+            "trigger references 'ghost', but there is no feature 'ghost'" in problem
+            for problem in errors_of(missing)
+        )
+
+    def test_a_trigger_reference_must_carry_state(self) -> None:
+        stateless = triggered_sluice()
+        stateless["features"][1]["trigger"]["when"] = {"spawn-party": "open"}
+        assert any(
+            "trigger references 'spawn-party', which carries no state" in problem
+            for problem in errors_of(stateless)
+        )
+
+    def test_trigger_dependencies_must_be_acyclic(self) -> None:
+        payload = triggered_sluice(mode="edge")
+        payload["features"][0]["trigger"] = {
+            "when": {"gate": "open"},
+            "set": "open",
+            "mode": "edge",
+        }
+        found = [problem for problem in errors_of(payload) if "trigger cycle" in problem]
+        assert found == [
+            "feature 'gate' is in a trigger cycle: gate -> spike -> gate; "
+            "automatic fixture transitions must be acyclic"
+        ]
+
+    def test_linked_door_leaves_must_have_identical_triggers(self) -> None:
+        payload = double_doors()
+        payload["features"].append(
+            {"id": "lever", "kind": "lever", "at": [1, 1], "state": "closed"}
+        )
+        payload["features"][0]["trigger"] = {
+            "when": {"lever": "open"},
+            "set": "open",
+            "mode": "maintained",
+        }
+        assert any(
+            "linked doors must have identical triggers" in problem
+            for problem in errors_of(payload)
+        )
+
+    def test_an_opening_trigger_must_imply_every_requirement(self) -> None:
+        payload = triggered_sluice()
+        payload["features"].append(
+            {"id": "second spike", "kind": "spike", "at": [4, 3], "state": "closed"}
+        )
+        payload["features"][1]["requires"] = ["spike", "second spike"]
+        assert any(
+            "opens feature 'gate' but does not require 'second spike' to be open" in problem
+            for problem in errors_of(payload)
+        )
+
+    def test_a_true_maintained_trigger_must_match_the_authored_state(self) -> None:
+        payload = triggered_sluice()
+        payload["features"][1]["trigger"]["when"] = {"spike": "closed"}
+        assert any(
+            "maintained trigger is true initially and sets it open, but its state is closed"
+            in problem
+            for problem in errors_of(payload)
+        )
+
+    def test_a_true_edge_trigger_does_not_constrain_the_authored_state(self) -> None:
+        payload = triggered_sluice(mode="edge")
+        payload["features"][1]["requires"] = []
+        payload["features"][1]["trigger"]["when"] = {"spike": "closed"}
+        assert errors_of(payload) == []
+
+    def test_a_trigger_without_a_state_is_refused_as_a_fixture_key(self) -> None:
+        payload = triggered_sluice()
+        del payload["features"][1]["state"]
+        assert any(
+            "required for a feature carrying" in problem and "trigger" in problem
+            for problem in errors_of(payload)
+        )
 
 
 class TestFixturesCrossToTheBattleMap:
