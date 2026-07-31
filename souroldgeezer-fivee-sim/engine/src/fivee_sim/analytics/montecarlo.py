@@ -127,6 +127,14 @@ def auto_action(encounter: Encounter) -> Action | None:
       counts for nothing, for the same reason Hold Person is never cast: its worth
       lives in turns this one-turn policy cannot see. The stepper still applies it
       when the swing lands.
+
+    One reflex comes before the greedy valuation: **a Prone creature stands
+    first**, whenever the stepper would allow it. Standing costs half the
+    creature's Speed and no action, and staying down costs Disadvantage on every
+    attack while handing melee attackers Advantage — a trade no one-turn damage
+    comparison needs to price. Legality comes from :meth:`Encounter.can_stand`,
+    the stepper's own gate, and the act consumes no randomness, so the RNG
+    stream stays identical to live play.
     """
     actor = encounter.current
     if not actor.active:
@@ -134,6 +142,8 @@ def auto_action(encounter: Encounter) -> Action | None:
     enemies = [c for c in encounter.enemies_of(actor.name) if c.conscious]
     if not enemies:
         return None
+    if encounter.can_stand(actor.name):
+        return Action(kind=ActionKind.STAND)
 
     turn = encounter.state()["turn_state"]
     options: list[_Option] = []
