@@ -25,8 +25,10 @@ import subprocess
 import sys
 import time
 import urllib.request
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from copy import deepcopy
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 from random import Random
@@ -49,6 +51,7 @@ from ..content import (
     environment_paths,
     load_packs,
     make_creature,
+    registry_from_snapshot,
 )
 from ..content import validate as _validate_content
 from ..editor.cli import read_state, state_file_for
@@ -71,6 +74,7 @@ from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
+from ..service import encounter_journal as _journal_service
 from ..service import maps as _map_service
 from ..service import replay as _replay_service
 from ..service import uvtt as _uvtt_service
@@ -115,11 +119,23 @@ class _Session:
     #: built: the combatants as they stood before any turn, which features
     #: began open, and — for a session-map fight — the map document payload
     #: **by value**, so a later map_edit can never change an exported replay.
-    #: An inline map spec is not a document; those fights keep ``None`` and
-    #: replay on the viewer's neutral plane.
+    #: Inline maps are kept separately so legacy v1 exports retain their
+    #: documented neutral-plane behaviour while v2 exports are self-contained.
     initial_creatures: list[dict[str, Any]] = field(default_factory=list)
+    initial_state: dict[str, Any] = field(default_factory=dict)
     initial_open_features: list[str] = field(default_factory=list)
     map_payload: dict[str, Any] | None = None
+    inline_map_payload: dict[str, Any] | None = None
+    normalized_combatants: list[dict[str, Any]] = field(default_factory=list)
+    content_snapshot: dict[str, Any] = field(default_factory=dict)
+    event_timestamps: list[str] = field(default_factory=list)
+    state_history: list[dict[str, Any]] = field(default_factory=list)
+    checkpoint_event_counts: list[int] = field(default_factory=list)
+    checkpoint_timestamps: list[str] = field(default_factory=list)
+    attempts: list[dict[str, Any]] = field(default_factory=list)
+    request_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+    finalized: bool = False
+    finalization_result: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -152,6 +168,119 @@ _CONTENT: _Content | None = None
 
 class ToolError(ValueError):
     """Bad tool input, reported to the caller rather than crashing the server."""
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _content_snapshot(registry: ContentRegistry) -> dict[str, Any]:
+    """The exact content records and provenance an encounter captured."""
+    records: dict[str, dict[str, Any]] = {}
+    for section in ("spells", "conditions", "terrain", "items"):
+        records[section] = {
+            name: {
+                "record": deepcopy(record),
+                "source": registry.source_of(section, name),
+            }
+            for name, record in sorted(registry.records_for(section).items())
+        }
+    return {
+        "builtin": registry.builtin.value,
+        "packs": [pack.as_dict() for pack in registry.packs],
+        "retained_conditions": list(registry.retained_conditions),
+        "records": records,
+    }
+
+
+def _capture_checkpoint(session: _Session, timestamp: str) -> None:
+    session.state_history.append(deepcopy(session.encounter.state()))
+    session.checkpoint_event_counts.append(len(session.encounter.log))
+    session.checkpoint_timestamps.append(timestamp)
+
+
+def _journal_append(encounter_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        return _journal_service.append(encounter_id, payload)
+    except _journal_service.JournalError as error:
+        raise ToolError(str(error)) from error
+
+
+def _cached_request(session: _Session, request_id: str | None) -> dict[str, Any] | None:
+    if request_id is None:
+        return None
+    cached = session.request_results.get(request_id)
+    if cached is None:
+        return None
+    if cached["status"] == "refused":
+        raise ToolError(str(cached["error"]))
+    result = cached.get("result")
+    if not isinstance(result, Mapping):
+        raise ToolError(f"request {request_id!r} has no recorded result")
+    return deepcopy(dict(result))
+
+
+def _attempt_started(
+    encounter_id: str,
+    session: _Session,
+    operation: str,
+    arguments: Mapping[str, Any],
+    request_id: str | None,
+) -> tuple[int, str]:
+    timestamp = _utc_now()
+    index = len(session.attempts)
+    _journal_append(
+        encounter_id,
+        {
+            "kind": "attempt",
+            "timestamp": timestamp,
+            "index": index,
+            "operation": operation,
+            "request_id": request_id,
+            "arguments": deepcopy(dict(arguments)),
+        },
+    )
+    return index, timestamp
+
+
+def _attempt_finished(
+    encounter_id: str,
+    session: _Session,
+    *,
+    index: int,
+    started_at: str,
+    operation: str,
+    arguments: Mapping[str, Any],
+    request_id: str | None,
+    status: str,
+    result: Mapping[str, Any] | None = None,
+    error: str | None = None,
+) -> None:
+    timestamp = _utc_now()
+    audit: dict[str, Any] = {
+        "index": index,
+        "timestamp": timestamp,
+        "started_at": started_at,
+        "operation": operation,
+        "request_id": request_id,
+        "arguments": deepcopy(dict(arguments)),
+        "status": status,
+    }
+    if result is not None:
+        audit["result"] = deepcopy(dict(result))
+    if error is not None:
+        audit["error"] = error
+    try:
+        _journal_append(encounter_id, {"kind": "result", **audit})
+    except ToolError:
+        # The caller cannot safely continue from state the durable record did
+        # not acknowledge. Dropping the cache forces recovery from the valid
+        # prefix on the next access.
+        _SESSIONS.pop(encounter_id, None)
+        raise
+    session.attempts.append(audit)
+    if request_id is not None:
+        session.request_results[request_id] = audit
 
 
 def _content() -> _Content:
@@ -189,13 +318,23 @@ def _mode(value: str | None, *, default: BuiltinMode) -> BuiltinMode:
 
 def _new_encounter_id() -> str:
     global _NEXT_ID
-    _NEXT_ID += 1
-    return f"enc-{_NEXT_ID}"
+    while True:
+        _NEXT_ID += 1
+        candidate = f"enc-{_NEXT_ID}"
+        try:
+            exists = _journal_service.journal_path(candidate).exists()
+        except _journal_service.JournalError:
+            exists = False
+        if candidate not in _SESSIONS and not exists:
+            return candidate
 
 
-# The seed convention lives in the service layer now; the alias keeps every
-# existing tool body reading as it always has.
-_resolve_seed = resolve_seed
+def _resolve_seed(seed: int | None) -> int:
+    """Expose service-level seed portability failures as MCP tool errors."""
+    try:
+        return resolve_seed(seed)
+    except ValueError as error:
+        raise ToolError(str(error)) from error
 
 
 def _advantage(value: str | None) -> Advantage:
@@ -230,8 +369,7 @@ def _point(value: int | list[int], what: str) -> Point | int:
 def _session(encounter_id: str) -> _Session:
     session = _SESSIONS.get(encounter_id)
     if session is None:
-        known = ", ".join(sorted(_SESSIONS)) or "none"
-        raise ToolError(f"unknown encounter {encounter_id!r}; active: {known}")
+        session, _ = _recover_session(encounter_id)
     return session
 
 
@@ -356,6 +494,7 @@ def _resolve_battle_map(
 def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
     bonus_type = spec.get("bonus_damage_type")
     save_ability = spec.get("on_hit_save_ability")
+    max_size = spec.get("on_hit_max_size")
     try:
         return AttackOption(
             name=str(spec["name"]),
@@ -386,6 +525,7 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
             ),
             on_hit_save_dc=int(spec.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(spec.get("on_hit_expiry", "none")),
+            on_hit_max_size=Size(max_size) if max_size is not None else None,
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -714,37 +854,108 @@ def _new_encounter(
 
 
 # --- primitives ------------------------------------------------------------
+def _audited_primitive(
+    *,
+    encounter_id: str | None,
+    request_id: str | None,
+    operation: str,
+    arguments: Mapping[str, Any],
+    execute: Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    if encounter_id is None:
+        if request_id is not None:
+            raise ToolError("request_id requires encounter_id")
+        return execute()
+    session = _session(encounter_id)
+    cached = _cached_request(session, request_id)
+    if cached is not None:
+        return cached
+    index, started_at = _attempt_started(
+        encounter_id, session, operation, arguments, request_id
+    )
+    try:
+        if session.finalized:
+            raise ToolError(f"encounter {encounter_id!r} is finalized")
+        result = execute()
+        result["encounter_id"] = encounter_id
+    except (ToolError, ValueError) as error:
+        _attempt_finished(
+            encounter_id,
+            session,
+            index=index,
+            started_at=started_at,
+            operation=operation,
+            arguments=arguments,
+            request_id=request_id,
+            status="refused",
+            error=str(error),
+        )
+        raise ToolError(str(error)) from error
+    _attempt_finished(
+        encounter_id,
+        session,
+        index=index,
+        started_at=started_at,
+        operation=operation,
+        arguments=arguments,
+        request_id=request_id,
+        status="success",
+        result=result,
+    )
+    return result
+
+
 @server.tool()
-def roll(expression: str, advantage: str = "none", seed: int | None = None) -> dict[str, Any]:
+def roll(
+    expression: str,
+    advantage: str = "none",
+    seed: int | None = None,
+    encounter_id: str | None = None,
+    request_id: str | None = None,
+    label: str | None = None,
+) -> dict[str, Any]:
     """Roll a dice expression such as "2d6+3" or "d20", optionally with advantage.
 
     Advantage and disadvantage apply only to a single d20; they are ignored for
     other expressions because the rules attach them to d20 tests.
     """
-    used = _resolve_seed(seed)
-    rng = Random(used)
-    dice = Dice.parse(expression)
-    state = _advantage(advantage)
-    if dice.count == 1 and dice.faces == 20 and state is not Advantage.NONE:
-        d20 = roll_d20(rng, state)
-        return {
-            "expression": str(dice),
-            "seed": used,
-            "advantage": state.value,
-            "natural": d20.natural,
-            "rolls": list(d20.rolls),
-            "total": d20.natural + dice.modifier,
-            "detail": d20.describe(),
-        }
-    result = roll_dice(dice, rng)
-    return {
-        "expression": str(dice),
-        "seed": used,
-        "advantage": Advantage.NONE.value,
-        "rolls": list(result.rolls),
-        "total": result.total,
-        "detail": result.describe(),
-    }
+    def execute() -> dict[str, Any]:
+        used = _resolve_seed(seed)
+        rng = Random(used)
+        dice = Dice.parse(expression)
+        state = _advantage(advantage)
+        if dice.count == 1 and dice.faces == 20 and state is not Advantage.NONE:
+            d20 = roll_d20(rng, state)
+            result: dict[str, Any] = {
+                "expression": str(dice),
+                "seed": used,
+                "advantage": state.value,
+                "natural": d20.natural,
+                "rolls": list(d20.rolls),
+                "total": d20.natural + dice.modifier,
+                "detail": d20.describe(),
+            }
+        else:
+            rolled = roll_dice(dice, rng)
+            result = {
+                "expression": str(dice),
+                "seed": used,
+                "advantage": Advantage.NONE.value,
+                "rolls": list(rolled.rolls),
+                "total": rolled.total,
+                "detail": rolled.describe(),
+            }
+        if label is not None:
+            result["label"] = label
+        return result
+
+    return _audited_primitive(
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="roll",
+        arguments={"expression": expression, "advantage": advantage, "seed": seed, "label": label},
+        execute=execute,
+    )
 
 
 @server.tool()
@@ -753,18 +964,45 @@ def check(
     dc: int,
     advantage: str = "none",
     seed: int | None = None,
+    encounter_id: str | None = None,
+    request_id: str | None = None,
+    ability: str | None = None,
+    skill: str | None = None,
 ) -> dict[str, Any]:
-    """Make an ability check against a DC."""
-    used = _resolve_seed(seed)
-    test = make_d20_test(Random(used), modifier=modifier, dc=dc, advantage=_advantage(advantage))
-    return {
-        "seed": used,
-        "natural": test.roll.natural,
-        "total": test.total,
-        "dc": dc,
-        "success": test.success,
-        "detail": test.describe(),
-    }
+    """Make an ability or skill check, optionally attached to an encounter."""
+    def execute() -> dict[str, Any]:
+        if ability is not None:
+            Ability(ability)
+        if skill is not None and not skill.strip():
+            raise ToolError("skill must not be blank")
+        used = _resolve_seed(seed)
+        test = make_d20_test(
+            Random(used), modifier=modifier, dc=dc, advantage=_advantage(advantage)
+        )
+        result: dict[str, Any] = {
+            "seed": used,
+            "natural": test.roll.natural,
+            "total": test.total,
+            "dc": dc,
+            "success": test.success,
+            "detail": test.describe(),
+        }
+        if ability is not None:
+            result["ability"] = ability
+        if skill is not None:
+            result["skill"] = skill
+        return result
+
+    return _audited_primitive(
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="check",
+        arguments={
+            "modifier": modifier, "dc": dc, "advantage": advantage, "seed": seed,
+            "ability": ability, "skill": skill,
+        },
+        execute=execute,
+    )
 
 
 @server.tool()
@@ -774,25 +1012,45 @@ def save(
     advantage: str = "none",
     auto_fail: bool = False,
     seed: int | None = None,
+    encounter_id: str | None = None,
+    request_id: str | None = None,
+    ability: str | None = None,
 ) -> dict[str, Any]:
     """Make a saving throw. ``auto_fail`` covers conditions that forfeit the save."""
-    used = _resolve_seed(seed)
-    test = make_d20_test(
-        Random(used),
-        modifier=modifier,
-        dc=dc,
-        advantage=_advantage(advantage),
-        auto_fail=auto_fail,
+    def execute() -> dict[str, Any]:
+        if ability is not None:
+            Ability(ability)
+        used = _resolve_seed(seed)
+        test = make_d20_test(
+            Random(used),
+            modifier=modifier,
+            dc=dc,
+            advantage=_advantage(advantage),
+            auto_fail=auto_fail,
+        )
+        result: dict[str, Any] = {
+            "seed": used,
+            "natural": test.roll.natural,
+            "total": test.total,
+            "dc": dc,
+            "success": test.success,
+            "auto_failed": test.auto_failed,
+            "detail": test.describe(),
+        }
+        if ability is not None:
+            result["ability"] = ability
+        return result
+
+    return _audited_primitive(
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="save",
+        arguments={
+            "modifier": modifier, "dc": dc, "advantage": advantage,
+            "auto_fail": auto_fail, "seed": seed, "ability": ability,
+        },
+        execute=execute,
     )
-    return {
-        "seed": used,
-        "natural": test.roll.natural,
-        "total": test.total,
-        "dc": dc,
-        "success": test.success,
-        "auto_failed": test.auto_failed,
-        "detail": test.describe(),
-    }
 
 
 def _condition_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
@@ -930,6 +1188,198 @@ def lookup_rule(topic: str = "") -> dict[str, Any]:
 
 
 # --- stateful encounters ---------------------------------------------------
+def _action_from_journal(arguments: Mapping[str, Any]) -> Action:
+    def point(name: str) -> int | Point | None:
+        value = arguments.get(name)
+        if value is None or isinstance(value, int):
+            return value
+        return (int(value[0]), int(value[1]))
+
+    toward = arguments.get("toward")
+    aimed: str | Point | None
+    if isinstance(toward, str) or toward is None:
+        aimed = toward
+    else:
+        aimed = (int(toward[0]), int(toward[1]))
+    direction = arguments.get("direction")
+    return Action(
+        kind=ActionKind(str(arguments["kind"])),
+        target=arguments.get("target"),
+        attack=arguments.get("attack"),
+        item=arguments.get("item"),
+        spell=arguments.get("spell"),
+        slot_level=arguments.get("slot_level"),
+        to_position=point("to_position"),
+        targets=tuple(arguments.get("targets") or ()),
+        center=point("center"),
+        direction=(
+            (int(direction[0]), int(direction[1])) if direction is not None else None
+        ),
+        toward=aimed,
+        path=tuple((int(step[0]), int(step[1])) for step in arguments.get("path") or ()),
+        feature=arguments.get("feature"),
+        set_open=arguments.get("set_open"),
+        to_level=arguments.get("to_level"),
+    )
+
+
+def _recover_session(encounter_id: str) -> tuple[_Session, dict[str, str] | None]:
+    global _NEXT_ID
+    try:
+        records, warning = _journal_service.read(encounter_id, repair_partial=True)
+    except _journal_service.JournalError as error:
+        known = ", ".join(sorted(_SESSIONS)) or "none"
+        if "unknown encounter" in str(error):
+            raise ToolError(
+                f"unknown encounter {encounter_id!r}; active: {known}"
+            ) from error
+        raise ToolError(str(error)) from error
+    if not records or records[0].get("kind") != "creation":
+        raise ToolError(f"encounter journal {encounter_id!r} has no creation record")
+    created = records[0]
+    captured_content = created.get("content")
+    if not isinstance(captured_content, Mapping):
+        raise ToolError(f"encounter journal {encounter_id!r} has no content snapshot")
+    try:
+        registry = registry_from_snapshot(captured_content)
+    except ContentError as error:
+        raise ToolError(f"cannot recover {encounter_id!r}'s content: {error}") from error
+    normalized = created.get("combatants")
+    if not isinstance(normalized, list):
+        raise ToolError(f"encounter journal {encounter_id!r} has no combatants")
+    captured_map = created.get("map")
+    battle_map: BattleMap | None = None
+    if isinstance(captured_map, Mapping):
+        try:
+            document, _ = _map_service.parse_payload(
+                captured_map,
+                source=f"journal:{encounter_id}",
+                terrain=registry.terrain_effects,
+            )
+        except (ValueError, DataError) as error:
+            raise ToolError(f"cannot recover {encounter_id!r}'s map: {error}") from error
+        battle_map = to_grid(document)
+    seed = int(created["seed"])
+    rng = Random(seed)
+    encounter = _new_encounter(
+        _combatants([dict(entry) for entry in normalized], registry),
+        rng,
+        registry,
+        movement_rule=_movement_rule(str(created["movement_rule"])),
+        battle_map=battle_map,
+    )
+    session = _Session(
+        encounter=encounter,
+        rng=rng,
+        seed=seed,
+        content_generation=int(created.get("content_generation", 0)),
+        initial_creatures=_initial_creatures(encounter),
+        initial_state=deepcopy(encounter.state()),
+        initial_open_features=list(created.get("map_open_features", [])),
+        normalized_combatants=deepcopy(normalized),
+        content_snapshot=deepcopy(dict(captured_content)),
+    )
+    map_kind = created.get("map_kind")
+    if map_kind == "loaded" and isinstance(captured_map, Mapping):
+        session.map_payload = deepcopy(dict(captured_map))
+        source = created.get("map_source")
+        if isinstance(source, Mapping):
+            session.map_id = str(source.get("map_id"))
+            session.map_generation = int(source.get("generation", 0))
+            session.map_sha256 = str(source.get("sha256", ""))
+    elif map_kind == "inline" and isinstance(captured_map, Mapping):
+        session.inline_map_payload = deepcopy(dict(captured_map))
+    created_at = str(created["timestamp"])
+    session.event_timestamps = [created_at] * len(encounter.log)
+    _capture_checkpoint(session, created_at)
+
+    pending: dict[int, dict[str, Any]] = {}
+    for record in records[1:]:
+        kind = record.get("kind")
+        if kind == "attempt":
+            pending[int(record["index"])] = record
+            continue
+        if kind == "finalized":
+            session.finalized = True
+            final = record.get("result")
+            session.finalization_result = (
+                deepcopy(dict(final)) if isinstance(final, Mapping) else {}
+            )
+            continue
+        if kind != "result":
+            continue
+        index = int(record["index"])
+        pending.pop(index, None)
+        audit = {
+            key: deepcopy(value)
+            for key, value in record.items()
+            if key not in {"kind", "previous_sha256", "sha256"}
+        }
+        operation = str(record.get("operation"))
+        status = str(record.get("status"))
+        if status == "success" and operation == "encounter_act":
+            before = len(encounter.log)
+            encounter.act(_action_from_journal(record["arguments"]), rng)
+            timestamp = str(record["timestamp"])
+            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
+            _capture_checkpoint(session, timestamp)
+        elif status == "success" and operation == "encounter_advance":
+            before = len(encounter.log)
+            encounter.advance(rng)
+            timestamp = str(record["timestamp"])
+            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
+            _capture_checkpoint(session, timestamp)
+        session.attempts.append(audit)
+        request_id = record.get("request_id")
+        if isinstance(request_id, str):
+            session.request_results[request_id] = audit
+    for index, record in sorted(pending.items()):
+        session.attempts.append(
+            {
+                "index": index,
+                "timestamp": record["timestamp"],
+                "started_at": record["timestamp"],
+                "operation": record["operation"],
+                "request_id": record.get("request_id"),
+                "arguments": deepcopy(record.get("arguments", {})),
+                "status": "interrupted",
+                "error": "the process stopped before recording a result",
+            }
+        )
+    _SESSIONS[encounter_id] = session
+    if encounter_id.startswith("enc-") and encounter_id[4:].isdigit():
+        _NEXT_ID = max(_NEXT_ID, int(encounter_id[4:]))
+    return session, warning
+
+
+def _creation_response(encounter_id: str, session: _Session) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "encounter_id": encounter_id,
+        "seed": session.seed,
+        "content_generation": session.content_generation,
+        "state": session.encounter.state(),
+        "log": [event.as_dict() for event in session.encounter.log],
+    }
+    map_source = _map_source_of(session)
+    if map_source is not None:
+        if session.map_sha256:
+            map_source["sha256"] = session.map_sha256
+        result["map_source"] = map_source
+    return result
+
+
+def _creation_request(request_id: str) -> tuple[str, _Session] | None:
+    for path in _journal_service.list_journals():
+        encounter_id = path.stem
+        try:
+            records, _ = _journal_service.read(encounter_id)
+        except _journal_service.JournalError:
+            continue
+        if records and records[0].get("request_id") == request_id:
+            return encounter_id, _session(encounter_id)
+    return None
+
+
 @server.tool()
 def encounter_create(
     combatants: list[dict[str, Any]],
@@ -937,6 +1387,7 @@ def encounter_create(
     movement_rule: str = "5-5-5",
     map: dict[str, Any] | None = None,
     map_id: str | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     """Start an encounter and roll initiative, optionally on a battle map.
 
@@ -975,13 +1426,18 @@ def encounter_create(
     ``map_source`` field here and in encounter_state reports the captured
     generation and whether the live map has since moved on.
     """
+    if request_id is not None:
+        existing = _creation_request(request_id)
+        if existing is not None:
+            return _creation_response(*existing)
     used = _resolve_seed(seed)
     rng = Random(used)
     content = _content()
     battle_map, map_source = _resolve_battle_map(map, map_id)
     try:
+        built_combatants = _combatants(combatants, content.registry)
         encounter = _new_encounter(
-            _combatants(combatants, content.registry), rng, content.registry,
+            built_combatants, rng, content.registry,
             movement_rule=_movement_rule(movement_rule),
             battle_map=battle_map,
         )
@@ -993,6 +1449,15 @@ def encounter_create(
         content_generation=content.generation,
     )
     session.initial_creatures = _initial_creatures(encounter)
+    session.initial_state = deepcopy(encounter.state())
+    session.normalized_combatants = [
+        _replay_service.normalized_combatant_payload(creature)
+        for creature in built_combatants
+    ]
+    session.content_snapshot = _content_snapshot(content.registry)
+    created_at = _utc_now()
+    session.event_timestamps = [created_at] * len(encounter.log)
+    _capture_checkpoint(session, created_at)
     if encounter.map_state is not None:
         session.initial_open_features = sorted(encounter.map_state.open_features)
     if map_source is not None:
@@ -1002,16 +1467,39 @@ def encounter_create(
         # The payload, not the session reference: replay_export must see the
         # document as it stands now, whatever happens to the map later.
         session.map_payload = as_payload(_map_session(session.map_id).document)
+    elif battle_map is not None:
+        session.inline_map_payload = _replay_service.battle_map_payload(battle_map)
     _SESSIONS[encounter_id] = session
-    result: dict[str, Any] = {
-        "encounter_id": encounter_id,
-        "seed": used,
-        "content_generation": content.generation,
-        "state": encounter.state(),
-        "log": [event.as_dict() for event in encounter.log],
-    }
-    if map_source is not None:
-        result["map_source"] = map_source
+    captured_map = session.map_payload or session.inline_map_payload
+    try:
+        _journal_append(
+            encounter_id,
+            {
+                "kind": "creation",
+                "timestamp": created_at,
+                "request_id": request_id,
+                "encounter_id": encounter_id,
+                "engine_version": __version__,
+                "seed": used,
+                "movement_rule": encounter.movement_rule.value,
+                "content_generation": content.generation,
+                "content": session.content_snapshot,
+                "combatants": session.normalized_combatants,
+                "map": captured_map,
+                "map_kind": (
+                    "loaded" if session.map_payload is not None
+                    else "inline" if session.inline_map_payload is not None
+                    else "none"
+                ),
+                "map_source": map_source,
+                "map_open_features": session.initial_open_features,
+                "initial_state": session.initial_state,
+            },
+        )
+    except ToolError:
+        _SESSIONS.pop(encounter_id, None)
+        raise
+    result = _creation_response(encounter_id, session)
     if content.startup_error:
         result["content_warning"] = (
             "configured content failed to load; this fight uses the bundled slice "
@@ -1032,6 +1520,39 @@ def encounter_state(encounter_id: str) -> dict[str, Any]:
     state = session.encounter.state()
     state["map_source"] = _map_source_of(session)
     return state
+
+
+@server.tool()
+def encounter_note(
+    encounter_id: str,
+    text: str,
+    category: str = "note",
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """Attach a durable narrative or adjudication note to an encounter."""
+    def execute() -> dict[str, Any]:
+        note = text.strip()
+        label = category.strip()
+        if not note:
+            raise ToolError("note text must not be blank")
+        if len(note) > 4000:
+            raise ToolError("note text must be at most 4000 characters")
+        if not label:
+            raise ToolError("note category must not be blank")
+        return {
+            "encounter_id": encounter_id,
+            "text": note,
+            "category": label,
+            "timestamp": _utc_now(),
+        }
+
+    return _audited_primitive(
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="encounter_note",
+        arguments={"text": text, "category": category},
+        execute=execute,
+    )
 
 
 @server.tool()
@@ -1072,8 +1593,7 @@ def encounter_log(
     return result
 
 
-@server.tool()
-def encounter_act(
+def _execute_encounter_act(
     encounter_id: str,
     kind: str,
     target: str | None = None,
@@ -1179,6 +1699,9 @@ def encounter_act(
         events = session.encounter.act(action, session.rng)
     except EncounterError as error:
         raise ToolError(str(error)) from error
+    completed_at = _utc_now()
+    session.event_timestamps.extend([completed_at] * len(events))
+    _capture_checkpoint(session, completed_at)
     return {
         "events": [event.as_dict() for event in events],
         "state": session.encounter.state(),
@@ -1186,14 +1709,245 @@ def encounter_act(
 
 
 @server.tool()
-def encounter_advance(encounter_id: str) -> dict[str, Any]:
+def encounter_act(
+    encounter_id: str,
+    kind: str,
+    target: str | None = None,
+    attack: str | None = None,
+    item: str | None = None,
+    spell: str | None = None,
+    slot_level: int | None = None,
+    to_position: int | list[int] | None = None,
+    targets: list[str] | None = None,
+    center: int | list[int] | None = None,
+    direction: list[int] | None = None,
+    toward: str | list[int] | None = None,
+    path: list[list[int]] | None = None,
+    feature: str | None = None,
+    set_open: bool | None = None,
+    to_level: int | None = None,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """Take the current creature's action and durably audit success or refusal.
+
+    ``request_id`` makes retries idempotent. The action fields have the same
+    meanings documented by encounter_state and encounter_log: attacks name a
+    target, movement names a destination/path/storey, and spells name their aim.
+    """
+    session = _session(encounter_id)
+    cached = _cached_request(session, request_id)
+    if cached is not None:
+        return cached
+    arguments: dict[str, Any] = {
+        "kind": kind,
+        "target": target,
+        "attack": attack,
+        "item": item,
+        "spell": spell,
+        "slot_level": slot_level,
+        "to_position": to_position,
+        "targets": targets,
+        "center": center,
+        "direction": direction,
+        "toward": toward,
+        "path": path,
+        "feature": feature,
+        "set_open": set_open,
+        "to_level": to_level,
+    }
+    index, started_at = _attempt_started(
+        encounter_id, session, "encounter_act", arguments, request_id
+    )
+    try:
+        if session.finalized:
+            raise ToolError(f"encounter {encounter_id!r} is finalized")
+        result = _execute_encounter_act(
+            encounter_id,
+            kind,
+            target,
+            attack,
+            item,
+            spell,
+            slot_level,
+            to_position,
+            targets,
+            center,
+            direction,
+            toward,
+            path,
+            feature,
+            set_open,
+            to_level,
+        )
+    except (ToolError, EncounterError) as error:
+        _attempt_finished(
+            encounter_id,
+            session,
+            index=index,
+            started_at=started_at,
+            operation="encounter_act",
+            arguments=arguments,
+            request_id=request_id,
+            status="refused",
+            error=str(error),
+        )
+        raise ToolError(str(error)) from error
+    _attempt_finished(
+        encounter_id,
+        session,
+        index=index,
+        started_at=started_at,
+        operation="encounter_act",
+        arguments=arguments,
+        request_id=request_id,
+        status="success",
+        result=result,
+    )
+    return result
+
+
+def _execute_encounter_advance(encounter_id: str) -> dict[str, Any]:
     """End the current turn and begin the next, rolling any death saves that are due."""
     session = _session(encounter_id)
     events = session.encounter.advance(session.rng)
+    completed_at = _utc_now()
+    session.event_timestamps.extend([completed_at] * len(events))
+    _capture_checkpoint(session, completed_at)
     return {
         "events": [event.as_dict() for event in events],
         "state": session.encounter.state(),
     }
+
+
+@server.tool()
+def encounter_advance(
+    encounter_id: str, request_id: str | None = None
+) -> dict[str, Any]:
+    """End this turn, begin the next, and durably record the transition."""
+    session = _session(encounter_id)
+    cached = _cached_request(session, request_id)
+    if cached is not None:
+        return cached
+    arguments: dict[str, Any] = {}
+    index, started_at = _attempt_started(
+        encounter_id, session, "encounter_advance", arguments, request_id
+    )
+    try:
+        if session.finalized:
+            raise ToolError(f"encounter {encounter_id!r} is finalized")
+        result = _execute_encounter_advance(encounter_id)
+    except (ToolError, EncounterError) as error:
+        _attempt_finished(
+            encounter_id,
+            session,
+            index=index,
+            started_at=started_at,
+            operation="encounter_advance",
+            arguments=arguments,
+            request_id=request_id,
+            status="refused",
+            error=str(error),
+        )
+        raise ToolError(str(error)) from error
+    _attempt_finished(
+        encounter_id,
+        session,
+        index=index,
+        started_at=started_at,
+        operation="encounter_advance",
+        arguments=arguments,
+        request_id=request_id,
+        status="success",
+        result=result,
+    )
+    return result
+
+
+@server.tool()
+def encounter_resume(encounter_id: str) -> dict[str, Any]:
+    """Load an encounter from its verified journal, repairing a partial crash tail."""
+    existing = _SESSIONS.get(encounter_id)
+    warning: dict[str, str] | None = None
+    recovered = existing is None
+    session = existing
+    if session is None:
+        session, warning = _recover_session(encounter_id)
+    result: dict[str, Any] = {
+        "encounter_id": encounter_id,
+        "recovered": recovered,
+        "finalized": session.finalized,
+        "state": encounter_state(encounter_id),
+    }
+    if warning is not None:
+        result["recovery_warning"] = warning
+    return result
+
+
+@server.tool()
+def encounter_list(status: str = "active") -> dict[str, Any]:
+    """Discover durable encounters without loading them into process memory."""
+    if status not in {"active", "finalized", "all"}:
+        raise ToolError("status must be active, finalized, or all")
+    entries: list[dict[str, Any]] = []
+    for path in _journal_service.list_journals():
+        encounter_id = path.stem
+        try:
+            records, _ = _journal_service.read(encounter_id)
+        except _journal_service.JournalError as error:
+            if status == "all":
+                entries.append(
+                    {
+                        "encounter_id": encounter_id,
+                        "status": "corrupt",
+                        "problem": str(error),
+                        "journal_path": str(path),
+                    }
+                )
+            continue
+        if not records:
+            continue
+        finalized = any(record.get("kind") == "finalized" for record in records)
+        actual_status = "finalized" if finalized else "active"
+        if status != "all" and status != actual_status:
+            continue
+        entries.append(
+            {
+                "encounter_id": encounter_id,
+                "status": actual_status,
+                "created_at": records[0].get("timestamp"),
+                "updated_at": records[-1].get("timestamp"),
+                "records": len(records),
+                "journal_path": str(path),
+            }
+        )
+    return {"status": status, "encounters": entries}
+
+
+@server.tool()
+def encounter_finalize(encounter_id: str) -> dict[str, Any]:
+    """Atomically export replay v2 and mark the durable encounter finalized."""
+    session = _session(encounter_id)
+    if session.finalization_result is not None:
+        return deepcopy(session.finalization_result)
+    target = _journal_service.encounters_root() / f"{encounter_id}.replay.json"
+    exported = replay_export(
+        encounter_id, path=str(target), format_version=_replay_service.LATEST_FORMAT_VERSION
+    )
+    result = {
+        "encounter_id": encounter_id,
+        "status": "finalized",
+        "replay_path": str(target),
+        "bytes": exported["bytes"],
+        "sha256": exported["sha256"],
+        "journal_path": str(_journal_service.journal_path(encounter_id)),
+    }
+    _journal_append(
+        encounter_id,
+        {"kind": "finalized", "timestamp": _utc_now(), "result": result},
+    )
+    session.finalized = True
+    session.finalization_result = deepcopy(result)
+    return result
 
 
 #: A serialized replay bundle at or under this many bytes is returned inline;
@@ -1203,17 +1957,29 @@ _INLINE_BUNDLE_BYTES = 64 * 1024
 
 
 @server.tool()
+def replay_validate(bundle: dict[str, Any]) -> dict[str, Any]:
+    """Validate a v1 or v2 replay and verify every v2 integrity hash."""
+    diagnostics = _replay_service.validate_replay(bundle)
+    return {
+        "valid": not diagnostics,
+        "error_count": len(diagnostics),
+        "diagnostics": diagnostics,
+    }
+
+
+@server.tool()
 def replay_export(
-    encounter_id: str, path: str | None = None, embed: bool = False
+    encounter_id: str,
+    path: str | None = None,
+    embed: bool = False,
+    format_version: int = _replay_service.LATEST_FORMAT_VERSION,
 ) -> dict[str, Any]:
     """Export a fight's replay: a bundle file, or a standalone viewer page.
 
-    The bundle (``fivee-sim-replay`` version 1) carries the seed, the map
-    document the fight captured at creation (``null`` for mapless and
-    inline-spec fights, which replay on a neutral plane), the combatants'
-    starting positions and hit points, and the full structured event log so
-    far — export mid-fight and you get the fight so far. A later map_edit
-    never changes an export: the map travelled by value.
+    Version 2 is the default: a self-contained, validated audit record with
+    normalized combatants, captured content and map, actions, attempts,
+    timestamped events, authoritative state checkpoints, and integrity hashes.
+    Pass ``format_version=1`` for the legacy viewer contract.
 
     Plain export: a small bundle is returned inline as ``bundle``; a large
     one — or any call with ``path`` — is written to disk (default
@@ -1225,19 +1991,61 @@ def replay_export(
     the session, not an original.
     """
     session = _session(encounter_id)
-    name = (
-        str(session.map_payload["name"])
-        if session.map_payload is not None
-        else encounter_id
-    )
-    bundle = _replay_service.replay_bundle(
-        name=name,
-        seed=session.seed,
-        map_payload=session.map_payload,
-        initial_creatures=session.initial_creatures,
-        map_open_features=session.initial_open_features,
-        events=[event.as_dict() for event in session.encounter.log],
-    )
+    if format_version == 1:
+        name = (
+            str(session.map_payload["name"])
+            if session.map_payload is not None
+            else encounter_id
+        )
+        bundle = _replay_service.replay_bundle(
+            name=name,
+            seed=session.seed,
+            map_payload=session.map_payload,
+            initial_creatures=session.initial_creatures,
+            map_open_features=session.initial_open_features,
+            events=[event.as_dict() for event in session.encounter.log],
+        )
+    elif format_version == 2:
+        captured_map = session.map_payload or session.inline_map_payload
+        name = str(captured_map["name"]) if captured_map is not None else encounter_id
+        latest_state = session.encounter.state()
+        latest_state["map_source"] = _map_source_of(session)
+        initial_state = deepcopy(session.initial_state)
+        initial_state["map_source"] = _map_source_of(session)
+        checkpoints = []
+        for index, captured_state in enumerate(session.state_history):
+            checkpoint_state = deepcopy(captured_state)
+            checkpoint_state["map_source"] = _map_source_of(session)
+            checkpoints.append(
+                {
+                    "index": index,
+                    "timestamp": session.checkpoint_timestamps[index],
+                    "event_count": session.checkpoint_event_counts[index],
+                    "state_hash": _replay_service.canonical_sha256(checkpoint_state),
+                    "state": checkpoint_state,
+                }
+            )
+        bundle = _replay_service.replay_bundle_v2(
+            name=name,
+            engine_version=__version__,
+            encounter_id=encounter_id,
+            seed=session.seed,
+            movement_rule=session.encounter.movement_rule.value,
+            map_payload=captured_map,
+            initial_creatures=initial_state["combatants"],
+            normalized_combatants=session.normalized_combatants,
+            initial_state=initial_state,
+            map_open_features=session.initial_open_features,
+            actions=[record.as_dict() for record in session.encounter.actions],
+            events=[event.as_dict() for event in session.encounter.log],
+            event_timestamps=session.event_timestamps,
+            latest_state=latest_state,
+            checkpoints=checkpoints,
+            attempts=session.attempts,
+            content_snapshot=session.content_snapshot,
+        )
+    else:
+        raise ToolError(f"format_version must be 1 or 2, got {format_version}")
     serialized = _replay_service.serialize_bundle(bundle)
     slug = slugify(name)
     result: dict[str, Any] = {
@@ -1245,6 +2053,7 @@ def replay_export(
         "seed": session.seed,
         "format": _replay_service.FORMAT,
         "events": len(session.encounter.log),
+        "sha256": _replay_service.sha256_bytes(serialized.encode("utf-8")),
     }
 
     if embed:
@@ -1260,11 +2069,15 @@ def replay_export(
             else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.html"
         )
         try:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(html, encoding="utf-8")
+            _replay_service.atomic_write_text(target, html)
         except OSError as error:
             raise ToolError(f"cannot write {target}: {error}") from error
-        return {**result, "path": str(target), "bytes": len(html.encode("utf-8"))}
+        return {
+            **result,
+            "path": str(target),
+            "bytes": len(html.encode("utf-8")),
+            "sha256": _replay_service.sha256_bytes(html.encode("utf-8")),
+        }
 
     size = len(serialized.encode("utf-8"))
     if path is None and size <= _INLINE_BUNDLE_BYTES:
@@ -1275,15 +2088,14 @@ def replay_export(
         else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.json"
     )
     try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(serialized, encoding="utf-8")
+        _replay_service.atomic_write_text(target, serialized)
     except OSError as error:
         raise ToolError(f"cannot write {target}: {error}") from error
     return {
         **result,
         "path": str(target),
         "bytes": size,
-        "sha256": sha256_of(serialized),
+        "sha256": _replay_service.sha256_bytes(serialized.encode("utf-8")),
     }
 
 

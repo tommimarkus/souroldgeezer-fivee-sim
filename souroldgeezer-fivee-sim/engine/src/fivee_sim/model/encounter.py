@@ -874,6 +874,7 @@ class Encounter:
         return {
             "round": self.round,
             "turn": self.current_name,
+            "movement_rule": self.movement_rule.value,
             "over": self.over,
             "winner": self.winner,
             "order": list(self.order),
@@ -884,6 +885,20 @@ class Encounter:
                 "interaction_used": self._turn.interaction_used,
             },
             "map": self._map_state(),
+            "ongoing_effects": [
+                {
+                    "id": effect.id,
+                    "source": effect.source,
+                    "name": effect.name,
+                    "target": effect.target,
+                    "condition": effect.condition,
+                    "concentration": effect.concentration,
+                    "stacked": effect.stacked,
+                    "expires_phase": effect.expires_phase,
+                    "expires_anchor": effect.expires_anchor,
+                }
+                for effect in self._effects
+            ],
             "combatants": [self._creature_state(c) for c in
                            (self.creatures[n] for n in self.order)],
         }
@@ -1005,6 +1020,8 @@ class Encounter:
             "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
             "dodging": self._dodging[creature.name],
+            "disengaged": self._disengaged[creature.name],
+            "reaction_available": self._reaction_available[creature.name],
             "conscious": creature.conscious,
             "dying": creature.dying,
             "dead": creature.dead,
@@ -2186,7 +2203,9 @@ class Encounter:
         self._turn.movement_left -= distance
         self._emit("move", actor.name,
                    detail=f"{origin} -> {destination} ({distance} ft used)",
-                   origin=origin, destination=destination, cost=distance)
+                   origin=origin, planned_destination=destination,
+                   destination=destination, cost=distance, completed=True)
+        move_event = self.log[-1]
 
         if self._disengaged[actor.name]:
             actor.position = destination
@@ -2209,6 +2228,8 @@ class Encounter:
             if not actor.conscious:
                 # Dropped mid-stride: the walk ends where the mover fell, and the
                 # state — not the move event's declared destination — is the truth.
+                move_event.data["destination"] = as_point(actor.position)
+                move_event.data["completed"] = False
                 return
         actor.position = destination
 
@@ -2340,12 +2361,20 @@ class Encounter:
             )
 
         self._turn.movement_left -= cost
+        travel_detail = (
+            f"{origin} -> {destination}"
+            if level == to_level
+            else f"{origin} [level {level}] -> {destination} [level {to_level}]"
+        )
         self._emit("move", actor.name,
-                   detail=f"{origin} -> {destination} ({cost} ft used)",
-                   origin=origin, destination=destination, cost=cost,
-                   to_level=to_level,
+                   detail=f"{travel_detail} ({cost} ft used)",
+                   origin=origin, planned_destination=destination,
+                   destination=destination, cost=cost,
+                   from_level=level, planned_to_level=to_level,
+                   to_level=to_level, completed=True,
                    movement_mode=movement_mode.value,
                    squares=[list(square) for square in route])
+        move_event = self.log[-1]
         suppressed = self._disengaged[actor.name]
         for previous, step in zip(route, route[1:], strict=False):
             threatening: list[Creature] = []
@@ -2367,6 +2396,9 @@ class Encounter:
             if not actor.conscious:
                 # Dropped mid-stride: the walk ends where the mover fell, and the
                 # state — not the move event's declared destination — is the truth.
+                move_event.data["destination"] = as_point(actor.position)
+                move_event.data["to_level"] = actor.level
+                move_event.data["completed"] = False
                 return
         # The connector is ridden last, and only by a mover still standing: one
         # dropped on the stairs falls at its foot, on the level it was walking.
@@ -2647,7 +2679,9 @@ class Encounter:
                    natural=resolution.attack.roll.natural,
                    total=resolution.attack.total,
                    advantage=resolution.advantage.value,
-                   damage=resolution.total_damage_dealt)
+                   damage=resolution.total_damage_dealt,
+                   position=as_point(mover.position),
+                   level=mover.level)
         if resolution.hit:
             # A mover cannot currently be at 0 hit points — a dying creature has
             # Speed 0 — so the flag changes nothing today. It is passed anyway: two

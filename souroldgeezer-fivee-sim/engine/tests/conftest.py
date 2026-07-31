@@ -35,9 +35,34 @@ from fivee_sim.model.encounter import Encounter
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
+REPLAY_HERO: dict[str, Any] = {
+    "name": "Thora",
+    "team": "party",
+    "ac": 16,
+    "max_hp": 30,
+    "position": [5, 5],
+    "attacks": [
+        {
+            "name": "Longsword",
+            "attack_bonus": 5,
+            "damage": "1d8+3",
+            "damage_type": "slashing",
+            "kind": "melee",
+        }
+    ],
+}
+REPLAY_GOBLIN: dict[str, Any] = {
+    "monster": "Goblin Warrior",
+    "label": "Goblin",
+    "team": "monsters",
+    "position": [15, 15],
+}
+
 
 @pytest.fixture(autouse=True)
-def _isolate_server_state() -> Iterator[None]:
+def _isolate_server_state(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> Iterator[None]:
     """Save and restore every module-level global in the MCP server around each test.
 
     ``_CONTENT`` is loaded lazily, so restoring it also *resets* it: the value put
@@ -51,6 +76,7 @@ def _isolate_server_state() -> Iterator[None]:
     content = api._CONTENT
     next_id = api._NEXT_ID
     next_map_id = api._NEXT_MAP_ID
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
     try:
         yield
     finally:
@@ -108,6 +134,23 @@ def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) ->
             return
         encounter.advance(rng)
     raise AssertionError(f"{name} never got a turn")
+
+
+def advance_encounter_to(encounter_id: str, name: str, limit: int = 24) -> None:
+    """Advance an MCP encounter until ``name`` holds the turn."""
+    for _ in range(limit):
+        if api.encounter_state(encounter_id)["turn"] == name:
+            return
+        api.encounter_advance(encounter_id)
+    raise AssertionError(f"{name} never got a turn")
+
+
+def mapless_fight(seed: int = 41) -> str:
+    """Create the shared two-combatant replay fixture through the public tool API."""
+    created = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed
+    )
+    return str(created["encounter_id"])
 
 
 def fighter(

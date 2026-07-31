@@ -565,8 +565,8 @@ class _Handler(BaseHTTPRequestHandler):
         name = body.get("name")
         if name is not None and not isinstance(name, str):
             raise _Problem(HTTPStatus.BAD_REQUEST, "'name' must be text")
-        used = resolve_seed(seed)
         try:
+            used = resolve_seed(seed)
             document = map_service.generate(kind, params, used, name=name)
         except MapError as error:
             raise _validation_problem(error) from None

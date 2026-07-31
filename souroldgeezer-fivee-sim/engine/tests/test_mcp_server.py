@@ -85,6 +85,10 @@ class TestPrimitives:
         with pytest.raises(ValueError, match="not a dice expression"):
             api.roll("two sixes")
 
+    def test_an_unportable_seed_is_a_tool_error(self) -> None:
+        with pytest.raises(api.ToolError, match="JavaScript safe integer"):
+            api.roll("d20", seed=2**53)
+
     def test_check_and_save_report_success_against_the_dc(self) -> None:
         assert api.check(modifier=20, dc=5, seed=1)["success"]
         assert not api.check(modifier=-20, dc=25, seed=1)["success"]

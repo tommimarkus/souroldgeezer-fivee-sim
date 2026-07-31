@@ -29,7 +29,7 @@ live play uses.
 
 | Plugin | Version | Skill | Claude agent |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.2` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.3` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
 
 ## Install
 
@@ -86,7 +86,8 @@ independently of either host.
 
 | Group | Tools |
 | --- | --- |
-| Stateful | `encounter_create`, `encounter_state`, `encounter_act`, `encounter_advance` |
+| Stateful | `encounter_create`, `encounter_state`, `encounter_act`, `encounter_advance`, `encounter_note`, `encounter_log`, `encounter_list`, `encounter_resume`, `encounter_finalize` |
+| Replay | `replay_export`, `replay_validate` |
 | Analytics | `simulate_rounds`, `simulate_dpr` |
 | Primitives | `roll`, `check`, `save`, `lookup_rule` |
 | Content | `content_status`, `content_configure`, `content_validate` |

@@ -109,6 +109,13 @@ class TestCommon:
     def test_resolve_seed_invents_one_only_when_absent(self) -> None:
         assert isinstance(resolve_seed(None), int)
 
+    @pytest.mark.parametrize("seed", [-(2**53), 2**53])
+    def test_resolve_seed_rejects_values_javascript_cannot_reproduce(
+        self, seed: int
+    ) -> None:
+        with pytest.raises(ValueError, match="JavaScript safe integer"):
+            resolve_seed(seed)
+
     def test_slugify_is_filesystem_safe(self) -> None:
         assert slugify("Dungeon 42!") == "dungeon-42"
         assert slugify("  ///  ") == "map"
