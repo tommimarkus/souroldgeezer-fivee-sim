@@ -141,5 +141,51 @@ them ends on a connector square and pays the climb. Routing is per level — ask
 for the walk to the stairs and the crossing as separate legs, because the
 pathfinder will not plan a route that takes the stairs on the way.
 
+## Fixtures the fight can operate
+
+A feature that carries a `state` is a **fixture** — something a fight can work
+mid-combat. A door is the ordinary case; a lever, a spike, or a sluice gate is
+the same record with more on it. A feature without a state is just an
+annotation: a drawn stairway or a spawn hint, which no fight ever operates.
+
+Six optional keys are what a fixture may carry, all of them needing that
+`state`: `terrain` and `elevation` pairs for its own square, `affects` naming
+further squares and what they become in each state, `requires` naming fixtures
+that must stand open first, `costs_action`, and `check` (`{"ability", "dc"}`).
+Build one with `add_feature`, whose overlay squares may be given as a `rect`
+rather than listed cell by cell. There is no operation for editing overlays —
+`remove_feature` plus `add_feature` in one atomic call replaces the fixture.
+
+**Say what a fixture does — and what it costs — before the party commits**,
+because the half that is missing is the half a user will assume:
+
+- **Price the whole chain out loud.** Pulling two spikes and opening the gate is
+  **three actions**, not one flourish: any fixture with `costs_action` spends
+  the action rather than the free object interaction, so three of them is three
+  turns unless three creatures split the work. A failed check spends the action
+  and moves nothing, so budget for retries.
+- **The check is a raw ability check.** Creatures have ability modifiers and no
+  skill proficiencies anywhere in this engine — no Athletics, no proficiency
+  bonus, no Expertise, no Help. **Set the DC as if the character were
+  untrained**, and say so when the user pitches one at a trained bonus.
+- **`requires` gates opening only.** Closing is never blocked, so a gate that
+  opened can always be shut again even with the spikes back in.
+- **The ground changes live, under whoever is standing there.** Terrain and
+  ground height both move the instant a fixture flips. A creature standing where
+  the footing turns impassable is *not* pushed anywhere — entry cost governs
+  entering a square, not remaining in one, and this engine models no forced
+  movement. It stays put and may walk out. Say that plainly rather than letting
+  the user expect a shove.
+- **One fixture per square.** Every square a fixture governs — its own and every
+  overlay cell — belongs to exactly one fixture per level, refused at load
+  otherwise. Two floods cannot share a room; combine them into one fixture's
+  overlay groups instead.
+
+When the fight is running, drive a fixture with
+`encounter_act(kind="interact", feature=..., set_open=true|false)`. Use
+`set_open` whenever you are working a chain: `interact` on its own **toggles**,
+so telling the engine to "open the sluice" when it already stands open silently
+closes it. Running the fight is the encounter-sim skill's ground.
+
 For the document format, the editor's API model, and the replay bundle
 schema, read [`../../docs/MAPS.md`](../../docs/MAPS.md).
