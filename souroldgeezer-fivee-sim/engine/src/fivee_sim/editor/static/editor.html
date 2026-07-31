@@ -156,6 +156,8 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <button class="tool" data-tool="height">Height</button>
     <input id="height-feet" type="number" step="5" value="10" aria-label="height in feet">
     <h3>Map</h3>
+    <label for="level-select">Level</label>
+    <select id="level-select" aria-label="level"></select>
     <button id="btn-resize">Resize&#8230;</button>
     <button id="btn-fit">Fit view</button>
     <button id="btn-heights">Heights</button>
@@ -278,7 +280,8 @@ if (typeof FiveeRenderer === "undefined") {
   var drag = null;
   var hoverCell = null;
   var heightsOn = false;  /* the elevation overlay toggle */
-  var elevSquares = null; /* cache of doc.elevation: "x,y" -> feet */
+  var activeLevel = 0; /* the storey being edited; 0 is the ground */
+  var elevSquares = null; /* cache of the active plane's elevation: "x,y" -> feet */
   var elevEntries = null; /* the same squares as [{x, y, feet}] for the overlay */
 
   var canvas = document.getElementById("map");
@@ -328,6 +331,55 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- document plumbing ------------------------------------------------ */
+  /* The ground lives in the document's own tiles/features/elevation keys and a
+     storey in doc.levels; both shapes carry the same three, so one accessor
+     serves either and the editing code never learns which it has. */
+  function plane() {
+    if (!doc) { return { tiles: [], features: [] }; }
+    if (activeLevel === 0) { return doc; }
+    var storeys = doc.levels || [];
+    for (var i = 0; i < storeys.length; i++) {
+      if (storeys[i].index === activeLevel) { return storeys[i]; }
+    }
+    return doc;
+  }
+  function levelIndices() {
+    var found = [0];
+    (doc && doc.levels ? doc.levels : []).forEach(function (level) {
+      if (Number.isInteger(level.index)) { found.push(level.index); }
+    });
+    found.sort(function (a, b) { return a - b; });
+    return found;
+  }
+  function levelLabel(index) {
+    if (index === 0) { return "0 · ground"; }
+    var storeys = doc && doc.levels ? doc.levels : [];
+    for (var i = 0; i < storeys.length; i++) {
+      if (storeys[i].index === index) {
+        return index + (storeys[i].name ? " · " + storeys[i].name : "");
+      }
+    }
+    return String(index);
+  }
+  function renderLevels() {
+    var select = byId("level-select");
+    select.innerHTML = "";
+    levelIndices().forEach(function (index) {
+      var option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = levelLabel(index);
+      if (index === activeLevel) { option.selected = true; }
+      select.appendChild(option);
+    });
+    select.disabled = levelIndices().length < 2;
+  }
+  /* The renderer never learns about storeys: it is handed the document's grid
+     and legend with the active plane's tiles and features, which is exactly
+     the shape it already draws. */
+  function renderable() {
+    return { grid: doc.grid, legend: doc.legend,
+      tiles: plane().tiles, features: plane().features };
+  }
   /* Every layer the document carries. The page paints ground elevation now,
      and keeps that layer in the server's canonical shape — sparse against the
      datum, sorted row then column — so undo, the dirty check, and byte-stable
@@ -336,7 +388,7 @@ if (typeof FiveeRenderer === "undefined") {
     return JSON.stringify({
       name: payload.name, grid: payload.grid, legend: payload.legend,
       tiles: payload.tiles, features: payload.features,
-      elevation: payload.elevation
+      elevation: payload.elevation, levels: payload.levels
     });
   }
   function snapshot() {
@@ -345,6 +397,9 @@ if (typeof FiveeRenderer === "undefined") {
     redoStack = [];
   }
   function restore(serialized) {
+    /* The whole document goes back, storeys included — the ground's keys are
+       the ground's, never the active plane's, or undoing while a storey is
+       selected would write the ground's tiles into it. */
     var previous = JSON.parse(serialized);
     doc.name = previous.name;
     doc.grid = previous.grid;
@@ -353,6 +408,10 @@ if (typeof FiveeRenderer === "undefined") {
     doc.features = previous.features;
     if (previous.elevation === undefined) { delete doc.elevation; }
     else { doc.elevation = previous.elevation; }
+    if (previous.levels === undefined) { delete doc.levels; }
+    else { doc.levels = previous.levels; }
+    if (levelIndices().indexOf(activeLevel) === -1) { activeLevel = 0; }
+    renderLevels();
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
@@ -385,6 +444,8 @@ if (typeof FiveeRenderer === "undefined") {
     undoStack = [];
     redoStack = [];
     selectedFeatureId = null;
+    activeLevel = 0;
+    renderLevels();
     rebuildElevationCache();
     heightsOn = !!payload.elevation;
     byId("btn-heights").classList.toggle("active", heightsOn);
@@ -475,8 +536,8 @@ if (typeof FiveeRenderer === "undefined") {
       && cell[1] >= 0 && cell[1] < doc.grid.height;
   }
   function paintCell(x, y, glyph) {
-    var row = doc.tiles[y];
-    doc.tiles[y] = row.substring(0, x) + glyph + row.substring(x + 1);
+    var row = plane().tiles[y];
+    plane().tiles[y] = row.substring(0, x) + glyph + row.substring(x + 1);
   }
   function brushCells(center, size) {
     var half = Math.floor(size / 2);
@@ -522,11 +583,11 @@ if (typeof FiveeRenderer === "undefined") {
     return glyphForKind("floor") || glyphForKind("normal");
   }
   function kindAt(cell) {
-    return doc.legend[doc.tiles[cell[1]].charAt(cell[0])];
+    return doc.legend[plane().tiles[cell[1]].charAt(cell[0])];
   }
   function featureAt(cell, predicate) {
-    for (var i = 0; i < doc.features.length; i++) {
-      var feature = doc.features[i];
+    for (var i = 0; i < plane().features.length; i++) {
+      var feature = plane().features[i];
       if (feature.at[0] === cell[0] && feature.at[1] === cell[1]
         && (!predicate || predicate(feature))) {
         return feature;
@@ -536,7 +597,7 @@ if (typeof FiveeRenderer === "undefined") {
   }
   function nextFeatureId(prefix) {
     var used = {};
-    doc.features.forEach(function (f) { used[f.id] = true; });
+    plane().features.forEach(function (f) { used[f.id] = true; });
     for (var n = 1; ; n++) {
       var candidate = prefix + "-" + n;
       if (!used[candidate]) { return candidate; }
@@ -560,7 +621,7 @@ if (typeof FiveeRenderer === "undefined") {
     var door = featureAt(cell, function (f) { return f.kind === "door"; });
     snapshot();
     if (door === null) {
-      doc.features.push({
+      plane().features.push({
         id: nextFeatureId("door"), kind: "door",
         at: [cell[0], cell[1]],
         orientation: doorOrientation(cell), state: "closed"
@@ -570,7 +631,7 @@ if (typeof FiveeRenderer === "undefined") {
       door.state = "open";
       setStatus("door " + door.id + " now stands open by default");
     } else {
-      doc.features.splice(doc.features.indexOf(door), 1);
+      plane().features.splice(plane().features.indexOf(door), 1);
       setStatus("removed " + door.id);
     }
     redraw();
@@ -579,12 +640,12 @@ if (typeof FiveeRenderer === "undefined") {
     var existing = featureAt(cell, function (f) { return f.kind !== "door"; });
     snapshot();
     if (existing !== null) {
-      doc.features.splice(doc.features.indexOf(existing), 1);
+      plane().features.splice(plane().features.indexOf(existing), 1);
       setStatus("removed " + existing.id);
     } else {
       var kind = byId("feature-kind").value;
       var id = nextFeatureId(kind.replace(/_/g, "-"));
-      doc.features.push({ id: id, kind: kind, at: [cell[0], cell[1]] });
+      plane().features.push({ id: id, kind: kind, at: [cell[0], cell[1]] });
       setStatus("placed " + id + " at [" + cell + "]");
     }
     renderFeatureInfo();
@@ -592,12 +653,12 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- ground height ---------------------------------------------------- */
-  /* doc.elevation is mirrored into two caches: elevSquares for lookups and
+  /* plane().elevation is mirrored into two caches: elevSquares for lookups and
      elevEntries for the overlay walk. Every write goes through
      writeElevation, which stores the server's canonical shape and rebuilds
      both, so the caches can never drift from the document. */
   function elevationDefault() {
-    var feet = doc && doc.elevation ? doc.elevation.default : 0;
+    var feet = doc && plane().elevation ? plane().elevation.default : 0;
     return Number.isInteger(feet) ? feet : 0;
   }
   function rebuildElevationCache() {
@@ -607,8 +668,8 @@ if (typeof FiveeRenderer === "undefined") {
        the server would refuse must not crash the load, so entries that are
        not [x, y, feet] whole numbers are ignored here and the Validate and
        Save buttons still tell the truth about them. */
-    var squares = doc && doc.elevation && Array.isArray(doc.elevation.squares)
-      ? doc.elevation.squares : [];
+    var squares = doc && plane().elevation && Array.isArray(plane().elevation.squares)
+      ? plane().elevation.squares : [];
     squares.forEach(function (square) {
       if (!Array.isArray(square) || square.length !== 3
         || !Number.isInteger(square[0]) || !Number.isInteger(square[1])
@@ -637,8 +698,8 @@ if (typeof FiveeRenderer === "undefined") {
       squares.push([Number(at[0]), Number(at[1]), elevSquares[key]]);
     });
     squares.sort(function (a, b) { return (a[1] - b[1]) || (a[0] - b[0]); });
-    if (!squares.length && defaultFeet === 0) { delete doc.elevation; }
-    else { doc.elevation = { "default": defaultFeet, squares: squares }; }
+    if (!squares.length && defaultFeet === 0) { delete plane().elevation; }
+    else { plane().elevation = { "default": defaultFeet, squares: squares }; }
     rebuildElevationCache();
   }
   function setHeightCells(cells, feet) {
@@ -667,7 +728,7 @@ if (typeof FiveeRenderer === "undefined") {
     var remove = byId("btn-delete-feature");
     var feature = null;
     if (doc && selectedFeatureId !== null) {
-      doc.features.forEach(function (f) {
+      plane().features.forEach(function (f) {
         if (f.id === selectedFeatureId) { feature = f; }
       });
     }
@@ -687,7 +748,7 @@ if (typeof FiveeRenderer === "undefined") {
   byId("btn-delete-feature").addEventListener("click", function () {
     if (!doc || selectedFeatureId === null) { return; }
     snapshot();
-    doc.features = doc.features.filter(function (f) {
+    plane().features = plane().features.filter(function (f) {
       return f.id !== selectedFeatureId;
     });
     selectedFeatureId = null;
@@ -717,7 +778,7 @@ if (typeof FiveeRenderer === "undefined") {
            water below. */
         var dark = R.isDark();
         var datum = elevationDefault();
-        var bounds = R.visibleBounds(doc, view);
+        var bounds = R.visibleBounds(renderable(), view);
         elevEntries.forEach(function (entry) {
           if (entry.x < bounds.x0 || entry.x >= bounds.x1
             || entry.y < bounds.y0 || entry.y >= bounds.y1) { return; }
@@ -739,7 +800,7 @@ if (typeof FiveeRenderer === "undefined") {
       if (hoverCell && inBounds(hoverCell) && tool !== "pan") {
         marks.push({ at: hoverCell, alpha: 0.2 });
       }
-      R.render(ctx, doc, view, { marks: marks, labels: labels });
+      R.render(ctx, renderable(), view, { marks: marks, labels: labels });
     });
   }
 
@@ -929,6 +990,17 @@ if (typeof FiveeRenderer === "undefined") {
     doc.name = name;
   });
 
+  byId("level-select").addEventListener("change", function () {
+    var chosen = Number(byId("level-select").value);
+    if (!Number.isInteger(chosen)) { return; }
+    activeLevel = chosen;
+    selectedFeatureId = null;
+    rebuildElevationCache();
+    byId("elevation-default").value = elevationDefault();
+    renderFeatureInfo();
+    redraw();
+  });
+
   /* --- resize dialog ---------------------------------------------------- */
   byId("btn-resize").addEventListener("click", function () {
     if (!doc) { return; }
@@ -957,35 +1029,43 @@ if (typeof FiveeRenderer === "undefined") {
     snapshot();
     var offX = anchor.indexOf("left") !== -1 ? 0 : width - doc.grid.width;
     var offY = anchor.indexOf("top") === 0 ? 0 : height - doc.grid.height;
-    var tiles = [];
-    for (var y = 0; y < height; y++) {
-      var row = "";
-      for (var x = 0; x < width; x++) {
-        var ox = x - offX, oy = y - offY;
-        row += (ox >= 0 && ox < doc.grid.width && oy >= 0 && oy < doc.grid.height)
-          ? doc.tiles[oy].charAt(ox) : fill;
+    /* A frame change is document-wide: every storey shares the grid, so one
+       that kept its old tiles would sit mislocated over the map it belongs to.
+       Elevation moves with the anchor like the tiles and features do; squares
+       pushed off the map are dropped, and new ground comes in at the datum. */
+    var planes = [doc].concat(doc.levels || []);
+    planes.forEach(function (target) {
+      var tiles = [];
+      for (var y = 0; y < height; y++) {
+        var row = "";
+        for (var x = 0; x < width; x++) {
+          var ox = x - offX, oy = y - offY;
+          row += (ox >= 0 && ox < doc.grid.width && oy >= 0 && oy < doc.grid.height)
+            ? target.tiles[oy].charAt(ox) : fill;
+        }
+        tiles.push(row);
       }
-      tiles.push(row);
-    }
-    doc.tiles = tiles;
-    doc.features = doc.features.map(function (f) {
-      return Object.assign({}, f, { at: [f.at[0] + offX, f.at[1] + offY] });
-    }).filter(function (f) {
-      return f.at[0] >= 0 && f.at[0] < width && f.at[1] >= 0 && f.at[1] < height;
+      target.tiles = tiles;
+      target.features = (target.features || []).map(function (f) {
+        return Object.assign({}, f, { at: [f.at[0] + offX, f.at[1] + offY] });
+      }).filter(function (f) {
+        return f.at[0] >= 0 && f.at[0] < width && f.at[1] >= 0 && f.at[1] < height;
+      });
+      var datum = target.elevation ? target.elevation.default : 0;
+      var kept = [];
+      ((target.elevation && Array.isArray(target.elevation.squares)
+        ? target.elevation.squares : [])).forEach(function (square) {
+        if (!Array.isArray(square) || square.length !== 3) { return; }
+        var nx = square[0] + offX, ny = square[1] + offY;
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+          kept.push([nx, ny, square[2]]);
+        }
+      });
+      kept.sort(function (a, b) { return (a[1] - b[1]) || (a[0] - b[0]); });
+      if (!kept.length && datum === 0) { delete target.elevation; }
+      else { target.elevation = { "default": datum, squares: kept }; }
     });
-    /* Elevation moves with the anchor like the features do; squares pushed
-       off the map are dropped, and new ground comes in at the datum. */
-    var translated = {};
-    Object.keys(elevSquares).forEach(function (key) {
-      var at = key.split(",");
-      var nx = Number(at[0]) + offX;
-      var ny = Number(at[1]) + offY;
-      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-        translated[nx + "," + ny] = elevSquares[key];
-      }
-    });
-    elevSquares = translated;
-    writeElevation(elevationDefault());
+    rebuildElevationCache();
     doc.grid.width = width;
     doc.grid.height = height;
     byId("dlg-resize").close();
