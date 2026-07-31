@@ -1007,6 +1007,7 @@ def encounter_act(
     toward: str | list[int] | None = None,
     path: list[list[int]] | None = None,
     feature: str | None = None,
+    to_level: int | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -1023,8 +1024,11 @@ def encounter_act(
     ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
     the plane; a bare number is accepted and means feet along the x-axis. On a
     battle map a move routes itself around walls and enemies; ``path`` optionally
-    pins the exact route as ``[x, y]`` waypoints, one per square. Illegal actions
-    are refused with the reason rather than silently adjusted.
+    pins the exact route as ``[x, y]`` waypoints, one per square. ``to_level``
+    ends a move on another storey: walk to a stairway on your own level — the
+    square named by ``to_position`` — and it carries you, charging the rise
+    between the two floors as a climb. Illegal actions are refused with the
+    reason rather than silently adjusted.
     """
     session = _session(encounter_id)
     try:
@@ -1069,6 +1073,7 @@ def encounter_act(
         toward=aim_toward,
         path=tuple(waypoints),
         feature=feature,
+        to_level=to_level,
     )
     try:
         events = session.encounter.act(action, session.rng)

@@ -612,6 +612,35 @@ class TestMapLevelAdapters:
         with pytest.raises(api.ToolError, match="no level 4"):
             api.map_query(map_id, "distance", frm=[0, 0], to=[1, 1], level=4)
 
+    def test_a_fight_climbs_between_storeys_over_the_wire(self) -> None:
+        map_id = self.load()
+        created = api.encounter_create(
+            [dict(HERO, position=[0, 15]), dict(GOBLIN, position=[20, 15])],
+            seed=11, map_id=map_id,
+        )
+        encounter_id = str(created["encounter_id"])
+        advance_to_thora(encounter_id)
+        acted = api.encounter_act(
+            encounter_id, kind="move", to_position=[0, 15], to_level=1
+        )
+        move = next(event for event in acted["events"] if event["kind"] == "move")
+        assert move["data"]["to_level"] == 1
+        thora = next(c for c in acted["state"]["combatants"] if c["name"] == "Thora")
+        assert (thora["level"], thora["elevation"]) == (1, 10)
+
+    def test_a_move_to_a_storey_without_a_stairway_is_refused_over_the_wire(self) -> None:
+        map_id = self.load()
+        created = api.encounter_create(
+            [dict(HERO, position=[0, 15]), dict(GOBLIN, position=[20, 15])],
+            seed=11, map_id=map_id,
+        )
+        encounter_id = str(created["encounter_id"])
+        advance_to_thora(encounter_id)
+        with pytest.raises(api.ToolError, match="leads to level 1"):
+            api.encounter_act(
+                encounter_id, kind="move", to_position=[5, 15], to_level=1
+            )
+
     def test_export_writes_the_level_it_is_given(self, tmp_path: Path) -> None:
         map_id = self.load()
         ground = api.uvtt_export(
