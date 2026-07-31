@@ -22,12 +22,15 @@ from typing import Any
 
 import pytest
 
+from fivee_sim import __version__
 from fivee_sim.editor.http_server import CONFIG_MARKER, MAX_BODY_BYTES, TOKEN_HEADER, EditorServer
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.service.common import sha256_of
 
 PROBLEM_TYPE = "application/problem+json"
-CONFIG_RE = re.compile(r'window\.__FIVEE_EDITOR__ = \{token: "[^"]+", apiBase: "/api"\};')
+CONFIG_RE = re.compile(
+    r'window\.__FIVEE_EDITOR__ = \{token: "[^"]+", apiBase: "/api", version: "[^"]+"\};'
+)
 
 
 def payload() -> dict[str, Any]:
@@ -364,6 +367,14 @@ class TestStaticPages:
         assert CONFIG_MARKER not in response.text
         assert len(CONFIG_RE.findall(response.text)) == 1
         assert editor.server.token in response.text
+
+    def test_the_configured_page_names_the_running_version(self, editor: Editor) -> None:
+        # Not merely well-shaped: the page must be told the version of the
+        # engine actually serving it, so a stale install is visible in the UI
+        # rather than only in a /ping nobody reads. Anchored to the real
+        # __version__ so a hardcoded or last-release string fails here.
+        response = editor.request("GET", "/", token=False)
+        assert f'version: "{__version__}"' in response.text
 
     def test_the_viewer_page_is_configured_and_keeps_its_data_slot(self, editor: Editor) -> None:
         response = editor.request("GET", "/viewer", token=False)

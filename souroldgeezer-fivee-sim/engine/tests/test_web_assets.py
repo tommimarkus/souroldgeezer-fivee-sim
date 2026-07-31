@@ -194,6 +194,24 @@ class TestEditorGroundControls:
         assert read("editor.html").count('id="elev-legend"') == 1
         assert read("editor.html").count('id="btn-heights-values"') == 1
 
+    def test_the_editor_shows_the_running_version_persistently(self) -> None:
+        # Exactly once for the byId() reason above. Anchored to the slot and
+        # to the write into it, because a slot nothing fills is a blank
+        # corner of the footer rather than a visible failure — and the
+        # version was previously announced only in a status line that the
+        # next message overwrote.
+        source = read("editor.html")
+        assert source.count('id="version-note"') == 1
+        assert 'byId("version-note").textContent' in source
+
+    def test_the_version_shown_comes_from_the_serving_engine(self) -> None:
+        # Read off the injected launch config, not a literal in the page: the
+        # page is a static asset that no release step rewrites, so a hardcoded
+        # version would be wrong the moment it shipped.
+        source = read("editor.html")
+        assert "CONFIG.version" in source
+        assert not re.search(r'version-note"\)\.textContent\s*=\s*"[0-9]', source)
+
     def test_the_relief_overlay_draws_the_movement_thresholds(self) -> None:
         # The step edges are keyed to what the engine charges for the step,
         # not to arbitrary prettiness: over 5 feet is climbed, 2 feet and up
@@ -202,6 +220,63 @@ class TestEditorGroundControls:
         source = read("editor.html")
         assert "CLIMB_FEET = 5" in source
         assert "SLOPE_FEET = 2" in source
+
+
+class TestEditorStackedStoreys:
+    # The onion-skin view: the storeys either side of the one being edited,
+    # printed through it. Presence and wiring as text only, as everywhere here.
+
+    def test_the_editor_carries_the_stack_toggle_and_its_key(self) -> None:
+        # Exactly once apiece: byId() answers with the first of a duplicated
+        # id, so a copy-paste double would break the wiring silently.
+        source = read("editor.html")
+        assert source.count('id="btn-stack"') == 1
+        assert source.count('id="stack-legend"') == 1
+
+    def test_the_stack_overlay_is_built_and_handed_to_the_generic_channels(self) -> None:
+        # Built in the page and fed through marks/labels, like the relief
+        # overlay: the renderer is never taught what a storey is.
+        source = read("editor.html")
+        assert "function buildStackOverlay(marks, labels)" in source
+        assert "buildStackOverlay(marks, labels);" in source
+
+    def test_the_ghosts_resolve_terrain_color_through_the_renderer(self) -> None:
+        # Reused, not re-tabulated. A second fallback color table in the page
+        # would drift from the renderer's the first time either moved, and a
+        # document palette resolved by only one of them would draw a kind two
+        # different colors on the same canvas. Anchored to the ghost's own
+        # call, not the bare name: the legend swatches already call it, so
+        # `R.terrainColor(` alone stays green against a ghost that computes
+        # its ink some other way.
+        assert (
+            "R.terrainColor(kind, context.dark, context.styles, doc.palette)"
+            in read("editor.html")
+        )
+
+    def test_the_ghosts_are_built_after_the_relief_they_must_sit_over(self) -> None:
+        # The relief overlay washes every non-flat square at alpha 1, so a
+        # ghost pushed before it is a ghost painted out. Order in the marks
+        # list is draw order on the canvas.
+        source = read("editor.html")
+        assert source.index("buildReliefOverlay(marks, edges, labels);") < source.index(
+            "buildStackOverlay(marks, labels);"
+        )
+
+    def test_the_stack_states_how_far_it_reaches_and_names_what_it_drops(self) -> None:
+        # Beyond a couple of storeys the ghosts are mud, so the view is capped
+        # — and a capped view that stayed silent would read as "this is every
+        # floor there is". The key says which storeys it left out.
+        source = read("editor.html")
+        assert "STACK_REACH = 2" in source
+        assert "not drawn" in source
+
+    def test_a_ghosted_storey_is_never_the_edited_one(self) -> None:
+        # The whole feature is overlay: the plane handed to the renderer, and
+        # so the plane every tool paints and every hit test picks, is still the
+        # active one alone.
+        source = read("editor.html")
+        assert "tiles: plane().tiles, features: plane().features" in source
+        assert "R.render(ctx, renderable(), view," in source
 
 
 class TestTerrainColors:

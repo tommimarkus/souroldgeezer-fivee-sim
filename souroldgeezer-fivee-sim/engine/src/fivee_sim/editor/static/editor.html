@@ -99,22 +99,37 @@ header .spacer { flex: 1; }
 #ground-row { display: flex; gap: 4px; align-items: center; }
 #ground-row input { width: 5em; }
 /* The key that earns the right to drop the per-square numbers: the wash is
-   only readable as a height if something says which wash means what. */
-#elev-legend { margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px; }
-.elev-band { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+   only readable as a height if something says which wash means what. The
+   storeys key is the same thing for the onion-skin, and shares the styling
+   rather than restating it. */
+#elev-legend, #stack-legend {
+  margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px;
+}
+.elev-band, .stack-row {
+  display: flex; gap: 6px; align-items: center; color: var(--muted);
+}
 /* A neutral ground the script lays the wash over as a background-image, so the
    swatch composites the same translucent colour the canvas does. */
-.elev-swatch {
+.elev-swatch, .stack-swatch {
   width: 22px; height: 11px; flex: none; border: 1px solid var(--edge);
   background-color: var(--terrain-floor);
 }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
+/* The scroll lives on the status, not the footer: a long refusal scrolls
+   inside its own column and the version stays pinned in the corner. */
 footer {
   border-top: 1px solid var(--edge); background: var(--panel);
-  padding: 4px 10px; max-height: 130px; overflow-y: auto;
+  padding: 4px 10px; display: flex; align-items: flex-start; gap: 12px;
 }
-#status { white-space: pre-wrap; font-family: ui-monospace, monospace; }
+#status {
+  flex: 1; min-width: 0; max-height: 130px; overflow-y: auto;
+  white-space: pre-wrap; font-family: ui-monospace, monospace;
+}
+#version-note {
+  flex: none; color: var(--muted); font-size: 12px;
+  font-family: ui-monospace, monospace; white-space: nowrap;
+}
 #status.error { color: var(--error); }
 #status.ok { color: var(--ok); }
 dialog {
@@ -176,6 +191,7 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <h3>Map</h3>
     <label for="level-select">Level</label>
     <select id="level-select" aria-label="level"></select>
+    <button id="btn-stack" title="show the other storeys through this one">Stack</button>
     <button id="btn-resize">Resize&#8230;</button>
     <button id="btn-fit">Fit view</button>
     <button id="btn-heights">Heights</button>
@@ -202,11 +218,16 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <input id="elevation-default" type="number" value="0"> ft
     </div>
     <div id="elev-legend" hidden></div>
+    <h3>Storeys</h3>
+    <div id="stack-legend">&#8212;</div>
     <h3>Cursor</h3>
     <div id="readout">&#8212;</div>
   </aside>
 </div>
-<footer><div id="status">No map loaded. Open one, open a file, or generate.</div></footer>
+<footer>
+  <div id="status">No map loaded. Open one, open a file, or generate.</div>
+  <div id="version-note" title="the engine serving this page"></div>
+</footer>
 
 <dialog id="dlg-open">
   <h2>Open a map from the server</h2>
@@ -302,6 +323,7 @@ if (typeof FiveeRenderer === "undefined") {
   var heightsOn = false;  /* the elevation overlay toggle */
   var heightValuesOn = false;  /* its per-square feet, which are off by default */
   var activeLevel = 0; /* the storey being edited; 0 is the ground */
+  var stackOn = false;    /* the onion-skin: the other storeys, printed through */
   var elevSquares = null; /* cache of the active plane's elevation: "x,y" -> feet */
   var elevBands = null; /* {step, lo, hi}: the band size and the span it covers */
 
@@ -332,6 +354,21 @@ if (typeof FiveeRenderer === "undefined") {
      zoom than this to be drawn at all. */
   var DETAIL_SCALE = 6;
   var VALUE_LABEL_SCALE = 16;  /* below this the feet will not fit a square */
+
+  /* The onion-skin. How many storeys either side of the active one are ghosted
+     through it: past two the washes stop being a reading of the building and
+     become mud, so the view is capped — and because it is capped, the key
+     names the storeys it left out rather than letting a partial stack read as
+     the whole map. STACK_ALPHA is the ink by distance, nearest first. */
+  var STACK_REACH = 2;
+  var STACK_ALPHA = [0.32, 0.16];
+  var STACK_GLYPH_SCALE = 12;  /* below this a feature glyph will not fit */
+  /* A ghosted storey's features are drawn with the glyphs the format reserves
+     for exactly these marks (RESERVED_GLYPHS in map_document.py), so a stair
+     one floor down reads as a stair rather than as an unexplained dot. */
+  var STACK_GLYPHS = {
+    door: "+", stairs_up: "<", stairs_down: ">", spawn: "@"
+  };
 
   var canvas = document.getElementById("map");
   var ctx = canvas.getContext("2d");
@@ -383,15 +420,16 @@ if (typeof FiveeRenderer === "undefined") {
   /* The ground lives in the document's own tiles/features/elevation keys and a
      storey in doc.levels; both shapes carry the same three, so one accessor
      serves either and the editing code never learns which it has. */
-  function plane() {
+  function planeOf(index) {
     if (!doc) { return { tiles: [], features: [] }; }
-    if (activeLevel === 0) { return doc; }
+    if (index === 0) { return doc; }
     var storeys = doc.levels || [];
     for (var i = 0; i < storeys.length; i++) {
-      if (storeys[i].index === activeLevel) { return storeys[i]; }
+      if (storeys[i].index === index) { return storeys[i]; }
     }
     return doc;
   }
+  function plane() { return planeOf(activeLevel); }
   function levelIndices() {
     var found = [0];
     (doc && doc.levels ? doc.levels : []).forEach(function (level) {
@@ -420,7 +458,35 @@ if (typeof FiveeRenderer === "undefined") {
       if (index === activeLevel) { option.selected = true; }
       select.appendChild(option);
     });
-    select.disabled = levelIndices().length < 2;
+    var single = levelIndices().length < 2;
+    select.disabled = single;
+    /* Nothing to see through on a single plane, and a toggle left on across a
+       load that brought one would keep claiming a stack that is not there. */
+    if (single) { stackOn = false; }
+    byId("btn-stack").disabled = single;
+    byId("btn-stack").classList.toggle("active", stackOn);
+  }
+  /* The storeys ghosted through the active one: everything within STACK_REACH,
+     furthest first. The marks list is draw order, so the floor next door
+     prints over the one beyond it. A basement and a gallery are equally far,
+     and one of them has to print over the other where they disagree — the
+     upper floor wins, stated here rather than left to how a stable sort
+     happens to order the ties. The key names both either way. */
+  function ghostedLevels() {
+    var ghosts = [];
+    levelIndices().forEach(function (index) {
+      var distance = Math.abs(index - activeLevel);
+      if (index !== activeLevel && distance <= STACK_REACH) {
+        ghosts.push({ index: index, distance: distance });
+      }
+    });
+    ghosts.sort(function (a, b) {
+      return (b.distance - a.distance) || (a.index - b.index);
+    });
+    return ghosts;
+  }
+  function ghostAlpha(distance) {
+    return STACK_ALPHA[Math.min(distance, STACK_ALPHA.length) - 1];
   }
   /* The renderer never learns about storeys: it is handed the document's grid
      and legend with the active plane's tiles and features, which is exactly
@@ -466,6 +532,7 @@ if (typeof FiveeRenderer === "undefined") {
     renderLevels();
     if (previous.palette === undefined) { delete doc.palette; }
     else { doc.palette = previous.palette; }
+    renderStackLegend();
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
@@ -503,7 +570,9 @@ if (typeof FiveeRenderer === "undefined") {
     redoStack = [];
     selectedFeatureId = null;
     activeLevel = 0;
+    stackOn = false;
     renderLevels();
+    renderStackLegend();
     rebuildElevationCache();
     heightsOn = !!payload.elevation;
     byId("btn-heights").classList.toggle("active", heightsOn);
@@ -1158,6 +1227,131 @@ if (typeof FiveeRenderer === "undefined") {
     }
   }
 
+  /* --- the onion-skin --------------------------------------------------- */
+  /* One ghosted storey: its terrain washed over the active plane at `alpha`,
+     and its features marked with the reserved glyphs. The wash is emitted as
+     horizontal runs on the same coarsening lattice the relief overlay uses,
+     for the same reason — a full-size map fitted to the canvas is a hundred
+     and fifty thousand squares, and this runs once per ghosted floor. */
+  function ghostStorey(target, alpha, marks, labels, context) {
+    var bounds = context.bounds;
+    var lattice = context.lattice;
+    /* Memoised per glyph: two squares of one terrain are then the identical
+       string, so extending a run is a pointer test rather than a lookup. */
+    var inks = {};
+    function inkOf(glyph) {
+      var ink = inks[glyph];
+      if (ink === undefined) {
+        var kind = doc.legend[glyph];
+        /* A glyph this document's legend does not define paints nothing: the
+           renderer draws the active plane's unknowns in its own computed
+           colour, and a ghost is not the place to invent one. */
+        ink = kind === undefined
+          ? null
+          : R.terrainColor(kind, context.dark, context.styles, doc.palette);
+        inks[glyph] = ink;
+      }
+      return ink;
+    }
+    for (var y = bounds.y0; y < bounds.y1; y += lattice) {
+      var row = target.tiles[y] || "";
+      var depth = Math.min(lattice, bounds.y1 - y);
+      var runInk = null;
+      var runStart = bounds.x0;
+      for (var x = bounds.x0; x < bounds.x1; x += lattice) {
+        var ink = inkOf(row.charAt(x));
+        if (ink !== runInk) {
+          if (runInk !== null) {
+            marks.push({ at: [runStart, y], w: x - runStart, h: depth,
+              color: runInk, alpha: alpha });
+          }
+          runInk = ink;
+          runStart = x;
+        }
+      }
+      if (runInk !== null) {
+        marks.push({ at: [runStart, y], w: bounds.x1 - runStart, h: depth,
+          color: runInk, alpha: alpha });
+      }
+    }
+    if (!context.showGlyphs) { return; }
+    (target.features || []).forEach(function (feature) {
+      var glyph = STACK_GLYPHS[feature.kind];
+      if (!glyph) { return; }
+      var fx = feature.at[0];
+      var fy = feature.at[1];
+      if (fx < bounds.x0 || fx >= bounds.x1
+        || fy < bounds.y0 || fy >= bounds.y1) { return; }
+      labels.push({ at: [fx, fy], text: glyph, color: context.glyphInk });
+    });
+  }
+
+  function buildStackOverlay(marks, labels) {
+    var dark = R.isDark();
+    var context = {
+      bounds: R.visibleBounds(renderable(), view),
+      lattice: Math.max(1, Math.ceil(DETAIL_SCALE / view.scale)),
+      dark: dark,
+      styles: window.getComputedStyle(canvas),
+      showGlyphs: view.scale >= STACK_GLYPH_SCALE,
+      glyphInk: null
+    };
+    ghostedLevels().forEach(function (ghost) {
+      var alpha = ghostAlpha(ghost.distance);
+      /* The glyph is ink on the page rather than terrain, so it takes the
+         theme's foreground at a strength that follows the storey's wash. */
+      context.glyphInk = (dark ? "rgba(247,244,236," : "rgba(26,22,16,")
+        + (0.45 + alpha).toFixed(2) + ")";
+      ghostStorey(planeOf(ghost.index), alpha, marks, labels, context);
+    });
+  }
+
+  /* What the stack is showing, named. A capped view that said nothing would
+     read as "these are all the floors there are". */
+  function renderStackLegend() {
+    var host = byId("stack-legend");
+    host.textContent = "";
+    if (!doc) { host.textContent = "—"; return; }
+    var others = levelIndices().filter(function (index) {
+      return index !== activeLevel;
+    });
+    if (!others.length) { host.textContent = "single plane"; return; }
+    if (!stackOn) {
+      host.textContent = others.length
+        + (others.length === 1 ? " other storey" : " other storeys")
+        + " · Stack is off";
+      return;
+    }
+    var dark = R.isDark();
+    var drawn = {};
+    /* Nearest first here, which is the reverse of draw order: the key is read
+       top to bottom, and the storey next door is the one it is about. */
+    ghostedLevels().slice().reverse().forEach(function (ghost) {
+      drawn[ghost.index] = true;
+      var row = document.createElement("div");
+      row.className = "stack-row";
+      var swatch = document.createElement("span");
+      swatch.className = "stack-swatch";
+      /* The wash the canvas lays over the floor colour, composited the same
+         way: a translucent background-image over the swatch's own ground. */
+      var wash = "rgba(" + (dark ? "233,228,216," : "42,38,32,")
+        + ghostAlpha(ghost.distance) + ")";
+      swatch.style.backgroundImage = "linear-gradient(" + wash + "," + wash + ")";
+      var text = document.createElement("span");
+      text.textContent = levelLabel(ghost.index);
+      row.appendChild(swatch);
+      row.appendChild(text);
+      host.appendChild(row);
+    });
+    var dropped = others.filter(function (index) { return !drawn[index]; });
+    if (dropped.length) {
+      var note = document.createElement("div");
+      note.className = "stack-row";
+      note.textContent = "not drawn: " + dropped.map(levelLabel).join(", ");
+      host.appendChild(note);
+    }
+  }
+
   /* --- canvas ----------------------------------------------------------- */
   var framePending = false;
   function redraw() {
@@ -1179,6 +1373,12 @@ if (typeof FiveeRenderer === "undefined") {
          of it rather than under. */
       if (heightsOn && elevSquares && elevBands) {
         buildReliefOverlay(marks, edges, labels);
+      }
+      /* After the relief, never before: its washes are opaque over every
+         square that departs from the datum, so a ghost built first is a ghost
+         painted out. */
+      if (stackOn) {
+        buildStackOverlay(marks, labels);
       }
       if (drag && drag.preview) {
         drag.preview.forEach(function (cell) { marks.push({ at: cell }); });
@@ -1401,6 +1601,17 @@ if (typeof FiveeRenderer === "undefined") {
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     renderFeatureInfo();
+    /* Which storeys are ghosted is relative to the one selected, so the key
+       and the ghosts both move when the selection does. */
+    renderStackLegend();
+    redraw();
+  });
+
+  byId("btn-stack").addEventListener("click", function () {
+    if (!doc || byId("btn-stack").disabled) { return; }
+    stackOn = !stackOn;
+    byId("btn-stack").classList.toggle("active", stackOn);
+    renderStackLegend();
     redraw();
   });
 
@@ -1813,6 +2024,13 @@ if (typeof FiveeRenderer === "undefined") {
   /* Before the mode branch: a restored document needs no API, so it comes back
      in the serverless mode too. Before /ping as well, whose answer arrives
      later and would otherwise overwrite the line reporting the reopened map. */
+  /* Stated once and left there, unlike the status line underneath it, which
+     the next message overwrites — and which skipped the version entirely
+     whenever a restored session had something better to say. Opened from
+     disk there is no server to have been told by, and the mode note beside
+     it already says so, so the corner stays empty rather than guessing. */
+  byId("version-note").textContent = CONFIG && CONFIG.version
+    ? "engine " + CONFIG.version : "";
   var restored = restoreSession();
   if (!CONFIG) {
     /* Opened from disk with no server behind it: editing, file open, and
@@ -1825,8 +2043,10 @@ if (typeof FiveeRenderer === "undefined") {
   } else {
     request("GET", "/ping").then(function (response) {
       if (response.json && response.json.ok && !restored) {
-        setStatus("editor server " + response.json.version + " · maps in "
-          + response.json.maps_dir);
+        /* The version is not repeated here: the footer's corner carries it
+           permanently now, and both come from the one __version__ in the one
+           process answering, so they could never disagree usefully. */
+        setStatus("maps in " + response.json.maps_dir);
       }
     });
   }
