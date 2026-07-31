@@ -25,6 +25,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
@@ -64,7 +65,7 @@ from ..kernel.grid import (
     to_square,
 )
 from ..kernel.rules import Ability, DamageType, make_d20_test
-from ..map_document import MapDocument, as_payload, to_grid
+from ..map_document import GROUND_LEVEL, MapDocument, MapLevel, as_payload, to_grid
 from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature
@@ -247,25 +248,61 @@ def _map_session(map_id: str) -> _MapSession:
     return session
 
 
-def _map_summary(document: MapDocument) -> dict[str, Any]:
+def _storey_summary(level: MapLevel, legend: Mapping[str, str]) -> dict[str, Any]:
+    """One storey's own counts, in the shape the document-wide totals take."""
     counts: dict[str, int] = {}
-    for row in document.tiles:
+    for row in level.tiles:
         for char in row:
-            kind = document.legend[char]
+            kind = legend[char]
             counts[kind] = counts.get(kind, 0) + 1
-    heights = [document.elevation.default, *document.elevation.squares.values()]
+    heights = [level.elevation.default, *level.elevation.squares.values()]
+    return {
+        "index": level.index,
+        "name": level.name,
+        "features": len(level.features),
+        "terrain_counts": {kind: counts[kind] for kind in sorted(counts)},
+        "elevation": {
+            "default": level.elevation.default,
+            "min": min(heights),
+            "max": max(heights),
+            "raised_squares": len(level.elevation.squares),
+        },
+    }
+
+
+def _map_summary(document: MapDocument) -> dict[str, Any]:
+    """What the document holds — every storey of it, and each one on its own.
+
+    ``terrain_counts``, ``features`` and ``elevation`` span the whole map, so
+    they answer the question ``levels`` has already told the reader to ask.
+    They used to read the ground aliases, which made this the ground's summary
+    under the map's name: an edit carrying ``level: 1`` reported level 0.
+
+    ``elevation.default`` is a *plane's* datum and storeys rarely share one — a
+    gallery ten feet up is exactly how a level sits above the one below. It is
+    reported only when every storey agrees, and is ``None`` otherwise; each
+    storey's own is in ``by_level``, which is where a caller reads one floor.
+    """
+    levels = [document.levels[index] for index in sorted(document.levels)]
+    storeys = [_storey_summary(level, document.legend) for level in levels]
+    counts: dict[str, int] = {}
+    for storey in storeys:
+        for kind, count in storey["terrain_counts"].items():
+            counts[kind] = counts.get(kind, 0) + count
+    defaults = {level.elevation.default for level in levels}
     return {
         "width": document.grid.width,
         "height": document.grid.height,
         "levels": sorted(document.levels),
-        "features": len(document.features),
+        "features": sum(len(level.features) for level in levels),
         "terrain_counts": {kind: counts[kind] for kind in sorted(counts)},
         "elevation": {
-            "default": document.elevation.default,
-            "min": min(heights),
-            "max": max(heights),
-            "raised_squares": len(document.elevation.squares),
+            "default": next(iter(defaults)) if len(defaults) == 1 else None,
+            "min": min(storey["elevation"]["min"] for storey in storeys),
+            "max": max(storey["elevation"]["max"] for storey in storeys),
+            "raised_squares": sum(len(level.elevation.squares) for level in levels),
         },
+        "by_level": storeys,
     }
 
 
@@ -1245,50 +1282,86 @@ def _encounter_tokens(
     return tokens, letters
 
 
-def _edit_render(before: MapDocument, after: MapDocument) -> dict[str, Any]:
-    """A render sized to what an edit touched.
+def _changed_squares(
+    before: MapLevel,
+    after: MapLevel,
+    before_legend: Mapping[str, str],
+    after_legend: Mapping[str, str],
+) -> list[Square]:
+    """Every square one edit moved on one storey, however it moved it.
 
-    The whole map when it is small enough to inline; otherwise the bounding
-    box of every changed cell and feature, downsampled just far enough to fit
-    the render budget.
+    Terrain is compared by the kind each document's own legend resolves, so a
+    legend rewrite that leaves the tiles reading the same is no change and one
+    that repoints a glyph is a change everywhere it appears. Heights count as
+    much as tiles: an elevation op contributed nothing here, which is how an
+    edit that only raised ground fell through to rendering the whole map.
+    """
+    squares: list[Square] = []
+    legends_match = dict(before_legend) == dict(after_legend)
+    for yy, (old_row, new_row) in enumerate(zip(before.tiles, after.tiles, strict=True)):
+        if legends_match and old_row == new_row:
+            continue
+        for xx, (old_char, new_char) in enumerate(zip(old_row, new_row, strict=True)):
+            if before_legend[old_char] != after_legend[new_char]:
+                squares.append((xx, yy))
+    olds = {feature.id: feature for feature in before.features}
+    news = {feature.id: feature for feature in after.features}
+    for feature_id in set(olds) | set(news):
+        old, new = olds.get(feature_id), news.get(feature_id)
+        if old == new:
+            continue
+        for feature in (old, new):
+            if feature is not None:
+                squares.append(feature.at)
+    for square in set(before.elevation.squares) | set(after.elevation.squares):
+        if before.elevation.at(square) != after.elevation.at(square):
+            squares.append(square)
+    return squares
+
+
+def _edit_render(before: MapDocument, after: MapDocument) -> dict[str, Any]:
+    """A render sized to what an edit touched, on the storey it touched.
+
+    Every storey is diffed, and the lowest one that moved is the one drawn —
+    reading the ground alone showed an unchanged ground floor after an edit
+    carrying ``level: 1``, and did it without scanning at all on a map small
+    enough to inline. An edit that moved no square draws the ground.
+
+    The whole storey when the map is small enough to inline; otherwise the
+    bounding box of every square that changed on it, downsampled just far
+    enough to fit the render budget.
     """
     width, height = after.grid.width, after.grid.height
+    touched: dict[int, list[Square]] = {}
+    # A resize moves every storey and there is no smaller thing to show; it
+    # also makes the row-by-row diff below ill-shaped, so it never runs.
+    resized = (before.grid.width, before.grid.height) != (width, height)
+    if not resized:
+        for index in sorted(after.levels):
+            old = before.levels.get(index)
+            if old is None:  # a storey the edit added: all of it is new
+                touched[index] = []
+                continue
+            new = after.levels[index]
+            squares = _changed_squares(old, new, before.legend, after.legend)
+            if squares or old.elevation.default != new.elevation.default:
+                touched[index] = squares
+    level = min(touched) if touched else GROUND_LEVEL
     if width * height <= _INLINE_RENDER_CELLS:
-        return _map_service.render_ascii(after)
-    xs: list[int] = []
-    ys: list[int] = []
-    if (before.grid.width, before.grid.height) != (width, height):
-        xs = [0, width - 1]
-        ys = [0, height - 1]
+        return _map_service.render_ascii(after, level=level)
+    changed = touched.get(level) or []
+    if changed:
+        xs = [square[0] for square in changed]
+        ys = [square[1] for square in changed]
     else:
-        legends_match = dict(before.legend) == dict(after.legend)
-        for yy, (old_row, new_row) in enumerate(zip(before.tiles, after.tiles, strict=True)):
-            if legends_match and old_row == new_row:
-                continue
-            for xx, (old_char, new_char) in enumerate(zip(old_row, new_row, strict=True)):
-                if before.legend[old_char] != after.legend[new_char]:
-                    xs.append(xx)
-                    ys.append(yy)
-        olds = {feature.id: feature for feature in before.features}
-        news = {feature.id: feature for feature in after.features}
-        for feature_id in set(olds) | set(news):
-            old, new = olds.get(feature_id), news.get(feature_id)
-            if old == new:
-                continue
-            for feature in (old, new):
-                if feature is not None:
-                    xs.append(feature.at[0])
-                    ys.append(feature.at[1])
-        if not xs:
-            xs = [0, width - 1]
-            ys = [0, height - 1]
+        xs, ys = [0, width - 1], [0, height - 1]
     x0, y0 = min(xs), min(ys)
     box_w, box_h = max(xs) - x0 + 1, max(ys) - y0 + 1
     downsample = 1
     while -(-box_w // downsample) * -(-box_h // downsample) > _map_service.RENDER_BUDGET:
         downsample += 1
     return _map_service.render_ascii(
-        after, x=x0, y=y0, width=box_w, height=box_h, downsample=downsample
+        after, x=x0, y=y0, width=box_w, height=box_h, downsample=downsample, level=level
     )
 
 

@@ -832,14 +832,28 @@ class Encounter:
     def _elevation_summary(self, level: int) -> dict[str, Any]:
         """One plane's ground heights in feet, and what they do — and do not — do.
 
-        ``flat`` is the fact a reader needs first. The default only counts toward
-        the range when some square actually falls back to it, so a map whose
-        sparse layer covers every square reports the heights it really has.
+        Live, not authored. The block this sits in already reports every
+        fixture's real state, and the creature standing in a flooded room
+        already reports the height it fell to, so a range read off the file
+        would contradict both inside one payload. It resolves through the same
+        ``_feature_squares`` index :meth:`_elevation_at` consults, and the index
+        is keyed by ``(level, square)`` — a sluice on the ground moves no
+        gallery.
+
+        ``flat`` is the fact a reader needs first. The default only counts
+        toward the range when some square actually falls back to it, so a map
+        whose sparse layer covers every square reports the heights it really
+        has — and a claimed square never falls back, in either state, so it
+        covers the plane exactly as an authored height does.
         """
         assert self.battle_map is not None
         plane = self._plane(level)
-        heights = list(plane.elevation.values())
-        covered = len(plane.elevation) == (self.battle_map.width * self.battle_map.height)
+        decided: dict[Square, int] = dict(plane.elevation)
+        for (claimed_level, square), claim in self._feature_squares.items():
+            if claimed_level == level and claim.elevation is not None:
+                decided[square] = self._elevation_at(level, square)
+        heights = list(decided.values())
+        covered = len(decided) == (self.battle_map.width * self.battle_map.height)
         if not covered:
             heights.append(plane.default_elevation)
         return {
