@@ -19,6 +19,7 @@ from fivee_sim.maps import (
     DEFAULT_LEGEND,
     MAX_MAP_BYTES,
     MAX_MAP_DIM,
+    MapElevation,
     MapError,
     parse_document,
     serialize,
@@ -299,6 +300,95 @@ class TestProvenanceDiagnostics:
         payload = document()
         payload["provenance"]["author"] = "me"
         assert any("unknown key" in p for p in errors_of(payload))
+
+
+class TestElevation:
+    """The optional height layer: absent means flat, and flat writes nothing."""
+
+    def test_a_document_without_the_key_is_flat_at_zero(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert doc.elevation == MapElevation()
+        assert doc.elevation.at((3, 2)) == 0
+
+    def test_heights_parse_into_a_sparse_layer(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 0, "squares": [[2, 2, 20], [3, 2, -10]]}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.elevation.default == 0
+        assert doc.elevation.at((2, 2)) == 20
+        assert doc.elevation.at((3, 2)) == -10  # a pit floor sits below the datum
+        assert doc.elevation.at((1, 1)) == 0
+
+    def test_a_flat_map_writes_no_elevation_key(self) -> None:
+        # The guarantee that keeps every map saved before heights existed quiet
+        # under version control.
+        text = serialize(parse_document(document(), source="test", terrain=TERRAIN))
+        assert "elevation" not in json.loads(text)
+
+    def test_a_raised_datum_is_written_even_with_no_named_squares(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 30, "squares": []}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert written["elevation"] == {"default": 30, "squares": []}
+
+    def test_squares_at_the_default_are_canonicalised_away(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 5, "squares": [[2, 2, 5], [1, 1, 20]]}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert written["elevation"] == {"default": 5, "squares": [[1, 1, 20]]}
+
+    def test_squares_are_written_in_row_then_column_order(self) -> None:
+        payload = document()
+        payload["elevation"] = {"squares": [[4, 3, 15], [1, 1, 5], [3, 1, 10]]}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert written["elevation"]["squares"] == [[1, 1, 5], [3, 1, 10], [4, 3, 15]]
+
+    def test_a_document_with_heights_round_trips_byte_stably(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 0, "squares": [[4, 3, 15], [1, 1, 5]]}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+
+    def test_heights_cross_to_the_battle_map(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 5, "squares": [[2, 2, 20]]}
+        grid = to_grid(parse_document(payload, source="test", terrain=TERRAIN))
+        assert grid.default_elevation == 5
+        assert grid.elevation == {(2, 2): 20}
+
+
+class TestElevationDiagnostics:
+    def test_a_non_object_says_what_the_shape_is(self) -> None:
+        payload = document()
+        payload["elevation"] = [[1, 1, 5]]
+        assert any('"squares"' in p for p in errors_of(payload))
+
+    def test_an_unknown_key_is_refused(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": 0, "heights": []}
+        assert any("unknown key" in p for p in errors_of(payload))
+
+    def test_a_malformed_entry_names_its_index(self) -> None:
+        payload = document()
+        payload["elevation"] = {"squares": [[1, 1, 5], [2, 2]]}
+        assert any("entry #1 must be [x, y, feet]" in p for p in errors_of(payload))
+
+    def test_a_height_off_the_grid_is_refused(self) -> None:
+        payload = document()
+        payload["elevation"] = {"squares": [[9, 9, 5]]}
+        assert any("outside the 6x5 grid" in p for p in errors_of(payload))
+
+    def test_a_square_named_twice_is_refused(self) -> None:
+        payload = document()
+        payload["elevation"] = {"squares": [[1, 1, 5], [1, 1, 10]]}
+        assert any("names square (1, 1) again" in p for p in errors_of(payload))
+
+    def test_a_non_integer_default_is_refused(self) -> None:
+        payload = document()
+        payload["elevation"] = {"default": "high"}
+        assert any("whole number" in p for p in errors_of(payload))
 
 
 class TestSerialize:

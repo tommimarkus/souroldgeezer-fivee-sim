@@ -11,7 +11,8 @@ into itself.
 
 Terrain is named by plain strings, resolved against whatever terrain table the
 encounter captured — the same discipline as conditions, and for the same reason:
-a pack may define kinds this module has never heard of.
+a pack may define kinds this module has never heard of. Ground height, by
+contrast, is just feet, and needs no table to interpret.
 
 Coordinates are 5-foot grid squares, zero-based, origin at the top-left with y
 increasing downward, matching :mod:`fivee_sim.kernel.grid`.
@@ -46,11 +47,16 @@ class MapFeature:
 
 @dataclass(frozen=True, slots=True)
 class BattleMap:
-    """The static battlefield: dimensions, terrain, and fixtures. Frozen.
+    """The static battlefield: dimensions, terrain, height, and fixtures. Frozen.
 
-    ``terrain`` is sparse — only squares that differ from ``default_terrain``
-    appear. ``features`` is keyed by feature name, which is how actions refer to
-    them.
+    ``terrain`` and ``elevation`` are both sparse — only squares that differ from
+    ``default_terrain`` and ``default_elevation`` appear. ``features`` is keyed by
+    feature name, which is how actions refer to them.
+
+    ``elevation`` is ground height in feet, and it reaches movement only: a step
+    onto higher ground is a slope or a climb, and that is the whole of it. Sight,
+    cover, and the area templates are measured on the flat, so a ridge screens
+    nobody and a creature atop one is no harder to shoot.
     """
 
     name: str
@@ -58,6 +64,8 @@ class BattleMap:
     height: int
     default_terrain: str = "normal"
     terrain: Mapping[Square, str] = field(default_factory=dict)
+    default_elevation: int = 0
+    elevation: Mapping[Square, int] = field(default_factory=dict)
     features: Mapping[str, MapFeature] = field(default_factory=dict)
     provenance: str = "caller-supplied"
 

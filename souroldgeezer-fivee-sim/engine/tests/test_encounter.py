@@ -1068,6 +1068,7 @@ def strip(
     height: int = 1,
     *,
     terrain: dict[Square, str] | None = None,
+    elevation: dict[Square, int] | None = None,
     features: tuple[MapFeature, ...] = (),
 ) -> BattleMap:
     return BattleMap(
@@ -1075,6 +1076,7 @@ def strip(
         width=width,
         height=height,
         terrain=terrain or {},
+        elevation=elevation or {},
         features={feature.name: feature for feature in features},
         provenance=FIXTURE,
     )
@@ -1267,6 +1269,120 @@ class TestMapMovement:
             )
 
 
+class TestMapElevation:
+    """Ground height on a fight's map: slopes, climbs, and what it does not touch."""
+
+    def fight(self, battle_map: BattleMap, rng: Random, wolf: Point = (25, 10)) -> Encounter:
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=wolf)], rng, battle_map=battle_map
+        )
+        advance_to(encounter, "Thora", rng)
+        return encounter
+
+    def moving(
+        self,
+        battle_map: BattleMap,
+        to: Point,
+        rng: Random,
+        wolf: Point = (25, 10),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        encounter = self.fight(battle_map, rng, wolf=wolf)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=to, **kwargs), rng)
+        return next(event for event in events if event.kind == "move").data
+
+    def test_a_slope_is_difficult_terrain(self) -> None:
+        # A one-row corridor, so the route cannot decline the grade.
+        rng = Random(1)
+        battle_map = strip(6, elevation={(2, 0): 5, (3, 0): 10, (4, 0): 10})
+        move = self.moving(battle_map, (20, 0), rng, wolf=(25, 0))
+        assert move["cost"] == 5 + 10 + 10 + 5  # only the two rises cost double
+
+    def test_a_slope_through_rough_going_is_not_doubled_twice(self) -> None:
+        # SRD 5.2: Difficult Terrain "isn't cumulative" — a slope over
+        # undergrowth is the same 10 feet a slope over grass is, not 20.
+        rng = Random(1)
+        battle_map = strip(
+            6,
+            terrain={(2, 0): "difficult"},
+            elevation={(2, 0): 5, (3, 0): 5, (4, 0): 5},
+        )
+        move = self.moving(battle_map, (20, 0), rng, wolf=(25, 0))
+        assert move["cost"] == 5 + 10 + 5 + 5
+
+    def test_a_cliff_costs_the_climb(self) -> None:
+        rng = Random(1)
+        # A 10-foot face: the step into it costs the square plus a foot for each
+        # foot climbed, which is most of a 30-foot Speed for one square.
+        move = self.moving(strip(6, 3, elevation={(1, 0): 10}), (5, 0), rng)
+        assert move["cost"] == 5 + 20
+        assert move["squares"] == [[0, 0], [1, 0]]
+
+    def test_climbing_down_costs_what_climbing_up_costs(self) -> None:
+        rng = Random(1)
+        # Thora starts at (0, 0), which this map puts on a 10-foot ledge.
+        move = self.moving(strip(6, 3, elevation={(0, 0): 10}), (5, 0), rng)
+        assert move["cost"] == 5 + 20
+
+    def test_a_route_walks_round_a_cliff_to_reach_its_top(self) -> None:
+        rng = Random(1)
+        # A 20-foot plateau along the top row, walled off head-on but reachable
+        # up a ramp that rises five feet a square through row 1.
+        battle_map = strip(
+            6, 2,
+            elevation={
+                (2, 0): 20, (3, 0): 20, (4, 0): 20, (5, 0): 20,
+                (2, 1): 5, (3, 1): 10, (4, 1): 15, (5, 1): 20,
+            },
+        )
+        route = self.fight(battle_map, rng, wolf=(0, 5)).route("Thora", (5, 0))
+        assert route is not None
+        walked = set(route.squares)
+        assert not walked & {(2, 0), (3, 0)}  # never up the face
+        assert route.cost_feet == 5 + 10 * 4  # one level step, then four slopes
+
+    def test_a_climb_beyond_the_budget_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = self.fight(strip(6, 3, elevation={(1, 0): 60}), rng)
+        with pytest.raises(EncounterError, match="needs 125 ft"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0)), rng)
+
+    def test_an_explicit_path_is_charged_the_same_climb(self) -> None:
+        rng = Random(1)
+        move = self.moving(
+            strip(6, 3, elevation={(2, 0): 10}), (10, 0), rng,
+            path=((5, 0), (10, 0)),
+        )
+        assert move["cost"] == 5 + (5 + 20)
+
+    def test_sight_and_cover_are_measured_flat(self) -> None:
+        # The limit this version keeps: a ridge between two creatures screens
+        # neither of them.
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(20, 0))], rng,
+            battle_map=strip(6, elevation={(2, 0): 40}),
+        )
+        assert encounter.cover_between("Thora", "Wolf") is CoverGrade.NONE
+
+    def test_state_reports_the_ground_underfoot(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(20, 0))], rng,
+            battle_map=strip(6, elevation={(4, 0): 25}),
+        )
+        state = encounter.state()
+        heights = {c["name"]: c["elevation"] for c in state["combatants"]}
+        assert heights == {"Thora": 0, "Wolf": 25}
+        assert state["map"]["elevation"]["flat"] is False
+        assert (state["map"]["elevation"]["min"], state["map"]["elevation"]["max"]) == (0, 25)
+
+    def test_a_fight_without_a_map_reports_no_ground_at_all(self) -> None:
+        rng = Random(1)
+        encounter = Encounter([fighter(), make_monster("Wolf", position=(20, 0))], rng)
+        assert all("elevation" not in c for c in encounter.state()["combatants"])
+
+
 class TestMapPlacement:
     def test_starting_inside_a_wall_is_refused(self) -> None:
         with pytest.raises(EncounterError, match="impassable 'wall'"):
@@ -1323,6 +1439,13 @@ class TestMapPlacement:
             "width": 4,
             "height": 1,
             "movement_rule": "5-5-5",
+            "elevation": {
+                "default": 0,
+                "min": 0,
+                "max": 0,
+                "flat": True,
+                "affects": "movement only; sight, cover, and areas are measured flat",
+            },
             "features": {
                 "crypt door": {"square": [1, 0], "kind": "door", "open": False},
             },

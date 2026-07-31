@@ -14,6 +14,12 @@ The format, ``fivee-sim-map`` version 1:
 - ``tiles`` — one string per row, top row first, each character resolved
   through the per-document ``legend`` to a terrain-kind string. Opacity is
   tile-based; the format has no edge walls.
+- ``elevation`` — optional ground height in feet: a ``default`` and a sparse
+  list of ``[x, y, feet]`` for the squares that differ from it. Omitted
+  entirely on a flat map, so a file written before heights existed round-trips
+  to the same bytes. A reader that predates the key refuses the document as an
+  unknown key rather than silently flattening it, which is why the format
+  version does not move.
 - ``features`` — doors, stairs, spawn hints. A door records its *default*
   open/closed state and an orientation; live state belongs to the encounter
   overlay, never the document. Door cells are ordinary floor in ``tiles`` —
@@ -55,6 +61,7 @@ __all__ = [
     "MAX_MAP_DIM",
     "RESERVED_GLYPHS",
     "MapDocument",
+    "MapElevation",
     "MapError",
     "MapFeatureRecord",
     "MapGrid",
@@ -101,9 +108,13 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
 )
 
 _DOCUMENT_KEYS = frozenset(
-    {"format", "format_version", "name", "grid", "legend", "tiles", "features", "provenance"}
+    {
+        "format", "format_version", "name", "grid", "legend", "tiles",
+        "elevation", "features", "provenance",
+    }
 )
 _GRID_KEYS = frozenset({"width", "height", "cell_feet"})
+_ELEVATION_KEYS = frozenset({"default", "squares"})
 _FEATURE_KEYS = frozenset({"id", "kind", "at", "orientation", "state", "team"})
 _PROVENANCE_KEYS = frozenset({"generator", "seed", "params", "edited", "source"})
 _DOOR_ORIENTATIONS = ("horizontal", "vertical")
@@ -128,6 +139,22 @@ class MapGrid:
     width: int
     height: int
     cell_feet: int = FEET_PER_SQUARE
+
+
+@dataclass(frozen=True, slots=True)
+class MapElevation:
+    """Ground height in feet: a default, and the squares that differ from it.
+
+    Heights are plain feet and may be negative — a pit floor is below the datum
+    the rest of the map sits on. The default instance is a flat map at zero, and
+    it is the one shape :func:`as_payload` leaves out of the document entirely.
+    """
+
+    default: int = 0
+    squares: Mapping[Square, int] = dataclasses.field(default_factory=dict)
+
+    def at(self, square: Square) -> int:
+        return self.squares.get(square, self.default)
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +195,7 @@ class MapDocument:
     tiles: tuple[str, ...]
     features: tuple[MapFeatureRecord, ...]
     provenance: MapProvenance
+    elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
 
 
 # --- parsing ---------------------------------------------------------------
@@ -287,6 +315,67 @@ def _parse_tiles(
                 f"row {y} column {x} uses {char!r}, which the legend does not define",
             )
     return tiles
+
+
+def _parse_elevation(
+    payload: Mapping[str, Any],
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    grid: MapGrid | None,
+    source: str,
+) -> MapElevation | None:
+    """The height layer, or the flat default when the document does not carry one.
+
+    ``None`` only when the key is present and unusable; an absent key is a flat
+    map, which is what every document written before heights existed is.
+    """
+    raw = payload.get("elevation")
+    if raw is None:
+        return MapElevation()
+    if not isinstance(raw, Mapping):
+        reader.fail(
+            "elevation",
+            'must be an object with a "default" height in feet and a "squares" '
+            'list of [x, y, feet], such as {"default": 0, "squares": [[3, 4, 20]]}',
+        )
+        return None
+    sub = Reader(raw, diagnostics, source=source, section="map", name="elevation")
+    sub.unknown_keys(_ELEVATION_KEYS)
+    default = sub.integer("default")
+    entries = raw.get("squares", [])
+    if not isinstance(entries, list):
+        sub.fail("squares", "must be a list of [x, y, feet] entries")
+        return None
+    squares: dict[Square, int] = {}
+    for index, entry in enumerate(entries):
+        if (
+            not isinstance(entry, (list, tuple))
+            or len(entry) != 3
+            or any(isinstance(value, bool) or not isinstance(value, int) for value in entry)
+        ):
+            sub.fail("squares", f"entry #{index} must be [x, y, feet], got {entry!r}")
+            continue
+        square = (int(entry[0]), int(entry[1]))
+        if grid is not None and not (
+            0 <= square[0] < grid.width and 0 <= square[1] < grid.height
+        ):
+            sub.fail(
+                "squares",
+                f"entry #{index} is at ({square[0]}, {square[1]}), outside the "
+                f"{grid.width}x{grid.height} grid",
+            )
+            continue
+        if square in squares:
+            sub.fail(
+                "squares",
+                f"entry #{index} names square ({square[0]}, {square[1]}) again; "
+                f"it is already {squares[square]} ft",
+            )
+            continue
+        squares[square] = int(entry[2])
+    if not sub.ok:
+        return None
+    return MapElevation(default=default, squares=MappingProxyType(squares))
 
 
 def _parse_features(
@@ -465,12 +554,14 @@ def _parse(
     grid = _parse_grid(payload, reader, diagnostics, source)
     legend = _parse_legend(payload, reader, terrain=terrain)
     tiles = _parse_tiles(payload, reader, grid, legend)
+    elevation = _parse_elevation(payload, reader, diagnostics, grid, source)
     features = _parse_features(payload, reader, diagnostics, grid, source)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
     if (
         grid is None
         or legend is None
+        or elevation is None
         or provenance is None
         or any(d.severity is Severity.ERROR for d in diagnostics)
     ):
@@ -482,6 +573,7 @@ def _parse(
         tiles=tiles,
         features=features,
         provenance=provenance,
+        elevation=elevation,
     )
 
 
@@ -515,7 +607,10 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
     """The document as JSON-ready primitives, in the canonical key order.
 
     Legend and params are sorted by key; features keep document order and omit
-    the optional fields they do not carry. This is what makes
+    the optional fields they do not carry. Elevation is canonicalised — squares
+    already sitting at the default are dropped, the rest sorted by row then
+    column — and the whole key is omitted from a flat map at zero, so a document
+    written before heights existed writes back byte-for-byte. This is what makes
     :func:`serialize` byte-stable across a parse round-trip.
     """
     features: list[dict[str, Any]] = []
@@ -532,7 +627,11 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
         if feature.team is not None:
             entry["team"] = feature.team
         features.append(entry)
-    return {
+    elevation = document.elevation
+    raised = {
+        square: feet for square, feet in elevation.squares.items() if feet != elevation.default
+    }
+    payload: dict[str, Any] = {
         "format": FORMAT,
         "format_version": FORMAT_VERSION,
         "name": document.name,
@@ -543,18 +642,27 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
         },
         "legend": {glyph: document.legend[glyph] for glyph in sorted(document.legend)},
         "tiles": list(document.tiles),
-        "features": features,
-        "provenance": {
-            "generator": document.provenance.generator,
-            "seed": document.provenance.seed,
-            "params": {
-                key: document.provenance.params[key]
-                for key in sorted(document.provenance.params)
-            },
-            "edited": document.provenance.edited,
-            "source": document.provenance.source,
-        },
     }
+    if raised or elevation.default:
+        payload["elevation"] = {
+            "default": elevation.default,
+            "squares": [
+                [square[0], square[1], raised[square]]
+                for square in sorted(raised, key=lambda s: (s[1], s[0]))
+            ],
+        }
+    payload["features"] = features
+    payload["provenance"] = {
+        "generator": document.provenance.generator,
+        "seed": document.provenance.seed,
+        "params": {
+            key: document.provenance.params[key]
+            for key in sorted(document.provenance.params)
+        },
+        "edited": document.provenance.edited,
+        "source": document.provenance.source,
+    }
+    return payload
 
 
 def serialize(document: MapDocument) -> str:
@@ -629,7 +737,9 @@ def to_grid(document: MapDocument) -> BattleMap:
 
     ``default_terrain`` is the most common kind on the tiles (ties broken by
     kind name, so the choice is deterministic); only squares that differ enter
-    the sparse mapping. Door features become :class:`MapFeature` rows with
+    the sparse mapping. Ground height crosses as the document already holds it —
+    the author's default and the squares that depart from it — since there is
+    nothing to infer. Door features become :class:`MapFeature` rows with
     ``initially_open`` read from the recorded default state. Non-door features
     — stairs, spawn hints — stay document-level *on purpose*: the battle map
     has no slot for them and a fight does not consult them; renderers and
@@ -667,6 +777,8 @@ def to_grid(document: MapDocument) -> BattleMap:
         height=document.grid.height,
         default_terrain=default,
         terrain=terrain,
+        default_elevation=document.elevation.default,
+        elevation=dict(document.elevation.squares),
         features=features,
         provenance=document.provenance.source,
     )

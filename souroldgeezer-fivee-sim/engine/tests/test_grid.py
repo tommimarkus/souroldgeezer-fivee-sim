@@ -15,6 +15,8 @@ from collections.abc import Callable
 import pytest
 
 from fivee_sim.kernel.grid import (
+    CLIMB_FEET,
+    SLOPE_DIFFICULT_FEET,
     TERRAIN,
     TERRAIN_FLAGS,
     CoverGrade,
@@ -31,6 +33,7 @@ from fivee_sim.kernel.grid import (
     line_squares,
     sphere_squares,
     square_center,
+    step_cost_feet,
     terrain_effect_of,
     to_square,
 )
@@ -281,13 +284,126 @@ class TestAoeTemplates:
         })
 
 
-def flat(_square: Square) -> int:
-    return 5
+def flat(_origin: Square, _step_to: Square, doubled: bool) -> int:
+    """Ordinary ground everywhere, on level ground."""
+    return 10 if doubled else 5
+
+
+def stepping(
+    entry_cost: Callable[[Square], int | None],
+) -> Callable[[Square, Square, bool], int | None]:
+    """A step composer over a per-square cost: level ground of varying going."""
+
+    def step_cost(_origin: Square, step_to: Square, doubled: bool) -> int | None:
+        cost = entry_cost(step_to)
+        if cost is None:
+            return None
+        return cost * 2 if doubled else cost
+
+    return step_cost
+
+
+def rising(heights: dict[Square, int]) -> Callable[[Square, Square, bool], int | None]:
+    """Ordinary ground at the heights given, everything unnamed at zero."""
+
+    def step_cost(origin: Square, step_to: Square, doubled: bool) -> int | None:
+        return step_cost_feet(
+            terrain_effect_of("normal"),
+            heights.get(step_to, 0) - heights.get(origin, 0),
+            doubled_diagonal=doubled,
+        )
+
+    return step_cost
+
+
+class TestStepCost:
+    """The three bands of :func:`step_cost_feet`, and the boundaries between them."""
+
+    def test_level_ground_costs_what_the_terrain_costs(self) -> None:
+        assert step_cost_feet(terrain_effect_of("normal"), 0) == 5
+        assert step_cost_feet(terrain_effect_of("difficult"), 0) == 10
+        assert step_cost_feet(terrain_effect_of("wall"), 0) is None
+
+    def test_a_gentle_grade_is_free(self) -> None:
+        gentle = SLOPE_DIFFICULT_FEET - 1
+        assert step_cost_feet(terrain_effect_of("normal"), gentle) == 5
+        assert step_cost_feet(terrain_effect_of("difficult"), gentle) == 10
+
+    def test_a_slope_is_difficult_terrain_but_never_twice(self) -> None:
+        # SRD 5.2: a slope of 20 degrees or more is Difficult Terrain, and
+        # Difficult Terrain "isn't cumulative" — so a slope through undergrowth
+        # is doubled once, not quadrupled.
+        assert step_cost_feet(terrain_effect_of("normal"), SLOPE_DIFFICULT_FEET) == 10
+        assert step_cost_feet(terrain_effect_of("normal"), CLIMB_FEET) == 10
+        assert step_cost_feet(terrain_effect_of("difficult"), CLIMB_FEET) == 10
+
+    def test_a_climb_costs_an_extra_foot_per_foot(self) -> None:
+        # SRD 5.2, "Climbing": each foot of movement costs 1 extra foot, 2 extra
+        # in Difficult Terrain — charged on top of the step into the square.
+        assert step_cost_feet(terrain_effect_of("normal"), 10) == 5 + 20
+        assert step_cost_feet(terrain_effect_of("difficult"), 10) == 10 + 30
+
+    def test_the_cost_jumps_where_the_slope_becomes_a_climb(self) -> None:
+        # Policy, not an accident: there is no graduated scale in the SRD, so
+        # ruling a boundary at all buys a step at it.
+        assert step_cost_feet(terrain_effect_of("normal"), CLIMB_FEET) == 10
+        assert step_cost_feet(terrain_effect_of("normal"), CLIMB_FEET + 1) == 17
+
+    def test_climbing_down_costs_what_climbing_up_costs(self) -> None:
+        for rise in (SLOPE_DIFFICULT_FEET, CLIMB_FEET, 10, 40):
+            up = step_cost_feet(terrain_effect_of("normal"), rise)
+            assert up == step_cost_feet(terrain_effect_of("normal"), -rise)
+
+    def test_the_variant_diagonal_doubles_the_travel_not_the_climb(self) -> None:
+        # 5-10-5 lengthens diagonal travel; a climb is not travelled diagonally.
+        assert step_cost_feet(terrain_effect_of("normal"), 0, doubled_diagonal=True) == 10
+        assert step_cost_feet(terrain_effect_of("normal"), 10, doubled_diagonal=True) == (
+            10 + 20
+        )
+        assert step_cost_feet(terrain_effect_of("wall"), 0, doubled_diagonal=True) is None
+
+
+class TestPathfindingOverHeight:
+    def test_a_route_prefers_the_long_ramp_to_the_short_cliff(self) -> None:
+        # A 20-foot plateau on the right half of a 3-row map, reached directly at
+        # (2, 1) or up a ramp that climbs 5 feet a square along the top row.
+        heights = {
+            (2, 0): 5, (3, 0): 10, (4, 0): 15, (5, 0): 20,
+            (2, 1): 20, (3, 1): 20, (4, 1): 20, (5, 1): 20,
+        }
+        path = find_path((0, 1), (5, 1), step_cost=rising(heights), bounds=(6, 3))
+        assert path is not None
+        # Every step of the ramp is a slope, so difficult terrain: 10 feet each.
+        assert path.squares == ((0, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 1))
+        assert path.cost_feet == 5 + 10 * 4
+        # Straight at the cliff instead: 5 onto level ground, then a 20-foot climb
+        # at 1 extra foot per foot, then three level squares.
+        assert 5 + (5 + 40) + 5 * 3 > path.cost_feet
+
+    def test_a_cliff_with_no_way_round_is_climbed_and_charged(self) -> None:
+        heights = {(2, 0): 20, (3, 0): 20, (4, 0): 20}
+        path = find_path((0, 0), (4, 0), step_cost=rising(heights), bounds=(5, 1))
+        assert path is not None
+        assert path.cost_feet == 5 + (5 + 40) + 5 + 5
+
+    def test_the_descent_is_charged_like_the_ascent(self) -> None:
+        heights = {(0, 0): 20, (1, 0): 20}
+        down = find_path((0, 0), (2, 0), step_cost=rising(heights), bounds=(3, 1))
+        up = find_path((2, 0), (0, 0), step_cost=rising(heights), bounds=(3, 1))
+        assert down is not None and up is not None
+        assert down.cost_feet == up.cost_feet == 5 + (5 + 40)
+
+    def test_impassable_ground_still_stops_a_climb(self) -> None:
+        def step_cost(origin: Square, step_to: Square, doubled: bool) -> int | None:
+            kind = "wall" if step_to[0] == 1 else "normal"
+            return step_cost_feet(terrain_effect_of(kind), 0, doubled_diagonal=doubled)
+
+        assert find_path((0, 0), (2, 0), step_cost=step_cost, bounds=(3, 1)) is None
 
 
 class TestPathfinding:
     def test_a_straight_run(self) -> None:
-        path = find_path((0, 0), (4, 0), entry_cost=flat, bounds=(6, 6))
+        path = find_path((0, 0), (4, 0), step_cost=flat, bounds=(6, 6))
         assert path is not None
         assert path.squares == ((0, 0), (1, 0), (2, 0), (3, 0), (4, 0))
         assert path.cost_feet == 20
@@ -298,7 +414,7 @@ class TestPathfinding:
         def entry(square: Square) -> int | None:
             return None if square in walls else 5
 
-        path = find_path((0, 0), (4, 0), entry_cost=entry, bounds=(6, 6))
+        path = find_path((0, 0), (4, 0), step_cost=stepping(entry), bounds=(6, 6))
         assert path is not None
         assert path.cost_feet == 30
         assert not set(path.squares) & walls
@@ -308,14 +424,14 @@ class TestPathfinding:
             return 10 if square == (2, 0) else 5
 
         # A one-row corridor: no way around, so the doubled square must be paid.
-        path = find_path((0, 0), (4, 0), entry_cost=entry, bounds=(6, 1))
+        path = find_path((0, 0), (4, 0), step_cost=stepping(entry), bounds=(6, 1))
         assert path is not None
         assert path.squares == ((0, 0), (1, 0), (2, 0), (3, 0), (4, 0))
         assert path.cost_feet == 25
 
     def test_blocked_squares_are_respected(self) -> None:
         blocked = frozenset({(2, 0), (2, 1), (2, 2)})
-        path = find_path((0, 0), (4, 0), entry_cost=flat, bounds=(6, 6), blocked=blocked)
+        path = find_path((0, 0), (4, 0), step_cost=flat, bounds=(6, 6), blocked=blocked)
         assert path is not None
         assert not set(path.squares) & blocked
         assert path.cost_feet == 30
@@ -326,9 +442,9 @@ class TestPathfinding:
         def entry(square: Square) -> int | None:
             return None if square in walls else 5
 
-        first = find_path((0, 0), (5, 3), entry_cost=entry, bounds=(8, 8),
+        first = find_path((0, 0), (5, 3), step_cost=stepping(entry), bounds=(8, 8),
                           rule=DiagonalRule.FIVE_TEN_FIVE)
-        second = find_path((0, 0), (5, 3), entry_cost=entry, bounds=(8, 8),
+        second = find_path((0, 0), (5, 3), step_cost=stepping(entry), bounds=(8, 8),
                            rule=DiagonalRule.FIVE_TEN_FIVE)
         assert first == second
         assert first is not None
@@ -337,30 +453,30 @@ class TestPathfinding:
     def test_equal_cost_routes_break_ties_lexicographically(self) -> None:
         # (0,0) -> (2,0) costs 10 via (1,0) or (1,1); the heap orders equal-cost
         # candidates by square, so (1,0) wins — pinned, never insertion order.
-        path = find_path((0, 0), (2, 0), entry_cost=flat, bounds=(3, 3))
+        path = find_path((0, 0), (2, 0), step_cost=flat, bounds=(3, 3))
         assert path is not None
         assert path.squares == ((0, 0), (1, 0), (2, 0))
         assert path.cost_feet == 10
 
     def test_stop_adjacent_halts_beside_the_goal(self) -> None:
-        path = find_path((0, 0), (4, 0), entry_cost=flat, bounds=(6, 6),
+        path = find_path((0, 0), (4, 0), step_cost=flat, bounds=(6, 6),
                          stop_adjacent=True)
         assert path is not None
         assert path.squares == ((0, 0), (1, 0), (2, 0), (3, 0))
         assert path.cost_feet == 15
 
     def test_stop_adjacent_from_next_door_is_already_there(self) -> None:
-        path = find_path((3, 0), (4, 0), entry_cost=flat, bounds=(6, 6),
+        path = find_path((3, 0), (4, 0), step_cost=flat, bounds=(6, 6),
                          stop_adjacent=True)
-        assert path == find_path((3, 0), (3, 0), entry_cost=flat, bounds=(6, 6))
+        assert path == find_path((3, 0), (3, 0), step_cost=flat, bounds=(6, 6))
         assert path is not None
         assert path.squares == ((3, 0),)
         assert path.cost_feet == 0
 
     def test_max_cost_bounds_the_budget(self) -> None:
-        assert find_path((0, 0), (4, 0), entry_cost=flat, bounds=(6, 6),
+        assert find_path((0, 0), (4, 0), step_cost=flat, bounds=(6, 6),
                          max_cost=15) is None
-        path = find_path((0, 0), (4, 0), entry_cost=flat, bounds=(6, 6), max_cost=20)
+        path = find_path((0, 0), (4, 0), step_cost=flat, bounds=(6, 6), max_cost=20)
         assert path is not None
         assert path.cost_feet == 20
 
@@ -371,19 +487,19 @@ class TestPathfinding:
         def entry(square: Square) -> int:
             return 10 if square == (2, 2) else 5
 
-        srd = find_path((0, 0), (2, 2), entry_cost=entry, bounds=(4, 4))
+        srd = find_path((0, 0), (2, 2), step_cost=stepping(entry), bounds=(4, 4))
         assert srd is not None
         assert srd.squares == ((0, 0), (1, 1), (2, 2))
         assert srd.cost_feet == 15
 
-        variant = find_path((0, 0), (2, 2), entry_cost=entry, bounds=(4, 4),
+        variant = find_path((0, 0), (2, 2), step_cost=stepping(entry), bounds=(4, 4),
                             rule=DiagonalRule.FIVE_TEN_FIVE)
         assert variant is not None
         assert variant.squares == ((0, 0), (1, 1), (1, 2), (2, 2))
         assert variant.cost_feet == 20
 
     def test_diagonal_parity_is_paid_on_a_pure_diagonal(self) -> None:
-        path = find_path((0, 0), (4, 4), entry_cost=flat, bounds=(6, 6),
+        path = find_path((0, 0), (4, 4), step_cost=flat, bounds=(6, 6),
                          rule=DiagonalRule.FIVE_TEN_FIVE)
         assert path is not None
         assert path.squares == ((0, 0), (1, 1), (2, 2), (3, 3), (4, 4))
@@ -395,11 +511,11 @@ class TestPathfinding:
         def entry(square: Square) -> int | None:
             return None if square in walls else 5
 
-        assert find_path((0, 0), (3, 0), entry_cost=entry, bounds=(4, 4)) is None
+        assert find_path((0, 0), (3, 0), step_cost=stepping(entry), bounds=(4, 4)) is None
 
     def test_out_of_bounds_endpoints_are_none(self) -> None:
-        assert find_path((0, 0), (9, 9), entry_cost=flat, bounds=(4, 4)) is None
-        assert find_path((-1, 0), (2, 2), entry_cost=flat, bounds=(4, 4)) is None
+        assert find_path((0, 0), (9, 9), step_cost=flat, bounds=(4, 4)) is None
+        assert find_path((-1, 0), (2, 2), step_cost=flat, bounds=(4, 4)) is None
 
 
 class TestTerrainTable:

@@ -36,7 +36,6 @@ from typing import Any, NoReturn
 
 from ..content import PROJECT_ENV
 from ..kernel.grid import (
-    FEET_PER_SQUARE,
     DiagonalRule,
     Square,
     TerrainTable,
@@ -44,6 +43,7 @@ from ..kernel.grid import (
     find_path,
     has_line_of_sight,
     square_center,
+    step_cost_feet,
     terrain_effect_of,
 )
 from ..kernel.mapgen import (
@@ -192,7 +192,12 @@ def _refuse(message: str) -> NoReturn:
 
 @dataclass(slots=True)
 class _EditState:
-    """The mutable working copy the edit operations act on."""
+    """The mutable working copy the edit operations act on.
+
+    Everything the document carries has to live here, because
+    :func:`apply_edits` rebuilds the payload from this and nothing else — a
+    layer left out is a layer every unrelated edit quietly discards.
+    """
 
     name: str
     width: int
@@ -200,6 +205,8 @@ class _EditState:
     legend: dict[str, str]
     grid: list[list[str]]
     features: list[dict[str, Any]]
+    default_elevation: int
+    elevation: dict[Square, int]
 
     @classmethod
     def from_document(cls, document: MapDocument) -> _EditState:
@@ -210,20 +217,28 @@ class _EditState:
             legend=dict(document.legend),
             grid=[list(row) for row in document.tiles],
             features=list(as_payload(document)["features"]),
+            default_elevation=document.elevation.default,
+            elevation=dict(document.elevation.squares),
         )
+
+    def height_at(self, square: Square) -> int:
+        return self.elevation.get(square, self.default_elevation)
 
 
 _EDIT_OPS = (
-    "add_feature", "carve_corridor", "line", "paint", "remove_feature",
-    "resize", "set_legend", "set_name", "set_terrain", "toggle_door",
+    "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
+    "remove_feature", "resize", "set_elevation", "set_legend", "set_name",
+    "set_terrain", "toggle_door",
 )
 _OP_KEYS: dict[str, frozenset[str]] = {
     "add_feature": frozenset({"feature"}),
+    "adjust_elevation": frozenset({"rect", "cells", "by"}),
     "carve_corridor": frozenset({"from", "to", "terrain", "horizontal_first"}),
     "line": frozenset({"from", "to", "terrain"}),
     "paint": frozenset({"cells", "terrain"}),
     "remove_feature": frozenset({"id"}),
     "resize": frozenset({"width", "height", "anchor", "fill"}),
+    "set_elevation": frozenset({"rect", "cells", "feet", "default"}),
     "set_legend": frozenset({"glyph", "terrain"}),
     "set_name": frozenset({"name"}),
     "set_terrain": frozenset({"rect", "terrain"}),
@@ -311,7 +326,8 @@ def _l_corridor(start: Square, end: Square, horizontal_first: bool) -> list[Squa
     return [(x0, yy) for yy in _span(y0, y1)] + [(xx, y1) for xx in _span(x0, x1)]
 
 
-def _op_set_terrain(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+def _rect_squares(state: _EditState, op: Mapping[str, Any]) -> list[Square]:
+    """Every square of a validated ``rect``, in row-major order."""
     raw = op.get("rect")
     if not (
         isinstance(raw, (list, tuple))
@@ -327,10 +343,14 @@ def _op_set_terrain(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
             f"'rect' [{rx}, {ry}, {rw}, {rh}] reaches outside the "
             f"{state.width}x{state.height} map"
         )
+    return [(xx, yy) for yy in range(ry, ry + rh) for xx in range(rx, rx + rw)]
+
+
+def _op_set_terrain(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    squares = _rect_squares(state, op)
     glyph = _op_terrain(state, op, "terrain")
-    for yy in range(ry, ry + rh):
-        for xx in range(rx, rx + rw):
-            state.grid[yy][xx] = glyph
+    for xx, yy in squares:
+        state.grid[yy][xx] = glyph
 
 
 def _op_paint(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
@@ -468,9 +488,83 @@ def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) 
         nx, ny = fx + off_x, fy + off_y
         if 0 <= nx < new_w and 0 <= ny < new_h:
             kept.append({**entry, "at": [nx, ny]})
+    # Height moves with the anchor exactly as tiles and features do; ground that
+    # falls outside the new bounds goes with the squares it described, and new
+    # ground comes in at the map's datum.
+    heights = {
+        (fx + off_x, fy + off_y): feet
+        for (fx, fy), feet in state.elevation.items()
+        if 0 <= fx + off_x < new_w and 0 <= fy + off_y < new_h
+    }
     state.grid = grid
     state.features = kept
+    state.elevation = heights
     state.width, state.height = new_w, new_h
+
+
+def _height_targets(state: _EditState, op: Mapping[str, Any], what: str) -> list[Square]:
+    """The squares a height op names — exactly one of ``rect`` or ``cells``."""
+    has_rect = "rect" in op
+    has_cells = "cells" in op
+    if has_rect == has_cells:
+        _refuse(
+            f"{what} needs exactly one of 'rect' ([x, y, width, height]) or "
+            f"'cells' (a list of [x, y] squares)"
+        )
+    if has_rect:
+        return _rect_squares(state, op)
+    raw = op.get("cells")
+    if not isinstance(raw, list) or not raw:
+        _refuse("'cells' must be a non-empty list of [x, y] squares")
+    return [_square_value(cell, "each cell", state) for cell in raw]
+
+
+def _height_feet(op: Mapping[str, Any], key: str) -> int:
+    value = op.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        _refuse(f"{key!r} is required and must be a whole number of feet, got {value!r}")
+    return int(value)
+
+
+def _set_height(state: _EditState, square: Square, feet: int) -> None:
+    """Record one square's height, keeping the layer sparse against the default."""
+    if feet == state.default_elevation:
+        state.elevation.pop(square, None)
+    else:
+        state.elevation[square] = feet
+
+
+def _op_set_elevation(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    """Set ground height outright: a plateau, a pit floor, or the whole map's datum.
+
+    ``default`` alone moves the datum every unnamed square sits at, which is how
+    a map is lifted or sunk as a whole without listing every square.
+    """
+    if "default" in op:
+        if "rect" in op or "cells" in op:
+            _refuse(
+                "'default' moves the datum every unnamed square sits at and cannot "
+                "be combined with 'rect' or 'cells'; use two operations"
+            )
+        state.default_elevation = _height_feet(op, "default")
+        # Squares that named the new datum explicitly are now redundant.
+        for square in list(state.elevation):
+            _set_height(state, square, state.elevation[square])
+        return
+    squares = _height_targets(state, op, "set_elevation")
+    feet = _height_feet(op, "feet")
+    for square in squares:
+        _set_height(state, square, feet)
+
+
+def _op_adjust_elevation(
+    state: _EditState, op: Mapping[str, Any], terrain: TerrainTable
+) -> None:
+    """Raise or lower named squares by ``by`` feet, relative to what they are now."""
+    squares = _height_targets(state, op, "adjust_elevation")
+    by = _height_feet(op, "by")
+    for square in squares:
+        _set_height(state, square, state.height_at(square) + by)
 
 
 def _op_set_legend(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
@@ -500,11 +594,13 @@ def _op_set_name(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable
 
 _HANDLERS: dict[str, Any] = {
     "add_feature": _op_add_feature,
+    "adjust_elevation": _op_adjust_elevation,
     "carve_corridor": _op_carve_corridor,
     "line": _op_line,
     "paint": _op_paint,
     "remove_feature": _op_remove_feature,
     "resize": _op_resize,
+    "set_elevation": _op_set_elevation,
     "set_legend": _op_set_legend,
     "set_name": _op_set_name,
     "set_terrain": _op_set_terrain,
@@ -563,6 +659,13 @@ def apply_edits(
         },
         "legend": dict(state.legend),
         "tiles": ["".join(row) for row in state.grid],
+        "elevation": {
+            "default": state.default_elevation,
+            "squares": [
+                [square[0], square[1], state.elevation[square]]
+                for square in sorted(state.elevation, key=lambda s: (s[1], s[0]))
+            ],
+        },
         "features": state.features,
         "provenance": provenance,
     }
@@ -578,6 +681,16 @@ def apply_edits(
 def _majority(counts: Mapping[str, int], order_of: Mapping[str, int]) -> str:
     """The most common kind; ties go to the kind first named in the legend."""
     return min(counts, key=lambda kind: (-counts[kind], order_of[kind]))
+
+
+def _lowest_majority(counts: Mapping[int, int]) -> int:
+    """The most common height in a block; ties go to the lower ground."""
+    return min(counts, key=lambda feet: (-counts[feet], feet))
+
+
+#: Height glyphs in ascending order, so a rendered relief reads as a contour: the
+#: lowest ground in view is always ``0``. The legend gives each one its feet.
+HEIGHT_GLYPHS = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
 def _feature_glyph(kind: str, state: str | None) -> str | None:
@@ -608,6 +721,7 @@ def render_ascii(
     height: int | None = None,
     downsample: int = 1,
     show_features: bool = True,
+    show_elevation: bool = False,
     tokens: Mapping[Square, str] | None = None,
 ) -> dict[str, Any]:
     """Rows of glyphs for a viewport of the document, through its own legend.
@@ -620,6 +734,13 @@ def render_ascii(
     encounter adapter puts combatants here). The viewport is clamped to the
     map, and a result over :data:`RENDER_BUDGET` cells is refused with the
     remedy rather than emitted.
+
+    ``show_elevation`` adds ``elevation_rows`` and ``elevation_legend`` *beside*
+    the terrain rows rather than in place of them — the two layers answer
+    different questions and a reader wants both. Heights are lettered from the
+    lowest ground in view upward through :data:`HEIGHT_GLYPHS`, so the picture
+    reads as a contour; a downsampled block takes its block's majority height,
+    ties to the lower ground.
     """
     map_w, map_h = document.grid.width, document.grid.height
     if downsample < 1:
@@ -651,24 +772,34 @@ def render_ascii(
 
     rows: list[list[str]] = []
     used: dict[str, str] = {}
+    heights: list[list[int]] = []
     for r in range(out_h):
         row_out: list[str] = []
+        height_row: list[int] = []
         for c in range(out_w):
             x0 = x + c * downsample
             y0 = y + r * downsample
             x1 = min(x0 + downsample, x + width)
             y1 = min(y0 + downsample, y + height)
             counts: dict[str, int] = {}
+            feet_counts: dict[int, int] = {}
             for yy in range(y0, y1):
                 tile_row = document.tiles[yy]
                 for xx in range(x0, x1):
                     kind = document.legend[tile_row[xx]]
                     counts[kind] = counts.get(kind, 0) + 1
+                    if show_elevation:
+                        feet = document.elevation.at((xx, yy))
+                        feet_counts[feet] = feet_counts.get(feet, 0) + 1
             best = _majority(counts, order_of)
             glyph = glyph_of[best]
             used[glyph] = best
             row_out.append(glyph)
+            if show_elevation:
+                height_row.append(_lowest_majority(feet_counts))
         rows.append(row_out)
+        if show_elevation:
+            heights.append(height_row)
 
     in_view: list[dict[str, Any]] = []
     feature_cells: set[tuple[int, int]] = set()
@@ -700,7 +831,7 @@ def render_ascii(
         token_cells.add(cell)
         rows[cell[1]][cell[0]] = marks[square]
 
-    return {
+    rendered: dict[str, Any] = {
         "viewport": {
             "x": x, "y": y, "width": width, "height": height, "downsample": downsample,
         },
@@ -709,6 +840,20 @@ def render_ascii(
         "features_in_view": in_view,
         "truncated": not (x == 0 and y == 0 and width == map_w and height == map_h),
     }
+    if show_elevation:
+        distinct = sorted({feet for row in heights for feet in row})
+        if len(distinct) > len(HEIGHT_GLYPHS):
+            raise ValueError(
+                f"the viewport holds {len(distinct)} distinct heights, over the "
+                f"{len(HEIGHT_GLYPHS)} the height glyphs can name; render a smaller "
+                f"viewport (x, y, width, height) or raise downsample"
+            )
+        glyph_for = {feet: HEIGHT_GLYPHS[index] for index, feet in enumerate(distinct)}
+        rendered["elevation_rows"] = [
+            "".join(glyph_for[feet] for feet in row) for row in heights
+        ]
+        rendered["elevation_legend"] = {glyph_for[feet]: feet for feet in distinct}
+    return rendered
 
 
 # --- geometry queries -------------------------------------------------------
@@ -727,9 +872,14 @@ def query(
     """Answer a geometry question over a bare map: distance, sight, or a route.
 
     Wraps the grid kernel over :func:`~fivee_sim.maps.to_grid`'s battle map,
-    composing entry-cost and opacity exactly as an encounter does — except
+    composing step cost and opacity exactly as an encounter does — except
     that with no fight in progress, doors count in their recorded *default*
     state and no square is occupied.
+
+    ``distance`` and ``line_of_sight`` are flat questions and stay flat: height
+    reaches the route and nothing else. A ``path`` result therefore carries the
+    endpoints' ground heights, because a cost that includes a climb is otherwise
+    unexplainable from the answer alone.
     """
     if kind not in _QUERIES:
         raise ValueError(f"unknown query {kind!r}; valid queries: {', '.join(_QUERIES)}")
@@ -759,13 +909,17 @@ def query(
     def on_map(square: Square) -> bool:
         return 0 <= square[0] < map_w and 0 <= square[1] < map_h
 
-    def entry_cost(square: Square) -> int | None:
-        if not on_map(square):
+    def height_at(square: Square) -> int:
+        return battle.elevation.get(square, battle.default_elevation)
+
+    def step_cost(origin: Square, step_to: Square, doubled_diagonal: bool) -> int | None:
+        if not on_map(step_to):
             return None
-        effect = terrain_effect_of(terrain_at(square), terrain)
-        if not effect.passable:
-            return None
-        return FEET_PER_SQUARE * effect.move_cost_multiplier
+        return step_cost_feet(
+            terrain_effect_of(terrain_at(step_to), terrain),
+            height_at(step_to) - height_at(origin),
+            doubled_diagonal=doubled_diagonal,
+        )
 
     def opaque(square: Square) -> bool:
         return on_map(square) and terrain_effect_of(terrain_at(square), terrain).opaque
@@ -774,7 +928,9 @@ def query(
         result["line_of_sight"] = has_line_of_sight(frm, to, opaque=opaque)
         return result
 
-    path = find_path(frm, to, entry_cost=entry_cost, rule=rule, bounds=(map_w, map_h))
+    path = find_path(frm, to, step_cost=step_cost, rule=rule, bounds=(map_w, map_h))
+    result["from_elevation"] = height_at(frm)
+    result["to_elevation"] = height_at(to)
     if path is None:
         result["reachable"] = False
         return result

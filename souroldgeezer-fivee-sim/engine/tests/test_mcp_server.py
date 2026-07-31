@@ -359,6 +359,83 @@ class TestMapTools:
             )
 
 
+class TestMapElevationTools:
+    """Ground height over the wire: the inline spec, the edit ops, and the render."""
+
+    LEDGE: dict[str, Any] = {
+        "name": "ledge",
+        "width": 4,
+        "height": 1,
+        "default_terrain": "normal",
+        "elevation": [[2, 0, 10], [3, 0, 10]],
+    }
+
+    def test_an_inline_spec_carries_ground_height_into_the_fight(self) -> None:
+        created = api.encounter_create(
+            [HERO, {**GOBLIN, "position": [15, 0]}], seed=11, map=self.LEDGE
+        )
+        state = api.encounter_state(str(created["encounter_id"]))
+        heights = {c["name"]: c["elevation"] for c in state["combatants"]}
+        assert heights == {"Thora": 0, "Goblin": 10}
+        assert state["map"]["elevation"]["max"] == 10
+        assert state["map"]["elevation"]["flat"] is False
+
+    def test_a_malformed_elevation_entry_says_the_shape(self) -> None:
+        with pytest.raises(api.ToolError, match=r"must be \[x, y, feet\]"):
+            api.encounter_create(
+                [HERO, {**GOBLIN, "position": [15, 0]}], seed=11,
+                map={**self.LEDGE, "elevation": [[2, 0]]},
+            )
+
+    def test_an_elevation_square_off_the_map_is_refused(self) -> None:
+        with pytest.raises(api.ToolError, match="elevation entry #0"):
+            api.encounter_create(
+                [HERO, {**GOBLIN, "position": [15, 0]}], seed=11,
+                map={**self.LEDGE, "elevation": [[9, 9, 10]]},
+            )
+
+    def test_a_default_elevation_must_be_whole_feet(self) -> None:
+        with pytest.raises(api.ToolError, match="whole number of feet"):
+            api.encounter_create(
+                [HERO, {**GOBLIN, "position": [15, 0]}], seed=11,
+                map={**self.LEDGE, "default_elevation": "high"},
+            )
+
+    def raised_map(self) -> str:
+        map_id = str(api.map_load(document=map_document())["map_id"])
+        api.map_edit(map_id, [{"op": "set_elevation", "rect": [3, 0, 2, 4], "feet": 20}])
+        return map_id
+
+    def test_the_edit_ops_raise_ground_and_the_summary_reports_it(self) -> None:
+        applied = api.map_edit(
+            str(api.map_load(document=map_document())["map_id"]),
+            [
+                {"op": "set_elevation", "rect": [3, 0, 2, 4], "feet": 20},
+                {"op": "adjust_elevation", "cells": [[4, 0]], "by": 5},
+            ],
+        )
+        assert applied["summary"]["elevation"] == {
+            "default": 0, "min": 0, "max": 25, "raised_squares": 8,
+        }
+
+    def test_render_shows_height_only_when_asked(self) -> None:
+        map_id = self.raised_map()
+        assert "elevation_rows" not in api.map_render(map_id)
+        rendered = api.map_render(map_id, show_elevation=True)
+        assert rendered["elevation_rows"] == ["00011", "00011", "00011", "00011"]
+        assert rendered["elevation_legend"] == {"0": 0, "1": 20}
+
+    def test_a_path_pays_for_the_climb_and_names_both_ends(self) -> None:
+        answer = api.map_query(self.raised_map(), "path", frm=[0, 3], to=[4, 3])
+        assert answer["reachable"] is True
+        assert (answer["from_elevation"], answer["to_elevation"]) == (0, 20)
+        assert answer["cost_feet"] == 5 + 5 + (5 + 40) + 5
+
+    def test_sight_over_the_plateau_stays_flat(self) -> None:
+        answer = api.map_query(self.raised_map(), "line_of_sight", frm=[0, 3], to=[4, 3])
+        assert answer["line_of_sight"] is True
+
+
 class TestEncounterLog:
     def start(self, seed: int = 11) -> str:
         created = api.encounter_create([HERO, GOBLIN], seed=seed)
