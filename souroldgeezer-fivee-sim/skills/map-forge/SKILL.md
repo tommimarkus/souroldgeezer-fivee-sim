@@ -104,9 +104,33 @@ couple of feet across a square is a slope, which costs difficult terrain; a
 rise over five feet is a cliff face, climbed at an extra foot per foot, and
 climbing down costs the same. Sight, cover, and area templates are measured
 flat, so a ridge blocks nothing and standing on a tower is no advantage in
-itself. Generated maps are flat; height is something you or the user adds —
-with these operations, or painted by hand in the browser editor's Height tool
-(step 5).
+itself. An overland map is generated with relief already — every square its own
+height, so a mountain stands above the hill beside it; tune it with the
+`relief_feet` and `water_depth_feet` params, or set both to zero for flat open
+country. Dungeons and caves generate flat, and height there is something you or
+the user adds — with these operations, or painted by hand in the browser
+editor's Height tool (step 5).
+
+## Storeys
+
+A map may carry more than one floor over the same footprint. Level `0` is the
+ground and is always there; `levels` in the document holds the storeys above
+and below it, with signed indices so a basement is `-1`. A level has its own
+tiles, features, and heights, and its `elevation.default` is the height its
+floor sits at.
+
+Every op that acts on one floor takes a `level` (default the ground), as do
+`map_render`, `map_query`, and `uvtt_export` — the last exports one file per
+floor, because the format has no notion of storeys. `set_name`, `set_legend`,
+and `resize` take none: they are document-wide, and a resize moves every floor
+together.
+
+A stairway becomes walkable when its feature carries `to_level`. **Say what a
+floor does**, as with height: a floor is opaque, so creatures on different
+levels cannot see, target, or threaten each other at all, and a move between
+them ends on a connector square and pays the climb. Routing is per level — ask
+for the walk to the stairs and the crossing as separate legs, because the
+pathfinder will not plan a route that takes the stairs on the way.
 
 For the document format, the editor's API model, and the replay bundle
 schema, read [`../../docs/MAPS.md`](../../docs/MAPS.md).
