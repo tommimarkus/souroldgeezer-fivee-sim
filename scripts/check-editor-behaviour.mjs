@@ -274,17 +274,36 @@ function makeElementClass(contextOf) {
 }
 
 /* The fake 2D context. Every drawing call is a no-op except fillRect, which is
- * how "the picture changed" is observed: the colour a square was painted. */
+ * how "the picture changed" is observed: the colour a square was painted, and
+ * the alpha it was painted at.
+ *
+ * Alpha is recorded because the context outlives the frame. A glyph that sets
+ * globalAlpha inside a save()/restore() pair and loses the restore leaves every
+ * later fill — this frame and every frame after it, since render() never resets
+ * alpha — painted at the value it borrowed. Reading fillStyle alone cannot see
+ * that: the colour string is unchanged and the whole map just goes faint. */
 function makeContext(fills) {
   const state = {
     fillStyle: "", strokeStyle: "", lineWidth: 1, font: "",
     textAlign: "", textBaseline: "", globalAlpha: 1, lineCap: "", lineJoin: "",
     canvas: null,
   };
+  const saved = [];
   return new Proxy(state, {
     get(target, prop) {
       if (prop === "fillRect") {
-        return (x, y, w, h) => fills.push([x, y, w, h, target.fillStyle]);
+        return (x, y, w, h) => fills.push([x, y, w, h, target.fillStyle, target.globalAlpha]);
+      }
+      /* save/restore are the two no-ops with state behind them: a glyph that
+       * borrows alpha or a line cap has to give it back. */
+      if (prop === "save") {
+        return () => { saved.push({ ...target }); };
+      }
+      if (prop === "restore") {
+        return () => {
+          const previous = saved.pop();
+          if (previous) { Object.assign(target, previous); }
+        };
       }
       if (prop === "measureText") { return () => ({ width: 4 }); }
       if (prop in target) { return target[prop]; }
@@ -593,6 +612,17 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
   /* 1. Closed is the half that was always right, and it is what "swung" is
    *    measured against, so it is pinned first. */
   const shutH = leaves("horizontal", "closed");
+  /* Named before anything reads shutH[0]. Every case here filters the frame by
+   * one ink, so retuning the leaf's colour empties all of them at once — and
+   * without this, the first case fails claiming the door has the wrong shape
+   * and the third dies on `undefined`, neither of which is what happened. */
+  if (!shutH.length) {
+    throw new Error(
+      "no door was painted in " + DOOR_INK + ". The leaf's ink changed, so this suite is"
+      + " filtering the frame on a colour renderer.js no longer uses — update DOOR_INK in"
+      + " scripts/check-editor-behaviour.mjs. (The door glyph itself may be fine.)"
+    );
+  }
   check("a closed door is one leaf, lying along the wall run it fills",
     shutH.length === 1 && shutH[0][2] > shutH[0][3], show(shutH));
   const shutV = leaves("vertical", "closed");
@@ -626,6 +656,17 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
     show([openV[0], shutV[0]]));
   check("out west, into its own passage",
     openV.length === 1 && openV[0][0] < px, show([openV[0][0], px]));
+
+  /* 4. The swing arc borrows alpha, and it has to give it back. The context
+   *    outlives the frame and render() never resets alpha, so a lost restore
+   *    does not spoil one door — it leaves the whole map, and every frame after
+   *    it, painted at three-tenths. Two frames, because the leak shows on
+   *    whatever is drawn next and this document draws nothing after the door. */
+  R.render(page.context, doorDoc("horizontal", "open"), DOOR_VIEW, {});
+  R.render(page.context, doorDoc("horizontal", "open"), DOOR_VIEW, {});
+  const faint = page.last().fills.filter((fill) => fill[5] !== 1);
+  check("a door that swings hands the context back at full opacity",
+    faint.length === 0, "painted under a borrowed alpha: " + show(faint.slice(0, 3)));
 });
 
 /* --- viewer.html ---------------------------------------------------------- */
