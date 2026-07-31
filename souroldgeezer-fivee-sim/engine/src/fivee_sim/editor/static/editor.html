@@ -452,7 +452,11 @@ if (typeof FiveeRenderer === "undefined") {
     doc = payload;
     mapId = source.id || clientSlug(payload.name);
     etag = source.etag || null;
-    baseline = contentOf(payload);
+    /* A restore brings its own baseline: recomputing it here would call the
+       unsaved edits it just carried across a refresh pristine, and the save
+       would then drop provenance.edited. Every other caller omits it. */
+    baseline = source.baseline === undefined || source.baseline === null
+      ? contentOf(payload) : source.baseline;
     generatedSeed = source.seed !== undefined ? source.seed : null;
     undoStack = [];
     redoStack = [];
@@ -481,6 +485,73 @@ if (typeof FiveeRenderer === "undefined") {
     }
     byId("provenance").textContent = line;
   }
+
+  /* --- session restore -------------------------------------------------- */
+  /* A refresh must not lose the open map. The tab's sessionStorage carries the
+     whole document across a reload, so unsaved edits come back too rather than
+     being quietly replaced by the last saved version — and it is already
+     per-tab and per-origin, and dies with the tab, which is the lifetime "the
+     map I have open" actually has. The stored ETag goes back into the save, so
+     a map another tab changed meanwhile still meets the conflict dialog.
+     Every access is guarded: the page also runs from file:// with no server
+     behind it, where a browser may refuse storage outright, and that mode has
+     to keep working. The key is versioned so a payload written by an older
+     editor is dropped rather than half-understood. */
+  var SESSION_KEY = "fivee-editor-open-map-v1";
+  function readSession() {
+    try {
+      return window.sessionStorage.getItem(SESSION_KEY);
+    } catch (error) {
+      return null;
+    }
+  }
+  function writeSession(value) {
+    try {
+      if (value === null) { window.sessionStorage.removeItem(SESSION_KEY); }
+      else { window.sessionStorage.setItem(SESSION_KEY, value); }
+    } catch (error) {
+      /* Storage denied or full: the refresh simply forgets, as it always did. */
+    }
+  }
+  function rememberSession() {
+    /* The undo and redo stacks are deliberately not carried: they can be far
+       larger than the document, and a refresh is a reasonable place for the
+       history to end. */
+    if (!doc) { writeSession(null); return; }
+    writeSession(JSON.stringify({
+      id: mapId, etag: etag, seed: generatedSeed, baseline: baseline, doc: doc
+    }));
+  }
+  function restoreSession() {
+    var stored = readSession();
+    if (!stored) { return false; }
+    try {
+      var state = JSON.parse(stored);
+      /* The fields loadDocument dereferences. A payload missing one is not a
+         document this editor can open, whatever else it holds. */
+      if (!state || !state.doc || !state.doc.grid || !state.doc.legend
+        || !state.doc.provenance) {
+        throw new Error("stored state is not a map document");
+      }
+      loadDocument(state.doc, { id: state.id, etag: state.etag,
+        seed: state.seed, baseline: state.baseline });
+    } catch (error) {
+      /* Nothing a stale or corrupt payload does may cost the user a working
+         editor: drop it and start empty, exactly as before this existed. */
+      writeSession(null);
+      doc = null;
+      view = null;
+      return false;
+    }
+    setStatus("reopened " + mapId + (contentOf(doc) !== baseline
+      ? " · unsaved changes restored" : ""));
+    return true;
+  }
+  window.addEventListener("pagehide", rememberSession);
+  /* The path a mobile or bfcache'd browser may take instead of pagehide. */
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") { rememberSession(); }
+  });
 
   /* --- legend panel ----------------------------------------------------- */
   var RESERVED = ["+", "/", "<", ">", "@"];
@@ -1407,6 +1478,10 @@ if (typeof FiveeRenderer === "undefined") {
 
   /* --- modes ------------------------------------------------------------ */
   window.addEventListener("resize", redraw);
+  /* Before the mode branch: a restored document needs no API, so it comes back
+     in the serverless mode too. Before /ping as well, whose answer arrives
+     later and would otherwise overwrite the line reporting the reopened map. */
+  var restored = restoreSession();
   if (!CONFIG) {
     /* Opened from disk with no server behind it: editing, file open, and
        download still work; everything that needs the API is off. */
@@ -1417,7 +1492,7 @@ if (typeof FiveeRenderer === "undefined") {
     });
   } else {
     request("GET", "/ping").then(function (response) {
-      if (response.json && response.json.ok) {
+      if (response.json && response.json.ok && !restored) {
         setStatus("editor server " + response.json.version + " · maps in "
           + response.json.maps_dir);
       }
