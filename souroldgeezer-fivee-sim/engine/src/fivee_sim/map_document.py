@@ -65,6 +65,7 @@ __all__ = [
     "MapError",
     "MapFeatureRecord",
     "MapGrid",
+    "MapLevel",
     "MapProvenance",
     "as_payload",
     "document_from",
@@ -111,12 +112,21 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
 _DOCUMENT_KEYS = frozenset(
     {
         "format", "format_version", "name", "grid", "legend", "tiles",
-        "elevation", "features", "provenance",
+        "elevation", "features", "levels", "provenance",
     }
 )
 _GRID_KEYS = frozenset({"width", "height", "cell_feet"})
 _ELEVATION_KEYS = frozenset({"default", "squares"})
-_FEATURE_KEYS = frozenset({"id", "kind", "at", "orientation", "state", "team"})
+_LEVEL_KEYS = frozenset({"index", "name", "tiles", "elevation", "features"})
+_FEATURE_KEYS = frozenset(
+    {"id", "kind", "at", "orientation", "state", "team", "to_level"}
+)
+
+#: The index of the ground plane. It is the one level the file keeps in its
+#: top-level ``tiles``/``elevation``/``features`` keys rather than in ``levels``,
+#: so a document with no storeys is byte-identical to one written before floors
+#: existed.
+GROUND_LEVEL = 0
 _PROVENANCE_KEYS = frozenset({"generator", "seed", "params", "edited", "source"})
 _DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
@@ -160,7 +170,12 @@ class MapElevation:
 
 @dataclass(frozen=True, slots=True)
 class MapFeatureRecord:
-    """One feature as the document records it — defaults, not live state."""
+    """One feature as the document records it — defaults, not live state.
+
+    ``to_level`` is what makes a stairway more than a drawn glyph: it names the
+    level the feature leads to, and the square it lands on is the one it stands
+    on. A feature without it is an ordinary fixture that goes nowhere.
+    """
 
     id: str
     kind: str
@@ -168,6 +183,24 @@ class MapFeatureRecord:
     orientation: str | None = None
     state: str | None = None
     team: str | None = None
+    to_level: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MapLevel:
+    """One storey: a full plane of tiles, heights, and fixtures over the grid.
+
+    Every level shares the document's ``grid`` and ``legend`` — floors of one
+    building, not unrelated maps — so only what differs between them lives here.
+    ``elevation.default`` is the level's own datum, which is how a first floor
+    sits ten feet above the ground one without a second concept for it.
+    """
+
+    index: int
+    name: str
+    tiles: tuple[str, ...]
+    features: tuple[MapFeatureRecord, ...]
+    elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,15 +221,35 @@ class MapProvenance:
 
 @dataclass(frozen=True, slots=True)
 class MapDocument:
-    """One parsed, validated map file. Frozen: every edit builds a new one."""
+    """One parsed, validated map file. Frozen: every edit builds a new one.
+
+    ``levels`` always holds :data:`GROUND_LEVEL`, and holds only that for a map
+    with no storeys. The ground is reachable as :attr:`ground`, and the three
+    accessors below read it, because that is what a caller asking a map for its
+    tiles has always meant — the storeys are the addition, never a repointing.
+    """
 
     name: str
     grid: MapGrid
     legend: Mapping[str, str]
-    tiles: tuple[str, ...]
-    features: tuple[MapFeatureRecord, ...]
     provenance: MapProvenance
-    elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
+    levels: Mapping[int, MapLevel]
+
+    @property
+    def ground(self) -> MapLevel:
+        return self.levels[GROUND_LEVEL]
+
+    @property
+    def tiles(self) -> tuple[str, ...]:
+        return self.ground.tiles
+
+    @property
+    def features(self) -> tuple[MapFeatureRecord, ...]:
+        return self.ground.features
+
+    @property
+    def elevation(self) -> MapElevation:
+        return self.ground.elevation
 
 
 # --- parsing ---------------------------------------------------------------
@@ -380,25 +433,34 @@ def _parse_elevation(
 
 
 def _parse_features(
-    payload: Mapping[str, Any],
+    raw: Any,
     reader: Reader,
     diagnostics: list[Diagnostic],
     grid: MapGrid | None,
     source: str,
+    *,
+    claimed: dict[str, str],
+    where: str = "",
 ) -> tuple[MapFeatureRecord, ...]:
-    raw = payload.get("features", [])
+    """One level's features. ``claimed`` spans the document, ``where`` locates it.
+
+    Ids are unique across every level, not within one: the battle map keys its
+    features by name in a single table, so two storeys sharing an id would
+    resolve to one feature rather than two. Doors, by contrast, collide only
+    within a level — two floors may each hang one over the same square.
+    """
     if not isinstance(raw, list):
         reader.fail("features", "must be a list of feature objects")
         return ()
     features: list[MapFeatureRecord] = []
-    claimed: dict[str, int] = {}
     door_squares: dict[Square, str] = {}
     for index, entry in enumerate(raw):
+        position = f"feature #{index}{where}"
         if not isinstance(entry, Mapping):
-            reader.fail("features", f"feature #{index} must be an object")
+            reader.fail("features", f"{position} must be an object")
             continue
         raw_id = entry.get("id")
-        label = raw_id if isinstance(raw_id, str) and raw_id.strip() else f"feature #{index}"
+        label = raw_id if isinstance(raw_id, str) and raw_id.strip() else position
         sub = Reader(entry, diagnostics, source=source, section="map", name=label)
         sub.unknown_keys(_FEATURE_KEYS)
         feature_id = sub.string("id", required=True)
@@ -439,6 +501,17 @@ def _parse_features(
             sub.fail("state", f"must be one of: {', '.join(_DOOR_STATES)}; got {state!r}")
         team = sub.string("team") or None
 
+        to_level: int | None = None
+        if "to_level" in entry:
+            raw_target = entry["to_level"]
+            if isinstance(raw_target, bool) or not isinstance(raw_target, int):
+                sub.fail(
+                    "to_level",
+                    f"must name a level by whole number, got {raw_target!r}",
+                )
+            else:
+                to_level = int(raw_target)
+
         # A door must be fully resolved, like provenance params: reading the
         # document alone must answer how it starts and how it hangs.
         if kind == "door":
@@ -464,18 +537,113 @@ def _parse_features(
             if feature_id in claimed:
                 sub.fail(
                     "id",
-                    f"is already used by feature #{claimed[feature_id]}; ids must be unique",
+                    f"is already used by {claimed[feature_id]}; ids must be unique",
                 )
             else:
-                claimed[feature_id] = index
+                claimed[feature_id] = position
         if sub.ok and at is not None:
             features.append(
                 MapFeatureRecord(
                     id=feature_id, kind=kind, at=at,
-                    orientation=orientation, state=state, team=team,
+                    orientation=orientation, state=state, team=team, to_level=to_level,
                 )
             )
     return tuple(features)
+
+
+def _parse_levels(
+    payload: Mapping[str, Any],
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    grid: MapGrid | None,
+    legend: dict[str, str] | None,
+    source: str,
+    claimed: dict[str, str],
+) -> dict[int, MapLevel]:
+    """The storeys above and below the ground, keyed by index.
+
+    The ground is not among them — it lives in the document's own
+    ``tiles``/``elevation``/``features`` — which is why
+    :data:`GROUND_LEVEL` is refused here rather than accepted as a second
+    spelling of it.
+    """
+    raw = payload.get("levels")
+    if raw is None:
+        return {}
+    if not isinstance(raw, list):
+        reader.fail(
+            "levels",
+            "must be a list of level objects, each with an index and its own tiles",
+        )
+        return {}
+    levels: dict[int, MapLevel] = {}
+    for position, entry in enumerate(raw):
+        if not isinstance(entry, Mapping):
+            reader.fail("levels", f"level #{position} must be an object")
+            continue
+        raw_index = entry.get("index")
+        label = f"level {raw_index}" if isinstance(raw_index, int) else f"level #{position}"
+        sub = Reader(entry, diagnostics, source=source, section="map", name=label)
+        sub.unknown_keys(_LEVEL_KEYS)
+        if raw_index is None:
+            sub.fail("index", "required: the storey's height order, above or below the ground")
+            continue
+        if isinstance(raw_index, bool) or not isinstance(raw_index, int):
+            sub.fail("index", f"must be a whole number, got {raw_index!r}")
+            continue
+        index = int(raw_index)
+        if index == GROUND_LEVEL:
+            sub.fail(
+                "index",
+                f"{GROUND_LEVEL} is the ground plane, which lives in the document's own "
+                f"tiles, elevation, and features; a storey needs another index",
+            )
+            continue
+        if index in levels:
+            sub.fail("index", "is already declared by an earlier level")
+            continue
+        tiles = _parse_tiles(entry, sub, grid, legend)
+        elevation = _parse_elevation(entry, sub, diagnostics, grid, source)
+        features = _parse_features(
+            entry.get("features", []), sub, diagnostics, grid, source,
+            claimed=claimed, where=f" on level {index}",
+        )
+        levels[index] = MapLevel(
+            index=index,
+            name=sub.string("name") or f"level {index}",
+            tiles=tiles,
+            features=features,
+            elevation=elevation if elevation is not None else MapElevation(),
+        )
+    return levels
+
+
+def _check_connectors(
+    document_levels: Mapping[int, MapLevel],
+    reader: Reader,
+) -> None:
+    """Every ``to_level`` names a level that exists, and never its own.
+
+    Deferred to a second pass because a connector on the ground may lead to a
+    storey the parser has not read yet.
+    """
+    for index in sorted(document_levels):
+        for feature in document_levels[index].features:
+            if feature.to_level is None:
+                continue
+            if feature.to_level == index:
+                reader.fail(
+                    "features",
+                    f"feature '{feature.id}' leads to its own level ({index}); "
+                    f"a connector joins two different levels",
+                )
+            elif feature.to_level not in document_levels:
+                available = ", ".join(str(i) for i in sorted(document_levels))
+                reader.fail(
+                    "features",
+                    f"feature '{feature.id}' leads to level {feature.to_level}, but "
+                    f"there is no level {feature.to_level} in this map. Declared: {available}",
+                )
 
 
 def _parse_provenance(
@@ -556,7 +724,19 @@ def _parse(
     legend = _parse_legend(payload, reader, terrain=terrain)
     tiles = _parse_tiles(payload, reader, grid, legend)
     elevation = _parse_elevation(payload, reader, diagnostics, grid, source)
-    features = _parse_features(payload, reader, diagnostics, grid, source)
+    claimed: dict[str, str] = {}
+    features = _parse_features(
+        payload.get("features", []), reader, diagnostics, grid, source, claimed=claimed
+    )
+    levels = _parse_levels(payload, reader, diagnostics, grid, legend, source, claimed)
+    levels[GROUND_LEVEL] = MapLevel(
+        index=GROUND_LEVEL,
+        name="ground",
+        tiles=tiles,
+        features=features,
+        elevation=elevation if elevation is not None else MapElevation(),
+    )
+    _check_connectors(levels, reader)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
     if (
@@ -571,10 +751,8 @@ def _parse(
         name=name,
         grid=grid,
         legend=MappingProxyType(dict(legend)),
-        tiles=tiles,
-        features=features,
         provenance=provenance,
-        elevation=elevation,
+        levels=MappingProxyType(levels),
     )
 
 
@@ -623,6 +801,43 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
         entry["state"] = feature.state
     if feature.team is not None:
         entry["team"] = feature.team
+    if feature.to_level is not None:
+        entry["to_level"] = feature.to_level
+    return entry
+
+
+def _elevation_payload(elevation: MapElevation) -> dict[str, Any] | None:
+    """The canonical height block, or ``None`` for a flat plane at zero.
+
+    Squares already sitting at the datum are dropped and the rest sorted by row
+    then column, so painting a height and painting it back writes the bytes it
+    started with.
+    """
+    raised = {
+        square: feet for square, feet in elevation.squares.items() if feet != elevation.default
+    }
+    if not raised and not elevation.default:
+        return None
+    return {
+        "default": elevation.default,
+        "squares": [
+            [square[0], square[1], raised[square]]
+            for square in sorted(raised, key=lambda s: (s[1], s[0]))
+        ],
+    }
+
+
+def _level_payload(level: MapLevel) -> dict[str, Any]:
+    """One storey as JSON-ready primitives. The ground never comes through here."""
+    entry: dict[str, Any] = {
+        "index": level.index,
+        "name": level.name,
+        "tiles": list(level.tiles),
+    }
+    elevation = _elevation_payload(level.elevation)
+    if elevation is not None:
+        entry["elevation"] = elevation
+    entry["features"] = [feature_payload(feature) for feature in level.features]
     return entry
 
 
@@ -635,12 +850,12 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
     column — and the whole key is omitted from a flat map at zero, so a document
     written before heights existed writes back byte-for-byte. This is what makes
     :func:`serialize` byte-stable across a parse round-trip.
+
+    The ground plane writes to the top-level ``tiles``/``elevation``/``features``
+    keys and the storeys to ``levels``, sorted by index. A map with no storeys
+    writes no ``levels`` key at all, which is what keeps a document written
+    before floors existed byte-identical too.
     """
-    features = [feature_payload(feature) for feature in document.features]
-    elevation = document.elevation
-    raised = {
-        square: feet for square, feet in elevation.squares.items() if feet != elevation.default
-    }
     payload: dict[str, Any] = {
         "format": FORMAT,
         "format_version": FORMAT_VERSION,
@@ -653,15 +868,17 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
         "legend": {glyph: document.legend[glyph] for glyph in sorted(document.legend)},
         "tiles": list(document.tiles),
     }
-    if raised or elevation.default:
-        payload["elevation"] = {
-            "default": elevation.default,
-            "squares": [
-                [square[0], square[1], raised[square]]
-                for square in sorted(raised, key=lambda s: (s[1], s[0]))
-            ],
-        }
-    payload["features"] = features
+    elevation = _elevation_payload(document.elevation)
+    if elevation is not None:
+        payload["elevation"] = elevation
+    payload["features"] = [feature_payload(feature) for feature in document.features]
+    storeys = [
+        _level_payload(document.levels[index])
+        for index in sorted(document.levels)
+        if index != GROUND_LEVEL
+    ]
+    if storeys:
+        payload["levels"] = storeys
     payload["provenance"] = {
         "generator": document.provenance.generator,
         "seed": document.provenance.seed,
@@ -767,18 +984,27 @@ def document_from(
         name=name,
         grid=MapGrid(width=generated.width, height=generated.height),
         legend=DEFAULT_LEGEND,
-        tiles=tuple(tiles),
-        elevation=_elevation_from(generated, name),
-        features=tuple(
-            MapFeatureRecord(
-                id=feature.id, kind=feature.kind, at=feature.at,
-                orientation=feature.orientation, state=feature.state, team=feature.team,
-            )
-            for feature in generated.features
-        ),
         provenance=MapProvenance(
             generator=generator, seed=seed, params=MappingProxyType(resolved),
             edited=False, source=GENERATED_SOURCE,
+        ),
+        levels=MappingProxyType(
+            {
+                GROUND_LEVEL: MapLevel(
+                    index=GROUND_LEVEL,
+                    name="ground",
+                    tiles=tuple(tiles),
+                    elevation=_elevation_from(generated, name),
+                    features=tuple(
+                        MapFeatureRecord(
+                            id=feature.id, kind=feature.kind, at=feature.at,
+                            orientation=feature.orientation, state=feature.state,
+                            team=feature.team,
+                        )
+                        for feature in generated.features
+                    ),
+                )
+            }
         ),
     )
 
