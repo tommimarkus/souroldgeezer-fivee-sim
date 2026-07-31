@@ -181,10 +181,8 @@ var FiveeRenderer = (function () {
 
   function drawGrid(ctx, doc, view, dark) {
     var s = view.scale;
-    var x0 = Math.max(0, Math.floor(view.x));
-    var y0 = Math.max(0, Math.floor(view.y));
-    var x1 = Math.min(doc.grid.width, Math.ceil(view.x + view.width / s));
-    var y1 = Math.min(doc.grid.height, Math.ceil(view.y + view.height / s));
+    var b = visibleBounds(doc, view);
+    var x0 = b.x0, y0 = b.y0, x1 = b.x1, y1 = b.y1;
     var light = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
     var heavy = dark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.18)";
     for (var pass = 0; pass < 2; pass++) {

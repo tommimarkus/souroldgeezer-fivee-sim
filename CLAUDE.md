@@ -45,7 +45,7 @@ keep passing the variable to `uv run` in that worktree:
 
 ```bash
 cd .worktrees/<name>/souroldgeezer-fivee-sim/engine
-export UV_CACHE_DIR=/home/souroldgeezer/repos/dndsim/souroldgeezer-fivee-sim/engine/.cache/uv
+export UV_CACHE_DIR=/home/souroldgeezer/repos/souroldgeezer-fivee-sim/souroldgeezer-fivee-sim/engine/.cache/uv
 uv sync
 ```
 
@@ -116,7 +116,7 @@ compatible.'"*
 So the `name` and `description` fields of `plugin.json`, `marketplace.json`, and
 every skill/agent frontmatter use **5E-compatible** wording only — never
 "Dungeons & Dragons", "D&D", "DnD", "5.5e", or "Wizards of the Coast". The
-`dndsim` directory name is local to this machine and is never published.
+local checkout's directory name is local to this machine and is never published.
 
 Descriptive nominative reference in repo-internal prose (this file, the README)
 is fine and is why those files are not scanned for marks.
