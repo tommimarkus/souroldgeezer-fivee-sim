@@ -58,6 +58,7 @@ from ..kernel.grid import (
     line_squares,
     sphere_squares,
     square_center,
+    step_cost_feet,
     terrain_effect_of,
     to_square,
 )
@@ -439,13 +440,33 @@ class Encounter:
         return terrain_effect_of(self._terrain_at(square), self.terrain_effects)
 
     def _entry_cost(self, square: Square) -> int | None:
-        """Feet to enter a square, or ``None`` off the map or into a wall."""
+        """Feet to enter a square, or ``None`` off the map or into a wall.
+
+        The per-square question, which is the one placement and "can a move end
+        here" ask. What a *step* costs is :meth:`_step_cost`, because that
+        depends on where the step came from.
+        """
         if not self._on_map(square):
             return None
         effect = self._terrain_effect(square)
         if not effect.passable:
             return None
         return FEET_PER_SQUARE * effect.move_cost_multiplier
+
+    def _step_cost(
+        self, origin: Square, step_to: Square, doubled_diagonal: bool = False
+    ) -> int | None:
+        """Feet to step between two adjacent squares, or ``None`` if it cannot be taken.
+
+        The single composer every charged move goes through — the routed path and
+        the caller's explicit one alike, so a hand-written route costs exactly
+        what the pathfinder would have charged for it.
+        """
+        if not self._on_map(step_to):
+            return None
+        return step_cost_feet(
+            self._terrain_effect(step_to), 0, doubled_diagonal=doubled_diagonal
+        )
 
     def _opaque(self, square: Square) -> bool:
         return self._on_map(square) and self._terrain_effect(square).opaque
@@ -494,7 +515,7 @@ class Encounter:
         return find_path(
             to_square(as_point(actor.position)),
             goal,
-            entry_cost=self._entry_cost,
+            step_cost=self._step_cost,
             rule=self.movement_rule,
             bounds=(self.battle_map.width, self.battle_map.height),
             blocked=blocked,
@@ -1660,7 +1681,10 @@ class Encounter:
                     raise EncounterError(
                         f"the path leaves the map at {step}"
                     )
-                entering = self._entry_cost(step)
+                diagonal = bool(dx and dy) and (
+                    self.movement_rule is DiagonalRule.FIVE_TEN_FIVE
+                )
+                entering = self._step_cost(previous, step, diagonal and bool(parity))
                 if entering is None:
                     raise EncounterError(
                         f"the path enters impassable {self._terrain_at(step)!r} "
@@ -1670,11 +1694,9 @@ class Encounter:
                     raise EncounterError(
                         f"the path passes through {occupied[step]}'s square {step}"
                     )
-                if dx and dy and self.movement_rule is DiagonalRule.FIVE_TEN_FIVE:
-                    cost += entering * 2 if parity else entering
+                cost += entering
+                if diagonal:
                     parity ^= 1
-                else:
-                    cost += entering
         else:
             found = self.route(actor.name, dest_sq)
             if found is None:

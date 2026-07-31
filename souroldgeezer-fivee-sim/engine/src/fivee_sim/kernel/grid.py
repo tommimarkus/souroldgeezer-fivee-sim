@@ -1,10 +1,10 @@
 """Square-grid geometry: distance, sight, cover, area templates, pathfinding.
 
 Nothing here knows what a ``Creature`` or a battle map is. Callers hand in the
-few facts a question depends on — which squares are opaque, what entering a
-square costs — as plain callables, for the same reason every rolling function
-takes an explicit ``Random``: geometry read from ambient module state is state a
-caller cannot control.
+few facts a question depends on — which squares are opaque, what a step from one
+square to the next costs — as plain callables, for the same reason every rolling
+function takes an explicit ``Random``: geometry read from ambient module state is
+state a caller cannot control.
 
 Two coordinate systems appear, and keeping them straight matters. A ``Point`` is
 feet on the plane and may be any pair of ints; a ``Square`` is a pair of 5-foot
@@ -22,9 +22,15 @@ shared by two edge-adjacent opaque squares. Grazing the outer face of a wall
 does not block, and neither does threading the corner point where two opaque
 squares touch only diagonally. The endpoints' own squares never block.
 
+Ground height is the one fact a step needs that a square cannot answer alone, so
+movement costs are asked of a *pair* of squares — see :func:`step_cost_feet` and
+:func:`find_path`. Height reaches movement and nothing else: sight, cover, and
+the area templates are flat, and a ridge no creature could see past on a real
+battlefield does not block a line here.
+
 Distance, cover grades, and areas of effect follow SRD 5.2 (see NOTICE). The
-``5-10-5`` diagonal is the published variant rule; the corner tests and the
-terrain kinds are engine policy.
+``5-10-5`` diagonal is the published variant rule; the corner tests, the terrain
+kinds, and the height at which a slope becomes a climb are engine policy.
 """
 
 from __future__ import annotations
@@ -139,6 +145,67 @@ def terrain_effect_of(kind: str, table: TerrainTable = TERRAIN) -> TerrainEffect
         raise UnknownTerrain(
             f"no terrain named {kind!r}; the active content defines: {available}"
         ) from None
+
+
+# --- ground height ---------------------------------------------------------
+#: The rise across one 5-foot square at which the grade reaches the 20 degrees
+#: SRD 5.2 calls Difficult Terrain. Below it the slope is gentle and free.
+SLOPE_DIFFICULT_FEET = 2
+
+#: Engine policy: above this rise across one square the face is climbed rather
+#: than walked up. Five feet over five feet is 45 degrees, which is the last
+#: grade a walking creature can reasonably scramble.
+CLIMB_FEET = 5
+
+
+def step_cost_feet(
+    effect: TerrainEffect, rise_feet: int, *, doubled_diagonal: bool = False
+) -> int | None:
+    """Feet to enter a square, given its terrain and the change in ground height.
+
+    ``None`` is impassable ground. ``rise_feet`` is the destination's height
+    minus the origin's; its sign is discarded, because SRD 5.2 makes climbing
+    down a climb like any other.
+
+    Three bands, and only the boundary between the last two is ours:
+
+    - Under :data:`SLOPE_DIFFICULT_FEET` the grade is gentle and costs the
+      square's ordinary terrain price.
+    - Up to :data:`CLIMB_FEET` it is a slope, which SRD 5.2 makes Difficult
+      Terrain. Difficult Terrain "isn't cumulative", so a slope through
+      undergrowth is doubled once rather than twice — hence ``max``, not a
+      product.
+    - Above it the face is climbed, and SRD 5.2 charges "1 extra foot" per foot
+      climbed, "2 extra feet in Difficult Terrain", on top of the horizontal
+      step into the square.
+
+    The cost therefore jumps at :data:`CLIMB_FEET` — a 5-foot rise onto ordinary
+    ground costs 10 feet and a 6-foot rise costs 17. That step is the price of
+    ruling a boundary at all rather than inventing a graduated scale the SRD
+    does not have.
+
+    ``doubled_diagonal`` is the second diagonal of a pair under
+    :attr:`DiagonalRule.FIVE_TEN_FIVE`. It doubles the horizontal part alone: the
+    variant rule lengthens diagonal *travel*, and a climb is not travelled
+    diagonally.
+    """
+    if not effect.passable:
+        return None
+    rise = abs(rise_feet)
+    multiplier = effect.move_cost_multiplier
+    difficult = multiplier > 1
+    if rise > CLIMB_FEET:
+        horizontal = FEET_PER_SQUARE * multiplier
+        vertical = rise * (3 if difficult else 2)
+    elif rise >= SLOPE_DIFFICULT_FEET:
+        horizontal = FEET_PER_SQUARE * max(2, multiplier)
+        vertical = 0
+    else:
+        horizontal = FEET_PER_SQUARE * multiplier
+        vertical = 0
+    if doubled_diagonal:
+        horizontal *= 2
+    return horizontal + vertical
 
 
 # --- points and squares ----------------------------------------------------
@@ -488,7 +555,7 @@ def find_path(
     start: Square,
     goal: Square,
     *,
-    entry_cost: Callable[[Square], int | None],
+    step_cost: Callable[[Square, Square, bool], int | None],
     rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
     bounds: tuple[int, int],
     blocked: frozenset[Square] = frozenset(),
@@ -497,19 +564,22 @@ def find_path(
 ) -> Path | None:
     """The cheapest route from ``start`` to ``goal``, or ``None`` if there is none.
 
-    A* over the 8-connected grid inside ``bounds`` (width, height). ``entry_cost``
-    is the feet it costs to enter a square — terrain multipliers already applied —
-    or ``None`` for impassable ground; ``blocked`` removes squares outright, which
-    is what occupancy is. Under ``5-10-5`` the search state carries diagonal
-    parity, and the second diagonal of each pair costs double its entry cost.
+    A* over the 8-connected grid inside ``bounds`` (width, height). ``step_cost``
+    is asked ``(from_square, to_square, doubled_diagonal)`` and answers the feet
+    that step costs — terrain multipliers and any climb already applied — or
+    ``None`` for a step that cannot be taken. It takes both squares because a
+    change in ground height belongs to neither alone; ``blocked`` removes squares
+    outright, which is what occupancy is. Under ``5-10-5`` the search state
+    carries diagonal parity and the second diagonal of each pair is flagged, but
+    what that costs is the caller's ruling — see :func:`step_cost_feet`.
 
     ``stop_adjacent`` accepts any square Chebyshev-adjacent to the goal — the way
     to walk *to* a creature rather than onto it. ``max_cost`` abandons routes over
     budget. The result is deterministic: the heap orders equal-cost candidates
     lexicographically by square, never by insertion order, and a test pins the
     tie-break. The heuristic is :func:`distance_feet` to the nearest accepting
-    square; with entry costs in multiples of 5 — every terrain multiplier is —
-    the returned path is cost-optimal under either rule.
+    square, which ignores height and so never overestimates: a climb only ever
+    raises what an edge costs, leaving the search admissible and consistent.
     """
     width, height = bounds
 
@@ -564,15 +634,11 @@ def find_path(
             step_to = (square[0] + ox, square[1] + oy)
             if not in_bounds(step_to) or step_to in blocked:
                 continue
-            entering = entry_cost(step_to)
-            if entering is None:
+            diagonal = rule is DiagonalRule.FIVE_TEN_FIVE and bool(ox) and bool(oy)
+            step = step_cost(square, step_to, diagonal and bool(parity))
+            if step is None:
                 continue
-            if rule is DiagonalRule.FIVE_TEN_FIVE and ox and oy:
-                step = entering * 2 if parity else entering
-                next_parity = parity ^ 1
-            else:
-                step = entering
-                next_parity = parity
+            next_parity = parity ^ 1 if diagonal else parity
             found_g = cost_so_far + step
             if max_cost is not None and found_g > max_cost:
                 continue

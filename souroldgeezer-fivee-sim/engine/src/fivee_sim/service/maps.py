@@ -36,7 +36,6 @@ from typing import Any, NoReturn
 
 from ..content import PROJECT_ENV
 from ..kernel.grid import (
-    FEET_PER_SQUARE,
     DiagonalRule,
     Square,
     TerrainTable,
@@ -44,6 +43,7 @@ from ..kernel.grid import (
     find_path,
     has_line_of_sight,
     square_center,
+    step_cost_feet,
     terrain_effect_of,
 )
 from ..kernel.mapgen import (
@@ -759,13 +759,14 @@ def query(
     def on_map(square: Square) -> bool:
         return 0 <= square[0] < map_w and 0 <= square[1] < map_h
 
-    def entry_cost(square: Square) -> int | None:
-        if not on_map(square):
+    def step_cost(origin: Square, step_to: Square, doubled_diagonal: bool) -> int | None:
+        if not on_map(step_to):
             return None
-        effect = terrain_effect_of(terrain_at(square), terrain)
-        if not effect.passable:
-            return None
-        return FEET_PER_SQUARE * effect.move_cost_multiplier
+        return step_cost_feet(
+            terrain_effect_of(terrain_at(step_to), terrain),
+            0,
+            doubled_diagonal=doubled_diagonal,
+        )
 
     def opaque(square: Square) -> bool:
         return on_map(square) and terrain_effect_of(terrain_at(square), terrain).opaque
@@ -774,7 +775,7 @@ def query(
         result["line_of_sight"] = has_line_of_sight(frm, to, opaque=opaque)
         return result
 
-    path = find_path(frm, to, entry_cost=entry_cost, rule=rule, bounds=(map_w, map_h))
+    path = find_path(frm, to, step_cost=step_cost, rule=rule, bounds=(map_w, map_h))
     if path is None:
         result["reachable"] = False
         return result
