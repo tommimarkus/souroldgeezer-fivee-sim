@@ -236,6 +236,16 @@ guarantee — and nothing ever executes them. A renderer defect ships green. Tha
 is deliberate for a localhost single-user tool, and the reasoning is recorded in
 that file's docstring; treat it as a known boundary rather than an oversight.
 
+**An error-branch test names the refusal, not just its status.** A status code or
+an exception type alone does not identify a branch: when nine
+`editor/http_server.py` request guards were mutated to check the tests written
+for them, four of the mutants still answered 400, so a status-only assertion
+would have passed against a server with the check deleted. Every
+`assert_problem(...)` therefore carries a problem+json `detail` fragment and
+every `pytest.raises(api.ToolError)` a `match=`, and
+`tests/test_assertion_discipline.py` parses the suite's own source to fail on a
+call that omits either.
+
 ## Tooling
 
 ```bash

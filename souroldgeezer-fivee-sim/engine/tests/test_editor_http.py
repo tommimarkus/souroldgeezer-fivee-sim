@@ -188,7 +188,13 @@ def test_the_server_serves_and_stops_under_a_short_poll_interval(tmp_path: Path)
 
 
 def assert_problem(response: Response, status: int, fragment: str = "") -> dict[str, Any]:
-    """Every error is RFC-9457 problem+json with the status repeated in the body."""
+    """Every error is RFC-9457 problem+json with the status repeated in the body.
+
+    ``fragment`` reads as optional and is not: a status-only assertion passes
+    against a server with the branch under test deleted, because a neighbour
+    answers with the same status. ``tests/test_assertion_discipline.py`` fails
+    the suite for a call that omits it, and carries the reasoning.
+    """
     assert response.status == status
     assert response.headers["Content-Type"].startswith(PROBLEM_TYPE)
     problem = response.json()
@@ -214,7 +220,9 @@ class TestGuards:
         assert_problem(editor.request("GET", "/api/ping", token=False), 401, TOKEN_HEADER)
 
     def test_a_wrong_token_is_401(self, editor: Editor) -> None:
-        assert_problem(editor.request("GET", "/api/ping", token="not-the-token"), 401)
+        assert_problem(
+            editor.request("GET", "/api/ping", token="not-the-token"), 401, TOKEN_HEADER
+        )
 
     def test_a_foreign_host_header_is_403_even_with_the_token(self, editor: Editor) -> None:
         response = editor.request("GET", "/api/ping", host="evil.example")
@@ -252,11 +260,17 @@ class TestGuards:
         assert response.status == 200
 
     def test_an_unknown_route_is_404(self, editor: Editor) -> None:
-        assert_problem(editor.request("GET", "/api/nothing"), 404)
+        # "no route for" is what separates this 404 from the map ones, which all
+        # say "no map ..."; the status alone would not.
+        assert_problem(editor.request("GET", "/api/nothing"), 404, "no route for /api/nothing")
 
     def test_a_method_mismatch_is_405(self, editor: Editor) -> None:
-        assert_problem(editor.request("POST", "/api/ping"), 405)
-        assert_problem(editor.request("GET", "/api/generate"), 405)
+        assert_problem(
+            editor.request("POST", "/api/ping"), 405, "POST is not supported on /api/ping"
+        )
+        assert_problem(
+            editor.request("GET", "/api/generate"), 405, "GET is not supported on /api/generate"
+        )
 
     def test_a_malformed_body_is_400(self, editor: Editor) -> None:
         connection = http.client.HTTPConnection("127.0.0.1", editor.server.port, timeout=10)
@@ -466,13 +480,23 @@ class TestMapsRoundTrip:
     def test_an_unknown_id_is_404(self, editor: Editor) -> None:
         assert_problem(editor.request("GET", "/api/maps/never-saved"), 404, "never-saved")
 
-    def test_a_traversal_id_is_404(self, editor: Editor) -> None:
-        assert_problem(editor.request("GET", "/api/maps/%2e%2e%2fescape"), 404)
+    def test_a_traversal_id_is_404_from_the_grammar_not_the_index(self, editor: Editor) -> None:
+        # Both refusals come from the id grammar, before the maps directory is
+        # read at all — hence the second assertion on each. The fragment alone
+        # would not bite: "no map '../escape'" is a *prefix* of what _entry_for
+        # says for an id it cannot find ("no map '../escape'; maps here: none"),
+        # so deleting the grammar guard leaves the fragment matching. The absence
+        # of "maps here" is what proves the id never reached the index.
+        fetched = assert_problem(
+            editor.request("GET", "/api/maps/%2e%2e%2fescape"), 404, "no map '../escape'"
+        )
+        assert "maps here" not in fetched["detail"]
         response = editor.request(
             "PUT", "/api/maps/%2e%2e%2fescape", json_body=payload(),
             headers={"If-Match": "*"},
         )
-        assert_problem(response, 404)
+        written = assert_problem(response, 404, "no map '../escape'")
+        assert "maps here" not in written["detail"]
         assert not (editor.maps_dir.parent / "escape.json").exists()
 
 
@@ -511,10 +535,12 @@ class TestEdits:
         assert editor.file_of("editor-chamber").read_bytes() == before
 
     def test_edits_on_an_unknown_map_are_404(self, editor: Editor) -> None:
+        # "maps here" is the index's refusal, so this is the mirror of the
+        # traversal case above: that one must not name the index, this one must.
         response = editor.request(
             "POST", "/api/maps/never-saved/edits", json_body={"operations": []}
         )
-        assert_problem(response, 404)
+        assert_problem(response, 404, "no map 'never-saved'; maps here")
 
     def test_a_non_list_operations_value_is_400(self, editor: Editor) -> None:
         editor.put_map("editor-chamber", payload())
@@ -611,5 +637,7 @@ class TestShutdown:
         assert not editor.thread.is_alive()
 
     def test_shutdown_still_needs_the_token(self, editor: Editor) -> None:
-        assert_problem(editor.request("POST", "/api/shutdown", token=False), 401)
+        assert_problem(
+            editor.request("POST", "/api/shutdown", token=False), 401, TOKEN_HEADER
+        )
         assert editor.thread.is_alive()
