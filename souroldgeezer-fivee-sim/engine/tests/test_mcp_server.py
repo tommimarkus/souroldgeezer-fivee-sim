@@ -183,6 +183,26 @@ class TestEncounterFlow:
         with pytest.raises(api.ToolError, match="no combatant named"):
             api.encounter_act(encounter_id, kind="attack", target="Nobody")
 
+    def test_stand_gets_a_prone_creature_up_for_half_its_speed(self) -> None:
+        prone_hero = {**HERO, "conditions": ["prone"]}
+        created = api.encounter_create([prone_hero, GOBLIN], seed=11)
+        encounter_id = str(created["encounter_id"])
+        if str(api.encounter_state(encounter_id)["turn"]) != "Thora":
+            api.encounter_advance(encounter_id)
+
+        acted = api.encounter_act(encounter_id, kind="stand")
+        assert [event["kind"] for event in acted["events"]] == ["stand"]
+        thora = next(
+            entry for entry in acted["state"]["combatants"] if entry["name"] == "Thora"
+        )
+        assert "prone" not in thora["conditions"]
+        # Half of the default Speed 30 is spent; the action is still in hand.
+        assert acted["state"]["turn_state"]["movement_left"] == 15
+        assert acted["state"]["turn_state"]["action_used"] is False
+
+        with pytest.raises(api.ToolError, match="Thora is not prone"):
+            api.encounter_act(encounter_id, kind="stand")
+
 
 class TestPlanarPositions:
     """The two-dimensional wire format: [x, y] in state, accepted on input."""
