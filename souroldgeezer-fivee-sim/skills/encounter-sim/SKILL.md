@@ -67,8 +67,36 @@ shelters a creature from an area entirely), and blocks sight. Positions snap to
 square centres, and `state["map"]` reports dimensions and door state.
 
 `encounter_act(kind="interact", feature="door")` opens or closes a door — free,
-once per turn, from the feature's square or one next to it. `simulate_rounds`
-accepts the same `map` and `movement_rule`, so batches fight on the terrain too.
+once per turn, from the feature's square or one next to it and on its own
+storey. `simulate_rounds` accepts the same `map` and `movement_rule`, so batches
+fight on the terrain too.
+
+A door is the simple case of a **fixture**: any map feature carrying a state is
+one, and a loaded map may hold levers, spikes, and sluice gates as well. A
+fixture can govern squares beyond its own, so working it changes terrain *and*
+ground height immediately, under whoever is standing there. Read
+`state["map"]["features"]` before promising anything — a fixture reports
+`affects`, `requires`, `blocked_by`, `costs_action`, and `check` whenever it
+carries them, so you can tell the party what a thing will cost before they spend
+a turn on it. Four things to state out loud rather than let a player assume:
+
+- **`costs_action` spends the action**, not the free interaction, so a chain of
+  three such fixtures is three actions — three turns unless the party splits
+  the work. A failed check spends it and moves nothing.
+- **The check is a raw ability check.** There are no skill proficiencies
+  anywhere in this engine, so a `check` of `{"ability": "strength", "dc": 15}`
+  is a flat Strength check against 15 — no Athletics, no proficiency bonus, no
+  Help.
+- **`blocked_by` names what is still shut.** Prerequisites gate *opening* only;
+  closing is never blocked.
+- **Nobody is moved by a fixture.** A creature standing where the ground turns
+  impassable stays and may walk out — entry cost governs entering a square, not
+  remaining in one, and there is no forced movement to shove it.
+
+Pass `set_open: true`/`false` to say which way rather than flipping whatever is
+there. Use it whenever you drive a fixture to a known state, because `interact`
+alone **toggles**: "open the sluice" on a sluice that already stands open closes
+it.
 
 ## Maps
 
@@ -158,6 +186,10 @@ bear on the question:
   implemented, and still never chosen, because valuing a condition means modelling
   the turns it buys the rest of the party. A batch is a **floor** for a control
   build, not a measurement of it.
+- **It never operates a map fixture.** No door is opened, no spike pulled, no
+  sluice raised. A batch fights the map at the configuration it was handed, so
+  measure a fixture by running two batches — one map authored open, one shut —
+  rather than expecting the policy to find the lever.
 - **It does not husband spell slots.** Best slot first, weapon afterwards.
 - **It is greedy, not tactical.** No focus-fire planning, no retreating, no
   readying. Treat a win rate as "what these statistics do when both sides swing

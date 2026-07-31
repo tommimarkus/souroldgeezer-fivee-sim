@@ -25,16 +25,85 @@ can use, because a floor blocks what is above and below it anyway.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
 from ..kernel.grid import Square
+from ..kernel.rules import Ability
 
-__all__ = ["GROUND_LEVEL", "BattleMap", "MapFeature", "MapPlane", "MapState"]
+__all__ = [
+    "GROUND_LEVEL",
+    "BattleMap",
+    "FeatureCheck",
+    "FeatureOverlay",
+    "HeightPair",
+    "MapFeature",
+    "MapPlane",
+    "MapState",
+    "SquareClaim",
+    "TerrainPair",
+]
 
 #: The level every fight starts on, and the only one a map without storeys has.
 GROUND_LEVEL = 0
+
+
+@dataclass(frozen=True, slots=True)
+class TerrainPair:
+    """What one square is in each of a fixture's two states."""
+
+    closed: str
+    open: str
+
+
+@dataclass(frozen=True, slots=True)
+class HeightPair:
+    """Ground height in feet in each of a fixture's two states.
+
+    Optional everywhere a :class:`TerrainPair` is required, because most
+    fixtures change what a square *is* without moving what it *sits at*. A
+    sluice does both: the room becomes water, and the water is lower than the
+    floor was.
+    """
+
+    closed: int
+    open: int
+
+
+@dataclass(frozen=True, slots=True)
+class FeatureOverlay:
+    """Squares a fixture governs beyond the one it stands on.
+
+    Either pair may be absent, and an absent pair means that layer falls through
+    to the plane — a fixture that only floods a room leaves its heights alone,
+    and one that only drops a water level leaves its terrain alone.
+    """
+
+    squares: tuple[Square, ...] = ()
+    terrain: TerrainPair | None = None
+    elevation: HeightPair | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FeatureCheck:
+    """The roll operating a fixture takes, if it takes one.
+
+    A raw ability check: creatures carry ability modifiers and no skill
+    proficiencies, so a DC here is set as if untrained.
+    """
+
+    ability: Ability
+    dc: int
+
+
+@dataclass(frozen=True, slots=True)
+class SquareClaim:
+    """What one square is, in either state, and which fixture decides it."""
+
+    feature: str
+    terrain: TerrainPair | None = None
+    elevation: HeightPair | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +113,13 @@ class MapFeature:
     The feature owns a pair of terrain kinds, one for each state, and the
     encounter's overlay decides which is in force. The map itself stores only the
     default via ``initially_open``.
+
+    A fixture may reach past its own square. ``affects`` names further squares
+    and what they are in each state, which is how one sluice gate floods a room
+    and starts a wheel turning. ``requires`` names fixtures that must stand open
+    before this one may be *opened* — closing is never gated, or a gate could be
+    shut and then never reopened by the fiction that opened it. ``costs_action``
+    and ``check`` are what operating it costs and what it takes.
     """
 
     name: str
@@ -52,6 +128,36 @@ class MapFeature:
     closed_terrain: str = "door-closed"
     open_terrain: str = "door-open"
     initially_open: bool = False
+    elevation: HeightPair | None = None
+    affects: tuple[FeatureOverlay, ...] = ()
+    requires: tuple[str, ...] = ()
+    costs_action: bool = False
+    check: FeatureCheck | None = None
+
+    def claims(self) -> Iterator[tuple[Square, SquareClaim]]:
+        """Every square this fixture decides, and what it decides about it.
+
+        The one derivation of that question. ``Encounter._adopt_map`` builds the
+        live index from it and :func:`~fivee_sim.service.maps.query` builds the
+        stateless mirror it promises to keep matching, so deriving it twice is
+        how the two would drift.
+
+        It reports rather than polices: a square named twice is yielded twice,
+        because the document parser and ``_adopt_map`` each refuse that, and
+        they can only refuse what they can see.
+        """
+        yield self.square, SquareClaim(
+            feature=self.name,
+            terrain=TerrainPair(closed=self.closed_terrain, open=self.open_terrain),
+            elevation=self.elevation,
+        )
+        for overlay in self.affects:
+            for square in overlay.squares:
+                yield square, SquareClaim(
+                    feature=self.name,
+                    terrain=overlay.terrain,
+                    elevation=overlay.elevation,
+                )
 
 
 @dataclass(frozen=True, slots=True)

@@ -75,7 +75,7 @@ silently become a default.
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
 | `palette` | Optional terrain colors — see below. Absent means the renderers choose. |
 | `elevation` | Optional ground height — see below. Absent means flat. |
-| `features` | Doors, stairs, spawn hints — see below. |
+| `features` | Doors, stairs, spawn hints, and the fixtures a fight can operate — see below. |
 | `levels` | Optional storeys above and below the ground — see below. Absent means a single plane. |
 | `provenance` | `generator`, `seed`, fully resolved `params`, the `edited` flag, and a `source` string. |
 
@@ -89,13 +89,135 @@ squares are ordinary floor in `tiles`; the feature supplies the blocking.
 Other bundled kinds: `stairs_up`, `stairs_down`, `spawn` (placement hint,
 optionally with a `team`). A feature may also carry `to_level`, which is what
 turns a drawn stairway into one a fight can actually walk — see **Levels**
-below. Ids are unique across the whole document, not per level.
+below. Ids are unique across the whole document, not per level. A feature
+carrying a `state` is a **fixture** the fight can operate, and a door is only
+the common case of one — see **Fixtures** below.
 
 **Terrain kinds are strings**, resolved against loaded content exactly like
 conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
 `plain`, `forest`, `hill`, `mountain`, the cover kinds, and door terrain, and
 a content pack may define more. A kind nothing defines is a validation error
 naming what is available.
+
+**Fixtures** are features a fight can *operate*, and carrying a `state` is the
+whole test. A door has always had one; a lever, a spike, or a sluice gate may
+have one too. A feature without a state — a drawn stairway, a spawn hint —
+stays document-level exactly as before: renderers and placement logic read it,
+and a fight never asks about it. A state is `open` or `closed` and nothing else:
+fixtures are two-valued, and the file records the one it is authored in. Six
+optional keys say what operating a fixture does and what it costs, and every one
+of them requires a `state`, because a fixture nothing can operate would flip
+nothing, silently:
+
+| Key | Meaning |
+| --- | --- |
+| `terrain` | `{"closed", "open"}` terrain kinds for the fixture's **own** square. Absent: `door-closed`/`door-open` for a `door`, and otherwise the tile it stands on in *both* states — so a lever driven into a wall leaves a wall behind it whichever way it is thrown. |
+| `elevation` | `{"closed", "open"}` ground height in feet for that same square. Absent: the plane's height, unmoved. |
+| `affects` | Overlay groups, each naming the `cells` it governs plus a `terrain` pair, an `elevation` pair, or both. Cells are squares on the fixture's own level. |
+| `requires` | Ids of other fixtures that must stand **open** before this one may be opened. |
+| `costs_action` | `true` spends the action; absent is the free object interaction. |
+| `check` | `{"ability", "dc"}` — an ability check the operator must pass to move it. |
+
+Kinds named in a pair are checked against *loaded content*, never against this
+document's `legend`: what a square becomes is not a drawing question, so a
+sluice may flood a room with a kind the map paints nowhere. A sluice gate that
+will not budge until two spikes are pulled, and floods the room behind it when
+it does:
+
+```json
+"grid": { "width": 7, "height": 5, "cell_feet": 5 },
+"legend": { ".": "floor", "#": "wall" },
+"tiles": [
+  "#######",
+  "#.#...#",
+  "#.....#",
+  "#.#...#",
+  "#######"
+],
+"features": [
+  { "id": "north spike", "kind": "spike", "at": [2, 1], "state": "closed",
+    "costs_action": true, "check": { "ability": "strength", "dc": 15 } },
+  { "id": "south spike", "kind": "spike", "at": [2, 3], "state": "closed",
+    "costs_action": true, "check": { "ability": "strength", "dc": 15 } },
+  { "id": "sluice gate", "kind": "door", "at": [2, 2],
+    "orientation": "vertical", "state": "closed",
+    "requires": ["north spike", "south spike"],
+    "costs_action": true,
+    "terrain":   { "closed": "door-closed", "open": "water" },
+    "elevation": { "closed": 0, "open": -5 },
+    "affects": [
+      { "cells": [[3, 1], [4, 1], [3, 2], [4, 2], [3, 3], [4, 3]],
+        "terrain":   { "closed": "floor", "open": "water" },
+        "elevation": { "closed": 0,       "open": -5 } },
+      { "cells": [[5, 1], [5, 2], [5, 3]],
+        "terrain": { "closed": "floor", "open": "difficult" } }
+    ] }
+]
+```
+
+The spikes stand on wall squares and carry no `terrain`, so pulling one changes
+no ground — correct, and the reason the default is the tile underneath. The
+gate costs an action, waits on both spikes, and when it opens it turns its own
+square and six floor squares to `water` five feet lower, and the three squares
+of the wheel's race to `difficult`. **The wheel is not a second mechanism**: it is
+another overlay group on the gate, which is what collapses "and the wheel starts
+turning" into the same flip. Authoring the gate as a `door` is deliberate — it
+inherits the door glyph, the browser editor's door drawing, and the UVTT portal
+for free.
+
+The document stores `cells` and never a rect. A rect is an `add_feature` input
+for the author who would rather type one than forty pairs, expanded before it
+reaches the file, so the format has exactly one shape — which is what lets a
+`resize` translate an overlay square by square with the frame.
+
+**Every square a fixture governs is claimed by exactly one fixture per level** —
+its own `at`, and every cell of every overlay. The document refuses a second
+claim, and so does an encounter adopting the map, because a battle map can be
+hand-built with no document behind it. The rule earns its refusals by removing
+the precedence question outright: there is no document order to consult and no
+history to replay, which is what lets `map_query` resolve terrain over a bare
+map — no fight, no history — and still agree with what the live encounter sees.
+
+**`requires` gates opening only.** Closing is never gated, or the fiction that
+opened a gate could never shut it: driving the spikes back in would bar the
+gate's own lever. It is checked when the fixture is operated rather than held as
+an invariant, so re-driving a spike later does not slam the gate shut.
+
+**The check is a raw ability check.** Creatures here carry ability modifiers and
+no skill proficiencies anywhere in the model — there is no Athletics, no
+proficiency bonus, no Expertise, and no Help — so **set the DC as if the
+character were untrained**. A DC pitched at a trained Athletics bonus will play
+several points harder than intended. The format has no place to say otherwise on
+purpose: skill proficiency is a rules feature of the creature model, not a map
+one.
+
+**A creature standing where the ground turns impassable stays there, and may
+walk out.** Entry cost governs entering a square, not remaining in one. Refusing
+the operation or shoving the occupant aside would each invent a rule SRD 5.2
+does not have — the engine models no forced movement at all — so nothing happens
+to it. That is a deliberate non-behaviour, not an oversight.
+
+Operating a fixture is the encounter's business: `encounter_act(kind="interact",
+feature=...)`, from its square or one beside it and on its own storey. `interact`
+**toggles** by default; pass `set_open` to drive a fixture to the state you mean,
+which is what to use when working a chain — asking to "open" a gate that already
+stands open would otherwise close it. Everything is verified before anything is
+spent — reach, storey, prerequisites, and whether the fixture already stands the
+way you asked — so a party learns why a thing will not move without paying for
+the lesson. Only the check itself costs: a failure spends the action and moves
+nothing.
+
+The refusals collect like every other diagnostic: an overlay group with neither
+pair, cells off the grid, a terrain kind nothing defines (naming what is
+available), a square claimed twice, a `requires` naming nothing, naming itself,
+or naming a feature with no state, a requirement cycle reported as its path, and
+a `dc` below 1.
+
+**`format_version` stays 1.** All six keys are omitted from a feature that does
+not carry them, so a file written before fixtures existed writes back
+byte-for-byte. A reader that predates them refuses the document as an unknown
+key — the loud failure this format prefers over a map that loads with its sluice
+quietly inert, and the same reasoning as `palette` and `elevation` below.
 
 **Palette** is what the map itself says its terrain looks like — a terrain kind
 mapped to one color, or to a `{light, dark}` pair when the two themes want
@@ -208,7 +330,7 @@ and nothing changes. Each operation is an object with an `op` key:
 | `paint` | `cells: [[x, y], ...]`, `terrain` |
 | `line` | `from`, `to`, `terrain` — Bresenham raster |
 | `carve_corridor` | `from`, `to`, `terrain?` (default floor), `horizontal_first?` |
-| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?}` |
+| `add_feature` | `feature: {id, kind, at, orientation?, state?, team?}`, plus the fixture keys — an overlay may be given as a `rect` instead of `cells` |
 | `remove_feature` | `id` |
 | `toggle_door` | `at` — flips the recorded default state |
 | `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
@@ -230,6 +352,13 @@ document's legend (`set_legend` first if not); `set_legend` and `set_palette`
 merely name a kind, so they check it against loaded content instead and a
 colored kind need never appear on the map. A successful edit marks the document
 `edited` and, in the session, bumps the map's generation.
+
+There is no edit operation for a fixture's overlays: changing what a sluice
+floods is `remove_feature` then `add_feature` in one call, which applies
+atomically like any other pair. `add_feature` accepts an overlay's squares as a
+`rect: [x, y, w, h]` as well as a list of `cells`, and expands it to cells
+before the document is written — the file keeps one shape, so a later `resize`
+translates and crops those squares with the frame exactly as it does heights.
 
 ## The interactive editor
 

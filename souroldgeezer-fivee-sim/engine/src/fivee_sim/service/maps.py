@@ -337,7 +337,19 @@ _OP_KEYS = {
     name: keys | {"level"} if name in _LEVELLED_OPS else keys
     for name, keys in _OP_KEYS.items()
 }
-_FEATURE_FIELDS = frozenset({"id", "kind", "at", "orientation", "state", "team"})
+#: What ``add_feature`` accepts. The six after ``team`` are the fixture keys —
+#: what operating a feature changes, needs, costs and rolls. They ride through
+#: to :func:`apply_edits`' final ``parse_document``, which is the one arbiter of
+#: them, exactly as ``palette`` entries do; only an overlay's *shape* is checked
+#: here, and only because a ``rect`` has to be expanded before the payload.
+_FEATURE_FIELDS = frozenset(
+    {
+        "id", "kind", "at", "orientation", "state", "team",
+        "terrain", "elevation", "affects", "requires", "costs_action", "check",
+    }
+)
+#: The fixture keys that need no shaping at all: copied across as written.
+_PASSED_THROUGH = ("terrain", "elevation", "requires", "costs_action", "check")
 _ANCHORS = ("top-left", "top-right", "bottom-left", "bottom-right")
 _DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
@@ -491,10 +503,46 @@ def _op_carve_corridor(state: _EditState, op: Mapping[str, Any], terrain: Terrai
         state.grid[yy][xx] = glyph
 
 
+def _overlay_entries(state: _EditState, raw: Any) -> list[dict[str, Any]]:
+    """One feature's ``affects`` groups, with any ``rect`` expanded to its cells.
+
+    The document stores **cells and never a rect**: a rect is the author's
+    shorthand — the :func:`_op_set_elevation` precedent, and the difference
+    between typing one rect and forty pairs — so expanding it here leaves the
+    file one shape, which is what a resize has to translate square by square and
+    what ``map_document`` refuses ``rect`` in. Which squares an overlay names is
+    the only question answered here; what it does to them rides through.
+    """
+    if not isinstance(raw, list):
+        _refuse(
+            "'affects' must be a list of overlay objects, each naming the cells it "
+            "governs and what they are in each state"
+        )
+    groups: list[dict[str, Any]] = []
+    for index, group in enumerate(raw):
+        if not isinstance(group, Mapping):
+            _refuse(f"'affects' entry #{index} must be an object")
+        squares = _height_targets(state, group, f"'affects' entry #{index}")
+        rest = {key: value for key, value in group.items() if key not in ("rect", "cells")}
+        groups.append(
+            {
+                "cells": [
+                    [square[0], square[1]]
+                    for square in sorted(squares, key=lambda s: (s[1], s[0]))
+                ],
+                **rest,
+            }
+        )
+    return groups
+
+
 def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
     raw = op.get("feature")
     if not isinstance(raw, Mapping):
-        _refuse("'feature' must be an object: {id, kind, at, orientation?, state?, team?}")
+        _refuse(
+            "'feature' must be an object: {id, kind, at, orientation?, state?, team?} "
+            "and, for a fixture, terrain, elevation, affects, requires, costs_action, check"
+        )
     unknown = sorted(set(raw) - _FEATURE_FIELDS)
     if unknown:
         _refuse(
@@ -534,6 +582,11 @@ def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
         entry["state"] = door_state
     if team is not None:
         entry["team"] = team
+    for key in _PASSED_THROUGH:
+        if key in raw:
+            entry[key] = raw[key]
+    if "affects" in raw:
+        entry["affects"] = _overlay_entries(state, raw["affects"])
     state.features.append(entry)
 
 
@@ -561,6 +614,64 @@ def _op_toggle_door(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
     _refuse(f"no door at [{at[0]}, {at[1]}]; doors: {doors}")
 
 
+def _resized_overlays(
+    entry: Mapping[str, Any], off_x: int, off_y: int, new_w: int, new_h: int
+) -> list[dict[str, Any]]:
+    """One feature's ``affects`` groups in the new frame, cropped to it.
+
+    A layer nested inside a record is still a layer. Overlay cells carry
+    coordinates, so a resize that moved only ``at`` would leave them
+    untranslated and mislocate the flood by exactly the anchor offset — on
+    maps somebody had resized and nowhere else. Cells outside the new bounds go
+    with the squares they described, as height does; a group emptied that way
+    is dropped, and the fixture keeps its own square.
+    """
+    groups: list[dict[str, Any]] = []
+    for group in entry.get("affects") or ():
+        cells = [
+            [x + off_x, y + off_y]
+            for x, y in group["cells"]
+            if 0 <= x + off_x < new_w and 0 <= y + off_y < new_h
+        ]
+        if cells:
+            cells.sort(key=lambda cell: (cell[1], cell[0]))
+            groups.append({**group, "cells": cells})
+    return groups
+
+
+def _refuse_orphaned_prerequisites(
+    state: _EditState, off_x: int, off_y: int, new_w: int, new_h: int
+) -> None:
+    """Refuse a resize that drops a fixture a surviving fixture requires.
+
+    A fixture pushed off the map is dropped, as one always has been. One
+    another fixture *requires* cannot be: the final re-parse would refuse the
+    whole edit naming a prerequisite that is missing, rather than the resize
+    that removed it. ``editor/static/editor.html`` refuses the same case in its
+    own resize, and the two are meant to agree.
+    """
+    def survives(entry: Mapping[str, Any]) -> bool:
+        fx, fy = entry["at"]
+        return 0 <= int(fx) + off_x < new_w and 0 <= int(fy) + off_y < new_h
+
+    features = [
+        entry for index in sorted(state.levels) for entry in state.levels[index].features
+    ]
+    # Prerequisites cross storeys — which floor the thing a fixture waits on
+    # stands on is the fiction's business — so the table spans the document.
+    by_id = {str(entry["id"]): entry for entry in features}
+    for entry in features:
+        if not survives(entry):
+            continue
+        for wanted in entry.get("requires") or ():
+            other = by_id.get(str(wanted))
+            if other is not None and not survives(other):
+                _refuse(
+                    f"resizing would push {str(wanted)!r} off the map, and "
+                    f"{str(entry['id'])!r} requires it; move or remove it first"
+                )
+
+
 def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
     dims: dict[str, int] = {}
     for key in ("width", "height"):
@@ -581,6 +692,7 @@ def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) 
     new_w, new_h = dims["width"], dims["height"]
     off_x = 0 if "left" in anchor else new_w - state.width
     off_y = 0 if anchor.startswith("top") else new_h - state.height
+    _refuse_orphaned_prerequisites(state, off_x, off_y, new_w, new_h)
     # A frame change is document-wide: every storey shares the grid, so a resize
     # that translated the ground alone would leave the floors above it
     # mislocated over the map they belong to.
@@ -599,8 +711,15 @@ def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) 
         for entry in plane.features:
             fx, fy = entry["at"]
             nx, ny = fx + off_x, fy + off_y
-            if 0 <= nx < new_w and 0 <= ny < new_h:
-                kept.append({**entry, "at": [nx, ny]})
+            if not (0 <= nx < new_w and 0 <= ny < new_h):
+                continue
+            moved = {**entry, "at": [nx, ny]}
+            groups = _resized_overlays(entry, off_x, off_y, new_w, new_h)
+            if groups:
+                moved["affects"] = groups
+            else:
+                moved.pop("affects", None)
+            kept.append(moved)
         # Height moves with the anchor exactly as tiles and features do; ground
         # that falls outside the new bounds goes with the squares it described,
         # and new ground comes in at the plane's datum.
@@ -879,9 +998,28 @@ HEIGHT_GLYPHS = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
 def _feature_glyph(kind: str, state: str | None) -> str | None:
-    if kind == "door":
+    """The overlay a feature draws, or ``None`` if it draws nothing.
+
+    The three drawn annotations keep their glyphs even when they can be
+    operated: a glyph says what a thing *is*, and an operable hatch drawing
+    ``+`` would read as a door in the corridor. Its state is not lost by that —
+    ``features_in_view`` carries the whole record.
+
+    Anything else carrying a state draws as that state, ``+`` shut and ``/``
+    open, because carrying a state is what makes a feature a fixture the fight
+    operates: a spike or a sluice is visible rather than invisible for not
+    being a door.
+
+    Deliberately **no sixth reserved glyph**: :data:`RESERVED_GLYPHS` is closed,
+    a legend claiming one is a validation error, and adding to the set would
+    retroactively invalidate every document that legends that character today.
+    """
+    annotation = {"stairs_up": "<", "stairs_down": ">", "spawn": "@"}.get(kind)
+    if annotation is not None:
+        return annotation
+    if state is not None:
         return "/" if state == "open" else "+"
-    return {"stairs_up": "<", "stairs_down": ">", "spawn": "@"}.get(kind)
+    return None
 
 
 def _level_or_refuse(document: MapDocument, level: int) -> MapLevel:
@@ -1085,21 +1223,42 @@ def query(
 
     battle = to_grid(document)
     plane = battle.levels[level]
-    feature_at = {feature.square: feature for feature in plane.features.values()}
+    # Every square a fixture governs, asked of the fixture rather than derived
+    # again here — ``MapFeature.claims`` is the one answer to that question, and
+    # ``Encounter._adopt_map`` builds its live index from the same call. The
+    # exactly-one-fixture-per-square rule is what makes this total: with no
+    # precedence to settle there is no document order to consult and no history
+    # to replay, so this reader cannot disagree with a fight about a square.
+    claims = {
+        square: claim
+        for feature in plane.features.values()
+        for square, claim in feature.claims()
+    }
+    standing_open = {
+        name for name, feature in plane.features.items() if feature.initially_open
+    }
 
-    # These mirror Encounter's composers (_terrain_at, _entry_cost, _opaque),
-    # minus the encounter-only parts: feature state comes from the document's
-    # defaults rather than a MapState overlay, and nobody occupies anything.
+    # These mirror Encounter's composers (_terrain_at, _elevation_at, _opaque),
+    # minus the encounter-only parts: a fixture stands in the state the document
+    # authored rather than one a MapState overlay has moved since, and nobody
+    # occupies anything. A claim missing a pair falls through as an unclaimed
+    # square does — a fixture that only moves a water level leaves the ground it
+    # finds, and one that only floods a room leaves the height it finds.
     def terrain_at(square: Square) -> str:
-        feature = feature_at.get(square)
-        if feature is not None:
-            return feature.open_terrain if feature.initially_open else feature.closed_terrain
+        claim = claims.get(square)
+        if claim is not None and claim.terrain is not None:
+            pair = claim.terrain
+            return pair.open if claim.feature in standing_open else pair.closed
         return plane.terrain.get(square, plane.default_terrain)
 
     def on_map(square: Square) -> bool:
         return 0 <= square[0] < map_w and 0 <= square[1] < map_h
 
     def height_at(square: Square) -> int:
+        claim = claims.get(square)
+        if claim is not None and claim.elevation is not None:
+            feet = claim.elevation
+            return feet.open if claim.feature in standing_open else feet.closed
         return plane.elevation.get(square, plane.default_elevation)
 
     def step_cost(origin: Square, step_to: Square, doubled_diagonal: bool) -> int | None:

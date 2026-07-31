@@ -123,6 +123,26 @@ NOT_SUPPORTED = (
         "the dying state.",
     ),
     (
+        "Skill proficiency on a check",
+        "The check a map fixture takes is a raw ability check, and there is nowhere "
+        "in the model to make it anything else: a creature carries ability "
+        "modifiers and no skill proficiencies at all, so there is no Athletics to "
+        "add, no proficiency bonus, no Expertise, and no Help action to grant "
+        "Advantage. Set a fixture's DC as if the character were untrained — a DC "
+        "pitched at a trained bonus will play several points harder than intended. "
+        "The standalone `check` primitive is the one place a proficiency can be "
+        "applied at all, and only because its modifier is supplied by the caller "
+        "rather than read off a creature.",
+    ),
+    (
+        "A batch that works the map",
+        "The auto-play policy behind `simulate_rounds` never operates a map "
+        "fixture: no door is opened, no spike pulled, no sluice raised. A batch "
+        "fights the map at the configuration it was handed. Measure what a fixture "
+        "is worth by running two batches — one map authored open, one shut — rather "
+        "than by expecting the policy to find the lever.",
+    ),
+    (
         "Conditions imposed on a creature that is already down",
         "A spell or item that imposes a condition applies it only to a conscious "
         "target. Damage from the same effect still lands on a dying creature, and "
@@ -355,9 +375,13 @@ def render_markdown() -> str:
         "disengaging."
     )
     add("")
-    add("`interact` is the free object interaction: once per turn, without spending "
-        "the action, it opens or closes a map feature the actor stands on or next "
-        "to.")
+    add("`interact` works a map fixture the actor stands on or next to, on its own "
+        "storey. By default it is the free object interaction: once per turn, "
+        "without spending the action. A fixture may cost the action instead, may "
+        "wait on other fixtures standing open before it will open, and may take an "
+        "ability check — a failed check spends the budget and moves nothing. It "
+        "toggles unless the action names `set_open`, which drives the fixture to "
+        "the state asked for rather than flipping whatever it finds.")
     add("")
     add("`stand` gets a Prone creature back on its feet: no action, but movement "
         "equal to half the creature's Speed, rounded down. It is refused when the "
@@ -416,6 +440,21 @@ def render_markdown() -> str:
         "movement costs, walls, line of sight, cover, pathfinding, and doors. Doors "
         "are named map features flipped by the `interact` action; closed they are "
         "impassable and block sight."
+    )
+    add("")
+    add(
+        "A door is the common case of a **fixture** — any map feature carrying a "
+        "state is one, so a lever, a spike, or a sluice gate is the same record "
+        "with more on it. A fixture may govern squares beyond its own, naming what "
+        "each becomes in either state in terrain and in ground height alike, may "
+        "wait on other fixtures standing open, may cost the action rather than the "
+        "free interaction, and may take an ability check. Working one changes that "
+        "ground immediately, under whoever is standing on it: entry cost governs "
+        "entering a square rather than remaining in one, so a creature whose "
+        "footing turns impassable stays where it is and may walk out. Every square "
+        "a fixture governs is claimed by exactly one fixture per level, which "
+        "leaves no precedence to resolve and is what lets a stateless map query "
+        "agree with the live fight about what a square is."
     )
     add("")
     add(

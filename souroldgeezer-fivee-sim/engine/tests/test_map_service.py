@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.kernel.grid import TERRAIN, Square
 from fivee_sim.map_document import (
     MapColor,
     MapDocument,
@@ -569,6 +569,262 @@ class TestPaletteEdits:
             )
 
 
+def sluice_payload() -> dict[str, Any]:
+    """Two rooms either side of a sluice gate that floods the far one.
+
+    The gate stands in the only gap in the dividing wall, so a shut gate leaves
+    the bottom corridor as the way round; its overlay says what the far room is
+    in each state — dry floor while it is shut, water five feet lower once it is
+    open. Nothing but the gate's own record says any of that, which is what
+    makes it the fixture case: the tiles are floor either way.
+    """
+    return {
+        **payload(),
+        "name": "sluice",
+        "grid": {"width": 7, "height": 6, "cell_feet": 5},
+        "tiles": [
+            "#######",
+            "#..#..#",
+            "#..#..#",
+            "#..#..#",
+            "#.....#",
+            "#######",
+        ],
+        "features": [
+            {
+                "id": "sluice gate",
+                "kind": "door",
+                "at": [3, 2],
+                "orientation": "vertical",
+                "state": "closed",
+                "affects": [
+                    {
+                        "cells": [[4, 1], [5, 1], [4, 2], [5, 2], [4, 3], [5, 3]],
+                        "terrain": {"closed": "floor", "open": "water"},
+                        "elevation": {"closed": 0, "open": -5},
+                    }
+                ],
+            }
+        ],
+    }
+
+
+#: The far room, in the order the document writes it: row, then column.
+FLOODED = ((4, 1), (5, 1), (4, 2), (5, 2), (4, 3), (5, 3))
+
+
+def sluiced(state: str = "closed") -> MapDocument:
+    """The sluice map with its gate authored in ``state``."""
+    raw = sluice_payload()
+    raw["features"][0]["state"] = state
+    return parse_document(raw, source="sluice", terrain=TERRAIN)
+
+
+def spiked() -> MapDocument:
+    """The sluice, pinned by two spikes — one already pulled, one still driven."""
+    raw = sluice_payload()
+    raw["features"][0]["requires"] = ["north spike", "south spike"]
+    raw["features"] += [
+        {
+            "id": "north spike", "kind": "spike", "at": [1, 1], "state": "closed",
+            "costs_action": True, "check": {"ability": "strength", "dc": 15},
+        },
+        {
+            "id": "south spike", "kind": "spike", "at": [1, 3], "state": "open",
+            "costs_action": True, "check": {"ability": "strength", "dc": 15},
+        },
+    ]
+    return parse_document(raw, source="spiked", terrain=TERRAIN)
+
+
+class TestFixtureEdits:
+    def gated(self, *affects: dict[str, Any]) -> MapDocument:
+        """The base room with a second door governing the caller's overlays."""
+        return edited(
+            document(),
+            {"op": "add_feature", "feature": {
+                "id": "sluice", "kind": "door", "at": [3, 3],
+                "orientation": "vertical", "state": "closed",
+                "affects": list(affects),
+            }},
+        )
+
+    def test_every_fixture_key_rides_through_to_the_document(self) -> None:
+        # The service checks the shape of an overlay and nothing else: the six
+        # keys are the document's to arbitrate, which is why one edit can add a
+        # fixture the format understands without the service knowing the rules.
+        feature: dict[str, Any] = {
+            "id": "lever", "kind": "lever", "at": [1, 3], "state": "closed",
+            "terrain": {"closed": "wall", "open": "floor"},
+            "elevation": {"closed": 0, "open": 5},
+            "affects": [
+                {"cells": [[4, 1], [4, 2]],
+                 "terrain": {"closed": "floor", "open": "water"}},
+            ],
+            "requires": ["door-1"],
+            "costs_action": True,
+            "check": {"ability": "strength", "dc": 15},
+        }
+        doc = edited(document(), {"op": "add_feature", "feature": feature})
+        assert json.loads(serialize(doc))["features"][-1] == feature
+
+    def test_an_overlay_rect_and_its_cells_write_the_same_document(self) -> None:
+        # The rect is the author's shorthand — one line instead of forty pairs —
+        # and it is expanded before the payload, so the file has one shape and a
+        # resize has one thing to translate.
+        flood = {"terrain": {"closed": "floor", "open": "water"}}
+        by_rect = self.gated({"rect": [1, 1, 2, 2], **flood})
+        by_cells = self.gated({"cells": [[2, 2], [1, 1], [2, 1], [1, 2]], **flood})
+        assert serialize(by_rect) == serialize(by_cells)
+        assert by_rect.features[-1].affects[0].cells == ((1, 1), (2, 1), (1, 2), (2, 2))
+
+    def test_an_overlay_naming_both_a_rect_and_cells_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="entry #0 needs exactly one of 'rect'"):
+            self.gated({"rect": [1, 1, 2, 2], "cells": [[1, 1]],
+                        "terrain": {"closed": "floor", "open": "water"}})
+
+    def test_an_overlay_naming_neither_a_rect_nor_cells_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="entry #0 needs exactly one of 'rect'"):
+            self.gated({"terrain": {"closed": "floor", "open": "water"}})
+
+    def test_an_overlay_rect_off_the_map_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="reaches outside"):
+            self.gated({"rect": [4, 4, 9, 9],
+                        "terrain": {"closed": "floor", "open": "water"}})
+
+    def test_an_overlay_cell_off_the_map_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="each cell is .9, 9., outside"):
+            self.gated({"cells": [[9, 9]],
+                        "terrain": {"closed": "floor", "open": "water"}})
+
+    def test_affects_must_be_a_list_of_overlay_objects(self) -> None:
+        with pytest.raises(MapEditError, match="'affects' must be a list"):
+            edited(document(), {"op": "add_feature", "feature": {
+                "id": "sluice", "kind": "door", "at": [3, 3],
+                "orientation": "vertical", "state": "closed",
+                "affects": {"cells": [[1, 1]]},
+            }})
+        with pytest.raises(MapEditError, match="'affects' entry #0 must be an object"):
+            edited(document(), {"op": "add_feature", "feature": {
+                "id": "sluice", "kind": "door", "at": [3, 3],
+                "orientation": "vertical", "state": "closed",
+                "affects": ["the whole east room"],
+            }})
+
+    def test_a_square_another_fixture_governs_is_refused_by_the_document(self) -> None:
+        # Not the service's rule to enforce, and deliberately so: the claim is
+        # the format's, and the final parse is where it is answered.
+        with pytest.raises(MapError, match="'sluice gate' already governs"):
+            edited(sluiced(), {"op": "add_feature", "feature": {
+                "id": "wheel", "kind": "wheel", "at": [1, 4], "state": "closed",
+                "affects": [{"cells": [[4, 2]],
+                             "terrain": {"closed": "floor", "open": "difficult"}}],
+            }})
+
+    def test_an_unrelated_edit_keeps_every_fixture_key(self) -> None:
+        # The trap: apply_edits rebuilds the whole payload from the edit state,
+        # so a layer that state does not hold is one every unrelated edit
+        # silently discards. Nested keys are no different from top-level ones.
+        before = spiked()
+        after = edited(before, {"op": "paint", "cells": [[1, 4]], "terrain": "difficult"})
+        assert after.tiles[4] == "#%....#"
+        assert json.dumps(json.loads(serialize(after))["features"]) == json.dumps(
+            json.loads(serialize(before))["features"]
+        )
+
+    def test_a_resize_moves_overlay_cells_with_the_anchor(self) -> None:
+        # A layer nested inside a record is still a layer: only 'at' used to
+        # move, so a fixture's overlay cells stayed where they were and
+        # mislocated the flood by exactly the anchor offset — visible only on a
+        # map somebody had resized.
+        shifts = {
+            "top-left": (0, 0), "top-right": (4, 0),
+            "bottom-left": (0, 4), "bottom-right": (4, 4),
+        }
+        moved: dict[str, tuple[Square, tuple[Square, ...]]] = {}
+        for anchor in shifts:
+            doc = edited(
+                sluiced(), {"op": "resize", "width": 11, "height": 10, "anchor": anchor}
+            )
+            gate = doc.features[0]
+            moved[anchor] = (gate.at, gate.affects[0].cells)
+        assert moved == {
+            anchor: (
+                (3 + dx, 2 + dy),
+                tuple((x + dx, y + dy) for x, y in FLOODED),
+            )
+            for anchor, (dx, dy) in shifts.items()
+        }
+
+    def test_a_resize_crops_overlay_cells_to_the_new_frame(self) -> None:
+        doc = edited(sluiced(), {"op": "resize", "width": 5, "height": 6})
+        gate = doc.features[0]
+        assert gate.at == (3, 2)
+        # The far room's east column fell off with the squares it described.
+        assert gate.affects[0].cells == ((4, 1), (4, 2), (4, 3))
+
+    def test_a_resize_that_empties_a_group_drops_it_and_keeps_the_fixture(self) -> None:
+        doc = edited(sluiced(), {"op": "resize", "width": 4, "height": 6})
+        gate = doc.features[0]
+        assert gate.at == (3, 2)
+        assert gate.affects == ()
+        assert "affects" not in json.loads(serialize(doc))["features"][0]
+
+    def test_a_resize_refuses_to_drop_a_fixture_another_one_requires(self) -> None:
+        # Left to happen, the final re-parse refuses the whole edit naming a
+        # missing prerequisite rather than the resize that removed it. The
+        # editor's own resize refuses this case, and the two are meant to agree.
+        with pytest.raises(MapEditError, match="would push 'north spike' off the map"):
+            edited(
+                spiked(),
+                {"op": "resize", "width": 5, "height": 6, "anchor": "top-right"},
+            )
+
+    def test_a_prerequisite_is_protected_across_a_storey(self) -> None:
+        # A prerequisite is not a reach: which floor the thing a fixture waits
+        # on stands on is the fiction's business, so the check spans the
+        # document rather than the plane being edited.
+        raw = sluice_payload()
+        raw["features"][0]["requires"] = ["hatch"]
+        raw["levels"] = [
+            {
+                "index": 1, "name": "gallery", "tiles": raw["tiles"],
+                "features": [
+                    {"id": "hatch", "kind": "hatch", "at": [5, 4], "state": "closed"}
+                ],
+            }
+        ]
+        with pytest.raises(MapEditError, match="would push 'hatch' off the map"):
+            edited(
+                parse_document(raw, source="crossed", terrain=TERRAIN),
+                {"op": "resize", "width": 5, "height": 6},
+            )
+
+    def test_dropping_the_fixture_that_does_the_requiring_is_allowed(self) -> None:
+        # Only a *surviving* fixture's prerequisites are protected. This crop
+        # takes the gate and the spike it waits on together, which leaves
+        # nothing asking for what is gone — refusing it would refuse cropping a
+        # map down to a room the gate is not in.
+        doc = edited(spiked(), {"op": "resize", "width": 7, "height": 2})
+        assert [f.id for f in doc.features] == ["north spike"]
+
+    def test_a_refused_resize_leaves_the_document_byte_identical(self) -> None:
+        before = spiked()
+        frozen = serialize(before)
+        with pytest.raises(MapEditError) as caught:
+            service.apply_edits(
+                before,
+                [
+                    {"op": "set_name", "name": "halfway"},
+                    {"op": "resize", "width": 5, "height": 6, "anchor": "top-right"},
+                ],
+                terrain=TERRAIN,
+            )
+        assert caught.value.op_index == 1
+        assert "operation #1" in str(caught.value)
+        assert serialize(before) == frozen  # the input document is untouched
+
+
 class TestEditAtomicity:
     def test_a_bad_op_names_its_index_and_applies_nothing(self) -> None:
         before = document()
@@ -629,6 +885,33 @@ class TestRenderAscii:
         assert rendered["rows"][1] == "#@...#"  # the spawn hint
         opened = edited(document(), {"op": "toggle_door", "at": [3, 4]})
         assert service.render_ascii(opened)["rows"][4] == "###/##"
+
+    def test_a_fixture_shows_its_state_whatever_kind_it_is(self) -> None:
+        # Carrying a state is what makes a feature a fixture, so a spike draws
+        # as one — invisible before, for not being a door. No sixth reserved
+        # glyph: the set is closed, a legend claiming one is a validation error,
+        # and adding to it would invalidate documents that legend it today.
+        rendered = service.render_ascii(spiked())
+        assert rendered["rows"][1] == "#+.#..#"  # the spike still driven in
+        assert rendered["rows"][3] == "#/.#..#"  # the one already pulled
+        assert rendered["rows"][2] == "#..+..#"  # the gate the two of them pin
+
+    def test_a_drawn_annotation_keeps_its_glyph_even_when_it_can_be_operated(
+        self,
+    ) -> None:
+        # An operable hatch is still a stairway. The glyph says what a thing
+        # *is*, so drawing it '+' would read as a door in the corridor; its
+        # state is not lost, because features_in_view carries the whole record.
+        hatch = edited(
+            document(),
+            {"op": "add_feature", "feature": {
+                "id": "hatch", "kind": "stairs_down", "at": [2, 2],
+                "state": "closed"}},
+        )
+        rendered = service.render_ascii(hatch)
+        assert rendered["rows"][2][2] == ">"
+        assert [f["state"] for f in rendered["features_in_view"]
+                if f["id"] == "hatch"] == ["closed"]
 
     def test_tokens_outrank_features_which_outrank_terrain(self) -> None:
         rendered = service.render_ascii(
@@ -783,6 +1066,25 @@ class TestQuery:
         assert shut["reachable"] is False
         ajar = service.query(self.wall_split("open"), "path", (0, 1), (4, 1), terrain=TERRAIN)
         assert ajar["reachable"] is True
+
+    def test_a_shut_fixture_leaves_the_room_it_governs_dry(self) -> None:
+        # "Can we reach the far room once the sluice is open?" is a planning
+        # question, so the composers here resolve a fixture's claims exactly as
+        # the encounter's do — from the state the document authored, since there
+        # is no fight to have moved one.
+        result = service.query(sluiced(), "path", (1, 2), (5, 2), terrain=TERRAIN)
+        assert result["reachable"] is True
+        assert result["cost_feet"] == 20  # four dry squares at 5 feet apiece
+        assert [3, 2] not in result["squares"]  # round the shut gate, not through it
+        assert (result["from_elevation"], result["to_elevation"]) == (0, 0)
+
+    def test_the_same_room_authored_open_is_flooded_and_costs_double(self) -> None:
+        result = service.query(sluiced("open"), "path", (1, 2), (5, 2), terrain=TERRAIN)
+        assert result["reachable"] is True
+        # Nothing but the gate's overlay says the room is water: the tiles under
+        # it are the same floor either way, so 30 feet is the flood being seen.
+        assert result["cost_feet"] == 30
+        assert (result["from_elevation"], result["to_elevation"]) == (0, -5)
 
     def test_an_unknown_query_lists_the_valid_ones(self) -> None:
         with pytest.raises(ValueError, match="distance, line_of_sight, path"):

@@ -116,6 +116,46 @@ class TestEditorGroundControls:
         assert "[doc].concat(doc.levels" in source
         assert "planes.forEach(" in source
 
+    def test_the_editor_resize_translates_a_fixtures_overlay_cells(self) -> None:
+        # The same failure one layer deeper. A fixture's `affects` cells carry
+        # coordinates, but they sit *inside* the feature record, so the
+        # Object.assign that moves `at` copies them verbatim — leaving a flood
+        # mislocated by exactly the anchor offset, and only on a resized map.
+        # Anchored to the offset arithmetic itself, not to the variables it
+        # writes into: `moved.affects = groups` stays true however wrong the
+        # translation is, and a sign flip is the specific regression this
+        # commit exists to fix.
+        source = read("editor.html")
+        assert "var cx = cell[0] + offX, cy = cell[1] + offY;" in source
+        assert "moved.affects = groups" in source
+        # The crop's other half: a group emptied by it is dropped rather than
+        # left as an empty list the validator would refuse.
+        assert "delete moved.affects" in source
+
+    def test_the_editor_resize_refuses_to_orphan_a_prerequisite(self) -> None:
+        # Dropping a fixture another one requires leaves a document that no
+        # longer parses, so the *save* would fail naming a missing
+        # prerequisite rather than the resize that removed it.
+        assert "requires it; move or remove it first" in read("editor.html")
+
+    def test_the_editor_resize_refuses_before_it_touches_the_document(self) -> None:
+        # Order is the whole guarantee: the refusal has to be decided before
+        # snapshot() and the mutation loop, or a refused resize still leaves
+        # the document changed. A position compare is as much as the text-only
+        # boundary allows, and it does pin the one thing that matters.
+        source = read("editor.html")
+        handler = source.index('byId("dlg-resize-go")')
+        assert source.index("if (blocked) {", handler) < source.index("snapshot();", handler)
+
+    def test_the_editor_resize_guards_every_shape_it_reads_from_a_file(self) -> None:
+        # These run after snapshot() and after earlier planes were rewritten,
+        # so a throw here leaves a half-resized document — and the Download
+        # button writes it out without the server ever seeing it.
+        source = read("editor.html")
+        assert 'if (!group || typeof group !== "object") { return; }' in source
+        assert "!Number.isFinite(cell[0]) || !Number.isFinite(cell[1])" in source
+        assert "Array.isArray(f.requires) ? f.requires : []" in source
+
     def test_the_renderer_is_never_handed_a_storey_it_must_understand(self) -> None:
         # The renderer stays pure: it is given the active plane's tiles and
         # features under the document's grid and legend, which is the shape it
