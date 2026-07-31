@@ -21,7 +21,14 @@ from typing import Any
 
 from .data import item_effects, monster_records, spell_records, spellbook
 from .kernel.conditions import Condition, effect_of
-from .kernel.grid import TERRAIN, CoverGrade, DiagonalRule, TerrainEffect
+from .kernel.grid import (
+    CLIMB_FEET,
+    SLOPE_DIFFICULT_FEET,
+    TERRAIN,
+    CoverGrade,
+    DiagonalRule,
+    TerrainEffect,
+)
 from .kernel.rules import DamageType
 from .kernel.spells import Spell, SpellShape
 from .model.encounter import ActionKind
@@ -62,14 +69,17 @@ NOT_SUPPORTED = (
         "regenerate; an encounter begins and ends.",
     ),
     (
-        "Battlefield geometry beyond a flat grid",
-        "The grid itself is real now — see the Battlefield section for the terrain "
-        "kinds, cover grades, line of sight, area shapes, the diagonal-cost knob, "
-        "and doors. What remains absent is the third dimension and body mechanics: "
-        "elevation and 3-D space, flying, creature size and squeezing (every "
-        "combatant occupies one square whatever its printed size), facing, "
-        "flanking, forced movement (nothing pushes, drags, or knocks a creature "
-        "through space), and climbing or swimming as movement modes.",
+        "The third dimension, past what it costs to walk",
+        "Ground height is modelled, and it reaches movement alone — see the "
+        "Battlefield section. Everything else on the map is measured flat: sight "
+        "lines, cover, and area templates ignore height entirely, so a ridge "
+        "screens nobody and a creature atop a cliff is neither harder to hit nor "
+        "better placed to shoot. Also absent: falling and fall damage, flying and "
+        "swimming, jumping, a Climb Speed (a creature with one still pays the "
+        "climb), creature size and squeezing (every combatant occupies one square "
+        "whatever its printed size), facing, flanking, and forced movement — "
+        "nothing pushes, drags, or knocks a creature through space, so no one is "
+        "ever shoved off a ledge.",
     ),
     (
         "Timed durations beyond attack riders",
@@ -430,6 +440,19 @@ def render_markdown() -> str:
     add("| --- | --- |")
     for name, effect in sorted(TERRAIN.items()):
         add(f"| {name} | {_terrain_summary(effect)} |")
+    add("")
+    add(
+        f"**Ground height** is feet per square, negative for ground below the map's "
+        f"datum, and it is charged to movement only. A rise of under "
+        f"{SLOPE_DIFFICULT_FEET} ft across a square is a gentle grade and costs "
+        f"nothing extra; from there up to {CLIMB_FEET} ft the square is a slope, "
+        f"which counts as difficult terrain and — since difficult terrain is not "
+        f"cumulative — is doubled once however rough the going. Above "
+        f"{CLIMB_FEET} ft the face is climbed, costing 1 extra foot per foot "
+        f"climbed (2 extra in difficult terrain) on top of the step into the "
+        f"square, and climbing down costs what climbing up costs. Sight, cover, "
+        f"and areas ignore height entirely."
+    )
     add("")
 
     add("## Not supported")

@@ -252,11 +252,18 @@ def _map_summary(document: MapDocument) -> dict[str, Any]:
         for char in row:
             kind = document.legend[char]
             counts[kind] = counts.get(kind, 0) + 1
+    heights = [document.elevation.default, *document.elevation.squares.values()]
     return {
         "width": document.grid.width,
         "height": document.grid.height,
         "features": len(document.features),
         "terrain_counts": {kind: counts[kind] for kind in sorted(counts)},
+        "elevation": {
+            "default": document.elevation.default,
+            "min": min(heights),
+            "max": max(heights),
+            "raised_squares": len(document.elevation.squares),
+        },
     }
 
 
@@ -417,7 +424,7 @@ def _combatants(specs: list[dict[str, Any]], registry: ContentRegistry) -> list[
 
 _MAP_KEYS = frozenset({
     "name", "width", "height", "default_terrain", "rows", "legend", "terrain",
-    "features",
+    "default_elevation", "elevation", "features",
 })
 _FEATURE_KEYS = frozenset({
     "name", "square", "kind", "initially_open", "closed_terrain", "open_terrain",
@@ -519,6 +526,35 @@ def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             for value in squares:
                 terrain[_square(value, f"terrain entry #{index} square", width, height)] = kind
 
+    default_elevation = spec.get("default_elevation", 0)
+    if isinstance(default_elevation, bool) or not isinstance(default_elevation, int):
+        raise ToolError(
+            f"'default_elevation' must be a whole number of feet, got "
+            f"{default_elevation!r}"
+        )
+    elevation: dict[tuple[int, int], int] = {}
+    raw_elevation = spec.get("elevation", [])
+    if not isinstance(raw_elevation, list):
+        raise ToolError(
+            "'elevation' must be a list of [x, y, feet] entries, such as [[3, 4, 20]]"
+        )
+    for index, entry in enumerate(raw_elevation):
+        if (
+            not isinstance(entry, list)
+            or len(entry) != 3
+            or any(isinstance(value, bool) or not isinstance(value, int) for value in entry)
+        ):
+            raise ToolError(
+                f"elevation entry #{index} must be [x, y, feet], got {entry!r}"
+            )
+        square = _square(entry[:2], f"elevation entry #{index} square", width, height)
+        if square in elevation:
+            raise ToolError(
+                f"elevation entry #{index} names square [{square[0]}, {square[1]}] "
+                f"again; it is already {elevation[square]} ft"
+            )
+        elevation[square] = int(entry[2])
+
     features: dict[str, MapFeature] = {}
     raw_features = spec.get("features", [])
     if not isinstance(raw_features, list):
@@ -555,6 +591,8 @@ def _battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
         height=height,
         default_terrain=default_terrain,
         terrain=terrain,
+        default_elevation=default_elevation,
+        elevation=elevation,
         features=features,
     )
 
@@ -836,10 +874,17 @@ def encounter_create(
     ``"legend"`` mapping each character to a terrain kind, or a ``"terrain"``
     list of ``{"kind", "squares": [[x, y], ...]}`` overrides on
     ``"default_terrain"``. ``"features"`` lists doors and the like:
-    ``{"name", "square", "kind"?, "initially_open"?}``. With a map, terrain
-    costs movement, walls block sight and routes, cover adjusts AC, and starting
+    ``{"name", "square", "kind"?, "initially_open"?}``. Ground height is
+    optional: ``"default_elevation"`` in feet plus an ``"elevation"`` list of
+    ``[x, y, feet]`` for the squares that differ. With a map, terrain costs
+    movement, walls block sight and routes, cover adjusts AC, and starting
     positions must be on-map, passable, and unoccupied; positions snap to their
     square. Without one, the plane is open and featureless.
+
+    Height reaches movement and nothing else: a slope costs difficult terrain, a
+    cliff costs a climb at an extra foot per foot, and climbing down costs what
+    climbing up costs. Sight, cover, and area templates are measured flat, so
+    high ground confers no advantage beyond the movement it costs to reach.
 
     ``map_id`` fights on a loaded map session (see map_generate and map_load)
     instead of an inline spec — one or the other, never both. The fight captures
@@ -1352,6 +1397,7 @@ def map_render(
     height: int | None = None,
     downsample: int = 1,
     show_features: bool = True,
+    show_elevation: bool = False,
     encounter_id: str | None = None,
 ) -> dict[str, Any]:
     """Render a viewport of a loaded map as rows of glyphs.
@@ -1364,6 +1410,10 @@ def map_render(
     overlay as letters in initiative order (``tokens`` maps letter to name)
     and downed ones as ``x`` — positions come from that encounter's state, so
     render after acting, not before.
+
+    ``show_elevation`` adds ``elevation_rows`` and ``elevation_legend`` beside
+    the terrain rows: one glyph per square, lettered from the lowest ground in
+    view upward, with the legend giving each its height in feet.
     """
     session = _map_session(map_id)
     tokens: dict[Square, str] = {}
@@ -1375,6 +1425,7 @@ def map_render(
             session.document,
             x=x, y=y, width=width, height=height,
             downsample=downsample, show_features=show_features,
+            show_elevation=show_elevation,
             tokens=tokens or None,
         )
     except ValueError as error:
@@ -1394,8 +1445,11 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     ``line`` {from, to, terrain}, ``carve_corridor`` {from, to, terrain?,
     horizontal_first?}, ``add_feature`` {feature}, ``remove_feature`` {id},
     ``toggle_door`` {at}, ``resize`` {width, height, anchor?, fill?},
-    ``set_legend`` {glyph, terrain}, ``set_name`` {name}. A bad operation is
-    refused with its index and changes nothing. A successful edit bumps the
+    ``set_legend`` {glyph, terrain}, ``set_name`` {name},
+    ``set_elevation`` {rect | cells, feet} or {default} to move the height every
+    unnamed square sits at, ``adjust_elevation`` {rect | cells, by} to raise or
+    lower what is already there. Heights are feet and may be negative. A bad
+    operation is refused with its index and changes nothing. A successful edit bumps the
     map's generation, marks it edited, and returns a render covering what
     changed. Fights already created from this map keep the version they
     captured — their encounter_state reports ``stale`` instead.
@@ -1435,7 +1489,10 @@ def map_query(
     recorded default state and nothing is occupied — for questions inside a
     fight, use the encounter tools, which see live doors and creatures.
     ``distance`` answers in feet; ``line_of_sight`` is a boolean; ``path``
-    returns the squares and cost in feet, or ``reachable: false``.
+    returns the squares and cost in feet, or ``reachable: false``. Ground height
+    is charged to a ``path`` — a slope is difficult terrain and a cliff is a
+    climb, and the result names both ends' elevation so a large cost is
+    explainable — but ``distance`` and ``line_of_sight`` are measured flat.
     """
     session = _map_session(map_id)
 

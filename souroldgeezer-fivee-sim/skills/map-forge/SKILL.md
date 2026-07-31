@@ -21,13 +21,16 @@ session or file — is currently the truth.
    over 10 000 cells is refused, so view a large map through `x`/`y`/`width`/
    `height` viewports or a `downsample` factor rather than asking for the
    whole thing. Overlay glyphs: `+` closed door, `/` open door, `<` `>`
-   stairs, `@` spawn.
+   stairs, `@` spawn. Pass `show_elevation` to get the ground heights back as
+   a second set of rows, lettered from the lowest ground in view upward with a
+   legend giving each its feet.
 3. **Verbal tweaks are `map_edit`** — the user says "wall off the north
    passage" and you translate it into operations: `set_terrain` (a rect),
    `paint` (cells), `line`, `carve_corridor`, `add_feature`,
-   `remove_feature`, `toggle_door`, `resize`, `set_legend`, `set_name`. The
-   whole list applies atomically; a bad operation names its index and changes
-   nothing. Render the result back so the user sees what changed.
+   `remove_feature`, `toggle_door`, `resize`, `set_legend`, `set_name`,
+   `set_elevation`, `adjust_elevation`. The whole list applies atomically; a
+   bad operation names its index and changes nothing. Render the result back so
+   the user sees what changed.
 4. **`map_save`** writes canonical JSON and refuses to overwrite unless told
    to. Quote the path and the sha256.
 5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
@@ -57,7 +60,8 @@ session or file — is currently the truth.
    `<maps root>/uvtt/<slug>.uvtt`, replaced on re-export) carrying wall
    polylines derived from the tiles, one portal per door, and a rendered PNG
    of the map — always a file, never inline; quote the path. Lights and
-   elevation are not exported, because the engine does not model them. The
+   elevation are not exported: the format has no place for the ground heights
+   the engine now models, and nothing here models lights. The
    image side is capped at 4096 pixels: lower `pixels_per_grid` for very
    large maps, or pass `include_image` false when the importer does not need
    the picture.
@@ -86,6 +90,21 @@ Maps live at `$CLAUDE_PROJECT_DIR/.fivee-sim/maps/` by default, or wherever
 `FIVEE_SIM_MAPS` points; replays are written under `replays/` beside them.
 `map_query` answers distance, line-of-sight, and path questions over a bare
 map without starting a fight.
+
+## Ground height
+
+A map may carry an elevation in feet per square, painted with `set_elevation`
+(a rect, named cells, or `default` to move the height every unnamed square sits
+at) and `adjust_elevation` (raise or lower what is already there). Negative
+feet are ground below the map's datum — a pit floor, a sunken chamber.
+
+**Say what it does when you use it**, because the half that is missing is the
+half a user will assume. Height is charged to *movement* alone: a rise of a
+couple of feet across a square is a slope, which costs difficult terrain; a
+rise over five feet is a cliff face, climbed at an extra foot per foot, and
+climbing down costs the same. Sight, cover, and area templates are measured
+flat, so a ridge blocks nothing and standing on a tower is no advantage in
+itself. Generated maps are flat; height is something you or the user adds.
 
 For the document format, the editor's API model, and the replay bundle
 schema, read [`../../docs/MAPS.md`](../../docs/MAPS.md).

@@ -73,6 +73,7 @@ silently become a default.
 | `grid` | `width` and `height` in squares (1–512 each), `cell_feet` fixed at 5. |
 | `legend` | Single character → terrain-kind string. The glyphs `+` `/` `<` `>` `@` are reserved for renderer overlays and may not be claimed. |
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
+| `elevation` | Optional ground height — see below. Absent means flat. |
 | `features` | Doors, stairs, spawn hints — see below. |
 | `provenance` | `generator`, `seed`, fully resolved `params`, the `edited` flag, and a `source` string. |
 
@@ -91,6 +92,29 @@ conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
 `plain`, `forest`, `hill`, `mountain`, the cover kinds, and door terrain, and
 a content pack may define more. A kind nothing defines is a validation error
 naming what is available.
+
+**Elevation** is ground height in feet — a `default` and a sparse `squares`
+list of `[x, y, feet]` for the ground that departs from it:
+
+```json
+"elevation": { "default": 0, "squares": [[3, 4, 20], [4, 4, 20]] }
+```
+
+Feet may be negative: a pit floor sits below the map's datum. The key is
+omitted entirely from a flat map at zero, so a file written before heights
+existed writes back byte-for-byte; on save, squares already sitting at the
+default are dropped and the rest sorted by row then column. The format version
+does **not** move for this. A reader that predates the key refuses the document
+as an unknown key, which is a loud failure rather than a map silently flattened.
+
+Height is charged to **movement only**. A rise of under 2 feet across a square
+is a gentle grade and free; from there up to 5 feet the square is a slope,
+which SRD 5.2 makes Difficult Terrain — once, since Difficult Terrain is not
+cumulative. Above 5 feet the face is climbed, at the SRD's extra foot per foot
+(2 extra in Difficult Terrain) on top of the step into the square; climbing
+down costs what climbing up costs. The 5-foot boundary and the step in cost
+across it are engine policy. Line of sight, cover, and area templates ignore
+height entirely.
 
 **Provenance** makes a map reproducible: `generator` + `seed` + resolved
 `params` regenerate it exactly, until `edited` flips true — from then on the
@@ -114,6 +138,8 @@ and nothing changes. Each operation is an object with an `op` key:
 | `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
 | `set_legend` | `glyph`, `terrain` — reserved glyphs refused |
 | `set_name` | `name` |
+| `set_elevation` | `rect` **or** `cells`, plus `feet`; **or** `default` alone, which moves the height every unnamed square sits at |
+| `adjust_elevation` | `rect` **or** `cells`, plus `by` — relative to what is there |
 
 Terrain named in an operation must already have a glyph in the document's
 legend (`set_legend` first if not). A successful edit marks the document

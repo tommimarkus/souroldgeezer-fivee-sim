@@ -108,6 +108,8 @@ Built-in terrain kinds — content packs may define more:
 | wall | impassable, blocks sight |
 | water | movement x2 |
 
+**Ground height** is feet per square, negative for ground below the map's datum, and it is charged to movement only. A rise of under 2 ft across a square is a gentle grade and costs nothing extra; from there up to 5 ft the square is a slope, which counts as difficult terrain and — since difficult terrain is not cumulative — is doubled once however rough the going. Above 5 ft the face is climbed, costing 1 extra foot per foot climbed (2 extra in difficult terrain) on top of the step into the square, and climbing down costs what climbing up costs. Sight, cover, and areas ignore height entirely.
+
 ## Not supported
 
 Stated explicitly because absence is invisible in the data above, and because a caller who assumes one of these exists will get a wrong answer rather than an error.
@@ -120,7 +122,7 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 **Anything outside a fight.** Exploration, travel, downtime, resting and recovery, skills and proficiencies as a system, social interaction, and the adventuring day. Resources do not regenerate; an encounter begins and ends.
 
-**Battlefield geometry beyond a flat grid.** The grid itself is real now — see the Battlefield section for the terrain kinds, cover grades, line of sight, area shapes, the diagonal-cost knob, and doors. What remains absent is the third dimension and body mechanics: elevation and 3-D space, flying, creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, forced movement (nothing pushes, drags, or knocks a creature through space), and climbing or swimming as movement modes.
+**The third dimension, past what it costs to walk.** Ground height is modelled, and it reaches movement alone — see the Battlefield section. Everything else on the map is measured flat: sight lines, cover, and area templates ignore height entirely, so a ridge screens nobody and a creature atop a cliff is neither harder to hit nor better placed to shoot. Also absent: falling and fall damage, flying and swimming, jumping, a Climb Speed (a creature with one still pays the climb), creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, and forced movement — nothing pushes, drags, or knocks a creature through space, so no one is ever shoved off a ledge.
 
 **Timed durations beyond attack riders.** Concentration is tracked, and ending it lifts the condition the spell imposed. An attack's on-hit condition rider can carry its own clock — expiring at the start of the attacker's next turn or the end of the target's next turn, and the expiry fires even if the attacker has died. Beyond those two anchors, elapsed time is not modelled: the 'up to 1 minute' cap on a concentration spell never expires it, a spell's repeat saving throw at the end of the target's turn is not rolled, and a condition applied by an item or set directly on a stat block lasts until something removes it.
 

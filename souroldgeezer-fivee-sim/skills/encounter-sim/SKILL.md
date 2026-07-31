@@ -75,11 +75,12 @@ accepts the same `map` and `movement_rule`, so batches fight on the terrain too.
 Six tools manage maps as first-class documents. **`map_generate`** builds a
 dungeon, caves, or overland map under a seed (always reported — quote it);
 **`map_render`** shows any of them as glyph rows, with `x`/`y`/`width`/`height`
-viewports and `downsample` for big maps, and an `encounter_id` overlay that
+viewports and `downsample` for big maps, `show_elevation` for the ground
+heights as a second set of rows, and an `encounter_id` overlay that
 letters the combatants; **`map_edit`** applies verbal tweaks atomically —
 paint, line, carve_corridor, set_terrain, add/remove_feature, toggle_door,
-resize, set_legend, set_name — a bad operation names its index and changes
-nothing; **`map_save`** writes canonical JSON (refusing silent overwrites) and
+resize, set_legend, set_name, set_elevation, adjust_elevation — a bad operation
+names its index and changes nothing; **`map_save`** writes canonical JSON (refusing silent overwrites) and
 **`map_load`** reads a file or inline document back, so the workflow is
 generate → render → edit → save, and load by path next session.
 **`map_query`** answers distance, line-of-sight, and pathing questions on a
@@ -210,11 +211,16 @@ the precedence rules, and a worked example.
 
 State these when they bear on a ruling rather than papering over them:
 
-- **Geometry is a flat grid.** Positions are `[x, y]` feet on 5-ft squares.
-  Terrain, walls, sight, cover, doors, and the area shapes all work — on a battle
-  map; without one the plane is open and featureless. Still absent either way:
-  elevation and 3-D space, flying, creature size and squeezing, flanking, and
-  forced movement.
+- **Height costs movement and nothing else.** Positions are `[x, y]` feet on 5-ft
+  squares. Terrain, walls, sight, cover, doors, and the area shapes all work — on
+  a battle map; without one the plane is open and featureless. A map may also
+  carry ground heights, and those are charged only to *movement*: a slope is
+  difficult terrain, a cliff is climbed at an extra foot per foot, and climbing
+  down costs the same as up. Sight, cover, and areas are measured flat, so say so
+  plainly when a player counts on high ground — a ridge screens nobody, and being
+  atop it grants no bonus to hit and none to AC. Still absent either way: falling
+  and fall damage, flying, jumping, Climb Speeds, creature size and squeezing,
+  flanking, and forced movement — so nothing can shove anyone off a ledge.
 - **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
   `content_status` before concluding it does not exist. Either way, do not invent
