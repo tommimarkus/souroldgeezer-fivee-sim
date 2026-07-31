@@ -10,6 +10,17 @@ on the canvas, which is why the guarantee can be a regex rather than a hope.
 The injection contracts are byte-level: the server replaces the config marker
 and ``replay_export(embed=True)`` replaces the embedded-data slot, so each
 must appear exactly once, exactly as written.
+
+**What these tests do not do, stated because it is invisible from a green run.**
+Every assertion here reads the assets as *text*. Nothing executes
+``renderer.js``, opens a page, or draws a canvas, so no test in this repo covers
+the behaviour of the three files a user actually looks at: a renderer that drew
+nothing, a token injected into the wrong element, or a viewer unable to parse
+its own embedded bundle would all ship green. That is a deliberate boundary —
+these are localhost, single-user tools, and driving them would put a browser
+toolchain into a Python repository — but it is a boundary, not coverage. If the
+editor grows past a convenience, this file is where the argument for a real
+harness starts.
 """
 
 from __future__ import annotations

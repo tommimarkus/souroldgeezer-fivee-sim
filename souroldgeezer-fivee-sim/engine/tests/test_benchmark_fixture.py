@@ -22,9 +22,9 @@ change of a few points lands outside. Expected-PCs-down gets ±0.35: under half
 a downed character, far above the ~0.06 standard error. A fight's band is
 asserted only where it cannot flap: when the calibrated win rate sits within
 WIN_TOLERANCE of a band edge, a win rate that still passes its own window could
-cross the edge, so the band assertion is skipped for that fight (at
-calibration: 4 Goblin Warriors, 4 Wolves, Goblin Boss + 2 Warriors, 1 Ogre,
-3 Giant Wasps).
+cross the edge, so the band assertion is skipped for that fight. Which fights
+those are is not left to this prose — ``UNBANDED`` names them and a test pins
+it, so a recalibration cannot move one on or off the list in silence.
 
 **If an intentional engine change moves a number: recalibrate the constants,
 do not widen the windows.** Rerun the loop below at ITERATIONS on the new
@@ -118,6 +118,31 @@ def band(win: float) -> str:
 def band_is_stable(expected_win: float) -> bool:
     """True when no win rate passing the ±WIN_TOLERANCE window can change band."""
     return all(abs(expected_win - edge) >= WIN_TOLERANCE for edge in (0.90, 0.60))
+
+
+#: The fights that go without a band assertion, named rather than left to a
+#: branch nobody sees. Their calibrated win rate sits close enough to an edge
+#: that a rate still inside its own ±WIN_TOLERANCE window could cross it, so the
+#: assertion would flap. Pinning the set is what makes the omission reviewable:
+#: a recalibration that moves a fight on or off this list has to say so in the
+#: same commit, rather than quietly dropping a third of the fights' band checks.
+UNBANDED = (
+    "4 Goblin Warriors",
+    "4 Wolves",
+    "Goblin Boss + 2 Warriors",
+    "1 Ogre (folklore)",
+    "3 Giant Wasps",
+)
+
+
+def test_the_fights_that_skip_the_band_assertion_are_the_ones_named() -> None:
+    skipped = tuple(
+        fight.title for fight in FIGHTS if not band_is_stable(fight.expected_win)
+    )
+    assert skipped == UNBANDED, (
+        "the set of fights going without a band assertion has moved; a "
+        "recalibration has added or dropped one, and UNBANDED must say which"
+    )
 
 
 @pytest.fixture(scope="module")

@@ -229,6 +229,13 @@ can pass a table.
 **Every tool reports its seed.** A tool called without one picks a seed and
 returns it, so no result is ever irreproducible.
 
+**The browser assets are checked as text, not driven.** `editor.html`,
+`viewer.html`, and `renderer.js` ship to users, but `tests/test_web_assets.py`
+asserts over their source — injection slots, balanced tags, and the offline
+guarantee — and nothing ever executes them. A renderer defect ships green. That
+is deliberate for a localhost single-user tool, and the reasoning is recorded in
+that file's docstring; treat it as a known boundary rather than an oversight.
+
 ## Tooling
 
 ```bash
