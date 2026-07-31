@@ -66,7 +66,7 @@ from ..kernel.grid import cover_between as grid_cover_between
 from ..kernel.items import ItemEffect, resolve_item_use
 from ..kernel.rules import Ability, D20Test, DamageType, concentration_dc, make_d20_test
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
-from .battlemap import BattleMap, MapState
+from .battlemap import GROUND_LEVEL, BattleMap, MapPlane, MapState
 from .creature import AttackOption, Creature
 
 DEATH_SAVE_DC = 10
@@ -112,6 +112,9 @@ class Action:
     direction: Point | None = None
     toward: str | Point | None = None
     feature: str | None = None
+    #: The storey a move ends on. Only meaningful for a move, and only over a
+    #: connector: walk to the stairway on your own level, and it carries you.
+    to_level: int | None = None
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -308,7 +311,7 @@ class Encounter:
         )
         self.battle_map = battle_map
         self.map_state: MapState | None = None
-        self._feature_squares: dict[Square, str] = {}
+        self._feature_squares: dict[tuple[int, Square], str] = {}
         if battle_map is not None:
             self._adopt_map(battle_map, combatants)
         # Combatants are handed the encounter's table rather than trusted to carry
@@ -370,10 +373,12 @@ class Encounter:
                 f"a battle map needs at least one square; "
                 f"got {battle_map.width}x{battle_map.height}"
             )
-        named = {battle_map.default_terrain, *battle_map.terrain.values()}
-        for feature in battle_map.features.values():
-            named.add(feature.closed_terrain)
-            named.add(feature.open_terrain)
+        named: set[str] = set()
+        for plane in battle_map.levels.values():
+            named.update({plane.default_terrain, *plane.terrain.values()})
+            for feature in plane.features.values():
+                named.add(feature.closed_terrain)
+                named.add(feature.open_terrain)
         unknown = sorted(kind for kind in named if kind not in self.terrain_effects)
         if unknown:
             defined = ", ".join(sorted(self.terrain_effects)) or "none"
@@ -381,42 +386,56 @@ class Encounter:
                 f"the map names terrain the loaded content does not define: "
                 f"{', '.join(unknown)}. Defined: {defined}"
             )
-        for name, feature in battle_map.features.items():
-            if not self._on_map(feature.square):
-                raise EncounterError(
-                    f"feature {name!r} sits at {feature.square}, off the "
-                    f"{battle_map.width}x{battle_map.height} map"
-                )
-            other = self._feature_squares.get(feature.square)
-            if other is not None:
-                raise EncounterError(
-                    f"features {other!r} and {name!r} share square {feature.square}"
-                )
-            self._feature_squares[feature.square] = name
+        for level in sorted(battle_map.levels):
+            plane = battle_map.levels[level]
+            for name, feature in plane.features.items():
+                if not self._on_map(feature.square):
+                    raise EncounterError(
+                        f"feature {name!r} sits at {feature.square}, off the "
+                        f"{battle_map.width}x{battle_map.height} map"
+                    )
+                other = self._feature_squares.get((level, feature.square))
+                if other is not None:
+                    raise EncounterError(
+                        f"features {other!r} and {name!r} share square {feature.square}"
+                    )
+                self._feature_squares[(level, feature.square)] = name
+            for square, target in plane.connectors.items():
+                if target not in battle_map.levels:
+                    raise EncounterError(
+                        f"the connector at {square} on level {level} leads to level "
+                        f"{target}, which this map does not have"
+                    )
         self.map_state = MapState(open_features={
             name for name, feature in battle_map.features.items()
             if feature.initially_open
         })
 
-        placed: dict[Square, str] = {}
+        placed: dict[tuple[int, Square], str] = {}
         for creature in combatants:
+            if creature.level not in battle_map.levels:
+                declared = ", ".join(str(i) for i in sorted(battle_map.levels))
+                raise EncounterError(
+                    f"{creature.name} starts on level {creature.level}, which this map "
+                    f"does not have. Levels: {declared}"
+                )
             square = to_square(as_point(creature.position))
             if not self._on_map(square):
                 raise EncounterError(
                     f"{creature.name} starts at {as_point(creature.position)}, off the "
                     f"{battle_map.width}x{battle_map.height} map"
                 )
-            if self._entry_cost(square) is None:
+            if self._entry_cost(creature.level, square) is None:
                 raise EncounterError(
                     f"{creature.name} starts on impassable "
-                    f"{self._terrain_at(square)!r} at {square}"
+                    f"{self._terrain_at_level(creature.level, square)!r} at {square}"
                 )
-            other = placed.get(square)
+            other = placed.get((creature.level, square))
             if other is not None:
                 raise EncounterError(
                     f"{creature.name} and {other} both start in square {square}"
                 )
-            placed[square] = creature.name
+            placed[(creature.level, square)] = creature.name
             creature.position = square_center(square)
 
     def _on_map(self, square: Square) -> bool:
@@ -425,26 +444,36 @@ class Encounter:
             0 <= square[1] < self.battle_map.height
         )
 
-    def _terrain_at(self, square: Square) -> str:
-        """What one square is right now: feature state first, then the map."""
+    def _plane(self, level: int) -> MapPlane:
+        """The storey a query is about. Every map query names one; none assumes."""
+        assert self.battle_map is not None
+        return self.battle_map.levels[level]
+
+    def _terrain_at_level(self, level: int, square: Square) -> str:
+        """What one square of one storey is right now: feature state, then the map."""
         assert self.battle_map is not None and self.map_state is not None
-        feature_name = self._feature_squares.get(square)
+        plane = self._plane(level)
+        feature_name = self._feature_squares.get((level, square))
         if feature_name is not None:
-            feature = self.battle_map.features[feature_name]
+            feature = plane.features[feature_name]
             if feature_name in self.map_state.open_features:
                 return feature.open_terrain
             return feature.closed_terrain
-        return self.battle_map.terrain.get(square, self.battle_map.default_terrain)
+        return plane.terrain.get(square, plane.default_terrain)
 
-    def _terrain_effect(self, square: Square) -> TerrainEffect:
-        return terrain_effect_of(self._terrain_at(square), self.terrain_effects)
+    def _terrain_at(self, square: Square) -> str:
+        """The ground plane's terrain. The mapless and single-storey shorthand."""
+        return self._terrain_at_level(GROUND_LEVEL, square)
 
-    def _elevation_at(self, square: Square) -> int:
+    def _terrain_effect(self, level: int, square: Square) -> TerrainEffect:
+        return terrain_effect_of(self._terrain_at_level(level, square), self.terrain_effects)
+
+    def _elevation_at(self, level: int, square: Square) -> int:
         """The ground height of a square in feet. Off-map ground is the default."""
-        assert self.battle_map is not None
-        return self.battle_map.elevation.get(square, self.battle_map.default_elevation)
+        plane = self._plane(level)
+        return plane.elevation.get(square, plane.default_elevation)
 
-    def _entry_cost(self, square: Square) -> int | None:
+    def _entry_cost(self, level: int, square: Square) -> int | None:
         """Feet to enter a square, or ``None`` off the map or into a wall.
 
         The per-square question, which is the one placement and "can a move end
@@ -453,13 +482,13 @@ class Encounter:
         """
         if not self._on_map(square):
             return None
-        effect = self._terrain_effect(square)
+        effect = self._terrain_effect(level, square)
         if not effect.passable:
             return None
         return FEET_PER_SQUARE * effect.move_cost_multiplier
 
     def _step_cost(
-        self, origin: Square, step_to: Square, doubled_diagonal: bool = False
+        self, level: int, origin: Square, step_to: Square, doubled_diagonal: bool = False
     ) -> int | None:
         """Feet to step between two adjacent squares, or ``None`` if it cannot be taken.
 
@@ -468,33 +497,55 @@ class Encounter:
         what the pathfinder would have charged for it. A change in ground height
         makes the step a slope or a climb; see
         :func:`~fivee_sim.kernel.grid.step_cost_feet` for what each costs.
+
+        Both squares are on ``level``. Crossing between storeys is not a step:
+        it goes through a connector, and :meth:`_connector_cost` prices it.
         """
         if not self._on_map(step_to):
             return None
         return step_cost_feet(
-            self._terrain_effect(step_to),
-            self._elevation_at(step_to) - self._elevation_at(origin),
+            self._terrain_effect(level, step_to),
+            self._elevation_at(level, step_to) - self._elevation_at(level, origin),
             doubled_diagonal=doubled_diagonal,
         )
 
-    def _opaque(self, square: Square) -> bool:
-        return self._on_map(square) and self._terrain_effect(square).opaque
+    def _connector_cost(self, level: int, square: Square, to_level: int) -> int | None:
+        """Feet to ride a connector to the same square one storey over.
 
-    def _cover_of(self, square: Square) -> int:
+        The rise between the two planes' heights at that square, charged through
+        the very rule an ordinary step is: a ten-foot storey is a climb, a
+        shallow half-landing is a slope. ``None`` if the arrival is impassable.
+        """
+        if self._entry_cost(to_level, square) is None:
+            return None
+        return step_cost_feet(
+            self._terrain_effect(to_level, square),
+            self._elevation_at(to_level, square) - self._elevation_at(level, square),
+        )
+
+    def _opaque(self, level: int, square: Square) -> bool:
+        return self._on_map(square) and self._terrain_effect(level, square).opaque
+
+    def _cover_of(self, level: int, square: Square) -> int:
         """The cover a square contributes to a sight line. Opaque means total."""
         if not self._on_map(square):
             return 0
-        effect = self._terrain_effect(square)
+        effect = self._terrain_effect(level, square)
         if effect.opaque:
             return int(CoverGrade.TOTAL)
         return effect.cover
 
-    def _occupied(self) -> dict[Square, str]:
-        """Which squares conscious creatures stand in. A downed body blocks nothing."""
+    def _occupied(self, level: int) -> dict[Square, str]:
+        """Which squares conscious creatures hold on one storey.
+
+        A downed body blocks nothing, and neither does a creature a floor away:
+        occupancy is per plane, so two fighters may stand at the same square on
+        different levels.
+        """
         return {
             to_square(as_point(creature.position)): creature.name
             for creature in self.creatures.values()
-            if creature.conscious
+            if creature.conscious and creature.level == level
         }
 
     def route(
@@ -517,14 +568,17 @@ class Encounter:
         if self.battle_map is None:
             return None
         actor = self.creatures[actor_name]
+        level = actor.level
         blocked = frozenset(
-            square for square, name in self._occupied().items()
+            square for square, name in self._occupied(level).items()
             if name != actor_name and self.creatures[name].team != actor.team
         )
         return find_path(
             to_square(as_point(actor.position)),
             goal,
-            step_cost=self._step_cost,
+            step_cost=lambda origin, step_to, doubled: self._step_cost(
+                level, origin, step_to, doubled
+            ),
             rule=self.movement_rule,
             bounds=(self.battle_map.width, self.battle_map.height),
             blocked=blocked,
@@ -543,10 +597,12 @@ class Encounter:
             return CoverGrade.NONE
         attacker = self.creatures[attacker_name]
         return self._cover_from_square(
-            to_square(as_point(attacker.position)), target_name
+            attacker.level, to_square(as_point(attacker.position)), target_name
         )
 
-    def _cover_from_square(self, origin: Square, target_name: str) -> CoverGrade:
+    def _cover_from_square(
+        self, level: int, origin: Square, target_name: str
+    ) -> CoverGrade:
         """The cover the target has against an effect measured from ``origin``.
 
         The one composition every cover question goes through: attacks measure
@@ -554,18 +610,25 @@ class Encounter:
         Intervening creatures cap at half, exactly as for attacks; the origin
         and target squares themselves never block, so a creature standing in
         the origin square — the caster of a cone, say — does not screen anyone.
+
+        A floor is opaque, so a target on another storey has total cover — which
+        is what stops a fighter shooting the ceiling out from under someone
+        standing at the same square one level up. That is the whole of what a
+        level does to sight; within one, nothing changed.
         """
         if self.battle_map is None:
             return CoverGrade.NONE
         target = self.creatures[target_name]
+        if target.level != level:
+            return CoverGrade.TOTAL
         occupied = frozenset(
-            square for square, name in self._occupied().items()
+            square for square, name in self._occupied(level).items()
             if name != target_name
         )
         return grid_cover_between(
             origin,
             to_square(as_point(target.position)),
-            cover_of=self._cover_of,
+            cover_of=lambda square: self._cover_of(level, square),
             occupied=occupied,
         )
 
@@ -597,8 +660,17 @@ class Encounter:
         return next(iter(alive)) if len(alive) == 1 else None
 
     def enemies_of(self, name: str) -> list[Creature]:
-        team = self.creatures[name].team
-        return [c for c in self.creatures.values() if c.team != team and c.conscious]
+        """The conscious enemies this creature can actually reach or be reached by.
+
+        On a map with storeys that means the ones sharing its level: a floor
+        between two combatants is total cover both ways, so an enemy upstairs
+        threatens nothing down here and cannot be threatened from here either.
+        """
+        actor = self.creatures[name]
+        return [
+            c for c in self.creatures.values()
+            if c.team != actor.team and c.conscious and c.level == actor.level
+        ]
 
     def state(self) -> dict[str, Any]:
         return {
@@ -626,33 +698,48 @@ class Encounter:
             "width": self.battle_map.width,
             "height": self.battle_map.height,
             "movement_rule": self.movement_rule.value,
-            "elevation": self._elevation_summary(),
+            "elevation": self._elevation_summary(GROUND_LEVEL),
+            "levels": [
+                self._level_summary(index) for index in sorted(self.battle_map.levels)
+            ],
             "features": {
                 name: {
                     "square": list(feature.square),
                     "kind": feature.kind,
+                    "level": self.battle_map.level_of(name),
                     "open": name in self.map_state.open_features,
                 }
                 for name, feature in sorted(self.battle_map.features.items())
             },
         }
 
-    def _elevation_summary(self) -> dict[str, Any]:
-        """The map's ground heights in feet, and what they do — and do not — do.
+    def _level_summary(self, level: int) -> dict[str, Any]:
+        """One storey: its heights and the squares that lead off it."""
+        plane = self._plane(level)
+        return {
+            "index": level,
+            "elevation": self._elevation_summary(level),
+            "connectors": [
+                {"square": [square[0], square[1]], "to_level": target}
+                for square, target in sorted(plane.connectors.items())
+            ],
+        }
+
+    def _elevation_summary(self, level: int) -> dict[str, Any]:
+        """One plane's ground heights in feet, and what they do — and do not — do.
 
         ``flat`` is the fact a reader needs first. The default only counts toward
         the range when some square actually falls back to it, so a map whose
         sparse layer covers every square reports the heights it really has.
         """
         assert self.battle_map is not None
-        heights = list(self.battle_map.elevation.values())
-        covered = len(self.battle_map.elevation) == (
-            self.battle_map.width * self.battle_map.height
-        )
+        plane = self._plane(level)
+        heights = list(plane.elevation.values())
+        covered = len(plane.elevation) == (self.battle_map.width * self.battle_map.height)
         if not covered:
-            heights.append(self.battle_map.default_elevation)
+            heights.append(plane.default_elevation)
         return {
-            "default": self.battle_map.default_elevation,
+            "default": plane.default_elevation,
             "min": min(heights),
             "max": max(heights),
             "flat": min(heights) == max(heights),
@@ -687,7 +774,10 @@ class Encounter:
         # Only where it means something: a fight on the open plane has no ground
         # to stand on, and reporting 0 feet there would read as a fact.
         if self.battle_map is not None:
-            state["elevation"] = self._elevation_at(to_square(as_point(creature.position)))
+            state["level"] = creature.level
+            state["elevation"] = self._elevation_at(
+                creature.level, to_square(as_point(creature.position))
+            )
         return state
 
     # --- turn lifecycle ---------------------------------------------------
@@ -1232,7 +1322,8 @@ class Encounter:
         cover_grades: dict[str, CoverGrade] = {}
         if area_origin is not None:
             cover_grades = {
-                c.name: self._cover_from_square(area_origin, c.name) for c in chosen
+                c.name: self._cover_from_square(actor.level, area_origin, c.name)
+                for c in chosen
             }
 
         def save_modifier(creature: Creature) -> int:
@@ -1376,7 +1467,7 @@ class Encounter:
         return has_line_of_sight(
             to_square(as_point(caster.position)),
             to_square(as_point(origin)),
-            opaque=self._opaque,
+            opaque=lambda square: self._opaque(caster.level, square),
         )
 
     _DIRECTIONS = frozenset({
@@ -1467,7 +1558,8 @@ class Encounter:
             return caught
         return [
             c for c in caught
-            if self._cover_from_square(origin_square, c.name) is not CoverGrade.TOTAL
+            if self._cover_from_square(caster.level, origin_square, c.name)
+            is not CoverGrade.TOTAL
         ]
     def save_advantage(self, creature: Creature, ability: Ability | None) -> Advantage:
         """Advantage this creature's saving throw resolves under.
@@ -1680,17 +1772,33 @@ class Encounter:
         origin_sq = to_square(origin)
         dest_sq = to_square(as_point(action.to_position))
         destination = square_center(dest_sq)
+        level = actor.level
+        # The connector is the last leg: walk to the stairway on this level, then
+        # ride it. So every check below is about the square the walk ends on, on
+        # the level the walk happens on, and the arrival is checked after.
+        to_level = level if action.to_level is None else action.to_level
+        if to_level != level:
+            if to_level not in self.battle_map.levels:
+                declared = ", ".join(str(i) for i in sorted(self.battle_map.levels))
+                raise EncounterError(
+                    f"there is no level {to_level} on this map. Levels: {declared}"
+                )
+            if self._plane(level).connectors.get(dest_sq) != to_level:
+                raise EncounterError(
+                    f"there is nothing at {dest_sq} that leads to level {to_level}; "
+                    f"a move between storeys ends on a stairway"
+                )
         if not self._on_map(dest_sq):
             raise EncounterError(
                 f"{dest_sq} is off the {self.battle_map.width}x"
                 f"{self.battle_map.height} map"
             )
-        if self._entry_cost(dest_sq) is None:
+        if self._entry_cost(level, dest_sq) is None:
             raise EncounterError(
-                f"cannot end a move on impassable {self._terrain_at(dest_sq)!r} "
+                f"cannot end a move on impassable {self._terrain_at_level(level, dest_sq)!r} "
                 f"at {dest_sq}"
             )
-        occupied = self._occupied()
+        occupied = self._occupied(level)
         holder = occupied.get(dest_sq)
         if holder is not None and holder != actor.name:
             raise EncounterError(f"square {dest_sq} is occupied by {holder}")
@@ -1721,11 +1829,11 @@ class Encounter:
                 diagonal = bool(dx and dy) and (
                     self.movement_rule is DiagonalRule.FIVE_TEN_FIVE
                 )
-                entering = self._step_cost(previous, step, diagonal and bool(parity))
+                entering = self._step_cost(level, previous, step, diagonal and bool(parity))
                 if entering is None:
                     raise EncounterError(
-                        f"the path enters impassable {self._terrain_at(step)!r} "
-                        f"at {step}"
+                        f"the path enters impassable "
+                        f"{self._terrain_at_level(level, step)!r} at {step}"
                     )
                 if step in enemy_squares:
                     raise EncounterError(
@@ -1742,6 +1850,19 @@ class Encounter:
                 )
             route = list(found.squares)
             cost = found.cost_feet
+        if to_level != level:
+            climb = self._connector_cost(level, dest_sq, to_level)
+            if climb is None:
+                raise EncounterError(
+                    f"the connector at {dest_sq} arrives on impassable "
+                    f"{self._terrain_at_level(to_level, dest_sq)!r} on level {to_level}"
+                )
+            arrival = self._occupied(to_level).get(dest_sq)
+            if arrival is not None and arrival != actor.name:
+                raise EncounterError(
+                    f"square {dest_sq} on level {to_level} is occupied by {arrival}"
+                )
+            cost += climb
         if cost > self._turn.movement_left:
             raise EncounterError(
                 f"{actor.name} has {self._turn.movement_left} ft of movement, "
@@ -1752,6 +1873,7 @@ class Encounter:
         self._emit("move", actor.name,
                    detail=f"{origin} -> {destination} ({cost} ft used)",
                    origin=origin, destination=destination, cost=cost,
+                   to_level=to_level,
                    squares=[list(square) for square in route])
         suppressed = self._disengaged[actor.name]
         for previous, step in zip(route, route[1:], strict=False):
@@ -1775,6 +1897,10 @@ class Encounter:
                 # Dropped mid-stride: the walk ends where the mover fell, and the
                 # state — not the move event's declared destination — is the truth.
                 return
+        # The connector is ridden last, and only by a mover still standing: one
+        # dropped on the stairs falls at its foot, on the level it was walking.
+        if to_level != level:
+            actor.level = to_level
 
     def _do_interact(self, actor: Creature, action: Action) -> None:
         """Open or close a named map feature. Free, once per turn, from adjacency."""

@@ -291,7 +291,7 @@ class TestMapTools:
         assert state["map"]["width"] == 4
         assert state["map"]["height"] == 3
         assert state["map"]["features"]["door"] == {
-            "square": [1, 1], "kind": "door", "open": False,
+            "square": [1, 1], "kind": "door", "level": 0, "open": False,
         }
 
     def test_interact_opens_the_door_over_the_wire(self) -> None:

@@ -191,6 +191,12 @@ class Creature:
     vulnerabilities: frozenset[DamageType] = frozenset()
     #: A point in feet; a scalar is accepted and widened to ``(x, 0)``.
     position: Point | int = (0, 0)
+    #: Which storey of the map the creature stands on. Zero — the ground — for
+    #: every fight on a map without storeys, which is nearly all of them. The
+    #: level is not part of ``position`` because feet along an axis and a choice
+    #: of plane are different kinds of fact: two creatures at the same point on
+    #: different levels are not near each other at all.
+    level: int = 0
     death_save_successes: int = 0
     death_save_failures: int = 0
     stable: bool = False

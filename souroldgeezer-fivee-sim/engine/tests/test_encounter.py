@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from random import Random
+from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -18,11 +19,18 @@ from fivee_sim.content import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
-from fivee_sim.kernel.grid import CoverGrade, DiagonalRule, Point, Square, as_point
+from fivee_sim.kernel.grid import (
+    CoverGrade,
+    DiagonalRule,
+    Point,
+    Square,
+    as_point,
+    to_square,
+)
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell
-from fivee_sim.model.battlemap import BattleMap, MapFeature
+from fivee_sim.model.battlemap import BattleMap, MapFeature, MapPlane
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
     Action,
@@ -1044,6 +1052,171 @@ def strip(
     )
 
 
+def tower(
+    *,
+    stair_at: Square = (1, 0),
+    upper_feet: int = 10,
+    ground_terrain: dict[Square, str] | None = None,
+    upper_terrain: dict[Square, str] | None = None,
+) -> BattleMap:
+    """Two 4x1 floors over one footprint, joined by a stair, the upper one raised."""
+    return BattleMap(
+        name="tower",
+        width=4,
+        height=1,
+        levels=MappingProxyType(
+            {
+                0: MapPlane(
+                    default_terrain="floor",
+                    terrain=ground_terrain or {},
+                    connectors={stair_at: 1},
+                ),
+                1: MapPlane(
+                    default_terrain="floor",
+                    terrain=upper_terrain or {},
+                    default_elevation=upper_feet,
+                    connectors={stair_at: 0},
+                ),
+            }
+        ),
+        provenance=FIXTURE,
+    )
+
+
+class TestLevels:
+    def test_a_creature_stands_on_the_ground_unless_it_says_otherwise(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        assert [c["level"] for c in encounter.state()["combatants"]] == [0, 0]
+
+    def test_two_creatures_may_hold_one_square_on_different_levels(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(0, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        assert encounter.creatures["Wolf"].level == 1
+
+    def test_a_floor_is_total_cover(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(0, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        assert encounter.cover_between("Thora", "Wolf") is CoverGrade.TOTAL
+
+    def test_an_attack_through_a_floor_finds_no_line(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(0, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wolf"), rng
+        )
+        attack = next(event for event in events if event.kind == "attack")
+        assert attack.data["total_cover"] is True
+
+    def test_an_enemy_upstairs_is_not_an_enemy_within_reach(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(0, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        assert encounter.enemies_of("Thora") == []
+
+    def test_a_connector_carries_a_mover_up(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng
+        )
+        thora = encounter.creatures["Thora"]
+        assert thora.level == 1
+        assert to_square(as_point(thora.position)) == (1, 0)
+
+    def test_climbing_a_storey_costs_the_climb(self) -> None:
+        # 5 ft to walk to the stair, then a 10-foot rise: over CLIMB_FEET, so
+        # 5 ft of horizontal plus 2 ft per foot climbed = 25. Exactly a speed.
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng
+        )
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 30
+        assert move.data["to_level"] == 1
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
+    def test_a_storey_too_high_to_climb_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng,
+            battle_map=tower(upper_feet=40),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="needs 90 ft"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng)
+
+    def test_a_move_to_a_level_needs_a_connector_on_the_square(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="nothing at .* leads to level 1"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0), to_level=1), rng)
+
+    def test_a_move_to_a_level_the_map_does_not_have_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="no level 7"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=7), rng)
+
+    def test_a_wall_upstairs_does_not_block_the_ground(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng,
+            battle_map=tower(upper_terrain={(2, 0): "wall"}),
+        )
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 10
+
+    def test_a_creature_upstairs_reports_the_storeys_height(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(0, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        wolf = next(c for c in encounter.state()["combatants"] if c["name"] == "Wolf")
+        assert (wolf["level"], wolf["elevation"]) == (1, 10)
+
+    def test_a_combatant_placed_on_a_level_the_map_lacks_is_refused(self) -> None:
+        rng = Random(1)
+        stray = make_monster("Wolf", position=(15, 0))
+        stray.level = 3
+        with pytest.raises(EncounterError, match="level 3"):
+            Encounter([fighter(), stray], rng, battle_map=tower())
+
+    def test_the_map_summary_lists_every_level(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+        )
+        levels = encounter.state()["map"]["levels"]
+        assert [level["index"] for level in levels] == [0, 1]
+        assert levels[1]["elevation"]["default"] == 10
+
+
 class TestMapMovement:
     def test_difficult_terrain_charges_double_for_every_entered_square(self) -> None:
         rng = Random(1)
@@ -1408,8 +1581,25 @@ class TestMapPlacement:
                 "flat": True,
                 "affects": "movement only; sight, cover, and areas are measured flat",
             },
+            "levels": [
+                {
+                    "index": 0,
+                    "elevation": {
+                        "default": 0,
+                        "min": 0,
+                        "max": 0,
+                        "flat": True,
+                        "affects": (
+                            "movement only; sight, cover, and areas are measured flat"
+                        ),
+                    },
+                    "connectors": [],
+                },
+            ],
             "features": {
-                "crypt door": {"square": [1, 0], "kind": "door", "open": False},
+                "crypt door": {
+                    "square": [1, 0], "kind": "door", "level": 0, "open": False,
+                },
             },
         }
 
