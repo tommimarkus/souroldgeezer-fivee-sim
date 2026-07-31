@@ -1148,7 +1148,7 @@ class TestContentTools:
     def test_status_reports_the_bundled_slice_by_default(self) -> None:
         status = api.content_status()
         assert status["builtin"] == "include"
-        assert status["counts"]["creatures"] == 4
+        assert status["counts"]["creatures"] == 6
         assert status["counts"]["conditions"] == 14
 
     def test_validate_reports_problems_without_loading_them(self, tmp_path: Path) -> None:
@@ -1157,7 +1157,7 @@ class TestContentTools:
         assert result["ok"] is False
         assert result["errors"]
         # And nothing was adopted.
-        assert api.content_status()["counts"]["creatures"] == 4
+        assert api.content_status()["counts"]["creatures"] == 6
 
     def test_validate_passes_a_good_pack(self, pack: Path) -> None:
         result = api.content_validate([str(pack)])
