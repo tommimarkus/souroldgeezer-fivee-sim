@@ -107,6 +107,17 @@ class TestViewerFeatureVisibility:
         assert 'HIDDEN_FEATURE_KINDS = ["spawn"]' in source
         assert "mapDoc = displayDoc(" in source
 
+    def test_a_loaded_replay_hides_the_empty_state_over_the_canvas(self) -> None:
+        # The id rule sets display:flex, which outranks the browser's default
+        # [hidden] rule unless the page states the contract explicitly.
+        assert "#empty-note[hidden] { display: none; }" in read("viewer.html")
+
+    def test_the_event_ticker_reflows_below_the_map_on_a_narrow_screen(self) -> None:
+        source = read("viewer.html")
+        assert "@media (max-width: 40rem)" in source
+        assert "#layout { flex-direction: column; }" in source
+        assert "inline-size: 100%; block-size: 9rem; flex: 0 0 9rem;" in source
+
     def test_the_door_replay_reads_the_unfiltered_bundle(self) -> None:
         # The filter shapes what is *drawn*; it must not shape what is
         # *replayed*. Door open/closed state is seeded from the bundle's own
