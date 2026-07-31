@@ -440,6 +440,24 @@ class TestMapsRoundTrip:
         assert saved.status == 200
         assert saved.json()["sha256"] == sha256  # a fixed point: same bytes, same digest
 
+    def test_a_noncanonical_height_layer_converges_to_the_canonical_form(
+        self, editor: Editor
+    ) -> None:
+        # The other half of the fixed-point claim: unsorted squares and a
+        # square sitting at the datum are accepted and come back reduced —
+        # sorted row then column, the datum-equal square dropped — after which
+        # the layer is stable. A broken page canonicalizer lands here.
+        jumbled = payload()
+        jumbled["elevation"] = {"default": 0, "squares": [[3, 1, 20], [2, 2, 0], [1, 1, 20]]}
+        editor.put_map("editor-chamber", jumbled)
+        fetched = editor.request("GET", "/api/maps/editor-chamber").json()
+        assert fetched["elevation"] == {"default": 0, "squares": [[1, 1, 20], [3, 1, 20]]}
+
+        sha256 = editor.request("GET", "/api/maps/editor-chamber").headers["ETag"].strip('"')
+        saved = editor.put_map("editor-chamber", fetched, if_match=f'"{sha256}"')
+        assert saved.status == 200
+        assert saved.json()["sha256"] == sha256  # converged, now a fixed point
+
     def test_an_edit_does_not_flatten_ground_height(self, editor: Editor) -> None:
         raised = payload()
         raised["elevation"] = {"default": 0, "squares": [[2, 2, 20]]}

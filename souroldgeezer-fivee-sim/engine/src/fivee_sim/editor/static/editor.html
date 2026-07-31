@@ -597,13 +597,22 @@ if (typeof FiveeRenderer === "undefined") {
      writeElevation, which stores the server's canonical shape and rebuilds
      both, so the caches can never drift from the document. */
   function elevationDefault() {
-    return doc && doc.elevation ? doc.elevation.default : 0;
+    var feet = doc && doc.elevation ? doc.elevation.default : 0;
+    return Number.isInteger(feet) ? feet : 0;
   }
   function rebuildElevationCache() {
     elevSquares = {};
     elevEntries = [];
-    var squares = doc && doc.elevation ? doc.elevation.squares : [];
+    /* A hand-opened file is trusted like the rest of the document: a shape
+       the server would refuse must not crash the load, so entries that are
+       not [x, y, feet] whole numbers are ignored here and the Validate and
+       Save buttons still tell the truth about them. */
+    var squares = doc && doc.elevation && Array.isArray(doc.elevation.squares)
+      ? doc.elevation.squares : [];
     squares.forEach(function (square) {
+      if (!Array.isArray(square) || square.length !== 3
+        || !Number.isInteger(square[0]) || !Number.isInteger(square[1])
+        || !Number.isInteger(square[2])) { return; }
       /* Last one wins, tolerating a hand-edited file that repeats a square. */
       elevSquares[square[0] + "," + square[1]] = square[2];
     });
