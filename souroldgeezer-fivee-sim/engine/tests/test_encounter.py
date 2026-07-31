@@ -1832,7 +1832,10 @@ class TestCoverReachesNamedTargetSpells:
     used to consult cover nowhere at all.
     """
 
-    WALL_COLUMN = TestCoverChangesTheAttack.WALL_COLUMN
+    #: Copied rather than aliased: the sibling class holds a mutable dict, and a
+    #: shared binding across two classes is one careless ``[...] = ...`` away from
+    #: cross-class pollution that no test would attribute correctly.
+    WALL_COLUMN = dict(TestCoverChangesTheAttack.WALL_COLUMN)
 
     def duel(self, terrain: dict[Square, str], *, spell: str = "Guiding Bolt",
              book: dict[str, Spell] | None = None) -> Encounter:
@@ -1923,19 +1926,62 @@ class TestCoverReachesNamedTargetSpells:
         assert shielded.data["cover"] == 1
 
     def test_a_non_dexterity_named_save_gets_no_cover_bonus(self) -> None:
-        # Hold Person saves on Wisdom. The goblin's half cover is reported but
-        # grants nothing: natural 12 + 1 (Wis) = 13 still fails DC 15, where a
-        # wrongly-applied +2 would save at 15.
+        """Half cover is *reported* for a Wisdom save and grants nothing.
+
+        The roll is chosen so the +2 straddles the DC, which is the whole point of
+        the case: the Goblin Warrior's Wisdom save modifier is **-1**, so natural
+        14 resolves to 13 against DC 15 and fails, while a wrongly-applied cover
+        bonus would make it exactly 15 and save. An earlier version of this test
+        used natural 12 — 11 against DC 15, a four-point margin the +2 could not
+        cross — so it passed whether or not the bonus was applied.
+        """
         covered = self.duel({(2, 1): "half-cover"}, spell="Hold Person")
         covered.creatures["Wren"].spell_slots = {2: 1}
         events = covered.act(
             Action(kind=ActionKind.CAST, spell="Hold Person", slot_level=2,
                    target="Goblin"),
-            FixedRandom(12),
+            FixedRandom(14),
         )
         effect = next(e for e in events if e.kind == "spell_effect")
         assert effect.data["cover"] == 1
         assert effect.data["saved"] is False
+        # The total is in the log, so a future reader can see the margin is one
+        # point rather than having to re-derive the modifier.
+        assert "-1 = 13 vs DC 15" in effect.detail
+
+    def test_three_quarters_cover_raises_a_named_target_by_five(self) -> None:
+        """The third degree of the contract; ``duel``'s straight line cannot reach it.
+
+        The corner rule caps the grade at what the blocker carries *and* at how
+        many of the four corner lines it blocks, so a lone square on a straight
+        line between two combatants is half cover however strong its terrain. The
+        offset here — caster at (0,0), goblin at (4,2) — is the geometry
+        ``test_grid.py::TestCover`` uses for the same grade: three of four lines
+        blocked. Natural 9 + 6 = 15 hits AC 15 in the open and misses AC 20 here.
+        """
+        rng = Random(3)
+        wren = caster(position=(0, 0))
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 1}
+        encounter = Encounter(
+            [wren, make_monster("Goblin Warrior", label="Goblin", position=(20, 10))],
+            rng,
+            spellbook=spellbook(),
+            battle_map=strip(5, 3, terrain={(2, 1): "three-quarters-cover"}),
+        )
+        advance_to(encounter, "Wren", rng)
+        assert encounter.cover_between("Wren", "Goblin") is CoverGrade.THREE_QUARTERS
+        shielded = next(
+            e for e in encounter.act(
+                Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                       target="Goblin"),
+                FixedRandom(9),
+            )
+            if e.kind == "spell_effect"
+        )
+        assert shielded.data["cover"] == 2
+        assert not shielded.data["affected"]
+        assert "vs AC 20 -> miss" in shielded.detail
 
     def test_a_storey_seals_a_spell_as_it_seals_an_arrow(self) -> None:
         """The field symptom, named: a floor stopped weapons and not spells.
@@ -1997,6 +2043,7 @@ class TestCoverReachesNamedTargetSpells:
             battle_map=strip(5, 3, terrain=self.WALL_COLUMN),
         )
         advance_to(encounter, "Wren", rng)
+        open_goblin = encounter.creatures["Open"]
         with pytest.raises(EncounterError, match="Sealed.*total cover"):
             encounter.act(
                 Action(kind=ActionKind.CAST, spell="Twin Bolt", slot_level=1,
@@ -2004,6 +2051,9 @@ class TestCoverReachesNamedTargetSpells:
                 FixedRandom(20),
             )
         assert wren.spell_slots[1] == 1
+        # The reachable target is the half the docstring is about: a cast that
+        # shrank to it would still raise and still leave the slot alone.
+        assert open_goblin.hp == open_goblin.max_hp
 
 
 class TestInteract:
