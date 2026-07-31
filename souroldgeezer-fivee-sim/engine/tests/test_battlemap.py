@@ -81,6 +81,8 @@ class TestClaims:
         gate = MapFeature(
             name="gate",
             square=(1, 1),
+            closed_terrain="wall",
+            open_terrain="wall",
             affects=(
                 FeatureOverlay(
                     squares=((1, 1),), terrain=TerrainPair(closed="floor", open="water")
@@ -88,6 +90,14 @@ class TestClaims:
             ),
         )
         assert [square for square, _ in gate.claims()] == [(1, 1), (1, 1)]
+        # The own square comes first, and the assertion is on the *values* so a
+        # reordering is caught: both real callers build a dict from this, where
+        # the last claim for a square wins, so the yield order decides which of
+        # two conflicting claims a caller keeps — and therefore which one its
+        # refusal names. A stable order is what makes that diagnostic stable.
+        both = [claim for _, claim in gate.claims()]
+        assert both[0].terrain == TerrainPair(closed="wall", open="wall")
+        assert both[1].terrain == TerrainPair(closed="floor", open="water")
 
 
 class TestGates:

@@ -1444,14 +1444,21 @@ if (typeof FiveeRenderer === "undefined") {
     [doc].concat(doc.levels || []).forEach(function (target) {
       (target.features || []).forEach(function (f) { allFeatures.push(f); });
     });
+    /* A Map rather than an object: ids come from a file a hand may have
+       written, and a `__proto__` key would land on an object literal's
+       prototype instead of in the table. It also turns the orphan search from
+       a scan per prerequisite into a lookup. */
+    var featureById = new Map();
+    allFeatures.forEach(function (f) {
+      if (!featureById.has(f.id)) { featureById.set(f.id, f); }
+    });
     var blocked = null;
     allFeatures.forEach(function (f) {
       if (blocked || !survives(f)) { return; }
-      (f.requires || []).forEach(function (id) {
+      (Array.isArray(f.requires) ? f.requires : []).forEach(function (id) {
         if (blocked) { return; }
-        allFeatures.forEach(function (other) {
-          if (other.id === id && !survives(other)) { blocked = { needs: id, by: f.id }; }
-        });
+        var other = featureById.get(id);
+        if (other && !survives(other)) { blocked = { needs: id, by: f.id }; }
       });
     });
     if (blocked) {
@@ -1488,9 +1495,18 @@ if (typeof FiveeRenderer === "undefined") {
         if (Array.isArray(f.affects)) {
           var groups = [];
           f.affects.forEach(function (group) {
+            /* Every element checked, not just the array: this loop runs after
+               snapshot() and after earlier planes have already been rewritten,
+               so a throw here leaves the document half-resized with no error
+               shown — and the Download button writes it out without ever
+               asking the server, which is the path that would have caught it. */
+            if (!group || typeof group !== "object") { return; }
             var cells = [];
             (Array.isArray(group.cells) ? group.cells : []).forEach(function (cell) {
               if (!Array.isArray(cell) || cell.length !== 2) { return; }
+              /* Numbers, or "5" + offX concatenates and onMap coerces it back,
+                 quietly saving a string coordinate. */
+              if (!Number.isFinite(cell[0]) || !Number.isFinite(cell[1])) { return; }
               var cx = cell[0] + offX, cy = cell[1] + offY;
               if (onMap(cx, cy)) { cells.push([cx, cy]); }
             });
