@@ -21,8 +21,24 @@ than inferred from whichever file happened to load first.
 holds no module state. Callers pass the tables into the encounter, which captures
 them, so reloading content cannot reach into a fight already in progress.
 
+There is exactly one cached thing here, and the line it sits on matters.
+:func:`builtin` caches the *bundled* registry, which is safe because the files it
+reads ship inside the plugin and cannot change within a session; the
+built-in-only accessors near the bottom of this module are views over it. Anything
+reflecting **loaded** content must take a registry argument instead, because the
+user can reconfigure that at any time and a cached view of it is a stale answer
+waiting to happen. Add an accessor on the wrong side of that line and
+``content_configure`` stops meaning anything.
+
 Diagnostics are structured because the consumer is a campaign author debugging
 their own JSON, and "invalid pack" tells them nothing they can act on.
+
+:func:`make_creature` closes the loop from a name to a combatant. It lives here
+rather than in ``model`` because the lookup is a question about a registry, which
+is this module's concept; the construction it delegates to lives in
+:meth:`fivee_sim.model.creature.Creature.from_record`, because that is the layer
+that owns creatures. The two halves change for different reasons — the record
+format here, the creature's fields there — and neither imports upward.
 """
 
 from __future__ import annotations
@@ -32,16 +48,18 @@ import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
 from .kernel.actions import AttackKind, RiderExpiry
-from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect
-from .kernel.grid import TERRAIN, TERRAIN_FLAGS, TerrainEffect
+from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect, ConditionTable
+from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
 from .kernel.items import ItemEffect, ItemError
 from .kernel.rules import Ability, DamageType
 from .kernel.spells import Spell, SpellShape
+from .model.creature import Creature
 
 # Re-exported under their historical home: the diagnostic machinery grew up in
 # this module and every import site — packs, tests, the server — still reads it
@@ -1195,3 +1213,91 @@ def builtin_registry() -> ContentRegistry:
 def registry_from_environment() -> ContentRegistry:
     """The registry a freshly started server should use."""
     return load_packs(builtin=builtin_mode())
+
+
+# --- from a name to a combatant --------------------------------------------
+class DataError(ValueError):
+    """A creature was asked for that the active content does not define."""
+
+
+def make_creature(
+    name: str,
+    *,
+    registry: ContentRegistry | None = None,
+    label: str | None = None,
+    team: str | None = None,
+    position: Point | int = 0,
+) -> Creature:
+    """Look ``name`` up in the active content and build it.
+
+    Defaults to the bundled slice, so a caller with no opinion about content
+    still gets something. The refusal lists what *is* loaded and whether the
+    built-ins were excluded, because "no such creature" with a configurable
+    catalogue is not an answer anyone can act on.
+    """
+    active = builtin() if registry is None else registry
+    record = active.creatures.get(name)
+    if record is None:
+        available = ", ".join(sorted(active.creatures)) or "none"
+        raise DataError(
+            f"no stat block named {name!r} in the loaded content "
+            f"(built-in content is {active.builtin.value}d); available: {available}"
+        )
+    return Creature.from_record(
+        record,
+        condition_effects=active.condition_effects,
+        source=active.source_of("creatures", name),
+        label=label,
+        team=team,
+        position=position,
+    )
+
+
+# --- built-in-only accessors -----------------------------------------------
+# Cached, and only ever over the bundled slice. See the module docstring: a
+# cached view of *loaded* content would go stale the moment a pack is
+# reconfigured, so anything reflecting that takes a registry instead.
+@lru_cache(maxsize=1)
+def builtin() -> ContentRegistry:
+    """The bundled SRD slice alone. Safe to cache: it ships inside the plugin."""
+    return builtin_registry()
+
+
+def monster_records() -> dict[str, dict[str, Any]]:
+    """Bundled stat blocks, keyed by name."""
+    return dict(builtin().creatures)
+
+
+def spell_records() -> dict[str, dict[str, Any]]:
+    """Raw bundled spell records, which carry fields the engine does not model."""
+    return dict(builtin().spell_records)
+
+
+def spellbook() -> dict[str, Spell]:
+    """Every bundled spell, keyed by name."""
+    return dict(builtin().spells)
+
+
+def item_effects() -> dict[str, ItemEffect]:
+    """Every bundled usable item, keyed by name."""
+    return dict(builtin().items)
+
+
+def condition_table() -> ConditionTable:
+    """The bundled condition table."""
+    return builtin().condition_effects
+
+
+def monster_names() -> list[str]:
+    return sorted(builtin().creatures)
+
+
+def make_monster(
+    name: str,
+    *,
+    label: str | None = None,
+    team: str | None = None,
+    position: Point | int = 0,
+) -> Creature:
+    """Build a creature from a *bundled* stat block. See :func:`make_creature`."""
+    return make_creature(name, registry=builtin(), label=label, team=team, position=position)

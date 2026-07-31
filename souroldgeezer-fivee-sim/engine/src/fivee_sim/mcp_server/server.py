@@ -42,13 +42,14 @@ from ..content import (
     BuiltinMode,
     ContentError,
     ContentRegistry,
+    DataError,
     builtin_mode,
     builtin_registry,
     environment_paths,
     load_packs,
+    make_creature,
 )
 from ..content import validate as _validate_content
-from ..data import DataError, make_creature
 from ..editor.cli import read_state, state_file_for
 from ..editor.http_server import TOKEN_HEADER
 from ..kernel.actions import AttackKind, RiderExpiry

@@ -15,8 +15,7 @@ from random import Random
 import pytest
 
 from fivee_sim.analytics.montecarlo import run_encounter
-from fivee_sim.content import ContentRegistry, load_packs
-from fivee_sim.data import make_creature, make_monster, spellbook
+from fivee_sim.content import ContentRegistry, load_packs, make_creature, make_monster, spellbook
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.model.creature import Creature

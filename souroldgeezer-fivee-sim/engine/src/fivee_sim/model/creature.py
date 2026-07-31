@@ -11,12 +11,33 @@ one-dimensional battlefield is this plane's x-axis, and a scalar caller sees
 identical numbers. Distance defaults to the SRD diagonal rule; the encounter
 passes its own.
 
+**Construction from a content record lives here**, as :meth:`Creature.from_record`
+and :meth:`AttackOption.from_record`, because this module owns creatures and the
+field-for-field shape a record maps onto is the transcription described above —
+changing one is changing the other, so they read better together than apart.
+
+That places a constraint worth stating: a record arrives as a plain mapping, and
+the two values construction cannot derive from it — the condition table the
+creature reads its conditions against, and the provenance to fall back on — are
+*arguments*. They are not looked up. Both come off a
+:class:`~fivee_sim.content.ContentRegistry` in practice, and a registry is
+``content``'s concept, one layer above this one; reaching up for it would invert
+the direction the whole tree depends on. :func:`fivee_sim.content.make_creature`
+is the caller that holds the registry and passes the two values down.
+
+Records reaching :meth:`Creature.from_record` from a pack have already been
+validated by ``content``, so construction does not re-check them; a malformed pack
+fails at load, with a diagnostic naming the field, rather than half-way into a
+fight.
+
 All provenance: SRD 5.2 (see NOTICE).
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import Any
 
 from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.conditions import (
@@ -86,6 +107,39 @@ class AttackOption:
                 f"or more"
             )
 
+    @classmethod
+    def from_record(cls, record: Mapping[str, Any]) -> AttackOption:
+        """Build one attack from a validated content record."""
+        bonus_type = record.get("bonus_damage_type")
+        save_ability = record.get("on_hit_save_ability")
+        return cls(
+            name=str(record["name"]),
+            attack_bonus=int(record["attack_bonus"]),
+            damage=Dice.parse(str(record["damage"])),
+            damage_type=DamageType(record["damage_type"]),
+            kind=AttackKind(record.get("kind", "melee")),
+            reach=int(record.get("reach", 5)),
+            normal_range=int(record.get("normal_range", 0)),
+            long_range=int(record.get("long_range", 0)),
+            bonus_damage=(
+                Dice.parse(str(record["bonus_damage"]))
+                if record.get("bonus_damage") is not None else None
+            ),
+            bonus_damage_type=DamageType(bonus_type) if bonus_type is not None else None,
+            advantage_bonus_damage=(
+                Dice.parse(str(record["advantage_bonus_damage"]))
+                if record.get("advantage_bonus_damage") is not None else None
+            ),
+            on_hit_condition=(
+                str(record["on_hit_condition"])
+                if record.get("on_hit_condition") is not None else None
+            ),
+            on_hit_save_ability=Ability(save_ability) if save_ability is not None else None,
+            on_hit_save_dc=int(record.get("on_hit_save_dc", 0)),
+            on_hit_expiry=RiderExpiry(record.get("on_hit_expiry", "none")),
+            provenance=str(record.get("provenance", "SRD 5.2")),
+        )
+
     def max_distance(self) -> int:
         if self.kind is AttackKind.MELEE:
             return self.reach
@@ -147,6 +201,68 @@ class Creature:
         if self.hp < 0:
             self.hp = self.max_hp
         self.position = as_point(self.position)
+
+    # --- construction -----------------------------------------------------
+    @classmethod
+    def from_record(
+        cls,
+        record: Mapping[str, Any],
+        *,
+        condition_effects: ConditionTable,
+        source: str,
+        label: str | None = None,
+        team: str | None = None,
+        position: Point | int = 0,
+    ) -> Creature:
+        """Build a fresh creature from a validated content record.
+
+        ``condition_effects`` is the table this creature will read its conditions
+        against, and ``source`` the provenance to use when the record does not
+        carry its own. Both are passed rather than looked up — see the module
+        docstring for why that is the seam.
+
+        ``label`` renames the instance, which matters because combatant names
+        identify them: two goblins in one fight need distinct labels.
+        """
+        return cls(
+            name=label or str(record["name"]),
+            team=team or str(record.get("team", "monsters")),
+            ac=int(record["ac"]),
+            max_hp=int(record["max_hp"]),
+            speed=int(record.get("speed", 30)),
+            abilities={
+                Ability(key): int(value)
+                for key, value in record.get("abilities", {}).items()
+            },
+            save_bonuses={
+                Ability(key): int(value)
+                for key, value in record.get("save_bonuses", {}).items()
+            },
+            attacks=tuple(
+                AttackOption.from_record(entry) for entry in record.get("attacks", [])
+            ),
+            attacks_per_action=int(record.get("attacks_per_action", 1)),
+            pack_tactics=bool(record.get("pack_tactics", False)),
+            undead_fortitude=bool(record.get("undead_fortitude", False)),
+            spells=tuple(str(entry) for entry in record.get("spells", [])),
+            spell_slots={int(k): int(v) for k, v in record.get("spell_slots", {}).items()},
+            spell_save_dc=int(record.get("spell_save_dc", 10)),
+            spell_attack_bonus=int(record.get("spell_attack_bonus", 0)),
+            items={str(k): int(v) for k, v in record.get("items", {}).items()},
+            immunities=frozenset(
+                DamageType(entry) for entry in record.get("immunities", [])
+            ),
+            resistances=frozenset(
+                DamageType(entry) for entry in record.get("resistances", [])
+            ),
+            vulnerabilities=frozenset(
+                DamageType(entry) for entry in record.get("vulnerabilities", [])
+            ),
+            conditions={str(entry) for entry in record.get("conditions", [])},
+            condition_effects=condition_effects,
+            position=position,
+            provenance=str(record.get("provenance", source)),
+        )
 
     # --- derived values ---------------------------------------------------
     def ability_score(self, ability: Ability) -> int:

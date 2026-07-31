@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .data import item_effects, monster_records, spell_records, spellbook
+from .content import item_effects, monster_records, spell_records, spellbook
 from .kernel.conditions import Condition, effect_of
 from .kernel.grid import (
     CLIMB_FEET,

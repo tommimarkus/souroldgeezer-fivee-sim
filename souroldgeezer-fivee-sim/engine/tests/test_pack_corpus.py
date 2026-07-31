@@ -37,9 +37,9 @@ from fivee_sim.content import (
     Diagnostic,
     Severity,
     load_packs,
+    make_creature,
     validate,
 )
-from fivee_sim.data import make_creature
 from fivee_sim.kernel.actions import (
     MELEE_THRESHOLD,
     compute_attack_advantage,
