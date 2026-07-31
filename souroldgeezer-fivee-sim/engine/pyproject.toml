@@ -10,6 +10,7 @@ dependencies = [
 [project.scripts]
 fivee-sim-mcp = "fivee_sim.mcp_server.server:main"
 fivee-sim-editor = "fivee_sim.editor.cli:main"
+fivee-sim-replay-sample = "fivee_sim.replay_sample:main"
 
 [build-system]
 requires = ["hatchling"]

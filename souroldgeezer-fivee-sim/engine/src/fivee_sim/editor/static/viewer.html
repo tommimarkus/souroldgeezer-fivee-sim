@@ -64,6 +64,13 @@ header .spacer { flex: 1; }
 #ticker li.round-row { color: var(--accent); font-weight: 600; margin-top: 4px; }
 #ticker li.current { background: var(--bg); color: var(--text); }
 #ticker li:hover { background: var(--bg); }
+@media (max-width: 40rem) {
+  #layout { flex-direction: column; }
+  #ticker {
+    inline-size: 100%; block-size: 9rem; flex: 0 0 9rem;
+    border-inline-start: 0; border-block-start: 1px solid var(--edge);
+  }
+}
 footer {
   border-top: 1px solid var(--edge); background: var(--panel);
   padding: 6px 10px; display: flex; flex-direction: column; gap: 4px;
@@ -77,6 +84,7 @@ footer {
   position: absolute; inset: 0; display: flex; align-items: center;
   justify-content: center; color: var(--muted); text-align: center; padding: 2em;
 }
+#empty-note[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -151,6 +159,10 @@ if (typeof FiveeRenderer === "undefined") {
   var view = null;
   var playing = false;
   var playTimer = null;
+  var transition = null;
+  var transitionFrame = null;
+  var motionQuery = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
   var canvas = document.getElementById("stage");
   var ctx = canvas.getContext("2d");
@@ -158,6 +170,23 @@ if (typeof FiveeRenderer === "undefined") {
   var ticker = document.getElementById("ticker");
 
   function byId(id) { return document.getElementById(id); }
+
+  function playbackRate() {
+    var rate = Number(byId("speed").value);
+    return Number.isFinite(rate) && rate > 0 ? rate : 1;
+  }
+
+  function eventDuration() { return 500 / playbackRate(); }
+
+  function reducedMotion() { return motionQuery && motionQuery.matches; }
+
+  function mix(from, to, progress) { return from + (to - from) * progress; }
+
+  function easedProgress() {
+    if (!transition) { return 1; }
+    var progress = transition.progress;
+    return progress * progress * (3 - 2 * progress);
+  }
 
   function feetToCell(point) {
     return [
@@ -261,10 +290,77 @@ if (typeof FiveeRenderer === "undefined") {
     return current;
   }
 
-  /* The cells to flash: the participants of the event just applied. */
-  function flashMarks() {
+  function featureById(id) {
+    var features = mapDoc.features || [];
+    for (var i = 0; i < features.length; i++) {
+      if (features[i].id === id) { return features[i]; }
+    }
+    return null;
+  }
+
+  function pulseColor(kind) {
+    var dark = R.isDark();
+    if (kind === "damage" || kind === "down" || kind === "death") {
+      return dark ? "#ef6a63" : "#b73b35";
+    }
+    if (kind === "heal" || kind === "stabilised") {
+      return dark ? "#66c983" : "#2c7a45";
+    }
+    if (kind === "interact") { return dark ? "#70b7d8" : "#2d7396"; }
+    return dark ? "#e8c76a" : "#b98a1e";
+  }
+
+  function tokenPoint(name) {
+    var token = state.tokens[name];
+    if (!token) { return null; }
+    if (transition && transition.actor === name && transition.fromAt) {
+      var progress = easedProgress();
+      return [
+        mix(transition.fromAt[0], token.at[0], progress),
+        mix(transition.fromAt[1], token.at[1], progress)
+      ];
+    }
+    return token.at;
+  }
+
+  /* The event's affected cells. While it moves, the cue rises and falls with
+     time; a scrubbed-to attack keeps the old static participant highlight. */
+  function eventMarks() {
     if (cursor === 0) { return []; }
-    var event = bundle.events[cursor - 1];
+    var event = transition ? transition.event : bundle.events[cursor - 1];
+    if (transition) {
+      var alpha = 0.5 * Math.sin(Math.PI * transition.progress);
+      var marks = [];
+      var seen = {};
+      var add = function (at) {
+        if (!at) { return; }
+        var key = at[0] + "," + at[1];
+        if (seen[key]) { return; }
+        seen[key] = true;
+        marks.push({ at: at, color: pulseColor(event.kind), alpha: alpha });
+      };
+      var data = event.data || {};
+      if (event.kind === "move") {
+        add(tokenPoint(event.actor));
+      } else if (FLASH_KINDS[event.kind]) {
+        add(tokenPoint(event.actor));
+        add(tokenPoint(event.target));
+        var targets = Array.isArray(data.targets) ? data.targets : [];
+        targets.forEach(function (name) { add(tokenPoint(name)); });
+        if (Array.isArray(data.center) && data.center.length === 2) {
+          add(feetToCell(data.center));
+        }
+      } else if (event.kind === "damage" || event.kind === "heal") {
+        add(tokenPoint(event.target));
+      } else if (event.kind === "down" || event.kind === "death"
+        || event.kind === "stabilised") {
+        add(tokenPoint(event.actor));
+      } else if (event.kind === "interact") {
+        var feature = featureById(data.feature);
+        if (feature) { add(feature.at); }
+      }
+      return marks;
+    }
     if (!FLASH_KINDS[event.kind] && event.kind !== "move") { return []; }
     var marks = [];
     [event.actor, event.target].forEach(function (name) {
@@ -277,35 +373,44 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- rendering -------------------------------------------------------- */
+  function renderFrame() {
+    var box = R.resizeCanvas(canvas, ctx);
+    if (!bundle) { ctx.clearRect(0, 0, box.width, box.height); return; }
+    view.width = box.width;
+    view.height = box.height;
+    var tokens = [];
+    Object.keys(state.tokens).forEach(function (name) {
+      var token = state.tokens[name];
+      var hp = token.hp;
+      if (transition && transition.target === name
+        && typeof transition.fromHp === "number") {
+        hp = mix(transition.fromHp, token.hp, easedProgress());
+      }
+      tokens.push({
+        at: tokenPoint(name),
+        label: name.charAt(0),
+        team: token.team,
+        hpFraction: token.maxHp > 0 ? hp / token.maxHp : 0,
+        down: token.down,
+        dead: token.dead,
+        stable: token.stable
+      });
+    });
+    R.render(ctx, mapDoc, view, {
+      tokens: tokens,
+      featureStates: state.featureStates,
+      terrainOverrides: state.terrainOverrides,
+      marks: eventMarks()
+    });
+  }
+
   var framePending = false;
   function redraw() {
     if (framePending) { return; }
     framePending = true;
     window.requestAnimationFrame(function () {
       framePending = false;
-      var box = R.resizeCanvas(canvas, ctx);
-      if (!bundle) { ctx.clearRect(0, 0, box.width, box.height); return; }
-      view.width = box.width;
-      view.height = box.height;
-      var tokens = [];
-      Object.keys(state.tokens).forEach(function (name) {
-        var token = state.tokens[name];
-        tokens.push({
-          at: token.at,
-          label: name.charAt(0),
-          team: token.team,
-          hpFraction: token.maxHp > 0 ? token.hp / token.maxHp : 0,
-          down: token.down,
-          dead: token.dead,
-          stable: token.stable
-        });
-      });
-      R.render(ctx, mapDoc, view, {
-        tokens: tokens,
-        featureStates: state.featureStates,
-        terrainOverrides: state.terrainOverrides,
-        marks: flashMarks()
-      });
+      renderFrame();
       drawTicks();
     });
   }
@@ -370,24 +475,82 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- playback --------------------------------------------------------- */
+  function cancelTransition() {
+    if (transitionFrame !== null) {
+      window.cancelAnimationFrame(transitionFrame);
+      transitionFrame = null;
+    }
+    transition = null;
+  }
+
   function stopPlaying() {
     playing = false;
     if (playTimer !== null) { window.clearTimeout(playTimer); playTimer = null; }
+    if (transition !== null) {
+      cancelTransition();
+      redraw();
+    }
     byId("btn-play").textContent = "Play";
   }
-  function tick() {
-    if (!playing) { return; }
-    if (cursor >= bundle.events.length) { stopPlaying(); return; }
-    setCursor(cursor + 1, true);
-    playTimer = window.setTimeout(tick, 500 / Number(byId("speed").value));
+
+  function transitionTick(time) {
+    if (!transition) { transitionFrame = null; return; }
+    if (transition.started === null) { transition.started = time; }
+    transition.progress = Math.min(1, (time - transition.started) / transition.duration);
+    renderFrame();
+    if (transition.progress < 1) {
+      transitionFrame = window.requestAnimationFrame(transitionTick);
+      return;
+    }
+    transition = null;
+    transitionFrame = null;
+    if (playing) { advancePlayback(); }
   }
+
+  function advancePlayback() {
+    if (!bundle || cursor >= bundle.events.length) {
+      if (playing) { stopPlaying(); }
+      return;
+    }
+    var event = bundle.events[cursor];
+    var token = state.tokens[event.actor];
+    var fromAt = event.kind === "move" && token ? token.at.slice() : null;
+    var target = state.tokens[event.target];
+    var fromHp = (event.kind === "damage" || event.kind === "heal") && target
+      ? target.hp : null;
+    fold(state, event);
+    cursor += 1;
+    scrub.value = String(cursor);
+    updateReadout();
+    updateTicker();
+
+    if (reducedMotion()) {
+      redraw();
+      if (playing) {
+        playTimer = window.setTimeout(advancePlayback, eventDuration());
+      }
+      return;
+    }
+    transition = {
+      event: event,
+      actor: event.actor,
+      target: event.target,
+      fromAt: fromAt,
+      fromHp: fromHp,
+      progress: 0,
+      started: null,
+      duration: eventDuration()
+    };
+    transitionFrame = window.requestAnimationFrame(transitionTick);
+  }
+
   byId("btn-play").addEventListener("click", function () {
     if (!bundle) { return; }
     if (playing) { stopPlaying(); return; }
     if (cursor >= bundle.events.length) { setCursor(0); }
     playing = true;
     byId("btn-play").textContent = "Pause";
-    tick();
+    advancePlayback();
   });
   byId("btn-back").addEventListener("click", function () {
     stopPlaying();
@@ -395,7 +558,7 @@ if (typeof FiveeRenderer === "undefined") {
   });
   byId("btn-forward").addEventListener("click", function () {
     stopPlaying();
-    setCursor(cursor + 1, true);
+    advancePlayback();
   });
   scrub.addEventListener("input", function () {
     stopPlaying();
@@ -527,7 +690,7 @@ if (typeof FiveeRenderer === "undefined") {
   });
   document.addEventListener("keydown", function (event) {
     if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") { return; }
-    if (event.key === "ArrowRight") { stopPlaying(); setCursor(cursor + 1, true); }
+    if (event.key === "ArrowRight") { stopPlaying(); advancePlayback(); }
     else if (event.key === "ArrowLeft") { stopPlaying(); setCursor(cursor - 1); }
     else if (event.key === " ") { event.preventDefault(); byId("btn-play").click(); }
   });

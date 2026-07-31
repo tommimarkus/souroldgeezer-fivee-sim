@@ -356,6 +356,9 @@ function makePage(options) {
   const requests = [];
   const blobs = [];
   const alerts = [];
+  const animationFrames = new Map();
+  let nextAnimationFrame = 1;
+  let immediateFrameTime = 0;
   const page = {
     fills, context, element, elements, documentStub, requests, blobs, alerts,
     renders: [],
@@ -366,9 +369,20 @@ function makePage(options) {
     console,
     document: documentStub,
     devicePixelRatio: 1,
-    matchMedia: () => ({ matches: false, addEventListener() {} }),
-    requestAnimationFrame: (cb) => { cb(0); return 1; },
-    cancelAnimationFrame: () => {},
+    matchMedia: (query) => ({
+      matches: !!options.reducedMotion && query.indexOf("prefers-reduced-motion") !== -1,
+      addEventListener() {},
+    }),
+    requestAnimationFrame: options.manualAnimationFrames
+      ? (cb) => {
+        const id = nextAnimationFrame++;
+        animationFrames.set(id, cb);
+        return id;
+      }
+      : (cb) => { immediateFrameTime += 1000; cb(immediateFrameTime); return 1; },
+    cancelAnimationFrame: options.manualAnimationFrames
+      ? (id) => { animationFrames.delete(id); }
+      : () => {},
     setTimeout: () => 1,
     clearTimeout: () => {},
     getComputedStyle: () => ({ getPropertyValue: () => "" }),
@@ -446,6 +460,12 @@ function makePage(options) {
     };
     documentStub.dispatch("drop", { dataTransfer: { files: [file] } });
     await settle();
+  };
+  page.frame = (time) => {
+    const pending = Array.from(animationFrames.values());
+    animationFrames.clear();
+    pending.forEach((cb) => cb(time));
+    return pending.length;
   };
   page.run = (source) => vm.runInContext(source, sandbox);
   return page;
@@ -806,6 +826,232 @@ await suite("viewer.html: folding a replay's fixtures", "the page sandbox in mak
     check("a bundle that is not a replay is refused, not rendered",
       page.alerts.length === 1 && page.alerts[0].indexOf("fivee-sim-replay") !== -1,
       show(page.alerts));
+  });
+
+await suite("viewer.html: animated playback", "the manual animation clock in makePage()",
+  async () => {
+    const page = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    const moving = replayBundle([]);
+    moving.map.features = [];
+    moving.events = [{
+      kind: "move", round: 1, turn: "Hero", actor: "Hero", target: "",
+      data: { origin: [10, 10], destination: [20, 10], cost: 10 },
+    }];
+    await page.drop(moving, "moving.json");
+    page.frame(0);
+    page.element("speed").value = "1";
+
+    const tokenAt = () => page.last().overlays.tokens[0].at;
+    check("the loaded replay starts at the recorded origin",
+      show(tokenAt()) === show([2, 2]), show(tokenAt()));
+
+    page.element("btn-play").click();
+    page.frame(0);
+    check("a move begins on the origin instead of jumping to its result",
+      show(tokenAt()) === show([2, 2]), show(tokenAt()));
+
+    page.frame(250);
+    check("halfway through the event the token is halfway between cells",
+      show(tokenAt()) === show([3, 2]), show(tokenAt()));
+
+    page.frame(500);
+    check("the animation settles on the replay's deterministic folded state",
+      show(tokenAt()) === show([4, 2]), show(tokenAt()));
+
+    const chained = copy(moving);
+    chained.events.push({
+      kind: "move", round: 1, turn: "Hero", actor: "Hero", target: "",
+      data: { origin: [20, 10], destination: [30, 10], cost: 10 },
+    });
+    const speedPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    speedPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await speedPage.drop(chained, "chained.json");
+    speedPage.frame(0);
+    speedPage.element("speed").value = "2";
+    speedPage.element("btn-play").click();
+    speedPage.frame(0);
+    speedPage.frame(125);
+    check("the speed control scales the active transition duration",
+      show(speedPage.last().overlays.tokens[0].at) === show([3, 2]),
+      show(speedPage.last().overlays.tokens[0].at));
+    speedPage.frame(250);
+    speedPage.frame(251);
+    speedPage.frame(376);
+    check("playback chains the next event without jumping over its midpoint",
+      show(speedPage.last().overlays.tokens[0].at) === show([5, 2]),
+      show(speedPage.last().overlays.tokens[0].at));
+    speedPage.frame(501);
+    check("the last chained event settles and stops playback",
+      show(speedPage.last().overlays.tokens[0].at) === show([6, 2])
+        && speedPage.element("btn-play").textContent === "Play"
+        && speedPage.element("readout").textContent.indexOf("2/2") > 0,
+      show([speedPage.last().overlays.tokens[0].at,
+        speedPage.element("btn-play").textContent,
+        speedPage.element("readout").textContent]));
+
+    const damaged = replayBundle([]);
+    damaged.map.features = [];
+    damaged.events = [{
+      kind: "damage", round: 1, turn: "Hero", actor: "", target: "Hero",
+      data: { amount: 6, hp: 3, max_hp: 9 },
+    }];
+    const damagePage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    damagePage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await damagePage.drop(damaged, "damage.json");
+    damagePage.frame(0);
+    damagePage.element("speed").value = "1";
+    damagePage.element("btn-play").click();
+    damagePage.frame(0);
+    check("damage starts with the hit-point ring at its previous value",
+      damagePage.last().overlays.tokens[0].hpFraction === 1,
+      damagePage.last().overlays.tokens[0].hpFraction);
+    check("an action pulse starts transparent",
+      damagePage.last().overlays.marks.length === 1
+        && damagePage.last().overlays.marks[0].alpha === 0,
+      show(damagePage.last().overlays.marks));
+    damagePage.frame(250);
+    check("damage drains the hit-point ring over the event",
+      Math.abs(damagePage.last().overlays.tokens[0].hpFraction - (2 / 3)) < 0.001,
+      damagePage.last().overlays.tokens[0].hpFraction);
+    check("damage pulses the affected token at the event midpoint",
+      damagePage.last().overlays.marks.length === 1
+        && damagePage.last().overlays.marks[0].alpha > 0.4,
+      show(damagePage.last().overlays.marks));
+    const damagePulseColor = damagePage.last().overlays.marks[0].color;
+    damagePage.frame(500);
+    check("damage settles on the recorded resulting hit points",
+      Math.abs(damagePage.last().overlays.tokens[0].hpFraction - (1 / 3)) < 0.001,
+      damagePage.last().overlays.tokens[0].hpFraction);
+
+    const healed = replayBundle([]);
+    healed.map.features = [];
+    healed.initial.creatures[0].hp = 3;
+    healed.events = [{
+      kind: "heal", round: 1, turn: "Hero", actor: "Hero", target: "Hero",
+      data: { amount: 6, hp: 9, max_hp: 9 },
+    }];
+    const healPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    healPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await healPage.drop(healed, "heal.json");
+    healPage.frame(0);
+    healPage.element("speed").value = "1";
+    healPage.element("btn-play").click();
+    healPage.frame(0);
+    healPage.frame(250);
+    check("healing fills the hit-point ring over the event",
+      Math.abs(healPage.last().overlays.tokens[0].hpFraction - (2 / 3)) < 0.001,
+      healPage.last().overlays.tokens[0].hpFraction);
+    check("healing uses its own positive pulse cue",
+      healPage.last().overlays.marks.length === 1
+        && healPage.last().overlays.marks[0].alpha > 0.4
+        && healPage.last().overlays.marks[0].color !== damagePulseColor,
+      show(healPage.last().overlays.marks));
+
+    const attacked = replayBundle([]);
+    attacked.map.features = [];
+    attacked.initial.creatures.push(
+      { name: "Foe", team: "monsters", position: [20, 10], hp: 8, max_hp: 8 }
+    );
+    attacked.events = [{
+      kind: "attack", round: 1, turn: "Hero", actor: "Hero", target: "Foe",
+      data: { attack: "Blade", hit: true },
+    }];
+    const attackPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    attackPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await attackPage.drop(attacked, "attack.json");
+    attackPage.frame(0);
+    attackPage.element("speed").value = "1";
+    attackPage.element("btn-play").click();
+    attackPage.frame(0);
+    check("an attack cue begins transparent on both participants",
+      attackPage.last().overlays.marks.length === 2
+        && attackPage.last().overlays.marks.every((mark) => mark.alpha === 0),
+      show(attackPage.last().overlays.marks));
+    attackPage.frame(250);
+    check("an attack cue pulses both participants at the midpoint",
+      attackPage.last().overlays.marks.length === 2
+        && attackPage.last().overlays.marks.every((mark) => mark.alpha > 0.4),
+      show(attackPage.last().overlays.marks));
+
+    const malformedTargets = copy(attacked);
+    malformedTargets.events[0].data.targets = "Foe";
+    malformedTargets.events[0].data.center = "nowhere";
+    const malformedPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    malformedPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await malformedPage.drop(malformedTargets, "malformed-targets.json");
+    malformedPage.frame(0);
+    malformedPage.element("speed").value = "1";
+    malformedPage.element("btn-play").click();
+    malformedPage.frame(0);
+    malformedPage.frame(250);
+    check("malformed optional cast targets cost their cues, not the animation frame",
+      malformedPage.last().overlays.marks.length === 2,
+      show(malformedPage.last().overlays.marks));
+
+    const interacted = replayBundle([]);
+    interacted.events = [{
+      kind: "interact", round: 1, turn: "Hero", actor: "Hero", target: "",
+      data: { feature: "sluice", open: false },
+    }];
+    const interactPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    interactPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await interactPage.drop(interacted, "interact.json");
+    interactPage.frame(0);
+    interactPage.element("speed").value = "1";
+    interactPage.element("btn-play").click();
+    interactPage.frame(0);
+    interactPage.frame(250);
+    check("an interaction pulses the operated fixture",
+      interactPage.last().overlays.marks.some(
+        (mark) => show(mark.at) === show([4, 3]) && mark.alpha > 0.4
+      ), show(interactPage.last().overlays.marks));
+
+    const reducedPage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" },
+      manualAnimationFrames: true, reducedMotion: true,
+    });
+    reducedPage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await reducedPage.drop(moving, "moving.json");
+    reducedPage.frame(0);
+    reducedPage.element("speed").value = "1";
+    reducedPage.element("btn-play").click();
+    reducedPage.frame(0);
+    check("reduced motion applies the folded event without interpolation",
+      show(reducedPage.last().overlays.tokens[0].at) === show([4, 2]),
+      show(reducedPage.last().overlays.tokens[0].at));
+
+    const pausePage = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" }, manualAnimationFrames: true,
+    });
+    pausePage.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await pausePage.drop(moving, "moving.json");
+    pausePage.frame(0);
+    pausePage.element("speed").value = "1";
+    pausePage.element("btn-play").click();
+    pausePage.frame(0);
+    pausePage.frame(250);
+    pausePage.element("btn-play").click();
+    pausePage.frame(300);
+    check("pausing settles the active event instead of leaving an in-between state",
+      show(pausePage.last().overlays.tokens[0].at) === show([4, 2])
+        && pausePage.element("btn-play").textContent === "Play",
+      show([pausePage.last().overlays.tokens[0].at,
+        pausePage.element("btn-play").textContent]));
   });
 
 /* --- editor.html ---------------------------------------------------------- */
