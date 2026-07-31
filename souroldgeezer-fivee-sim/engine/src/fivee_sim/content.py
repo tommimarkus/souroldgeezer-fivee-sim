@@ -411,7 +411,7 @@ def _parse_spell(
         save_ability=reader.enum("save_ability", Ability),
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),
-        half_on_save=reader.boolean("half_on_save", default=True),
+        half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
@@ -577,7 +577,7 @@ def _parse_item(
     damage_type = sub.enum("damage_type", DamageType)
     save_ability = sub.enum("save_ability", Ability)
     save_dc = sub.integer("save_dc", minimum=1) if save_ability is not None else 0
-    half_on_save = sub.boolean("half_on_save", default=True)
+    half_on_save = sub.boolean("half_on_save", default=False)
     condition = sub.string("condition") or None
     if not (reader.ok and sub.ok):
         return None
