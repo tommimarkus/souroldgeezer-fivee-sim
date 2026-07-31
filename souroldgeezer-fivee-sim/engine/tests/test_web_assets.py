@@ -116,6 +116,22 @@ class TestEditorGroundControls:
         assert "[doc].concat(doc.levels" in source
         assert "planes.forEach(" in source
 
+    def test_the_editor_resize_translates_a_fixtures_overlay_cells(self) -> None:
+        # The same failure one layer deeper. A fixture's `affects` cells carry
+        # coordinates, but they sit *inside* the feature record, so the
+        # Object.assign that moves `at` copies them verbatim — leaving a flood
+        # mislocated by exactly the anchor offset, and only on a resized map.
+        # Anchored to the write, not the word, which could outlive the code.
+        source = read("editor.html")
+        assert "moved.affects = groups" in source
+        assert "cells.push([cx, cy])" in source
+
+    def test_the_editor_resize_refuses_to_orphan_a_prerequisite(self) -> None:
+        # Dropping a fixture another one requires leaves a document that no
+        # longer parses, so the *save* would fail naming a missing
+        # prerequisite rather than the resize that removed it.
+        assert "requires it; move or remove it first" in read("editor.html")
+
     def test_the_renderer_is_never_handed_a_storey_it_must_understand(self) -> None:
         # The renderer stays pure: it is given the active plane's tiles and
         # features under the document's grid and legend, which is the shape it

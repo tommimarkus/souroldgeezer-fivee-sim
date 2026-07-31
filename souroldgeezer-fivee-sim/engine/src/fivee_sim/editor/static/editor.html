@@ -1429,9 +1429,37 @@ if (typeof FiveeRenderer === "undefined") {
         + "add one first", "error");
       return;
     }
-    snapshot();
     var offX = anchor.indexOf("left") !== -1 ? 0 : width - doc.grid.width;
     var offY = anchor.indexOf("top") === 0 ? 0 : height - doc.grid.height;
+    /* A fixture pushed off the map is dropped, as one always has been. But a
+       fixture another one *requires* cannot be: the document would stop
+       parsing, and the save would fail naming a missing prerequisite rather
+       than the resize that removed it. Refuse here, where the cause is still
+       on screen. */
+    var onMap = function (x, y) {
+      return x >= 0 && x < width && y >= 0 && y < height;
+    };
+    var survives = function (f) { return onMap(f.at[0] + offX, f.at[1] + offY); };
+    var allFeatures = [];
+    [doc].concat(doc.levels || []).forEach(function (target) {
+      (target.features || []).forEach(function (f) { allFeatures.push(f); });
+    });
+    var blocked = null;
+    allFeatures.forEach(function (f) {
+      if (blocked || !survives(f)) { return; }
+      (f.requires || []).forEach(function (id) {
+        if (blocked) { return; }
+        allFeatures.forEach(function (other) {
+          if (other.id === id && !survives(other)) { blocked = { needs: id, by: f.id }; }
+        });
+      });
+    });
+    if (blocked) {
+      setStatus("resizing would push '" + blocked.needs + "' off the map, and '"
+        + blocked.by + "' requires it; move or remove it first", "error");
+      return;
+    }
+    snapshot();
     /* A frame change is document-wide: every storey shares the grid, so one
        that kept its old tiles would sit mislocated over the map it belongs to.
        Elevation moves with the anchor like the tiles and features do; squares
@@ -1450,10 +1478,30 @@ if (typeof FiveeRenderer === "undefined") {
       }
       target.tiles = tiles;
       target.features = (target.features || []).map(function (f) {
-        return Object.assign({}, f, { at: [f.at[0] + offX, f.at[1] + offY] });
-      }).filter(function (f) {
-        return f.at[0] >= 0 && f.at[0] < width && f.at[1] >= 0 && f.at[1] < height;
-      });
+        var moved = Object.assign({}, f, { at: [f.at[0] + offX, f.at[1] + offY] });
+        /* A fixture's overlay cells carry coordinates too. A layer nested
+           inside a record is still a layer: one left untranslated here would
+           mislocate a flood by exactly the anchor offset, and only on maps
+           somebody had resized. Cells pushed off the map go with the squares
+           they described, as elevation's do; a group emptied that way is
+           dropped, and the fixture keeps its own square. */
+        if (Array.isArray(f.affects)) {
+          var groups = [];
+          f.affects.forEach(function (group) {
+            var cells = [];
+            (Array.isArray(group.cells) ? group.cells : []).forEach(function (cell) {
+              if (!Array.isArray(cell) || cell.length !== 2) { return; }
+              var cx = cell[0] + offX, cy = cell[1] + offY;
+              if (onMap(cx, cy)) { cells.push([cx, cy]); }
+            });
+            cells.sort(function (a, b) { return (a[1] - b[1]) || (a[0] - b[0]); });
+            if (cells.length) { groups.push(Object.assign({}, group, { cells: cells })); }
+          });
+          if (groups.length) { moved.affects = groups; }
+          else { delete moved.affects; }
+        }
+        return moved;
+      }).filter(function (f) { return onMap(f.at[0], f.at[1]); });
       var datum = target.elevation ? target.elevation.default : 0;
       var kept = [];
       ((target.elevation && Array.isArray(target.elevation.squares)
