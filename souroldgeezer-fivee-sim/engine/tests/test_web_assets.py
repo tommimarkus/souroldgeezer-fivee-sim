@@ -212,6 +212,39 @@ class TestEditorGroundControls:
         # the same reason as the labels channel above.
         assert "overlays.edges" in read("renderer.js")
 
+    def test_the_renderer_knows_the_terrain_override_channel(self) -> None:
+        # What a fixture does to the ground reaches the canvas as one generic
+        # per-square channel. Anchored on the overlay access, per the labels
+        # and edges channels above.
+        assert "overlays.terrainOverrides" in read("renderer.js")
+
+    def test_an_override_is_applied_before_the_colour_and_the_texture(self) -> None:
+        # Load-bearing placement: `kind` is read again for the hatch and notch
+        # branches, so an override taken after the fill would recolour a
+        # flooded square while leaving it hatched as difficult terrain.
+        source = read("renderer.js")
+        override = source.index("overlays.terrainOverrides")
+        assert override < source.index("ctx.fillStyle = terrainColor(")
+        assert override < source.index('if (kind === "difficult")')
+
+    def test_the_override_derivation_is_exported_once_for_both_pages(self) -> None:
+        # The editor and the viewer both need "which squares does this
+        # document's fixtures decide, given which stand open". Server-side that
+        # derivation is MapFeature.claims(), which names drift as its risk; a
+        # copy per page would make three.
+        source = read("renderer.js")
+        assert "function terrainOverridesFor(doc, states)" in source
+        assert "terrainOverridesFor: terrainOverridesFor" in source
+
+    def test_the_override_channel_stays_generic(self) -> None:
+        # Same rule the edge channel is held to: the renderer is handed squares
+        # and kinds, never fixtures. It must not learn what `affects` is, or
+        # the viewer's synthesized mapless plane stops being a document it can
+        # draw. The derivation helper may know; the drawing loop may not.
+        source = read("renderer.js")
+        loop = source.index("for (var cy = y0; cy < y1; cy++)")
+        assert "affects" not in source[loop:]
+
     def test_the_edge_channel_stays_generic(self) -> None:
         # The channel is a stroke on a named side of a cell, nothing more:
         # the renderer must not learn what elevation is, or the viewer's
@@ -308,6 +341,52 @@ class TestEditorStackedStoreys:
         source = read("editor.html")
         assert "tiles: plane().tiles, features: plane().features" in source
         assert "R.render(ctx, renderable(), view," in source
+
+
+class TestViewerFixtureOverlay:
+    # What a fixture did to the ground, drawn under the replay. Text only, per
+    # the module docstring — and that boundary is why these three were also
+    # driven under node, where the seeding bug below was reproduced first.
+
+    def test_the_viewer_seeds_every_fixture_not_only_the_doors(self) -> None:
+        # The bug this class was written for: the seed loop gated on
+        # `kind === "door"`, so a sluice never entered featureStates at all
+        # and a bundle whose live open-list disagreed with the document
+        # silently drew the document. `state` is what makes a feature one the
+        # fight owns — map_document.py picks fixtures by exactly that test —
+        # so the page must pick them by it too. Anchored on the guard itself:
+        # the door gate must be gone *and* the state gate present, because
+        # dropping the gate entirely would seed spawns and stairways as
+        # fixtures and pass a check for either half alone.
+        source = read("viewer.html")
+        seeding = source[source.index("function initialState") : source.index("function fold")]
+        assert 'feature.kind === "door"' not in seeding
+        assert "feature.state === undefined || feature.state === null" in seeding
+
+    def test_the_viewer_hands_the_frame_its_terrain_overrides(self) -> None:
+        # Anchored on the overlay key *and* what fills it: `terrainOverrides`
+        # alone would stay green against a page that passed an empty object,
+        # which is exactly what a fixture-blind viewer looks like.
+        assert "terrainOverrides: state.terrainOverrides" in read("viewer.html")
+
+    def test_the_viewer_derives_overrides_through_the_shared_helper(self) -> None:
+        # The renderer exports the derivation so that the question "which
+        # squares does this document's fixtures decide" has one answer, not
+        # one per page. A private copy here would make three with
+        # MapFeature.claims(), which is the drift its docstring names.
+        source = read("viewer.html")
+        assert "R.terrainOverridesFor(mapDoc, " in source
+        assert "function terrainOverridesFor" not in source
+
+    def test_the_overlay_is_derived_per_state_change_not_per_frame(self) -> None:
+        # stateAt() rebuilds from zero on any non-incremental scrub, so a
+        # scrub drag replays the whole log — and redraw() also runs on a
+        # bare window resize. Deriving inside the frame would pay for the
+        # walk on both. It hangs off the state instead, so the only place it
+        # is computed is the place the state changes.
+        source = read("viewer.html")
+        frame = source[source.index("function redraw") : source.index("function drawTicks")]
+        assert "R.terrainOverridesFor(" not in frame
 
 
 class TestTerrainColors:
@@ -424,6 +503,186 @@ class TestOfflineGuarantee:
         text = read(asset).lower()
         assert "@font-face" not in text
         assert "@import" not in text
+
+
+class TestEditorFixturePreview:
+    # The editor's half of "see the fixtures": a lens over what is drawn, and
+    # an inspector that stops hiding what a fixture does. Text and ordering
+    # only, per the module docstring — the behaviour these assertions cannot
+    # reach was driven under node instead, which is where "the toggle changes
+    # the picture and not the document" is actually proven.
+
+    def test_the_editor_carries_the_preview_toggle_and_its_list_once_each(self) -> None:
+        # Exactly once apiece: byId() answers with the first of a duplicated
+        # id, so a copy-paste double would wire the toggle to the wrong node
+        # while a bare presence check stayed green.
+        source = read("editor.html")
+        assert source.count('id="btn-preview"') == 1
+        assert source.count('id="fixture-list"') == 1
+
+    def test_the_preview_derives_its_squares_through_the_shared_helper(self) -> None:
+        # renderer.js exports terrainOverridesFor precisely so neither page
+        # re-derives "which square shows what given which fixtures stand
+        # open". Server-side that derivation is MapFeature.claims(), whose
+        # docstring names drift as the risk; a copy here would make three.
+        assert "R.terrainOverridesFor(" in read("editor.html")
+
+    def test_the_preview_is_derived_from_the_storey_being_drawn(self) -> None:
+        # renderable() is the active plane; `doc` is the ground. Handing the
+        # helper the document would recolour the storey being edited with the
+        # ground floor's fixtures — and an override is keyed "x,y" with no
+        # level in it, so nothing downstream could catch the mix-up.
+        assert "R.terrainOverridesFor(renderable(), previewOpen)" in read("editor.html")
+
+    def test_the_preview_reaches_the_canvas_through_the_live_state_channels(self) -> None:
+        # Both halves of a fixture, through the two channels the renderer
+        # already carries a fight's live state on: the ground through
+        # terrainOverrides, the door glyph through featureStates. The page
+        # teaches the renderer nothing new to preview a fixture.
+        source = read("editor.html")
+        assert "overlays.terrainOverrides = " in source
+        assert "overlays.featureStates = previewOpen" in source
+
+    def test_the_preview_channels_are_handed_down_only_while_it_is_on(self) -> None:
+        # An override map passed unconditionally costs the tile loop a lookup
+        # per cell forever — the fast path renderer.js hoists exists for the
+        # documents that hand down none — and a featureStates map left in
+        # place would keep flipping door glyphs after the lens was switched
+        # off. Anchored on the order, which is what "only while on" means.
+        source = read("editor.html")
+        assert source.index("if (previewOn) {") < source.index("overlays.terrainOverrides = ")
+
+    def test_the_preview_never_reaches_the_document(self) -> None:
+        # The whole promise of the control. contentOf feeds undo, the dirty
+        # check and the save, so a preview that leaked into it would stamp
+        # provenance.edited on a map nobody edited.
+        source = read("editor.html")
+        body = source[source.index("function contentOf(") : source.index("function snapshot(")]
+        assert "previewOpen" not in body
+        assert "previewOn" not in body
+
+    def test_the_preview_toggle_takes_no_undo_snapshot(self) -> None:
+        # Every control that changes the document calls snapshot() first; this
+        # one must not, because there is nothing to undo — and a snapshot here
+        # would push a no-op entry that swallows a real undo.
+        source = read("editor.html")
+        handler = source.index('byId("btn-preview").addEventListener')
+        assert "snapshot()" not in source[handler : source.index("});", handler)]
+
+    def test_the_preview_is_reset_when_a_document_is_opened(self) -> None:
+        # The layer checklist's third entry, and the first page state to need
+        # it: a preview left set across an open would draw the new map through
+        # the old map's fixtures, whose ids may even collide with this one's.
+        # Both halves — the toggle and the per-fixture choices.
+        source = read("editor.html")
+        body = source[
+            source.index("function loadDocument(") : source.index("function renderProvenance(")
+        ]
+        assert "previewOn = false;" in body
+        assert "previewOpen = Object.create(null);" in body
+
+    def test_a_restored_session_resets_the_preview_through_the_same_door(self) -> None:
+        # Session restore does not get its own reset because it does not get
+        # its own load: it hands the stored payload to loadDocument like every
+        # other opener, so the reset above covers it. A restore that built the
+        # document itself would need the checklist walked a second time.
+        source = read("editor.html")
+        body = source[
+            source.index("function restoreSession(") : source.index('addEventListener("pagehide"')
+        ]
+        assert "loadDocument(state.doc, {" in body
+
+    def test_the_preview_stands_down_on_a_map_with_no_fixtures(self) -> None:
+        # Exactly as the Level control is disabled on a map with no storeys.
+        # Both halves, because either alone is a live-looking control over
+        # nothing: the toggle is disabled, *and* a lens left on across a load
+        # or a level switch that brought no fixtures is switched off rather
+        # than left claiming to show something.
+        source = read("editor.html")
+        body = source[source.index("function renderFixtureList(") :]
+        body = body[: body.index("\n  }\n")]
+        assert 'var button = byId("btn-preview");' in body
+        assert "button.disabled = !fixtures.length;" in body
+        assert "if (!fixtures.length) { previewOn = false; }" in body
+
+    def test_a_fixture_is_any_feature_carrying_a_state(self) -> None:
+        # The document's own definition of what a fight can operate, and not a
+        # list of kinds: a sluice, a lever and a spike are fixtures, a spawn
+        # hint and a drawn stairway are not. A kind check here would preview
+        # doors and nothing else.
+        source = read("editor.html")
+        body = source[source.index("function fixturesOnPlane(") :]
+        body = body[: body.index("\n  }\n")]
+        assert "f.state !== undefined" in body
+        assert "kind" not in body
+
+    def test_the_fixture_list_follows_the_storey_being_edited(self) -> None:
+        # The preview is derived from the active plane, so its list has to be
+        # too: a level switch that left the ground's fixtures listed would
+        # offer checkboxes for squares this storey has never heard of.
+        source = read("editor.html")
+        handler = source.index('byId("level-select").addEventListener')
+        assert "renderFixtureList();" in source[handler : source.index("});", handler)]
+
+    def test_the_fixture_list_is_rebuilt_wherever_a_fixture_appears(self) -> None:
+        # The door tool creates fixtures and the delete button removes them,
+        # so a list built only at load would go stale mid-session — offering a
+        # checkbox for a fixture that is gone, and none for the one just
+        # placed. Neither handler can lean on redraw() to rebuild it: redraw
+        # runs on every pointer move, and rebuilding the panel there would
+        # tear the checkboxes out from under the pointer thirty times a second.
+        source = read("editor.html")
+        for handler in ("function cycleDoor(", 'byId("btn-delete-feature").addEventListener'):
+            start = source.index(handler)
+            assert "renderFixtureList();" in source[start : source.index("\n  }", start)], handler
+
+    def test_the_inspector_shows_the_six_keys_that_make_a_fixture(self) -> None:
+        # Five fields left a loaded sluice indistinguishable from a bare door:
+        # the block showed a `state` and stopped, so nothing on the page said
+        # what operating it would do. Anchored on the rendered label of each
+        # line, not the bare word — every one of these names also appears in
+        # the resize code and in the prose around it.
+        source = read("editor.html")
+        info = source[
+            source.index("function renderFeatureInfo(") : source.index(
+                'byId("btn-delete-feature").addEventListener'
+            )
+        ]
+        for label in (
+            '"terrain: "',
+            '"elevation: "',
+            '"affects: "',
+            '"requires: "',
+            '"costs_action: "',
+            '"check: "',
+        ):
+            assert label in info, label
+
+    def test_the_inspector_counts_an_overlay_rather_than_listing_it(self) -> None:
+        # A fixture may govern a whole room. The panel is 230px wide and this
+        # block is meant to be read at a glance, so `affects` reports how many
+        # groups and how many squares — never the squares themselves.
+        source = read("editor.html")
+        info = source[
+            source.index("function renderFeatureInfo(") : source.index(
+                'byId("btn-delete-feature").addEventListener'
+            )
+        ]
+        assert '" group(s), "' in info
+        assert '" square(s)"' in info
+
+    def test_the_inspector_guards_the_shapes_a_hand_written_file_may_carry(self) -> None:
+        # It runs on every selection click, and a throw here leaves the panel
+        # showing the previously selected feature while the click looks like
+        # it simply missed. A hand-opened file may carry `affects: "nope"`.
+        source = read("editor.html")
+        info = source[
+            source.index("function renderFeatureInfo(") : source.index(
+                'byId("btn-delete-feature").addEventListener'
+            )
+        ]
+        assert "Array.isArray(feature.affects)" in info
+        assert "Array.isArray(feature.requires)" in info
 
 
 class TestPagesParse:
