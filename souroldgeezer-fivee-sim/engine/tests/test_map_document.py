@@ -19,6 +19,7 @@ from fivee_sim.map_document import (
     DEFAULT_LEGEND,
     MAX_MAP_BYTES,
     MAX_MAP_DIM,
+    MapColor,
     MapElevation,
     MapError,
     parse_document,
@@ -279,7 +280,7 @@ class TestFeatureDiagnostics:
 
     def test_unknown_feature_key(self) -> None:
         payload = document()
-        payload["features"][0]["colour"] = "red"
+        payload["features"][0]["color"] = "red"
         assert any("unknown key" in p for p in errors_of(payload))
 
 
@@ -389,6 +390,129 @@ class TestElevationDiagnostics:
         payload = document()
         payload["elevation"] = {"default": "high"}
         assert any("whole number" in p for p in errors_of(payload))
+
+
+class TestPalette:
+    """The optional color layer: absent means computed, and absent writes nothing."""
+
+    def test_a_document_without_the_key_carries_no_colors(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert dict(doc.palette) == {}
+
+    def test_one_color_serves_both_themes(self) -> None:
+        payload = document()
+        payload["palette"] = {"water": "#a9c6ce"}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.palette["water"] == MapColor(light="#a9c6ce", dark="#a9c6ce")
+
+    def test_a_pair_colors_each_theme_separately(self) -> None:
+        payload = document()
+        payload["palette"] = {"water": {"light": "#a9c6ce", "dark": "#1f3a44"}}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.palette["water"] == MapColor(light="#a9c6ce", dark="#1f3a44")
+
+    def test_shorthand_expands_and_case_is_normalised(self) -> None:
+        # Canonical storage is what keeps serialize ∘ parse idempotent.
+        payload = document()
+        payload["palette"] = {"floor": "#ABC"}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.palette["floor"].light == "#aabbcc"
+
+    def test_a_kind_needs_no_glyph_in_this_map(self) -> None:
+        # Colors outlive re-legending, so an unpainted kind may still be colored.
+        payload = document()
+        payload["palette"] = {"water": "#a9c6ce"}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert "water" not in doc.legend.values()
+        assert "water" in doc.palette
+
+    def test_a_document_without_colors_writes_no_palette_key(self) -> None:
+        # The guarantee that keeps every map saved before colors existed quiet
+        # under version control.
+        text = serialize(parse_document(document(), source="test", terrain=TERRAIN))
+        assert "palette" not in json.loads(text)
+
+    def test_kinds_are_written_in_sorted_order(self) -> None:
+        payload = document()
+        payload["palette"] = {"water": "#a9c6ce", "floor": "#e9e4d8", "wall": "#4d463c"}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert list(written["palette"]) == ["floor", "wall", "water"]
+
+    def test_a_pair_that_matches_collapses_to_one_color(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": {"light": "#AABBCC", "dark": "#aabbcc"}}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert written["palette"] == {"floor": "#aabbcc"}
+
+    def test_a_differing_pair_is_written_light_then_dark(self) -> None:
+        payload = document()
+        payload["palette"] = {"water": {"dark": "#1f3a44", "light": "#a9c6ce"}}
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert list(written["palette"]["water"].items()) == [
+            ("light", "#a9c6ce"),
+            ("dark", "#1f3a44"),
+        ]
+
+    def test_a_colored_document_round_trips_byte_stably(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": "#ABC", "water": {"light": "#a9c6ce", "dark": "#1f3a44"}}
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+
+
+class TestPaletteDiagnostics:
+    def test_a_non_object_says_what_the_shape_is(self) -> None:
+        payload = document()
+        payload["palette"] = ["#a9c6ce"]
+        assert any("terrain kinds to colors" in p for p in errors_of(payload))
+
+    def test_an_unknown_terrain_kind_lists_what_is_available(self) -> None:
+        payload = document()
+        payload["palette"] = {"lava": "#d2440f"}
+        assert any(
+            "names terrain 'lava', which the active content does not define" in p
+            and "Available: " in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_named_css_color_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": "red"}
+        assert any("must be a hex color" in p for p in errors_of(payload))
+
+    def test_a_url_value_is_refused(self) -> None:
+        # The pages assign this into style.background; a url() would fetch over
+        # the network and break the editor's offline guarantee.
+        payload = document()
+        payload["palette"] = {"floor": "url(https://example.invalid/x.png)"}
+        assert any("must be a hex color" in p for p in errors_of(payload))
+
+    def test_a_hex_of_the_wrong_length_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": "#12345"}
+        assert any("must be a hex color" in p for p in errors_of(payload))
+
+    def test_a_non_hex_digit_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": "#gggggg"}
+        assert any("must be a hex color" in p for p in errors_of(payload))
+
+    def test_a_pair_missing_a_theme_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": {"light": "#aabbcc"}}
+        assert any('must give both "light" and "dark"' in p for p in errors_of(payload))
+
+    def test_an_unknown_theme_key_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": {"light": "#aabbcc", "dark": "#112233", "dusk": "#445566"}}
+        assert any("unknown key" in p for p in errors_of(payload))
+
+    def test_a_value_of_the_wrong_type_is_refused(self) -> None:
+        payload = document()
+        payload["palette"] = {"floor": 16711680}
+        assert any("must be a hex color" in p for p in errors_of(payload))
 
 
 class TestSerialize:

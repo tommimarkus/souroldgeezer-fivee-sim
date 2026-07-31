@@ -82,9 +82,17 @@ header .spacer { flex: 1; }
 .legend-row.selected { border-color: var(--accent); background: var(--bg); }
 .legend-swatch {
   width: 16px; height: 16px; border: 1px solid var(--edge); border-radius: 3px;
-  flex: none;
+  flex: none; padding: 0; background: none; cursor: pointer;
 }
+.legend-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.legend-swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
+.legend-swatch::-moz-color-swatch { border: none; border-radius: 2px; }
 .legend-glyph { font-family: ui-monospace, monospace; width: 14px; text-align: center; }
+.legend-kind { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.legend-clear {
+  flex: none; padding: 0 4px; line-height: 1.2; border: 1px solid var(--edge);
+  border-radius: 3px; background: none; color: var(--muted); cursor: pointer;
+}
 #legend-add { display: flex; gap: 4px; margin-top: 6px; }
 #legend-add input:first-child { width: 32px; text-align: center; }
 #legend-add input:nth-child(2) { flex: 1; min-width: 0; }
@@ -328,15 +336,16 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- document plumbing ------------------------------------------------ */
-  /* Every layer the document carries. The page paints ground elevation now,
-     and keeps that layer in the server's canonical shape — sparse against the
-     datum, sorted row then column — so undo, the dirty check, and byte-stable
-     round-trips stay honest. */
+  /* Every layer the document carries. The page paints ground elevation and
+     terrain color now, and keeps both in the server's canonical shape —
+     elevation sparse against the datum and sorted row then column, the palette
+     dropped entirely once its last color goes — so undo, the dirty check, and
+     byte-stable round-trips stay honest. */
   function contentOf(payload) {
     return JSON.stringify({
       name: payload.name, grid: payload.grid, legend: payload.legend,
       tiles: payload.tiles, features: payload.features,
-      elevation: payload.elevation
+      elevation: payload.elevation, palette: payload.palette
     });
   }
   function snapshot() {
@@ -353,6 +362,8 @@ if (typeof FiveeRenderer === "undefined") {
     doc.features = previous.features;
     if (previous.elevation === undefined) { delete doc.elevation; }
     else { doc.elevation = previous.elevation; }
+    if (previous.palette === undefined) { delete doc.palette; }
+    else { doc.palette = previous.palette; }
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     byId("map-name").value = doc.name;
@@ -419,26 +430,77 @@ if (typeof FiveeRenderer === "undefined") {
       selectedGlyph = glyphs[0] || null;
     }
     glyphs.forEach(function (glyph) {
+      var kindName = doc.legend[glyph];
       var row = document.createElement("div");
       row.className = "legend-row" + (glyph === selectedGlyph ? " selected" : "");
-      var swatch = document.createElement("span");
+      /* The swatch is the control: it shows the color this kind draws in and
+         picks a new one. Its own clicks must not reach the row, whose handler
+         re-renders this very element out from under an open picker. */
+      var swatch = document.createElement("input");
+      swatch.type = "color";
       swatch.className = "legend-swatch";
-      swatch.style.background = R.terrainColor(
-        doc.legend[glyph], R.isDark(), getComputedStyle(canvas));
+      swatch.value = R.asHex(ctx, R.terrainColor(
+        kindName, R.isDark(), getComputedStyle(canvas), doc.palette));
+      swatch.title = "color for " + kindName;
+      swatch.addEventListener("click", function (event) { event.stopPropagation(); });
+      swatch.addEventListener("change", function () {
+        setTerrainColor(kindName, swatch.value);
+      });
       var mark = document.createElement("span");
       mark.className = "legend-glyph";
       mark.textContent = glyph;
       var kind = document.createElement("span");
-      kind.textContent = doc.legend[glyph];
+      kind.className = "legend-kind";
+      kind.textContent = kindName;
       row.appendChild(swatch);
       row.appendChild(mark);
       row.appendChild(kind);
+      if (doc.palette && doc.palette[kindName]) {
+        var clear = document.createElement("button");
+        clear.className = "legend-clear";
+        clear.textContent = "×";
+        clear.title = "drop this color and let the theme choose again";
+        clear.addEventListener("click", function (event) {
+          event.stopPropagation();
+          clearTerrainColor(kindName);
+        });
+        row.appendChild(clear);
+      }
       row.addEventListener("click", function () {
         selectedGlyph = glyph;
         renderLegend();
       });
       list.appendChild(row);
     });
+  }
+
+  function setTerrainColor(kind, hex) {
+    snapshot();
+    if (!doc.palette) { doc.palette = {}; }
+    var current = doc.palette[kind];
+    if (current && typeof current === "object") {
+      /* A hand-authored {light, dark} pair keeps its other half: the picker
+         only ever speaks for the theme the page is showing. */
+      current[R.isDark() ? "dark" : "light"] = hex;
+    } else {
+      doc.palette[kind] = hex;
+    }
+    renderLegend();
+    setStatus("color: " + kind + " → " + hex);
+    redraw();
+  }
+
+  function clearTerrainColor(kind) {
+    snapshot();
+    if (doc.palette) {
+      delete doc.palette[kind];
+      /* Canonical at all times, like the height layer: an empty palette is no
+         palette, so paint-then-clear returns to the baseline byte for byte. */
+      if (!Object.keys(doc.palette).length) { delete doc.palette; }
+    }
+    renderLegend();
+    setStatus("color: " + kind + " back to the theme's own");
+    redraw();
   }
 
   byId("btn-add-legend").addEventListener("click", function () {

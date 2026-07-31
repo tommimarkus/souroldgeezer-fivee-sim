@@ -79,7 +79,8 @@ viewports and `downsample` for big maps, `show_elevation` for the ground
 heights as a second set of rows, and an `encounter_id` overlay that
 letters the combatants; **`map_edit`** applies verbal tweaks atomically —
 paint, line, carve_corridor, set_terrain, add/remove_feature, toggle_door,
-resize, set_legend, set_name, set_elevation, adjust_elevation — a bad operation
+resize, set_legend, set_name, set_palette, set_elevation, adjust_elevation — a
+bad operation
 names its index and changes nothing; **`map_save`** writes canonical JSON (refusing silent overwrites) and
 **`map_load`** reads a file or inline document back, so the workflow is
 generate → render → edit → save, and load by path next session.

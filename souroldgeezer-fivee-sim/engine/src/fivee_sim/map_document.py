@@ -14,6 +14,15 @@ The format, ``fivee-sim-map`` version 1:
 - ``tiles`` — one string per row, top row first, each character resolved
   through the per-document ``legend`` to a terrain-kind string. Opacity is
   tile-based; the format has no edge walls.
+- ``palette`` — optional terrain colors: a terrain kind maps to one hex color,
+  or to a ``{"light", "dark"}`` pair when the two themes want different ones.
+  Colors are hex and nothing else, because the browser assets put them straight
+  into a CSS background where a ``url(...)`` would reach the network and break
+  the pages' offline guarantee. A kind the document does not paint may still be
+  colored, so a palette survives re-legending. Omitted entirely when empty, so a
+  file written before colors existed round-trips to the same bytes. What a kind
+  looks like without an entry is the renderers' business — see ``renderer.js``
+  and :mod:`fivee_sim.service.uvtt`, which compute one.
 - ``elevation`` — optional ground height in feet: a ``default`` and a sparse
   list of ``[x, y, feet]`` for the squares that differ from it. Omitted
   entirely on a flat map, so a file written before heights existed round-trips
@@ -41,6 +50,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import re
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -60,6 +70,7 @@ __all__ = [
     "MAX_MAP_BYTES",
     "MAX_MAP_DIM",
     "RESERVED_GLYPHS",
+    "MapColor",
     "MapDocument",
     "MapElevation",
     "MapError",
@@ -110,10 +121,15 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
 
 _DOCUMENT_KEYS = frozenset(
     {
-        "format", "format_version", "name", "grid", "legend", "tiles",
+        "format", "format_version", "name", "grid", "legend", "palette", "tiles",
         "elevation", "features", "provenance",
     }
 )
+#: The two themes a palette entry may name; one color for both is the short form.
+_PALETTE_THEMES = frozenset({"light", "dark"})
+#: ``#rgb`` or ``#rrggbb``, and nothing else — see the module docstring on why
+#: the format refuses every other CSS color syntax.
+_HEX_COLOR = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\Z")
 _GRID_KEYS = frozenset({"width", "height", "cell_feet"})
 _ELEVATION_KEYS = frozenset({"default", "squares"})
 _FEATURE_KEYS = frozenset({"id", "kind", "at", "orientation", "state", "team"})
@@ -159,6 +175,19 @@ class MapElevation:
 
 
 @dataclass(frozen=True, slots=True)
+class MapColor:
+    """One terrain kind's authored fill, per theme.
+
+    Both values are canonical ``#rrggbb`` in lowercase, whatever the file spelled.
+    A document naming one color parses to a pair whose themes match, and that is
+    the shape :func:`as_payload` writes back as the single color it came from.
+    """
+
+    light: str
+    dark: str
+
+
+@dataclass(frozen=True, slots=True)
 class MapFeatureRecord:
     """One feature as the document records it — defaults, not live state."""
 
@@ -197,6 +226,7 @@ class MapDocument:
     features: tuple[MapFeatureRecord, ...]
     provenance: MapProvenance
     elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
+    palette: Mapping[str, MapColor] = dataclasses.field(default_factory=dict)
 
 
 # --- parsing ---------------------------------------------------------------
@@ -275,6 +305,106 @@ def _parse_legend(
             )
         legend[glyph] = kind
     return legend
+
+
+def canonical_color(value: str) -> str | None:
+    """``value`` as lowercase ``#rrggbb``, or ``None`` if it is not a hex color.
+
+    The one place the format's color syntax is decided; the map service reuses it
+    so an edit operation and a hand-written file are held to the same rule.
+    """
+    text = value.strip()
+    if not _HEX_COLOR.match(text):
+        return None
+    text = text.lower()
+    if len(text) == 4:
+        return "#" + "".join(char * 2 for char in text[1:])
+    return text
+
+
+def _color_of(
+    kind: str, value: Any, reader: Reader, diagnostics: list[Diagnostic], source: str
+) -> MapColor | None:
+    """One palette entry: a color for both themes, or a ``{light, dark}`` pair."""
+    if isinstance(value, str):
+        canonical = canonical_color(value)
+        if canonical is None:
+            reader.fail("palette", _bad_color(kind, value))
+            return None
+        return MapColor(light=canonical, dark=canonical)
+    if isinstance(value, Mapping):
+        sub = Reader(value, diagnostics, source=source, section="map", name=f"palette.{kind}")
+        sub.unknown_keys(_PALETTE_THEMES)
+        themes: dict[str, str] = {}
+        for theme in ("light", "dark"):
+            raw = value.get(theme)
+            if raw is None:
+                sub.fail(
+                    theme,
+                    f'{kind!r} must give both "light" and "dark", or a single color '
+                    f"for both themes",
+                )
+                continue
+            canonical = canonical_color(raw) if isinstance(raw, str) else None
+            if canonical is None:
+                sub.fail(theme, _bad_color(kind, raw))
+                continue
+            themes[theme] = canonical
+        if not sub.ok:
+            return None
+        return MapColor(light=themes["light"], dark=themes["dark"])
+    reader.fail("palette", _bad_color(kind, value))
+    return None
+
+
+def _bad_color(kind: str, value: Any) -> str:
+    return (
+        f'{kind!r} must be a hex color like "#d2440f" or "#abc" — the format takes '
+        f"no other color syntax — got {value!r}"
+    )
+
+
+def _parse_palette(
+    payload: Mapping[str, Any],
+    reader: Reader,
+    diagnostics: list[Diagnostic],
+    source: str,
+    *,
+    terrain: TerrainTable,
+) -> dict[str, MapColor]:
+    """The color layer, or empty when the document does not carry one.
+
+    Always a usable mapping: a palette has no dependents inside the document, so
+    a bad entry is reported and dropped rather than failing the whole key. The
+    document is refused all the same — every problem here is an error.
+    """
+    raw = payload.get("palette")
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        reader.fail(
+            "palette",
+            "must be an object mapping terrain kinds to colors, such as "
+            '{"lava": "#d2440f"}',
+        )
+        return {}
+    available = ", ".join(sorted(terrain)) or "none"
+    palette: dict[str, MapColor] = {}
+    for kind in sorted(raw, key=str):
+        if not isinstance(kind, str) or not kind.strip():
+            reader.fail("palette", f"{kind!r} must name a terrain kind")
+            continue
+        if kind not in terrain:
+            reader.fail(
+                "palette",
+                f"names terrain {kind!r}, which the active content does not define. "
+                f"Available: {available}",
+            )
+            continue
+        color = _color_of(kind, raw[kind], reader, diagnostics, source)
+        if color is not None:
+            palette[kind] = color
+    return palette
 
 
 def _parse_tiles(
@@ -554,6 +684,7 @@ def _parse(
 
     grid = _parse_grid(payload, reader, diagnostics, source)
     legend = _parse_legend(payload, reader, terrain=terrain)
+    palette = _parse_palette(payload, reader, diagnostics, source, terrain=terrain)
     tiles = _parse_tiles(payload, reader, grid, legend)
     elevation = _parse_elevation(payload, reader, diagnostics, grid, source)
     features = _parse_features(payload, reader, diagnostics, grid, source)
@@ -575,6 +706,7 @@ def _parse(
         features=features,
         provenance=provenance,
         elevation=elevation,
+        palette=MappingProxyType(palette),
     )
 
 
@@ -626,6 +758,13 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
     return entry
 
 
+def _color_payload(color: MapColor) -> str | dict[str, str]:
+    """One color, in the shortest shape that says the same thing."""
+    if color.light == color.dark:
+        return color.light
+    return {"light": color.light, "dark": color.dark}
+
+
 def as_payload(document: MapDocument) -> dict[str, Any]:
     """The document as JSON-ready primitives, in the canonical key order.
 
@@ -633,8 +772,10 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
     the optional fields they do not carry. Elevation is canonicalised — squares
     already sitting at the default are dropped, the rest sorted by row then
     column — and the whole key is omitted from a flat map at zero, so a document
-    written before heights existed writes back byte-for-byte. This is what makes
-    :func:`serialize` byte-stable across a parse round-trip.
+    written before heights existed writes back byte-for-byte. The palette sorts by
+    kind, writes a matched pair as the single color it is, and is likewise omitted
+    when empty. This is what makes :func:`serialize` byte-stable across a parse
+    round-trip.
     """
     features = [feature_payload(feature) for feature in document.features]
     elevation = document.elevation
@@ -651,8 +792,12 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
             "cell_feet": document.grid.cell_feet,
         },
         "legend": {glyph: document.legend[glyph] for glyph in sorted(document.legend)},
-        "tiles": list(document.tiles),
     }
+    if document.palette:
+        payload["palette"] = {
+            kind: _color_payload(document.palette[kind]) for kind in sorted(document.palette)
+        }
+    payload["tiles"] = list(document.tiles)
     if raised or elevation.default:
         payload["elevation"] = {
             "default": elevation.default,

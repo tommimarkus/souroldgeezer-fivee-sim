@@ -261,6 +261,35 @@ class TestImage:
         assert _fallback_rgb("swamp") == _fallback_rgb("swamp")
         assert _fallback_rgb("swamp") != _fallback_rgb("bog")
 
+    def test_the_documents_palette_outranks_the_engine_table(self) -> None:
+        raw = payload()
+        raw["palette"] = {"floor": "#d2440f"}
+        width, _, image = self.decode(
+            to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
+        )
+        assert self.pixel(image, width, 4, 4) == (0xD2, 0x44, 0x0F)
+        assert self.pixel(image, width, 2 * 8 + 4, 4) == PALETTE["wall"]  # uncolored
+
+    def test_a_theme_pair_exports_its_light_color(self) -> None:
+        # The PNG has exactly one theme, and the light one is what the engine
+        # table already follows.
+        raw = payload()
+        raw["palette"] = {"floor": {"light": "#a9c6ce", "dark": "#1f3a44"}}
+        width, _, image = self.decode(
+            to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
+        )
+        assert self.pixel(image, width, 4, 4) == (0xA9, 0xC6, 0xCE)
+
+    def test_a_pack_kind_can_be_colored_instead_of_hashed(self) -> None:
+        raw = payload()
+        raw["legend"]["~"] = "water"
+        raw["tiles"][0] = "~.#..."
+        raw["palette"] = {"water": "#010203"}
+        width, _, image = self.decode(
+            to_uvtt(document(raw), terrain=TERRAIN, pixels_per_grid=8)["image"]
+        )
+        assert self.pixel(image, width, 4, 4) == (0x01, 0x02, 0x03)
+
     def test_include_image_false_is_an_empty_string(self) -> None:
         assert export(include_image=False)["image"] == ""
 

@@ -458,6 +458,75 @@ class TestMapsRoundTrip:
         assert saved.status == 200
         assert saved.json()["sha256"] == sha256  # converged, now a fixed point
 
+    def test_a_canonical_palette_is_a_server_fixed_point(self, editor: Editor) -> None:
+        # The shape the page's color picker must emit: lowercase six-digit hex,
+        # kinds sorted, a pair only where the themes differ. Comes back verbatim
+        # and re-saves to the identical digest.
+        colored = payload()
+        colored["palette"] = {
+            "floor": "#d2440f",
+            "wall": {"light": "#a9c6ce", "dark": "#1f3a44"},
+        }
+        sha256 = editor.put_map("editor-chamber", colored).json()["sha256"]
+        fetched = editor.request("GET", "/api/maps/editor-chamber").json()
+        assert fetched["palette"] == {
+            "floor": "#d2440f",
+            "wall": {"light": "#a9c6ce", "dark": "#1f3a44"},
+        }
+
+        saved = editor.put_map("editor-chamber", fetched, if_match=f'"{sha256}"')
+        assert saved.status == 200
+        assert saved.json()["sha256"] == sha256  # a fixed point: same bytes, same digest
+
+    def test_a_noncanonical_palette_converges_to_the_canonical_form(
+        self, editor: Editor
+    ) -> None:
+        # The other half: shorthand and uppercase hex, kinds out of order, and a
+        # pair whose halves match are all accepted and come back reduced, after
+        # which the layer is stable. A page that hand-rolls the shape lands here.
+        jumbled = payload()
+        jumbled["palette"] = {
+            "wall": "#ABC",
+            "floor": {"light": "#D2440F", "dark": "#d2440f"},
+        }
+        editor.put_map("editor-chamber", jumbled)
+        fetched = editor.request("GET", "/api/maps/editor-chamber").json()
+        assert list(fetched["palette"].items()) == [("floor", "#d2440f"), ("wall", "#aabbcc")]
+
+        sha256 = editor.request("GET", "/api/maps/editor-chamber").headers["ETag"].strip('"')
+        saved = editor.put_map("editor-chamber", fetched, if_match=f'"{sha256}"')
+        assert saved.status == 200
+        assert saved.json()["sha256"] == sha256  # converged, now a fixed point
+
+    def test_an_empty_palette_is_no_palette(self, editor: Editor) -> None:
+        # What the page sends after clearing its last color, and why it must
+        # delete the key rather than send {}: the digest has to return to the
+        # one an uncolored map had, or clearing would read as an edit.
+        plain = editor.put_map("editor-chamber", payload()).json()["sha256"]
+        emptied = payload()
+        emptied["palette"] = {}
+        assert editor.put_map(
+            "editor-chamber", emptied, if_match=f'"{plain}"'
+        ).json()["sha256"] == plain
+        assert "palette" not in editor.request("GET", "/api/maps/editor-chamber").json()
+
+    def test_a_bad_color_is_refused_by_the_seam(self, editor: Editor) -> None:
+        broken = payload()
+        broken["palette"] = {"floor": "url(https://example.invalid/x.png)"}
+        assert_problem(editor.put_map("editor-chamber", broken), 422, "must be a hex color")
+
+    def test_an_edit_does_not_discard_terrain_colors(self, editor: Editor) -> None:
+        colored = payload()
+        colored["palette"] = {"floor": "#d2440f"}
+        editor.put_map("editor-chamber", colored)
+        response = editor.request(
+            "POST",
+            "/api/maps/editor-chamber/edits",
+            json_body={"operations": [{"op": "set_name", "name": "renamed"}]},
+        )
+        assert response.status == 200
+        assert response.json()["document"]["palette"] == {"floor": "#d2440f"}
+
     def test_an_edit_does_not_flatten_ground_height(self, editor: Editor) -> None:
         raised = payload()
         raised["elevation"] = {"default": 0, "squares": [[2, 2, 20]]}

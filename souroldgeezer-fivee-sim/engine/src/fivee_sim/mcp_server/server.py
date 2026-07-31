@@ -1447,6 +1447,9 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     horizontal_first?}, ``add_feature`` {feature}, ``remove_feature`` {id},
     ``toggle_door`` {at}, ``resize`` {width, height, anchor?, fill?},
     ``set_legend`` {glyph, terrain}, ``set_name`` {name},
+    ``set_palette`` {terrain, color} to color a terrain kind in this document —
+    one hex color, a {light, dark} pair of them, or null to drop back to the
+    color the renderers compute —
     ``set_elevation`` {rect | cells, feet} or {default} to move the height every
     unnamed square sits at, ``adjust_elevation`` {rect | cells, by} to raise or
     lower what is already there. Heights are feet and may be negative. A bad

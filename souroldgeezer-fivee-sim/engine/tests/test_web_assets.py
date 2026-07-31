@@ -110,6 +110,43 @@ class TestEditorGroundControls:
         assert "R.visibleBounds(" in read("editor.html")
 
 
+class TestTerrainColors:
+    # Presence and precedence as text, never a drawn pixel — the boundary in
+    # the module docstring holds here too.
+
+    def test_the_renderer_resolves_a_kind_against_the_documents_palette(self) -> None:
+        # Anchored to the lookup rather than the word, which could survive in a
+        # comment after the argument itself was dropped.
+        assert "palette[kind]" in read("renderer.js")
+
+    def test_an_authored_color_outranks_the_pages_theme(self) -> None:
+        # The pages define --terrain-* for all thirteen bundled kinds, so a
+        # palette consulted after the custom property would never color one.
+        renderer = read("renderer.js")
+        assert renderer.index("palette[kind]") < renderer.index("getPropertyValue(")
+
+    def test_the_renderer_draws_tiles_with_the_documents_palette(self) -> None:
+        assert "doc.palette" in read("renderer.js")
+
+    def test_the_editor_carries_colors_through_the_document_plumbing(self) -> None:
+        # contentOf feeds undo, the dirty check and the save digest; a layer
+        # missing from it is one every unrelated edit silently discards.
+        editor = read("editor.html")
+        assert "palette: payload.palette" in editor
+        assert "doc.palette = previous.palette" in editor
+
+    def test_the_editor_offers_a_color_control_per_legend_row(self) -> None:
+        editor = read("editor.html")
+        assert '.type = "color"' in editor
+        assert "legend-clear" in editor
+
+    def test_the_renderer_normalises_a_color_for_the_picker(self) -> None:
+        # <input type="color"> takes #rrggbb only, and the computed color may
+        # be an hsl() from the hash fallback or a CSS variable.
+        assert "asHex" in read("renderer.js")
+        assert "R.asHex(" in read("editor.html")
+
+
 class TestOfflineGuarantee:
     @pytest.mark.parametrize("asset", ASSETS)
     def test_no_asset_references_an_external_url(self, asset: str) -> None:

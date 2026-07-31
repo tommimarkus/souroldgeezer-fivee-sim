@@ -16,7 +16,13 @@ from typing import Any
 import pytest
 
 from fivee_sim.kernel.grid import TERRAIN
-from fivee_sim.map_document import MapDocument, MapError, parse_document, serialize
+from fivee_sim.map_document import (
+    MapColor,
+    MapDocument,
+    MapError,
+    parse_document,
+    serialize,
+)
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
 from fivee_sim.service.errors import MapEditError
@@ -333,6 +339,79 @@ class TestElevationEdits:
             edited(document(), {"op": "set_elevation", "rect": [4, 4, 9, 9], "feet": 5})
 
 
+class TestPaletteEdits:
+    def colored(self) -> MapDocument:
+        """The room with its floor painted a color the renderers would not pick."""
+        return edited(document(), {"op": "set_palette", "terrain": "floor", "color": "#d2440f"})
+
+    def test_set_palette_colors_a_kind(self) -> None:
+        doc = self.colored()
+        assert doc.palette["floor"] == MapColor(light="#d2440f", dark="#d2440f")
+        assert doc.provenance.edited is True
+
+    def test_set_palette_takes_a_theme_pair(self) -> None:
+        doc = edited(
+            document(),
+            {"op": "set_palette", "terrain": "water", "color": {"light": "#a9c6ce",
+                                                                "dark": "#1f3a44"}},
+        )
+        assert doc.palette["water"] == MapColor(light="#a9c6ce", dark="#1f3a44")
+
+    def test_a_shorthand_color_is_canonicalised(self) -> None:
+        doc = edited(document(), {"op": "set_palette", "terrain": "floor", "color": "#ABC"})
+        assert doc.palette["floor"].light == "#aabbcc"
+
+    def test_a_null_color_clears_the_entry(self) -> None:
+        doc = edited(self.colored(), {"op": "set_palette", "terrain": "floor", "color": None})
+        assert dict(doc.palette) == {}
+        assert "palette" not in json.loads(serialize(doc))
+
+    def test_clearing_a_color_that_was_never_set_changes_nothing(self) -> None:
+        before = document()
+        after = edited(before, {"op": "set_palette", "terrain": "floor", "color": None})
+        assert after is before
+
+    def test_an_unrelated_edit_keeps_the_color_layer(self) -> None:
+        # The trap: apply_edits rebuilds the whole payload, so a layer the edit
+        # state forgets is one every unrelated edit silently discards.
+        doc = edited(self.colored(), {"op": "set_name", "name": "renamed"})
+        assert doc.name == "renamed"
+        assert doc.palette["floor"].light == "#d2440f"
+
+    def test_a_resize_keeps_the_color_layer(self) -> None:
+        # Colors have no coordinate frame, so the op that reframes everything
+        # else must leave them exactly where they were.
+        doc = edited(self.colored(), {"op": "resize", "width": 8, "height": 5})
+        assert doc.palette["floor"].light == "#d2440f"
+
+    def test_a_kind_with_no_glyph_may_still_be_colored(self) -> None:
+        doc = edited(document(), {"op": "set_palette", "terrain": "water", "color": "#a9c6ce"})
+        assert "water" not in doc.legend.values()
+        assert doc.palette["water"].light == "#a9c6ce"
+
+    def test_an_unknown_terrain_kind_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="not defined by the active content"):
+            edited(document(), {"op": "set_palette", "terrain": "lava", "color": "#d2440f"})
+
+    def test_a_named_css_color_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="hex color"):
+            edited(document(), {"op": "set_palette", "terrain": "floor", "color": "red"})
+
+    def test_a_url_color_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="hex color"):
+            edited(
+                document(),
+                {"op": "set_palette", "terrain": "floor", "color": "url(http://x.invalid/i.png)"},
+            )
+
+    def test_a_half_finished_pair_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match='both "light" and "dark"'):
+            edited(
+                document(),
+                {"op": "set_palette", "terrain": "floor", "color": {"light": "#aabbcc"}},
+            )
+
+
 class TestEditAtomicity:
     def test_a_bad_op_names_its_index_and_applies_nothing(self) -> None:
         before = document()
@@ -356,8 +435,8 @@ class TestEditAtomicity:
             edited(document(), {"op": "sculpt"})
 
     def test_an_unknown_op_key_is_refused(self) -> None:
-        with pytest.raises(MapEditError, match="unknown key.*'colour'"):
-            edited(document(), {"op": "set_name", "name": "x", "colour": "red"})
+        with pytest.raises(MapEditError, match="unknown key.*'color'"):
+            edited(document(), {"op": "set_name", "name": "x", "color": "red"})
 
     def test_provenance_generation_lineage_survives_an_edit(self) -> None:
         doc = edited(document(), {"op": "paint", "cells": [[1, 1]], "terrain": "wall"})

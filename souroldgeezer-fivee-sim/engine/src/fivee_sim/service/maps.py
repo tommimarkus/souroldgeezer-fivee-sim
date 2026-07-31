@@ -64,6 +64,7 @@ from ..map_document import (
     MapDocument,
     MapError,
     as_payload,
+    canonical_color,
     document_from,
     feature_payload,
     parse_document,
@@ -209,18 +210,23 @@ class _EditState:
     features: list[dict[str, Any]]
     default_elevation: int
     elevation: dict[Square, int]
+    palette: dict[str, Any]
 
     @classmethod
     def from_document(cls, document: MapDocument) -> _EditState:
+        payload = as_payload(document)
         return cls(
             name=document.name,
             width=document.grid.width,
             height=document.grid.height,
             legend=dict(document.legend),
             grid=[list(row) for row in document.tiles],
-            features=list(as_payload(document)["features"]),
+            features=list(payload["features"]),
             default_elevation=document.elevation.default,
             elevation=dict(document.elevation.squares),
+            # Payload form, like the features: the canonical shape goes back out
+            # untouched, and the document's own parser is the one arbiter of it.
+            palette=dict(payload.get("palette", {})),
         )
 
     def height_at(self, square: Square) -> int:
@@ -230,7 +236,7 @@ class _EditState:
 _EDIT_OPS = (
     "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
     "remove_feature", "resize", "set_elevation", "set_legend", "set_name",
-    "set_terrain", "toggle_door",
+    "set_palette", "set_terrain", "toggle_door",
 )
 _OP_KEYS: dict[str, frozenset[str]] = {
     "add_feature": frozenset({"feature"}),
@@ -243,6 +249,7 @@ _OP_KEYS: dict[str, frozenset[str]] = {
     "set_elevation": frozenset({"rect", "cells", "feet", "default"}),
     "set_legend": frozenset({"glyph", "terrain"}),
     "set_name": frozenset({"name"}),
+    "set_palette": frozenset({"terrain", "color"}),
     "set_terrain": frozenset({"rect", "terrain"}),
     "toggle_door": frozenset({"at"}),
 }
@@ -291,6 +298,22 @@ def _op_terrain(
     if not isinstance(value, str) or not value.strip():
         _refuse(f"{key!r} must name a terrain kind, got {value!r}")
     return _glyph_of_kind(state, value)
+
+
+def _terrain_kind(op: Mapping[str, Any], terrain: TerrainTable) -> str:
+    """The op's ``terrain``, checked against the active content rather than the legend.
+
+    What :func:`_op_terrain` does for the ops that *paint* a kind, for the ops
+    that merely *name* one — a document may color or legend a kind it has not
+    put on the map.
+    """
+    kind = op.get("terrain")
+    if not isinstance(kind, str) or not kind.strip():
+        _refuse(f"'terrain' must name a terrain kind, got {kind!r}")
+    if kind not in terrain:
+        available = ", ".join(sorted(terrain)) or "none"
+        _refuse(f"terrain {kind!r} is not defined by the active content. Available: {available}")
+    return kind
 
 
 def _bresenham(start: Square, end: Square) -> list[Square]:
@@ -578,13 +601,58 @@ def _op_set_legend(state: _EditState, op: Mapping[str, Any], terrain: TerrainTab
             f"glyph {glyph!r} is reserved for renderer overlays "
             f"({' '.join(sorted(RESERVED_GLYPHS))}) and cannot name terrain"
         )
-    kind = op.get("terrain")
-    if not isinstance(kind, str) or not kind.strip():
-        _refuse(f"'terrain' must name a terrain kind, got {kind!r}")
-    if kind not in terrain:
-        available = ", ".join(sorted(terrain)) or "none"
-        _refuse(f"terrain {kind!r} is not defined by the active content. Available: {available}")
-    state.legend[glyph] = kind
+    state.legend[glyph] = _terrain_kind(op, terrain)
+
+
+def _color_value(value: Any) -> Any:
+    """One palette value in document payload form, refusing anything else.
+
+    The syntax rule itself is :func:`~fivee_sim.map_document.canonical_color`, so
+    an edit operation and a hand-written file cannot drift apart on what a color
+    is; only the shape around it — a pair, or one color for both themes — is
+    unpacked here.
+    """
+    if isinstance(value, str):
+        canonical = canonical_color(value)
+        if canonical is None:
+            _refuse(_bad_color(value))
+        return canonical
+    if isinstance(value, Mapping):
+        unknown = sorted(set(value) - {"light", "dark"})
+        if unknown:
+            _refuse(
+                f"a color pair takes only 'light' and 'dark'; got "
+                f"{', '.join(repr(key) for key in unknown)}"
+            )
+        pair: dict[str, str] = {}
+        for theme in ("light", "dark"):
+            raw = value.get(theme)
+            if raw is None:
+                _refuse(
+                    'a color must give both "light" and "dark", or a single color '
+                    "for both themes"
+                )
+            canonical = canonical_color(raw) if isinstance(raw, str) else None
+            if canonical is None:
+                _refuse(_bad_color(raw))
+            pair[theme] = canonical
+        return pair
+    _refuse(_bad_color(value))
+
+
+def _bad_color(value: Any) -> str:
+    return (
+        f"'color' must be a hex color like \"#d2440f\", a {{light, dark}} pair of "
+        f"them, or null to clear the kind's color; got {value!r}"
+    )
+
+
+def _op_set_palette(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    kind = _terrain_kind(op, terrain)
+    if op.get("color") is None:
+        state.palette.pop(kind, None)
+        return
+    state.palette[kind] = _color_value(op["color"])
 
 
 def _op_set_name(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
@@ -605,6 +673,7 @@ _HANDLERS: dict[str, Any] = {
     "set_elevation": _op_set_elevation,
     "set_legend": _op_set_legend,
     "set_name": _op_set_name,
+    "set_palette": _op_set_palette,
     "set_terrain": _op_set_terrain,
     "toggle_door": _op_toggle_door,
 }
@@ -661,6 +730,7 @@ def apply_edits(
             "cell_feet": document.grid.cell_feet,
         },
         "legend": dict(state.legend),
+        "palette": dict(state.palette),
         "tiles": ["".join(row) for row in state.grid],
         "elevation": {
             "default": state.default_elevation,

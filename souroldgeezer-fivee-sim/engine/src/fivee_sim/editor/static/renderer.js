@@ -6,12 +6,20 @@
    (fractional while panning), scale is pixels per cell, width and height are
    the canvas size in CSS pixels.
 
-   Terrain colors come from CSS custom properties (--terrain-<kind>, with any
-   character outside [a-z0-9] in the kind mapped to "-") read off the canvas at
-   draw time, so the pages theme them with prefers-color-scheme; every bundled
-   kind also has a fixed fallback, and an unknown or pack-defined kind gets a
-   deterministic color hashed from its name — the same kind is the same color
-   in every session, with no configuration.
+   Terrain colors resolve in four steps, first hit wins:
+
+     1. the document's own palette — doc.palette[kind], either one color or a
+        {light, dark} pair — because a color the map author wrote down beats
+        every color anyone computed for them;
+     2. a CSS custom property (--terrain-<kind>, with any character outside
+        [a-z0-9] in the kind mapped to "-") read off the canvas at draw time,
+        so the pages theme the bundled kinds with prefers-color-scheme;
+     3. a fixed fallback, which every bundled kind has;
+     4. a deterministic color hashed from the kind's name — so an unknown or
+        pack-defined kind is at least the same color in every session.
+
+   Steps 2-4 need no configuration, which is the point: a map that says nothing
+   about color still draws.
 
    No network, no fonts, no external references: everything here is drawn. */
 "use strict";
@@ -60,7 +68,13 @@ var FiveeRenderer = (function () {
     return "--terrain-" + String(kind).toLowerCase().replace(/[^a-z0-9]+/g, "-");
   }
 
-  function terrainColor(kind, dark, styles) {
+  function terrainColor(kind, dark, styles, palette) {
+    var authored = palette && palette[kind];
+    if (authored) {
+      if (typeof authored === "string") { return authored; }
+      var themed = authored[dark ? "dark" : "light"];
+      if (themed) { return themed; }
+    }
     if (styles) {
       var custom = styles.getPropertyValue(propertyName(kind));
       if (custom && custom.trim()) { return custom.trim(); }
@@ -68,6 +82,18 @@ var FiveeRenderer = (function () {
     var fixed = FALLBACK[kind];
     if (fixed) { return fixed[dark ? 1 : 0]; }
     return hashedColor(kind, dark);
+  }
+
+  /* Any CSS color as "#rrggbb". The canvas normalises whatever it is handed,
+     which saves converting hsl() or a custom property by hand — <input
+     type="color"> takes hex and nothing else. */
+  function asHex(ctx, color) {
+    var previous = ctx.fillStyle;
+    ctx.fillStyle = color;
+    var normalised = ctx.fillStyle;
+    ctx.fillStyle = previous;
+    return typeof normalised === "string" && normalised.charAt(0) === "#"
+      ? normalised : "#000000";
   }
 
   function teamColor(team, dark) {
@@ -306,8 +332,9 @@ var FiveeRenderer = (function () {
 
   /* render(ctx, doc, view, overlays)
      doc — a map document payload: {grid: {width, height}, legend, tiles,
-       features}. Only those keys are consulted, so a synthesized stand-in
-       (the viewer's mapless plane) works too.
+       features}, plus an optional palette. Only those keys are consulted, so a
+       synthesized stand-in (the viewer's mapless plane) works too — it carries
+       no palette and every kind falls through to a computed color.
      overlays — all optional: {
        featureStates: {featureId: bool},  // live door state over the defaults
        marks: [{at: [x, y], color, alpha}],  // translucent cell washes
@@ -338,7 +365,7 @@ var FiveeRenderer = (function () {
         if (kind === undefined) { kind = "unknown:" + glyph; }
         var px = (cx - view.x) * s;
         var py = (cy - view.y) * s;
-        ctx.fillStyle = terrainColor(kind, dark, styles);
+        ctx.fillStyle = terrainColor(kind, dark, styles, doc.palette);
         ctx.fillRect(px, py, s + 0.5, s + 0.5);
         if (kind === "difficult") { drawHatch(ctx, px, py, s, dark); }
         else if (kind === "half-cover") { drawNotches(ctx, px, py, s, 2, dark); }
@@ -417,6 +444,7 @@ var FiveeRenderer = (function () {
     resizeCanvas: resizeCanvas,
     terrainColor: terrainColor,
     teamColor: teamColor,
+    asHex: asHex,
     isDark: isDark
   };
 })();
