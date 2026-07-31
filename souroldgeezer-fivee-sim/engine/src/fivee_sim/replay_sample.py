@@ -14,6 +14,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from . import __version__
 from .model.encounter import Event
 from .service import replay as replay_service
 
@@ -21,7 +22,7 @@ __all__ = ["DEFAULT_OUTPUT", "SEED", "main", "sample_bundle", "write_sample"]
 
 SEED = 731204
 DEFAULT_OUTPUT = Path(".fivee-sim/replays/animated-replay-showcase.html")
-_NAME = "Animated Replay Showcase"
+_NAME = "Gatehouse Victory Showcase"
 _SOURCE = "Authored as 5E-compatible original content for the animated replay showcase"
 
 
@@ -51,7 +52,37 @@ def _map_payload() -> dict[str, Any]:
                 "state": "closed",
                 "terrain": {"closed": "wall", "open": "floor"},
             },
-            {"id": "east-stairs", "kind": "stairs_down", "at": [9, 5]},
+            {
+                "id": "east-stairs",
+                "kind": "stairs_up",
+                "at": [5, 4],
+                "to_level": 1,
+            },
+        ],
+        "levels": [
+            {
+                "index": 1,
+                "name": "gallery",
+                "tiles": [
+                    "############",
+                    "#..........#",
+                    "#..........#",
+                    "#..........#",
+                    "#..........#",
+                    "#..........#",
+                    "#..........#",
+                    "############",
+                ],
+                "elevation": {"default": 10, "squares": []},
+                "features": [
+                    {
+                        "id": "gallery-stairs",
+                        "kind": "stairs_down",
+                        "at": [5, 4],
+                        "to_level": 0,
+                    }
+                ],
+            }
         ],
         "provenance": {
             "generator": "animated-replay-showcase",
@@ -178,15 +209,24 @@ def _events() -> list[dict[str, Any]]:
         Event(
             kind="cast",
             actor="Mira",
-            detail="Restorative Word (slot 1).",
+            target="Gatehouse Brute",
+            detail="Signal Flare (slot 1).",
             round=1,
             turn="Mira",
             data={
-                "spell": "Restorative Word",
+                "spell": "Signal Flare",
                 "slot_level": 1,
-                "center": [25, 15],
-                "targets": ["Arin"],
+                "targets": ["Gatehouse Brute"],
             },
+        ),
+        Event(
+            kind="use_item",
+            actor="Mira",
+            target="Arin",
+            detail="Mira uses Field Restorative on Arin.",
+            round=1,
+            turn="Mira",
+            data={"item": "Field Restorative", "quantity": 0},
         ),
         Event(
             kind="heal",
@@ -204,6 +244,76 @@ def _events() -> list[dict[str, Any]]:
             turn="Mira",
             data={"feature": "inner-gate", "open": False},
         ),
+        Event(
+            kind="move",
+            actor="Mira",
+            detail="(25, 20) [level 0] -> (25, 20) [level 1] (20 ft used)",
+            round=1,
+            turn="Mira",
+            data={
+                "origin": [25, 20],
+                "planned_destination": [25, 20],
+                "destination": [25, 20],
+                "cost": 20,
+                "from_level": 0,
+                "planned_to_level": 1,
+                "to_level": 1,
+                "completed": True,
+            },
+        ),
+        Event(
+            kind="turn_end",
+            actor="Mira",
+            detail="Mira ends her turn on the gallery.",
+            round=1,
+            turn="Mira",
+        ),
+        Event(
+            kind="round",
+            detail="Round 2 begins.",
+            round=2,
+            turn="Arin",
+        ),
+        Event(
+            kind="turn_start",
+            actor="Arin",
+            detail="Arin begins the decisive turn.",
+            round=2,
+            turn="Arin",
+        ),
+        Event(
+            kind="attack",
+            actor="Arin",
+            target="Gatehouse Brute",
+            detail="Long Blade: 8 slashing damage.",
+            round=2,
+            turn="Arin",
+            data={
+                "attack": "Long Blade",
+                "hit": True,
+                "critical": False,
+                "natural": 14,
+                "total": 19,
+                "advantage": "normal",
+                "damage": 8,
+                "cover": 0,
+            },
+        ),
+        Event(
+            kind="damage",
+            target="Gatehouse Brute",
+            detail="8 damage, 0/18 hit points left.",
+            round=2,
+            turn="Arin",
+            data={"amount": 8, "hp": 0, "max_hp": 18},
+        ),
+        Event(
+            kind="down",
+            actor="Gatehouse Brute",
+            detail="The gatehouse brute falls unconscious and is dying.",
+            round=2,
+            turn="Arin",
+        ),
     ]
     return [
         Event(
@@ -220,15 +330,421 @@ def _events() -> list[dict[str, Any]]:
     ]
 
 
+def _normalized_combatants() -> list[dict[str, Any]]:
+    common: dict[str, Any] = {
+        "speed": 30,
+        "size": "medium",
+        "abilities": {
+            "strength": 10,
+            "dexterity": 10,
+            "constitution": 10,
+            "intelligence": 10,
+            "wisdom": 10,
+            "charisma": 10,
+        },
+        "save_bonuses": {},
+        "attacks_per_action": 1,
+        "pack_tactics": False,
+        "undead_fortitude": False,
+        "spells": [],
+        "spell_slots": {},
+        "spell_save_dc": 10,
+        "spell_attack_bonus": 0,
+        "resistances": [],
+        "immunities": [],
+        "vulnerabilities": [],
+        "items": {},
+        "conditions": [],
+        "level": 0,
+        "provenance": _SOURCE,
+    }
+    return [
+        {
+            **common,
+            "name": "Arin",
+            "team": "party",
+            "ac": 17,
+            "max_hp": 20,
+            "hp": 20,
+            "abilities": {**common["abilities"], "strength": 16, "charisma": 14},
+            "attacks": [
+                {
+                    "name": "Long Blade",
+                    "attack_bonus": 5,
+                    "damage": "1d8+3",
+                    "damage_type": "slashing",
+                    "kind": "melee",
+                }
+            ],
+            "position": [10, 15],
+        },
+        {
+            **common,
+            "name": "Mira",
+            "team": "party",
+            "ac": 14,
+            "max_hp": 12,
+            "hp": 12,
+            "abilities": {**common["abilities"], "wisdom": 16, "charisma": 16},
+            "attacks": [],
+            "spells": ["Signal Flare"],
+            "spell_slots": {"1": 2},
+            "spell_save_dc": 13,
+            "spell_attack_bonus": 5,
+            "items": {"Field Restorative": 1},
+            "position": [15, 25],
+        },
+        {
+            **common,
+            "name": "Gatehouse Brute",
+            "team": "monsters",
+            "ac": 15,
+            "max_hp": 18,
+            "hp": 18,
+            "abilities": {**common["abilities"], "strength": 16, "constitution": 14},
+            "attacks": [
+                {
+                    "name": "Heavy Mace",
+                    "attack_bonus": 5,
+                    "damage": "1d8+3",
+                    "damage_type": "bludgeoning",
+                    "kind": "melee",
+                }
+            ],
+            "position": [45, 15],
+        },
+    ]
+
+
+def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
+    facts: list[dict[str, Any]] = [
+        {
+            "name": "Arin",
+            "team": "party",
+            "position": [25, 15] if final else [10, 15],
+            "hp": 15 if final else 20,
+            "max_hp": 20,
+            "ac": 17,
+            "level": 0,
+            "conditions": [],
+            "dodging": False,
+            "concentrating_on": None,
+            "reaction_available": True,
+            "disengaged": False,
+            "conscious": True,
+            "dead": False,
+            "stable": False,
+            "death_saves": {"successes": 0, "failures": 0},
+            "spell_slots": {},
+            "items": {"Potion": 1},
+        },
+        {
+            "name": "Mira",
+            "team": "party",
+            "position": [25, 20] if final else [15, 25],
+            "hp": 12,
+            "max_hp": 12,
+            "ac": 14,
+            "level": 1 if final else 0,
+            "conditions": [],
+            "concentrating_on": None,
+            "dodging": False,
+            "reaction_available": True,
+            "disengaged": False,
+            "conscious": True,
+            "dead": False,
+            "stable": False,
+            "death_saves": {"successes": 0, "failures": 0},
+            "spell_slots": {"1": 1 if final else 2},
+            "items": {"Field Restorative": 0 if final else 1},
+        },
+        {
+            "name": "Gatehouse Brute",
+            "team": "monsters",
+            "position": [35, 15] if final else [45, 15],
+            "hp": 0 if final else 18,
+            "max_hp": 18,
+            "ac": 15,
+            "level": 0,
+            "conditions": ["prone", "unconscious"] if final else [],
+            "dodging": False,
+            "concentrating_on": None,
+            "reaction_available": True,
+            "disengaged": False,
+            "conscious": not final,
+            "dead": False,
+            "stable": False,
+            "death_saves": {"successes": 0, "failures": 0},
+            "spell_slots": {},
+            "items": {},
+        },
+    ]
+    return facts
+
+
+def _state(*, final: bool) -> dict[str, Any]:
+    return {
+        "round": 2 if final else 1,
+        "turn": "Arin",
+        "order": ["Arin", "Gatehouse Brute", "Mira"],
+        "over": final,
+        "winner": "party" if final else None,
+        "movement_rule": "5-5-5",
+        "movement_left": 30,
+        "action_available": not final,
+        "bonus_action_available": True,
+        "ongoing_effects": [],
+        "combatants": _state_combatants(final=final),
+        "map": {
+            "open_features": [],
+            "features": {"inner-gate": {"open": False}},
+        },
+        "map_source": {
+            "kind": "captured",
+            "name": "Gatehouse Skirmish",
+            "stale": False,
+        },
+    }
+
+
+def _actions() -> list[dict[str, Any]]:
+    actions = [
+        {
+            "index": index,
+            "round": 1,
+            "actor": actor,
+            "action": action,
+            "first_event": first,
+            "event_count": count,
+        }
+        for index, (actor, action, first, count) in enumerate(
+            [
+                ("Arin", {"kind": "move", "to_position": [25, 15]}, 0, 1),
+                ("Arin", {"kind": "attack", "target": "Gatehouse Brute"}, 1, 2),
+                ("Arin", {"kind": "interact", "feature": "inner-gate"}, 3, 1),
+                ("Gatehouse Brute", {"kind": "move", "to_position": [35, 15]}, 4, 1),
+                ("Gatehouse Brute", {"kind": "attack", "target": "Arin"}, 5, 2),
+                ("Mira", {"kind": "move", "to_position": [25, 20]}, 7, 1),
+                ("Mira", {"kind": "cast", "spell": "Signal Flare"}, 8, 1),
+                (
+                    "Mira",
+                    {
+                        "kind": "use_item",
+                        "item": "Field Restorative",
+                        "target": "Arin",
+                    },
+                    9,
+                    2,
+                ),
+                ("Mira", {"kind": "interact", "feature": "inner-gate"}, 11, 1),
+                (
+                    "Mira",
+                    {"kind": "move", "to_position": [25, 20], "to_level": 1},
+                    12,
+                    1,
+                ),
+            ]
+        )
+    ]
+    actions.extend(
+        [
+            {
+                "index": 10,
+                "round": 1,
+                "actor": "Mira",
+                "action": None,
+                "first_event": 13,
+                "event_count": 3,
+            },
+            {
+                "index": 11,
+                "round": 2,
+                "actor": "Arin",
+                "action": {"kind": "attack", "target": "Gatehouse Brute"},
+                "first_event": 16,
+                "event_count": 3,
+            },
+        ]
+    )
+    return actions
+
+
+def _attempts() -> list[dict[str, Any]]:
+    return [
+        {
+            "index": 0,
+            "timestamp": "2026-08-01T12:00:00Z",
+            "started_at": "2026-08-01T11:59:59Z",
+            "operation": "check",
+            "request_id": "sample-persuasion",
+            "arguments": {
+                "ability": "charisma",
+                "skill": "Persuasion",
+                "modifier": 5,
+                "dc": 14,
+            },
+            "status": "success",
+            "result": {
+                "natural": 12,
+                "total": 17,
+                "dc": 14,
+                "success": True,
+                "detail": "d20 [12] +5 = 17 vs DC 14: success",
+            },
+        },
+        {
+            "index": 1,
+            "timestamp": "2026-08-01T12:00:01Z",
+            "started_at": "2026-08-01T12:00:01Z",
+            "operation": "encounter_note",
+            "request_id": "sample-note",
+            "arguments": {
+                "category": "playtest",
+                "text": "The successful Persuasion check buys one round before combat.",
+            },
+            "status": "success",
+            "result": {"category": "playtest"},
+        },
+        {
+            "index": 2,
+            "timestamp": "2026-08-01T12:00:14Z",
+            "started_at": "2026-08-01T12:00:14Z",
+            "operation": "encounter_act",
+            "request_id": "sample-refusal",
+            "arguments": {"kind": "interact", "feature": "inner-gate"},
+            "status": "refused",
+            "error": "Mira cannot reach inner-gate from gallery level 1",
+        },
+        {
+            "index": 3,
+            "timestamp": "2026-08-01T12:00:21Z",
+            "started_at": "2026-08-01T12:00:21Z",
+            "operation": "encounter_note",
+            "request_id": "sample-outcome",
+            "arguments": {
+                "category": "outcome",
+                "text": "Gatehouse secured. The party holds the inner gate.",
+            },
+            "status": "success",
+            "result": {"category": "outcome"},
+        },
+    ]
+
+
 def sample_bundle() -> dict[str, Any]:
-    """Return a fresh replay bundle for the animated viewer showcase."""
-    return replay_service.replay_bundle(
+    """Return a fresh, valid replay-v2 bundle for the viewer showcase."""
+    initial_state = _state(final=False)
+    latest_state = _state(final=True)
+    events = _events()
+    timestamps = [f"2026-08-01T12:00:{index + 2:02d}Z" for index in range(len(events))]
+    checkpoints = [
+        {
+            "index": 0,
+            "timestamp": "2026-08-01T11:59:58Z",
+            "event_count": 0,
+            "state_hash": replay_service.canonical_sha256(initial_state),
+            "state": initial_state,
+        },
+        {
+            "index": 1,
+            "timestamp": "2026-08-01T12:00:20Z",
+            "event_count": len(events),
+            "state_hash": replay_service.canonical_sha256(latest_state),
+            "state": latest_state,
+        },
+    ]
+    return replay_service.replay_bundle_v2(
         name=_NAME,
+        engine_version=__version__,
+        encounter_id="sample-encounter",
         seed=SEED,
+        movement_rule="5-5-5",
         map_payload=_map_payload(),
         initial_creatures=_initial_creatures(),
+        normalized_combatants=_normalized_combatants(),
+        initial_state=initial_state,
         map_open_features=[],
-        events=_events(),
+        actions=_actions(),
+        events=events,
+        event_timestamps=timestamps,
+        latest_state=latest_state,
+        checkpoints=checkpoints,
+        attempts=_attempts(),
+        content_snapshot={
+            "builtin": "exclude",
+            "packs": [
+                {
+                    "label": "animated-replay-showcase",
+                    "level": "project",
+                    "pack": "animated-replay-showcase",
+                    "version": "1.0",
+                    "provenance": _SOURCE,
+                    "path": "",
+                    "counts": {"items": 1, "spells": 1, "terrain": 2},
+                }
+            ],
+            "retained_conditions": [],
+            "records": {
+                "conditions": {},
+                "creatures": {},
+                "items": {
+                    "Field Restorative": {
+                        "record": {
+                            "name": "Field Restorative",
+                            "description": "A quick tonic for the gatehouse patrol.",
+                            "use": {"heal": "1d8"},
+                            "provenance": _SOURCE,
+                            "unmodelled": [],
+                        },
+                        "source": _SOURCE,
+                    }
+                },
+                "spells": {
+                    "Signal Flare": {
+                        "record": {
+                            "name": "Signal Flare",
+                            "level": 1,
+                            "school": "Evocation",
+                            "range_feet": 60,
+                            "provenance": _SOURCE,
+                            "unmodelled": [],
+                        },
+                        "source": _SOURCE,
+                    }
+                },
+                "terrain": {
+                    "floor": {
+                        "record": {
+                            "name": "floor",
+                            "effects": {
+                                "move_cost_multiplier": 1,
+                                "passable": True,
+                                "opaque": False,
+                                "cover": 0,
+                            },
+                            "provenance": _SOURCE,
+                            "unmodelled": [],
+                        },
+                        "source": _SOURCE,
+                    },
+                    "wall": {
+                        "record": {
+                            "name": "wall",
+                            "effects": {
+                                "move_cost_multiplier": 1,
+                                "passable": False,
+                                "opaque": True,
+                                "cover": 3,
+                            },
+                            "provenance": _SOURCE,
+                            "unmodelled": [],
+                        },
+                        "source": _SOURCE,
+                    },
+                },
+            },
+            "provenance": _SOURCE,
+        },
     )
 
 
@@ -263,6 +779,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Replay: {target}")
     print(f"Seed: {SEED}")
     print(f"Events: {len(_events())}")
+    print("Format: replay v2")
+    print(f"Audit records: {len(_attempts())}")
     return 0
 
 

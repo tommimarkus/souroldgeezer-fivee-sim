@@ -31,7 +31,9 @@ def test_the_showcase_covers_each_animated_event_family() -> None:
     bundle = replay_sample.sample_bundle()
 
     assert bundle["format"] == "fivee-sim-replay"
+    assert bundle["format_version"] == 2
     assert bundle["seed"] == 731204
+    assert replay_service.validate_replay(bundle) == []
     assert parse_document(bundle["map"], source="sample", terrain=TERRAIN).name == (
         "Gatehouse Skirmish"
     )
@@ -45,8 +47,16 @@ def test_the_showcase_covers_each_animated_event_family() -> None:
         "damage",
         "move",
         "cast",
+        "use_item",
         "heal",
         "interact",
+        "move",
+        "turn_end",
+        "round",
+        "turn_start",
+        "attack",
+        "damage",
+        "down",
     ]
     assert bundle["map"]["features"] == [
         {
@@ -57,8 +67,77 @@ def test_the_showcase_covers_each_animated_event_family() -> None:
             "state": "closed",
             "terrain": {"closed": "wall", "open": "floor"},
         },
-        {"id": "east-stairs", "kind": "stairs_down", "at": [9, 5]},
+        {
+            "id": "east-stairs",
+            "kind": "stairs_up",
+            "at": [5, 4],
+            "to_level": 1,
+        },
     ]
+
+
+def test_the_showcase_demonstrates_replay_v2_audit_and_state() -> None:
+    bundle = replay_sample.sample_bundle()
+
+    assert bundle["map"]["levels"][0]["name"] == "gallery"
+    assert bundle["encounter"]["id"] == "sample-encounter"
+    assert bundle["initial"]["combatants"]
+    assert bundle["latest_state"] == bundle["checkpoints"][-1]["state"]
+    assert {
+        "conditions",
+        "dodging",
+        "reaction_available",
+        "spell_slots",
+        "items",
+    } <= bundle["latest_state"]["combatants"][0].keys()
+    assert bundle["latest_state"]["combatants"][1]["level"] == 1
+    assert bundle["actions"]
+    assert "Signal Flare" in bundle["content"]["records"]["spells"]
+    assert "Field Restorative" in bundle["content"]["records"]["items"]
+    assert {attempt["status"] for attempt in bundle["attempts"]} == {
+        "refused",
+        "success",
+    }
+    assert any(
+        attempt["operation"] == "check"
+        and attempt["arguments"]["skill"] == "Persuasion"
+        for attempt in bundle["attempts"]
+    )
+    assert any(
+        attempt["operation"] == "encounter_note"
+        for attempt in bundle["attempts"]
+    )
+    assert bundle["integrity"]["algorithm"] == "sha256"
+
+
+def test_the_showcase_ends_in_a_recorded_party_victory() -> None:
+    bundle = replay_sample.sample_bundle()
+
+    assert bundle["latest_state"]["over"] is True
+    assert bundle["latest_state"]["winner"] == "party"
+    brute = next(
+        combatant
+        for combatant in bundle["latest_state"]["combatants"]
+        if combatant["name"] == "Gatehouse Brute"
+    )
+    assert brute["hp"] == 0
+    assert brute["conscious"] is False
+    assert bundle["events"][-1]["kind"] == "down"
+    assert bundle["events"][-1]["actor"] == "Gatehouse Brute"
+
+    assert bundle["attempts"][-1]["operation"] == "encounter_note"
+    assert bundle["attempts"][-1]["status"] == "success"
+    assert bundle["attempts"][-1]["arguments"] == {
+        "category": "outcome",
+        "text": "Gatehouse secured. The party holds the inner gate.",
+    }
+    refused = next(
+        attempt for attempt in bundle["attempts"] if attempt["status"] == "refused"
+    )
+    assert refused["index"] < bundle["attempts"][-1]["index"]
+    assert bundle["events"][12]["timestamp"] <= refused["timestamp"]
+    assert refused["timestamp"] < bundle["events"][-1]["timestamp"]
+    assert bundle["events"][-1]["timestamp"] < bundle["attempts"][-1]["timestamp"]
 
 
 def test_the_showcase_writes_one_self_contained_html_file(tmp_path: Path) -> None:
@@ -88,4 +167,6 @@ def test_the_cli_reports_the_written_path_and_seed(
     output = capsys.readouterr().out
     assert str(target) in output
     assert "Seed: 731204" in output
-    assert "Events: 11" in output
+    assert "Events: 19" in output
+    assert "Format: replay v2" in output
+    assert "Audit records: 4" in output
