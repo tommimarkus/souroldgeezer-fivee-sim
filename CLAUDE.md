@@ -62,21 +62,33 @@ git worktree prune
 git branch -d <branch>
 ```
 
-Two of those four print errors and succeed anyway. Neither means closeout failed,
-and `git worktree list` plus `git branch` are the things to trust:
+Three of those four print errors and succeed anyway, and one of them exits 255
+while doing it. None of that means closeout failed. **Verify with `git worktree
+list` and `git branch`, never with an exit code.**
 
-- `git worktree prune` prints `failed to delete '.git/worktrees/fivee-sim':
-  Device or resource busy` and exits 0. That is one stale entry from a session
-  predating the rename — the devcontainer holds character-device mounts over its
-  `commondir` and `config.worktree` — and it is reported whatever worktree you
-  were removing. Leave it; it goes when the container is recreated, and do not
-  try to unmount it.
+- `git worktree remove --force` prints `error: failed to delete
+  '.git/worktrees/<name>': Device or resource busy` and exits **255**, having
+  succeeded in every way that matters: the checkout is gone, the branch is
+  intact, `git worktree list` no longer shows it. All it failed at was deleting
+  the registration directory. An agent that reads 255 as a failed closeout and
+  starts repairing things will do damage the error never asked for.
+- `git worktree prune` then offers to clear that leftover registration, fails
+  the same way, and exits 0 — one such line per leftover, whatever worktree you
+  were removing.
 - `git branch -d` prints `could not lock config file .git/config` and
   `warning: update of config-file failed`, because `.git/config` is itself a
   read-only mount. It still prints `Deleted branch <name>`, and it is deleted.
 
-`git worktree remove --force` is silent and clean. Worktrees created today carry
-no character-device mounts, in the checkout or in `.git/worktrees/<name>/`.
+Those leftovers are permanent, and there is one per worktree ever created. The
+devcontainer mounts `/dev/null` over every registration's `config.worktree`, and
+a bind-mounted file cannot be unlinked, so the directory holding it cannot be
+removed — not by `remove`, not by `prune`, not by hand. `remove` does delete
+`gitdir` first, which is both why prune keeps offering to clear them and why
+`git worktree list` never shows them: it reads `gitdir`. Expected under this
+devcontainer, not a failed closeout. Leave them, and do not try to unmount them.
+
+A worktree's own checkout is clean — no character devices anywhere inside it.
+Only its `.git/worktrees/<name>/` registration is mounted over.
 
 ### Staging discipline
 
@@ -191,9 +203,11 @@ use. A test pins that a 1-iteration analytics run equals a single stateful run
 at the same seed; if the two ever diverge, the statistics are lying.
 
 **The MCP layer is a thin adapter.** `fivee_sim.mcp_server.server` validates
-input, calls the kernel, serialises results. No rules logic belongs there. The
-package is `mcp_server`, not `mcp`, so it can never be confused with the
-third-party `mcp` distribution it imports.
+input, calls the kernel, serialises results. No rules logic belongs there — and
+the map, replay, and UVTT tools reach it through `service/` rather than
+implementing anything, which is what keeps it thin. The package is `mcp_server`,
+not `mcp`, so it can never be confused with the third-party `mcp` distribution
+it imports.
 
 `stdout` of the MCP launcher is the JSON-RPC channel. Anything diagnostic must
 go to `stderr`, or the protocol breaks. `scripts/check-mcp-handshake.py` exists
@@ -205,6 +219,25 @@ conditions, attacks, spells, items — and knows nothing about creatures; caller
 the handful of values a roll depends on. `model/` owns creatures and is the only
 place combat state changes. Spell and item definitions live in `kernel/` rather than
 a separate layer because they are resolution primitives like the rest.
+
+**`service/` holds the tool bodies, and both adapters go through it.** Some 1,600
+lines over `common.py`, `errors.py`, `maps.py`, `replay.py`, and `uvtt.py`.
+Nothing in it may import MCP, HTTP, or any transport's error type: a function
+takes plain values — a document, a terrain table, a seed — and raises plain
+`ValueError`-family errors. That is the whole reason two adapters can both be
+thin. `mcp_server/server.py` maps those errors onto `ToolError`,
+`editor/http_server.py` onto problem+json, and neither does anything more than
+that and serialisation. A tool body written into an adapter belongs here instead.
+
+**Four modules sit beside the packages, and that tier is deliberate.**
+`content.py`, `maps.py`, `validation.py`, and `coverage.py` live directly in
+`src/fivee_sim/` — 2,757 lines, about a fifth of the engine. What belongs there
+is a cross-cutting concern that is neither a rules primitive nor creature state:
+how content enters the engine and how any file it reads is validated, the on-disk
+map document format, and the generated coverage report. Nothing in `kernel/`,
+`model/`, or `analytics/` imports any of them, and that is the property to keep —
+a module only the rules layers need is not a root module, it is a `kernel/` or
+`model/` one.
 
 **Content is data, and the bundled slice is not privileged.** `content.py` loads
 every pack — including `data/srd/*.json` — through one parser and one validator, and
