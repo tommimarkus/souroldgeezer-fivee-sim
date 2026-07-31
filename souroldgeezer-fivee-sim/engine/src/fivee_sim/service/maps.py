@@ -58,11 +58,13 @@ from ..kernel.mapgen import (
 from ..map_document import (
     FORMAT,
     FORMAT_VERSION,
+    GROUND_LEVEL,
     MAX_MAP_BYTES,
     MAX_MAP_DIM,
     RESERVED_GLYPHS,
     MapDocument,
     MapError,
+    MapLevel,
     as_payload,
     document_from,
     feature_payload,
@@ -193,38 +195,108 @@ def _refuse(message: str) -> NoReturn:
 
 
 @dataclass(slots=True)
+class _PlaneState:
+    """One storey's mutable working copy: everything that varies between levels."""
+
+    name: str
+    grid: list[list[str]]
+    features: list[dict[str, Any]]
+    default_elevation: int
+    elevation: dict[Square, int]
+
+
+@dataclass(slots=True)
 class _EditState:
     """The mutable working copy the edit operations act on.
 
     Everything the document carries has to live here, because
     :func:`apply_edits` rebuilds the payload from this and nothing else — a
-    layer left out is a layer every unrelated edit quietly discards.
+    layer left out is a layer every unrelated edit quietly discards. Storeys
+    are the newest such layer, which is why ``levels`` holds every plane and
+    not only the one an operation happens to name.
+
+    ``target`` is the plane the current operation acts on; the accessors below
+    read it, so the handlers say ``state.grid`` and mean "the grid of the level
+    this op named" without any of them having to know levels exist.
     """
 
     name: str
     width: int
     height: int
     legend: dict[str, str]
-    grid: list[list[str]]
-    features: list[dict[str, Any]]
-    default_elevation: int
-    elevation: dict[Square, int]
+    levels: dict[int, _PlaneState]
+    target: int = GROUND_LEVEL
 
     @classmethod
     def from_document(cls, document: MapDocument) -> _EditState:
+        payload = as_payload(document)
+        storeys = {level["index"]: level for level in payload.get("levels", [])}
         return cls(
             name=document.name,
             width=document.grid.width,
             height=document.grid.height,
             legend=dict(document.legend),
-            grid=[list(row) for row in document.tiles],
-            features=list(as_payload(document)["features"]),
-            default_elevation=document.elevation.default,
-            elevation=dict(document.elevation.squares),
+            levels={
+                index: _PlaneState(
+                    name=level.name,
+                    grid=[list(row) for row in level.tiles],
+                    features=list(
+                        payload["features"] if index == GROUND_LEVEL
+                        else storeys[index]["features"]
+                    ),
+                    default_elevation=level.elevation.default,
+                    elevation=dict(level.elevation.squares),
+                )
+                for index, level in document.levels.items()
+            },
         )
+
+    @property
+    def plane(self) -> _PlaneState:
+        return self.levels[self.target]
+
+    @property
+    def grid(self) -> list[list[str]]:
+        return self.plane.grid
+
+    @grid.setter
+    def grid(self, rows: list[list[str]]) -> None:
+        self.plane.grid = rows
+
+    @property
+    def features(self) -> list[dict[str, Any]]:
+        return self.plane.features
+
+    @features.setter
+    def features(self, entries: list[dict[str, Any]]) -> None:
+        self.plane.features = entries
+
+    @property
+    def default_elevation(self) -> int:
+        return self.plane.default_elevation
+
+    @default_elevation.setter
+    def default_elevation(self, feet: int) -> None:
+        self.plane.default_elevation = feet
+
+    @property
+    def elevation(self) -> dict[Square, int]:
+        return self.plane.elevation
+
+    @elevation.setter
+    def elevation(self, heights: dict[Square, int]) -> None:
+        self.plane.elevation = heights
 
     def height_at(self, square: Square) -> int:
         return self.elevation.get(square, self.default_elevation)
+
+    def feature_ids(self) -> set[str]:
+        """Every id in use anywhere on the map — ids are unique document-wide."""
+        return {
+            str(entry["id"])
+            for plane in self.levels.values()
+            for entry in plane.features
+        }
 
 
 _EDIT_OPS = (
@@ -232,6 +304,14 @@ _EDIT_OPS = (
     "remove_feature", "resize", "set_elevation", "set_legend", "set_name",
     "set_terrain", "toggle_door",
 )
+
+#: The ops that act on one storey and so accept a ``level``. The rest —
+#: ``set_name``, ``set_legend``, ``resize`` — are document-wide by nature, and
+#: taking a level would suggest they could be applied to one floor alone.
+_LEVELLED_OPS = frozenset({
+    "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
+    "remove_feature", "set_elevation", "set_terrain", "toggle_door",
+})
 _OP_KEYS: dict[str, frozenset[str]] = {
     "add_feature": frozenset({"feature"}),
     "adjust_elevation": frozenset({"rect", "cells", "by"}),
@@ -245,6 +325,10 @@ _OP_KEYS: dict[str, frozenset[str]] = {
     "set_name": frozenset({"name"}),
     "set_terrain": frozenset({"rect", "terrain"}),
     "toggle_door": frozenset({"at"}),
+}
+_OP_KEYS = {
+    name: keys | {"level"} if name in _LEVELLED_OPS else keys
+    for name, keys in _OP_KEYS.items()
 }
 _FEATURE_FIELDS = frozenset({"id", "kind", "at", "orientation", "state", "team"})
 _ANCHORS = ("top-left", "top-right", "bottom-left", "bottom-right")
@@ -397,7 +481,7 @@ def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
     feature_id = raw.get("id")
     if not isinstance(feature_id, str) or not feature_id.strip():
         _refuse("feature 'id' is required and must be non-empty text")
-    if any(entry["id"] == feature_id for entry in state.features):
+    if feature_id in state.feature_ids():
         _refuse(f"a feature named {feature_id!r} already exists; ids must be unique")
     kind = raw.get("kind")
     if not isinstance(kind, str) or not kind.strip():
@@ -474,33 +558,36 @@ def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) 
     new_w, new_h = dims["width"], dims["height"]
     off_x = 0 if "left" in anchor else new_w - state.width
     off_y = 0 if anchor.startswith("top") else new_h - state.height
-    grid: list[list[str]] = []
-    for yy in range(new_h):
-        row: list[str] = []
-        for xx in range(new_w):
-            ox, oy = xx - off_x, yy - off_y
-            if 0 <= ox < state.width and 0 <= oy < state.height:
-                row.append(state.grid[oy][ox])
-            else:
-                row.append(fill)
-        grid.append(row)
-    kept: list[dict[str, Any]] = []
-    for entry in state.features:
-        fx, fy = entry["at"]
-        nx, ny = fx + off_x, fy + off_y
-        if 0 <= nx < new_w and 0 <= ny < new_h:
-            kept.append({**entry, "at": [nx, ny]})
-    # Height moves with the anchor exactly as tiles and features do; ground that
-    # falls outside the new bounds goes with the squares it described, and new
-    # ground comes in at the map's datum.
-    heights = {
-        (fx + off_x, fy + off_y): feet
-        for (fx, fy), feet in state.elevation.items()
-        if 0 <= fx + off_x < new_w and 0 <= fy + off_y < new_h
-    }
-    state.grid = grid
-    state.features = kept
-    state.elevation = heights
+    # A frame change is document-wide: every storey shares the grid, so a resize
+    # that translated the ground alone would leave the floors above it
+    # mislocated over the map they belong to.
+    for plane in state.levels.values():
+        grid: list[list[str]] = []
+        for yy in range(new_h):
+            row: list[str] = []
+            for xx in range(new_w):
+                ox, oy = xx - off_x, yy - off_y
+                if 0 <= ox < state.width and 0 <= oy < state.height:
+                    row.append(plane.grid[oy][ox])
+                else:
+                    row.append(fill)
+            grid.append(row)
+        kept: list[dict[str, Any]] = []
+        for entry in plane.features:
+            fx, fy = entry["at"]
+            nx, ny = fx + off_x, fy + off_y
+            if 0 <= nx < new_w and 0 <= ny < new_h:
+                kept.append({**entry, "at": [nx, ny]})
+        # Height moves with the anchor exactly as tiles and features do; ground
+        # that falls outside the new bounds goes with the squares it described,
+        # and new ground comes in at the plane's datum.
+        plane.grid = grid
+        plane.features = kept
+        plane.elevation = {
+            (fx + off_x, fy + off_y): feet
+            for (fx, fy), feet in plane.elevation.items()
+            if 0 <= fx + off_x < new_w and 0 <= fy + off_y < new_h
+        }
     state.width, state.height = new_w, new_h
 
 
@@ -610,6 +697,17 @@ _HANDLERS: dict[str, Any] = {
 }
 
 
+def _height_payload(plane: _PlaneState) -> dict[str, Any]:
+    """One plane's heights, sorted by row then column as the document writes them."""
+    return {
+        "default": plane.default_elevation,
+        "squares": [
+            [square[0], square[1], plane.elevation[square]]
+            for square in sorted(plane.elevation, key=lambda s: (s[1], s[0]))
+        ],
+    }
+
+
 def _apply_one(state: _EditState, operation: Any, terrain: TerrainTable) -> None:
     valid = ", ".join(_EDIT_OPS)
     if not isinstance(operation, Mapping):
@@ -623,6 +721,13 @@ def _apply_one(state: _EditState, operation: Any, terrain: TerrainTable) -> None
             f"{name} has unknown key(s): {', '.join(repr(key) for key in unknown)}. "
             f"Valid keys: {', '.join(sorted(_OP_KEYS[name]))}"
         )
+    level = operation.get("level", GROUND_LEVEL)
+    if isinstance(level, bool) or not isinstance(level, int):
+        _refuse(f"'level' must name a storey by whole number, got {level!r}")
+    if level not in state.levels:
+        declared = ", ".join(str(index) for index in sorted(state.levels))
+        _refuse(f"there is no level {level} on this map. Levels: {declared}")
+    state.target = level
     _HANDLERS[name](state, operation, terrain)
 
 
@@ -661,17 +766,24 @@ def apply_edits(
             "cell_feet": document.grid.cell_feet,
         },
         "legend": dict(state.legend),
-        "tiles": ["".join(row) for row in state.grid],
-        "elevation": {
-            "default": state.default_elevation,
-            "squares": [
-                [square[0], square[1], state.elevation[square]]
-                for square in sorted(state.elevation, key=lambda s: (s[1], s[0]))
-            ],
-        },
-        "features": state.features,
+        "tiles": ["".join(row) for row in state.levels[GROUND_LEVEL].grid],
+        "elevation": _height_payload(state.levels[GROUND_LEVEL]),
+        "features": state.levels[GROUND_LEVEL].features,
         "provenance": provenance,
     }
+    storeys = [
+        {
+            "index": index,
+            "name": state.levels[index].name,
+            "tiles": ["".join(row) for row in state.levels[index].grid],
+            "elevation": _height_payload(state.levels[index]),
+            "features": state.levels[index].features,
+        }
+        for index in sorted(state.levels)
+        if index != GROUND_LEVEL
+    ]
+    if storeys:
+        payload["levels"] = storeys
     result = parse_document(payload, source=document.name, terrain=terrain)
     if serialize(result) == serialize(document):
         return document
@@ -702,6 +814,14 @@ def _feature_glyph(kind: str, state: str | None) -> str | None:
     return {"stairs_up": "<", "stairs_down": ">", "spawn": "@"}.get(kind)
 
 
+def _level_or_refuse(document: MapDocument, level: int) -> MapLevel:
+    """The named storey, or a refusal listing the ones the map has."""
+    if level not in document.levels:
+        declared = ", ".join(str(index) for index in sorted(document.levels))
+        raise ValueError(f"there is no level {level} on this map. Levels: {declared}")
+    return document.levels[level]
+
+
 def render_ascii(
     document: MapDocument,
     *,
@@ -712,6 +832,7 @@ def render_ascii(
     downsample: int = 1,
     show_features: bool = True,
     show_elevation: bool = False,
+    level: int = GROUND_LEVEL,
     tokens: Mapping[Square, str] | None = None,
 ) -> dict[str, Any]:
     """Rows of glyphs for a viewport of the document, through its own legend.
@@ -725,6 +846,9 @@ def render_ascii(
     map, and a result over :data:`RENDER_BUDGET` cells is refused with the
     remedy rather than emitted.
 
+    ``level`` picks the storey to draw; ``levels`` in the result names every one
+    the map has, so a reader looking at the ground knows there is more above it.
+
     ``show_elevation`` adds ``elevation_rows`` and ``elevation_legend`` *beside*
     the terrain rows rather than in place of them — the two layers answer
     different questions and a reader wants both. Heights are lettered from the
@@ -732,6 +856,7 @@ def render_ascii(
     reads as a contour; a downsampled block takes its block's majority height,
     ties to the lower ground.
     """
+    plane = _level_or_refuse(document, level)
     map_w, map_h = document.grid.width, document.grid.height
     if downsample < 1:
         raise ValueError(f"downsample must be at least 1, got {downsample}")
@@ -774,12 +899,12 @@ def render_ascii(
             counts: dict[str, int] = {}
             feet_counts: dict[int, int] = {}
             for yy in range(y0, y1):
-                tile_row = document.tiles[yy]
+                tile_row = plane.tiles[yy]
                 for xx in range(x0, x1):
                     kind = document.legend[tile_row[xx]]
                     counts[kind] = counts.get(kind, 0) + 1
                     if show_elevation:
-                        feet = document.elevation.at((xx, yy))
+                        feet = plane.elevation.at((xx, yy))
                         feet_counts[feet] = feet_counts.get(feet, 0) + 1
             best = _majority(counts, order_of)
             glyph = glyph_of[best]
@@ -793,7 +918,7 @@ def render_ascii(
 
     in_view: list[dict[str, Any]] = []
     feature_cells: set[tuple[int, int]] = set()
-    for feature in document.features:
+    for feature in plane.features:
         fx, fy = feature.at
         if not (x <= fx < x + width and y <= fy < y + height):
             continue
@@ -827,6 +952,8 @@ def render_ascii(
         },
         "rows": ["".join(row) for row in rows],
         "legend": {glyph: used[glyph] for glyph in sorted(used)},
+        "level": level,
+        "levels": sorted(document.levels),
         "features_in_view": in_view,
         "truncated": not (x == 0 and y == 0 and width == map_w and height == map_h),
     }
@@ -858,6 +985,7 @@ def query(
     *,
     terrain: TerrainTable,
     rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
+    level: int = GROUND_LEVEL,
 ) -> dict[str, Any]:
     """Answer a geometry question over a bare map: distance, sight, or a route.
 
@@ -873,6 +1001,7 @@ def query(
     """
     if kind not in _QUERIES:
         raise ValueError(f"unknown query {kind!r}; valid queries: {', '.join(_QUERIES)}")
+    _level_or_refuse(document, level)
     map_w, map_h = document.grid.width, document.grid.height
     for label, square in (("from", frm), ("to", to)):
         if not (0 <= square[0] < map_w and 0 <= square[1] < map_h):
@@ -885,7 +1014,8 @@ def query(
         return result
 
     battle = to_grid(document)
-    feature_at = {feature.square: feature for feature in battle.features.values()}
+    plane = battle.levels[level]
+    feature_at = {feature.square: feature for feature in plane.features.values()}
 
     # These mirror Encounter's composers (_terrain_at, _entry_cost, _opaque),
     # minus the encounter-only parts: feature state comes from the document's
@@ -894,13 +1024,13 @@ def query(
         feature = feature_at.get(square)
         if feature is not None:
             return feature.open_terrain if feature.initially_open else feature.closed_terrain
-        return battle.terrain.get(square, battle.default_terrain)
+        return plane.terrain.get(square, plane.default_terrain)
 
     def on_map(square: Square) -> bool:
         return 0 <= square[0] < map_w and 0 <= square[1] < map_h
 
     def height_at(square: Square) -> int:
-        return battle.elevation.get(square, battle.default_elevation)
+        return plane.elevation.get(square, plane.default_elevation)
 
     def step_cost(origin: Square, step_to: Square, doubled_diagonal: bool) -> int | None:
         if not on_map(step_to):
