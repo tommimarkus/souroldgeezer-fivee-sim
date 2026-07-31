@@ -1227,6 +1227,7 @@ def make_creature(
     label: str | None = None,
     team: str | None = None,
     position: Point | int = 0,
+    level: int = 0,
 ) -> Creature:
     """Look ``name`` up in the active content and build it.
 
@@ -1250,6 +1251,7 @@ def make_creature(
         label=label,
         team=team,
         position=position,
+        level=level,
     )
 
 
@@ -1298,6 +1300,9 @@ def make_monster(
     label: str | None = None,
     team: str | None = None,
     position: Point | int = 0,
+    level: int = 0,
 ) -> Creature:
     """Build a creature from a *bundled* stat block. See :func:`make_creature`."""
-    return make_creature(name, registry=builtin(), label=label, team=team, position=position)
+    return make_creature(
+        name, registry=builtin(), label=label, team=team, position=position, level=level
+    )

@@ -371,6 +371,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
                 label=spec.get("label"),
                 team=spec.get("team"),
                 position=_point(spec.get("position", 0), "position"),
+                level=int(spec.get("level", 0)),
             )
         except DataError as error:
             raise ToolError(str(error)) from error
@@ -409,6 +410,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             conditions={str(entry) for entry in spec.get("conditions", [])},
             condition_effects=registry.condition_effects,
             position=_point(spec.get("position", 0), "position"),
+            level=int(spec.get("level", 0)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -1454,6 +1456,9 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     horizontal_first?}, ``add_feature`` {feature}, ``remove_feature`` {id},
     ``toggle_door`` {at}, ``resize`` {width, height, anchor?, fill?},
     ``set_legend`` {glyph, terrain}, ``set_name`` {name},
+    ``set_palette`` {terrain, color} to color a terrain kind in this document —
+    one hex color, a {light, dark} pair of them, or null to drop back to the
+    color the renderers compute —
     ``set_elevation`` {rect | cells, feet} or {default} to move the height every
     unnamed square sits at, ``adjust_elevation`` {rect | cells, by} to raise or
     lower what is already there. Heights are feet and may be negative. A bad

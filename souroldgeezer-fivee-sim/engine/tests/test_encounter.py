@@ -1096,7 +1096,11 @@ class TestLevels:
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
         encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
-        assert encounter.creatures["Wolf"].level == 1
+        # Both resolve to the same square; only the level tells them apart. On
+        # one plane this pair is refused ("both start in square").
+        thora, wolf = encounter.creatures["Thora"], encounter.creatures["Wolf"]
+        assert to_square(as_point(thora.position)) == to_square(as_point(wolf.position))
+        assert (thora.level, wolf.level) == (0, 1)
 
     def test_a_floor_is_total_cover(self) -> None:
         rng = Random(1)
@@ -1154,6 +1158,8 @@ class TestLevels:
         assert encounter.state()["turn_state"]["movement_left"] == 0
 
     def test_a_storey_too_high_to_climb_is_refused(self) -> None:
+        # 5 ft to the stair plus a 40-foot rise at 2 ft per foot climbed, on top
+        # of the 5-foot step in: 5 + 5 + 80 = 90, three times a fighter's speed.
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
@@ -1199,6 +1205,40 @@ class TestLevels:
         encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
         wolf = next(c for c in encounter.state()["combatants"] if c["name"] == "Wolf")
         assert (wolf["level"], wolf["elevation"]) == (1, 10)
+
+    def test_a_connector_arriving_in_a_wall_is_refused(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng,
+            battle_map=tower(upper_terrain={(1, 0): "wall"}),
+        )
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="arrives on impassable 'wall'"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng)
+
+    def test_a_connector_arriving_on_an_occupied_square_is_refused(self) -> None:
+        rng = Random(1)
+        upstairs = make_monster("Wolf", position=(5, 0))
+        upstairs.level = 1
+        encounter = Encounter([fighter(), upstairs], rng, battle_map=tower())
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="on level 1 is occupied by Wolf"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng)
+
+    def test_a_connector_to_a_level_the_map_lacks_is_refused_at_adoption(self) -> None:
+        # A hand-built battle map can carry one; the document parser refuses it
+        # earlier, but the map need not have come from a document.
+        rng = Random(1)
+        broken = BattleMap(
+            name="broken tower", width=4, height=1,
+            levels=MappingProxyType({
+                0: MapPlane(default_terrain="floor", connectors={(1, 0): 3}),
+            }),
+            provenance=FIXTURE,
+        )
+        with pytest.raises(EncounterError, match="leads to level 3, which this map does not have"):
+            Encounter([fighter(), make_monster("Wolf", position=(15, 0))], rng,
+                      battle_map=broken)
 
     def test_a_combatant_placed_on_a_level_the_map_lacks_is_refused(self) -> None:
         rng = Random(1)

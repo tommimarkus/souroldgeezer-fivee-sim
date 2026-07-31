@@ -590,8 +590,10 @@ class TestMapLevelAdapters:
 
     def test_query_answers_on_the_level_it_is_given(self) -> None:
         map_id = self.load()
-        # The dividing wall is on the ground only, so a walk across it has to
-        # go the long way round while the gallery above crosses straight over.
+        # The dividing wall is on the ground only. Under 5-5-5 every step costs
+        # 5 ft: the gallery crosses straight over in 4 steps (20 ft), while the
+        # ground must reach the open bottom row to pass x=2 — 3 steps down to
+        # (2, 3) and 3 back up to (4, 0), so 6 steps (30 ft).
         assert api.map_query(map_id, "path", frm=[0, 0], to=[4, 0])["cost_feet"] == 30
         assert api.map_query(map_id, "path", frm=[0, 0], to=[4, 0], level=1)[
             "cost_feet"
@@ -627,6 +629,28 @@ class TestMapLevelAdapters:
         assert move["data"]["to_level"] == 1
         thora = next(c for c in acted["state"]["combatants"] if c["name"] == "Thora")
         assert (thora["level"], thora["elevation"]) == (1, 10)
+
+    def test_a_combatant_can_start_the_fight_upstairs(self) -> None:
+        # Without this the storey is only reachable on foot, so a sentry posted
+        # on the gallery could not be set up at all.
+        map_id = self.load()
+        created = api.encounter_create(
+            [dict(HERO, position=[0, 15]),
+             dict(GOBLIN, position=[20, 15], level=1)],
+            seed=11, map_id=map_id,
+        )
+        by_name = {c["name"]: c for c in created["state"]["combatants"]}
+        assert (by_name["Thora"]["level"], by_name["Thora"]["elevation"]) == (0, 0)
+        assert (by_name["Goblin"]["level"], by_name["Goblin"]["elevation"]) == (1, 10)
+
+    def test_a_combatant_started_on_a_level_the_map_lacks_is_refused(self) -> None:
+        map_id = self.load()
+        with pytest.raises(api.ToolError, match="level 4, which this map does not have"):
+            api.encounter_create(
+                [dict(HERO, position=[0, 15]),
+                 dict(GOBLIN, position=[20, 15], level=4)],
+                seed=11, map_id=map_id,
+            )
 
     def test_a_move_to_a_storey_without_a_stairway_is_refused_over_the_wire(self) -> None:
         map_id = self.load()

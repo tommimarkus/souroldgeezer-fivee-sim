@@ -112,7 +112,9 @@ class TestEditorGroundControls:
     def test_the_editor_resize_walks_every_plane(self) -> None:
         # A frame change is document-wide; resizing the ground alone would
         # leave the storeys mislocated over it.
-        assert "var planes = [doc].concat(doc.levels || []);" in read("editor.html")
+        source = read("editor.html")
+        assert "[doc].concat(doc.levels" in source
+        assert "planes.forEach(" in source
 
     def test_the_renderer_is_never_handed_a_storey_it_must_understand(self) -> None:
         # The renderer stays pure: it is given the active plane's tiles and
@@ -132,6 +134,43 @@ class TestEditorGroundControls:
         # helper the renderer draws by — both sides of the shared surface.
         assert "visibleBounds" in read("renderer.js")
         assert "R.visibleBounds(" in read("editor.html")
+
+
+class TestTerrainColors:
+    # Presence and precedence as text, never a drawn pixel — the boundary in
+    # the module docstring holds here too.
+
+    def test_the_renderer_resolves_a_kind_against_the_documents_palette(self) -> None:
+        # Anchored to the lookup rather than the word, which could survive in a
+        # comment after the argument itself was dropped.
+        assert "palette[kind]" in read("renderer.js")
+
+    def test_an_authored_color_outranks_the_pages_theme(self) -> None:
+        # The pages define --terrain-* for all thirteen bundled kinds, so a
+        # palette consulted after the custom property would never color one.
+        renderer = read("renderer.js")
+        assert renderer.index("palette[kind]") < renderer.index("getPropertyValue(")
+
+    def test_the_renderer_draws_tiles_with_the_documents_palette(self) -> None:
+        assert "doc.palette" in read("renderer.js")
+
+    def test_the_editor_carries_colors_through_the_document_plumbing(self) -> None:
+        # contentOf feeds undo, the dirty check and the save digest; a layer
+        # missing from it is one every unrelated edit silently discards.
+        editor = read("editor.html")
+        assert "palette: payload.palette" in editor
+        assert "doc.palette = previous.palette" in editor
+
+    def test_the_editor_offers_a_color_control_per_legend_row(self) -> None:
+        editor = read("editor.html")
+        assert '.type = "color"' in editor
+        assert "legend-clear" in editor
+
+    def test_the_renderer_normalises_a_color_for_the_picker(self) -> None:
+        # <input type="color"> takes #rrggbb only, and the computed color may
+        # be an hsl() from the hash fallback or a CSS variable.
+        assert "asHex" in read("renderer.js")
+        assert "R.asHex(" in read("editor.html")
 
 
 class TestOfflineGuarantee:

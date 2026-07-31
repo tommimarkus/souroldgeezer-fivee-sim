@@ -19,12 +19,13 @@ What travels, and what deliberately does not:
   orientation, ``closed`` from the recorded default state.
 - ``image`` — a base64 PNG: flat truecolor fill per terrain kind plus a
   one-pixel grid line, because some importers refuse a file without an image.
-  The palette is engine policy, defined here; it happens to follow the
-  editor renderer's light-theme colors for familiarity, but that parity is
-  cosmetic, not contractual — the renderer themes at draw time and this file
-  has exactly one theme. Pack-defined kinds get the same deterministic
-  hue-hash fallback formula the renderer uses, so an unknown kind is the same
-  color in every export.
+  A kind the *document* colors is exported in that color — its ``light`` one,
+  since this file has exactly one theme. Everything else is engine policy,
+  defined here; it happens to follow the editor renderer's light-theme colors
+  for familiarity, but that parity is cosmetic, not contractual — the renderer
+  themes at draw time. Pack-defined kinds with no authored color get the same
+  deterministic hue-hash fallback formula the renderer uses, so an unknown kind
+  is the same color in every export.
 - ``lights`` and ``objects_line_of_sight`` ship empty, and elevation does not
   exist here: the engine models none of them, and inventing values would
   misrepresent the map.
@@ -42,10 +43,11 @@ import base64
 import colorsys
 import struct
 import zlib
+from collections.abc import Mapping
 from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
-from ..map_document import GROUND_LEVEL, MapDocument, MapLevel
+from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
 
@@ -103,9 +105,22 @@ def _fallback_rgb(kind: str) -> tuple[int, int, int]:
     return (round(red * 255), round(green * 255), round(blue * 255))
 
 
-def _rgb_of(kind: str) -> tuple[int, int, int]:
+def _rgb_of(kind: str, palette: Mapping[str, MapColor]) -> tuple[int, int, int]:
+    """The document's own color for ``kind`` if it names one, else engine policy.
+
+    A pair exports its ``light`` value: this file has exactly one theme, and the
+    light one is what :data:`PALETTE` already follows.
+    """
+    authored = palette.get(kind)
+    if authored is not None:
+        return _hex_rgb(authored.light)
     fixed = PALETTE.get(kind)
     return fixed if fixed is not None else _fallback_rgb(kind)
+
+
+def _hex_rgb(color: str) -> tuple[int, int, int]:
+    """``#rrggbb`` to its channels; the document guarantees the shape."""
+    return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
 
 
 # --- the PNG ---------------------------------------------------------------
@@ -137,7 +152,7 @@ def _render_png(document: MapDocument, plane: MapLevel, pixels_per_grid: int) ->
     for row in plane.tiles:
         body = bytearray()
         for char in row:
-            pixel = bytes(_rgb_of(document.legend[char]))
+            pixel = bytes(_rgb_of(document.legend[char], document.palette))
             if grid_lines:
                 body += grid_pixel + pixel * (pixels_per_grid - 1)
             else:

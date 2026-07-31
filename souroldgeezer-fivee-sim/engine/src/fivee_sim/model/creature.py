@@ -219,6 +219,7 @@ class Creature:
         label: str | None = None,
         team: str | None = None,
         position: Point | int = 0,
+        level: int = 0,
     ) -> Creature:
         """Build a fresh creature from a validated content record.
 
@@ -267,6 +268,7 @@ class Creature:
             conditions={str(entry) for entry in record.get("conditions", [])},
             condition_effects=condition_effects,
             position=position,
+            level=level,
             provenance=str(record.get("provenance", source)),
         )
 

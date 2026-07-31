@@ -73,6 +73,7 @@ silently become a default.
 | `grid` | `width` and `height` in squares (1–512 each), `cell_feet` fixed at 5. |
 | `legend` | Single character → terrain-kind string. The glyphs `+` `/` `<` `>` `@` are reserved for renderer overlays and may not be claimed. |
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
+| `palette` | Optional terrain colors — see below. Absent means the renderers choose. |
 | `elevation` | Optional ground height — see below. Absent means flat. |
 | `features` | Doors, stairs, spawn hints — see below. |
 | `levels` | Optional storeys above and below the ground — see below. Absent means a single plane. |
@@ -95,6 +96,30 @@ conditions: the built-in table covers `floor`, `wall`, `difficult`, `water`,
 `plain`, `forest`, `hill`, `mountain`, the cover kinds, and door terrain, and
 a content pack may define more. A kind nothing defines is a validation error
 naming what is available.
+
+**Palette** is what the map itself says its terrain looks like — a terrain kind
+mapped to one color, or to a `{light, dark}` pair when the two themes want
+different ones:
+
+```json
+"palette": { "lava": "#d2440f", "water": { "light": "#a9c6ce", "dark": "#1f3a44" } }
+```
+
+Colors are `#rgb` or `#rrggbb` hex and nothing else: the browser assets put them
+straight into a CSS background, where a `url(...)` would reach the network and
+break the editor's offline guarantee. Whatever the file spells, the saved form is
+lowercase six-digit, kinds sorted, and a pair whose halves match written as the
+one color it is. A kind may be colored without appearing in this map's `legend`,
+so a palette survives re-legending.
+
+Without an entry a kind still draws: the renderers fall back to the page's theme,
+then a built-in color, then a hue hashed from the kind's name — so a pack-defined
+kind is at least consistent everywhere. An authored color outranks all three, on
+the canvas, in the replay viewer, and in the flat image a UVTT export carries
+(which takes the `light` half, having only one theme). The key is omitted
+entirely when empty, so a file written before colors existed writes back
+byte-for-byte, and the format version does **not** move — same reasoning as
+elevation below.
 
 **Elevation** is ground height in feet — a `default` and a sparse `squares`
 list of `[x, y, feet]` for the ground that departs from it:
@@ -189,18 +214,21 @@ and nothing changes. Each operation is an object with an `op` key:
 | `resize` | `width`, `height`, `anchor?` (default top-left), `fill?` (default wall) |
 | `set_legend` | `glyph`, `terrain` — reserved glyphs refused |
 | `set_name` | `name` |
+| `set_palette` | `terrain`, `color` — one hex color, a `{light, dark}` pair, or `null` to drop it |
 | `set_elevation` | `rect` **or** `cells`, plus `feet`; **or** `default` alone, which moves the height every unnamed square sits at |
 | `adjust_elevation` | `rect` **or** `cells`, plus `by` — relative to what is there |
 
 Every operation that acts on one storey also takes `level` (default `0`, the
 ground): `set_terrain`, `paint`, `line`, `carve_corridor`, `add_feature`,
 `remove_feature`, `toggle_door`, `set_elevation`, `adjust_elevation`. The other
-three are document-wide by nature and take no level — `set_name` and
-`set_legend` because a floor has neither of its own, and `resize` because every
-storey shares the grid, so it translates them all together.
+four are document-wide by nature and take no level — `set_name`, `set_legend`
+and `set_palette` because a floor has none of the three of its own, and `resize`
+because every storey shares the grid, so it translates them all together.
 
-Terrain named in an operation must already have a glyph in the document's
-legend (`set_legend` first if not). A successful edit marks the document
+Terrain named in an operation that *paints* must already have a glyph in the
+document's legend (`set_legend` first if not); `set_legend` and `set_palette`
+merely name a kind, so they check it against loaded content instead and a
+colored kind need never appear on the map. A successful edit marks the document
 `edited` and, in the session, bumps the map's generation.
 
 ## The interactive editor
@@ -242,6 +270,13 @@ not in the page — that stays with the `adjust_elevation` edit operation.
 the one selected, and the canvas draws it. The control is disabled on a map
 with no storeys. Undo, save, and resize carry the whole document, so editing
 the gallery never costs the ground below it.
+
+**Terrain color.** Each legend row's swatch is a color picker: change it and
+that terrain kind is colored in the document itself, for this map everywhere it
+is drawn — every storey included, since one palette serves the document as one
+legend does. A row with a color of its own grows a `×` that drops it back to the
+theme's. On a map whose file carries a `{light, dark}` pair, the picker speaks
+only for the theme the page is showing and leaves the other half alone.
 
 After saving in the editor, the file has moved on from any session copy:
 `map_load` (with `replace` to keep the same map id) re-reads it. Once
@@ -307,11 +342,12 @@ What is exported:
 - **Image**: a flat-color PNG of the tiles at `pixels_per_grid` pixels per
   square (default 32), one fill per terrain kind plus a one-pixel grid line
   between cells. Some importers require an image; `include_image: false`
-  writes `"image": ""` instead, deliberately. The palette is engine policy:
-  bundled kinds have fixed colors, and a pack-defined kind gets a
-  deterministic hue hashed from its name using the same fallback formula the
-  editor renderer documents — the PNG has exactly one theme, so pixel parity
-  with the themed canvas is not promised.
+  writes `"image": ""` instead, deliberately. A kind the document's own
+  `palette` colors is exported in that color — its `light` half, the PNG having
+  exactly one theme. Everything else is engine policy: bundled kinds have fixed
+  colors, and an uncolored pack-defined kind gets a deterministic hue hashed
+  from its name using the same fallback formula the editor renderer documents.
+  Pixel parity with the themed canvas is not promised.
 
 `uvtt_export` takes a `level` (default the ground). The format has one plane
 and no notion of storeys, so a map with floors exports one file per floor

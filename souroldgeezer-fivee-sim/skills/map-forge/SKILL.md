@@ -28,9 +28,9 @@ session or file — is currently the truth.
    passage" and you translate it into operations: `set_terrain` (a rect),
    `paint` (cells), `line`, `carve_corridor`, `add_feature`,
    `remove_feature`, `toggle_door`, `resize`, `set_legend`, `set_name`,
-   `set_elevation`, `adjust_elevation`. The whole list applies atomically; a
-   bad operation names its index and changes nothing. Render the result back so
-   the user sees what changed.
+   `set_palette`, `set_elevation`, `adjust_elevation`. The whole list applies
+   atomically; a bad operation names its index and changes nothing. Render the
+   result back so the user sees what changed.
 4. **`map_save`** writes canonical JSON and refuses to overwrite unless told
    to. Quote the path and the sha256.
 5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
@@ -83,6 +83,15 @@ pack may define more. `lookup_rule` on a terrain name reports its effects;
 `content_status` says what is loaded. A document's legend maps single
 characters to kinds, and the glyphs `+` `/` `<` `>` `@` are reserved for
 overlays — a legend claiming one is refused.
+
+A kind draws in a color the renderers compute, which for a pack-defined kind is
+a hue hashed from its name. When the user wants a different one — "make the lava
+orange", "this is a snow map" — `set_palette` writes it into the document:
+`{"op": "set_palette", "terrain": "lava", "color": "#d2440f"}`, a
+`{"light": ..., "dark": ...}` object where the two themes should differ, or
+`"color": null` to drop back to the computed color. Hex only, `#rgb` or
+`#rrggbb`. The color then travels with the map — canvas, replay viewer, and the
+image a UVTT export carries — and a kind need not be on the map to be colored.
 
 ## Files
 
