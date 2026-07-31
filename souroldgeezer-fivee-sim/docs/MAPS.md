@@ -75,6 +75,7 @@ silently become a default.
 | `legend` | Single character → terrain-kind string. The glyphs `+` `/` `<` `>` `@` are reserved for renderer overlays and may not be claimed. |
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
 | `palette` | Optional terrain colors — see below. Absent means the renderers choose. |
+| `ambient_light` | Optional `bright`, `dim`, or `darkness` for the ground plane. Bright is the omitted default. |
 | `elevation` | Optional ground height — see below. Absent means flat. |
 | `features` | Doors, stairs, spawn hints, and the fixtures a fight can operate — see below. |
 | `levels` | Optional storeys above and below the ground — see below. Absent means a single plane. |
@@ -94,7 +95,11 @@ describe the leaf on the map; an open leaf does not occupy another combat
 square. Door
 squares are ordinary floor in `tiles`; the feature supplies the blocking.
 Other bundled kinds: `stairs_up`, `stairs_down`, `spawn` (placement hint,
-optionally with a `team`). A feature may also carry `to_level`, which is what
+optionally with a `team`), `opening`, and `light`. A feature may carry
+`sight_to_levels`, a list of levels visible through its square, and a `light`
+object with non-negative `bright` and `dim` ranges in feet plus a `#rrggbb`
+`color`. Either field is valid on any feature; `opening` and `light` are the
+editor's purpose-specific glyphs. A feature may also carry `to_level`, which is what
 turns a drawn stairway into one a fight can actually walk — see **Levels**
 below. Ids are unique across the whole document, not per level. A feature
 carrying a `state` is a **fixture** the fight can operate, and a door is only
@@ -299,7 +304,8 @@ height entirely.
 
 **Levels** are storeys over one footprint. Every level shares the document's
 `grid` and `legend` — floors of one building, not unrelated maps — so a level
-carries only what differs: its own `tiles`, `elevation`, and `features`.
+carries only what differs: its own `tiles`, `elevation`, `features`, and optional
+`ambient_light`.
 
 The ground is level `0`, and it stays in the document's own `tiles`,
 `elevation`, and `features` keys. `levels` holds only what is above or below
@@ -331,10 +337,12 @@ the *same square* on the named level, paying the rise between the two planes
 through the ordinary slope-and-climb rules above — a ten-foot storey is a
 climb. A connector must name a level the map has, and never its own.
 
-What a level does to a fight is deliberately narrow. **A floor is opaque**:
-sight, cover, and area templates do not cross between levels, so a creature on
-another storey has total cover and cannot be attacked, caught in an area, or
-threatened with an opportunity attack. Movement crosses at connectors only, and
+What a level does to a fight is deliberately narrow. **A floor is opaque unless
+an authored `sight_to_levels` opening says otherwise**: sight and attacks may
+cross from that square to the named storey, while area templates remain on their
+own plane. Everywhere else a creature on another storey has total cover and
+cannot be attacked, caught in an area, or threatened with an opportunity attack.
+Movement crosses at connectors or by an explicit Fly move, and
 routing is per level — the pathfinder will not plan a route that takes the
 stairs on the way, so cross-level movement is asked for a leg at a time.
 
@@ -533,6 +541,13 @@ linked-door selector. Only an adjacent compatible leaf is offered; linking
 writes both reciprocal records and assigns the outer hinges, while unlinking
 clears both records. Previewing either linked leaf previews both.
 
+**Light and openings.** Ambient light is selected per storey. Selecting any
+feature exposes its visible-level list and optional bright/dim light ranges and
+color; the Feature tool can place purpose-labelled `opening` and `light` glyphs.
+The renderer applies ambient dimness or darkness and marks light sources.
+Encounters use those same fields for Darkvision, Blindsight, and unseen-target
+attack modifiers, so the document, editor, replay, and fight read one source.
+
 The preview shows **terrain only**. The Heights overlay reads the storey's own
 height layer, so a fixture that drops a water level five feet recolors the room
 without re-shading it, and the cursor readout reports the authored height there.
@@ -670,9 +685,9 @@ state the door is in. What a door reaches *past* itself is spared nothing: a
 sluice gate is a door whose overlay floods a room, and that room resolves like
 any other fixture's.
 
-Deliberately omitted, because the engine does not model them and inventing
-values would misrepresent the map: `lights` and `objects_line_of_sight` ship
-empty, and there is no elevation. An overland map typically has no opaque
+Authored light sources export through `lights`, and the selected plane's ambient
+state exports through `environment.ambient_light`. `objects_line_of_sight`
+remains empty, and there is no elevation in the format. An overland map typically has no opaque
 kinds at all, so it exports an image and an empty `line_of_sight` — correct,
 not a bug.
 

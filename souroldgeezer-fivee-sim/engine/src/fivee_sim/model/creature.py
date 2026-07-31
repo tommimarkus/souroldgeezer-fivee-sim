@@ -98,6 +98,9 @@ class AttackOption:
     bonus_damage: Dice | None = None
     bonus_damage_type: DamageType | None = None
     advantage_bonus_damage: Dice | None = None
+    #: Extend that same rider to a hit made while a capable ally is beside the
+    #: target (the common Sneak Attack eligibility shape).
+    advantage_bonus_with_adjacent_ally: bool = False
     on_hit_condition: str | None = None
     on_hit_save_ability: Ability | None = None
     on_hit_save_dc: int = 0
@@ -164,6 +167,9 @@ class AttackOption:
                 Dice.parse(str(record["advantage_bonus_damage"]))
                 if record.get("advantage_bonus_damage") is not None else None
             ),
+            advantage_bonus_with_adjacent_ally=bool(
+                record.get("advantage_bonus_with_adjacent_ally", False)
+            ),
             on_hit_condition=(
                 str(record["on_hit_condition"])
                 if record.get("on_hit_condition") is not None else None
@@ -229,6 +235,9 @@ class Creature:
     bonus_actions: frozenset[str] = frozenset()
     #: A simple authored morale endpoint: give up when no conscious ally remains.
     surrender_when_last: bool = False
+    #: May spend its reaction to exchange places with an adjacent Small or
+    #: Medium ally and make that ally the target of an attack.
+    redirect_attack: bool = False
     surrendered: bool = False
     #: Pack Tactics, as a flag: the stat block prints it, the encounter resolves
     #: it, because whether a capable ally is within 5 feet of the target is a
@@ -328,6 +337,7 @@ class Creature:
                 str(entry) for entry in record.get("bonus_actions", [])
             ),
             surrender_when_last=bool(record.get("surrender_when_last", False)),
+            redirect_attack=bool(record.get("redirect_attack", False)),
             pack_tactics=bool(record.get("pack_tactics", False)),
             undead_fortitude=bool(record.get("undead_fortitude", False)),
             spells=tuple(str(entry) for entry in record.get("spells", [])),

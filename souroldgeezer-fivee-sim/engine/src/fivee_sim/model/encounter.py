@@ -70,6 +70,7 @@ from ..kernel.rules import (
     Ability,
     D20Test,
     DamageType,
+    Size,
     concentration_dc,
     fits_within,
     make_d20_test,
@@ -154,7 +155,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
-    "attach", "attached_damage", "detach", "surrender",
+    "attach", "attached_damage", "detach", "surrender", "redirect_attack",
     "turn_end", "turn_start", "undead_fortitude", "use_item",
 })
 
@@ -1029,6 +1030,20 @@ class Encounter:
             "hp": creature.hp,
             "max_hp": creature.max_hp,
             "ac": creature.ac,
+            "speeds": {
+                "walk": creature.speed,
+                "climb": creature.climb_speed,
+                "swim": creature.swim_speed,
+                "fly": creature.fly_speed,
+            },
+            "senses": {
+                "darkvision": creature.darkvision,
+                "blindsight": creature.blindsight,
+            },
+            "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
+            "death_rule": creature.death_rule.value,
+            "bonus_actions": sorted(creature.bonus_actions),
+            "redirect_attack": creature.redirect_attack,
             "position": list(as_point(creature.position)),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
@@ -1385,6 +1400,7 @@ class Encounter:
             # yet rather than checking action_used alone.
             raise EncounterError(f"{actor.name} has already taken an action this turn")
         option = self._pick_attack(actor, action.attack)
+        target = self._redirect_attack_target(actor, target)
         distance = actor.distance_to(target, self.movement_rule)
         reach = option.max_distance()
         if distance > reach:
@@ -1439,13 +1455,16 @@ class Encounter:
             resisted=self._resisted_by_target(target, option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
-            **self._rider_damage_arguments(option, target),
+            **self._rider_damage_arguments(actor, option, target),
         )
         cover_note = ""
         if grade is not CoverGrade.NONE:
             label = "half" if grade is CoverGrade.HALF else "three-quarters"
             cover_note = f" ({label} cover, +{cover_bonus} AC)"
         extras: dict[str, Any] = {}
+        if resolution.advantage_damage is not None:
+            extras["advantage_bonus_damage"] = resolution.advantage_damage.total
+            extras["advantage_bonus_reason"] = resolution.advantage_damage_reason
         if resolution.bonus_damage is not None:
             extras["bonus_damage"] = resolution.bonus_damage_dealt
         self._emit("attack", actor.name, target.name,
@@ -1483,7 +1502,7 @@ class Encounter:
         return (option.damage_type, option.bonus_damage_type)
 
     def _rider_damage_arguments(
-        self, option: AttackOption, target: Creature
+        self, actor: Creature, option: AttackOption, target: Creature
     ) -> dict[str, Any]:
         """The damage-rider keywords one attack passes to ``resolve_attack``.
 
@@ -1494,6 +1513,10 @@ class Encounter:
         """
         return {
             "advantage_bonus_damage": option.advantage_bonus_damage,
+            "advantage_bonus_damage_applies": (
+                option.advantage_bonus_with_adjacent_ally
+                and self._capable_ally_adjacent(actor=actor, target=target)
+            ),
             "bonus_damage": option.bonus_damage,
             "bonus_resisted": (
                 self._resisted_by_target(target, option.bonus_damage_type)
@@ -1508,6 +1531,48 @@ class Encounter:
                 if option.bonus_damage_type is not None else False
             ),
         }
+
+    def _redirect_attack_target(
+        self, attacker: Creature, target: Creature
+    ) -> Creature:
+        """Apply an authored Redirect Attack reaction, returning the new target."""
+        if (
+            not target.redirect_attack
+            or not self._reaction_available.get(target.name, False)
+            or not target.active
+            or not self._can_see(target, attacker)
+        ):
+            return target
+        eligible = sorted(
+            (
+                ally
+                for ally in self.creatures.values()
+                if ally is not target
+                and ally.team == target.team
+                and ally.active
+                and ally.level == target.level
+                and fits_within(ally.size, Size.MEDIUM)
+                and ally.distance_to(target, self.movement_rule) <= MELEE_THRESHOLD
+            ),
+            key=lambda ally: (ally.hp, ally.name),
+        )
+        if not eligible:
+            return target
+        redirected = eligible[0]
+        target.position, redirected.position = redirected.position, target.position
+        self._reaction_available[target.name] = False
+        self._emit(
+            "redirect_attack",
+            target.name,
+            redirected.name,
+            f"{target.name} swaps places with {redirected.name}, redirecting the attack",
+            attacker=attacker.name,
+            original_target=target.name,
+            redirected_target=redirected.name,
+            original_position=as_point(target.position),
+            redirected_position=as_point(redirected.position),
+        )
+        return redirected
 
     def attack_advantage(
         self, actor: Creature, target: Creature, option: AttackOption
@@ -1614,8 +1679,15 @@ class Encounter:
         """
         if not actor.pack_tactics:
             return False
+        return self._capable_ally_adjacent(actor=actor, target=target)
+
+    def _capable_ally_adjacent(
+        self, *, actor: Creature, target: Creature
+    ) -> bool:
+        """Whether the attacking team has another capable creature by the target."""
         return any(
-            ally is not actor and ally is not target
+            ally is not actor
+            and ally is not target
             and ally.team == actor.team
             and ally.active
             and ally.distance_to(target, self.movement_rule) <= MELEE_THRESHOLD
@@ -1805,6 +1877,8 @@ class Encounter:
         chosen, area_origin = self._spell_targets(actor, spell, action)
         if not chosen:
             raise EncounterError(f"{spell.name} has no valid targets")
+        if spell.requires_attack_roll:
+            chosen = [self._redirect_attack_target(actor, target) for target in chosen]
 
         # Cover shields a spell exactly as it shields a weapon swing: +2 behind
         # half cover, +5 behind three-quarters, on AC and on Dexterity saves
@@ -2740,7 +2814,7 @@ class Encounter:
             resisted=mover.resists(melee.damage_type),
             vulnerable=melee.damage_type in mover.vulnerabilities,
             immune=melee.damage_type in mover.immunities,
-            **self._rider_damage_arguments(melee, mover),
+            **self._rider_damage_arguments(attacker, melee, mover),
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
                    f"{melee.name}: {resolution.describe()}",

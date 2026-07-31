@@ -16,7 +16,7 @@ Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 cover
 | Spells | 4 |
 | Conditions | 14 |
 | Damage types | 13 |
-| Actions | 9 |
+| Actions | 10 |
 | Usable items | 0 bundled — the category is modelled, packs supply it |
 | Terrain kinds | 13 built in — packs may add more |
 | Classes, species, backgrounds, feats | 0 — not modelled |
@@ -66,7 +66,7 @@ The creature and spell lists are a deliberately narrow starting slice, not an at
 
 ## Actions
 
-Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`, `stand`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
+Each combatant may take one action per turn, plus movement: `attack`, `cast`, `move`, `dash`, `disengage`, `dodge`, `use_item`, `interact`, `stand`, `surrender`. Extra Attack is supported as a count of attacks per action. Opportunity attacks are taken automatically when a creature leaves reach without disengaging.
 
 `interact` works a map fixture the actor stands on or next to, on its own storey. By default it is the free object interaction: once per turn, without spending the action. A fixture may cost the action instead, may wait on other fixtures standing open before it will open, and may take an ability check — a failed check spends the budget and moves nothing. It reads condition-based Advantage and Disadvantage just like initiative. It toggles unless the action names `set_open`, which drives the fixture to the state asked for rather than flipping whatever it finds.
 
@@ -74,11 +74,13 @@ Each combatant may take one action per turn, plus movement: `attack`, `cast`, `m
 
 Also resolved: death saving throws, stabilising, instant death when damage past 0 hit points equals maximum hit points, damage resistance, vulnerability and immunity, and concentration checks when a concentrating creature is damaged. A condition a concentration spell imposed is lifted when that concentration ends — by a failed check, by the caster being incapacitated or killed, or by the caster beginning another concentration spell — unless another effect is still imposing it.
 
-An attack may carry riders, straight from its stat block: bonus damage of a second type on every hit, defended against its own type; extra dice added only when the attack roll actually resolved with Advantage; and an on-hit condition, automatic or applied on a failed save. Rider dice double on a critical hit like any damage dice. An on-hit condition may expire on its own — at the start of the attacker's next turn or the end of the target's next turn — and the expiry fires when that turn slot passes, even if the attacker has died; it never strips a condition something else is still imposing.
+An attack may carry riders, straight from its stat block: bonus damage of a second type on every hit, defended against its own type; extra dice added when the attack roll actually resolved with Advantage or, when the stat block says so, a capable ally stood within 5 feet of the target; an attachment that deals damage at the start of the attacker's turns; and an on-hit condition, automatic or applied on a failed save. Rider dice double on a critical hit like any damage dice. An on-hit condition may expire on its own — at the start of the attacker's next turn or the end of the target's next turn — and the expiry fires when that turn slot passes, even if the attacker has died; it never strips a condition something else is still imposing.
 
 A ranged weapon or ranged spell attack has Disadvantage when a capable enemy within 5 feet can see the attacker. Allies, Incapacitated enemies, an unseen attacker, and an enemy without a sight line do not impose it. This is one ordinary Disadvantage source, so any Advantage cancels it.
 
 Two printed creature traits are modelled as stat-block flags. Pack Tactics grants a creature's attack rolls — weapon and spell alike, opportunity attacks included — Advantage while another member of its team is within 5 feet of the target, conscious, and free of incapacitating conditions; it counts as one Advantage source and cancels against Disadvantage like any other. Undead Fortitude turns damage that would drop the creature to 0 hit points into a Constitution saving throw at DC 5 plus the damage taken, and a success leaves it standing at 1 hit point — bypassed when any of the damage was Radiant, the hit was a critical, or the overflow was enough to kill outright.
+
+Authored Bonus Actions currently cover Dash and Disengage. A creature may also surrender under its stat block's declared last-combatant rule. An authored Redirect Attack spends the intended target's reaction and swaps that target with an eligible nearby ally before the attack resolves.
 
 A creature at 0 hit points is a legal target, not an untouchable one: an attack, an area effect it stands inside, and a usable item all reach it. Each costs it one death saving throw failure, two if the damage came from a critical hit — and an attack from within 5 feet of an Unconscious creature is always a critical hit. Only a dead creature is refused as a target.
 
@@ -88,7 +90,7 @@ acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psy
 
 ## Battlefield
 
-Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, and doors. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
+Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, ambient and local light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately authored speeds; underwater terrain doubles movement unless the mover has a Swim speed, and Fly may move between storeys. Darkvision and Blindsight extend what a creature can perceive, while authored openings can carry both movement and sight between named levels. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
 
 A door is the common case of a **fixture** — any map feature carrying a state is one, so a lever, a spike, or a sluice gate is the same record with more on it. A fixture may govern squares beyond its own, naming what each becomes in either state in terrain and in ground height alike, may wait on other fixtures standing open, may cost the action rather than the free interaction, and may take an ability check. Working one changes that ground immediately, under whoever is standing on it: entry cost governs entering a square rather than remaining in one, so a creature whose footing turns impassable stays where it is and may walk out. Every square a fixture governs is claimed by exactly one fixture per level, which leaves no precedence to resolve and is what lets a stateless map query agree with the live fight about what a square is.
 
@@ -110,7 +112,7 @@ Built-in terrain kinds — content packs may define more:
 | plain | ordinary ground |
 | three-quarters-cover | grants three-quarters cover |
 | wall | impassable, blocks sight |
-| water | movement x2 |
+| water | movement x2, underwater |
 
 **Ground height** is feet per square, negative for ground below the map's datum, and it is charged to movement only. A rise of under 2 ft across a square is a gentle grade and costs nothing extra; from there up to 5 ft the square is a slope, which counts as difficult terrain and — since difficult terrain is not cumulative — is doubled once however rough the going. Above 5 ft the face is climbed, costing 1 extra foot per foot climbed (2 extra in difficult terrain) on top of the step into the square, and climbing down costs what climbing up costs. Sight, cover, and areas ignore height entirely.
 
@@ -120,21 +122,19 @@ Stated explicitly because absence is invisible in the data above, and because a 
 
 **Character building.** Classes, subclasses, species and lineages, backgrounds, feats, ability-score generation, levelling, and multiclassing. Combatants are described directly by their statistics — armour class, hit points, attacks, save bonuses — the way a stat block presents them. There is no notion of a character sheet that derives those numbers.
 
-**Equipment beyond simple usable items.** Simple usable items *are* modelled: potions, flasks, and doses of poison — one use that heals, deals damage, or applies a condition, held in a quantity that is also its charge count. None ship in the bundled slice, so potions reach a session through a content pack. Nothing beyond that use is modelled. Weapons and armour as objects that derive attack bonuses and armour class, scrolls, attunement, encumbrance, ammunition, and charges tracked separately from quantity are all absent. An attack carries its own bonus and damage expression; nothing models the object producing it.
+**Equipment beyond simple usable items.** Simple usable items *are* modelled: potions, flasks, and doses of poison — one use that heals, deals damage, or applies a condition, held in a quantity that is also its charge count, and whose pack declares an Action or Bonus Action cost. None ship in the bundled slice, so potions reach a session through a content pack. Nothing beyond that use is modelled. Weapons and armour as objects that derive attack bonuses and armour class, scrolls, attunement, encumbrance, ammunition, and charges tracked separately from quantity are all absent. An attack carries its own bonus and damage expression; nothing models the object producing it.
 
 **Spell resources beyond slots.** Spell lists per class, preparation rules, ritual casting, cantrip scaling by level, components, and material costs. A combatant simply holds a set of spell names and a count of slots per level.
 
-**Anything outside a fight.** Exploration, travel, downtime, resting and recovery, skills and proficiencies as a system, social interaction, and the adventuring day. Resources do not regenerate; an encounter begins and ends.
+**Anything outside a fight.** The scenario_timing primitive measures a fixed route against an authored round delay, but it carries no campaign state. Exploration choices, downtime, resting and recovery, skills and proficiencies as a system, social interaction, and the adventuring day remain caller-owned. Resources do not regenerate; an encounter begins and ends.
 
-**The third dimension, past what it costs to walk.** Ground height is modelled, and it reaches movement alone — see the Battlefield section. Everything else on the map is measured flat: sight lines, cover, and area templates ignore height entirely, so a ridge screens nobody and a creature atop a cliff is neither harder to hit nor better placed to shoot. Also absent: falling and fall damage, flying and swimming, jumping, a Climb Speed (a creature with one still pays the climb), creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, and forced movement — nothing pushes, drags, or knocks a creature through space, so no one is ever shoved off a ledge.
+**The third dimension, past what it costs to walk.** Ground height reaches movement alone — see the Battlefield section. Walk, Climb, Swim, and Fly speeds are tracked, flight may cross storeys, and authored openings may carry sight between named levels. Height itself is still ignored by sight lines, cover, and area templates, so a ridge screens nobody and high ground changes no attack roll. Also absent: falling and fall damage, jumping, creature size and squeezing (every combatant occupies one square whatever its printed size), facing, flanking, and forced movement — nothing pushes, drags, or knocks a creature through space, so no one is ever shoved off a ledge.
 
 **Timed durations beyond attack riders.** Concentration is tracked, and ending it lifts the condition the spell imposed. An attack's on-hit condition rider can carry its own clock — expiring at the start of the attacker's next turn or the end of the target's next turn, and the expiry fires even if the attacker has died. Beyond those two anchors, elapsed time is not modelled: the 'up to 1 minute' cap on a concentration spell never expires it, a spell's repeat saving throw at the end of the target's turn is not rolled, and a condition applied by an item or set directly on a stat block lasts until something removes it.
 
-**Reactions other than opportunity attacks.** Readied actions, Shield and similar reaction spells, Parry, and legendary or lair actions. Each combatant has one reaction per round and only ever spends it on an opportunity attack.
+**Reactions beyond opportunity attacks and Redirect Attack.** Readied actions, Shield and similar reaction spells, Parry, and legendary or lair actions. Each combatant has one reaction per round; opportunity attacks and a stat-block-authored Redirect Attack can spend it.
 
 **A fight that carries on over the dying.** An encounter ends as soon as one side has nobody conscious left, so a side reduced to dying creatures counts as beaten. Their death saves stop with the fight: a downed creature can never roll the natural 20 that would put it back on its feet, and a mutual knockout is reported as a draw rather than decided by whichever side recovers first. Damage to a creature at 0 hit points is fully modelled — an attack, an area spell, and an item all reach one — but this is about when the fight stops being simulated. Measured on the bundled stat blocks, counting the dying as still in the fight would lengthen a reported fight by 58% to 131%, and 30% to 46% of every round reported would be one in which nobody acts at all — more still once a caster is involved. Nothing in the auto-play policy that drives a batch finishes a downed creature off or takes the Help action to stabilise one, so those rounds are an empty room rather than a fight.
-
-**Monster instant death.** SRD 5.2 has a monster die the instant it drops to 0 hit points, where a character instead falls unconscious and makes death saving throws. Every combatant here is treated as a character, so any creature that drops begins the dying state.
 
 **Skill proficiency on a check.** The check a map fixture takes is a raw ability check, and there is nowhere in the model to make it anything else: a creature carries ability modifiers and no skill proficiencies at all, so there is no Athletics to add, no proficiency bonus, no Expertise, and no Help action to grant Advantage. Set a fixture's DC as if the character were untrained — a DC pitched at a trained bonus will play several points harder than intended. The standalone `check` primitive is the one place a proficiency can be applied at all, and only because its modifier is supplied by the caller rather than read off a creature.
 

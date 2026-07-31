@@ -183,7 +183,10 @@ def auto_action(encounter: Encounter) -> Action | None:
         best = min(options, key=lambda option: (-option.value, option.tiebreak))
         if best.value > 0.0:
             return best.action
-    return _closing_move(encounter, actor, enemies, turn)
+    closing = _closing_move(encounter, actor, enemies, turn)
+    if closing is not None:
+        return closing
+    return _closing_dash(encounter, actor, enemies, turn)
 
 
 def _attack_options(
@@ -214,6 +217,17 @@ def _attack_options(
                 vulnerable=option.damage_type in target.vulnerabilities,
                 immune=option.damage_type in target.immunities,
                 advantage_bonus_damage=option.advantage_bonus_damage,
+                advantage_bonus_damage_applies=(
+                    option.advantage_bonus_with_adjacent_ally
+                    and any(
+                        ally is not actor
+                        and ally.team == actor.team
+                        and ally.active
+                        and ally.distance_to(target, encounter.movement_rule)
+                        <= MELEE_THRESHOLD
+                        for ally in encounter.creatures.values()
+                    )
+                ),
                 bonus_damage=option.bonus_damage,
                 bonus_resisted=(
                     target.resists(option.bonus_damage_type)
@@ -653,6 +667,46 @@ def _closing_move(
     else:
         destination = (ax, ay + (step if ty > ay else -step))
     return Action(kind=ActionKind.MOVE, to_position=destination)
+
+
+def _closing_dash(
+    encounter: Encounter,
+    actor: Creature,
+    enemies: Sequence[Creature],
+    turn: dict[str, Any],
+) -> Action | None:
+    """Buy another movement budget when closing can still reach a threat.
+
+    A creature with an authored Bonus Action Dash spends that budget first so
+    its action remains available if the extra move reaches an attack.  A second
+    Dash with the action remains legal and useful on a longer approach.
+    """
+    desired = _threat_range(encounter, actor)
+    if desired is None:
+        return None
+    if encounter.battle_map is not None:
+        can_close = any(
+            actor.distance_to(enemy, encounter.movement_rule) > desired
+            and encounter.route(
+                actor.name,
+                to_square(as_point(enemy.position)),
+                stop_adjacent=True,
+            )
+            is not None
+            for enemy in enemies
+        )
+    else:
+        can_close = any(
+            actor.distance_to(enemy, encounter.movement_rule) > desired
+            for enemy in enemies
+        )
+    if not can_close:
+        return None
+    if "dash" in actor.bonus_actions and not turn["bonus_action_used"]:
+        return Action(kind=ActionKind.DASH, as_bonus_action=True)
+    if not turn["action_used"]:
+        return Action(kind=ActionKind.DASH)
+    return None
 
 
 def _closing_move_mapped(

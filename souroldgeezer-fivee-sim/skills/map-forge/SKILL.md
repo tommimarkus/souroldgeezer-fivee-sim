@@ -80,9 +80,8 @@ session or file — is currently the truth.
    map a fight is on rather than the map on disk, pass `open_features` with
    the fixtures standing open (`encounter_state`'s map block lists them): a
    raised portcullis stops being a wall and a flooded room exports as water.
-   Lights and
-   elevation are not exported: the format has no place for the ground heights
-   the engine now models, and nothing here models lights. The
+   Authored ambient light and feature light sources are exported. Elevation is
+   not: the format has no place for the ground heights the engine models. The
    image side is capped at 4096 pixels: lower `pixels_per_grid` for very
    large maps, or pass `include_image` false when the importer does not need
    the picture.
@@ -168,11 +167,18 @@ way to line a stair head up with the stair foot below without editing blind.
 A stairway becomes walkable when its feature carries `to_level`, which
 `add_feature` and `set_feature` both write — a stairway drawn without one is a
 glyph nobody can climb. **Say what a
-floor does**, as with height: a floor is opaque, so creatures on different
-levels cannot see, target, or threaten each other at all, and a move between
-them ends on a connector square and pays the climb. Routing is per level — ask
+floor does**, as with height: a floor is opaque unless a feature carries
+`sight_to_levels` naming the other plane. Sight and attacks cross through that
+opening; area effects do not. A move between levels ends on a connector square
+and pays the climb, unless it explicitly uses a Fly speed. Routing is per level — ask
 for the walk to the stairs and the crossing as separate legs, because the
 pathfinder will not plan a route that takes the stairs on the way.
+
+Each plane may set `ambient_light` to `bright`, `dim`, or `darkness`, and any
+feature may carry `light: {bright, dim, color}`. The editor exposes both plus
+purpose-labelled opening and light glyphs. These fields affect combat:
+Darkvision and Blindsight consult them, and UVTT export carries the ambient
+state and sources.
 
 ## Fixtures the fight can operate
 

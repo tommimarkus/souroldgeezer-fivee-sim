@@ -514,7 +514,7 @@ var FiveeRenderer = (function () {
       ctx.save();
       ctx.fillStyle = "#07111f";
       ctx.globalAlpha = doc.ambient_light === "darkness" ? 0.38 : 0.18;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.restore();
     }
 

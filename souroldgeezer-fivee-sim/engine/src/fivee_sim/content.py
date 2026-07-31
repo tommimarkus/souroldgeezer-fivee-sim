@@ -104,6 +104,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
     "size", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
+    "redirect_attack",
     "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
@@ -111,6 +112,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
     "long_range", "bonus_damage", "bonus_damage_type", "advantage_bonus_damage",
+    "advantage_bonus_with_adjacent_ally",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
     "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
     "detach_after_damage", "provenance",
@@ -326,6 +328,7 @@ def _parse_creature(
                 f"{', '.join(sorted(allowed_bonus_actions))}",
             )
     reader.boolean("surrender_when_last")
+    reader.boolean("redirect_attack")
     reader.boolean("pack_tactics")
     reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
@@ -387,6 +390,14 @@ def _parse_creature(
         ):
             sub.fail("bonus_damage", "bonus_damage_type names a type for no damage")
         sub.dice("advantage_bonus_damage")
+        sub.boolean("advantage_bonus_with_adjacent_ally")
+        if attack.get("advantage_bonus_with_adjacent_ally") and (
+            attack.get("advantage_bonus_damage") is None
+        ):
+            sub.fail(
+                "advantage_bonus_with_adjacent_ally",
+                "needs advantage_bonus_damage — there are no bonus dice to apply",
+            )
         sub.string("on_hit_condition")
         sub.enum("on_hit_save_ability", Ability)
         sub.integer("on_hit_save_dc", minimum=1)

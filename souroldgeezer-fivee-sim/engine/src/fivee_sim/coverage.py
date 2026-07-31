@@ -49,7 +49,8 @@ NOT_SUPPORTED = (
         "Equipment beyond simple usable items",
         "Simple usable items *are* modelled: potions, flasks, and doses of poison — one "
         "use that heals, deals damage, or applies a condition, held in a quantity that "
-        "is also its charge count. None ship in the bundled slice, so potions reach a "
+        "is also its charge count, and whose pack declares an Action or Bonus Action "
+        "cost. None ship in the bundled slice, so potions reach a "
         "session through a content pack. Nothing beyond that use is modelled. Weapons "
         "and armour as objects that derive attack bonuses and armour class, scrolls, "
         "attunement, encumbrance, ammunition, and charges tracked separately from "
@@ -64,20 +65,21 @@ NOT_SUPPORTED = (
     ),
     (
         "Anything outside a fight",
-        "Exploration, travel, downtime, resting and recovery, skills and proficiencies "
-        "as a system, social interaction, and the adventuring day. Resources do not "
-        "regenerate; an encounter begins and ends.",
+        "The scenario_timing primitive measures a fixed route against an authored "
+        "round delay, but it carries no campaign state. Exploration choices, downtime, "
+        "resting and recovery, skills and proficiencies as a system, social interaction, "
+        "and the adventuring day remain caller-owned. Resources do not regenerate; an "
+        "encounter begins and ends.",
     ),
     (
         "The third dimension, past what it costs to walk",
-        "Ground height is modelled, and it reaches movement alone — see the "
-        "Battlefield section. Everything else on the map is measured flat: sight "
-        "lines, cover, and area templates ignore height entirely, so a ridge "
-        "screens nobody and a creature atop a cliff is neither harder to hit nor "
-        "better placed to shoot. Also absent: falling and fall damage, flying and "
-        "swimming, jumping, a Climb Speed (a creature with one still pays the "
-        "climb), creature size and squeezing (every combatant occupies one square "
-        "whatever its printed size), facing, flanking, and forced movement — "
+        "Ground height reaches movement alone — see the Battlefield section. Walk, "
+        "Climb, Swim, and Fly speeds are tracked, flight may cross storeys, and authored "
+        "openings may carry sight between named levels. Height itself is still ignored "
+        "by sight lines, cover, and area templates, so a ridge screens nobody and high "
+        "ground changes no attack roll. Also absent: falling and fall damage, jumping, "
+        "creature size and squeezing (every combatant occupies one square whatever its "
+        "printed size), facing, flanking, and forced movement — "
         "nothing pushes, drags, or knocks a creature through space, so no one is "
         "ever shoved off a ledge.",
     ),
@@ -94,10 +96,10 @@ NOT_SUPPORTED = (
         "something removes it.",
     ),
     (
-        "Reactions other than opportunity attacks",
+        "Reactions beyond opportunity attacks and Redirect Attack",
         "Readied actions, Shield and similar reaction spells, Parry, and legendary or "
-        "lair actions. Each combatant has one reaction per round and only ever spends "
-        "it on an opportunity attack.",
+        "lair actions. Each combatant has one reaction per round; opportunity attacks "
+        "and a stat-block-authored Redirect Attack can spend it.",
     ),
     (
         "A fight that carries on over the dying",
@@ -114,13 +116,6 @@ NOT_SUPPORTED = (
         "Nothing in the auto-play policy that drives a batch finishes a downed "
         "creature off or takes the Help action to stabilise one, so those rounds are "
         "an empty room rather than a fight.",
-    ),
-    (
-        "Monster instant death",
-        "SRD 5.2 has a monster die the instant it drops to 0 hit points, where a "
-        "character instead falls unconscious and makes death saving throws. Every "
-        "combatant here is treated as a character, so any creature that drops begins "
-        "the dying state.",
     ),
     (
         "Skill proficiency on a check",
@@ -173,6 +168,8 @@ def _rider_summary(attack: dict[str, Any]) -> str:
             f" plus {attack['advantage_bonus_damage']} if the attack roll "
             f"had advantage"
         )
+        if attack.get("advantage_bonus_with_adjacent_ally"):
+            text += " or a capable ally stood within 5 ft of the target"
     if attack.get("on_hit_condition"):
         text += f", on hit: {attack['on_hit_condition']}"
         if attack.get("on_hit_max_size"):
@@ -189,6 +186,11 @@ def _rider_summary(attack: dict[str, Any]) -> str:
             text += " until the start of the attacker's next turn"
         elif expiry == "end_of_target_next_turn":
             text += " until the end of the target's next turn"
+    if attack.get("on_hit_attach"):
+        text += (
+            f", attaches and deals {attack['attached_damage']} "
+            f"{attack['attached_damage_type']} at the start of its turns"
+        )
     return text
 
 
@@ -255,6 +257,8 @@ def _terrain_summary(effect: TerrainEffect) -> str:
         parts.append("impassable")
     if effect.opaque:
         parts.append("blocks sight")
+    if effect.underwater:
+        parts.append("underwater")
     if effect.cover:
         parts.append(f"grants {_grade_name(CoverGrade(effect.cover))} cover")
     return ", ".join(parts) or "ordinary ground"
@@ -405,7 +409,9 @@ def render_markdown() -> str:
     add("")
     add("An attack may carry riders, straight from its stat block: bonus damage of "
         "a second type on every hit, defended against its own type; extra dice added "
-        "only when the attack roll actually resolved with Advantage; and an on-hit "
+        "when the attack roll actually resolved with Advantage or, when the stat block "
+        "says so, a capable ally stood within 5 feet of the target; an attachment that "
+        "deals damage at the start of the attacker's turns; and an on-hit "
         "condition, automatic or applied on a failed save. Rider dice double on a "
         "critical hit like any damage dice. An on-hit condition may expire on its "
         "own — at the start of the attacker's next turn or the end of the target's "
@@ -429,6 +435,11 @@ def render_markdown() -> str:
         "damage was Radiant, the hit was a critical, or the overflow was enough to "
         "kill outright.")
     add("")
+    add("Authored Bonus Actions currently cover Dash and Disengage. A creature may "
+        "also surrender under its stat block's declared last-combatant rule. An "
+        "authored Redirect Attack spends the intended target's reaction and swaps "
+        "that target with an eligible nearby ally before the attack resolves.")
+    add("")
     add("A creature at 0 hit points is a legal target, not an untouchable one: an "
         "attack, an area effect it stands inside, and a usable item all reach it. Each "
         "costs it one death saving throw failure, two if the damage came from a "
@@ -447,7 +458,12 @@ def render_markdown() -> str:
         "Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight "
         "may run mapless — an open, featureless plane — or on a battle map, supplied "
         "inline to `encounter_create` and `simulate_rounds`, which adds terrain "
-        "movement costs, walls, line of sight, cover, pathfinding, and doors. Doors "
+        "movement costs, walls, line of sight, cover, pathfinding, ambient and local "
+        "light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately "
+        "authored speeds; underwater terrain doubles movement unless the mover has a "
+        "Swim speed, and Fly may move between storeys. Darkvision and Blindsight "
+        "extend what a creature can perceive, while authored openings can carry both "
+        "movement and sight between named levels. Doors "
         "are named map features flipped by the `interact` action; closed they are "
         "impassable and block sight."
     )

@@ -188,6 +188,74 @@ class TestEncounterFlow:
         assert names == {"Thora", "Goblin"}
         assert all("hp" in entry for entry in state["combatants"])
 
+    def test_inline_combatants_accept_the_modelled_movement_and_morale_fields(
+        self,
+    ) -> None:
+        scout = {
+            **HERO,
+            "name": "Scout",
+            "climb_speed": 20,
+            "swim_speed": 15,
+            "fly_speed": 40,
+            "terrain_cost_overrides": ["grain"],
+            "darkvision": 60,
+            "blindsight": 10,
+            "death_rule": "instant",
+            "bonus_actions": ["dash", "disengage"],
+            "surrender_when_last": True,
+        }
+
+        created = api.encounter_create([scout, GOBLIN], seed=3)
+        state = next(
+            creature
+            for creature in created["state"]["combatants"]
+            if creature["name"] == "Scout"
+        )
+
+        assert state["speeds"] == {
+            "walk": 30,
+            "climb": 20,
+            "swim": 15,
+            "fly": 40,
+        }
+        assert state["senses"] == {"darkvision": 60, "blindsight": 10}
+        assert state["terrain_cost_overrides"] == ["grain"]
+        assert state["death_rule"] == "instant"
+        assert state["bonus_actions"] == ["dash", "disengage"]
+
+    def test_public_action_tool_passes_bonus_action_and_movement_mode(self) -> None:
+        skirmisher = {
+            **HERO,
+            "name": "Skirmisher",
+            "fly_speed": 40,
+            "bonus_actions": ["dash"],
+        }
+        foe = {
+            **HERO,
+            "name": "Foe",
+            "team": "monsters",
+            "position": 5,
+            "bonus_actions": ["dash"],
+            "fly_speed": 40,
+        }
+        created = api.encounter_create([skirmisher, foe], seed=3)
+        encounter_id = str(created["encounter_id"])
+
+        acted = api.encounter_act(
+            encounter_id,
+            kind="dash",
+            movement_mode="fly",
+            as_bonus_action=True,
+        )
+
+        assert acted["events"][0]["data"] == {
+            "movement_left": 80,
+            "movement_mode": "fly",
+            "as_bonus_action": True,
+        }
+        assert acted["state"]["turn_state"]["action_used"] is False
+        assert acted["state"]["turn_state"]["bonus_action_used"] is True
+
     def test_an_unknown_encounter_id_lists_the_active_ones(self) -> None:
         api.encounter_create([HERO, GOBLIN], seed=1)
         with pytest.raises(api.ToolError, match="active:"):

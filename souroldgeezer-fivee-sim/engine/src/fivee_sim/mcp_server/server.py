@@ -74,7 +74,7 @@ from ..kernel.rules import Ability, DamageType, Size, make_d20_test
 from ..map_document import GROUND_LEVEL, MapDocument, MapLevel, as_payload, to_grid
 from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
-from ..model.creature import AttackOption, Creature
+from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from ..service import encounter_journal as _journal_service
 from ..service import maps as _map_service
@@ -518,6 +518,9 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
                 Dice.parse(str(spec["advantage_bonus_damage"]))
                 if spec.get("advantage_bonus_damage") is not None else None
             ),
+            advantage_bonus_with_adjacent_ally=bool(
+                spec.get("advantage_bonus_with_adjacent_ally", False)
+            ),
             on_hit_condition=(
                 str(spec["on_hit_condition"])
                 if spec.get("on_hit_condition") is not None else None
@@ -528,6 +531,16 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
             on_hit_save_dc=int(spec.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(spec.get("on_hit_expiry", "none")),
             on_hit_max_size=Size(max_size) if max_size is not None else None,
+            on_hit_attach=bool(spec.get("on_hit_attach", False)),
+            attached_damage=(
+                Dice.parse(str(spec["attached_damage"]))
+                if spec.get("attached_damage") is not None else None
+            ),
+            attached_damage_type=(
+                DamageType(spec["attached_damage_type"])
+                if spec.get("attached_damage_type") is not None else None
+            ),
+            detach_after_damage=int(spec.get("detach_after_damage", 0)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -542,8 +555,11 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: silently ignore the AC, which is the very failure this guard exists to stop.
 _LOOKUP_SPEC_KEYS = frozenset({"creature", "monster", "label", "team", "position", "level"})
 _DESCRIBED_SPEC_KEYS = frozenset({
-    "name", "team", "ac", "max_hp", "hp", "speed", "size", "abilities", "save_bonuses",
-    "attacks", "attacks_per_action", "pack_tactics", "undead_fortitude", "spells",
+    "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
+    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "size", "abilities", "save_bonuses", "attacks", "attacks_per_action",
+    "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
+    "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "provenance",
 })
@@ -588,6 +604,13 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             )
         except DataError as error:
             raise ToolError(str(error)) from error
+    bonus_actions = frozenset(str(value) for value in spec.get("bonus_actions", []))
+    unsupported_bonus_actions = sorted(bonus_actions - {"dash", "disengage"})
+    if unsupported_bonus_actions:
+        raise ToolError(
+            "bonus_actions must contain only dash or disengage; got: "
+            + ", ".join(unsupported_bonus_actions)
+        )
     try:
         return Creature(
             name=str(spec["name"]),
@@ -596,6 +619,14 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             max_hp=int(spec["max_hp"]),
             hp=int(spec.get("hp", -1)),
             speed=int(spec.get("speed", 30)),
+            climb_speed=int(spec.get("climb_speed", 0)),
+            swim_speed=int(spec.get("swim_speed", 0)),
+            fly_speed=int(spec.get("fly_speed", 0)),
+            terrain_cost_overrides=frozenset(
+                str(value) for value in spec.get("terrain_cost_overrides", [])
+            ),
+            darkvision=int(spec.get("darkvision", 0)),
+            blindsight=int(spec.get("blindsight", 0)),
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
             # route. Size gates attack riders like the Wolf's Prone.
@@ -610,6 +641,9 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             },
             attacks=tuple(_attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),
+            bonus_actions=bonus_actions,
+            surrender_when_last=bool(spec.get("surrender_when_last", False)),
+            redirect_attack=bool(spec.get("redirect_attack", False)),
             pack_tactics=bool(spec.get("pack_tactics", False)),
             undead_fortitude=bool(spec.get("undead_fortitude", False)),
             spells=tuple(str(name) for name in spec.get("spells", [])),
@@ -628,6 +662,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             condition_effects=registry.condition_effects,
             position=_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),
+            death_rule=DeathRule(spec.get("death_rule", DeathRule.DEATH_SAVES)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -1765,6 +1800,8 @@ def encounter_act(
     feature: str | None = None,
     set_open: bool | None = None,
     to_level: int | None = None,
+    movement_mode: str | None = None,
+    as_bonus_action: bool = False,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Take the current creature's action and durably audit success or refusal.
@@ -1793,6 +1830,8 @@ def encounter_act(
         "feature": feature,
         "set_open": set_open,
         "to_level": to_level,
+        "movement_mode": movement_mode,
+        "as_bonus_action": as_bonus_action,
     }
     index, started_at = _attempt_started(
         encounter_id, session, "encounter_act", arguments, request_id
@@ -1817,6 +1856,8 @@ def encounter_act(
             feature,
             set_open,
             to_level,
+            movement_mode,
+            as_bonus_action,
         )
     except (ToolError, EncounterError) as error:
         _attempt_finished(

@@ -123,6 +123,34 @@ class TestUnderwaterCombat:
 
 
 class TestMovementModes:
+    def test_state_exposes_authored_speeds_senses_and_terrain_overrides(self) -> None:
+        centipede = fighter("Centipede", team="monsters")
+        centipede.climb_speed = 30
+        centipede.swim_speed = 15
+        centipede.fly_speed = 5
+        centipede.darkvision = 60
+        centipede.blindsight = 30
+        centipede.terrain_cost_overrides = frozenset({"grain"})
+        encounter = Encounter(
+            [centipede, fighter("Harrow", position=30)], FixedRandom(10)
+        )
+
+        state = next(
+            creature
+            for creature in encounter.state()["combatants"]
+            if creature["name"] == "Centipede"
+        )
+
+        assert state["speeds"] == {
+            "walk": 30,
+            "climb": 30,
+            "swim": 15,
+            "fly": 5,
+        }
+        assert state["senses"] == {"darkvision": 60, "blindsight": 30}
+        assert state["terrain_cost_overrides"] == ["grain"]
+        assert state["death_rule"] == "death_saves"
+
     def test_a_swim_speed_uses_ordinary_cost_in_underwater_terrain(self) -> None:
         swimmer = fighter("Ooloth", team="monsters", position=(2, 2))
         swimmer.swim_speed = 30
@@ -298,6 +326,35 @@ class TestAttachment:
 
 
 class TestHealingAndActionEconomy:
+    def test_sneak_attack_rider_applies_when_an_ally_is_beside_the_target(self) -> None:
+        rogue = fighter("Tansy")
+        rogue.attacks = (
+            AttackOption(
+                name="Shortsword",
+                attack_bonus=20,
+                damage=Dice(1, 6, 3),
+                damage_type=DamageType.PIERCING,
+                advantage_bonus_damage=Dice(1, 6),
+                advantage_bonus_with_adjacent_ally=True,
+                provenance=FIXTURE,
+            ),
+        )
+        ally = fighter("Harrow", position=10)
+        target = fighter("Goblin", team="monsters", position=5)
+        rng = FixedRandom(4)
+        encounter = Encounter([rogue, ally, target], rng)
+        advance_to(encounter, "Tansy", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin", attack="Shortsword"),
+            rng,
+        )
+
+        attack = next(event for event in events if event.kind == "attack")
+        assert attack.data["advantage"] == "none"
+        assert attack.data["damage"] == 11
+        assert attack.data["advantage_bonus_damage"] == 4
+
     def test_a_healing_spell_restores_hit_points_and_spends_its_slot(self) -> None:
         cleric = fighter("Wren")
         cleric.spells = ("Cure Wounds",)
@@ -411,6 +468,31 @@ class TestHealingAndActionEconomy:
         }
         assert any(event.kind == "attack" for event in events)
 
+    def test_batch_policy_uses_a_bonus_action_dash_to_reach_an_attack(self) -> None:
+        rogue = fighter("Tansy")
+        rogue.bonus_actions = frozenset({"dash", "disengage"})
+        enemy = fighter("Goblin", team="monsters", position=65)
+        rng = FixedRandom(10)
+        encounter = Encounter([rogue, enemy], rng)
+        advance_to(encounter, "Tansy", rng)
+
+        actions: list[Action] = []
+        for _ in range(5):
+            action = auto_action(encounter)
+            assert action is not None
+            actions.append(action)
+            encounter.act(action, rng)
+            if action.kind is ActionKind.ATTACK:
+                break
+
+        assert [action.kind for action in actions] == [
+            ActionKind.MOVE,
+            ActionKind.DASH,
+            ActionKind.MOVE,
+            ActionKind.ATTACK,
+        ]
+        assert actions[1].as_bonus_action is True
+
 
 class TestMorale:
     def test_the_last_authored_holdout_surrenders_and_ends_the_encounter(self) -> None:
@@ -438,6 +520,49 @@ class TestMorale:
             if creature["name"] == "Whip"
         )
         assert state["surrendered"] is True
+
+
+class TestRedirectAttack:
+    def test_a_target_can_spend_its_reaction_to_swap_in_an_adjacent_ally(self) -> None:
+        attacker = fighter("Harrow", position=0)
+        attacker.attacks = (
+            AttackOption(
+                name="Longsword",
+                attack_bonus=20,
+                damage=Dice(1, 8, 3),
+                damage_type=DamageType.SLASHING,
+                provenance=FIXTURE,
+            ),
+        )
+        boss = fighter("Snagfinger", team="monsters", position=5)
+        boss.redirect_attack = True
+        minion = fighter("House Goblin", team="monsters", position=10)
+        rng = FixedRandom(4)
+        encounter = Encounter([attacker, boss, minion], rng)
+        advance_to(encounter, "Harrow", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Snagfinger", attack="Longsword"),
+            rng,
+        )
+
+        assert [event.kind for event in events] == [
+            "redirect_attack",
+            "attack",
+            "damage",
+        ]
+        assert events[0].actor == "Snagfinger"
+        assert events[0].target == "House Goblin"
+        assert boss.position == (10, 0)
+        assert minion.position == (5, 0)
+        assert boss.hp == boss.max_hp
+        assert minion.hp == minion.max_hp - 7
+        boss_state = next(
+            creature
+            for creature in encounter.state()["combatants"]
+            if creature["name"] == "Snagfinger"
+        )
+        assert boss_state["reaction_available"] is False
 
 
 class TestDistributionEvidence:
