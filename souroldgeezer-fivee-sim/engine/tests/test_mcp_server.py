@@ -14,6 +14,8 @@ from typing import Any
 
 import pytest
 
+from fivee_sim.analytics.expectation import attack_damage_expectation
+from fivee_sim.kernel.dice import Dice
 from fivee_sim.maps import parse_document
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import maps as map_service
@@ -145,20 +147,20 @@ class TestEncounterFlow:
         encounter_id = str(created["encounter_id"])
         assert created["seed"] == 11
         assert created["state"]["round"] == 1
+        # The seed fixes initiative, so the sequence below is not a guess: the
+        # goblin wins the roll and swings first. Branching on whoever's turn it
+        # is would leave the assertions unable to say which outcome was right.
+        assert created["state"]["order"] == ["Goblin", "Thora"]
 
-        # Walk to whoever's turn it is, then attack the other side.
-        state = api.encounter_state(encounter_id)
-        actor = str(state["turn"])
-        opponent = "Goblin" if actor == "Thora" else "Thora"
-        attack = "Longsword" if actor == "Thora" else "Scimitar"
         acted = api.encounter_act(
-            encounter_id, kind="attack", target=opponent, attack=attack
+            encounter_id, kind="attack", target="Thora", attack="Scimitar"
         )
-        assert acted["events"]
-        assert acted["state"]["turn"] == actor
+        assert [event["kind"] for event in acted["events"]] == ["attack", "damage"]
+        assert acted["state"]["turn"] == "Goblin"  # acting does not end the turn
 
         advanced = api.encounter_advance(encounter_id)
-        assert advanced["state"]["turn"] != actor or advanced["state"]["over"]
+        assert advanced["state"]["turn"] == "Thora"
+        assert advanced["state"]["over"] is False
 
     def test_state_is_the_authoritative_view(self) -> None:
         created = api.encounter_create([HERO, GOBLIN], seed=3)
@@ -811,9 +813,26 @@ class TestAnalyticsTools:
         assert pytest.approx(sum(result["win_rate"].values()), abs=1e-6) == 1.0
 
     def test_simulate_dpr_reports_damage_per_round(self) -> None:
-        result = api.simulate_dpr(HERO, target_ac=15, rounds=3, iterations=100, seed=7)
-        assert result["damage"]["mean"] > 0
-        assert result["damage_per_round"] > 0
+        # The oracle is the engine's own closed form, read off the same fixture
+        # the run uses so the two cannot drift apart. The tight bound belongs to
+        # test_analytics, which pins simulate_dpr against this arithmetic at
+        # 6,000 iterations; 500 places the mean inside 5%, which is enough for
+        # the adapter's job — that the spec, the AC, and the round count reach
+        # the batch intact. "> 0" would have passed a wrong divisor, a dropped
+        # round, or a lost attack bonus.
+        weapon = HERO["attacks"][0]
+        expected = attack_damage_expectation(
+            attack_bonus=int(weapon["attack_bonus"]),
+            target_ac=15,
+            damage=Dice.parse(str(weapon["damage"])),
+        )
+        result = api.simulate_dpr(HERO, target_ac=15, rounds=3, iterations=500, seed=7)
+        assert result["damage_per_round"] == pytest.approx(expected, rel=0.05)
+        # And the two reported figures describe the same run; Stats.as_dict
+        # rounds the mean to three decimals, so they agree to within that.
+        assert result["damage_per_round"] == pytest.approx(
+            result["damage"]["mean"] / 3, abs=1e-3
+        )
 
     def test_bad_iteration_counts_are_refused(self) -> None:
         with pytest.raises(api.ToolError, match="at least 1"):

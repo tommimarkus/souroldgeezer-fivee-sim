@@ -119,6 +119,21 @@ def detail_of(events: Sequence[Event], kind: str) -> str:
     return matching[0].detail
 
 
+def rolled_with(event: Event) -> str:
+    """The Advantage state the d20 in this event was rolled under.
+
+    Matched on the ``describe()`` token rather than by substring, because
+    ``"advantage" in "disadvantage"`` is true and a substring test would pass
+    whichever way the roll actually went. Every assertion about the state a d20
+    was rolled under goes through here — attack rolls and saving throws alike,
+    since both render the same ``[faces] <state> ->`` shape.
+    """
+    for state in ("disadvantage", "advantage"):
+        if f"] {state} ->" in event.detail:
+            return state
+    return "none"
+
+
 class TestInitiative:
     def test_the_same_seed_produces_the_same_order(self) -> None:
         first = Encounter([fighter(), make_monster("Wolf")], Random(7))
@@ -2097,29 +2112,25 @@ class TestSavingThrowAdvantage:
     def test_a_restrained_target_saves_with_disadvantage_rather_than_failing(
         self,
     ) -> None:
-        detail = self.fireball_save(conditions=(Condition.RESTRAINED,)).detail
-        assert "disadvantage" in detail
-        assert "auto-fail" not in detail
+        event = self.fireball_save(conditions=(Condition.RESTRAINED,))
+        assert rolled_with(event) == "disadvantage"
+        assert "auto-fail" not in event.detail
 
     def test_an_unhindered_target_saves_straight(self) -> None:
-        detail = self.fireball_save().detail
-        assert "disadvantage" not in detail
-        assert "advantage" not in detail
+        assert rolled_with(self.fireball_save()) == "none"
 
     def test_a_paralyzed_target_still_fails_outright(self) -> None:
         assert "auto-fail" in self.fireball_save(conditions=(Condition.PARALYZED,)).detail
 
     def test_dodging_gives_advantage_on_a_dexterity_save(self) -> None:
-        assert "advantage" in self.fireball_save(dodging=True).detail
+        assert rolled_with(self.fireball_save(dodging=True)) == "advantage"
 
     def test_a_restrained_dodger_loses_the_benefit_rather_than_cancelling(self) -> None:
         # Dodge's benefits are lost while Speed is 0, and Restrained sets Speed 0.
         # Treating the Dodge as a live source of Advantage would cancel the
         # Disadvantage and hand the creature a straight roll it has not earned.
-        detail = self.fireball_save(
-            conditions=(Condition.RESTRAINED,), dodging=True
-        ).detail
-        assert "disadvantage" in detail
+        event = self.fireball_save(conditions=(Condition.RESTRAINED,), dodging=True)
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_forced_failure_and_disadvantage_are_decided_independently(self) -> None:
         rng = Random(4)
@@ -2222,49 +2233,37 @@ class TestSpellAttackAdvantage:
         )
         return next(event for event in events if event.kind == "spell_effect")
 
-    @staticmethod
-    def rolled_with(event: Event) -> str:
-        """The Advantage state the d20 in this event was rolled under.
-
-        Matched on the describe() token rather than by substring, because
-        ``"advantage" in "disadvantage"`` is true and would pass either way.
-        """
-        for state in ("disadvantage", "advantage"):
-            if f"] {state} ->" in event.detail:
-                return state
-        return "none"
-
     def test_an_unhindered_target_is_attacked_straight(self) -> None:
-        assert self.rolled_with(self.bolt()) == "none"
+        assert rolled_with(self.bolt()) == "none"
 
     def test_a_paralyzed_target_grants_advantage(self) -> None:
         event = self.bolt(target_conditions=(Condition.PARALYZED,))
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_restrained_target_grants_advantage(self) -> None:
         event = self.bolt(target_conditions=(Condition.RESTRAINED,))
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_blinded_caster_attacks_with_disadvantage(self) -> None:
         event = self.bolt(caster_conditions=(Condition.BLINDED,))
-        assert self.rolled_with(event) == "disadvantage"
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_frightened_caster_attacks_with_disadvantage(self) -> None:
         event = self.bolt(caster_conditions=(Condition.FRIGHTENED,))
-        assert self.rolled_with(event) == "disadvantage"
+        assert rolled_with(event) == "disadvantage"
 
     def test_a_dodging_target_imposes_disadvantage(self) -> None:
         # SRD 5.2, Dodge: "any attack roll made against you has Disadvantage if
         # you can see the attacker". The _dodging map was never consulted on the
         # cast path, so a Dodge bought nothing against a spell.
-        assert self.rolled_with(self.bolt(dodging=True)) == "disadvantage"
+        assert rolled_with(self.bolt(dodging=True)) == "disadvantage"
 
     def test_a_blinded_caster_on_a_paralyzed_target_cancels_to_neither(self) -> None:
         event = self.bolt(
             caster_conditions=(Condition.BLINDED,),
             target_conditions=(Condition.PARALYZED,),
         )
-        assert self.rolled_with(event) == "none"
+        assert rolled_with(event) == "none"
 
     def test_a_hit_on_a_paralyzed_target_within_5_feet_is_a_critical(self) -> None:
         # SRD 5.2, Paralyzed: "Any attack roll that hits you is a Critical Hit if
@@ -2282,7 +2281,7 @@ class TestSpellAttackAdvantage:
         assert "-> hit" in event.detail
         # Only the automatic critical is distance-scoped; the Advantage the
         # condition grants applies at any range.
-        assert self.rolled_with(event) == "advantage"
+        assert rolled_with(event) == "advantage"
 
     def test_a_prone_target_is_advantaged_within_5_feet_and_disadvantaged_beyond(
         self,
@@ -2294,8 +2293,8 @@ class TestSpellAttackAdvantage:
         # what kind of attack a spell is.
         near = self.bolt(target_conditions=(Condition.PRONE,), distance=5)
         far = self.bolt(target_conditions=(Condition.PRONE,), distance=30)
-        assert self.rolled_with(near) == "advantage"
-        assert self.rolled_with(far) == "disadvantage"
+        assert rolled_with(near) == "advantage"
+        assert rolled_with(far) == "disadvantage"
 
     def test_the_cast_path_and_the_swing_path_agree_about_advantage(self) -> None:
         # The drift guard, and the half of it that still has two code paths to
