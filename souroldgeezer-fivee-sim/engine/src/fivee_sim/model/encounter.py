@@ -439,6 +439,11 @@ class Encounter:
     def _terrain_effect(self, square: Square) -> TerrainEffect:
         return terrain_effect_of(self._terrain_at(square), self.terrain_effects)
 
+    def _elevation_at(self, square: Square) -> int:
+        """The ground height of a square in feet. Off-map ground is the default."""
+        assert self.battle_map is not None
+        return self.battle_map.elevation.get(square, self.battle_map.default_elevation)
+
     def _entry_cost(self, square: Square) -> int | None:
         """Feet to enter a square, or ``None`` off the map or into a wall.
 
@@ -460,12 +465,16 @@ class Encounter:
 
         The single composer every charged move goes through — the routed path and
         the caller's explicit one alike, so a hand-written route costs exactly
-        what the pathfinder would have charged for it.
+        what the pathfinder would have charged for it. A change in ground height
+        makes the step a slope or a climb; see
+        :func:`~fivee_sim.kernel.grid.step_cost_feet` for what each costs.
         """
         if not self._on_map(step_to):
             return None
         return step_cost_feet(
-            self._terrain_effect(step_to), 0, doubled_diagonal=doubled_diagonal
+            self._terrain_effect(step_to),
+            self._elevation_at(step_to) - self._elevation_at(origin),
+            doubled_diagonal=doubled_diagonal,
         )
 
     def _opaque(self, square: Square) -> bool:
@@ -617,6 +626,7 @@ class Encounter:
             "width": self.battle_map.width,
             "height": self.battle_map.height,
             "movement_rule": self.movement_rule.value,
+            "elevation": self._elevation_summary(),
             "features": {
                 name: {
                     "square": list(feature.square),
@@ -627,8 +637,30 @@ class Encounter:
             },
         }
 
-    def _creature_state(self, creature: Creature) -> dict[str, Any]:
+    def _elevation_summary(self) -> dict[str, Any]:
+        """The map's ground heights in feet, and what they do — and do not — do.
+
+        ``flat`` is the fact a reader needs first. The default only counts toward
+        the range when some square actually falls back to it, so a map whose
+        sparse layer covers every square reports the heights it really has.
+        """
+        assert self.battle_map is not None
+        heights = list(self.battle_map.elevation.values())
+        covered = len(self.battle_map.elevation) == (
+            self.battle_map.width * self.battle_map.height
+        )
+        if not covered:
+            heights.append(self.battle_map.default_elevation)
         return {
+            "default": self.battle_map.default_elevation,
+            "min": min(heights),
+            "max": max(heights),
+            "flat": min(heights) == max(heights),
+            "affects": "movement only; sight, cover, and areas are measured flat",
+        }
+
+    def _creature_state(self, creature: Creature) -> dict[str, Any]:
+        state: dict[str, Any] = {
             "name": creature.name,
             "team": creature.team,
             "hp": creature.hp,
@@ -652,6 +684,11 @@ class Encounter:
             "spells": list(creature.spells),
             "items": dict(sorted(creature.items.items())),
         }
+        # Only where it means something: a fight on the open plane has no ground
+        # to stand on, and reporting 0 feet there would read as a fact.
+        if self.battle_map is not None:
+            state["elevation"] = self._elevation_at(to_square(as_point(creature.position)))
+        return state
 
     # --- turn lifecycle ---------------------------------------------------
     def _begin_turn(self, rng: Random) -> None:

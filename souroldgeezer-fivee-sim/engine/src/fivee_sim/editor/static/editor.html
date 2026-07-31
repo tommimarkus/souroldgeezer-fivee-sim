@@ -314,10 +314,14 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   /* --- document plumbing ------------------------------------------------ */
+  /* Every layer the document carries, including ones this page cannot paint:
+     ground elevation rides through a save untouched, and counting it here keeps
+     undo and the dirty check honest if the page ever learns to edit it. */
   function contentOf(payload) {
     return JSON.stringify({
       name: payload.name, grid: payload.grid, legend: payload.legend,
-      tiles: payload.tiles, features: payload.features
+      tiles: payload.tiles, features: payload.features,
+      elevation: payload.elevation
     });
   }
   function snapshot() {
@@ -332,6 +336,8 @@ if (typeof FiveeRenderer === "undefined") {
     doc.legend = previous.legend;
     doc.tiles = previous.tiles;
     doc.features = previous.features;
+    if (previous.elevation === undefined) { delete doc.elevation; }
+    else { doc.elevation = previous.elevation; }
     byId("map-name").value = doc.name;
     renderLegend();
     redraw();

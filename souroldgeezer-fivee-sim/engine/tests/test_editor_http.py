@@ -278,6 +278,34 @@ class TestMapsRoundTrip:
         assert [entry["id"] for entry in listing["maps"]] == ["editor-chamber"]
         assert listing["maps"][0]["name"] == "editor chamber"
 
+    def test_ground_height_survives_a_fetch_and_save(self, editor: Editor) -> None:
+        # The page cannot paint heights, but it PUTs back the document it was
+        # given — so a map with relief must not come home flat.
+        raised = payload()
+        raised["elevation"] = {"default": 0, "squares": [[2, 2, 20]]}
+        sha256 = editor.put_map("editor-chamber", raised).json()["sha256"]
+        fetched = editor.request("GET", "/api/maps/editor-chamber").json()
+        assert fetched["elevation"] == {"default": 0, "squares": [[2, 2, 20]]}
+
+        saved = editor.put_map("editor-chamber", fetched, if_match=f'"{sha256}"')
+        assert saved.status == 200
+        assert saved.json()["sha256"] == sha256  # unchanged bytes, unchanged digest
+        assert editor.request("GET", "/api/maps/editor-chamber").json()["elevation"] == (
+            {"default": 0, "squares": [[2, 2, 20]]}
+        )
+
+    def test_an_edit_does_not_flatten_ground_height(self, editor: Editor) -> None:
+        raised = payload()
+        raised["elevation"] = {"default": 0, "squares": [[2, 2, 20]]}
+        editor.put_map("editor-chamber", raised)
+        response = editor.request(
+            "POST",
+            "/api/maps/editor-chamber/edits",
+            json_body={"operations": [{"op": "set_name", "name": "renamed"}]},
+        )
+        assert response.status == 200
+        assert response.json()["document"]["elevation"]["squares"] == [[2, 2, 20]]
+
     def test_put_with_the_current_etag_replaces(self, editor: Editor) -> None:
         sha256 = editor.put_map("editor-chamber", payload()).json()["sha256"]
         renamed = payload()

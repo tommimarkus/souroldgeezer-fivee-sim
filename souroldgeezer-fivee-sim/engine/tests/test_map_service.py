@@ -251,6 +251,88 @@ class TestEditOps:
         assert doc.provenance.edited is True
 
 
+class TestElevationEdits:
+    def raised(self) -> MapDocument:
+        """The room with a 20-foot plateau across its middle column."""
+        return edited(
+            document(),
+            {"op": "set_elevation", "rect": [3, 1, 2, 3], "feet": 20},
+        )
+
+    def test_set_elevation_raises_a_rect(self) -> None:
+        doc = self.raised()
+        assert doc.elevation.at((3, 1)) == 20
+        assert doc.elevation.at((4, 3)) == 20
+        assert doc.elevation.at((1, 1)) == 0
+
+    def test_set_elevation_takes_named_cells_too(self) -> None:
+        doc = edited(document(), {"op": "set_elevation", "cells": [[1, 1], [2, 2]], "feet": -5})
+        assert doc.elevation.at((1, 1)) == -5
+        assert doc.elevation.at((2, 2)) == -5
+        assert doc.elevation.at((3, 3)) == 0
+
+    def test_adjust_elevation_is_relative_to_what_is_there(self) -> None:
+        doc = edited(
+            self.raised(),
+            {"op": "adjust_elevation", "rect": [3, 1, 2, 1], "by": 10},
+        )
+        assert doc.elevation.at((3, 1)) == 30
+        assert doc.elevation.at((3, 2)) == 20
+
+    def test_the_default_moves_the_ground_every_unnamed_square_stands_on(self) -> None:
+        doc = edited(self.raised(), {"op": "set_elevation", "default": 20})
+        assert doc.elevation.default == 20
+        assert doc.elevation.at((1, 1)) == 20
+        # The plateau matched the new datum, so it is no longer worth recording.
+        assert dict(doc.elevation.squares) == {}
+
+    def test_a_square_set_back_to_the_default_leaves_the_layer(self) -> None:
+        doc = edited(self.raised(), {"op": "set_elevation", "rect": [3, 1, 2, 3], "feet": 0})
+        assert dict(doc.elevation.squares) == {}
+        assert "elevation" not in json.loads(serialize(doc))
+
+    def test_an_unrelated_edit_keeps_the_height_layer(self) -> None:
+        # The trap: apply_edits rebuilds the whole payload, so a layer the edit
+        # state forgets is one every unrelated edit silently flattens.
+        doc = edited(self.raised(), {"op": "set_name", "name": "renamed"})
+        assert doc.name == "renamed"
+        assert doc.elevation.at((3, 1)) == 20
+
+    def test_resize_moves_the_height_with_the_anchor(self) -> None:
+        doc = edited(
+            self.raised(),
+            {"op": "resize", "width": 8, "height": 5, "anchor": "top-right"},
+        )
+        # Anchored top-right, everything shifts two squares east.
+        assert doc.elevation.at((5, 1)) == 20
+        assert doc.elevation.at((3, 1)) == 0
+
+    def test_resize_drops_height_that_falls_off_the_map(self) -> None:
+        doc = edited(self.raised(), {"op": "resize", "width": 3, "height": 5})
+        assert dict(doc.elevation.squares) == {}
+
+    def test_naming_both_a_rect_and_cells_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="exactly one of 'rect'"):
+            edited(document(), {"op": "set_elevation", "rect": [0, 0, 1, 1],
+                                "cells": [[1, 1]], "feet": 5})
+
+    def test_naming_neither_a_rect_nor_cells_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="exactly one of 'rect'"):
+            edited(document(), {"op": "adjust_elevation", "by": 5})
+
+    def test_the_default_cannot_be_combined_with_a_target(self) -> None:
+        with pytest.raises(MapEditError, match="cannot be combined"):
+            edited(document(), {"op": "set_elevation", "default": 5, "rect": [0, 0, 1, 1]})
+
+    def test_a_non_integer_height_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="whole number of feet"):
+            edited(document(), {"op": "set_elevation", "rect": [0, 0, 1, 1], "feet": "high"})
+
+    def test_a_rect_off_the_map_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="reaches outside"):
+            edited(document(), {"op": "set_elevation", "rect": [4, 4, 9, 9], "feet": 5})
+
+
 class TestEditAtomicity:
     def test_a_bad_op_names_its_index_and_applies_nothing(self) -> None:
         before = document()
@@ -332,6 +414,54 @@ class TestRenderAscii:
         # Blocks of 3x3: top-left is 5 wall / 3 floor / 1 difficult -> wall.
         assert rendered["rows"][0] == "##"
         assert rendered["viewport"]["downsample"] == 3
+
+    def test_height_is_not_rendered_unless_it_is_asked_for(self) -> None:
+        rendered = service.render_ascii(document())
+        assert "elevation_rows" not in rendered
+        assert "elevation_legend" not in rendered
+
+    def test_height_renders_as_a_contour_beside_the_terrain(self) -> None:
+        raised = edited(
+            document(),
+            {"op": "set_elevation", "rect": [3, 1, 2, 2], "feet": 20},
+            {"op": "set_elevation", "cells": [[1, 1]], "feet": -10},
+        )
+        rendered = service.render_ascii(raised, show_elevation=True, show_features=False)
+        assert rendered["rows"] == list(payload()["tiles"])  # terrain is untouched
+        assert rendered["elevation_rows"] == [
+            "111111",
+            "101221",
+            "111221",
+            "111111",
+            "111111",
+        ]
+        assert rendered["elevation_legend"] == {"0": -10, "1": 0, "2": 20}
+
+    def test_a_downsampled_block_takes_its_majority_height(self) -> None:
+        raised = edited(document(), {"op": "set_elevation", "rect": [0, 0, 3, 3], "feet": 20})
+        rendered = service.render_ascii(raised, downsample=3, show_elevation=True)
+        # The top-left 3x3 block is all plateau; the rest falls back to the datum,
+        # and ties within a block go to the lower ground.
+        assert rendered["elevation_rows"] == ["10", "00"]
+        assert rendered["elevation_legend"] == {"0": 0, "1": 20}
+
+    def test_more_heights_than_glyphs_is_refused_with_the_remedy(self) -> None:
+        terraced = parse_document(
+            {
+                **payload(),
+                "grid": {"width": 8, "height": 6, "cell_feet": 5},
+                "tiles": ["........"] * 6,
+                "elevation": {
+                    "default": 0,
+                    "squares": [[x, y, 5 * (y * 8 + x)] for y in range(6) for x in range(8)],
+                },
+                "features": [],
+            },
+            source="terraced",
+            terrain=TERRAIN,
+        )
+        with pytest.raises(ValueError, match="raise downsample"):
+            service.render_ascii(terraced, show_elevation=True)
 
     def test_a_downsample_tie_falls_to_legend_order(self) -> None:
         two = parse_document(
@@ -425,6 +555,36 @@ class TestQuery:
     def test_an_off_map_square_is_refused(self) -> None:
         with pytest.raises(ValueError, match="outside the 5x4 map"):
             service.query(self.wall_split(), "distance", (0, 0), (9, 9), terrain=TERRAIN)
+
+    def stepped(self) -> MapDocument:
+        """A one-row corridor with a 20-foot cliff at its far end."""
+        return parse_document(
+            {
+                **payload(),
+                "name": "ledge",
+                "grid": {"width": 4, "height": 1, "cell_feet": 5},
+                "tiles": ["...."],
+                "elevation": {"default": 0, "squares": [[3, 0, 20]]},
+                "features": [],
+            },
+            source="ledge",
+            terrain=TERRAIN,
+        )
+
+    def test_a_path_pays_for_the_climb(self) -> None:
+        result = service.query(self.stepped(), "path", (0, 0), (3, 0), terrain=TERRAIN)
+        assert result["reachable"] is True
+        assert result["cost_feet"] == 5 + 5 + (5 + 40)
+
+    def test_a_path_reports_the_ground_at_both_ends(self) -> None:
+        result = service.query(self.stepped(), "path", (0, 0), (3, 0), terrain=TERRAIN)
+        assert (result["from_elevation"], result["to_elevation"]) == (0, 20)
+
+    def test_distance_and_sight_stay_flat(self) -> None:
+        doc = self.stepped()
+        assert service.query(doc, "distance", (0, 0), (3, 0), terrain=TERRAIN)["feet"] == 15
+        sight = service.query(doc, "line_of_sight", (0, 0), (3, 0), terrain=TERRAIN)
+        assert sight["line_of_sight"] is True
 
 
 class TestFiles:
