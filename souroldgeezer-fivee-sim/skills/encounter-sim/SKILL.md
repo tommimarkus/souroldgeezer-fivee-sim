@@ -38,8 +38,8 @@ narrating from memory puts it straight back.
    variant.
 2. **`encounter_state`** to see whose turn it is and what the situation is.
 3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
-   `dash`, `disengage`, `dodge`. It returns the events it generated plus fresh
-   state.
+   `dash`, `disengage`, `dodge`, `stand` (up from Prone — half Speed in
+   movement, no action). It returns the events it generated plus fresh state.
 4. **`encounter_advance`** to end the turn. Death saves for dying creatures are
    rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.

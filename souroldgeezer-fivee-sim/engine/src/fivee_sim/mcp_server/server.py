@@ -963,14 +963,16 @@ def encounter_act(
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
-    ``kind`` is attack, cast, use_item, move, dash, disengage, dodge, or interact.
-    Attacks need ``target``; casting needs ``spell`` plus an aim — ``target`` or
-    ``targets`` for named creatures, ``center`` for a sphere (or a cube's minimum
-    corner), ``direction`` for a cone (one of the eight unit offsets, such as
-    ``[1, 0]`` or ``[-1, 1]``), ``toward`` for a line (a combatant name or a
-    point). Using an item needs ``item``, and ``target`` unless the item is
-    self-directed; moving needs ``to_position``; interacting — opening or closing
-    a map feature, free once per turn — needs ``feature``. A position —
+    ``kind`` is attack, cast, use_item, move, dash, disengage, dodge, stand, or
+    interact. Attacks need ``target``; casting needs ``spell`` plus an aim —
+    ``target`` or ``targets`` for named creatures, ``center`` for a sphere (or a
+    cube's minimum corner), ``direction`` for a cone (one of the eight unit
+    offsets, such as ``[1, 0]`` or ``[-1, 1]``), ``toward`` for a line (a
+    combatant name or a point). Using an item needs ``item``, and ``target``
+    unless the item is self-directed; moving needs ``to_position``; interacting —
+    opening or closing a map feature, free once per turn — needs ``feature``;
+    ``stand`` takes nothing and gets a Prone creature up, spending half its Speed
+    from this turn's movement and no action. A position —
     ``to_position``, ``center``, or a ``toward`` point — is ``[x, y]`` in feet on
     the plane; a bare number is accepted and means feet along the x-axis. On a
     battle map a move routes itself around walls and enemies; ``path`` optionally
