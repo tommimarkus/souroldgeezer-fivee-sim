@@ -8,15 +8,15 @@ or consumes it. Everything here is stdlib: ``zlib``, ``struct``, ``base64``,
 What travels, and what deliberately does not:
 
 - ``line_of_sight`` — wall polylines in grid-square units, **derived from the
-  tiles**: the document has no edge walls, so every interior cell-side where
+  terrain**: the document has no edge walls, so every interior cell-side where
   an opaque square meets a non-opaque one becomes a unit edge, and the edges
-  are chained and merged into polylines. Door squares are floor in ``tiles``
-  (the door is a feature), so wall runs break at doorways by construction and
-  the ``portals`` fill the gaps. The map boundary emits nothing: out of
-  bounds counts as opaque, so a wall run along the border contributes only
-  its interior-facing edge.
+  are chained and merged into polylines. A door's square is the tile under it
+  whatever ``open`` says (the door is a feature, and travels as a portal), so
+  wall runs break at doorways by construction and the ``portals`` fill the
+  gaps. The map boundary emits nothing: out of bounds counts as opaque, so a
+  wall run along the border contributes only its interior-facing edge.
 - ``portals`` — one per door feature, spanning its square along the door's
-  orientation, ``closed`` from the recorded default state.
+  orientation, ``closed`` from the recorded default state or from ``open``.
 - ``image`` — a base64 PNG: flat truecolor fill per terrain kind plus a
   one-pixel grid line, because some importers refuse a file without an image.
   A kind the *document* colors is exported in that color — its ``light`` one,
@@ -29,6 +29,14 @@ What travels, and what deliberately does not:
 - ``lights`` and ``objects_line_of_sight`` ship empty, and elevation does not
   exist here: the engine models none of them, and inventing values would
   misrepresent the map.
+
+``open`` names the fixtures standing open — a fight's live set. Given one, the
+walls and the image are derived from what those fixtures *make* of each square
+rather than from the tiles, and the portals report the state they are in: a
+raised portcullis stops being a wall, a sluice gate's flooded room exports as
+water. Left ``None`` nothing resolves and the export is the map exactly as
+authored, byte for byte as it always was — ``None`` and ``[]`` are different
+answers, and ``[]`` shuts a fixture the document authored open.
 
 An overland map typically has no opaque kinds at all, so it exports with an
 image and an empty ``line_of_sight`` — that is correct, not a bug.
@@ -43,11 +51,12 @@ import base64
 import colorsys
 import struct
 import zlib
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
-from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel
+from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel, to_grid
+from .maps import ResolvedLevel
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
 
@@ -123,6 +132,44 @@ def _hex_rgb(color: str) -> tuple[int, int, int]:
     return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
 
 
+# --- what each square is ----------------------------------------------------
+def _terrain_kinds(
+    document: MapDocument,
+    plane: MapLevel,
+    level: int,
+    open_features: Collection[str] | None,
+) -> list[list[str]]:
+    """The terrain kind of every square, as the fixtures named open leave it.
+
+    The one place this file decides what a square *is*; the walls and the image
+    are then two readings of the same grid, so they cannot disagree about a
+    square. ``None`` resolves nothing and reads the tiles, as this exporter
+    always did. A collection resolves through
+    :class:`~fivee_sim.service.maps.ResolvedLevel` — the same derivation
+    ``map_render`` and ``map_query`` answer from, rather than a third copy of it.
+
+    **A door's own square is the exception, and it is the format's rule rather
+    than ours.** A door travels here as a portal, and a portal buried in solid
+    wall is a door the importer cannot open; a shut door's square resolves to
+    ``door-closed``, which is opaque, so resolving it would seal the very gap
+    the portal exists to fill. What a door *reaches past itself* is spared
+    nothing: a sluice gate's flooded room is ordinary fixture business.
+    """
+    kinds = [[document.legend[char] for char in row] for row in plane.tiles]
+    if open_features is None:
+        return kinds
+    battle = to_grid(document).levels[level]
+    live = ResolvedLevel.of(battle, open_features)
+    portalled = {
+        feature.square for feature in battle.features.values() if feature.kind == "door"
+    }
+    for y, row in enumerate(kinds):
+        for x in range(len(row)):
+            if (x, y) not in portalled:
+                row[x] = live.terrain_at((x, y))
+    return kinds
+
+
 # --- the PNG ---------------------------------------------------------------
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -136,23 +183,25 @@ def _chunk(kind: bytes, data: bytes) -> bytes:
     )
 
 
-def _render_png(document: MapDocument, plane: MapLevel, pixels_per_grid: int) -> bytes:
-    """A flat-color truecolor PNG of the tiles, one cell per terrain fill.
+def _render_png(
+    kinds: list[list[str]], palette: Mapping[str, MapColor], pixels_per_grid: int
+) -> bytes:
+    """A flat-color truecolor PNG of the terrain, one cell per fill.
 
     Grid lines: when a cell is at least ``_MIN_GRID_PPG`` pixels wide, the
     first pixel row and column of every cell is :data:`GRID_RGB` — a line
     between cells, plus the map's own top and left border.
     """
-    width, height = document.grid.width, document.grid.height
+    width = len(kinds[0])
     grid_lines = pixels_per_grid >= _MIN_GRID_PPG
     grid_pixel = bytes(GRID_RGB)
     grid_row = grid_pixel * (width * pixels_per_grid)
 
     scanlines: list[bytes] = []
-    for row in plane.tiles:
+    for row in kinds:
         body = bytearray()
-        for char in row:
-            pixel = bytes(_rgb_of(document.legend[char], document.palette))
+        for kind in row:
+            pixel = bytes(_rgb_of(kind, palette))
             if grid_lines:
                 body += grid_pixel + pixel * (pixels_per_grid - 1)
             else:
@@ -162,7 +211,7 @@ def _render_png(document: MapDocument, plane: MapLevel, pixels_per_grid: int) ->
             scanlines.append(grid_row if grid_lines and py == 0 else body_bytes)
 
     header = struct.pack(
-        ">IIBBBBB", width * pixels_per_grid, height * pixels_per_grid, 8, 2, 0, 0, 0
+        ">IIBBBBB", width * pixels_per_grid, len(kinds) * pixels_per_grid, 8, 2, 0, 0, 0
     )
     raw = b"".join(b"\x00" + line for line in scanlines)
     return b"".join(
@@ -184,7 +233,7 @@ _DIRECTIONS: tuple[tuple[int, int], ...] = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
 def _wall_edges(
-    document: MapDocument, plane: MapLevel, terrain: TerrainTable
+    kinds: list[list[str]], terrain: TerrainTable
 ) -> set[frozenset[_Corner]]:
     """Every interior cell-side where exactly one adjacent cell is opaque,
     as unit edges between integer corners.
@@ -194,11 +243,8 @@ def _wall_edges(
     only its interior-facing edge, and open terrain at the map edge is
     bounded by the map itself rather than by an invented wall.
     """
-    width, height = document.grid.width, document.grid.height
-    opaque = [
-        [terrain_effect_of(document.legend[char], terrain).opaque for char in row]
-        for row in plane.tiles
-    ]
+    height, width = len(kinds), len(kinds[0])
+    opaque = [[terrain_effect_of(kind, terrain).opaque for kind in row] for row in kinds]
     edges: set[frozenset[_Corner]] = set()
     for y in range(height):
         for x in range(1, width):
@@ -267,7 +313,14 @@ def _point(x: float, y: float) -> dict[str, float]:
     return {"x": float(x), "y": float(y)}
 
 
-def _portals(plane: MapLevel) -> list[dict[str, Any]]:
+def _portals(plane: MapLevel, open_features: Collection[str] | None) -> list[dict[str, Any]]:
+    """One portal per door, ``closed`` from ``open_features`` or the record.
+
+    Gated to ``kind == "door"`` on purpose: a portal is a door concept in this
+    format, and a lever or a sluice's *spike* is not one. A door that is also a
+    fixture — a sluice gate is — is still a door, and travels as this portal
+    plus whatever its overlay does to the terrain.
+    """
     portals: list[dict[str, Any]] = []
     for feature in sorted(plane.features, key=lambda feature: feature.id):
         if feature.kind != "door":
@@ -282,7 +335,10 @@ def _portals(plane: MapLevel) -> list[dict[str, Any]]:
                 "position": _point(x + 0.5, y + 0.5),
                 "bounds": bounds,
                 "rotation": 0.0,
-                "closed": feature.state == "closed",
+                "closed": (
+                    feature.state == "closed" if open_features is None
+                    else feature.id not in open_features
+                ),
                 "freestanding": False,
             }
         )
@@ -296,11 +352,12 @@ def to_uvtt(
     pixels_per_grid: int = 32,
     include_image: bool = True,
     level: int = GROUND_LEVEL,
+    open: Collection[str] | None = None,
 ) -> dict[str, Any]:
     """The document as a Universal VTT payload, JSON-ready.
 
     Every key is always present. ``line_of_sight`` carries the wall polylines
-    derived from the tiles; ``portals`` one entry per door feature, ordered by
+    derived from the terrain; ``portals`` one entry per door feature, ordered by
     feature id; ``image`` a base64 PNG of the map, or ``""`` when
     ``include_image`` is false — documented, because some importers require
     an image and an empty string is a deliberate choice, not an accident.
@@ -308,6 +365,15 @@ def to_uvtt(
     ``level`` names the storey to export. The format has one plane and no
     notion of floors, so a map with storeys exports one of them per file rather
     than flattening them into a picture that is true of neither.
+
+    ``open`` names the fixtures standing open — a fight's live set, straight
+    from ``fight.map_state.open_features``, and the same argument
+    :func:`~fivee_sim.service.maps.render_ascii` takes. Given one, every square
+    a fixture claims is exported as that fixture leaves it (see
+    :func:`_terrain_kinds`, including the one square it spares) and every portal
+    reports the state it is in. Left ``None`` nothing resolves and the export is
+    the map exactly as authored; ``None`` and an empty collection are different
+    answers, since ``[]`` says every fixture is shut.
 
     The image refuses to exceed :data:`MAX_IMAGE_SIDE` pixels on a side; the
     error says what ``pixels_per_grid`` would fit. The cap applies whether or
@@ -334,14 +400,16 @@ def to_uvtt(
             f"the {MAX_IMAGE_SIDE} cap; lower pixels_per_grid to at most {largest}"
         )
 
+    open_names = None if open is None else frozenset(open)
+    kinds = _terrain_kinds(document, plane, level, open_names)
     walls = [
         [_point(corner[0], corner[1]) for corner in polyline]
-        for polyline in _chain_edges(_wall_edges(document, plane, terrain))
+        for polyline in _chain_edges(_wall_edges(kinds, terrain))
     ]
     image = ""
     if include_image:
         image = base64.b64encode(
-            _render_png(document, plane, pixels_per_grid)
+            _render_png(kinds, document.palette, pixels_per_grid)
         ).decode("ascii")
     return {
         "format": UVTT_FORMAT,
@@ -352,7 +420,7 @@ def to_uvtt(
         },
         "line_of_sight": walls,
         "objects_line_of_sight": [],
-        "portals": _portals(plane),
+        "portals": _portals(plane, open_names),
         "environment": {"baked_lighting": False, "ambient_light": "ffffffff"},
         "lights": [],
         "image": image,

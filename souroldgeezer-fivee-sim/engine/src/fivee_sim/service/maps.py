@@ -83,6 +83,7 @@ from .errors import MapEditError
 __all__ = [
     "MAPS_ENV",
     "RENDER_BUDGET",
+    "ResolvedLevel",
     "apply_edits",
     "environment_roots",
     "generate",
@@ -308,14 +309,17 @@ class _EditState:
 
 _EDIT_OPS = (
     "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
-    "remove_feature", "resize", "set_elevation", "set_legend", "set_name",
-    "set_palette", "set_terrain", "toggle_door",
+    "remove_feature", "resize", "set_elevation", "set_feature", "set_legend",
+    "set_name", "set_palette", "set_terrain", "toggle_door",
 )
 
 #: The ops that act on one storey and so accept a ``level``. The rest —
 #: ``set_name``, ``set_legend``, ``set_palette``, ``resize`` — are document-wide
 #: by nature, and taking a level would suggest they could be applied to one
-#: floor alone.
+#: floor alone. ``set_feature`` is the fifth, for a different reason: it edits
+#: the feature its record's id names, wherever that feature stands, and taking a
+#: level would be taking the power to rehouse a fixture on another storey — the
+#: exact silent relocation the remove-and-re-add pair it replaces could do.
 _LEVELLED_OPS = frozenset({
     "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
     "remove_feature", "set_elevation", "set_terrain", "toggle_door",
@@ -329,6 +333,7 @@ _OP_KEYS: dict[str, frozenset[str]] = {
     "remove_feature": frozenset({"id"}),
     "resize": frozenset({"width", "height", "anchor", "fill"}),
     "set_elevation": frozenset({"rect", "cells", "feet", "default"}),
+    "set_feature": frozenset({"feature"}),
     "set_legend": frozenset({"glyph", "terrain"}),
     "set_name": frozenset({"name"}),
     "set_palette": frozenset({"terrain", "color"}),
@@ -339,19 +344,37 @@ _OP_KEYS = {
     name: keys | {"level"} if name in _LEVELLED_OPS else keys
     for name, keys in _OP_KEYS.items()
 }
-#: What ``add_feature`` accepts. The six after ``team`` are the fixture keys —
-#: what operating a feature changes, needs, costs and rolls. They ride through
-#: to :func:`apply_edits`' final ``parse_document``, which is the one arbiter of
+#: What ``add_feature`` and ``set_feature`` accept — the document's own feature
+#: keys, entire. The six after ``to_level`` are the fixture keys: what operating
+#: a feature changes, needs, costs and rolls. They ride through to
+#: :func:`apply_edits`' final ``parse_document``, which is the one arbiter of
 #: them, exactly as ``palette`` entries do; only an overlay's *shape* is checked
 #: here, and only because a ``rect`` has to be expanded before the payload.
+#:
+#: ``to_level`` is the key that makes a storey walkable, and until it was listed
+#: here no operation could write one — a connector could only be authored by
+#: hand-editing the file. Which level it may name, and that it may never name
+#: its own, stays the document's to refuse.
 _FEATURE_FIELDS = frozenset(
     {
-        "id", "kind", "at", "orientation", "state", "team",
+        "id", "kind", "at", "orientation", "state", "team", "to_level",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
     }
 )
-#: The fixture keys that need no shaping at all: copied across as written.
-_PASSED_THROUGH = ("terrain", "elevation", "requires", "costs_action", "check")
+#: The keys that need no shaping at all: copied across as written.
+_PASSED_THROUGH = (
+    "to_level", "terrain", "elevation", "requires", "costs_action", "check",
+)
+#: Said on every ``set_feature`` refusal a merge-shaped call trips, because the
+#: difference is otherwise silent: a caller who believes the op merges writes
+#: the one key they mean to change, and a replace that honoured it would return
+#: a record holding only that key. Every such call omits ``kind`` or ``at``, so
+#: every such call is refused — and this is where it learns which it got.
+_REPLACES_WHOLE = (
+    "set_feature writes the record whole: a key left out is a key removed, not "
+    "a key kept, so name every field the feature is to keep — or use "
+    "toggle_door, which flips a door's state in place"
+)
 _ANCHORS = ("top-left", "top-right", "bottom-left", "bottom-right")
 _DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
@@ -538,12 +561,19 @@ def _overlay_entries(state: _EditState, raw: Any) -> list[dict[str, Any]]:
     return groups
 
 
-def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
-    raw = op.get("feature")
+def _feature_and_id(raw: Any, note: str) -> tuple[Mapping[str, Any], str]:
+    """A feature record and the id in it, or the refusal that says what is wrong.
+
+    Shared by both feature-writing ops because the id is the one key neither can
+    do without: ``add_feature`` names what it is creating, ``set_feature`` names
+    what it is editing. Both are answered before either op acts, so the id is
+    known even to the refusals that come after it.
+    """
     if not isinstance(raw, Mapping):
         _refuse(
-            "'feature' must be an object: {id, kind, at, orientation?, state?, team?} "
-            "and, for a fixture, terrain, elevation, affects, requires, costs_action, check"
+            "'feature' must be an object: {id, kind, at, orientation?, state?, "
+            "team?, to_level?} and, for a fixture, terrain, elevation, affects, "
+            f"requires, costs_action, check{note}"
         )
     unknown = sorted(set(raw) - _FEATURE_FIELDS)
     if unknown:
@@ -554,11 +584,25 @@ def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
     feature_id = raw.get("id")
     if not isinstance(feature_id, str) or not feature_id.strip():
         _refuse("feature 'id' is required and must be non-empty text")
-    if feature_id in state.feature_ids():
-        _refuse(f"a feature named {feature_id!r} already exists; ids must be unique")
+    return raw, feature_id
+
+
+def _feature_entry(
+    state: _EditState, raw: Mapping[str, Any], feature_id: str, *, note: str = ""
+) -> dict[str, Any]:
+    """One feature record in payload form, shaped as far as the service goes.
+
+    The whole record, always: both ops that write a feature write every field
+    the call names and nothing else, which is what lets the final
+    ``parse_document`` be the one arbiter of what the fields *mean*. ``note``
+    rides on the refusals a caller who expected ``set_feature`` to merge would
+    trip — see :data:`_REPLACES_WHOLE` for why they are the ones that carry it.
+    """
     kind = raw.get("kind")
     if not isinstance(kind, str) or not kind.strip():
-        _refuse("feature 'kind' is required and must be non-empty text")
+        _refuse(f"feature 'kind' is required and must be non-empty text{note}")
+    if raw.get("at") is None:
+        _refuse(f"feature 'at' is required{note}")
     at = _square_value(raw.get("at"), "feature 'at'", state)
     orientation = raw.get("orientation")
     if orientation is not None and orientation not in _DOOR_ORIENTATIONS:
@@ -574,9 +618,12 @@ def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
         _refuse(f"feature 'team' must be non-empty text, got {team!r}")
     if kind == "door":
         if orientation is None:
-            _refuse("a door needs 'orientation' (horizontal or vertical)")
+            _refuse(f"a door needs 'orientation' (horizontal or vertical){note}")
         if door_state is None:
-            _refuse("a door needs 'state' (open or closed); the document stores the default")
+            _refuse(
+                "a door needs 'state' (open or closed); the document stores the "
+                f"default{note}"
+            )
     entry: dict[str, Any] = {"id": feature_id, "kind": kind, "at": [at[0], at[1]]}
     if orientation is not None:
         entry["orientation"] = orientation
@@ -589,7 +636,46 @@ def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
             entry[key] = raw[key]
     if "affects" in raw:
         entry["affects"] = _overlay_entries(state, raw["affects"])
-    state.features.append(entry)
+    return entry
+
+
+def _op_add_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    raw, feature_id = _feature_and_id(op.get("feature"), "")
+    if feature_id in state.feature_ids():
+        _refuse(
+            f"a feature named {feature_id!r} already exists; ids must be unique. "
+            f"set_feature edits the one that is there"
+        )
+    state.features.append(_feature_entry(state, raw, feature_id))
+
+
+def _op_set_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    """Edit one feature in place, by id, replacing its record.
+
+    **Replace, not merge**, and the choice is load-bearing rather than
+    incidental. Every other ``set_*`` op in this module states a value rather
+    than patching one, and replacement is what makes this one's result a
+    function of the call alone: a merge would make it depend on state the call
+    never names, and — with no delete convention anywhere in the feature keys —
+    would leave a fixture's ``affects``, ``requires`` or ``check`` impossible to
+    clear at all. The cost is that a key left out is a key removed, which is why
+    :data:`_REPLACES_WHOLE` rides on every refusal a merge-shaped call trips.
+
+    Position and identity are what it preserves: the record goes back at the
+    index it came from, on the plane it was already on, under the id that found
+    it. That is the whole gap it closes — ``remove_feature`` plus
+    ``add_feature`` reorders the array, and ``add_feature`` takes a ``level``,
+    so the pair could silently rehouse a fixture one storey up.
+    """
+    note = f". {_REPLACES_WHOLE}"
+    raw, feature_id = _feature_and_id(op.get("feature"), note)
+    for plane in state.levels.values():
+        for index, entry in enumerate(plane.features):
+            if entry["id"] == feature_id:
+                plane.features[index] = _feature_entry(state, raw, feature_id, note=note)
+                return
+    known = ", ".join(sorted(state.feature_ids())) or "none"
+    _refuse(f"no feature named {feature_id!r}; features: {known}")
 
 
 def _op_remove_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
@@ -879,6 +965,7 @@ _HANDLERS: dict[str, Any] = {
     "remove_feature": _op_remove_feature,
     "resize": _op_resize,
     "set_elevation": _op_set_elevation,
+    "set_feature": _op_set_feature,
     "set_legend": _op_set_legend,
     "set_name": _op_set_name,
     "set_palette": _op_set_palette,
@@ -985,16 +1072,21 @@ def apply_edits(
 
 # --- what the fixtures make of a square -------------------------------------
 @dataclass(frozen=True, slots=True)
-class _ResolvedLevel:
+class ResolvedLevel:
     """One storey's squares as a given set of open fixtures leaves them.
 
     The single reader-side answer to "given a plane and which fixtures stand
     open, what is each square": :func:`query` asks it of the states the document
-    authored, :func:`render_ascii` of the states a fight is in, and they share
-    this so the two cannot answer differently. The claims come from
-    :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, whose own docstring
-    names deriving them twice as how answers drift, and
+    authored, :func:`render_ascii` of the states a fight is in,
+    :func:`~fivee_sim.service.uvtt.to_uvtt` of the states an export is asked
+    for, and they share this so the three cannot answer differently. The claims
+    come from :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, whose own
+    docstring names deriving them twice as how answers drift, and
     ``Encounter._adopt_map`` builds the live index from that same call.
+
+    Public for that third reader: ``uvtt`` is a sibling in this layer, not a
+    caller of the map service, so it needs the derivation by name rather than
+    through a function that renders.
 
     The exactly-one-fixture-per-square rule is what makes the index total: with
     no precedence to settle there is no document order to consult and no history
@@ -1012,7 +1104,7 @@ class _ResolvedLevel:
     open_features: frozenset[str]
 
     @classmethod
-    def of(cls, plane: MapPlane, open_features: Collection[str]) -> _ResolvedLevel:
+    def of(cls, plane: MapPlane, open_features: Collection[str]) -> ResolvedLevel:
         """The plane resolved through the fixtures named open.
 
         Names the plane has no fixture for are ignored rather than refused: a
@@ -1100,7 +1192,7 @@ _FORMAT_GLYPH_OF: Mapping[str, str] = {
 
 def _kind_glyphs(
     document: MapDocument,
-    live: _ResolvedLevel | None,
+    live: ResolvedLevel | None,
     taken: Collection[str],
 ) -> tuple[dict[str, str], dict[str, int]]:
     """A glyph and a tie-break rank for every terrain kind a render can draw.
@@ -1213,10 +1305,11 @@ def render_ascii(
     ``open`` names the fixtures standing open — a fight's live set, straight
     from ``fight.map_state.open_features``. Given one, all three channels
     resolve through it rather than through the file: terrain and ground height
-    come from what those fixtures claim (:class:`_ResolvedLevel`, shared with
-    :func:`query`), and a fixture's glyph is the state it is *in* rather than
-    the state it was authored in. So a sluice a fight has opened floods the room
-    its overlay governs, drops that room's ground, and draws ``/``.
+    come from what those fixtures claim (:class:`ResolvedLevel`, shared with
+    :func:`query` and the UVTT export), and a fixture's glyph is the state it is
+    *in* rather than the state it was authored in. So a sluice a fight has
+    opened floods the room its overlay governs, drops that room's ground, and
+    draws ``/``.
 
     Left ``None`` nothing resolves and the render is the map exactly as
     authored, byte for byte as it always was. ``None`` and an empty collection
@@ -1256,7 +1349,7 @@ def render_ascii(
     open_names = None if open is None else frozenset(open)
     live = (
         None if open_names is None
-        else _ResolvedLevel.of(to_grid(document).levels[level], open_names)
+        else ResolvedLevel.of(to_grid(document).levels[level], open_names)
     )
     glyph_of, order_of = _kind_glyphs(document, live, marks.values())
 
@@ -1405,7 +1498,7 @@ def query(
     # have moved it — the one difference from what render_ascii asks of the same
     # derivation. Everything below then mirrors Encounter's composers
     # (_terrain_at, _elevation_at, _opaque) minus the occupancy.
-    live = _ResolvedLevel.of(
+    live = ResolvedLevel.of(
         plane,
         [name for name, feature in plane.features.items() if feature.initially_open],
     )

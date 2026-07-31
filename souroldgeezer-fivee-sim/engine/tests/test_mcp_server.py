@@ -982,6 +982,24 @@ class TestUvttExport:
         assert second["path"] == first["path"]
         assert json.loads(Path(first["path"]).read_text(encoding="utf-8"))["image"] == ""
 
+    def test_open_features_exports_the_state_a_fight_is_in(self, tmp_path: Path) -> None:
+        # The gap: the export could only ever say what the file said, so a map
+        # handed to another tabletop mid-fight showed the sluice shut and the
+        # room dry however the fight had left them.
+        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        target = str(tmp_path / "flooded.uvtt")
+        result = api.uvtt_export(
+            map_id, path=target, pixels_per_grid=8, include_image=False,
+            open_features=["sluice"],
+        )
+        assert result["portals"] == 1
+        written = json.loads(Path(target).read_text(encoding="utf-8"))
+        assert written["portals"][0]["closed"] is False
+        # And without it, the recorded default — the gate is authored shut.
+        api.uvtt_export(map_id, path=target, pixels_per_grid=8, include_image=False)
+        authored = json.loads(Path(target).read_text(encoding="utf-8"))
+        assert authored["portals"][0]["closed"] is True
+
     def test_an_unknown_map_id_lists_the_active_ones(self) -> None:
         self.load()
         with pytest.raises(api.ToolError, match="active:"):

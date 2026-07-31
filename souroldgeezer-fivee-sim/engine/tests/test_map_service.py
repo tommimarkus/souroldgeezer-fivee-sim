@@ -23,6 +23,7 @@ from fivee_sim.map_document import (
     MapError,
     parse_document,
     serialize,
+    to_grid,
 )
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
@@ -456,6 +457,51 @@ class TestLevelEdits:
             edited(storeyed(), {"op": "set_name", "name": "keep", "level": 1})
 
 
+class TestConnectorEdits:
+    """``to_level``: the key that makes a storey walkable, now authorable.
+
+    It was in the document's feature keys and in no edit operation's, so the
+    only way to write a connector was to hand-edit the JSON — a gap that
+    predates fixtures entirely.
+    """
+
+    def test_add_feature_authors_a_connector(self) -> None:
+        doc = edited(
+            storeyed(),
+            {"op": "add_feature", "level": 1, "feature": {
+                "id": "hatch", "kind": "stairs_down", "at": [1, 1], "to_level": 0,
+            }},
+        )
+        assert doc.levels[1].features[-1].to_level == 0
+        # And it is a connector to the fight, not merely a drawn glyph.
+        assert to_grid(doc).levels[1].connectors[(1, 1)] == 0
+
+    def test_a_connector_to_a_level_the_map_lacks_is_the_documents_refusal(self) -> None:
+        # The refusals stay the document's, as every fixture key's do: the
+        # service shapes the record and the final parse arbitrates it.
+        with pytest.raises(MapError, match="there is no level 4 in this map"):
+            edited(storeyed(), {"op": "add_feature", "feature": {
+                "id": "hatch", "kind": "stairs_up", "at": [1, 1], "to_level": 4}})
+
+    def test_a_connector_to_its_own_level_is_the_documents_refusal(self) -> None:
+        with pytest.raises(MapError, match="leads to its own level"):
+            edited(storeyed(), {"op": "add_feature", "feature": {
+                "id": "hatch", "kind": "stairs_up", "at": [1, 1], "to_level": 0}})
+
+    def test_a_connector_must_name_its_level_by_whole_number(self) -> None:
+        with pytest.raises(MapError, match="whole number"):
+            edited(storeyed(), {"op": "add_feature", "feature": {
+                "id": "hatch", "kind": "stairs_up", "at": [1, 1], "to_level": "up"}})
+
+    def test_set_feature_drops_a_connector_by_not_naming_it(self) -> None:
+        # Replacement's other half: a key left out is a key removed, so the
+        # stairway stops leading anywhere without a delete op existing.
+        doc = edited(storeyed(), {"op": "set_feature", "feature": {
+            "id": "stair-foot", "kind": "stairs_up", "at": [3, 3]}})
+        assert doc.features[-1].to_level is None
+        assert to_grid(doc).levels[0].connectors == {}
+
+
 class TestLevelViews:
     def test_rendering_shows_the_level_it_is_asked_for(self) -> None:
         doc = storeyed()
@@ -818,6 +864,152 @@ class TestFixtureEdits:
                 [
                     {"op": "set_name", "name": "halfway"},
                     {"op": "resize", "width": 5, "height": 6, "anchor": "top-right"},
+                ],
+                terrain=TERRAIN,
+            )
+        assert caught.value.op_index == 1
+        assert "operation #1" in str(caught.value)
+        assert serialize(before) == frozen  # the input document is untouched
+
+
+class TestSetFeature:
+    """``set_feature``: edit one feature in place, by id.
+
+    Before it, everything but a door's state was ``remove_feature`` plus
+    ``add_feature`` — which reorders the features array and, because
+    ``add_feature`` takes a ``level``, can silently move a fixture to another
+    storey.
+    """
+
+    def test_a_feature_is_edited_in_place_and_keeps_its_position(self) -> None:
+        doc = edited(
+            document(),
+            {"op": "set_feature", "feature": {
+                "id": "door-1", "kind": "door", "at": [3, 4],
+                "orientation": "vertical", "state": "open",
+            }},
+        )
+        # remove_feature + add_feature would have written it last instead.
+        assert [f.id for f in doc.features] == ["door-1", "spawn-party"]
+        assert doc.features[0].orientation == "vertical"
+        assert doc.features[0].state == "open"
+
+    def test_the_record_is_replaced_rather_than_merged_into(self) -> None:
+        # The decision this op is written around: what the call names is what
+        # the document holds. A merge would make the result depend on state the
+        # call never mentions, and would leave no way to clear a key at all.
+        doc = edited(
+            sluiced(),
+            {"op": "set_feature", "feature": {
+                "id": "sluice gate", "kind": "door", "at": [3, 2],
+                "orientation": "vertical", "state": "closed",
+            }},
+        )
+        assert doc.features[0].affects == ()
+        assert "affects" not in json.loads(serialize(doc))["features"][0]
+
+    def test_a_call_shaped_like_a_merge_is_refused_saying_it_replaces(self) -> None:
+        # The one-key patch a caller who assumed merge would write. Every such
+        # call omits 'kind' or 'at', so every such call is refused — and the
+        # refusal is where the semantics are stated, because a replace that
+        # honoured it silently would drop the rest of the record.
+        with pytest.raises(MapEditError, match="a key left out is a key removed"):
+            edited(document(), {"op": "set_feature",
+                                "feature": {"id": "door-1", "state": "open"}})
+        with pytest.raises(MapEditError, match="'at' is required.*key removed"):
+            edited(document(), {"op": "set_feature",
+                                "feature": {"id": "door-1", "kind": "door"}})
+        with pytest.raises(MapEditError, match="a door needs 'orientation'.*key removed"):
+            edited(document(), {"op": "set_feature",
+                                "feature": {"id": "door-1", "kind": "door", "at": [3, 4]}})
+
+    def test_the_refusal_points_at_toggle_door_for_a_doors_state(self) -> None:
+        # toggle_door stays for exactly the case a merge would have served.
+        # Matched on the whole clause: every refusal in this module lists the
+        # valid ops, so a bare "toggle_door" would pass against any of them.
+        with pytest.raises(MapEditError, match="toggle_door, which flips a door's state"):
+            edited(document(), {"op": "set_feature",
+                                "feature": {"id": "door-1", "state": "open"}})
+
+    def test_setting_a_feature_that_does_not_exist_lists_what_does(self) -> None:
+        with pytest.raises(
+            MapEditError, match="no feature named 'portcullis'.*door-1, spawn-party"
+        ):
+            edited(document(), {"op": "set_feature", "feature": {
+                "id": "portcullis", "kind": "door", "at": [3, 4],
+                "orientation": "vertical", "state": "open"}})
+
+    def test_an_unknown_feature_key_names_the_valid_ones(self) -> None:
+        with pytest.raises(MapEditError, match=r"unknown key\(s\): 'hinge'.*to_level"):
+            edited(document(), {"op": "set_feature", "feature": {
+                "id": "door-1", "kind": "door", "at": [3, 4],
+                "orientation": "vertical", "state": "open", "hinge": "left"}})
+
+    def test_set_feature_takes_no_level_so_it_cannot_move_a_storey(self) -> None:
+        # The relocation hazard the re-add pair carries: add_feature takes a
+        # level, so re-adding a fixture can silently rehouse it one floor up.
+        with pytest.raises(MapEditError, match=r"unknown key\(s\): 'level'"):
+            edited(storeyed(), {"op": "set_feature", "level": 1, "feature": {
+                "id": "stair-foot", "kind": "stairs_up", "at": [3, 3], "to_level": 1}})
+
+    def test_a_feature_on_a_storey_is_found_by_id_and_stays_there(self) -> None:
+        doc = edited(
+            storeyed(),
+            {"op": "set_feature", "feature": {
+                "id": "stair-head", "kind": "stairs_down", "at": [2, 3], "to_level": 0,
+            }},
+        )
+        assert [f.id for f in doc.levels[1].features] == ["stair-head"]
+        assert doc.levels[1].features[0].at == (2, 3)
+        assert [f.id for f in doc.levels[0].features] == [
+            "door-1", "spawn-party", "stair-foot",
+        ]
+
+    def test_every_field_a_feature_can_carry_round_trips_through_a_set(self) -> None:
+        feature: dict[str, Any] = {
+            "id": "north spike", "kind": "lever", "at": [2, 3],
+            "orientation": "vertical", "state": "open", "team": "party",
+            "terrain": {"closed": "wall", "open": "floor"},
+            "elevation": {"closed": 0, "open": 5},
+            "affects": [
+                {"cells": [[2, 1], [2, 2]],
+                 "terrain": {"closed": "floor", "open": "water"}},
+            ],
+            "requires": ["south spike"],
+            "costs_action": True,
+            "check": {"ability": "strength", "dc": 15},
+        }
+        doc = edited(spiked(), {"op": "set_feature", "feature": feature})
+        # Index 1 is where the spike stood, and where it stays.
+        assert json.loads(serialize(doc))["features"][1] == feature
+
+    def test_an_overlay_may_be_given_as_a_rect_here_too(self) -> None:
+        by_rect = edited(sluiced(), {"op": "set_feature", "feature": {
+            "id": "sluice gate", "kind": "door", "at": [3, 2],
+            "orientation": "vertical", "state": "closed",
+            "affects": [{"rect": [4, 1, 2, 3],
+                         "terrain": {"closed": "floor", "open": "water"}}]}})
+        assert by_rect.features[0].affects[0].cells == FLOODED
+
+    def test_the_document_arbitrates_the_result_of_a_set(self) -> None:
+        # The pattern add_feature already follows: the service shapes the
+        # record and the final parse_document decides. Which fixture governs a
+        # square is the format's rule, not this operation's.
+        with pytest.raises(MapError, match="'sluice gate' already governs"):
+            edited(spiked(), {"op": "set_feature", "feature": {
+                "id": "north spike", "kind": "spike", "at": [1, 1], "state": "closed",
+                "affects": [{"cells": [[4, 2]],
+                             "terrain": {"closed": "floor", "open": "difficult"}}]}})
+
+    def test_a_refused_set_feature_leaves_the_document_byte_identical(self) -> None:
+        before = spiked()
+        frozen = serialize(before)
+        with pytest.raises(MapEditError) as caught:
+            service.apply_edits(
+                before,
+                [
+                    {"op": "set_name", "name": "halfway"},
+                    {"op": "set_feature", "feature": {"id": "north spike", "kind": "spike"}},
                 ],
                 terrain=TERRAIN,
             )
