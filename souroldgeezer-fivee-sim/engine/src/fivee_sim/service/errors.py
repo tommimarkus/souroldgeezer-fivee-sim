@@ -1,12 +1,12 @@
 """Errors the service layer raises. Adapters translate them; nothing else does.
 
-:class:`~fivee_sim.maps.MapError` is re-exported so an adapter catching the
-service layer's failures needs one import, not a tour of the engine.
+:class:`~fivee_sim.map_document.MapError` is re-exported so an adapter catching
+the service layer's failures needs one import, not a tour of the engine.
 """
 
 from __future__ import annotations
 
-from ..maps import MapError as MapError
+from ..map_document import MapError as MapError
 
 __all__ = ["MapEditError", "MapError"]
 

@@ -45,7 +45,7 @@ import zlib
 from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
-from ..maps import MapDocument
+from ..map_document import MapDocument
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
 

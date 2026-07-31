@@ -16,7 +16,7 @@ import pytest
 
 from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.kernel.dice import Dice
-from fivee_sim.maps import parse_document
+from fivee_sim.map_document import parse_document
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import maps as map_service
 

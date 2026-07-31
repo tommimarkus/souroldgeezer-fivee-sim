@@ -1,10 +1,10 @@
 """The map service: generate, edit, render, query, and store map documents.
 
-Plain functions over :mod:`fivee_sim.maps`, :mod:`fivee_sim.kernel.mapgen`,
-and :mod:`fivee_sim.kernel.grid`. Every function takes explicit inputs — a
-document, a terrain table, a seed — and raises plain :class:`ValueError`
-family errors, so the MCP and REST adapters stay serialization and error
-mapping only.
+Plain functions over :mod:`fivee_sim.map_document`,
+:mod:`fivee_sim.kernel.mapgen`, and :mod:`fivee_sim.kernel.grid`. Every
+function takes explicit inputs — a document, a terrain table, a seed — and
+raises plain :class:`ValueError` family errors, so the MCP and REST adapters
+stay serialization and error mapping only.
 
 Three behaviours worth naming:
 
@@ -18,9 +18,10 @@ frozen and untouched either way.
 viewport or a coarser downsample, never as a wall of text that drowns the
 session it was meant to inform.
 
-**Storage is canonical.** :func:`save_file` writes :func:`~fivee_sim.maps.serialize`'s
-byte-stable text and refuses to overwrite silently, so a saved map diffs
-cleanly and a slip of a path cannot destroy an edited original.
+**Storage is canonical.** :func:`save_file` writes
+:func:`~fivee_sim.map_document.serialize`'s byte-stable text and refuses to
+overwrite silently, so a saved map diffs cleanly and a slip of a path cannot
+destroy an edited original.
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ from ..kernel.mapgen import (
     generate_dungeon,
     generate_overland,
 )
-from ..maps import (
+from ..map_document import (
     FORMAT,
     FORMAT_VERSION,
     MAX_MAP_BYTES,
@@ -635,11 +636,12 @@ def apply_edits(
 
     A bad operation raises :class:`MapEditError` naming its index; the input
     document — frozen — is untouched either way. The composed result goes back
-    through :func:`~fivee_sim.maps.parse_document` before it is returned,
-    because a sequence of individually valid operations can still compose an
-    invalid document, and that is refused whole. ``provenance.edited`` flips
-    to true only when the document actually changed; an edit that lands the
-    map exactly where it stood returns the original object.
+    through :func:`~fivee_sim.map_document.parse_document` before it is
+    returned, because a sequence of individually valid operations can still
+    compose an invalid document, and that is refused whole.
+    ``provenance.edited`` flips to true only when the document actually
+    changed; an edit that lands the map exactly where it stood returns the
+    original object.
     """
     state = _EditState.from_document(document)
     for index, operation in enumerate(operations):
@@ -859,8 +861,8 @@ def query(
 ) -> dict[str, Any]:
     """Answer a geometry question over a bare map: distance, sight, or a route.
 
-    Wraps the grid kernel over :func:`~fivee_sim.maps.to_grid`'s battle map,
-    composing step cost and opacity exactly as an encounter does — except
+    Wraps the grid kernel over :func:`~fivee_sim.map_document.to_grid`'s battle
+    map, composing step cost and opacity exactly as an encounter does — except
     that with no fight in progress, doors count in their recorded *default*
     state and no square is occupied.
 
@@ -959,8 +961,9 @@ def parse_payload(
 ) -> tuple[MapDocument, list[Diagnostic]]:
     """Parse one payload, returning the document and any warnings.
 
-    Errors raise :class:`~fivee_sim.maps.MapError` carrying every diagnostic;
-    warnings ride along with a successful parse rather than being swallowed.
+    Errors raise :class:`~fivee_sim.map_document.MapError` carrying every
+    diagnostic; warnings ride along with a successful parse rather than being
+    swallowed.
     """
     diagnostics = validate_document(payload, source=source, terrain=terrain)
     if any(d.severity is Severity.ERROR for d in diagnostics):

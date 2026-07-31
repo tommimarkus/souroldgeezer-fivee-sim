@@ -27,7 +27,7 @@ from fivee_sim.kernel.mapgen import (
     generate_dungeon,
     generate_overland,
 )
-from fivee_sim.maps import (
+from fivee_sim.map_document import (
     DEFAULT_LEGEND,
     GENERATED_SOURCE,
     as_payload,
@@ -288,7 +288,7 @@ class TestDocumentFrom:
         }
 
     def test_an_unencodable_kind_is_refused(self) -> None:
-        from fivee_sim.maps import MapError
+        from fivee_sim.map_document import MapError
 
         generated = GeneratedMap(
             width=1, height=1, cells=(("normal",),), features=()
