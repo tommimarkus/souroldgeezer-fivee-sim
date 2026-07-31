@@ -1373,6 +1373,7 @@ def make_creature(
     team: str | None = None,
     position: Point | int = 0,
     level: int = 0,
+    arrival_round: int = 1,
 ) -> Creature:
     """Look ``name`` up in the active content and build it.
 
@@ -1397,6 +1398,7 @@ def make_creature(
         team=team,
         position=position,
         level=level,
+        arrival_round=arrival_round,
     )
 
 

@@ -440,6 +440,11 @@ def render_markdown() -> str:
         "authored Redirect Attack spends the intended target's reaction and swaps "
         "that target with an eligible nearby ally before the attack resolves.")
     add("")
+    add("A combatant instance may set `arrival_round` for reinforcement timing. It "
+        "is absent, untargetable, and unable to act before that round, while its "
+        "scheduled side still keeps the encounter open. The batch policy preserves "
+        "the same timing on every iteration.")
+    add("")
     add("A creature at 0 hit points is a legal target, not an untouchable one: an "
         "attack, an area effect it stands inside, and a usable item all reach it. Each "
         "costs it one death saving throw failure, two if the damage came from a "
@@ -461,7 +466,8 @@ def render_markdown() -> str:
         "movement costs, walls, line of sight, cover, pathfinding, ambient and local "
         "light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately "
         "authored speeds; underwater terrain doubles movement unless the mover has a "
-        "Swim speed, and Fly may move between storeys. Darkvision and Blindsight "
+        "Swim speed, and Fly may move between storeys. Auto-play chooses among "
+        "those authored modes when closing on a target. Darkvision and Blindsight "
         "extend what a creature can perceive, while authored openings can carry both "
         "movement and sight between named levels. Doors "
         "are named map features flipped by the `interact` action; closed they are "

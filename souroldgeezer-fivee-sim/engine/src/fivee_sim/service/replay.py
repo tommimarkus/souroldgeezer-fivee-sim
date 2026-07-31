@@ -211,6 +211,8 @@ def _attack_payload(option: AttackOption) -> dict[str, Any]:
             payload[name] = str(value)
     if option.bonus_damage_type is not None:
         payload["bonus_damage_type"] = option.bonus_damage_type.value
+    if option.advantage_bonus_with_adjacent_ally:
+        payload["advantage_bonus_with_adjacent_ally"] = True
     if option.on_hit_condition is not None:
         payload["on_hit_condition"] = option.on_hit_condition
     if option.on_hit_save_ability is not None:
@@ -220,6 +222,14 @@ def _attack_payload(option: AttackOption) -> dict[str, Any]:
         payload["on_hit_expiry"] = option.on_hit_expiry.value
     if option.on_hit_max_size is not None:
         payload["on_hit_max_size"] = option.on_hit_max_size.value
+    if option.on_hit_attach:
+        payload["on_hit_attach"] = True
+        assert option.attached_damage is not None
+        assert option.attached_damage_type is not None
+        payload["attached_damage"] = str(option.attached_damage)
+        payload["attached_damage_type"] = option.attached_damage_type.value
+        if option.detach_after_damage:
+            payload["detach_after_damage"] = option.detach_after_damage
     return payload
 
 
@@ -232,6 +242,13 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "max_hp": creature.max_hp,
         "hp": creature.hp,
         "speed": creature.speed,
+        "climb_speed": creature.climb_speed,
+        "swim_speed": creature.swim_speed,
+        "fly_speed": creature.fly_speed,
+        "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
+        "darkvision": creature.darkvision,
+        "blindsight": creature.blindsight,
+        "death_rule": creature.death_rule.value,
         "size": creature.size.value,
         "abilities": {
             ability.value: creature.abilities.get(ability, 10) for ability in Ability
@@ -244,6 +261,9 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         },
         "attacks": [_attack_payload(option) for option in creature.attacks],
         "attacks_per_action": creature.attacks_per_action,
+        "bonus_actions": sorted(creature.bonus_actions),
+        "surrender_when_last": creature.surrender_when_last,
+        "redirect_attack": creature.redirect_attack,
         "pack_tactics": creature.pack_tactics,
         "undead_fortitude": creature.undead_fortitude,
         "spells": list(creature.spells),
@@ -257,6 +277,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "conditions": sorted(creature.conditions),
         "position": list(as_point(creature.position)),
         "level": creature.level,
+        "arrival_round": creature.arrival_round,
         "provenance": creature.provenance,
     }
 

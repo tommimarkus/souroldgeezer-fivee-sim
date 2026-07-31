@@ -186,6 +186,66 @@ class TestBundleV2:
         assert bundle["integrity"]["algorithm"] == "sha256"
         assert replay_service.validate_replay(bundle) == []
 
+    def test_v2_normalized_inputs_preserve_playtest_mechanics(self) -> None:
+        stirge = dict(REPLAY_HERO)
+        stirge.update(
+            {
+                "name": "Stirge",
+                "team": "monsters",
+                "position": [15, 15],
+                "climb_speed": 10,
+                "swim_speed": 15,
+                "fly_speed": 40,
+                "terrain_cost_overrides": ["grain"],
+                "darkvision": 60,
+                "blindsight": 10,
+                "death_rule": "instant",
+                "bonus_actions": ["disengage"],
+                "surrender_when_last": True,
+                "redirect_attack": True,
+                "arrival_round": 2,
+                "attacks": [
+                    {
+                        "name": "Proboscis",
+                        "attack_bonus": 5,
+                        "damage": "1d6+3",
+                        "damage_type": "piercing",
+                        "advantage_bonus_damage": "1d6",
+                        "advantage_bonus_with_adjacent_ally": True,
+                        "on_hit_attach": True,
+                        "attached_damage": "2d4",
+                        "attached_damage_type": "necrotic",
+                        "detach_after_damage": 10,
+                    }
+                ],
+            }
+        )
+        created = api.encounter_create([dict(REPLAY_HERO), stirge], seed=79)
+
+        bundle = api.replay_export(
+            str(created["encounter_id"]), format_version=2
+        )["bundle"]
+        captured = next(
+            entry
+            for entry in bundle["initial"]["combatants"]
+            if entry["name"] == "Stirge"
+        )
+
+        assert captured["climb_speed"] == 10
+        assert captured["swim_speed"] == 15
+        assert captured["fly_speed"] == 40
+        assert captured["terrain_cost_overrides"] == ["grain"]
+        assert captured["darkvision"] == 60
+        assert captured["blindsight"] == 10
+        assert captured["death_rule"] == "instant"
+        assert captured["bonus_actions"] == ["disengage"]
+        assert captured["surrender_when_last"] is True
+        assert captured["redirect_attack"] is True
+        assert captured["arrival_round"] == 2
+        assert captured["attacks"][0]["advantage_bonus_with_adjacent_ally"] is True
+        assert captured["attacks"][0]["attached_damage"] == "2d4"
+        assert captured["attacks"][0]["detach_after_damage"] == 10
+
     def test_unknown_replay_versions_are_refused(self) -> None:
         with pytest.raises(api.ToolError, match="format_version must be 1 or 2"):
             api.replay_export(mapless_fight(), format_version=99)

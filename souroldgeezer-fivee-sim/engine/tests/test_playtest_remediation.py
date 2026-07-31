@@ -48,6 +48,7 @@ def _mapped_encounter(
             "normal": TerrainEffect(),
             "water": TerrainEffect(move_cost_multiplier=2, underwater=True),
             "grain": TerrainEffect(move_cost_multiplier=2),
+            "wall": TerrainEffect(passable=False, opaque=True),
         },
     )
 
@@ -218,8 +219,88 @@ class TestMovementModes:
         assert move.data["cost"] == 10
         assert move.data["movement_mode"] == "fly"
 
+    def test_auto_policy_uses_a_swim_speed_to_close_through_deep_water(self) -> None:
+        marauder = fighter("Marauder", team="monsters", position=(2, 2))
+        marauder.swim_speed = 30
+        target = fighter("Harrow", position=(32, 2))
+        encounter = _mapped_encounter(
+            [marauder, target],
+            terrain={(x, y): "water" for x in range(7) for y in range(4)},
+        )
+        advance_to(encounter, "Marauder", FixedRandom(10))
+
+        action = auto_action(encounter)
+
+        assert action is not None
+        assert action.kind is ActionKind.MOVE
+        assert action.movement_mode is MovementMode.SWIM
+        assert action.to_position == (25, 0)
+
+    def test_auto_policy_flies_through_an_opening_to_another_level(self) -> None:
+        stirge = fighter("Stirge", team="monsters", position=(2, 2))
+        stirge.level = 1
+        stirge.fly_speed = 40
+        target = fighter("Harrow", position=(17, 2))
+        levels = {
+            0: MapPlane(default_elevation=0),
+            1: MapPlane(
+                default_elevation=10,
+                sight_links={(0, 0): frozenset({0})},
+            ),
+        }
+        encounter = _mapped_encounter([stirge, target], levels=levels)
+        advance_to(encounter, "Stirge", FixedRandom(10))
+
+        action = auto_action(encounter)
+
+        assert action is not None
+        assert action.kind is ActionKind.MOVE
+        assert action.movement_mode is MovementMode.FLY
+        assert action.to_level == 0
+        assert action.to_position == (10, 0)
+
+    def test_flight_does_not_route_through_an_opaque_wall(self) -> None:
+        flyer = fighter("Stirge", team="monsters", position=(2, 7))
+        flyer.fly_speed = 40
+        target = fighter("Harrow", position=(17, 7))
+        encounter = _mapped_encounter(
+            [flyer, target],
+            terrain={(1, y): "wall" for y in range(4)},
+        )
+
+        assert encounter.route(
+            "Stirge",
+            (2, 1),
+            movement_mode=MovementMode.FLY,
+        ) is None
+
 
 class TestOpeningsAndLifeCycle:
+    def test_a_scheduled_reinforcement_joins_on_its_authored_round(self) -> None:
+        whip = fighter("Whip", team="monsters", position=10)
+        whip.arrival_round = 2
+        party = fighter("Harrow")
+        rng = FixedRandom(10)
+        encounter = Encounter([whip, party], rng)
+
+        assert encounter.over is False
+        advance_to(encounter, "Whip", rng)
+        state = next(
+            creature
+            for creature in encounter.state()["combatants"]
+            if creature["name"] == "Whip"
+        )
+        assert state["arrival_round"] == 2
+        assert state["present"] is False
+        assert auto_action(encounter) is None
+
+        events = []
+        while encounter.round < 2 or encounter.current_name != "Whip":
+            events.extend(encounter.advance(rng))
+
+        assert any(event.kind == "arrival" and event.actor == "Whip" for event in events)
+        assert auto_action(encounter) is not None
+
     def test_an_authored_sight_link_allows_a_cross_level_ranged_attack(self) -> None:
         archer = fighter("Whip", team="monsters", position=(2, 2))
         archer.level = 1

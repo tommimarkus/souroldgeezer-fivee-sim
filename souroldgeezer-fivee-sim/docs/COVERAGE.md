@@ -82,6 +82,8 @@ Two printed creature traits are modelled as stat-block flags. Pack Tactics grant
 
 Authored Bonus Actions currently cover Dash and Disengage. A creature may also surrender under its stat block's declared last-combatant rule. An authored Redirect Attack spends the intended target's reaction and swaps that target with an eligible nearby ally before the attack resolves.
 
+A combatant instance may set `arrival_round` for reinforcement timing. It is absent, untargetable, and unable to act before that round, while its scheduled side still keeps the encounter open. The batch policy preserves the same timing on every iteration.
+
 A creature at 0 hit points is a legal target, not an untouchable one: an attack, an area effect it stands inside, and a usable item all reach it. Each costs it one death saving throw failure, two if the damage came from a critical hit — and an attack from within 5 feet of an Unconscious creature is always a critical hit. Only a dead creature is refused as a target.
 
 ## Damage types
@@ -90,7 +92,7 @@ acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psy
 
 ## Battlefield
 
-Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, ambient and local light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately authored speeds; underwater terrain doubles movement unless the mover has a Swim speed, and Fly may move between storeys. Darkvision and Blindsight extend what a creature can perceive, while authored openings can carry both movement and sight between named levels. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
+Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight may run mapless — an open, featureless plane — or on a battle map, supplied inline to `encounter_create` and `simulate_rounds`, which adds terrain movement costs, walls, line of sight, cover, pathfinding, ambient and local light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately authored speeds; underwater terrain doubles movement unless the mover has a Swim speed, and Fly may move between storeys. Auto-play chooses among those authored modes when closing on a target. Darkvision and Blindsight extend what a creature can perceive, while authored openings can carry both movement and sight between named levels. Doors are named map features flipped by the `interact` action; closed they are impassable and block sight.
 
 A door is the common case of a **fixture** — any map feature carrying a state is one, so a lever, a spike, or a sluice gate is the same record with more on it. A fixture may govern squares beyond its own, naming what each becomes in either state in terrain and in ground height alike, may wait on other fixtures standing open, may cost the action rather than the free interaction, and may take an ability check. Working one changes that ground immediately, under whoever is standing on it: entry cost governs entering a square rather than remaining in one, so a creature whose footing turns impassable stays where it is and may walk out. Every square a fixture governs is claimed by exactly one fixture per level, which leaves no precedence to resolve and is what lets a stateless map query agree with the live fight about what a square is.
 

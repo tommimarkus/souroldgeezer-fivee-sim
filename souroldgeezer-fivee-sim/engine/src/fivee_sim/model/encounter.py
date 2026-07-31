@@ -155,7 +155,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
-    "attach", "attached_damage", "detach", "surrender", "redirect_attack",
+    "attach", "attached_damage", "detach", "surrender", "redirect_attack", "arrival",
     "turn_end", "turn_start", "undead_fortitude", "use_item",
 })
 
@@ -350,6 +350,8 @@ class Encounter:
                 "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
             )
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
+        for creature in combatants:
+            creature.arrived = creature.arrival_round <= 1
         #: How diagonals are measured, for every distance this fight takes.
         self.movement_rule = movement_rule
         self.spellbook: dict[str, Spell] = dict(spellbook or {})
@@ -687,7 +689,9 @@ class Encounter:
         effect = self._terrain_effect(level, step_to)
         kind = self._terrain_at_level(level, step_to)
         if movement_mode is MovementMode.FLY:
-            effect = TerrainEffect()
+            # Flight ignores ground drag and elevation, not solid architecture.
+            # Replacing the whole effect made a wall passable as a side effect.
+            effect = replace(effect, move_cost_multiplier=1)
         elif movement_mode is MovementMode.SWIM and effect.underwater:
             effect = replace(effect, move_cost_multiplier=1)
         elif actor is not None and kind in actor.terrain_cost_overrides:
@@ -737,7 +741,7 @@ class Encounter:
         return {
             to_square(as_point(creature.position)): creature.name
             for creature in self.creatures.values()
-            if creature.conscious and creature.level == level
+            if creature.combat_active and creature.level == level
         }
 
     def route(
@@ -783,6 +787,36 @@ class Encounter:
             stop_adjacent=stop_adjacent,
             max_cost=max_cost,
         )
+
+    def flight_cost(
+        self,
+        actor_name: str,
+        destination: Point,
+        to_level: int,
+    ) -> int | None:
+        """Cost of a legal direct flight, or ``None`` when it cannot end there.
+
+        This is the planning seam used by auto-play.  It mirrors the live
+        action's destination, occupancy, and vertical-distance gates so a
+        proposed cross-storey move will not be refused when resolved.
+        """
+        if self.battle_map is None or to_level not in self.battle_map.levels:
+            return None
+        actor = self.creatures[actor_name]
+        if actor.fly_speed <= 0:
+            return None
+        dest_sq = to_square(destination)
+        if not self._on_map(dest_sq) or self._entry_cost(to_level, dest_sq) is None:
+            return None
+        holder = self._occupied(to_level).get(dest_sq)
+        if holder is not None and holder != actor_name:
+            return None
+        origin = as_point(actor.position)
+        vertical = abs(
+            self._elevation_at(to_level, dest_sq)
+            - self._elevation_at(actor.level, to_square(origin))
+        )
+        return max(distance_feet(origin, destination, self.movement_rule), vertical)
 
     def cover_between(self, attacker_name: str, target_name: str) -> CoverGrade:
         """The cover the target has against the attacker, on this fight's map.
@@ -856,7 +890,7 @@ class Encounter:
         return grouped
 
     def living_teams(self) -> set[str]:
-        return {c.team for c in self.creatures.values() if c.combat_active}
+        return {c.team for c in self.creatures.values() if c.contesting}
 
     @property
     def over(self) -> bool:
@@ -1044,6 +1078,8 @@ class Encounter:
             "death_rule": creature.death_rule.value,
             "bonus_actions": sorted(creature.bonus_actions),
             "redirect_attack": creature.redirect_attack,
+            "arrival_round": creature.arrival_round,
+            "present": creature.arrived,
             "position": list(as_point(creature.position)),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
@@ -1080,6 +1116,14 @@ class Encounter:
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
         self._reaction_available[creature.name] = True
+        if not creature.arrived:
+            self._turn = TurnState(
+                movement_left=0,
+                action_used=True,
+                bonus_action_used=True,
+                attacks_left=0,
+            )
+            return
         self._resolve_attached_damage(creature, rng)
         if creature.dying:
             self._death_save(creature, rng)
@@ -1219,6 +1263,21 @@ class Encounter:
             creature.death_save_failures = 0
             self._emit("stabilised", creature.name, detail="three successful death saves")
 
+    def _arrive_for_round(self) -> None:
+        """Make every scheduled reinforcement for the current round present."""
+        for creature in sorted(self.creatures.values(), key=lambda entry: entry.name):
+            if creature.arrived or creature.arrival_round > self.round:
+                continue
+            creature.arrived = True
+            self._emit(
+                "arrival",
+                creature.name,
+                detail=f"{creature.name} arrives in round {self.round}",
+                arrival_round=creature.arrival_round,
+                position=list(as_point(creature.position)),
+                level=creature.level,
+            )
+
     def advance(self, rng: Random) -> list[Event]:
         """End the current turn and begin the next, wrapping the round."""
         before = len(self.log)
@@ -1233,6 +1292,7 @@ class Encounter:
                     self.round += 1
                     self._emit("round", detail=f"round {self.round} begins",
                                round=self.round)
+                    self._arrive_for_round()
                 if (
                     not self.creatures[self.current_name].dead
                     and not self.creatures[self.current_name].surrendered
@@ -1261,6 +1321,10 @@ class Encounter:
         actor = self.current
         if self.over:
             raise EncounterError("the encounter is over")
+        if not actor.arrived:
+            raise EncounterError(
+                f"{actor.name} does not arrive until round {actor.arrival_round}"
+            )
         if not actor.conscious:
             raise EncounterError(f"{actor.name} is not conscious and cannot act")
         if not actor.active:
@@ -1375,6 +1439,10 @@ class Encounter:
         ``dead`` is the one refusal that survives, because a corpse is not a
         creature a spell or an attack can target.
         """
+        if not target.arrived:
+            raise EncounterError(
+                f"{target.name} does not arrive until round {target.arrival_round}"
+            )
         if target.dead:
             raise EncounterError(f"{target.name} is dead and cannot be targeted")
 
@@ -2102,7 +2170,7 @@ class Encounter:
                 if self.battle_map is None:
                     return [
                         c for c in self.creatures.values()
-                        if not c.dead
+                        if c.arrived and not c.dead
                         and distance_feet(
                             as_point(c.position), centre, self.movement_rule
                         ) <= spell.radius
@@ -2144,7 +2212,7 @@ class Encounter:
                 raise EncounterError(f"{spell.name} is not an area spell")
         caught = [
             c for c in self.creatures.values()
-            if not c.dead and to_square(as_point(c.position)) in squares
+            if c.arrived and not c.dead and to_square(as_point(c.position)) in squares
         ]
         if self.battle_map is None:
             return caught

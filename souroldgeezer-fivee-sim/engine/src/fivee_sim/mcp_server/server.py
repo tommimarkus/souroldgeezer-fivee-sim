@@ -553,7 +553,9 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: before the constructor is reached and so reads none of the description keys —
 #: folding them into one set would accept ``{"monster": "...", "ac": 22}`` and
 #: silently ignore the AC, which is the very failure this guard exists to stop.
-_LOOKUP_SPEC_KEYS = frozenset({"creature", "monster", "label", "team", "position", "level"})
+_LOOKUP_SPEC_KEYS = frozenset({
+    "creature", "monster", "label", "team", "position", "level", "arrival_round",
+})
 _DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
@@ -561,7 +563,8 @@ _DESCRIBED_SPEC_KEYS = frozenset({
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
-    "vulnerabilities", "items", "conditions", "position", "level", "provenance",
+    "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
+    "provenance",
 })
 
 
@@ -601,6 +604,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
                 team=spec.get("team"),
                 position=_point(spec.get("position", 0), "position"),
                 level=int(spec.get("level", 0)),
+                arrival_round=int(spec.get("arrival_round", 1)),
             )
         except DataError as error:
             raise ToolError(str(error)) from error
@@ -662,6 +666,7 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             condition_effects=registry.condition_effects,
             position=_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),
+            arrival_round=int(spec.get("arrival_round", 1)),
             death_rule=DeathRule(spec.get("death_rule", DeathRule.DEATH_SAVES)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
@@ -1467,9 +1472,11 @@ def encounter_create(
     "team": "monsters", "position": [15, 0]}`` for a bundled stat block, or an
     explicit description with at least name, team, ac, and max_hp. A key the spec
     does not define is refused rather than ignored, so a misspelling or an
-    unmodelled field such as ``fly_speed`` is reported instead of silently
-    dropped; the two forms take different keys, and the refusal lists the ones
-    that would have worked. Names must be
+    unsupported field is reported instead of silently dropped; the two forms
+    take different keys, and the refusal lists the ones that would have worked.
+    ``arrival_round`` is per-instance reinforcement timing: a combatant scheduled
+    after round 1 is absent, untargetable, and unable to act until that round
+    begins. Names must be
     unique — they identify combatants in every later call. A position is ``[x, y]``
     in feet on a flat plane; a bare number is accepted and means feet along the
     x-axis. ``movement_rule`` is how diagonals are measured: "5-5-5" (the default)
@@ -2943,8 +2950,10 @@ def simulate_rounds(
     Combatant specs match ``encounter_create``, as do ``movement_rule``, the
     inline ``map`` spec, and ``map_id`` (a loaded map session; one or the
     other, not both) — with a map, every iteration fights on it: terrain
-    costs, cover, sight, and pathfinding all apply, and doors reset to their
-    initial state between iterations. Iteration ``i`` uses ``seed + i``, so one
+    costs, cover, sight, and pathfinding all apply, the policy chooses authored
+    Walk/Climb/Swim/Fly modes, and doors reset to their initial state between
+    iterations. ``arrival_round`` schedules the same reinforcement in every
+    iteration. Iteration ``i`` uses ``seed + i``, so one
     iteration reproduces a single hand-played encounter at that seed. With
     ``map_id`` the result's ``map_source`` records the exact map generation
     and hash the batch ran on.

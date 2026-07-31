@@ -16,7 +16,7 @@ exact arithmetic in :mod:`.expectation`.
 
 What the policy cannot do bounds what these numbers mean, so it is stated on
 ``auto_action`` itself rather than left to be discovered: it does not husband spell
-slots, never casts a spell that deals no damage, and never uses an item.
+slots, never casts a spell that deals no damage, and values only healing items.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ from ..kernel.grid import (
     FEET_PER_SQUARE,
     CoverGrade,
     DiagonalRule,
+    MovementMode,
     Point,
     Square,
     TerrainTable,
@@ -684,17 +685,10 @@ def _closing_dash(
     desired = _threat_range(encounter, actor)
     if desired is None:
         return None
+    movement_mode: MovementMode | None = None
     if encounter.battle_map is not None:
-        can_close = any(
-            actor.distance_to(enemy, encounter.movement_rule) > desired
-            and encounter.route(
-                actor.name,
-                to_square(as_point(enemy.position)),
-                stop_adjacent=True,
-            )
-            is not None
-            for enemy in enemies
-        )
+        movement_mode = _preferred_movement_mode(encounter, actor, enemies, desired)
+        can_close = movement_mode is not None
     else:
         can_close = any(
             actor.distance_to(enemy, encounter.movement_rule) > desired
@@ -702,11 +696,120 @@ def _closing_dash(
         )
     if not can_close:
         return None
+    authored_mode = (
+        movement_mode
+        if movement_mode is not MovementMode.WALK
+        else None
+    )
     if "dash" in actor.bonus_actions and not turn["bonus_action_used"]:
-        return Action(kind=ActionKind.DASH, as_bonus_action=True)
+        return Action(
+            kind=ActionKind.DASH,
+            movement_mode=authored_mode,
+            as_bonus_action=True,
+        )
     if not turn["action_used"]:
-        return Action(kind=ActionKind.DASH)
+        return Action(kind=ActionKind.DASH, movement_mode=authored_mode)
     return None
+
+
+def _movement_modes(actor: Creature) -> tuple[MovementMode, ...]:
+    """Authored movement modes the creature can actually use, stable by preference."""
+    speeds = (
+        (MovementMode.WALK, actor.speed),
+        (MovementMode.CLIMB, actor.climb_speed),
+        (MovementMode.SWIM, actor.swim_speed),
+        (MovementMode.FLY, actor.fly_speed),
+    )
+    return tuple(mode for mode, speed in speeds if speed > 0)
+
+
+def _preferred_movement_mode(
+    encounter: Encounter,
+    actor: Creature,
+    enemies: Sequence[Creature],
+    desired: int,
+) -> MovementMode | None:
+    """Cheapest authored mode that makes progress toward a visible enemy."""
+    if actor.fly_speed > 0 and any(
+        enemy.level != actor.level
+        and actor.distance_to(enemy, encounter.movement_rule) > desired
+        for enemy in enemies
+    ):
+        return MovementMode.FLY
+    choices: list[tuple[int, int, MovementMode]] = []
+    for enemy in enemies:
+        if enemy.level != actor.level:
+            continue
+        for rank, mode in enumerate(_movement_modes(actor)):
+            path = encounter.route(
+                actor.name,
+                to_square(as_point(enemy.position)),
+                stop_adjacent=True,
+                movement_mode=mode,
+            )
+            if path is not None:
+                choices.append((path.cost_feet, rank, mode))
+    if not choices:
+        return None
+    return min(choices, key=lambda entry: (entry[0], entry[1]))[2]
+
+
+def _cross_level_flight_move(
+    encounter: Encounter,
+    actor: Creature,
+    enemies: Sequence[Creature],
+    budget: int,
+    desired: int,
+) -> Action | None:
+    """Best legal direct flight toward an enemy on another visible storey."""
+    battle_map = encounter.battle_map
+    if battle_map is None or actor.fly_speed <= 0:
+        return None
+    origin = as_point(actor.position)
+    radius = max(0, budget // FEET_PER_SQUARE + 1)
+    origin_square = to_square(origin)
+    x_min = max(0, origin_square[0] - radius)
+    x_max = min(battle_map.width - 1, origin_square[0] + radius)
+    y_min = max(0, origin_square[1] - radius)
+    y_max = min(battle_map.height - 1, origin_square[1] + radius)
+    candidates: list[tuple[int, int, int, str, int, int, int]] = []
+    for enemy in sorted(enemies, key=lambda creature: creature.name):
+        if enemy.level == actor.level:
+            continue
+        current_gap = actor.distance_to(enemy, encounter.movement_rule)
+        for y in range(y_min, y_max + 1):
+            for x in range(x_min, x_max + 1):
+                destination = square_center((x, y))
+                cost = encounter.flight_cost(actor.name, destination, enemy.level)
+                if cost is None or cost > budget:
+                    continue
+                gap = distance_feet(
+                    destination,
+                    as_point(enemy.position),
+                    encounter.movement_rule,
+                )
+                if gap >= current_gap:
+                    continue
+                candidates.append(
+                    (
+                        max(0, gap - desired),
+                        gap,
+                        cost,
+                        enemy.name,
+                        y,
+                        x,
+                        enemy.level,
+                    )
+                )
+    if not candidates:
+        return None
+    _outside, _gap, _cost, _name, y, x, level = min(candidates)
+    return Action(
+        kind=ActionKind.MOVE,
+        to_position=square_center((x, y)),
+        to_level=level,
+        movement_mode=MovementMode.FLY,
+    )
 
 
 def _closing_move_mapped(
@@ -726,17 +829,35 @@ def _closing_move_mapped(
     pathfinding the stepper charges with, so an emitted move is never refused.
     Unreachable enemies — or no affordable progress at all — mean ``None``.
     """
+    cross_level = _cross_level_flight_move(
+        encounter, actor, enemies, budget, desired
+    )
+    if cross_level is not None:
+        return cross_level
     rule = encounter.movement_rule
-    routed: list[tuple[int, str, Creature, tuple[Square, ...]]] = []
+    routed: list[
+        tuple[int, str, int, MovementMode, Creature, tuple[Square, ...]]
+    ] = []
     for enemy in sorted(enemies, key=lambda creature: creature.name):
-        path = encounter.route(
-            actor.name, to_square(as_point(enemy.position)), stop_adjacent=True
-        )
-        if path is not None:
-            routed.append((path.cost_feet, enemy.name, enemy, path.squares))
+        if enemy.level != actor.level:
+            continue
+        for rank, mode in enumerate(_movement_modes(actor)):
+            path = encounter.route(
+                actor.name,
+                to_square(as_point(enemy.position)),
+                stop_adjacent=True,
+                movement_mode=mode,
+            )
+            if path is not None:
+                routed.append(
+                    (path.cost_feet, enemy.name, rank, mode, enemy, path.squares)
+                )
     if not routed:
         return None
-    _cost, _name, enemy, squares = min(routed, key=lambda entry: (entry[0], entry[1]))
+    _cost, _name, _rank, mode, enemy, squares = min(
+        routed,
+        key=lambda entry: (entry[0], entry[1], entry[2]),
+    )
     if actor.distance_to(enemy, rule) <= desired:
         return None
     # Truncate at the first square already within the desired range: a ranged
@@ -757,10 +878,19 @@ def _closing_move_mapped(
         stop = walk[index]
         if stop in occupied:
             continue
-        leg = encounter.route(actor.name, stop, max_cost=budget)
+        leg = encounter.route(
+            actor.name,
+            stop,
+            max_cost=budget,
+            movement_mode=mode,
+        )
         if leg is None:
             continue
-        return Action(kind=ActionKind.MOVE, to_position=square_center(stop))
+        return Action(
+            kind=ActionKind.MOVE,
+            to_position=square_center(stop),
+            movement_mode=mode if mode is not MovementMode.WALK else None,
+        )
     return None
 
 

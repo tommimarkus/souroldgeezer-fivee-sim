@@ -90,9 +90,9 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `spell_attack_bonus`, `items`, `conditions`, `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
 
-There is deliberately no `hp` or `position`. A creature starts a fight at full hit
-points, and position is per-instance — you set it when you add a combatant to an
-encounter, not in the stat block.
+There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
+placement, and reinforcement timing are per-instance — set them when adding a
+combatant to an encounter, not in its reusable stat block.
 
 Attacks carry their own bonus and damage expression rather than deriving them from
 ability scores and proficiency. That is how a stat block presents an attack, and it

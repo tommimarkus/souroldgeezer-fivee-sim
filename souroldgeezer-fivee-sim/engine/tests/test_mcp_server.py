@@ -203,6 +203,7 @@ class TestEncounterFlow:
             "death_rule": "instant",
             "bonus_actions": ["dash", "disengage"],
             "surrender_when_last": True,
+            "arrival_round": 2,
         }
 
         created = api.encounter_create([scout, GOBLIN], seed=3)
@@ -222,6 +223,8 @@ class TestEncounterFlow:
         assert state["terrain_cost_overrides"] == ["grain"]
         assert state["death_rule"] == "instant"
         assert state["bonus_actions"] == ["dash", "disengage"]
+        assert state["arrival_round"] == 2
+        assert state["present"] is False
 
     def test_public_action_tool_passes_bonus_action_and_movement_mode(self) -> None:
         skirmisher = {

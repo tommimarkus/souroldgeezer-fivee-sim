@@ -31,7 +31,9 @@ narrating from memory puts it straight back.
    stat block — `{"monster": "Goblin Warrior", "label": "Goblin A", "team":
    "monsters", "position": [15, 0]}` — or an explicit build with at least `name`,
    `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they identify
-   combatants in every later call. A position is `[x, y]` in feet on a flat plane
+   combatants in every later call. `arrival_round` schedules a reinforcement:
+   before that round it is absent, untargetable, and unable to act, but its side
+   still keeps the encounter open. A position is `[x, y]` in feet on a flat plane
    (a bare number still means feet along the x-axis), and `encounter_state`
    reports positions in the same `[x, y]` form. Diagonals cost 5 ft by default;
    pass `movement_rule: "5-10-5"` for the every-second-diagonal-costs-double
@@ -128,7 +130,9 @@ Movement defaults to Walk. Pass `movement_mode` as `climb`, `swim`, or `fly` to
 use that authored speed. A Swim speed avoids underwater terrain's doubled cost;
 Fly can change storeys without a connector. `encounter_state` reports all four
 speeds, Darkvision/Blindsight, terrain overrides, death rule, Bonus Actions, and
-reaction availability so narration never has to infer them from the pack.
+reaction availability plus `arrival_round`/`present`, so narration never has to
+infer them from the pack. Auto-play chooses among authored movement modes when it
+closes, including swimming through underwater terrain and flying between storeys.
 
 ## Maps
 

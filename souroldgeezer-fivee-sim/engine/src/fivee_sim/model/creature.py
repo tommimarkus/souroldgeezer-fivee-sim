@@ -271,6 +271,11 @@ class Creature:
     #: of plane are different kinds of fact: two creatures at the same point on
     #: different levels are not near each other at all.
     level: int = 0
+    #: Scenario timing, not a stat-block trait. Round 1 means present when the
+    #: encounter is created; a later value keeps the combatant off-map until
+    #: that round begins.
+    arrival_round: int = 1
+    arrived: bool = True
     death_save_successes: int = 0
     death_save_failures: int = 0
     stable: bool = False
@@ -279,6 +284,8 @@ class Creature:
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
+        if self.arrival_round < 1:
+            raise ValueError("arrival_round must be at least 1")
         if self.hp < 0:
             self.hp = self.max_hp
         self.position = as_point(self.position)
@@ -295,6 +302,7 @@ class Creature:
         team: str | None = None,
         position: Point | int = 0,
         level: int = 0,
+        arrival_round: int = 1,
     ) -> Creature:
         """Build a fresh creature from a validated content record.
 
@@ -358,6 +366,7 @@ class Creature:
             condition_effects=condition_effects,
             position=position,
             level=level,
+            arrival_round=arrival_round,
             provenance=str(record.get("provenance", source)),
             death_rule=DeathRule(record.get("death_rule", DeathRule.INSTANT)),
         )
@@ -382,6 +391,11 @@ class Creature:
     @property
     def combat_active(self) -> bool:
         """Still opposing the other teams, rather than dead, down, or yielded."""
+        return self.conscious and not self.surrendered and self.arrived
+
+    @property
+    def contesting(self) -> bool:
+        """Still belongs to a side the fight must resolve, even before arrival."""
         return self.conscious and not self.surrendered
 
     @property
