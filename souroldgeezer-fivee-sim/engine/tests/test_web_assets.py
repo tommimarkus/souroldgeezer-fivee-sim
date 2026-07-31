@@ -173,6 +173,54 @@ class TestTerrainColors:
         assert "R.asHex(" in read("editor.html")
 
 
+class TestSessionRestore:
+    # A refresh must not lose the open map. Presence and ordering as text —
+    # nothing here reloads a page, per the module docstring's boundary.
+
+    def test_the_editor_names_a_versioned_storage_key_exactly_once(self) -> None:
+        # Versioned so a payload written by an older editor is dropped rather
+        # than half-understood; once, because two keys would mean two answers
+        # to "what is open".
+        assert read("editor.html").count('"fivee-editor-open-map-v1"') == 1
+
+    def test_every_storage_access_sits_in_the_guarded_helpers(self) -> None:
+        # The page also runs from file://, where a browser may refuse storage
+        # outright, and the serverless mode has to keep working. So storage is
+        # reached only through the two try/catch helpers — an access that
+        # escaped them would throw on boot and take the editor with it.
+        # Counted with the dot, which is what an access looks like — the bare
+        # word also appears in the prose explaining why the guard is there.
+        source = read("editor.html")
+        accessors = source[
+            source.index("function readSession") : source.index("function rememberSession")
+        ]
+        assert source.count("sessionStorage.") == accessors.count("sessionStorage.")
+        assert accessors.count("try {") == 2
+
+    def test_the_editor_restores_before_the_ping_reports_status(self) -> None:
+        # /ping answers asynchronously and calls setStatus, so the restore has
+        # to run first *and* the handler has to stand down when it did —
+        # either half alone leaves the "reopened" line silently overwritten.
+        source = read("editor.html")
+        assert "var restored = restoreSession();" in source
+        assert source.index("restoreSession()") < source.index('request("GET", "/ping")')
+        assert "response.json.ok && !restored" in source
+
+    def test_the_editor_persists_the_open_map_when_the_page_goes_away(self) -> None:
+        # pagehide fires on reload, which is the case this feature exists for.
+        assert 'addEventListener("pagehide"' in read("editor.html")
+
+    def test_the_stored_state_carries_what_a_later_save_needs(self) -> None:
+        # Without the id the save has no target; without the etag it either
+        # overwrites another tab's work or 409s on a map nobody touched.
+        assert "id: mapId, etag: etag" in read("editor.html")
+
+    def test_a_restored_document_keeps_its_own_baseline(self) -> None:
+        # baseline drives the dirty check that stamps provenance.edited, so a
+        # restore that recomputed it would call the restored edits pristine.
+        assert "source.baseline" in read("editor.html")
+
+
 class TestOfflineGuarantee:
     @pytest.mark.parametrize("asset", ASSETS)
     def test_no_asset_references_an_external_url(self, asset: str) -> None:
