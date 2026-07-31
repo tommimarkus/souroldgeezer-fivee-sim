@@ -518,46 +518,75 @@ hand-edited, the file is the source of truth — re-load, never assume.
 
 ## The replay bundle
 
-`replay_export` turns an encounter into a portable record, format
-`fivee-sim-replay` version 1:
+`replay_export` turns an encounter into a portable, self-contained audit record.
+Version 2 is the default:
 
 ```json
 {
   "format": "fivee-sim-replay",
-  "format_version": 1,
+  "format_version": 2,
   "name": "guard room",
   "seed": 71203941,
   "map": { "...": "a fivee-sim-map payload, or null" },
-  "initial": {
-    "creatures": [
-      { "name": "Thora", "team": "party", "position": [5, 5],
-        "hp": 30, "max_hp": 30 }
-    ],
-    "map_open_features": ["door-east"]
-  },
-  "events": [ { "kind": "round", "detail": "round 1 begins", "...": "..." } ]
+  "encounter": { "id": "enc-1", "seed": 71203941,
+    "movement_rule": "5-5-5" },
+  "initial": { "creatures": [], "combatants": [], "state": {},
+    "map_open_features": ["door-east"] },
+  "events": [ { "kind": "round", "timestamp": "...", "...": "..." } ],
+  "actions": [],
+  "attempts": [],
+  "checkpoints": [ { "event_count": 2, "state_hash": "...", "state": {} } ],
+  "latest_state": {},
+  "content": { "records": {}, "sha256": "..." },
+  "integrity": { "algorithm": "sha256", "events": "...", "...": "..." }
 }
 ```
 
 `map` is the document **as the fight captured it** — an edit made after
-`encounter_create` never changes an export. Fights created mapless or from an
-inline `map` spec carry `null` and replay on a neutral plane. Positions are
-`[x, y]` in feet; `events` is the structured log `encounter_log` pages, in
-full.
+`encounter_create` never changes an export. Version 2 also converts an inline
+`map` spec to a complete map document and preserves every storey; only a mapless
+fight carries `null`. `initial.combatants` is the normalized creation input,
+including attacks and resources, while the captured content records preserve
+the spells, conditions, items, and terrain the fight resolved against.
+
+Every event has a wall-clock timestamp. Successful actions and advances are in
+`actions`; `attempts` also carries refused actions, encounter-scoped rolls,
+checks, saves, and `encounter_note` entries. Checkpoints hold authoritative full
+state after creation and after every state-changing call, each with its own hash.
+The top-level integrity block hashes the map, initial state, events, actions,
+checkpoints, latest state, and content. `replay_validate` checks the nested
+schema and all hashes, and the viewer performs the same checks before rendering
+a dropped or embedded v2 file. These hashes make corruption and alteration
+evident; they are not signatures and do not authenticate an author. Pass
+`format_version=1` only when a legacy consumer needs the old seven-field bundle;
+the viewer continues to accept both versions.
+
+Encounters are journaled under `.fivee-sim/encounters/` (or
+`FIVEE_SIM_ENCOUNTERS`). Creation, attempt, and result records are append-only,
+fsynced, and hash-chained. `request_id` makes creation, actions, advances, and
+encounter-scoped primitives safe to retry. `encounter_list` discovers active or
+finalized journals, `encounter_resume` recovers one after a restart, and
+`encounter_finalize` writes its replay v2 file and marks it finalized without
+deleting the journal. A partial crash tail is preserved beside the journal;
+hash-chain tampering is refused.
 
 The viewer replays what the fixtures did. `initial.map_open_features` says
 which stood open when the fight began — for every fixture, not only doors — and
 each `interact` event moves one, so stepping to the round the party opened the
 sluice floods the rooms it governs and turns the wheel. Scrubbing back drains
 them again: the viewer rebuilds from the start of the fight rather than undoing,
-so any point in the log shows the ground as it was at that moment.
+so any point in the log shows the ground as it was at that moment. For v2 it
+also follows movement between storeys, can pin a selected storey, applies the
+authoritative checkpoints, shows full combatant resources and conditions, and
+places checks, notes, and refusals in the timestamped audit timeline.
 
 Small bundles come back inline; larger ones (or any call with `path`) are
 written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
 bundle is baked into the replay viewer instead, yielding a single
 self-contained `.html` — open it in any browser, no server required. The
 viewer is also served live at `/viewer` by the editor process, where it takes
-a dropped bundle file.
+a dropped bundle file. JSON and HTML results both report the SHA-256 of the
+exact bytes written, and replacement is atomic.
 
 ## Universal VTT export
 

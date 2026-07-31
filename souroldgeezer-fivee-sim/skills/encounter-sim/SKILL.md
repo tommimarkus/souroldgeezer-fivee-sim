@@ -35,7 +35,9 @@ narrating from memory puts it straight back.
    (a bare number still means feet along the x-axis), and `encounter_state`
    reports positions in the same `[x, y]` form. Diagonals cost 5 ft by default;
    pass `movement_rule: "5-10-5"` for the every-second-diagonal-costs-double
-   variant.
+   variant. Give creation and later state-changing calls a stable `request_id`
+   whenever a host may retry them; the engine returns the first recorded result
+   instead of acting twice.
 2. **`encounter_state`** to see whose turn it is and what the situation is.
 3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
    `dash`, `disengage`, `dodge`, `stand` (up from Prone — half Speed in
@@ -50,10 +52,31 @@ records that — with the reported seed — reproduce the fight exactly. Recap
 earlier rounds from it rather than from memory; `encounter_state` stays the view
 of *now*.
 
+The history survives the MCP process. Creation, every attempt, and every result
+are fsynced into a hash-chained journal under `.fivee-sim/encounters/` (or
+`FIVEE_SIM_ENCOUNTERS`). Use `encounter_list` to discover active/finalized
+fights, `encounter_resume` after a restart, and `encounter_finalize` when play is
+done; finalization writes replay v2 and retains the journal. If narration or an
+adjudication must be part of the record, use `encounter_note` rather than leaving
+it only in prose.
+
+`roll`, `check`, and `save` accept an `encounter_id` and `request_id`. A scoped
+check can name `ability` and `skill` (for example Charisma/Persuasion or
+Charisma/Intimidation); this is audit metadata around the supplied modifier, not
+a proficiency system. Scoped primitives are recorded without consuming the
+encounter's combat RNG or advancing its turn.
+
 An illegal action is **refused with a reason** — out of reach, no slots left, no
 attacks remaining, none of that potion left, speed 0 while Grappled. Read the
 reason and adapt. Do not retry the same call hoping for a different answer, and do
 not narrate the action as though it happened.
+
+For a portable record, `replay_export` defaults to version 2: normalized starting
+combatants, captured inline/loaded maps and storeys, captured content, successful
+actions, refused attempts, timestamps, full state checkpoints, and integrity
+hashes. `replay_validate` and the viewer verify the nested schema and hashes;
+the hashes detect alteration but are not author signatures. Use
+`format_version=1` only for a legacy consumer.
 
 ## Fighting on a map
 

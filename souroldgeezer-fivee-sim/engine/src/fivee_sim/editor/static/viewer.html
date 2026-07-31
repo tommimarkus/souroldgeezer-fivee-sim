@@ -54,9 +54,21 @@ header .spacer { flex: 1; }
 #layout { display: flex; flex: 1; min-height: 0; }
 #canvas-wrap { flex: 1; position: relative; min-width: 0; }
 #stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#sidebar {
+  width: 340px; border-left: 1px solid var(--edge); background: var(--panel);
+  display: flex; flex-direction: column; min-height: 0;
+}
+#combatant-state {
+  padding: 6px; border-bottom: 1px solid var(--edge); max-height: 42%;
+  overflow-y: auto;
+}
+#combatant-state h2 { font-size: 12px; margin: 0 0 4px; color: var(--muted); }
+.combatant-card { padding: 4px 6px; margin: 3px 0; border: 1px solid var(--edge);
+  border-radius: 4px; }
+.combatant-card.current { border-color: var(--accent); }
+.combatant-card .muted { color: var(--muted); }
 #ticker {
-  width: 300px; border-left: 1px solid var(--edge); background: var(--panel);
-  overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+  flex: 1; overflow-y: auto; margin: 0; padding: 4px; list-style: none;
 }
 #ticker li {
   padding: 2px 6px; border-radius: 4px; cursor: pointer; color: var(--muted);
@@ -64,12 +76,15 @@ header .spacer { flex: 1; }
 #ticker li.round-row { color: var(--accent); font-weight: 600; margin-top: 4px; }
 #ticker li.current { background: var(--bg); color: var(--text); }
 #ticker li:hover { background: var(--bg); }
+#ticker li.audit-row { border-left: 2px solid var(--accent); padding-left: 8px; }
+#ticker li.audit-refused { border-left-color: #b73b35; }
 @media (max-width: 40rem) {
   #layout { flex-direction: column; }
-  #ticker {
+  #sidebar {
     inline-size: 100%; block-size: 9rem; flex: 0 0 9rem;
     border-inline-start: 0; border-block-start: 1px solid var(--edge);
   }
+  #combatant-state { display: none; }
 }
 footer {
   border-top: 1px solid var(--edge); background: var(--panel);
@@ -91,6 +106,8 @@ footer {
 <header>
   <span id="title">replay viewer</span>
   <span id="seed"></span>
+  <label>Storey <select id="level-select" aria-label="visible storey"></select></label>
+  <label><input id="follow-level" type="checkbox" checked> Follow action</label>
   <span class="spacer"></span>
   <button id="btn-open-file">Open replay&#8230;</button>
   <input id="file-input" type="file" accept=".json,application/json" hidden>
@@ -101,7 +118,10 @@ footer {
     <div id="empty-note">No replay loaded.<br>
       Open a replay bundle file, or drop one anywhere on this page.</div>
   </main>
-  <ul id="ticker"></ul>
+  <aside id="sidebar" aria-label="encounter state and audit timeline">
+    <section id="combatant-state" aria-live="polite"></section>
+    <ul id="ticker" aria-label="event and audit timeline"></ul>
+  </aside>
 </div>
 <footer>
   <div id="controls">
@@ -114,7 +134,7 @@ footer {
       <option value="2">2&#215;</option>
       <option value="4">4&#215;</option>
     </select>
-    <span id="readout">&#8212;</span>
+    <span id="readout" aria-live="polite">&#8212;</span>
   </div>
   <div id="scrub-wrap">
     <canvas id="ticks"></canvas>
@@ -161,6 +181,7 @@ if (typeof FiveeRenderer === "undefined") {
   var playTimer = null;
   var transition = null;
   var transitionFrame = null;
+  var activeLevel = 0;
   var motionQuery = window.matchMedia
     ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
@@ -195,6 +216,65 @@ if (typeof FiveeRenderer === "undefined") {
     ];
   }
 
+  function allMapFeatures() {
+    if (!bundle || !bundle.map) { return []; }
+    var found = (bundle.map.features || []).slice();
+    (bundle.map.levels || []).forEach(function (level) {
+      (level.features || []).forEach(function (feature) { found.push(feature); });
+    });
+    return found;
+  }
+
+  function planeDocument(level) {
+    if (!bundle.map || level === 0) { return displayDoc(bundle.map); }
+    var planes = bundle.map.levels || [];
+    var plane = null;
+    for (var i = 0; i < planes.length; i++) {
+      if (Number(planes[i].index) === level) { plane = planes[i]; break; }
+    }
+    if (!plane) { return displayDoc(bundle.map); }
+    var copy = Object.create(null);
+    Object.keys(bundle.map).forEach(function (key) { copy[key] = bundle.map[key]; });
+    copy.tiles = plane.tiles;
+    copy.features = plane.features || [];
+    copy.elevation = plane.elevation;
+    delete copy.levels;
+    return displayDoc(copy);
+  }
+
+  function selectLevel(level) {
+    activeLevel = Number(level) || 0;
+    byId("level-select").value = String(activeLevel);
+    if (bundle && bundle.map) { mapDoc = planeDocument(activeLevel); }
+    if (state) { state.terrainOverrides = overridesFor(state.featureStates); }
+    if (view && mapDoc) {
+      var box = canvas.getBoundingClientRect();
+      view = R.fitView(mapDoc.grid.width, mapDoc.grid.height, box.width, box.height);
+    }
+    redraw();
+  }
+
+  function configureLevels() {
+    var select = byId("level-select");
+    select.textContent = "";
+    var levels = [{ index: 0, name: "ground" }];
+    if (bundle.map) {
+      (bundle.map.levels || []).forEach(function (level) {
+        levels.push({ index: Number(level.index), name: level.name || ("level " + level.index) });
+      });
+    }
+    levels.sort(function (left, right) { return left.index - right.index; });
+    levels.forEach(function (level) {
+      var option = document.createElement("option");
+      option.value = String(level.index);
+      option.textContent = level.name + " (" + level.index + ")";
+      select.appendChild(option);
+    });
+    select.disabled = levels.length === 1;
+    activeLevel = levels[0].index;
+    select.value = String(activeLevel);
+  }
+
   /* --- folding the event log ------------------------------------------- */
 
   /* What the fixtures standing open make of the ground, as the renderer's
@@ -211,23 +291,35 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   function initialState() {
-    var tokens = {};
-    (bundle.initial.creatures || []).forEach(function (creature) {
+    var tokens = Object.create(null);
+    var authoritative = bundle.format_version === 2 && bundle.initial.state
+      ? (bundle.initial.state.combatants || []) : (bundle.initial.creatures || []);
+    authoritative.forEach(function (creature) {
       tokens[creature.name] = {
         name: creature.name,
         team: creature.team,
         at: feetToCell(creature.position),
         hp: creature.hp,
         maxHp: creature.max_hp,
+        ac: creature.ac,
+        level: Number(creature.level || 0),
+        conditions: (creature.conditions || []).slice(),
+        concentrating_on: creature.concentrating_on || null,
+        dodging: !!creature.dodging,
+        disengaged: !!creature.disengaged,
+        reaction_available: creature.reaction_available !== false,
+        death_saves: creature.death_saves || { successes: 0, failures: 0 },
+        spell_slots: creature.spell_slots || {},
+        items: creature.items || {},
         down: creature.hp === 0,
-        dead: false,
-        stable: false
+        dead: !!creature.dead,
+        stable: !!creature.stable
       };
     });
-    var featureStates = {};
+    var featureStates = Object.create(null);
     if (bundle.map) {
       var openList = bundle.initial.map_open_features || [];
-      (bundle.map.features || []).forEach(function (feature) {
+      allMapFeatures().forEach(function (feature) {
         /* Carrying a `state` is what makes a feature one the fight owns, not
            being a door: a spawn hint and a drawn stairway have none, a lever
            and a sluice gate do, and the log's interact events name any of
@@ -245,19 +337,64 @@ if (typeof FiveeRenderer === "undefined") {
       tokens: tokens,
       featureStates: featureStates,
       terrainOverrides: overridesFor(featureStates),
-      round: 0,
-      turn: ""
+      round: bundle.initial.state ? bundle.initial.state.round : 0,
+      turn: bundle.initial.state ? bundle.initial.state.turn : ""
     };
   }
 
-  function fold(current, event) {
+  function applyAuthoritative(current, authoritative) {
+    if (!authoritative) { return current; }
+    current.round = authoritative.round;
+    current.turn = authoritative.turn;
+    (authoritative.combatants || []).forEach(function (creature) {
+      var token = current.tokens[creature.name];
+      if (!token) { return; }
+      token.at = feetToCell(creature.position);
+      token.hp = creature.hp;
+      token.maxHp = creature.max_hp;
+      token.ac = creature.ac;
+      token.level = Number(creature.level || 0);
+      token.conditions = (creature.conditions || []).slice();
+      token.concentrating_on = creature.concentrating_on || null;
+      token.dodging = !!creature.dodging;
+      token.disengaged = !!creature.disengaged;
+      token.reaction_available = creature.reaction_available !== false;
+      token.death_saves = creature.death_saves || { successes: 0, failures: 0 };
+      token.spell_slots = creature.spell_slots || {};
+      token.items = creature.items || {};
+      token.down = !creature.conscious;
+      token.dead = !!creature.dead;
+      token.stable = !!creature.stable;
+    });
+    if (authoritative.map && authoritative.map.features) {
+      Object.keys(authoritative.map.features).forEach(function (id) {
+        current.featureStates[id] = !!authoritative.map.features[id].open;
+      });
+      current.terrainOverrides = overridesFor(current.featureStates);
+    }
+    return current;
+  }
+
+  function checkpointAt(eventCount) {
+    var checkpoints = bundle.checkpoints || [];
+    for (var i = 0; i < checkpoints.length; i++) {
+      var checkpoint = checkpoints[i];
+      if (Number(checkpoint.event_count) === eventCount) { return checkpoint; }
+    }
+    return null;
+  }
+
+  function fold(current, event, eventCount) {
     current.round = event.round;
     current.turn = event.turn;
     var data = event.data || {};
     var token;
     if (event.kind === "move" && data.destination) {
       token = current.tokens[event.actor];
-      if (token) { token.at = feetToCell(data.destination); }
+      if (token) {
+        token.at = feetToCell(data.destination);
+        if (data.to_level !== undefined) { token.level = Number(data.to_level); }
+      }
     } else if (event.kind === "damage" || event.kind === "heal") {
       token = current.tokens[event.target];
       if (token && typeof data.hp === "number") {
@@ -273,6 +410,13 @@ if (typeof FiveeRenderer === "undefined") {
     } else if (event.kind === "stabilised") {
       token = current.tokens[event.actor];
       if (token) { token.stable = true; }
+    } else if (event.kind === "death_save") {
+      token = current.tokens[event.actor];
+      if (token) {
+        token.death_saves = {
+          successes: Number(data.successes || 0), failures: Number(data.failures || 0)
+        };
+      }
     } else if (event.kind === "interact" && data.feature !== undefined) {
       current.featureStates[data.feature] = !!data.open;
       /* Re-derived here and in initialState(), which between them are every
@@ -281,12 +425,14 @@ if (typeof FiveeRenderer === "undefined") {
          the whole log. */
       current.terrainOverrides = overridesFor(current.featureStates);
     }
+    var checkpoint = checkpointAt(eventCount);
+    if (checkpoint) { applyAuthoritative(current, checkpoint.state); }
     return current;
   }
 
   function stateAt(n) {
     var current = initialState();
-    for (var i = 0; i < n; i++) { fold(current, bundle.events[i]); }
+    for (var i = 0; i < n; i++) { fold(current, bundle.events[i], i + 1); }
     return current;
   }
 
@@ -312,7 +458,7 @@ if (typeof FiveeRenderer === "undefined") {
 
   function tokenPoint(name) {
     var token = state.tokens[name];
-    if (!token) { return null; }
+    if (!token || token.level !== activeLevel) { return null; }
     if (transition && transition.actor === name && transition.fromAt) {
       var progress = easedProgress();
       return [
@@ -331,7 +477,7 @@ if (typeof FiveeRenderer === "undefined") {
     if (transition) {
       var alpha = 0.5 * Math.sin(Math.PI * transition.progress);
       var marks = [];
-      var seen = {};
+      var seen = Object.create(null);
       var add = function (at) {
         if (!at) { return; }
         var key = at[0] + "," + at[1];
@@ -381,6 +527,7 @@ if (typeof FiveeRenderer === "undefined") {
     var tokens = [];
     Object.keys(state.tokens).forEach(function (name) {
       var token = state.tokens[name];
+      if (token.level !== activeLevel) { return; }
       var hp = token.hp;
       if (transition && transition.target === name
         && typeof transition.fromHp === "number") {
@@ -449,14 +596,60 @@ if (typeof FiveeRenderer === "undefined") {
     byId("readout").textContent = text;
   }
 
+  function updateStatePanel() {
+    var panel = byId("combatant-state");
+    panel.textContent = "";
+    var heading = document.createElement("h2");
+    heading.textContent = "Combatants";
+    panel.appendChild(heading);
+    Object.keys(state.tokens).forEach(function (name) {
+      var token = state.tokens[name];
+      var card = document.createElement("div");
+      card.className = "combatant-card" + (state.turn === name ? " current" : "");
+      var saves = token.death_saves || { successes: 0, failures: 0 };
+      var badges = [];
+      if (token.level !== 0) { badges.push("level " + token.level); }
+      if (token.conditions.length) { badges.push(token.conditions.join(", ")); }
+      if (token.dodging) { badges.push("Dodging"); }
+      if (token.disengaged) { badges.push("Disengaged"); }
+      if (!token.reaction_available) { badges.push("reaction spent"); }
+      if (token.concentrating_on) { badges.push("concentrating: " + token.concentrating_on); }
+      if (token.stable) { badges.push("Stable"); }
+      if (token.dead) { badges.push("Dead"); }
+      var slots = Object.keys(token.spell_slots).map(function (level) {
+        return "L" + level + ":" + token.spell_slots[level];
+      });
+      var items = Object.keys(token.items).map(function (item) {
+        return item + ":" + token.items[item];
+      });
+      card.textContent = name + " · HP " + token.hp + "/" + token.maxHp
+        + (token.ac === undefined ? "" : " · AC " + token.ac)
+        + " · saves " + saves.successes + "✓/" + saves.failures + "✗"
+        + (slots.length ? " · slots " + slots.join(" ") : "")
+        + (items.length ? " · items " + items.join(", ") : "")
+        + (badges.length ? " · " + badges.join(" · ") : "");
+      panel.appendChild(card);
+    });
+  }
+
   function updateTicker() {
     var rows = ticker.children;
+    var current = null;
     for (var i = 0; i < rows.length; i++) {
-      rows[i].classList.toggle("current", i === cursor - 1);
+      var matches = rows[i].dataset.eventIndex === String(cursor);
+      rows[i].classList.toggle("current", matches);
+      if (matches) { current = rows[i]; }
     }
-    if (cursor > 0 && rows[cursor - 1]) {
-      rows[cursor - 1].scrollIntoView({ block: "nearest" });
+    if (current) {
+      current.scrollIntoView({ block: "nearest" });
     }
+  }
+
+  function followActionLevel() {
+    if (!byId("follow-level").checked || cursor === 0) { return; }
+    var event = bundle.events[cursor - 1];
+    var token = state.tokens[event.actor] || state.tokens[state.turn];
+    if (token && token.level !== activeLevel) { selectLevel(token.level); }
   }
 
   function setCursor(n, incremental) {
@@ -470,7 +663,9 @@ if (typeof FiveeRenderer === "undefined") {
     cursor = n;
     scrub.value = String(cursor);
     updateReadout();
+    updateStatePanel();
     updateTicker();
+    followActionLevel();
     redraw();
   }
 
@@ -518,11 +713,13 @@ if (typeof FiveeRenderer === "undefined") {
     var target = state.tokens[event.target];
     var fromHp = (event.kind === "damage" || event.kind === "heal") && target
       ? target.hp : null;
-    fold(state, event);
+    fold(state, event, cursor + 1);
     cursor += 1;
     scrub.value = String(cursor);
     updateReadout();
+    updateStatePanel();
     updateTicker();
+    followActionLevel();
 
     if (reducedMotion()) {
       redraw();
@@ -573,17 +770,61 @@ if (typeof FiveeRenderer === "undefined") {
     return event.kind + (event.actor ? " · " + event.actor : "");
   }
 
+  function describeAttempt(attempt) {
+    var args = attempt.arguments || {};
+    var result = attempt.result || {};
+    if (attempt.operation === "encounter_note") {
+      return (args.category || "note") + ": " + (args.text || "");
+    }
+    var label = attempt.operation || "attempt";
+    if (attempt.operation === "check") {
+      label = args.skill || args.ability || "check";
+    }
+    if (attempt.status === "refused") { return label + " refused: " + attempt.error; }
+    if (result.detail) { return label + ": " + result.detail; }
+    return label + " · " + attempt.status;
+  }
+
   function buildTicker() {
     ticker.textContent = "";
+    var rows = [];
     bundle.events.forEach(function (event, index) {
-      var row = document.createElement("li");
-      if (event.kind === "round") { row.className = "round-row"; }
-      row.textContent = describe(event);
-      row.title = event.kind + " · round " + event.round;
-      row.addEventListener("click", function () {
-        stopPlaying();
-        setCursor(index + 1);
+      rows.push({ timestamp: event.timestamp || "", order: index, event: event, index: index });
+    });
+    (bundle.attempts || []).forEach(function (attempt, index) {
+      rows.push({
+        timestamp: attempt.timestamp || attempt.started_at || "",
+        order: bundle.events.length + index,
+        attempt: attempt
       });
+    });
+    rows.sort(function (left, right) {
+      if (!left.timestamp && !right.timestamp) { return left.order - right.order; }
+      if (!left.timestamp) { return -1; }
+      if (!right.timestamp) { return 1; }
+      return left.timestamp === right.timestamp
+        ? left.order - right.order : left.timestamp.localeCompare(right.timestamp);
+    });
+    rows.forEach(function (entry) {
+      var row = document.createElement("li");
+      if (entry.event) {
+        var event = entry.event;
+        if (event.kind === "round") { row.className = "round-row"; }
+        row.textContent = describe(event);
+        row.title = event.kind + " · round " + event.round
+          + (event.timestamp ? " · " + event.timestamp : "");
+        row.dataset.eventIndex = String(entry.index + 1);
+        row.addEventListener("click", function () {
+          stopPlaying();
+          setCursor(entry.index + 1);
+        });
+      } else {
+        var attempt = entry.attempt;
+        row.className = "audit-row" + (attempt.status === "refused" ? " audit-refused" : "");
+        row.textContent = describeAttempt(attempt);
+        row.title = (attempt.operation || "attempt")
+          + (entry.timestamp ? " · " + entry.timestamp : "");
+      }
       ticker.appendChild(row);
     });
   }
@@ -637,22 +878,337 @@ if (typeof FiveeRenderer === "undefined") {
       }
     }
     if (kept.length === features.length) { return doc; }
-    var copy = {};
+    var copy = Object.create(null);
     Object.keys(doc).forEach(function (key) { copy[key] = doc[key]; });
     copy.features = kept;
     return copy;
   }
 
+  function compareCodePoints(left, right) {
+    var leftPoints = Array.from(left);
+    var rightPoints = Array.from(right);
+    var length = Math.min(leftPoints.length, rightPoints.length);
+    for (var i = 0; i < length; i++) {
+      var difference = leftPoints[i].codePointAt(0) - rightPoints[i].codePointAt(0);
+      if (difference) { return difference; }
+    }
+    return leftPoints.length - rightPoints.length;
+  }
+
+  function canonicalJson(value) {
+    if (value === null || typeof value !== "object") { return JSON.stringify(value); }
+    if (Array.isArray(value)) {
+      return "[" + value.map(canonicalJson).join(",") + "]";
+    }
+    return "{" + Object.keys(value).sort(compareCodePoints).map(function (key) {
+      return JSON.stringify(key) + ":" + canonicalJson(value[key]);
+    }).join(",") + "}";
+  }
+
+  function utf8Bytes(value) {
+    var bytes = [];
+    for (var i = 0; i < value.length; i++) {
+      var point = value.codePointAt(i);
+      if (point > 0xffff) { i += 1; }
+      if (point < 0x80) {
+        bytes.push(point);
+      } else if (point < 0x800) {
+        bytes.push(0xc0 | (point >>> 6), 0x80 | (point & 0x3f));
+      } else if (point < 0x10000) {
+        bytes.push(0xe0 | (point >>> 12), 0x80 | ((point >>> 6) & 0x3f),
+          0x80 | (point & 0x3f));
+      } else {
+        bytes.push(0xf0 | (point >>> 18), 0x80 | ((point >>> 12) & 0x3f),
+          0x80 | ((point >>> 6) & 0x3f), 0x80 | (point & 0x3f));
+      }
+    }
+    return bytes;
+  }
+
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+
+  function sha256Hex(value) {
+    var constants = [
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+      0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+      0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+      0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+      0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+      0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+      0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+      0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+      0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ];
+    var hash = [
+      0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+      0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    ];
+    var bytes = utf8Bytes(value);
+    var bitLength = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) { bytes.push(0); }
+    var high = Math.floor(bitLength / 0x100000000);
+    var low = bitLength >>> 0;
+    for (var shift = 24; shift >= 0; shift -= 8) { bytes.push((high >>> shift) & 0xff); }
+    for (var shift = 24; shift >= 0; shift -= 8) { bytes.push((low >>> shift) & 0xff); }
+
+    for (var offset = 0; offset < bytes.length; offset += 64) {
+      var words = new Array(64);
+      for (var i = 0; i < 16; i++) {
+        var start = offset + i * 4;
+        words[i] = ((bytes[start] << 24) | (bytes[start + 1] << 16)
+          | (bytes[start + 2] << 8) | bytes[start + 3]) >>> 0;
+      }
+      for (var i = 16; i < 64; i++) {
+        var x = words[i - 15];
+        var y = words[i - 2];
+        var sigma0 = rightRotate(x, 7) ^ rightRotate(x, 18) ^ (x >>> 3);
+        var sigma1 = rightRotate(y, 17) ^ rightRotate(y, 19) ^ (y >>> 10);
+        words[i] = (words[i - 16] + sigma0 + words[i - 7] + sigma1) >>> 0;
+      }
+      var a = hash[0], b = hash[1], c = hash[2], d = hash[3];
+      var e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+      for (var i = 0; i < 64; i++) {
+        var big1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
+        var choose = (e & f) ^ ((~e) & g);
+        var temp1 = (h + big1 + choose + constants[i] + words[i]) >>> 0;
+        var big0 = rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22);
+        var majority = (a & b) ^ (a & c) ^ (b & c);
+        var temp2 = (big0 + majority) >>> 0;
+        h = g; g = f; f = e; e = (d + temp1) >>> 0;
+        d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+      }
+      hash[0] = (hash[0] + a) >>> 0; hash[1] = (hash[1] + b) >>> 0;
+      hash[2] = (hash[2] + c) >>> 0; hash[3] = (hash[3] + d) >>> 0;
+      hash[4] = (hash[4] + e) >>> 0; hash[5] = (hash[5] + f) >>> 0;
+      hash[6] = (hash[6] + g) >>> 0; hash[7] = (hash[7] + h) >>> 0;
+    }
+    return hash.map(function (word) {
+      return ("00000000" + word.toString(16)).slice(-8);
+    }).join("");
+  }
+
+  function verifyIntegrity(payload, errors) {
+    var integrity = payload.integrity;
+    ["map", "initial", "events", "actions", "checkpoints", "latest_state"]
+      .forEach(function (key) {
+        if (integrity[key] !== sha256Hex(canonicalJson(payload[key]))) {
+          errors.push("integrity." + key + " does not match " + key);
+        }
+      });
+    var content = Object.create(null);
+    Object.keys(payload.content).forEach(function (key) {
+      if (key !== "sha256") { content[key] = payload.content[key]; }
+    });
+    var contentHash = sha256Hex(canonicalJson(content));
+    if (payload.content.sha256 !== contentHash || integrity.content !== contentHash) {
+      errors.push("integrity.content does not match content");
+    }
+    payload.checkpoints.forEach(function (checkpoint, index) {
+      if (checkpoint.state_hash !== sha256Hex(canonicalJson(checkpoint.state))) {
+        errors.push("checkpoints." + index + ".state_hash does not match state");
+      }
+    });
+    if (payload.checkpoints.length) {
+      var finalState = payload.checkpoints[payload.checkpoints.length - 1].state;
+      if (canonicalJson(finalState) !== canonicalJson(payload.latest_state)) {
+        errors.push("latest_state does not match the final checkpoint");
+      }
+    }
+  }
+
+  function isJsonNumber(value) {
+    return typeof value === "number" && Number.isFinite(value);
+  }
+
+  function validateCombatants(value, path, errors) {
+    if (!Array.isArray(value)) { errors.push(path + " must be an array"); return; }
+    value.forEach(function (creature, index) {
+      var itemPath = path + "." + index;
+      if (!creature || typeof creature !== "object" || Array.isArray(creature)) {
+        errors.push(itemPath + " must be an object");
+        return;
+      }
+      if (typeof creature.name !== "string" || !creature.name.trim()) {
+        errors.push(itemPath + ".name must be a non-empty string");
+      }
+      if (!Array.isArray(creature.position) || creature.position.length !== 2
+        || !creature.position.every(isJsonNumber)) {
+        errors.push(itemPath + ".position must be two numeric coordinates");
+      }
+      ["hp", "max_hp"].forEach(function (key) {
+        if (!isJsonNumber(creature[key])) { errors.push(itemPath + "." + key + " must be numeric"); }
+      });
+    });
+  }
+
+  function validateState(value, path, errors) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      errors.push(path + " must be an object");
+      return;
+    }
+    if (!Number.isInteger(value.round)) { errors.push(path + ".round must be an integer"); }
+    if (typeof value.turn !== "string") { errors.push(path + ".turn must be a string"); }
+    validateCombatants(value.combatants, path + ".combatants", errors);
+  }
+
+  function validateMap(value, errors) {
+    if (value === null || value === undefined) { return; }
+    if (typeof value !== "object" || Array.isArray(value)) {
+      errors.push("map must be an object or null");
+      return;
+    }
+    var grid = value.grid;
+    if (!grid || typeof grid !== "object" || Array.isArray(grid)) {
+      errors.push("map.grid must be an object");
+    } else {
+      ["width", "height", "cell_feet"].forEach(function (key) {
+        if (!Number.isInteger(grid[key]) || grid[key] <= 0) {
+          errors.push("map.grid." + key + " must be a positive integer");
+        }
+      });
+    }
+    if (!Array.isArray(value.tiles) || !value.tiles.every(function (row) {
+      return typeof row === "string";
+    })) { errors.push("map.tiles must be an array of strings"); }
+    if (!Array.isArray(value.features) || !value.features.every(function (feature) {
+      return feature && typeof feature === "object" && !Array.isArray(feature);
+    })) { errors.push("map.features must be an array of objects"); }
+    var levels = value.levels === undefined ? [] : value.levels;
+    if (!Array.isArray(levels)) {
+      errors.push("map.levels must be an array");
+      return;
+    }
+    levels.forEach(function (level, index) {
+      var levelPath = "map.levels." + index;
+      if (!level || typeof level !== "object" || Array.isArray(level)) {
+        errors.push(levelPath + " must be an object");
+        return;
+      }
+      if (!Number.isInteger(level.index)) { errors.push(levelPath + ".index must be an integer"); }
+      if (!Array.isArray(level.tiles) || !level.tiles.every(function (row) {
+        return typeof row === "string";
+      })) { errors.push(levelPath + ".tiles must be an array of strings"); }
+    });
+  }
+
+  function validateBundle(payload) {
+    var errors = [];
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return ["$ must be an object"];
+    }
+    if (payload.format !== "fivee-sim-replay") {
+      errors.push("format must be fivee-sim-replay");
+    }
+    var version = payload.format_version;
+    if (version !== 1 && version !== 2) { errors.push("format_version must be 1 or 2"); }
+    if (!Number.isInteger(payload.seed)) {
+      errors.push("seed must be an integer");
+    } else if (!Number.isSafeInteger(payload.seed)) {
+      errors.push("seed must be a JavaScript safe integer");
+    }
+    if (!payload.initial || typeof payload.initial !== "object") {
+      errors.push("initial must be an object");
+    } else {
+      validateCombatants(payload.initial.creatures, "initial.creatures", errors);
+      if (!Array.isArray(payload.initial.map_open_features)) {
+        errors.push("initial.map_open_features must be an array");
+      } else if (!payload.initial.map_open_features.every(function (item) {
+        return typeof item === "string";
+      })) {
+        errors.push("initial.map_open_features must contain only strings");
+      }
+    }
+    validateMap(payload.map, errors);
+    if (!Array.isArray(payload.events)) {
+      errors.push("events must be an array");
+    } else {
+      payload.events.forEach(function (event, index) {
+        if (!event || typeof event !== "object" || Array.isArray(event)) {
+          errors.push("events." + index + " must be an object");
+        } else if (typeof event.kind !== "string" || !event.kind.trim()) {
+          errors.push("events." + index + ".kind must be a non-empty string");
+        }
+      });
+    }
+    if (version === 2) {
+      if (!payload.encounter || typeof payload.encounter !== "object") {
+        errors.push("encounter must be an object");
+      } else {
+        if (typeof payload.encounter.id !== "string" || !payload.encounter.id.trim()) {
+          errors.push("encounter.id must be a non-empty string");
+        }
+        if (!Number.isSafeInteger(payload.encounter.seed)) {
+          errors.push("encounter.seed must be a JavaScript safe integer");
+        } else if (payload.encounter.seed !== payload.seed) {
+          errors.push("encounter.seed must equal seed");
+        }
+      }
+      ["actions", "checkpoints", "attempts"].forEach(function (key) {
+        if (!Array.isArray(payload[key])) {
+          errors.push(key + " must be an array");
+        } else if (key !== "checkpoints") {
+          payload[key].forEach(function (record, index) {
+            if (!record || typeof record !== "object" || Array.isArray(record)) {
+              errors.push(key + "." + index + " must be an object");
+            }
+          });
+        }
+      });
+      if (payload.initial && typeof payload.initial === "object") {
+        validateCombatants(payload.initial.combatants, "initial.combatants", errors);
+        validateState(payload.initial.state, "initial.state", errors);
+      }
+      validateState(payload.latest_state, "latest_state", errors);
+      if (!payload.content || typeof payload.content !== "object") {
+        errors.push("content must be an object");
+      }
+      if (!payload.integrity || typeof payload.integrity !== "object") {
+        errors.push("integrity must be an object");
+      } else if (payload.integrity.algorithm !== "sha256") {
+        errors.push("integrity.algorithm must be sha256");
+      }
+      if (Array.isArray(payload.events)) {
+        payload.events.forEach(function (event, index) {
+          if (event && typeof event === "object") {
+            if (event.seq !== index) { errors.push("events." + index + ".seq must be " + index); }
+            if (typeof event.timestamp !== "string" || !event.timestamp.trim()) {
+              errors.push("events." + index + ".timestamp must be a non-empty string");
+            }
+          }
+        });
+      }
+      if (Array.isArray(payload.checkpoints)) {
+        payload.checkpoints.forEach(function (checkpoint, index) {
+          if (!checkpoint || typeof checkpoint !== "object" || Array.isArray(checkpoint)) {
+            errors.push("checkpoints." + index + " must be an object");
+          } else {
+            validateState(checkpoint.state, "checkpoints." + index + ".state", errors);
+          }
+        });
+      }
+      if (!errors.length) { verifyIntegrity(payload, errors); }
+    }
+    return errors;
+  }
+
   function loadBundle(payload, sourceName) {
-    if (!payload || payload.format !== "fivee-sim-replay") {
-      window.alert((sourceName || "that") + " is not a fivee-sim-replay bundle");
+    var diagnostics = validateBundle(payload);
+    if (diagnostics.length) {
+      window.alert((sourceName || "that") + " is not a valid fivee-sim-replay bundle:\n"
+        + diagnostics.join("\n"));
       return;
     }
     stopPlaying();
     bundle = payload;
     offset = [0, 0];
     cellFeet = (payload.map && payload.map.grid && payload.map.grid.cell_feet) || 5;
-    mapDoc = displayDoc(payload.map ? payload.map : neutralPlane());
+    configureLevels();
+    mapDoc = displayDoc(payload.map ? planeDocument(activeLevel) : neutralPlane());
     byId("title").textContent = payload.name || "replay";
     byId("seed").textContent = "seed " + payload.seed;
     byId("empty-note").hidden = true;
@@ -670,6 +1226,12 @@ if (typeof FiveeRenderer === "undefined") {
   byId("file-input").addEventListener("change", function (event) {
     if (event.target.files.length) { openFileObject(event.target.files[0]); }
     event.target.value = "";
+  });
+  byId("level-select").addEventListener("change", function () {
+    selectLevel(Number(byId("level-select").value));
+  });
+  byId("follow-level").addEventListener("change", function () {
+    followActionLevel();
   });
   function openFileObject(file) {
     file.text().then(function (text) {

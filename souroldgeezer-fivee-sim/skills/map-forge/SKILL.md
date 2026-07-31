@@ -56,12 +56,19 @@ session or file — is currently the truth.
    `encounter_state["map_source"].stale` turning true means the live map has
    moved on — re-create the encounter when the new layout should apply.
    Running the fight is the encounter-sim skill's ground.
-8. **After the fight, `replay_export`.** It bundles the seed, the captured
-   map, the starting roster, and the whole event log. For a file to hand the
-   user, call it with `embed` true: the result is a single self-contained
-   HTML page that plays the fight back in any browser — no server, no
-   install. Report the written path; small plain bundles come back inline
-   instead.
+8. **After the fight, `encounter_finalize` or `replay_export`.** Finalization
+   writes replay v2 and retains the encounter's hash-chained journal. A direct
+   export defaults to the same v2 contract: the seed, normalized roster,
+   captured content, the captured map (including inline maps and every
+   storey), timestamped events and attempts, authoritative state checkpoints,
+   and integrity hashes. For a file to hand the user, call `replay_export` with
+   `embed` true: the result is a single self-contained HTML page that plays the
+   fight back in any browser — no server, no install. Report the written path
+   and SHA-256; small plain bundles come back inline instead. Use
+   `replay_validate` before accepting a bundle from elsewhere; the viewer also
+   checks the nested schema and hashes before rendering. Integrity hashes detect
+   alteration but do not authenticate the file's author. Request
+   `format_version=1` only for a legacy consumer.
 9. **Hand a map to another virtual tabletop with `uvtt_export`.** It writes
    the loaded map as a Universal VTT JSON file (default
    `<maps root>/uvtt/<slug>.uvtt`, replaced on re-export) carrying wall

@@ -17,33 +17,18 @@ from typing import Any
 
 import pytest
 
+from fivee_sim import __version__
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import replay as replay_service
 
-FIXTURE = "Authored for the test suite; 5E-compatible original content"
+from .conftest import (
+    REPLAY_GOBLIN,
+    REPLAY_HERO,
+    advance_encounter_to,
+    mapless_fight,
+)
 
-HERO: dict[str, Any] = {
-    "name": "Thora",
-    "team": "party",
-    "ac": 16,
-    "max_hp": 30,
-    "position": [5, 5],
-    "attacks": [
-        {
-            "name": "Longsword",
-            "attack_bonus": 5,
-            "damage": "1d8+3",
-            "damage_type": "slashing",
-            "kind": "melee",
-        }
-    ],
-}
-GOBLIN: dict[str, Any] = {
-    "monster": "Goblin Warrior",
-    "label": "Goblin",
-    "team": "monsters",
-    "position": [15, 15],
-}
+FIXTURE = "Authored for the test suite; 5E-compatible original content"
 
 
 def chamber() -> dict[str, Any]:
@@ -81,21 +66,18 @@ def chamber() -> dict[str, Any]:
     }
 
 
-def mapless_fight(seed: int = 41) -> str:
-    created = api.encounter_create([dict(HERO), dict(GOBLIN)], seed=seed)
-    return str(created["encounter_id"])
-
-
 def mapped_fight(seed: int = 43) -> tuple[str, str]:
     map_id = str(api.map_load(document=chamber())["map_id"])
-    created = api.encounter_create([dict(HERO), dict(GOBLIN)], seed=seed, map_id=map_id)
+    created = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed, map_id=map_id
+    )
     return str(created["encounter_id"]), map_id
 
 
 class TestBundleSchema:
     def test_the_bundle_carries_exactly_the_viewer_contract(self) -> None:
         encounter_id = mapless_fight()
-        result = api.replay_export(encounter_id)
+        result = api.replay_export(encounter_id, format_version=1)
         bundle = result["bundle"]
         assert set(bundle) == {
             "format", "format_version", "name", "seed", "map", "initial", "events",
@@ -115,7 +97,7 @@ class TestBundleSchema:
         state = api.encounter_state(encounter_id)
         mover = str(state["turn"])
         api.encounter_act(encounter_id, "move", to_position=[30, 25])
-        bundle = api.replay_export(encounter_id)["bundle"]
+        bundle = api.replay_export(encounter_id, format_version=1)["bundle"]
         starts = {c["name"]: c["position"] for c in bundle["initial"]["creatures"]}
         assert starts[mover] in ([5, 5], [15, 15])
         moves = [e for e in bundle["events"] if e["kind"] == "move"]
@@ -126,7 +108,7 @@ class TestBundleSchema:
     def test_the_events_are_the_whole_log_so_far(self) -> None:
         encounter_id = mapless_fight()
         api.encounter_advance(encounter_id)
-        bundle = api.replay_export(encounter_id)["bundle"]
+        bundle = api.replay_export(encounter_id, format_version=1)["bundle"]
         log = api.encounter_log(encounter_id, include_actions=False)
         assert len(bundle["events"]) == log["total_events"]
         assert bundle["events"][0]["kind"] == "round"
@@ -134,6 +116,155 @@ class TestBundleSchema:
     def test_an_unknown_encounter_is_refused(self) -> None:
         with pytest.raises(api.ToolError, match="unknown encounter"):
             api.replay_export("enc-never")
+
+
+class TestBundleV2:
+    def test_v2_is_the_default_export_contract(self) -> None:
+        assert api.replay_export(mapless_fight())["bundle"]["format_version"] == 2
+
+    def test_v2_carries_the_reconstruction_and_state_contract(self) -> None:
+        encounter_id = mapless_fight(seed=67)
+
+        bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        assert bundle["format_version"] == 2
+        assert bundle["engine_version"] == __version__
+        assert bundle["encounter"] == {
+            "id": encounter_id,
+            "seed": 67,
+            "movement_rule": "5-5-5",
+        }
+        assert bundle["initial"]["state"]["order"] == [
+            creature["name"] for creature in bundle["initial"]["creatures"]
+        ]
+        assert bundle["latest_state"] == api.encounter_state(encounter_id)
+        assert bundle["actions"] == []
+
+    def test_v2_captures_an_inline_map_instead_of_using_the_neutral_plane(self) -> None:
+        inline = {
+            "name": "inline room",
+            "width": 6,
+            "height": 5,
+            "rows": ["######", "#....#", "#....#", "#....#", "######"],
+            "legend": {"#": "wall", ".": "normal"},
+            "features": [
+                {"name": "door-east", "square": [5, 2], "initially_open": True}
+            ],
+        }
+        created = api.encounter_create(
+            [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=71, map=inline
+        )
+
+        bundle = api.replay_export(
+            str(created["encounter_id"]), format_version=2
+        )["bundle"]
+
+        assert bundle["map"]["format"] == "fivee-sim-map"
+        assert bundle["map"]["name"] == "inline room"
+        assert bundle["map"]["legend"][bundle["map"]["tiles"][0][0]] == "wall"
+        assert bundle["map"]["legend"][bundle["map"]["tiles"][1][1]] == "normal"
+        assert bundle["initial"]["map_open_features"] == ["door-east"]
+
+    def test_v2_records_normalized_inputs_actions_checkpoints_and_integrity(self) -> None:
+        encounter_id = mapless_fight(seed=73)
+        actor = str(api.encounter_state(encounter_id)["turn"])
+
+        api.encounter_act(encounter_id, "move", to_position=[25, 20])
+        bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        normalized = {entry["name"]: entry for entry in bundle["initial"]["combatants"]}
+        assert normalized["Thora"]["speed"] == 30
+        assert normalized["Thora"]["attacks"][0]["damage"] == "1d8+3"
+        assert normalized["Goblin"]["provenance"]
+        assert bundle["actions"][0]["actor"] == actor
+        assert bundle["actions"][0]["action"]["kind"] == "move"
+        assert len(bundle["checkpoints"]) == 2
+        assert bundle["checkpoints"][0]["event_count"] == 2
+        assert bundle["checkpoints"][-1]["state"] == bundle["latest_state"]
+        assert all(event["timestamp"] for event in bundle["events"])
+        assert bundle["content"]["sha256"]
+        assert bundle["integrity"]["algorithm"] == "sha256"
+        assert replay_service.validate_replay(bundle) == []
+
+    def test_unknown_replay_versions_are_refused(self) -> None:
+        with pytest.raises(api.ToolError, match="format_version must be 1 or 2"):
+            api.replay_export(mapless_fight(), format_version=99)
+
+    def test_v2_state_checkpoints_include_transient_turn_and_effect_state(self) -> None:
+        encounter_id = mapless_fight(seed=89)
+
+        state = api.replay_export(encounter_id, format_version=2)["bundle"][
+            "initial"
+        ]["state"]
+
+        assert state["movement_rule"] == "5-5-5"
+        assert state["ongoing_effects"] == []
+        for combatant in state["combatants"]:
+            assert set(("reaction_available", "disengaged")) <= set(combatant)
+
+    def test_v2_preserves_storeys_and_cross_storey_actions(self) -> None:
+        document = {
+            "format": "fivee-sim-map",
+            "format_version": 1,
+            "name": "two floors",
+            "grid": {"width": 5, "height": 4, "cell_feet": 5},
+            "legend": {".": "floor"},
+            "tiles": [".....", ".....", ".....", "....."],
+            "features": [
+                {"id": "stair-foot", "kind": "stairs_up", "at": [0, 3], "to_level": 1}
+            ],
+            "levels": [
+                {
+                    "index": 1,
+                    "name": "gallery",
+                    "tiles": [".....", ".....", ".....", "....."],
+                    "elevation": {"default": 10, "squares": []},
+                    "features": [
+                        {
+                            "id": "stair-head",
+                            "kind": "stairs_down",
+                            "at": [0, 3],
+                            "to_level": 0,
+                        }
+                    ],
+                }
+            ],
+            "provenance": {
+                "generator": "hand",
+                "seed": 1,
+                "params": {},
+                "edited": False,
+                "source": FIXTURE,
+            },
+        }
+        map_id = str(api.map_load(document=document)["map_id"])
+        created = api.encounter_create(
+            [
+                dict(REPLAY_HERO, position=[0, 15]),
+                dict(REPLAY_GOBLIN, position=[20, 15]),
+            ],
+            seed=97,
+            map_id=map_id,
+        )
+        encounter_id = str(created["encounter_id"])
+        advance_encounter_to(encounter_id, "Thora")
+        api.encounter_act(
+            encounter_id, "move", to_position=[0, 15], to_level=1
+        )
+
+        bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        assert bundle["map"]["levels"][0]["index"] == 1
+        move = next(event for event in bundle["events"] if event["kind"] == "move")
+        assert (move["data"]["from_level"], move["data"]["to_level"]) == (0, 1)
+        assert "level 0" in move["detail"]
+        assert "level 1" in move["detail"]
+        thora = next(
+            creature
+            for creature in bundle["latest_state"]["combatants"]
+            if creature["name"] == "Thora"
+        )
+        assert thora["level"] == 1
 
 
 class TestSizeGate:
@@ -166,6 +297,24 @@ class TestSizeGate:
         assert result["path"] == str(target)
         assert "sha256" in result
         assert json.loads(target.read_text(encoding="utf-8"))["name"] == result["encounter_id"]
+
+    def test_every_export_reports_the_hash_of_the_exact_written_bytes(
+        self, tmp_path: Path
+    ) -> None:
+        encounter_id = mapless_fight()
+        json_result = api.replay_export(
+            encounter_id, path=str(tmp_path / "fight.json"), format_version=2
+        )
+        html_result = api.replay_export(
+            encounter_id, path=str(tmp_path / "fight.html"), embed=True, format_version=2
+        )
+
+        assert json_result["sha256"] == replay_service.sha256_bytes(
+            (tmp_path / "fight.json").read_bytes()
+        )
+        assert html_result["sha256"] == replay_service.sha256_bytes(
+            (tmp_path / "fight.html").read_bytes()
+        )
 
 
 class TestEmbed:
@@ -222,7 +371,7 @@ class TestEmbed:
 class TestMapCapture:
     def test_a_mapped_fight_carries_the_document_it_was_created_on(self) -> None:
         encounter_id, map_id = mapped_fight()
-        bundle = api.replay_export(encounter_id)["bundle"]
+        bundle = api.replay_export(encounter_id, format_version=1)["bundle"]
         assert bundle["name"] == "replay chamber"
         assert bundle["map"]["name"] == "replay chamber"
         assert bundle["map"]["tiles"] == chamber()["tiles"]
@@ -236,14 +385,14 @@ class TestMapCapture:
             {"op": "paint", "cells": [[1, 1], [2, 1]], "terrain": "wall"},
             {"op": "set_name", "name": "renovated chamber"},
         ])
-        bundle = api.replay_export(encounter_id)["bundle"]
+        bundle = api.replay_export(encounter_id, format_version=1)["bundle"]
         assert bundle["map"]["name"] == "replay chamber"
         assert bundle["map"]["tiles"] == chamber()["tiles"]
         assert bundle["map"]["provenance"]["edited"] is False
 
     def test_an_inline_map_fight_replays_on_the_neutral_plane(self) -> None:
         created = api.encounter_create(
-            [dict(HERO), dict(GOBLIN)],
+            [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)],
             seed=61,
             map={
                 "width": 6, "height": 5,
@@ -251,10 +400,12 @@ class TestMapCapture:
                 "legend": {".": "normal"},
             },
         )
-        bundle = api.replay_export(str(created["encounter_id"]))["bundle"]
+        bundle = api.replay_export(
+            str(created["encounter_id"]), format_version=1
+        )["bundle"]
         assert bundle["map"] is None
 
     def test_a_mapless_fight_carries_no_map(self) -> None:
-        bundle = api.replay_export(mapless_fight())["bundle"]
+        bundle = api.replay_export(mapless_fight(), format_version=1)["bundle"]
         assert bundle["map"] is None
         assert bundle["initial"]["map_open_features"] == []
