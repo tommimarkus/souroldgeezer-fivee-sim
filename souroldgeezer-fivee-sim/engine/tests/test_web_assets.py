@@ -12,15 +12,26 @@ and ``replay_export(embed=True)`` replaces the embedded-data slot, so each
 must appear exactly once, exactly as written.
 
 **What these tests do not do, stated because it is invisible from a green run.**
-Every assertion here reads the assets as *text*. Nothing executes
-``renderer.js``, opens a page, or draws a canvas, so no test in this repo covers
-the behaviour of the three files a user actually looks at: a renderer that drew
-nothing, a token injected into the wrong element, or a viewer unable to parse
-its own embedded bundle would all ship green. That is a deliberate boundary —
-these are localhost, single-user tools, and driving them would put a browser
-toolchain into a Python repository — but it is a boundary, not coverage. If the
-editor grows past a convenience, this file is where the argument for a real
-harness starts.
+Every assertion here reads the assets as *text*. Nothing in this file executes
+``renderer.js``, opens a page, or draws a canvas, so nothing here would notice a
+renderer that drew nothing, a token injected into the wrong element, or a viewer
+unable to parse its own embedded bundle.
+
+This file used to end by saying that if the editor grew past a convenience, this
+was where the argument for a real harness started. It grew, the argument was
+made, and it was answered: ``scripts/check-editor-behaviour.mjs``, at the
+repository root, drives the same three shipped files under ``node`` — each
+page's own inline script against a stub DOM — and asserts what a page *decided*.
+It exists because three real ``editor.html`` defects shipped green past this
+file, one of them a resize that wrote a half-resized document to disk. It stays
+outside pytest so that no browser toolchain enters a Python repository.
+
+So the division is **text contracts here, behaviour there**, and a new assertion
+belongs on whichever side can actually see it: a substring search cannot tell
+you whether the tile loop consulted an override, and a stub DOM cannot tell you
+whether an injection slot appears exactly once. Neither half is a browser —
+there is no layout, no CSS, no pixels — but "nothing executes these files" is no
+longer true of the repository, only of this file.
 """
 
 from __future__ import annotations
