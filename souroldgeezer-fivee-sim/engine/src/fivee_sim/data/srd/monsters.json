@@ -69,12 +69,13 @@
           "damage": "1d6+2",
           "damage_type": "piercing",
           "kind": "melee",
-          "reach": 5
+          "reach": 5,
+          "on_hit_condition": "prone"
         }
       ],
       "provenance": "SRD 5.2",
       "unmodelled": [
-        "Bite knocks a Medium or smaller target Prone on a failed Strength save"
+        "Bite's Prone rider ignores the printed size gate: the SRD applies it only to a Medium or smaller target, and this engine does not model creature size"
       ]
     },
     {
