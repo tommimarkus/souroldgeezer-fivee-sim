@@ -138,12 +138,53 @@ class Editor:
 def editor(tmp_path: Path) -> Iterator[Editor]:
     log = io.StringIO()
     server = EditorServer(maps_dir=tmp_path / "maps", terrain=TERRAIN, log=log)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    # A short poll interval, because shutdown() blocks until the serve loop next
+    # wakes: at the stdlib default this fixture spent half a second per test
+    # dying, which was most of the file's runtime and most of the suite's.
+    thread = threading.Thread(
+        target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
+    )
     thread.start()
     yield Editor(server=server, thread=thread, maps_dir=tmp_path / "maps", log=log)
     server.shutdown()
     server.close()
     thread.join(timeout=5)
+
+
+def test_the_server_serves_and_stops_under_a_short_poll_interval(tmp_path: Path) -> None:
+    """``serve_forever`` takes the interval its shutdown latency is bound by.
+
+    ``ThreadingHTTPServer`` polls at half a second by default and ``shutdown()``
+    blocks until the loop next wakes, so every test using the ``editor`` fixture
+    spent that half second dying — 21 of this file's 22 seconds. The parameter
+    exists for the fixture above; ``editor/cli.py`` keeps the stdlib default,
+    where a shutdown happens once and its latency is nobody's problem.
+    """
+    log = io.StringIO()
+    server = EditorServer(maps_dir=tmp_path / "maps", terrain=TERRAIN, log=log)
+    thread = threading.Thread(
+        target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
+    )
+    thread.start()
+    try:
+        connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=10)
+        try:
+            connection.request("GET", "/api/ping", headers={TOKEN_HEADER: server.token})
+            response = connection.getresponse()
+            assert response.status == 200
+            assert json.loads(response.read())["ok"] is True
+        finally:
+            connection.close()
+    finally:
+        # Only a running loop can be shut down: BaseServer.shutdown() waits on an
+        # event that serve_forever sets on its way out, so calling it after the
+        # thread has died blocks for ever. Guarding it keeps a regression here a
+        # failure rather than a hang.
+        if thread.is_alive():
+            server.shutdown()
+        server.close()
+        thread.join(timeout=5)
+    assert not thread.is_alive(), "a short poll interval must still stop the server"
 
 
 def assert_problem(response: Response, status: int, fragment: str = "") -> dict[str, Any]:

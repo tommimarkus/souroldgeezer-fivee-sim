@@ -159,9 +159,16 @@ class EditorServer:
     def url(self) -> str:
         return f"http://127.0.0.1:{self.port}/"
 
-    def serve_forever(self) -> None:
-        """Serve until :meth:`shutdown`. Blocks; run it in a thread to embed."""
-        self._httpd.serve_forever()
+    def serve_forever(self, poll_interval: float = 0.5) -> None:
+        """Serve until :meth:`shutdown`. Blocks; run it in a thread to embed.
+
+        ``poll_interval`` is how often the loop checks whether it has been asked
+        to stop, and so how long :meth:`shutdown` can block waiting for it. The
+        stdlib default of half a second is right for a launch that shuts down
+        once; a test harness starting and stopping a server per case wants it
+        far smaller.
+        """
+        self._httpd.serve_forever(poll_interval)
 
     def shutdown(self) -> None:
         """Stop :meth:`serve_forever` gracefully. Safe to call more than once."""
