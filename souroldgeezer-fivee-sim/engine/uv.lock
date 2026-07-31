@@ -256,7 +256,7 @@ wheels = [
 
 [[package]]
 name = "fivee-sim"
-version = "2026.7.22"
+version = "2026.7.23"
 source = { editable = "." }
 dependencies = [
     { name = "mcp" },
