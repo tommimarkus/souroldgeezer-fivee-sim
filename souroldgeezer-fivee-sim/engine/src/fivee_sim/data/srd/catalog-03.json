@@ -17,8 +17,1334 @@
         3,
         4
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Index of Stat Blocks",
+        "entry_count": 330,
+        "ordering": "alphabetical by stat block name",
+        "entries": [
+          {
+            "name": "Aboleth",
+            "page": 258
+          },
+          {
+            "name": "Adult Black Dragon",
+            "page": 264
+          },
+          {
+            "name": "Adult Blue Dragon",
+            "page": 266
+          },
+          {
+            "name": "Adult Brass Dragon",
+            "page": 268
+          },
+          {
+            "name": "Adult Bronze Dragon",
+            "page": 270
+          },
+          {
+            "name": "Adult Copper Dragon",
+            "page": 276
+          },
+          {
+            "name": "Adult Gold Dragon",
+            "page": 291
+          },
+          {
+            "name": "Adult Green Dragon",
+            "page": 294
+          },
+          {
+            "name": "Adult Red Dragon",
+            "page": 318
+          },
+          {
+            "name": "Adult Silver Dragon",
+            "page": 324
+          },
+          {
+            "name": "Adult White Dragon",
+            "page": 340
+          },
+          {
+            "name": "Air Elemental",
+            "page": 258
+          },
+          {
+            "name": "Allosaurus",
+            "page": 344
+          },
+          {
+            "name": "Ancient Black Dragon",
+            "page": 265
+          },
+          {
+            "name": "Ancient Blue Dragon",
+            "page": 267
+          },
+          {
+            "name": "Ancient Brass Dragon",
+            "page": 269
+          },
+          {
+            "name": "Ancient Bronze Dragon",
+            "page": 271
+          },
+          {
+            "name": "Ancient Copper Dragon",
+            "page": 277
+          },
+          {
+            "name": "Ancient Gold Dragon",
+            "page": 292
+          },
+          {
+            "name": "Ancient Green Dragon",
+            "page": 294
+          },
+          {
+            "name": "Ancient Red Dragon",
+            "page": 319
+          },
+          {
+            "name": "Ancient Silver Dragon",
+            "page": 325
+          },
+          {
+            "name": "Ancient White Dragon",
+            "page": 341
+          },
+          {
+            "name": "Animated Armor",
+            "page": 259
+          },
+          {
+            "name": "Animated Flying Sword",
+            "page": 259
+          },
+          {
+            "name": "Animated Rug of Smothering",
+            "page": 259
+          },
+          {
+            "name": "Ankheg",
+            "page": 259
+          },
+          {
+            "name": "Ankylosaurus",
+            "page": 344
+          },
+          {
+            "name": "Ape",
+            "page": 344
+          },
+          {
+            "name": "Archelon",
+            "page": 344
+          },
+          {
+            "name": "Archmage",
+            "page": 305
+          },
+          {
+            "name": "Assassin",
+            "page": 260
+          },
+          {
+            "name": "Awakened Shrub",
+            "page": 260
+          },
+          {
+            "name": "Awakened Tree",
+            "page": 260
+          },
+          {
+            "name": "Axe Beak",
+            "page": 260
+          },
+          {
+            "name": "Azer Sentinel",
+            "page": 261
+          },
+          {
+            "name": "Baboon",
+            "page": 345
+          },
+          {
+            "name": "Badger",
+            "page": 345
+          },
+          {
+            "name": "Balor",
+            "page": 261
+          },
+          {
+            "name": "Bandit",
+            "page": 261
+          },
+          {
+            "name": "Bandit Captain",
+            "page": 261
+          },
+          {
+            "name": "Barbed Devil",
+            "page": 262
+          },
+          {
+            "name": "Basilisk",
+            "page": 262
+          },
+          {
+            "name": "Bat",
+            "page": 345
+          },
+          {
+            "name": "Bearded Devil",
+            "page": 262
+          },
+          {
+            "name": "Behir",
+            "page": 263
+          },
+          {
+            "name": "Berserker",
+            "page": 263
+          },
+          {
+            "name": "Black Bear",
+            "page": 345
+          },
+          {
+            "name": "Black Dragon Wyrmling",
+            "page": 263
+          },
+          {
+            "name": "Black Pudding",
+            "page": 265
+          },
+          {
+            "name": "Blink Dog",
+            "page": 266
+          },
+          {
+            "name": "Blood Hawk",
+            "page": 345
+          },
+          {
+            "name": "Blue Dragon Wyrmling",
+            "page": 266
+          },
+          {
+            "name": "Boar",
+            "page": 346
+          },
+          {
+            "name": "Bone Devil",
+            "page": 267
+          },
+          {
+            "name": "Brass Dragon Wyrmling",
+            "page": 268
+          },
+          {
+            "name": "Bronze Dragon Wyrmling",
+            "page": 269
+          },
+          {
+            "name": "Brown Bear",
+            "page": 346
+          },
+          {
+            "name": "Bugbear Stalker",
+            "page": 271
+          },
+          {
+            "name": "Bugbear Warrior",
+            "page": 272
+          },
+          {
+            "name": "Bulette",
+            "page": 272
+          },
+          {
+            "name": "Camel",
+            "page": 346
+          },
+          {
+            "name": "Cat",
+            "page": 346
+          },
+          {
+            "name": "Centaur Trooper",
+            "page": 272
+          },
+          {
+            "name": "Chain Devil",
+            "page": 272
+          },
+          {
+            "name": "Chimera",
+            "page": 273
+          },
+          {
+            "name": "Chuul",
+            "page": 273
+          },
+          {
+            "name": "Clay Golem",
+            "page": 274
+          },
+          {
+            "name": "Cloaker",
+            "page": 274
+          },
+          {
+            "name": "Cloud Giant",
+            "page": 275
+          },
+          {
+            "name": "Cockatrice",
+            "page": 275
+          },
+          {
+            "name": "Commoner",
+            "page": 275
+          },
+          {
+            "name": "Constrictor Snake",
+            "page": 346
+          },
+          {
+            "name": "Copper Dragon Wyrmling",
+            "page": 275
+          },
+          {
+            "name": "Couatl",
+            "page": 277
+          },
+          {
+            "name": "Crab",
+            "page": 347
+          },
+          {
+            "name": "Crocodile",
+            "page": 347
+          },
+          {
+            "name": "Cultist",
+            "page": 278
+          },
+          {
+            "name": "Cultist Fanatic",
+            "page": 278
+          },
+          {
+            "name": "Darkmantle",
+            "page": 278
+          },
+          {
+            "name": "Death Dog",
+            "page": 279
+          },
+          {
+            "name": "Deer",
+            "page": 347
+          },
+          {
+            "name": "Deva",
+            "page": 279
+          },
+          {
+            "name": "Dire Wolf",
+            "page": 347
+          },
+          {
+            "name": "Djinni",
+            "page": 280
+          },
+          {
+            "name": "Doppelganger",
+            "page": 280
+          },
+          {
+            "name": "Draft Horse",
+            "page": 347
+          },
+          {
+            "name": "Dragon Turtle",
+            "page": 281
+          },
+          {
+            "name": "Dretch",
+            "page": 281
+          },
+          {
+            "name": "Drider",
+            "page": 281
+          },
+          {
+            "name": "Druid",
+            "page": 282
+          },
+          {
+            "name": "Dryad",
+            "page": 282
+          },
+          {
+            "name": "Dust Mephit",
+            "page": 307
+          },
+          {
+            "name": "Eagle",
+            "page": 348
+          },
+          {
+            "name": "Earth Elemental",
+            "page": 282
+          },
+          {
+            "name": "Efreeti",
+            "page": 283
+          },
+          {
+            "name": "Elephant",
+            "page": 348
+          },
+          {
+            "name": "Elk",
+            "page": 348
+          },
+          {
+            "name": "Erinyes",
+            "page": 283
+          },
+          {
+            "name": "Ettercap",
+            "page": 284
+          },
+          {
+            "name": "Ettin",
+            "page": 284
+          },
+          {
+            "name": "Fire Elemental",
+            "page": 284
+          },
+          {
+            "name": "Fire Giant",
+            "page": 285
+          },
+          {
+            "name": "Flesh Golem",
+            "page": 285
+          },
+          {
+            "name": "Flying Snake",
+            "page": 348
+          },
+          {
+            "name": "Frog",
+            "page": 348
+          },
+          {
+            "name": "Frost Giant",
+            "page": 285
+          },
+          {
+            "name": "Gargoyle",
+            "page": 286
+          },
+          {
+            "name": "Gelatinous Cube",
+            "page": 286
+          },
+          {
+            "name": "Ghast",
+            "page": 287
+          },
+          {
+            "name": "Ghost",
+            "page": 287
+          },
+          {
+            "name": "Ghoul",
+            "page": 288
+          },
+          {
+            "name": "Giant Ape",
+            "page": 349
+          },
+          {
+            "name": "Giant Badger",
+            "page": 349
+          },
+          {
+            "name": "Giant Bat",
+            "page": 349
+          },
+          {
+            "name": "Giant Boar",
+            "page": 349
+          },
+          {
+            "name": "Giant Centipede",
+            "page": 349
+          },
+          {
+            "name": "Giant Constrictor Snake",
+            "page": 350
+          },
+          {
+            "name": "Giant Crab",
+            "page": 350
+          },
+          {
+            "name": "Giant Crocodile",
+            "page": 350
+          },
+          {
+            "name": "Giant Eagle",
+            "page": 350
+          },
+          {
+            "name": "Giant Elk",
+            "page": 351
+          },
+          {
+            "name": "Giant Fire Beetle",
+            "page": 351
+          },
+          {
+            "name": "Giant Frog",
+            "page": 351
+          },
+          {
+            "name": "Giant Goat",
+            "page": 351
+          },
+          {
+            "name": "Giant Hyena",
+            "page": 352
+          },
+          {
+            "name": "Giant Lizard",
+            "page": 352
+          },
+          {
+            "name": "Giant Octopus",
+            "page": 352
+          },
+          {
+            "name": "Giant Owl",
+            "page": 352
+          },
+          {
+            "name": "Giant Rat",
+            "page": 353
+          },
+          {
+            "name": "Giant Scorpion",
+            "page": 353
+          },
+          {
+            "name": "Giant Seahorse",
+            "page": 353
+          },
+          {
+            "name": "Giant Shark",
+            "page": 353
+          },
+          {
+            "name": "Giant Spider",
+            "page": 353
+          },
+          {
+            "name": "Giant Toad",
+            "page": 354
+          },
+          {
+            "name": "Giant Venomous Snake",
+            "page": 354
+          },
+          {
+            "name": "Giant Vulture",
+            "page": 354
+          },
+          {
+            "name": "Giant Wasp",
+            "page": 354
+          },
+          {
+            "name": "Giant Weasel",
+            "page": 355
+          },
+          {
+            "name": "Giant Wolf Spider",
+            "page": 355
+          },
+          {
+            "name": "Gibbering Mouther",
+            "page": 288
+          },
+          {
+            "name": "Glabrezu",
+            "page": 289
+          },
+          {
+            "name": "Gladiator",
+            "page": 289
+          },
+          {
+            "name": "Gnoll Warrior",
+            "page": 289
+          },
+          {
+            "name": "Goat",
+            "page": 355
+          },
+          {
+            "name": "Goblin Boss",
+            "page": 290
+          },
+          {
+            "name": "Goblin Minion",
+            "page": 290
+          },
+          {
+            "name": "Goblin Warrior",
+            "page": 290
+          },
+          {
+            "name": "Gold Dragon Wyrmling",
+            "page": 290
+          },
+          {
+            "name": "Gorgon",
+            "page": 292
+          },
+          {
+            "name": "Gray Ooze",
+            "page": 293
+          },
+          {
+            "name": "Green Dragon Wyrmling",
+            "page": 293
+          },
+          {
+            "name": "Green Hag",
+            "page": 295
+          },
+          {
+            "name": "Grick",
+            "page": 295
+          },
+          {
+            "name": "Griffon",
+            "page": 295
+          },
+          {
+            "name": "Grimlock",
+            "page": 296
+          },
+          {
+            "name": "Guard",
+            "page": 296
+          },
+          {
+            "name": "Guard Captain",
+            "page": 296
+          },
+          {
+            "name": "Guardian Naga",
+            "page": 296
+          },
+          {
+            "name": "Half-Dragon",
+            "page": 297
+          },
+          {
+            "name": "Harpy",
+            "page": 297
+          },
+          {
+            "name": "Hawk",
+            "page": 355
+          },
+          {
+            "name": "Hell Hound",
+            "page": 297
+          },
+          {
+            "name": "Hezrou",
+            "page": 298
+          },
+          {
+            "name": "Hill Giant",
+            "page": 298
+          },
+          {
+            "name": "Hippogriff",
+            "page": 298
+          },
+          {
+            "name": "Hippopotamus",
+            "page": 355
+          },
+          {
+            "name": "Hobgoblin Captain",
+            "page": 299
+          },
+          {
+            "name": "Hobgoblin Warrior",
+            "page": 298
+          },
+          {
+            "name": "Homunculus",
+            "page": 299
+          },
+          {
+            "name": "Horned Devil",
+            "page": 299
+          },
+          {
+            "name": "Hunter Shark",
+            "page": 356
+          },
+          {
+            "name": "Hydra",
+            "page": 300
+          },
+          {
+            "name": "Hyena",
+            "page": 356
+          },
+          {
+            "name": "Ice Devil",
+            "page": 300
+          },
+          {
+            "name": "Ice Mephit",
+            "page": 307
+          },
+          {
+            "name": "Imp",
+            "page": 300
+          },
+          {
+            "name": "Incubus",
+            "page": 301
+          },
+          {
+            "name": "Invisible Stalker",
+            "page": 301
+          },
+          {
+            "name": "Iron Golem",
+            "page": 302
+          },
+          {
+            "name": "Jackal",
+            "page": 356
+          },
+          {
+            "name": "Killer Whale",
+            "page": 356
+          },
+          {
+            "name": "Knight",
+            "page": 302
+          },
+          {
+            "name": "Kobold Warrior",
+            "page": 302
+          },
+          {
+            "name": "Kraken",
+            "page": 303
+          },
+          {
+            "name": "Lamia",
+            "page": 303
+          },
+          {
+            "name": "Lemure",
+            "page": 304
+          },
+          {
+            "name": "Lich",
+            "page": 304
+          },
+          {
+            "name": "Lion",
+            "page": 356
+          },
+          {
+            "name": "Lizard",
+            "page": 357
+          },
+          {
+            "name": "Mage",
+            "page": 305
+          },
+          {
+            "name": "Magma Mephit",
+            "page": 307
+          },
+          {
+            "name": "Magmin",
+            "page": 305
+          },
+          {
+            "name": "Mammoth",
+            "page": 357
+          },
+          {
+            "name": "Manticore",
+            "page": 306
+          },
+          {
+            "name": "Marilith",
+            "page": 306
+          },
+          {
+            "name": "Mastiff",
+            "page": 357
+          },
+          {
+            "name": "Medusa",
+            "page": 306
+          },
+          {
+            "name": "Merfolk Skirmisher",
+            "page": 308
+          },
+          {
+            "name": "Merrow",
+            "page": 308
+          },
+          {
+            "name": "Mimic",
+            "page": 308
+          },
+          {
+            "name": "Minotaur of Baphomet",
+            "page": 309
+          },
+          {
+            "name": "Minotaur Skeleton",
+            "page": 326
+          },
+          {
+            "name": "Mule",
+            "page": 357
+          },
+          {
+            "name": "Mummy",
+            "page": 309
+          },
+          {
+            "name": "Mummy Lord",
+            "page": 309
+          },
+          {
+            "name": "Nalfeshnee",
+            "page": 310
+          },
+          {
+            "name": "Night Hag",
+            "page": 311
+          },
+          {
+            "name": "Nightmare",
+            "page": 311
+          },
+          {
+            "name": "Noble",
+            "page": 312
+          },
+          {
+            "name": "Ochre Jelly",
+            "page": 312
+          },
+          {
+            "name": "Octopus",
+            "page": 357
+          },
+          {
+            "name": "Ogre",
+            "page": 312
+          },
+          {
+            "name": "Ogre Zombie",
+            "page": 344
+          },
+          {
+            "name": "Oni",
+            "page": 312
+          },
+          {
+            "name": "Otyugh",
+            "page": 313
+          },
+          {
+            "name": "Owl",
+            "page": 358
+          },
+          {
+            "name": "Owlbear",
+            "page": 313
+          },
+          {
+            "name": "Panther",
+            "page": 358
+          },
+          {
+            "name": "Pegasus",
+            "page": 313
+          },
+          {
+            "name": "Phase Spider",
+            "page": 313
+          },
+          {
+            "name": "Piranha",
+            "page": 358
+          },
+          {
+            "name": "Pirate",
+            "page": 314
+          },
+          {
+            "name": "Pirate Captain",
+            "page": 314
+          },
+          {
+            "name": "Pit Fiend",
+            "page": 314
+          },
+          {
+            "name": "Planetar",
+            "page": 315
+          },
+          {
+            "name": "Plesiosaurus",
+            "page": 358
+          },
+          {
+            "name": "Polar Bear",
+            "page": 359
+          },
+          {
+            "name": "Pony",
+            "page": 359
+          },
+          {
+            "name": "Priest",
+            "page": 316
+          },
+          {
+            "name": "Priest Acolyte",
+            "page": 316
+          },
+          {
+            "name": "Pseudodragon",
+            "page": 316
+          },
+          {
+            "name": "Pteranodon",
+            "page": 359
+          },
+          {
+            "name": "Purple Worm",
+            "page": 316
+          },
+          {
+            "name": "Quasit",
+            "page": 317
+          },
+          {
+            "name": "Rakshasa",
+            "page": 317
+          },
+          {
+            "name": "Rat",
+            "page": 359
+          },
+          {
+            "name": "Raven",
+            "page": 359
+          },
+          {
+            "name": "Red Dragon Wyrmling",
+            "page": 318
+          },
+          {
+            "name": "Reef Shark",
+            "page": 360
+          },
+          {
+            "name": "Remorhaz",
+            "page": 319
+          },
+          {
+            "name": "Rhinoceros",
+            "page": 360
+          },
+          {
+            "name": "Riding Horse",
+            "page": 360
+          },
+          {
+            "name": "Roc",
+            "page": 320
+          },
+          {
+            "name": "Roper",
+            "page": 320
+          },
+          {
+            "name": "Rust Monster",
+            "page": 320
+          },
+          {
+            "name": "Saber-Toothed Tiger",
+            "page": 360
+          },
+          {
+            "name": "Sahuagin Warrior",
+            "page": 321
+          },
+          {
+            "name": "Salamander",
+            "page": 321
+          },
+          {
+            "name": "Satyr",
+            "page": 321
+          },
+          {
+            "name": "Scorpion",
+            "page": 360
+          },
+          {
+            "name": "Scout",
+            "page": 322
+          },
+          {
+            "name": "Sea Hag",
+            "page": 322
+          },
+          {
+            "name": "Seahorse",
+            "page": 361
+          },
+          {
+            "name": "Shadow",
+            "page": 322
+          },
+          {
+            "name": "Shambling Mound",
+            "page": 323
+          },
+          {
+            "name": "Shield Guardian",
+            "page": 323
+          },
+          {
+            "name": "Shrieker Fungus",
+            "page": 286
+          },
+          {
+            "name": "Silver Dragon Wyrmling",
+            "page": 324
+          },
+          {
+            "name": "Skeleton",
+            "page": 325
+          },
+          {
+            "name": "Solar",
+            "page": 326
+          },
+          {
+            "name": "Specter",
+            "page": 327
+          },
+          {
+            "name": "Sphinx of Lore",
+            "page": 327
+          },
+          {
+            "name": "Sphinx of Valor",
+            "page": 328
+          },
+          {
+            "name": "Sphinx of Wonder",
+            "page": 327
+          },
+          {
+            "name": "Spider",
+            "page": 361
+          },
+          {
+            "name": "Spirit Naga",
+            "page": 329
+          },
+          {
+            "name": "Sprite",
+            "page": 329
+          },
+          {
+            "name": "Spy",
+            "page": 329
+          },
+          {
+            "name": "Steam Mephit",
+            "page": 308
+          },
+          {
+            "name": "Stirge",
+            "page": 329
+          },
+          {
+            "name": "Stone Giant",
+            "page": 330
+          },
+          {
+            "name": "Stone Golem",
+            "page": 330
+          },
+          {
+            "name": "Storm Giant",
+            "page": 330
+          },
+          {
+            "name": "Succubus",
+            "page": 331
+          },
+          {
+            "name": "Swarm of Bats",
+            "page": 361
+          },
+          {
+            "name": "Swarm of Crawling Claws",
+            "page": 278
+          },
+          {
+            "name": "Swarm of Insects",
+            "page": 361
+          },
+          {
+            "name": "Swarm of Piranhas",
+            "page": 362
+          },
+          {
+            "name": "Swarm of Rats",
+            "page": 362
+          },
+          {
+            "name": "Swarm of Ravens",
+            "page": 362
+          },
+          {
+            "name": "Swarm of Venomous Snakes",
+            "page": 362
+          },
+          {
+            "name": "Tarrasque",
+            "page": 331
+          },
+          {
+            "name": "Tiger",
+            "page": 363
+          },
+          {
+            "name": "Tough",
+            "page": 332
+          },
+          {
+            "name": "Tough Boss",
+            "page": 332
+          },
+          {
+            "name": "Treant",
+            "page": 333
+          },
+          {
+            "name": "Triceratops",
+            "page": 363
+          },
+          {
+            "name": "Troll",
+            "page": 333
+          },
+          {
+            "name": "Troll Limb",
+            "page": 333
+          },
+          {
+            "name": "Tyrannosaurus Rex",
+            "page": 363
+          },
+          {
+            "name": "Unicorn",
+            "page": 334
+          },
+          {
+            "name": "Vampire",
+            "page": 335
+          },
+          {
+            "name": "Vampire Familiar",
+            "page": 334
+          },
+          {
+            "name": "Vampire Spawn",
+            "page": 334
+          },
+          {
+            "name": "Venomous Snake",
+            "page": 363
+          },
+          {
+            "name": "Violet Fungus",
+            "page": 286
+          },
+          {
+            "name": "Vrock",
+            "page": 336
+          },
+          {
+            "name": "Vulture",
+            "page": 363
+          },
+          {
+            "name": "Warhorse",
+            "page": 364
+          },
+          {
+            "name": "Warhorse Skeleton",
+            "page": 326
+          },
+          {
+            "name": "Warrior Infantry",
+            "page": 336
+          },
+          {
+            "name": "Warrior Veteran",
+            "page": 337
+          },
+          {
+            "name": "Water Elemental",
+            "page": 337
+          },
+          {
+            "name": "Weasel",
+            "page": 364
+          },
+          {
+            "name": "Werebear",
+            "page": 337
+          },
+          {
+            "name": "Wereboar",
+            "page": 338
+          },
+          {
+            "name": "Wererat",
+            "page": 338
+          },
+          {
+            "name": "Weretiger",
+            "page": 339
+          },
+          {
+            "name": "Werewolf",
+            "page": 339
+          },
+          {
+            "name": "White Dragon Wyrmling",
+            "page": 339
+          },
+          {
+            "name": "Wight",
+            "page": 341
+          },
+          {
+            "name": "Will-o’-Wisp",
+            "page": 341
+          },
+          {
+            "name": "Winter Wolf",
+            "page": 342
+          },
+          {
+            "name": "Wolf",
+            "page": 364
+          },
+          {
+            "name": "Worg",
+            "page": 342
+          },
+          {
+            "name": "Wraith",
+            "page": 342
+          },
+          {
+            "name": "Wyvern",
+            "page": 343
+          },
+          {
+            "name": "Xorn",
+            "page": 343
+          },
+          {
+            "name": "Young Black Dragon",
+            "page": 264
+          },
+          {
+            "name": "Young Blue Dragon",
+            "page": 266
+          },
+          {
+            "name": "Young Brass Dragon",
+            "page": 268
+          },
+          {
+            "name": "Young Bronze Dragon",
+            "page": 270
+          },
+          {
+            "name": "Young Copper Dragon",
+            "page": 276
+          },
+          {
+            "name": "Young Gold Dragon",
+            "page": 291
+          },
+          {
+            "name": "Young Green Dragon",
+            "page": 293
+          },
+          {
+            "name": "Young Red Dragon",
+            "page": 318
+          },
+          {
+            "name": "Young Silver Dragon",
+            "page": 324
+          },
+          {
+            "name": "Young White Dragon",
+            "page": 340
+          },
+          {
+            "name": "Zombie",
+            "page": 343
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1"
     }
   ],
