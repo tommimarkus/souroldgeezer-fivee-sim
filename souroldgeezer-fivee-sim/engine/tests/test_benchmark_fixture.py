@@ -37,6 +37,12 @@ from any earlier benchmark session's.
 This calibration also includes ranged attacks in close combat: a ranged weapon
 or ranged spell attack has Disadvantage while a capable, seeing enemy is within
 5 feet of the attacker.
+
+This calibration also treats ordinary content-pack monsters as dead at 0 HP;
+only combatants that explicitly author ``death_rule: death_saves`` keep taking
+death-save turns. That removes the old PC lifecycle from monster initiative and
+changes later RNG consumption even in fights whose final rate moves only a few
+points.
 """
 
 from __future__ import annotations
@@ -84,31 +90,31 @@ class Fight(NamedTuple):
 
 
 FIGHTS: tuple[Fight, ...] = (
-    Fight("2 Goblin Warriors", (("Goblin Warrior", 2),), "easy/low", 1.0000, 0.2475),
-    Fight("Zombie + Skeleton", (("Zombie", 1), ("Skeleton", 1)), "easy/low", 1.0000, 0.2325),
-    Fight("4 Goblin Warriors", (("Goblin Warrior", 4),), "low", 0.9525, 0.9300),
-    Fight("4 Skeletons", (("Skeleton", 4),), "low", 0.7825, 1.6475),
-    Fight("4 Wolves", (("Wolf", 4),), "low", 0.8425, 1.2650),
-    Fight("6 Goblin Warriors", (("Goblin Warrior", 6),), "moderate", 0.5600, 2.4650),
+    Fight("2 Goblin Warriors", (("Goblin Warrior", 2),), "easy/low", 1.0000, 0.2500),
+    Fight("Zombie + Skeleton", (("Zombie", 1), ("Skeleton", 1)), "easy/low", 1.0000, 0.2625),
+    Fight("4 Goblin Warriors", (("Goblin Warrior", 4),), "low", 0.9300, 1.0825),
+    Fight("4 Skeletons", (("Skeleton", 4),), "low", 0.7775, 1.7425),
+    Fight("4 Wolves", (("Wolf", 4),), "low", 0.8700, 1.2225),
+    Fight("6 Goblin Warriors", (("Goblin Warrior", 6),), "moderate", 0.4975, 2.6150),
     Fight(
         "Goblin Boss + 2 Warriors",
         (("Goblin Boss", 1), ("Goblin Warrior", 2)),
-        "moderate", 0.9150, 1.1000,
+        "moderate", 0.9025, 1.2275,
     ),
     Fight(
         "3 Goblins + 3 Skeletons",
         (("Goblin Warrior", 3), ("Skeleton", 3)),
-        "moderate", 0.2650, 3.2800,
+        "moderate", 0.2650, 3.3300,
     ),
-    Fight("Ogre + Goblin Boss", (("Ogre", 1), ("Goblin Boss", 1)), "deadly", 0.5650, 2.4375),
-    Fight("1 Ogre (folklore)", (("Ogre", 1),), None, 0.9325, 0.8950),
-    Fight("3 Giant Wasps", (("Giant Wasp", 3),), "moderate", 0.5375, 2.5875),
-    Fight("4 Giant Venomous Snakes", (("Giant Venomous Snake", 4),), "low", 0.3875, 3.0025),
-    Fight("3 Giant Venomous Snakes", (("Giant Venomous Snake", 3),), "low", 0.7500, 1.9325),
+    Fight("Ogre + Goblin Boss", (("Ogre", 1), ("Goblin Boss", 1)), "deadly", 0.5325, 2.6175),
+    Fight("1 Ogre (folklore)", (("Ogre", 1),), None, 0.9350, 0.9825),
+    Fight("3 Giant Wasps", (("Giant Wasp", 3),), "moderate", 0.4675, 2.7525),
+    Fight("4 Giant Venomous Snakes", (("Giant Venomous Snake", 4),), "low", 0.3625, 3.1000),
+    Fight("3 Giant Venomous Snakes", (("Giant Venomous Snake", 3),), "low", 0.7175, 2.0575),
     Fight(
         "2 Snakes + 3 Goblins",
         (("Giant Venomous Snake", 2), ("Goblin Warrior", 3)),
-        "low", 0.5150, 2.5650,
+        "low", 0.5400, 2.6550,
     ),
 )
 
@@ -130,9 +136,9 @@ def band_is_stable(expected_win: float) -> bool:
 #: a recalibration that moves a fight on or off this list has to say so in the
 #: same commit, rather than quietly dropping a third of the fights' band checks.
 UNBANDED = (
-    "6 Goblin Warriors",
+    "4 Goblin Warriors",
+    "4 Wolves",
     "Goblin Boss + 2 Warriors",
-    "Ogre + Goblin Boss",
     "1 Ogre (folklore)",
 )
 

@@ -55,6 +55,7 @@ EXPECTED_TOOLS = {
     "uvtt_export",
     "simulate_rounds",
     "simulate_dpr",
+    "scenario_timing",
     "content_status",
     "content_configure",
     "content_validate",

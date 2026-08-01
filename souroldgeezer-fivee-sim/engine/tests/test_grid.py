@@ -520,7 +520,13 @@ class TestPathfinding:
 
 class TestTerrainTable:
     def test_the_flags_are_derived_from_the_dataclass(self) -> None:
-        assert TERRAIN_FLAGS == ("move_cost_multiplier", "passable", "opaque", "cover")
+        assert TERRAIN_FLAGS == (
+            "move_cost_multiplier",
+            "passable",
+            "opaque",
+            "underwater",
+            "cover",
+        )
 
     def test_the_dungeon_kinds(self) -> None:
         assert terrain_effect_of("normal") == terrain_effect_of("floor")
