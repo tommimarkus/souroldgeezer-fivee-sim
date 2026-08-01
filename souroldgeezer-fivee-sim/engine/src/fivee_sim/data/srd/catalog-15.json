@@ -30159,8 +30159,157 @@
         337,
         338
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Werebear",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Monstrosity",
+        "alignment": "Neutral Good",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 135,
+          "hit_dice": "18d8 + 54"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "bear_form_walk_feet": 40,
+          "bear_form_climb_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          }
+        },
+        "descriptive_tags": [
+          "Lycanthrope"
+        ],
+        "skills": {
+          "Perception": 7
+        },
+        "gear": [
+          "4 Handaxes"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 17
+        },
+        "languages": [
+          "Common",
+          "cannot speak in bear form"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Handaxe",
+              "Rend"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Bite"
+          },
+          "bite": {
+            "form_requirement": [
+              "bear",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d12 + 4 Piercing",
+            "curse": {
+              "eligible_target_type": "Humanoid",
+              "save": {
+                "ability": "Constitution",
+                "dc": 14
+              },
+              "failure_condition": "Cursed",
+              "at_zero_hit_points_instead": {
+                "transforms_into": "Werebear",
+                "controller": "GM",
+                "hit_points": 10
+              },
+              "success_immunity_hours": 24
+            }
+          },
+          "handaxe": {
+            "form_requirement": [
+              "Humanoid",
+              "hybrid"
+            ],
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "range_feet": [
+              20,
+              60
+            ],
+            "damage": "3d6 + 4 Slashing"
+          },
+          "rend": {
+            "form_requirement": [
+              "bear",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Slashing"
+          }
+        },
+        "bonus_actions": {
+          "shape_shift": {
+            "forms": [
+              "Large bear-Humanoid hybrid",
+              "Large bear",
+              "true Humanoid form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30175,8 +30324,162 @@
       "pages": [
         338
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wereboar",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Monstrosity",
+        "alignment": "Neutral Evil",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 97,
+          "hit_dice": "15d8 + 30"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "boar_form_walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "descriptive_tags": [
+          "Lycanthrope"
+        ],
+        "skills": {
+          "Perception": 2
+        },
+        "gear": [
+          "6 Javelins"
+        ],
+        "senses": {
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Common",
+          "cannot speak in boar form"
+        ],
+        "challenge_rating": "4",
+        "experience_points": 1100,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Javelin",
+              "Tusk"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Gore"
+          },
+          "gore": {
+            "form_requirement": [
+              "boar",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d8 + 3 Piercing",
+            "curse": {
+              "eligible_target_type": "Humanoid",
+              "save": {
+                "ability": "Constitution",
+                "dc": 12
+              },
+              "failure_condition": "Cursed",
+              "at_zero_hit_points_instead": {
+                "transforms_into": "Wereboar",
+                "controller": "GM",
+                "hit_points": 10
+              },
+              "success_immunity_hours": 24
+            }
+          },
+          "javelin": {
+            "form_requirement": [
+              "Humanoid",
+              "hybrid"
+            ],
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "range_feet": [
+              30,
+              120
+            ],
+            "damage": "3d6 + 3 Piercing"
+          },
+          "tusk": {
+            "form_requirement": [
+              "boar",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d6 + 3 Piercing",
+            "charge": {
+              "maximum_target_size": "Medium",
+              "minimum_straight_movement_feet": 20,
+              "timing": "immediately before hit",
+              "extra_damage": "2d6 Piercing",
+              "condition": "Prone"
+            }
+          }
+        },
+        "bonus_actions": {
+          "shape_shift": {
+            "forms": [
+              "Medium boar-Humanoid hybrid",
+              "Small boar",
+              "true Humanoid form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30191,8 +30494,149 @@
       "pages": [
         338
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wererat",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Monstrosity",
+        "alignment": "Lawful Evil",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 60,
+          "hit_dice": "11d8 + 11"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "climb_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "descriptive_tags": [
+          "Lycanthrope"
+        ],
+        "skills": {
+          "Perception": 4,
+          "Stealth": 5
+        },
+        "gear": [
+          "Hand Crossbow"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Common",
+          "cannot speak in rat form"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Scratch",
+              "Hand Crossbow"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Bite"
+          },
+          "bite": {
+            "form_requirement": [
+              "rat",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d4 + 3 Piercing",
+            "curse": {
+              "eligible_target_type": "Humanoid",
+              "save": {
+                "ability": "Constitution",
+                "dc": 11
+              },
+              "failure_condition": "Cursed",
+              "at_zero_hit_points_instead": {
+                "transforms_into": "Wererat",
+                "controller": "GM",
+                "hit_points": 10
+              },
+              "success_immunity_hours": 24
+            }
+          },
+          "scratch": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d6 + 3 Slashing"
+          },
+          "hand_crossbow": {
+            "form_requirement": [
+              "Humanoid",
+              "hybrid"
+            ],
+            "type": "Ranged",
+            "attack_bonus": 5,
+            "range_feet": [
+              30,
+              120
+            ],
+            "damage": "1d6 + 3 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "shape_shift": {
+            "forms": [
+              "Medium rat-Humanoid hybrid",
+              "Small rat",
+              "true Humanoid form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30207,8 +30651,158 @@
       "pages": [
         339
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Weretiger",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Monstrosity",
+        "alignment": "Neutral",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 120,
+          "hit_dice": "16d8 + 48"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "tiger_form_walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "descriptive_tags": [
+          "Lycanthrope"
+        ],
+        "skills": {
+          "Perception": 5,
+          "Stealth": 4
+        },
+        "gear": [
+          "Longbow"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "Common",
+          "cannot speak in tiger form"
+        ],
+        "challenge_rating": "4",
+        "experience_points": 1100,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Scratch",
+              "Longbow"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Bite"
+          },
+          "bite": {
+            "form_requirement": [
+              "tiger",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d8 + 3 Piercing",
+            "curse": {
+              "eligible_target_type": "Humanoid",
+              "save": {
+                "ability": "Constitution",
+                "dc": 13
+              },
+              "failure_condition": "Cursed",
+              "at_zero_hit_points_instead": {
+                "transforms_into": "Weretiger",
+                "controller": "GM",
+                "hit_points": 10
+              },
+              "success_immunity_hours": 24
+            }
+          },
+          "scratch": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d6 + 3 Slashing"
+          },
+          "longbow": {
+            "form_requirement": [
+              "Humanoid",
+              "hybrid"
+            ],
+            "type": "Ranged",
+            "attack_bonus": 4,
+            "range_feet": [
+              150,
+              600
+            ],
+            "damage": "2d8 + 2 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "prowl": {
+            "form_requirement": [
+              "tiger",
+              "hybrid"
+            ],
+            "movement": "up to Speed",
+            "provokes_opportunity_attacks": false,
+            "may_hide_after_movement": true
+          },
+          "shape_shift": {
+            "forms": [
+              "Large tiger-Humanoid hybrid",
+              "Large tiger",
+              "true Humanoid form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30223,8 +30817,155 @@
       "pages": [
         339
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Werewolf",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Monstrosity",
+        "alignment": "Chaotic Evil",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 71,
+          "hit_dice": "11d8 + 22"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "wolf_form_walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "descriptive_tags": [
+          "Lycanthrope"
+        ],
+        "skills": {
+          "Perception": 4,
+          "Stealth": 4
+        },
+        "gear": [
+          "Longbow"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Common",
+          "cannot speak in wolf form"
+        ],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "pack_tactics": {
+            "advantage_when_ally_within_feet": 5,
+            "ally_must_not_be_incapacitated": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Scratch",
+              "Longbow"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Bite"
+          },
+          "bite": {
+            "form_requirement": [
+              "wolf",
+              "hybrid"
+            ],
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d8 + 3 Piercing",
+            "curse": {
+              "eligible_target_type": "Humanoid",
+              "save": {
+                "ability": "Constitution",
+                "dc": 12
+              },
+              "failure_condition": "Cursed",
+              "at_zero_hit_points_instead": {
+                "transforms_into": "Werewolf",
+                "controller": "GM",
+                "hit_points": 10
+              },
+              "success_immunity_hours": 24
+            }
+          },
+          "scratch": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d6 + 3 Slashing"
+          },
+          "longbow": {
+            "form_requirement": [
+              "Humanoid",
+              "hybrid"
+            ],
+            "type": "Ranged",
+            "attack_bonus": 4,
+            "range_feet": [
+              150,
+              600
+            ],
+            "damage": "2d8 + 2 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "shape_shift": {
+            "forms": [
+              "Large wolf-Humanoid hybrid",
+              "Medium wolf",
+              "true Humanoid form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30239,7 +30980,7 @@
       "pages": [
         339
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -30256,8 +30997,111 @@
         339,
         340
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "White Dragon Wyrmling",
+        "size": "Medium",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Evil",
+        "armor_class": 16,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 32,
+          "hit_dice": "5d8 + 10"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "burrow_feet": 15,
+          "fly_feet": 60,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 4,
+          "Stealth": 2
+        },
+        "immunities": [
+          "Cold"
+        ],
+        "senses": {
+          "Blindsight_feet": 10,
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Draconic"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "ice_walk": {
+            "moves_and_climbs_on_icy_surfaces_without_check": true,
+            "ice_or_snow_difficult_terrain_costs_extra_movement": false
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              "1d8 + 2 Slashing",
+              "1d4 Cold"
+            ]
+          },
+          "cold_breath": {
+            "recharge": "5-6",
+            "save": {
+              "ability": "Constitution",
+              "dc": 12
+            },
+            "area": "15-foot Cone",
+            "failure_damage": "5d8 Cold",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30272,8 +31116,112 @@
       "pages": [
         340
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Young White Dragon",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Evil",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 123,
+          "hit_dice": "13d10 + 52"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 20,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 6,
+            "modifier": -2,
+            "save": 2
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 6,
+          "Stealth": 3
+        },
+        "immunities": [
+          "Cold"
+        ],
+        "senses": {
+          "Blindsight_feet": 30,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "6",
+        "experience_points": 2300,
+        "proficiency_bonus": 3,
+        "traits": {
+          "ice_walk": {
+            "moves_and_climbs_on_icy_surfaces_without_check": true,
+            "ice_or_snow_difficult_terrain_costs_extra_movement": false
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 10,
+            "damage": [
+              "2d4 + 4 Slashing",
+              "1d4 Cold"
+            ]
+          },
+          "cold_breath": {
+            "recharge": "5-6",
+            "save": {
+              "ability": "Constitution",
+              "dc": 15
+            },
+            "area": "30-foot Cone",
+            "failure_damage": "9d8 Cold",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30288,8 +31236,147 @@
       "pages": [
         340
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adult White Dragon",
+        "size": "Huge",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Evil",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 200,
+          "hit_dice": "16d12 + 96"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 30,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 6
+          },
+          "Charisma": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 11,
+          "Stealth": 5
+        },
+        "immunities": [
+          "Cold"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 21
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "13",
+        "experience_points": 10000,
+        "lair_experience_points": 11500,
+        "proficiency_bonus": 5,
+        "traits": {
+          "ice_walk": {
+            "moves_and_climbs_on_icy_surfaces_without_check": true,
+            "ice_or_snow_difficult_terrain_costs_extra_movement": false
+          },
+          "legendary_resistance": {
+            "uses_per_day": 3,
+            "uses_per_day_in_lair": 4,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 11,
+            "reach_feet": 10,
+            "damage": [
+              "2d6 + 6 Slashing",
+              "1d8 Cold"
+            ]
+          },
+          "cold_breath": {
+            "recharge": "5-6",
+            "save": {
+              "ability": "Constitution",
+              "dc": 19
+            },
+            "area": "60-foot Cone",
+            "failure_damage": "12d8 Cold",
+            "success_damage": "half"
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "regains_all_uses_at_start_of_turn": true,
+          "actions": {
+            "freezing_burst": {
+              "save": {
+                "ability": "Constitution",
+                "dc": 14
+              },
+              "area": "30-foot-radius Sphere centered on visible point within 120 feet",
+              "failure_damage": "2d6 Cold",
+              "failure_speed_feet": 0,
+              "speed_effect_ends": "end of target's next turn",
+              "cooldown_ends": "start of dragon's next turn after Failure or Success"
+            },
+            "frightful_presence": {
+              "casts": "Fear",
+              "material_components_required": false,
+              "spellcasting_ability": "Charisma",
+              "save_dc": 14,
+              "cooldown_ends": "start of dragon's next turn"
+            },
+            "pounce": {
+              "movement": "up to half Speed",
+              "rend_attacks": 1
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30304,8 +31391,147 @@
       "pages": [
         341
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ancient White Dragon",
+        "size": "Gargantuan",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Evil",
+        "armor_class": 20,
+        "initiative": {
+          "modifier": 12,
+          "score": 22
+        },
+        "hit_points": {
+          "average": 333,
+          "hit_dice": "18d20 + 144"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 40,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 26,
+            "modifier": 8,
+            "save": 8
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 6
+          },
+          "Constitution": {
+            "score": 26,
+            "modifier": 8,
+            "save": 8
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 7
+          },
+          "Charisma": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 13,
+          "Stealth": 6
+        },
+        "immunities": [
+          "Cold"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 23
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "20",
+        "experience_points": 25000,
+        "lair_experience_points": 33000,
+        "proficiency_bonus": 6,
+        "traits": {
+          "ice_walk": {
+            "moves_and_climbs_on_icy_surfaces_without_check": true,
+            "ice_or_snow_difficult_terrain_costs_extra_movement": false
+          },
+          "legendary_resistance": {
+            "uses_per_day": 4,
+            "uses_per_day_in_lair": 5,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 15,
+            "damage": [
+              "2d8 + 8 Slashing",
+              "2d6 Cold"
+            ]
+          },
+          "cold_breath": {
+            "recharge": "5-6",
+            "save": {
+              "ability": "Constitution",
+              "dc": 22
+            },
+            "area": "90-foot Cone",
+            "failure_damage": "14d8 Cold",
+            "success_damage": "half"
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "regains_all_uses_at_start_of_turn": true,
+          "actions": {
+            "freezing_burst": {
+              "save": {
+                "ability": "Constitution",
+                "dc": 20
+              },
+              "area": "30-foot-radius Sphere centered on visible point within 120 feet",
+              "failure_damage": "4d6 Cold",
+              "failure_speed_feet": 0,
+              "speed_effect_ends": "end of target's next turn",
+              "cooldown_ends": "start of dragon's next turn after Failure or Success"
+            },
+            "frightful_presence": {
+              "casts": "Fear",
+              "material_components_required": false,
+              "spellcasting_ability": "Charisma",
+              "save_dc": 18,
+              "cooldown_ends": "start of dragon's next turn"
+            },
+            "pounce": {
+              "movement": "up to half Speed",
+              "rend_attacks": 1
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30320,8 +31546,139 @@
       "pages": [
         341
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wight",
+        "size": "Medium",
+        "creature_type": "Undead",
+        "alignment": "Neutral Evil",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 82,
+          "hit_dice": "11d8 + 33"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "skills": {
+          "Perception": 3,
+          "Stealth": 4
+        },
+        "resistances": [
+          "Necrotic"
+        ],
+        "immunities": [
+          "Poison",
+          "Exhaustion",
+          "Poisoned"
+        ],
+        "gear": [
+          "Studded Leather Armor"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 13
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "sunlight_sensitivity": {
+            "disadvantage_in_sunlight": [
+              "ability checks",
+              "attack rolls"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Necrotic Sword",
+              "Necrotic Bow"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Life Drain"
+          },
+          "necrotic_sword": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              "1d8 + 2 Slashing",
+              "1d8 Necrotic"
+            ]
+          },
+          "necrotic_bow": {
+            "type": "Ranged",
+            "attack_bonus": 4,
+            "range_feet": [
+              150,
+              600
+            ],
+            "damage": [
+              "1d8 + 2 Piercing",
+              "1d8 Necrotic"
+            ]
+          },
+          "life_drain": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 13
+            },
+            "target": "one creature within 5 feet",
+            "failure_damage": "1d8 + 2 Necrotic",
+            "hit_point_maximum_reduction": "damage taken",
+            "slain_humanoid_rises_after_hours": 24,
+            "rises_as": "Zombie under wight's control",
+            "prevented_by": [
+              "restored to life",
+              "body destroyed"
+            ],
+            "maximum_controlled_zombies": 12
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30337,8 +31694,135 @@
         341,
         342
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Will-o'-Wisp",
+        "size": "Tiny",
+        "creature_type": "Undead",
+        "alignment": "Chaotic Evil",
+        "armor_class": 19,
+        "initiative": {
+          "modifier": 9,
+          "score": 19
+        },
+        "hit_points": {
+          "average": 27,
+          "hit_dice": "11d4"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "fly_feet": 50,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Dexterity": {
+            "score": 28,
+            "modifier": 9,
+            "save": 9
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "resistances": [
+          "Acid",
+          "Bludgeoning",
+          "Cold",
+          "Fire",
+          "Necrotic",
+          "Piercing",
+          "Slashing"
+        ],
+        "immunities": [
+          "Lightning",
+          "Poison",
+          "Exhaustion",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned",
+          "Prone",
+          "Restrained",
+          "Unconscious"
+        ],
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "ephemeral": {
+            "can_wear_or_carry": false
+          },
+          "illumination": {
+            "bright_light_radius_feet": 20,
+            "additional_dim_light_feet": 20
+          },
+          "incorporeal_movement": {
+            "moves_through_creatures_and_objects_as_difficult_terrain": true,
+            "damage_if_turn_ends_inside_object": "1d10 Force"
+          }
+        },
+        "actions": {
+          "shock": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "2d8 + 2 Lightning"
+          }
+        },
+        "bonus_actions": {
+          "consume_life": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 10
+            },
+            "target": "one visible living creature within 5 feet with 0 Hit Points",
+            "failure_target_dies": true,
+            "failure_self_healing": "3d6 Hit Points"
+          },
+          "vanish": {
+            "targets": [
+              "wisp",
+              "its light"
+            ],
+            "condition": "Invisible",
+            "requires_concentration": true,
+            "ends_early_after": [
+              "wisp makes attack roll",
+              "wisp uses Consume Life"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30353,8 +31837,100 @@
       "pages": [
         342
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Winter Wolf",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Neutral Evil",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 75,
+          "hit_dice": "10d10 + 20"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "skills": {
+          "Perception": 5,
+          "Stealth": 5
+        },
+        "immunities": [
+          "Cold"
+        ],
+        "senses": {
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "Common",
+          "Giant"
+        ],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "pack_tactics": {
+            "advantage_when_ally_within_feet": 5,
+            "ally_must_not_be_incapacitated": true
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "2d6 + 4 Piercing",
+            "maximum_target_size_for_condition": "Large",
+            "hit_condition": "Prone"
+          },
+          "cold_breath": {
+            "recharge": "5-6",
+            "save": {
+              "ability": "Constitution",
+              "dc": 12
+            },
+            "area": "15-foot Cone",
+            "failure_damage": "4d8 Cold",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30369,8 +31945,81 @@
       "pages": [
         342
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Worg",
+        "size": "Large",
+        "creature_type": "Fey",
+        "alignment": "Neutral Evil",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 26,
+          "hit_dice": "4d10 + 4"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "skills": {
+          "Perception": 4
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Goblin",
+          "Worg"
+        ],
+        "challenge_rating": "1/2",
+        "experience_points": 100,
+        "proficiency_bonus": 2,
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d8 + 3 Piercing",
+            "next_attack_against_target_has_advantage": true,
+            "advantage_expires": "start of worg's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30386,8 +32035,125 @@
         342,
         343
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wraith",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Undead",
+        "alignment": "Neutral Evil",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 67,
+          "hit_dice": "9d8 + 27"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "fly_feet": 60,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "resistances": [
+          "Acid",
+          "Bludgeoning",
+          "Cold",
+          "Fire",
+          "Piercing",
+          "Slashing"
+        ],
+        "immunities": [
+          "Necrotic",
+          "Poison",
+          "Charmed",
+          "Exhaustion",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned",
+          "Prone",
+          "Restrained",
+          "Unconscious"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Common",
+          "two other languages"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "traits": {
+          "incorporeal_movement": {
+            "moves_through_creatures_and_objects_as_difficult_terrain": true,
+            "damage_if_turn_ends_inside_object": "1d10 Force"
+          },
+          "sunlight_sensitivity": {
+            "disadvantage_in_sunlight": [
+              "ability checks",
+              "attack rolls"
+            ]
+          }
+        },
+        "actions": {
+          "life_drain": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "4d8 + 3 Necrotic",
+            "creature_target_hit_point_maximum_reduction": "damage taken"
+          },
+          "create_specter": {
+            "target": "Humanoid corpse within 10 feet dead no longer than 1 minute",
+            "rises_as": "Specter",
+            "space": [
+              "corpse's space",
+              "nearest unoccupied space"
+            ],
+            "controller": "wraith",
+            "maximum_controlled_specters": 7
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30402,8 +32168,91 @@
       "pages": [
         343
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wyvern",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 127,
+          "hit_dice": "15d10 + 45"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 4
+        },
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 14
+        },
+        "languages": [],
+        "challenge_rating": "6",
+        "experience_points": 2300,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "sting_attacks": 1
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Piercing"
+          },
+          "sting": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 10,
+            "damage": [
+              "2d6 + 4 Piercing",
+              "7d6 Poison"
+            ],
+            "hit_condition": "Poisoned until start of wyvern's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30418,8 +32267,119 @@
       "pages": [
         343
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Xorn",
+        "size": "Medium",
+        "creature_type": "Elemental",
+        "alignment": "Neutral",
+        "armor_class": 19,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 84,
+          "hit_dice": "8d8 + 48"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "burrow_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "skills": {
+          "Perception": 6,
+          "Stealth": 6
+        },
+        "immunities": [
+          "Poison",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Tremorsense_feet": 60,
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "Primordial (Terran)"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "traits": {
+          "earth_glide": {
+            "materials": [
+              "nonmagical unworked earth",
+              "nonmagical unworked stone"
+            ],
+            "disturbs_material": false
+          },
+          "treasure_sense": {
+            "pinpoints": [
+              "precious metals",
+              "precious stones"
+            ],
+            "range_feet": 60
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "claw_attacks": 3
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "4d6 + 3 Piercing"
+          },
+          "claw": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "1d10 + 3 Slashing"
+          }
+        },
+        "bonus_actions": {
+          "charge": {
+            "movement": "up to Speed or Burrow Speed",
+            "direction": "straight toward an enemy it can sense"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -30434,7 +32394,7 @@
       "pages": [
         343
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -30451,8 +32411,92 @@
         343,
         344
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Zombie",
+        "size": "Medium",
+        "creature_type": "Undead",
+        "alignment": "Neutral Evil",
+        "armor_class": 8,
+        "initiative": {
+          "modifier": -2,
+          "score": 8
+        },
+        "hit_points": {
+          "average": 15,
+          "hit_dice": "2d8 + 6"
+        },
+        "speed": {
+          "walk_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dexterity": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 6,
+            "modifier": -2,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "immunities": [
+          "Poison",
+          "Exhaustion",
+          "Poisoned"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 8
+        },
+        "languages": [
+          "understands Common and one other language but cannot speak"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "traits": {
+          "undead_fortitude": {
+            "trigger": "damage reduces zombie to 0 Hit Points",
+            "save": {
+              "ability": "Constitution",
+              "dc": "5 + damage taken"
+            },
+            "excluded_damage": "Radiant",
+            "excluded_hit": "Critical Hit",
+            "success_hit_points": 1
+          }
+        },
+        "actions": {
+          "slam": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "reach_feet": 5,
+            "damage": "1d8 + 1 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z",
       "content_ref": {
@@ -30471,8 +32515,92 @@
       "pages": [
         344
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ogre Zombie",
+        "size": "Large",
+        "creature_type": "Undead",
+        "alignment": "Neutral Evil",
+        "armor_class": 8,
+        "initiative": {
+          "modifier": -2,
+          "score": 8
+        },
+        "hit_points": {
+          "average": 85,
+          "hit_dice": "9d10 + 36"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Constitution": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 6,
+            "modifier": -2,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "immunities": [
+          "Poison",
+          "Exhaustion",
+          "Poisoned"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 8
+        },
+        "languages": [
+          "understands Common and Giant but cannot speak"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "undead_fortitude": {
+            "trigger": "damage reduces zombie to 0 Hit Points",
+            "save": {
+              "ability": "Constitution",
+              "dc": "5 + damage taken"
+            },
+            "excluded_damage": "Radiant",
+            "excluded_hit": "Critical Hit",
+            "success_hit_points": 1
+          }
+        },
+        "actions": {
+          "slam": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     }
