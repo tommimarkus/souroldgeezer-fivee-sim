@@ -1498,7 +1498,7 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
@@ -1514,8 +1514,25 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Disguise Kit",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "ability": "Charisma",
+        "weight_lb": 3,
+        "utilize": [
+          {
+            "activity": "Apply makeup",
+            "dc": 10
+          }
+        ],
+        "craft": [
+          "Costume"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1530,8 +1547,27 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Forgery Kit",
+        "price": {
+          "amount": 15,
+          "currency": "GP"
+        },
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize": [
+          {
+            "activity": "Mimic handwriting",
+            "maximum_words": 10,
+            "dc": 15
+          },
+          {
+            "activity": "Duplicate a wax seal",
+            "dc": 20
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1546,8 +1582,53 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Gaming Set",
+        "price": "Varies",
+        "ability": "Wisdom",
+        "listed_weight_applicable": false,
+        "utilize": [
+          {
+            "activity": "Discern cheating",
+            "dc": 10
+          },
+          {
+            "activity": "Win the game",
+            "dc": 20
+          }
+        ],
+        "variants": [
+          {
+            "name": "Dice",
+            "price": {
+              "amount": 1,
+              "currency": "SP"
+            }
+          },
+          {
+            "name": "Dragonchess",
+            "price": {
+              "amount": 1,
+              "currency": "GP"
+            }
+          },
+          {
+            "name": "Playing Cards",
+            "price": {
+              "amount": 5,
+              "currency": "SP"
+            }
+          },
+          {
+            "name": "Three-Dragon Ante",
+            "price": {
+              "amount": 1,
+              "currency": "GP"
+            }
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1562,8 +1643,28 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Herbalism Kit",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "ability": "Intelligence",
+        "weight_lb": 3,
+        "utilize": [
+          {
+            "activity": "Identify a plant",
+            "dc": 10
+          }
+        ],
+        "craft": [
+          "Antitoxin",
+          "Candle",
+          "Healer's Kit",
+          "Potion of Healing"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1578,8 +1679,105 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Musical Instrument",
+        "price": "Varies",
+        "weight": "Varies",
+        "ability": "Charisma",
+        "utilize": [
+          {
+            "activity": "Play a known tune",
+            "dc": 10
+          },
+          {
+            "activity": "Improvise a song",
+            "dc": 15
+          }
+        ],
+        "variants": [
+          {
+            "name": "Bagpipes",
+            "price": {
+              "amount": 30,
+              "currency": "GP"
+            },
+            "weight_lb": 6
+          },
+          {
+            "name": "Drum",
+            "price": {
+              "amount": 6,
+              "currency": "GP"
+            },
+            "weight_lb": 3
+          },
+          {
+            "name": "Dulcimer",
+            "price": {
+              "amount": 25,
+              "currency": "GP"
+            },
+            "weight_lb": 10
+          },
+          {
+            "name": "Flute",
+            "price": {
+              "amount": 2,
+              "currency": "GP"
+            },
+            "weight_lb": 1
+          },
+          {
+            "name": "Horn",
+            "price": {
+              "amount": 3,
+              "currency": "GP"
+            },
+            "weight_lb": 2
+          },
+          {
+            "name": "Lute",
+            "price": {
+              "amount": 35,
+              "currency": "GP"
+            },
+            "weight_lb": 2
+          },
+          {
+            "name": "Lyre",
+            "price": {
+              "amount": 30,
+              "currency": "GP"
+            },
+            "weight_lb": 2
+          },
+          {
+            "name": "Pan Flute",
+            "price": {
+              "amount": 12,
+              "currency": "GP"
+            },
+            "weight_lb": 2
+          },
+          {
+            "name": "Shawm",
+            "price": {
+              "amount": 2,
+              "currency": "GP"
+            },
+            "weight_lb": 1
+          },
+          {
+            "name": "Viol",
+            "price": {
+              "amount": 30,
+              "currency": "GP"
+            },
+            "weight_lb": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1594,8 +1792,26 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Navigator's Tools",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "ability": "Wisdom",
+        "weight_lb": 2,
+        "utilize": [
+          {
+            "activity": "Plot a course",
+            "dc": 10
+          },
+          {
+            "activity": "Determine position by stargazing",
+            "dc": 15
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1610,8 +1826,25 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Poisoner's Kit",
+        "price": {
+          "amount": 50,
+          "currency": "GP"
+        },
+        "ability": "Intelligence",
+        "weight_lb": 2,
+        "utilize": [
+          {
+            "activity": "Detect a poisoned object",
+            "dc": 10
+          }
+        ],
+        "craft": [
+          "Basic Poison"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1626,8 +1859,26 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Thieves' Tools",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "ability": "Dexterity",
+        "weight_lb": 1,
+        "utilize": [
+          {
+            "activity": "Pick a lock",
+            "dc": 15
+          },
+          {
+            "activity": "Disarm a trap",
+            "dc": 15
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "621-9-12-other-tools"
     },
@@ -1642,8 +1893,12 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "table_id": "095-adventuring-gear",
+        "item_order": "alphabetical",
+        "price_location": "after item name"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -1658,8 +1913,31 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Acid",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "activation_action": "Attack",
+        "replaces_attacks": 1,
+        "delivery": "thrown vial",
+        "target_types": [
+          "creature",
+          "object"
+        ],
+        "target_visibility_required": true,
+        "range_feet": 20,
+        "saving_throw": {
+          "ability": "Dexterity",
+          "dc_formula": "8 + Dexterity modifier + Proficiency Bonus"
+        },
+        "failed_save_damage": {
+          "dice": "2d6",
+          "type": "Acid"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1674,8 +1952,32 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Alchemist's Fire",
+        "price": {
+          "amount": 50,
+          "currency": "GP"
+        },
+        "activation_action": "Attack",
+        "replaces_attacks": 1,
+        "delivery": "thrown flask",
+        "target_types": [
+          "creature",
+          "object"
+        ],
+        "target_visibility_required": true,
+        "range_feet": 20,
+        "saving_throw": {
+          "ability": "Dexterity",
+          "dc_formula": "8 + Dexterity modifier + Proficiency Bonus"
+        },
+        "failed_save_damage": {
+          "dice": "1d4",
+          "type": "Fire"
+        },
+        "failed_save_condition": "Burning"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1692,8 +1994,15 @@
         95,
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Ammunition",
+        "price": "Varies",
+        "required_by_weapon_property": "Ammunition",
+        "ammunition_type_source": "weapon description",
+        "table_id": "096-ammunition",
+        "storage_sold_separately": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1708,8 +2017,21 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Antitoxin",
+        "price": {
+          "amount": 50,
+          "currency": "GP"
+        },
+        "activation_action": "Bonus Action",
+        "consumed_by": "drink",
+        "duration_hours": 1,
+        "saving_throw_advantage_applies_to": [
+          "avoid Poisoned",
+          "end Poisoned"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1724,8 +2046,22 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Arcane Focus",
+        "price": "Varies",
+        "table_id": "096-arcane-focuses",
+        "construction": [
+          "bejeweled",
+          "carved"
+        ],
+        "purpose": "channel arcane magic",
+        "spellcasting_focus_classes": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1740,8 +2076,17 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Backpack",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "capacity_weight_lb": 30,
+        "capacity_volume_cubic_feet": 1,
+        "additional_use": "Saddlebag"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -1756,8 +2101,29 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Ball Bearings",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "activation_action": "Utilize",
+        "deployment": "spill pouch",
+        "area": {
+          "shape": "square",
+          "side_feet": 10,
+          "surface": "level",
+          "maximum_distance_feet": 10
+        },
+        "entry_frequency": "first time on a turn",
+        "saving_throw": {
+          "ability": "Dexterity",
+          "dc": 10
+        },
+        "failed_save_condition": "Prone",
+        "recovery_minutes": 10
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -5352,7 +5718,7 @@
       "name": "Adventuring Gear",
       "section_id": "633-9-13-3-ammunition-varies",
       "page": 95,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "item",
@@ -5362,17 +5728,1321 @@
         {
           "id": "weight",
           "name": "Weight",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 41,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Alchemist's Fire"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ammunition"
+            },
+            {
+              "value": "Varies"
+            },
+            {
+              "value": "Varies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Antitoxin"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Arcane Focus"
+            },
+            {
+              "value": "Varies"
+            },
+            {
+              "value": "Varies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Backpack"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ball Bearings"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Barrel"
+            },
+            {
+              "value": "70 lb.",
+              "numeric_value": 70
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Basket"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "4 SP",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bedroll"
+            },
+            {
+              "value": "7 lb.",
+              "numeric_value": 7
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bell"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blanket"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Block and Tackle"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Book"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bottle, Glass"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bucket"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 CP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Burglar's Pack"
+            },
+            {
+              "value": "42 lb.",
+              "numeric_value": 42
+            },
+            {
+              "value": "16 GP",
+              "numeric_value": 16
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Caltrops"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Candle"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 CP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Case, Crossbow Bolt"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Case, Map or Scroll"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chain"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chest"
+            },
+            {
+              "value": "25 lb.",
+              "numeric_value": 25
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Climber's Kit"
+            },
+            {
+              "value": "12 lb.",
+              "numeric_value": 12
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Clothes, Fine"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "15 GP",
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Clothes, Traveler's"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Component Pouch"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Costume"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Crowbar"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Diplomat's Pack"
+            },
+            {
+              "value": "39 lb.",
+              "numeric_value": 39
+            },
+            {
+              "value": "39 GP",
+              "numeric_value": 39
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Druidic Focus"
+            },
+            {
+              "value": "Varies"
+            },
+            {
+              "value": "Varies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dungeoneer's Pack"
+            },
+            {
+              "value": "55 lb.",
+              "numeric_value": 55
+            },
+            {
+              "value": "12 GP",
+              "numeric_value": 12
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Entertainer's Pack"
+            },
+            {
+              "value": "58½ lb.",
+              "numeric_value": 58.5
+            },
+            {
+              "value": "40 GP",
+              "numeric_value": 40
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Explorer's Pack"
+            },
+            {
+              "value": "55 lb.",
+              "numeric_value": 55
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flask"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "2 CP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Grappling Hook"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Healer's Kit"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Holy Symbol"
+            },
+            {
+              "value": "Varies"
+            },
+            {
+              "value": "Varies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Holy Water"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hunting Trap"
+            },
+            {
+              "value": "25 lb.",
+              "numeric_value": 25
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ink"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ink Pen"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "2 CP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Jug"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "2 CP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ladder"
+            },
+            {
+              "value": "25 lb.",
+              "numeric_value": 25
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lamp"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lantern, Bullseye"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lantern, Hooded"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lock"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magnifying Glass"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "100 GP",
+              "numeric_value": 100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Manacles"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Map"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mirror"
+            },
+            {
+              "value": "1/2 lb.",
+              "numeric_value": 0.5
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Net"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Oil"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Paper"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Parchment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Perfume"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poison, Basic"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "100 GP",
+              "numeric_value": 100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Pole"
+            },
+            {
+              "value": "7 lb.",
+              "numeric_value": 7
+            },
+            {
+              "value": "5 CP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Pot, Iron"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Healing"
+            },
+            {
+              "value": "1/2 lb.",
+              "numeric_value": 0.5
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Pouch"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Priest's Pack"
+            },
+            {
+              "value": "29 lb.",
+              "numeric_value": 29
+            },
+            {
+              "value": "33 GP",
+              "numeric_value": 33
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Quiver"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ram, Portable"
+            },
+            {
+              "value": "35 lb.",
+              "numeric_value": 35
+            },
+            {
+              "value": "4 GP",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rations"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Robe"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rope"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sack"
+            },
+            {
+              "value": "1/2 lb.",
+              "numeric_value": 0.5
+            },
+            {
+              "value": "1 CP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scholar's Pack"
+            },
+            {
+              "value": "22 lb.",
+              "numeric_value": 22
+            },
+            {
+              "value": "40 GP",
+              "numeric_value": 40
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shovel"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Signal Whistle"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "5 CP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spell Scroll (Cantrip)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "30 GP",
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spell Scroll (Level 1)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spikes, Iron"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spyglass"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1,000 GP",
+              "numeric_value": 1000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "String"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tent"
+            },
+            {
+              "value": "20 lb.",
+              "numeric_value": 20
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tinderbox"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Torch"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 CP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Vial"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Waterskin"
+            },
+            {
+              "value": "5 lb. (full)",
+              "numeric_value": 5
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            }
+          ]
+        }
+      ],
+      "source_row_count": 82,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 18,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 40,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 41,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 48,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 50,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 54,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 55,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 56,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 57,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 71,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 72,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 73,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 76,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 80,
+          "column": "weight"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -5380,7 +7050,7 @@
       "name": "Ammunition",
       "section_id": "633-9-13-3-ammunition-varies",
       "page": 96,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "type",
@@ -5388,17 +7058,133 @@
           "type": "string"
         },
         {
-          "id": "amount-storage",
-          "name": "Amount Storage",
+          "id": "amount",
+          "name": "Amount",
+          "type": "integer"
+        },
+        {
+          "id": "storage",
+          "name": "Storage",
           "type": "string"
         },
         {
-          "id": "weight-cost",
-          "name": "Weight Cost",
+          "id": "weight",
+          "name": "Weight",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Arrows"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": "Quiver"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bolts"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": "Case"
+            },
+            {
+              "value": "1½ lb.",
+              "numeric_value": 1.5
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bullets, Firearm"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "Pouch"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "3 GP",
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bullets, Sling"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": "Pouch"
+            },
+            {
+              "value": "1½ lb.",
+              "numeric_value": 1.5
+            },
+            {
+              "value": "4 CP",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Needles"
+            },
+            {
+              "value": 50
+            },
+            {
+              "value": "Pouch"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5408,7 +7194,7 @@
       "name": "Arcane Focuses",
       "section_id": "635-9-13-5-arcane-focus-varies",
       "page": 96,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "focus",
@@ -5418,15 +7204,91 @@
         {
           "id": "weight",
           "name": "Weight",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Crystal"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Orb"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "20 GP",
+              "numeric_value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rod"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Staff (also a Quarterstaff)"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wand"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
