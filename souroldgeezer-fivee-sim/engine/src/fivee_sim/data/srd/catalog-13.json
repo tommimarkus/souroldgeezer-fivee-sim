@@ -3978,8 +3978,19 @@
       "pages": [
         221
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Eyes of the Eagle",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "form": "crystal lenses worn over eyes",
+        "wisdom_perception_checks_relying_on_sight": "Advantage",
+        "clear_visibility": {
+          "can_discern_extremely_distant_details": true,
+          "minimum_creature_or_object_size_feet_across": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3994,8 +4005,144 @@
       "pages": [
         221
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Feather Token",
+        "item_category": "Wondrous Item",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "appearance": "feather",
+        "uses_per_token": 1,
+        "type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "type_table_id": "221-feather-tokens",
+        "types": {
+          "Anchor": {
+            "rarity": "Uncommon",
+            "activation": {
+              "action": "Magic",
+              "method": "touch token to boat or ship"
+            },
+            "vessel_cannot_be_moved": true,
+            "duration_hours": 24,
+            "early_end": "touch token to vessel again",
+            "token_disappears_when_effect_ends": true
+          },
+          "Bird": {
+            "rarity": "Rare",
+            "activation": {
+              "action": "Magic",
+              "method": "toss token 5 feet into air"
+            },
+            "token_disappears": true,
+            "creature": "enormous multicolored bird using Roc statistics",
+            "can_attack": false,
+            "obeys_simple_commands": true,
+            "flight_profiles": [
+              {
+                "maximum_load_pounds": 500,
+                "speed_miles_per_hour": 16,
+                "maximum_miles_per_day": 144,
+                "rest_hours_per_3_hours_flying": 1
+              },
+              {
+                "maximum_load_pounds": 1000,
+                "speed": "half maximum speed"
+              }
+            ],
+            "disappears_after": [
+              "maximum daily flight distance",
+              "0 Hit Points"
+            ],
+            "dismiss_action": "Magic"
+          },
+          "Fan": {
+            "rarity": "Uncommon",
+            "prerequisite": "user is on boat or ship",
+            "activation": {
+              "action": "Magic",
+              "method": "toss token up to 10 feet into air"
+            },
+            "token_disappears": true,
+            "effect": "floating giant fan creates strong wind",
+            "affected_sails": "one ship",
+            "ship_speed_increase_miles_per_hour": 5,
+            "duration_hours": 8,
+            "dismiss_action": "Magic"
+          },
+          "Swan Boat": {
+            "rarity": "Rare",
+            "activation": {
+              "action": "Magic",
+              "method": "touch token to body of water",
+              "minimum_water_diameter_feet": 60
+            },
+            "token_disappears": true,
+            "boat_dimensions_feet": {
+              "length": 50,
+              "width": 20
+            },
+            "appearance": "swan-shaped",
+            "self_propelled": true,
+            "speed_miles_per_hour": 6,
+            "command": {
+              "action": "Magic",
+              "user_must_be_aboard": true,
+              "options": [
+                "move",
+                "turn up to 90 degrees"
+              ]
+            },
+            "duration_hours": 24,
+            "dismiss_action": "Magic"
+          },
+          "Tree": {
+            "rarity": "Uncommon",
+            "prerequisite": "outdoors",
+            "activation": {
+              "action": "Magic",
+              "method": "touch token to unoccupied ground space"
+            },
+            "token_disappears": true,
+            "result": "nonmagical oak tree",
+            "tree_height_feet": 60,
+            "trunk_diameter_feet": 5,
+            "top_branch_radius_feet": 20
+          },
+          "Whip": {
+            "rarity": "Rare",
+            "activation": {
+              "action": "Magic",
+              "method": "throw token to point",
+              "range_feet": 10
+            },
+            "token_disappears": true,
+            "result": "floating whip",
+            "attack": {
+              "action": "Bonus Action",
+              "type": "melee spell attack",
+              "target_range_from_whip_feet": 10,
+              "attack_bonus": 9,
+              "hit_damage": {
+                "dice": "1d6 + 5",
+                "type": "Force"
+              }
+            },
+            "repeat_attack": {
+              "action": "Bonus Action",
+              "maximum_whip_flight_feet": 20
+            },
+            "duration_hours": 1,
+            "early_end_conditions": [
+              "user dismisses it as a Magic action",
+              "user dies",
+              "user has Incapacitated condition"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -4011,8 +4158,166 @@
         221,
         222
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Figurine of Wondrous Power",
+        "item_category": "Wondrous Item",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "form": "pocket-sized statuette",
+        "activation": {
+          "action": "Magic",
+          "method": "throw figurine to ground",
+          "range_feet": 60
+        },
+        "transformation_fails_if": [
+          "appearance space occupied",
+          "insufficient space"
+        ],
+        "creature_form": {
+          "attitude": "Friendly to user and allies",
+          "understands_user_languages": true,
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "without_commands": "defends itself and takes no other actions",
+          "normal_reversion": "end of figurine-specific duration",
+          "early_reversion": [
+            "creature form reaches 0 Hit Points",
+            "user takes Magic action while touching creature"
+          ]
+        },
+        "variants": {
+          "Bronze Griffon": {
+            "rarity": "Rare",
+            "creature": "Griffon",
+            "maximum_duration_hours": 6,
+            "recharge_days": 5
+          },
+          "Ebony Fly": {
+            "rarity": "Rare",
+            "creature": "Giant Fly",
+            "maximum_duration_hours": 12,
+            "can_be_ridden_as_mount": true,
+            "recharge_days": 2
+          },
+          "Golden Lions": {
+            "rarity": "Rare",
+            "created_as_pair": true,
+            "simultaneous_use_count": [
+              1,
+              2
+            ],
+            "creature_per_figurine": "Lion",
+            "maximum_duration_hours": 1,
+            "recharge_days_per_lion": 7
+          },
+          "Ivory Goats": {
+            "rarity": "Rare",
+            "created_as_set_of_three": true,
+            "members": {
+              "Goat of Terror": {
+                "creature": "Giant Goat",
+                "maximum_duration_hours": 3,
+                "can_attack": false,
+                "removable_horns": {
+                  "action": "Magic",
+                  "weapons": [
+                    "+1 Lance",
+                    "+2 Longsword"
+                  ],
+                  "return_when": "goat reverts to figurine"
+                },
+                "mounted_fear": {
+                  "area": {
+                    "shape": "Emanation",
+                    "radius_feet": 30
+                  },
+                  "targets": "Hostile creatures starting turn in area",
+                  "saving_throw": {
+                    "ability": "Wisdom",
+                    "dc": 15
+                  },
+                  "failure_condition": "Frightened",
+                  "duration_until": [
+                    "1 minute",
+                    "user no longer rides goat",
+                    "goat reverts to figurine"
+                  ],
+                  "repeat_save": "end of each affected creature turn",
+                  "success_immunity_hours": 24
+                },
+                "recharge_days": 15
+              },
+              "Goat of Traveling": {
+                "creature": "Large goat using Riding Horse statistics",
+                "charges": 24,
+                "charge_cost": "1 per hour or portion thereof in goat form",
+                "reusable_while_charged": true,
+                "reverts_at_zero_charges": true,
+                "recharge_days": 7,
+                "charges_regained": "all"
+              },
+              "Goat of Travail": {
+                "creature": "Giant Goat",
+                "maximum_duration_hours": 3,
+                "recharge_days": 30
+              }
+            }
+          },
+          "Marble Elephant": {
+            "rarity": "Rare",
+            "creature": "Elephant",
+            "maximum_duration_hours": 24,
+            "recharge_days": 7
+          },
+          "Obsidian Steed": {
+            "rarity": "Very Rare",
+            "creature": "Nightmare",
+            "maximum_duration_hours": 24,
+            "combat_behavior": "fights only to defend itself",
+            "recharge_days": 5,
+            "ignore_orders_chance_percent_per_use": 10,
+            "ignored_orders_include_reversion": true,
+            "mounted_while_ignoring_orders": {
+              "destination": "random location on plane of Hades",
+              "transported": [
+                "user",
+                "nightmare"
+              ],
+              "nightmare_reverts_to_figurine": true
+            }
+          },
+          "Onyx Dog": {
+            "rarity": "Rare",
+            "creature": "Mastiff",
+            "maximum_duration_hours": 6,
+            "intelligence": 8,
+            "language": "Common",
+            "blindsight_feet": 60,
+            "recharge_days": 7
+          },
+          "Serpentine Owl": {
+            "rarity": "Rare",
+            "creature": "Giant Owl",
+            "maximum_duration_hours": 8,
+            "telepathy_with_user": {
+              "range": "any",
+              "same_plane_required": true
+            },
+            "recharge_days": 2
+          },
+          "Silver Raven": {
+            "rarity": "Uncommon",
+            "creature": "Raven",
+            "maximum_duration_hours": 12,
+            "recharge_days": 2,
+            "grants_user_spell": {
+              "spell": "Animal Messenger",
+              "target": "raven form"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -4027,8 +4332,64 @@
       "pages": [
         222
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Giant Fly",
+        "size": "Large",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": 19,
+        "hit_dice": "3d10 + 3",
+        "speeds_feet": {
+          "walk": 30,
+          "fly": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "darkvision_feet": 60,
+          "passive_perception": 10
+        },
+        "languages": "None",
+        "challenge_rating": 0,
+        "experience_points": 0,
+        "proficiency_bonus": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -4043,8 +4404,31 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Flame Tongue",
+        "item_category": "Weapon (Any Melee Weapon)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "flame_activation": {
+          "action": "Bonus Action",
+          "requires_command_word": true
+        },
+        "while_ablaze": {
+          "bright_light_radius_feet": 40,
+          "additional_dim_light_feet": 40,
+          "extra_hit_damage": {
+            "dice": "2d6",
+            "type": "Fire"
+          }
+        },
+        "flames_end_after": [
+          "user repeats command as Bonus Action",
+          "user drops weapon",
+          "user stows weapon",
+          "user sheathes weapon"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4059,8 +4443,38 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Folding Boat",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "box_dimensions_inches": {
+          "length": 12,
+          "width": 6,
+          "depth": 6
+        },
+        "box_weight_pounds": 4,
+        "box_floats": true,
+        "box_can_store_items": true,
+        "command_words": {
+          "action": "Magic",
+          "first": "unfolds box into Rowboat",
+          "second": "unfolds box into Keelboat",
+          "third": {
+            "effect": "folds vessel into box",
+            "requires_no_creatures_aboard": true,
+            "objects_fitting_box_move_inside": true,
+            "objects_not_fitting_box_remain_outside": true
+          }
+        },
+        "vessel_form": {
+          "weight": "normal vessel of its size",
+          "stored_box_contents_remain_aboard": true,
+          "statistics_reference": "Equipment"
+        },
+        "destroyed_if_vessel_reaches_zero_hit_points": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4075,8 +4489,27 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Frost Brand",
+        "item_category": "Weapon (Glaive, Greatsword, Longsword, Rapier, Scimitar, or Shortsword)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "extra_hit_damage": {
+          "dice": "1d6",
+          "type": "Cold"
+        },
+        "fire_damage_resistance_while_held": true,
+        "freezing_temperature_light": {
+          "bright_light_radius_feet": 10,
+          "additional_dim_light_feet": 10
+        },
+        "on_draw": {
+          "effect": "extinguish all nonmagical flames",
+          "radius_feet": 30,
+          "recharge_hours": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4091,8 +4524,15 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gauntlets of Ogre Power",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "strength_while_worn": 19,
+        "no_effect_if_unmodified_strength_at_least": 19
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4107,8 +4547,55 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gem of Brightness",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "form": "prism",
+        "charges": 50,
+        "activation": {
+          "action": "Magic",
+          "requires_holding": true
+        },
+        "command_words": {
+          "first": {
+            "charge_cost": 0,
+            "bright_light_radius_feet": 30,
+            "additional_dim_light_feet": 30,
+            "ends_after": [
+              "repeat command as Bonus Action",
+              "use another gem function"
+            ]
+          },
+          "second": {
+            "charge_cost": 1,
+            "target": "one visible creature",
+            "range_feet": 60,
+            "saving_throw": {
+              "ability": "Constitution",
+              "dc": 15
+            },
+            "failure_condition": "Blinded",
+            "duration_minutes": 1,
+            "repeat_save": "end of each affected creature turn"
+          },
+          "third": {
+            "charge_cost": 5,
+            "area": {
+              "shape": "Cone",
+              "length_feet": 30
+            },
+            "targets": "each creature in area",
+            "saving_throw_and_effect": "same as second command beam"
+          }
+        },
+        "at_zero_charges": {
+          "becomes_nonmagical": true,
+          "value_gp": 50
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4123,8 +4610,23 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gem of Seeing",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 3,
+        "activation": {
+          "action": "Magic",
+          "charge_cost": 1
+        },
+        "effect_while_peering_through_gem": {
+          "truesight_feet": 120,
+          "duration_minutes": 10
+        },
+        "recharge": "1d3 expended charges daily at dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4139,8 +4641,26 @@
       "pages": [
         223
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Giant Slayer",
+        "item_category": "Weapon (Any Simple or Martial)",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "attack_roll_bonus": 1,
+        "damage_roll_bonus": 1,
+        "hit_against_giant": {
+          "extra_damage": {
+            "dice": "2d6",
+            "type": "weapon damage type"
+          },
+          "saving_throw": {
+            "ability": "Strength",
+            "dc": 15
+          },
+          "failure_condition": "Prone"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4156,8 +4676,31 @@
         223,
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Glamoured Studded Leather",
+        "item_category": "Armor (Studded Leather Armor)",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "armor_class_bonus_while_worn": 1,
+        "appearance_change": {
+          "action": "Bonus Action",
+          "forms": [
+            "normal clothing",
+            "other armor"
+          ],
+          "user_controls": [
+            "color",
+            "style",
+            "accessories"
+          ],
+          "normal_bulk_and_weight_retained": true,
+          "duration_until": [
+            "property used again",
+            "armor doffed"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4172,8 +4715,19 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gloves of Missile Snaring",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "trigger": "wearer hit by Ranged or Thrown weapon attack roll",
+        "requires_free_hand": true,
+        "reaction": {
+          "damage_reduction": "1d10 + Dexterity modifier",
+          "at_zero_damage": "catch ammunition or weapon if small enough for free hand"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4188,8 +4742,18 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gloves of Swimming and Climbing",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "benefits_while_worn": {
+          "climb_speed": "equal to Speed",
+          "swim_speed": "equal to Speed",
+          "strength_athletics_checks_to_climb_or_swim_bonus": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4204,8 +4768,15 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Gloves of Thievery",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "imperceptible_while_worn": true,
+        "dexterity_sleight_of_hand_checks_bonus": 5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4220,8 +4791,16 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Goggles of Night",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "form": "dark lenses",
+        "darkvision_while_worn_feet": 60,
+        "existing_darkvision_range_increase_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4236,8 +4815,52 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Hammer of Thunderbolts",
+        "item_category": "Weapon (Maul or Warhammer)",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "attack_roll_bonus": 1,
+        "damage_roll_bonus": 1,
+        "charges": 5,
+        "charged_throw": {
+          "charge_cost": 1,
+          "normal_range_feet": 20,
+          "long_range_feet": 60,
+          "returns_to_hand_after": [
+            "hit",
+            "miss"
+          ],
+          "on_hit": {
+            "thunderclap_audible_feet": 300,
+            "targets": "target and every creature within 30 feet except user",
+            "saving_throw": {
+              "ability": "Constitution",
+              "dc": 17
+            },
+            "failure_condition": "Stunned until end of user's next turn"
+          }
+        },
+        "recharge": "1d4 + 1 expended charges daily at dawn",
+        "giants_bane_prerequisites": [
+          "attuned to weapon",
+          "wearing and attuned to Belt of Giant Strength or Gauntlets of Ogre Power"
+        ],
+        "giants_bane_benefits": {
+          "attack_roll_d20_result_20_against_giant": {
+            "saving_throw": {
+              "ability": "Constitution",
+              "dc": 17
+            },
+            "failure": "Giant dies"
+          },
+          "might_of_giants": {
+            "bestowed_strength_increase": 4,
+            "maximum_strength": 30
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4252,8 +4875,56 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Handy Haversack",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "pouches": {
+          "side": {
+            "count": 2,
+            "capacity_pounds_each": 200,
+            "capacity_cubic_feet_each": 25
+          },
+          "central": {
+            "count": 1,
+            "capacity_pounds": 500,
+            "capacity_cubic_feet": 64
+          }
+        },
+        "spaces": "extradimensional",
+        "item_weight_pounds_regardless_of_contents": 5,
+        "retrieve_actions": [
+          "Utilize",
+          "Bonus Action"
+        ],
+        "requested_item_magically_on_top": true,
+        "overloaded_pierced_or_torn": {
+          "haversack_destroyed": true,
+          "contents": "lost forever",
+          "artifact_exception": "turns up again somewhere"
+        },
+        "turned_inside_out": {
+          "contents_spill_unharmed": true,
+          "must_be_righted_before_reuse": true
+        },
+        "breathable_air_minutes_per_pouch": "10 divided by number of breathing creatures inside",
+        "nested_extradimensional_space": {
+          "examples": [
+            "Bag of Holding",
+            "Portable Hole"
+          ],
+          "both_items_destroyed": true,
+          "opens_gate_to": "Astral Plane",
+          "gate_radius_feet": 10,
+          "total_cover_prevents_transport": true,
+          "transport_destination": "random Astral Plane location",
+          "gate_closes_afterward": true,
+          "gate_direction": "one-way",
+          "gate_can_reopen": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4268,8 +4939,15 @@
       "pages": [
         224
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Hat of Disguise",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "spell_while_worn": "Disguise Self",
+        "spell_ends_if_hat_removed": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -8622,10 +9300,10 @@
       "name": "Feather Tokens",
       "section_id": "1475-13-26-78-feather-token",
       "page": 221,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
           "type": "string"
         },
@@ -8640,7 +9318,86 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01–20"
+            },
+            {
+              "value": "Anchor"
+            },
+            {
+              "value": "Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21–35"
+            },
+            {
+              "value": "Bird"
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36–50"
+            },
+            {
+              "value": "Fan"
+            },
+            {
+              "value": "Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51–65"
+            },
+            {
+              "value": "Swan boat"
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "66–90"
+            },
+            {
+              "value": "Tree"
+            },
+            {
+              "value": "Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91–00"
+            },
+            {
+              "value": "Whip"
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
