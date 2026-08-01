@@ -15,7 +15,7 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,14 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_origin_component": "background",
+        "represents_formative_characteristics": [
+          "place",
+          "occupation"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
     },
@@ -46,8 +52,16 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "part_ids": [
+          "520-7-2-1-ability-scores",
+          "521-7-2-2-feat",
+          "522-7-2-3-skill-proficiencies",
+          "523-7-2-4-tool-proficiency",
+          "524-7-2-5-equipment"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
     },
@@ -62,8 +76,24 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background_listed_ability_count": 3,
+        "increase_options": [
+          [
+            2,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            1
+          ]
+        ],
+        "plus_2_and_plus_1_apply_to_different_abilities": true,
+        "maximum_score_after_increase": 20
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "519-7-2-parts-of-a-background"
     },
@@ -78,8 +108,12 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_count": 1,
+        "feat_type": "Origin",
+        "feat_specified_by": "background"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "519-7-2-parts-of-a-background"
     },
@@ -94,8 +128,11 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "skill_proficiency_count": 2,
+        "skills_specified_by": "background"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "519-7-2-parts-of-a-background"
     },
@@ -110,8 +147,14 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool_proficiency_count": 1,
+        "tool_selection_options": [
+          "specified tool",
+          "Artisan’s Tools category choice"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "519-7-2-parts-of-a-background"
     },
@@ -126,8 +169,13 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "equipment_choice": [
+          "background equipment package",
+          "50 GP"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "519-7-2-parts-of-a-background"
     },
@@ -142,7 +190,7 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
@@ -158,8 +206,53 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background": "Acolyte",
+        "ability_scores": [
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "feat": "Magic Initiate (Cleric)",
+        "skill_proficiencies": [
+          "Insight",
+          "Religion"
+        ],
+        "tool_proficiency": "Calligrapher’s Supplies",
+        "equipment_options": {
+          "A": {
+            "items": [
+              {
+                "name": "Calligrapher’s Supplies",
+                "quantity": 1
+              },
+              {
+                "name": "Book",
+                "kind": "prayers",
+                "quantity": 1
+              },
+              {
+                "name": "Holy Symbol",
+                "quantity": 1
+              },
+              {
+                "name": "Parchment",
+                "quantity": 10,
+                "unit": "sheets"
+              },
+              {
+                "name": "Robe",
+                "quantity": 1
+              }
+            ],
+            "gp": 8
+          },
+          "B": {
+            "gp": 50
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "525-7-3-background-descriptions"
     },
