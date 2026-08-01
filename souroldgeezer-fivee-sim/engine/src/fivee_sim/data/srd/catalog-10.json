@@ -18575,8 +18575,51 @@
       "pages": [
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Spiritual Weapon",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "force": {
+            "mobility": "floating",
+            "nature": "spectral",
+            "appearance": "weapon chosen by caster",
+            "origin": "chosen space within range"
+          },
+          "immediate_attack": {
+            "type": "melee spell attack",
+            "target": "one creature within 5 feet of force"
+          },
+          "hit_damage": "1d8 + spellcasting ability modifier",
+          "damage_type": "Force",
+          "later_turn_bonus_action": {
+            "move_force_feet": 20,
+            "repeat_attack": true,
+            "target_distance_from_force_feet": 5
+          },
+          "higher_level_slots": {
+            "damage_increase_per_slot_above_2": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18591,8 +18634,48 @@
       "pages": [
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Starry Wisp",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target_types": [
+            "creature",
+            "object"
+          ],
+          "attack": "ranged spell attack",
+          "hit_damage": "1d8",
+          "damage_type": "Radiant",
+          "hit_until_end_of_next_turn": {
+            "dim_light_radius_feet": 10,
+            "Invisible_condition_benefit": false
+          },
+          "damage_by_character_level": {
+            "1": "1d8",
+            "5": "2d8",
+            "11": "3d8",
+            "17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18607,8 +18690,49 @@
       "pages": [
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Stinking Cloud",
+        "level": 3,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "rotten egg"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "point within range"
+          },
+          "cloud": {
+            "condition": "Heavily Obscured",
+            "dispersed_by": "strong wind"
+          },
+          "start_turn_save": "Constitution",
+          "failed_save_condition": "Poisoned until end of current turn",
+          "while_poisoned": {
+            "can_take_action": false,
+            "can_take_bonus_action": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18623,8 +18747,43 @@
       "pages": [
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Stone Shape",
+        "level": 4,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "soft clay"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target_options": [
+            "Medium or smaller stone object",
+            "stone section no more than 5 feet in any dimension"
+          ],
+          "shape_chosen_by": "caster",
+          "can_make_passage_through_wall_thickness_feet": 5,
+          "can_seal_stone_door_or_frame": true,
+          "created_object_maximum_hinges": 2,
+          "created_object_can_have_latch": true,
+          "finer_mechanical_detail_possible": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18639,8 +18798,42 @@
       "pages": [
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Stoneskin",
+        "level": 4,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond dust worth 100+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "one willing touched creature",
+          "resistances": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18656,8 +18849,77 @@
         165,
         166
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Storm of Vengeance",
+        "level": 9,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "miles": 1
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "cloud": {
+            "radius_feet": 300,
+            "origin": "point within range"
+          },
+          "on_appearance": {
+            "targets": "each creature under cloud",
+            "saving_throw": "Constitution",
+            "failed_save_damage": "2d6",
+            "damage_type": "Thunder",
+            "failed_save_condition": "Deafened for spell duration"
+          },
+          "later_turns": {
+            "2": {
+              "targets": [
+                "creatures",
+                "objects"
+              ],
+              "damage": "4d6",
+              "damage_type": "Acid"
+            },
+            "3": {
+              "targets": "six different creatures or objects",
+              "bolts": 6,
+              "saving_throw": "Dexterity",
+              "failed_save_damage": "10d6",
+              "damage_type": "Lightning",
+              "successful_save_damage": "half"
+            },
+            "4": {
+              "targets": "creatures",
+              "damage": "2d6",
+              "damage_type": "Bludgeoning"
+            },
+            "5-10": {
+              "targets": "creatures",
+              "damage": "1d6",
+              "damage_type": "Cold",
+              "persistent_area_effects": [
+                "Difficult Terrain",
+                "Heavily Obscured",
+                "ranged weapon attacks impossible",
+                "strong wind"
+              ]
+            }
+          },
+          "later_effect_timing": "start of caster's turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18672,8 +18934,48 @@
       "pages": [
         166
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Suggestion",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "M": "drop of honey"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 8
+        },
+        "effect": {
+          "target": "one visible creature that can hear and understand caster",
+          "suggestion_maximum_words": 25,
+          "suggestion_requirements": [
+            "sounds achievable",
+            "does not obviously deal damage to target or target's allies"
+          ],
+          "saving_throw": "Wisdom",
+          "failed_save_condition": "Charmed",
+          "condition_ends": [
+            "spell duration ends",
+            "caster or caster's ally damages target"
+          ],
+          "behavior": "Charmed target pursues suggestion to best of its ability",
+          "completion": "spell ends for target when activity is completed"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18688,8 +18990,49 @@
       "pages": [
         166
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Summon Dragon",
+        "level": 5,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "dragon-engraved object worth 500+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "summon": "Dragon spirit",
+          "destination": "visible unoccupied space",
+          "stat_block_id": "1084-10-17-draconic-spirit",
+          "disappears_at_hit_points": 0,
+          "disappears_when_spell_ends": true,
+          "allegiance": "ally to caster and caster's allies",
+          "initiative": "shares caster's Initiative count",
+          "turn_order": "immediately after caster",
+          "commands": {
+            "type": "verbal",
+            "caster_action_required": false
+          },
+          "without_command": [
+            "takes Dodge action",
+            "uses movement to avoid danger"
+          ],
+          "stat_block_spell_level": "spell slot level"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18704,8 +19047,105 @@
       "pages": [
         166
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block": "Draconic Spirit",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Neutral",
+        "armor_class_formula": "14 + spell level",
+        "hit_points_formula": "50 + 10 × (spell level - 5)",
+        "speeds_feet": {
+          "walk": 30,
+          "fly": 60,
+          "swim": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "damage_resistances": [
+          "Acid",
+          "Cold",
+          "Fire",
+          "Lightning",
+          "Poison"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Poisoned"
+        ],
+        "blindsight_feet": 30,
+        "darkvision_feet": 60,
+        "passive_perception": 12,
+        "languages": [
+          "Draconic",
+          "understands languages caster knows"
+        ],
+        "challenge_rating": "None",
+        "experience_points": 0,
+        "proficiency_bonus": "caster's Proficiency Bonus",
+        "traits": {
+          "Shared Resistances": {
+            "choice": "one spirit damage Resistance chosen when summoned",
+            "caster_gains_chosen_resistance": true,
+            "duration": "until spell ends"
+          }
+        },
+        "actions": {
+          "Multiattack": {
+            "rend_attacks": "half spell level, rounded down",
+            "also_uses_breath_weapon": true
+          },
+          "Rend": {
+            "type": "Melee Attack Roll",
+            "attack_bonus": "caster's spell attack modifier",
+            "reach_feet": 10,
+            "damage_formula": "1d6 + 4 + spell level",
+            "damage_type": "Piercing"
+          },
+          "Breath Weapon": {
+            "area": {
+              "shape": "Cone",
+              "length_feet": 30
+            },
+            "saving_throw": "Dexterity",
+            "dc": "caster's spell save DC",
+            "failed_save_damage": "2d6",
+            "damage_type": "one of spirit's Resistances, chosen when spell is cast",
+            "successful_save_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1083-10-16-158-summon-dragon"
     },
@@ -18720,8 +19160,50 @@
       "pages": [
         166
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sunbeam",
+        "level": 6,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "magnifying glass"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "line": {
+            "width_feet": 5,
+            "length_feet": 60
+          },
+          "saving_throw": "Constitution",
+          "failed_save_damage": "6d8",
+          "damage_type": "Radiant",
+          "failed_save_condition": "Blinded until start of caster's next turn",
+          "successful_save_damage": "half",
+          "later_new_line_action": "Magic",
+          "caster_light": {
+            "bright_radius_feet": 30,
+            "additional_dim_radius_feet": 30,
+            "is_sunlight": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18736,8 +19218,51 @@
       "pages": [
         167
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sunburst",
+        "level": 8,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "piece of sunstone"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 60,
+            "origin": "chosen point"
+          },
+          "light": "sunlight",
+          "saving_throw": "Constitution",
+          "failed_save_damage": "12d6",
+          "damage_type": "Radiant",
+          "failed_save_condition": "Blinded for 1 minute",
+          "successful_save_damage": "half",
+          "blinded_repeat_save": {
+            "ability": "Constitution",
+            "timing": "end of each target turn",
+            "success": "condition ends"
+          },
+          "dispels": "Darkness in area created by any spell"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18752,8 +19277,112 @@
       "pages": [
         167
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Symbol",
+        "level": 7,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "powdered diamond worth 1,000+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "until": [
+            "dispelled",
+            "triggered"
+          ]
+        },
+        "effect": {
+          "placement": [
+            "surface",
+            "inside closable object"
+          ],
+          "maximum_diameter_feet": 10,
+          "object_movement_limit_feet": 10,
+          "movement_beyond_limit": "glyph breaks and spell ends without triggering",
+          "notice_check": {
+            "ability": "Wisdom",
+            "skill": "Perception",
+            "dc": "caster's spell save DC"
+          },
+          "trigger": {
+            "defined_by": "caster",
+            "can_filter_creature_types": true,
+            "can_exempt_creatures_by_conditions": true,
+            "password_exception": true
+          },
+          "activation": {
+            "area": {
+              "shape": "Sphere",
+              "radius_feet": 60
+            },
+            "light": "Dim",
+            "light_duration_minutes": 10,
+            "spell_ends_after_minutes": 10,
+            "target_timings": [
+              "glyph activation",
+              "first entry on a turn",
+              "end of turn in Sphere"
+            ],
+            "maximum_target_frequency": "once per turn"
+          },
+          "effect_choice": {
+            "Death": {
+              "saving_throw": "Constitution",
+              "failed_save_damage": "10d10",
+              "damage_type": "Necrotic",
+              "successful_save_damage": "half"
+            },
+            "Discord": {
+              "saving_throw": "Wisdom",
+              "failed_save_duration_minutes": 1,
+              "failed_save_effects": [
+                "argues with other creatures",
+                "incapable of meaningful communication",
+                "Disadvantage on attack rolls",
+                "Disadvantage on ability checks"
+              ]
+            },
+            "Fear": {
+              "saving_throw": "Wisdom",
+              "failed_save_condition": "Frightened for 1 minute",
+              "required_movement_per_turn_feet": 30,
+              "movement_direction": "away from glyph",
+              "only_if_able": true
+            },
+            "Pain": {
+              "saving_throw": "Constitution",
+              "failed_save_condition": "Incapacitated for 1 minute"
+            },
+            "Sleep": {
+              "saving_throw": "Wisdom",
+              "failed_save_condition": "Unconscious for 10 minutes",
+              "awakens_on": [
+                "takes damage",
+                "another creature uses action to shake awake"
+              ]
+            },
+            "Stunning": {
+              "saving_throw": "Wisdom",
+              "failed_save_condition": "Stunned for 1 minute"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18769,8 +19398,60 @@
         167,
         168
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Telekinesis",
+        "level": 5,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "use_timings": [
+            "when spell is cast",
+            "Magic action on later turns"
+          ],
+          "target": "one visible creature or object",
+          "can_repeat_same_target": true,
+          "can_switch_target": true,
+          "switching_ends_prior_target_effect": true,
+          "creature": {
+            "maximum_size": "Huge",
+            "saving_throw": "Strength",
+            "failed_save_move_feet": 30,
+            "direction": "any within spell range",
+            "failed_save_condition": "Restrained until end of caster's next turn",
+            "airborne_target_suspended": true,
+            "falls_at_end_of_caster_next_turn": true,
+            "repeat_failed_save_prevents_fall": true
+          },
+          "object": {
+            "maximum_size": "Huge",
+            "unworn_unheld_move_automatic": true,
+            "worn_or_carried_save": "Strength by carrier",
+            "failed_save": "object pulled away and moved",
+            "move_feet": 30,
+            "direction": "any within spell range",
+            "fine_control": true,
+            "fine_control_example": "manipulating a simple tool"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18785,8 +19466,42 @@
       "pages": [
         168
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Telepathic Bond",
+        "level": 5,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "options": [
+            "Action",
+            "Ritual"
+          ]
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "two eggs"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "maximum_targets": 8,
+          "targets": "willing creatures chosen by caster",
+          "each_target_linked_to_all_others": true,
+          "creatures_unable_to_communicate_in_any_language_unaffected": true,
+          "shared_language_required": false,
+          "distance_limit": false,
+          "extends_across_planes": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18801,8 +19516,83 @@
       "pages": [
         168
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Teleport",
+        "level": 7,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target_options": {
+            "creatures": {
+              "caster_included": true,
+              "maximum_additional": 8,
+              "willing": true,
+              "visible": true
+            },
+            "object": {
+              "count": 1,
+              "visible": true,
+              "maximum_size": "Large",
+              "cannot_be_held_or_carried_by_unwilling_creature": true
+            }
+          },
+          "destination": {
+            "must_be_known_to_caster": true,
+            "same_plane_required": true
+          },
+          "outcome_roll": "1d100 by GM",
+          "outcome_table_id": "168-teleportation-outcome",
+          "familiarity": {
+            "Permanent circle": "permanent teleportation circle whose sigil sequence caster knows",
+            "Linked object": "caster possesses object taken from destination within last six months",
+            "Very familiar": "visited often, carefully studied, or currently visible",
+            "Seen casually": "seen more than once but not very familiar",
+            "Viewed once or described": "seen once, possibly by magic, or known from another's description",
+            "False destination": "place does not exist"
+          },
+          "outcomes": {
+            "Mishap": {
+              "damage_per_teleporting_creature_or_object": "3d10",
+              "damage_type": "Force",
+              "reroll_table": true,
+              "multiple_mishaps_possible": true
+            },
+            "Similar Area": "closest visually or thematically similar area",
+            "Off Target": {
+              "distance_miles": "2d12",
+              "direction_roll": "1d8",
+              "directions": {
+                "1": "east",
+                "2": "southeast",
+                "3": "south",
+                "4": "southwest",
+                "5": "west",
+                "6": "northwest",
+                "7": "north",
+                "8": "northeast"
+              }
+            },
+            "On Target": "intended destination"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18818,8 +19608,57 @@
         168,
         169
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Teleportation Circle",
+        "level": 5,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "M": "rare inks worth 50+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "rounds": 1
+        },
+        "effect": {
+          "drawn_circle": {
+            "radius_feet": 5,
+            "surface": "ground",
+            "inscribed_with_sigils": true
+          },
+          "destination": {
+            "type": "permanent teleportation circle",
+            "sigil_sequence_known": true,
+            "same_plane_required": true
+          },
+          "portal": {
+            "appearance": "shimmering",
+            "location": "drawn circle",
+            "open_until": "end of caster's next turn"
+          },
+          "traveler_arrival": "within 5 feet of destination circle or nearest unoccupied space",
+          "permanent_circle_sigils_unique": true,
+          "initial_material_plane_sigil_sequences": 2,
+          "initial_sequences_chosen_by": "GM",
+          "new_sequence_study_minutes": 1,
+          "permanent_circle_creation": {
+            "same_location_daily_castings_days": 365
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18834,8 +19673,62 @@
       "pages": [
         169
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Thaumaturgy",
+        "level": 0,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "maximum_simultaneous_one_minute_effects": 3,
+          "effect_choice": {
+            "Altered Eyes": {
+              "effect": "alter caster eye appearance",
+              "duration_minutes": 1
+            },
+            "Booming Voice": {
+              "maximum_volume_multiplier": 3,
+              "duration_minutes": 1,
+              "Charisma_Intimidation_checks": "Advantage"
+            },
+            "Fire Play": {
+              "changes": [
+                "flicker",
+                "brighten",
+                "dim",
+                "change color"
+              ],
+              "duration_minutes": 1
+            },
+            "Invisible Hand": {
+              "effect": "unlocked door or window flies open or slams shut",
+              "duration": "instantaneous"
+            },
+            "Phantom Sound": {
+              "origin": "chosen point within range",
+              "duration": "instantaneous"
+            },
+            "Tremors": {
+              "effect": "harmless ground tremors",
+              "duration_minutes": 1
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18850,8 +19743,49 @@
       "pages": [
         169
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Thunderwave",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "side_feet": 15,
+            "origin": "caster"
+          },
+          "saving_throw": "Constitution",
+          "failed_save_damage": "2d8",
+          "damage_type": "Thunder",
+          "failed_save_push_feet": 10,
+          "push_direction": "away from caster",
+          "successful_save_damage": "half",
+          "unsecured_objects_entirely_in_area_push_feet": 10,
+          "boom_audible_feet": 300,
+          "higher_level_slots": {
+            "damage_increase_per_slot_above_1": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18866,8 +19800,38 @@
       "pages": [
         169
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Time Stop",
+        "level": 9,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "other_creatures_time_passes": false,
+          "consecutive_caster_turns": "1d4 + 1",
+          "caster_actions_and_movement": "normal",
+          "ends_if_action_or_created_effect_affects": [
+            "creature other than caster",
+            "object worn or carried by someone other than caster"
+          ],
+          "maximum_distance_from_casting_location_feet": 1000
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20202,41 +21166,151 @@
       "name": "Teleportation Outcome",
       "section_id": "1090-10-17-6-teleport",
       "page": 168,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "familiarity",
+          "name": "Familiarity",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "mishap",
+          "name": "Mishap",
           "type": "string"
         },
         {
-          "id": "column-3",
-          "name": "Column 3",
+          "id": "similar-area",
+          "name": "Similar Area",
           "type": "string"
         },
         {
-          "id": "column-4",
-          "name": "Column 4",
+          "id": "off-target",
+          "name": "Off Target",
           "type": "string"
         },
         {
-          "id": "column-5",
-          "name": "Column 5",
-          "type": "string"
-        },
-        {
-          "id": "column-6",
-          "name": "Column 6",
+          "id": "on-target",
+          "name": "On Target",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 8,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Permanent circle"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "01-00"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Linked object"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "01-00"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Very familiar"
+            },
+            {
+              "value": "01-05"
+            },
+            {
+              "value": "06-13"
+            },
+            {
+              "value": "14-24"
+            },
+            {
+              "value": "25-00"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Seen casually"
+            },
+            {
+              "value": "01-33"
+            },
+            {
+              "value": "34-43"
+            },
+            {
+              "value": "44-53"
+            },
+            {
+              "value": "54-00"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Viewed once or described"
+            },
+            {
+              "value": "01-43"
+            },
+            {
+              "value": "44-53"
+            },
+            {
+              "value": "54-73"
+            },
+            {
+              "value": "74-00"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "False destination"
+            },
+            {
+              "value": "01-50"
+            },
+            {
+              "value": "51-00"
+            },
+            {
+              "value": "—"
+            },
+            {
+              "value": "—"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
