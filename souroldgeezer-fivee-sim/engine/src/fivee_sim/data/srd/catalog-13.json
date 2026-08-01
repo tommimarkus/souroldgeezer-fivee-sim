@@ -2017,8 +2017,27 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Boots of Speed",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "activation": {
+          "action": "Bonus Action",
+          "method": "click heels together"
+        },
+        "active_effects": {
+          "speed_multiplier": 2,
+          "opportunity_attacks_against_wearer": "Disadvantage"
+        },
+        "deactivation": {
+          "action": "Bonus Action",
+          "method": "click heels together again"
+        },
+        "maximum_total_active_duration_minutes": 10,
+        "recharge": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2033,8 +2052,26 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Boots of Striding and Springing",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "speed_while_worn": {
+          "minimum_feet": 30,
+          "higher_speed_preserved": true
+        },
+        "speed_not_reduced_by": [
+          "carrying weight beyond carrying capacity",
+          "wearing Heavy Armor"
+        ],
+        "jump": {
+          "uses_per_turn": 1,
+          "maximum_distance_feet": 30,
+          "movement_cost_feet": 10
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2049,8 +2086,25 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Boots of the Winterlands",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "appearance": "furred boots",
+        "benefits_while_worn": {
+          "damage_resistance": "Cold",
+          "cold_temperature_tolerance_fahrenheit": {
+            "maximum": 0,
+            "additional_protection_required": false
+          },
+          "ignored_difficult_terrain_sources": [
+            "ice",
+            "snow"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2065,8 +2119,36 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bowl of Commanding Water Elementals",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "dimensions": {
+          "diameter_feet": 1,
+          "depth": "half the diameter"
+        },
+        "capacity_gallons": 3,
+        "summoning": {
+          "prerequisites": [
+            "bowl is filled with water",
+            "user is within 5 feet of bowl"
+          ],
+          "action": "Magic",
+          "creature": "Water Elemental",
+          "arrival": "nearest unoccupied space to bowl",
+          "understands_user_languages": true,
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "duration_hours": 1,
+          "early_end_conditions": [
+            "elemental dies",
+            "user dismisses it as a Bonus Action"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2081,8 +2163,20 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bracers of Archery",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "benefits_while_worn": {
+          "weapon_proficiencies": [
+            "Longbow",
+            "Shortbow"
+          ],
+          "damage_roll_bonus_with_those_weapons": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2097,8 +2191,18 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bracers of Defense",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "armor_class_bonus": 2,
+        "armor_class_bonus_requirements": [
+          "wearing no armor",
+          "using no Shield"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2113,8 +2217,28 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Brazier of Commanding Fire Elementals",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "summoning": {
+          "prerequisite": "user is within 5 feet of brazier",
+          "action": "Magic",
+          "creature": "Fire Elemental",
+          "arrival": "nearest unoccupied space to brazier",
+          "understands_user_languages": true,
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "duration_hours": 1,
+          "early_end_conditions": [
+            "elemental dies",
+            "user dismisses it as a Bonus Action"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2129,8 +2253,17 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Brooch of Shielding",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "benefits_while_worn": {
+          "damage_resistance": "Force",
+          "damage_immunity_source": "Magic Missile spell"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2145,8 +2278,40 @@
       "pages": [
         214
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Broom of Flying",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "inactive_function": "mundane broom",
+        "riding_activation": {
+          "requirements": [
+            "stand astride broom",
+            "take Magic action"
+          ],
+          "effect": "broom hovers beneath user and can be ridden in air"
+        },
+        "flight": {
+          "fly_speed_feet": 50,
+          "maximum_capacity_pounds": 400,
+          "fly_speed_over_200_pounds_feet": 30,
+          "hover_ends_when": [
+            "user lands",
+            "user is no longer riding broom"
+          ]
+        },
+        "unridden_travel": {
+          "action": "Magic",
+          "maximum_destination_distance_miles": 1,
+          "requirements": [
+            "name destination",
+            "be familiar with destination"
+          ],
+          "return_action": "Magic action using command word",
+          "return_range_miles": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2162,8 +2327,40 @@
         214,
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Candle of Invocation",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "lighting_action": "Magic",
+        "total_burn_time_hours": 4,
+        "burn_time_tracking_increment_minutes": 1,
+        "can_be_snuffed_and_reused": true,
+        "destroyed_after_total_burn_time": true,
+        "while_lit": {
+          "dim_light_radius_feet": 30,
+          "creatures_within_light_d20_tests": "Advantage",
+          "slot_free_spellcasting": {
+            "eligible_classes": [
+              "Cleric",
+              "Druid"
+            ],
+            "spell_level": 1,
+            "spell_must_be_prepared": true
+          }
+        },
+        "first_lighting_alternative": {
+          "spell": "Gate",
+          "candle_destroyed": true,
+          "destination": "particular Outer Plane",
+          "destination_determined_by": [
+            "GM choice",
+            "random table roll"
+          ],
+          "destination_table_id": "215-1d100-outer-plane-1d100-outer-plane"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2178,8 +2375,24 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Cape of the Mountebank",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "odor": "faint brimstone",
+        "spell_cast_while_worn": {
+          "action": "Magic",
+          "spell": "Dimension Door"
+        },
+        "recharge": "next dawn",
+        "teleport_smoke": {
+          "location": "space left by user",
+          "condition": "Lightly Obscured",
+          "duration": "until end of user's next turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2194,8 +2407,26 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Carpet of Flying",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "activation": {
+          "action": "Magic",
+          "requires_command_word": true
+        },
+        "effect": "carpet hovers and flies",
+        "direction_control_range_feet": 30,
+        "size_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "size_table_id": "215-1d100-size",
+        "maximum_capacity_multiplier": 2,
+        "fly_speed_above_normal_capacity_multiplier": 0.5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2210,8 +2441,28 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Censer of Controlling Air Elementals",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "summoning": {
+          "prerequisite": "gently swing censer",
+          "action": "Magic",
+          "creature": "Air Elemental",
+          "arrival": "nearest unoccupied space to censer",
+          "understands_user_languages": true,
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "duration_hours": 1,
+          "early_end_conditions": [
+            "elemental dies",
+            "user dismisses it as a Bonus Action"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2226,8 +2477,27 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Chime of Opening",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "form": "hollow metal tube",
+        "length_feet": 1,
+        "weight_pounds": 1,
+        "use": {
+          "action": "Magic",
+          "method": "strike chime",
+          "spell": "Knock"
+        },
+        "replacement_spell_sound": {
+          "sound": "clear ringing tone",
+          "audible_range_feet": 300
+        },
+        "maximum_uses": 10,
+        "after_final_use": "cracks and becomes useless"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2242,8 +2512,18 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Circlet of Blasting",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "spell_cast_while_worn": {
+          "spell": "Scorching Ray",
+          "spell_attack_bonus": 5
+        },
+        "recharge": "next dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2258,8 +2538,31 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Cloak of Arachnida",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "appearance": "black silk interwoven with faint silvery threads",
+        "benefits_while_worn": {
+          "damage_resistance": "Poison",
+          "climb_speed": "equal to Speed",
+          "climb_surfaces": [
+            "vertical surfaces",
+            "ceilings"
+          ],
+          "hands_free_while_climbing": true,
+          "cannot_be_caught_in_webs": true,
+          "webs_count_as": "Difficult Terrain"
+        },
+        "web_spell": {
+          "spell": "Web",
+          "save_dc": 13,
+          "area_multiplier": 2,
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2274,8 +2577,17 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Cloak of Displacement",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "illusion_while_worn": "wearer appears near actual location",
+        "attack_rolls_against_wearer": "Disadvantage",
+        "after_wearer_takes_damage": "property ceases until start of wearer's next turn",
+        "suppressed_while_speed_is_zero": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2290,8 +2602,17 @@
       "pages": [
         215
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Cloak of Elvenkind",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "benefits_while_worn": {
+          "wisdom_perception_checks_to_perceive_wearer": "Disadvantage",
+          "wearer_dexterity_stealth_checks": "Advantage"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -7678,20 +7999,159 @@
       "name": "1d100 Outer Plane / 1d100 Outer Plane",
       "section_id": "1431-13-26-34-candle-of-invocation",
       "page": 215,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100-outer-plane",
-          "name": "1d100 Outer Plane",
+          "id": "left-roll",
+          "name": "1d100",
           "type": "string"
         },
         {
-          "id": "1d100-outer-plane-2",
-          "name": "1d100 Outer Plane",
+          "id": "left-outer-plane",
+          "name": "Outer Plane",
+          "type": "string"
+        },
+        {
+          "id": "right-roll",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "right-outer-plane",
+          "name": "Outer Plane",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01–05"
+            },
+            {
+              "value": "Abyss"
+            },
+            {
+              "value": "55–59"
+            },
+            {
+              "value": "Gehenna"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "06–10"
+            },
+            {
+              "value": "Acheron"
+            },
+            {
+              "value": "60–64"
+            },
+            {
+              "value": "Hades"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11–17"
+            },
+            {
+              "value": "Arborea"
+            },
+            {
+              "value": "65–69"
+            },
+            {
+              "value": "Limbo"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "18–25"
+            },
+            {
+              "value": "Arcadia"
+            },
+            {
+              "value": "70–77"
+            },
+            {
+              "value": "Mechanus"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "26–33"
+            },
+            {
+              "value": "Beastlands"
+            },
+            {
+              "value": "78–85"
+            },
+            {
+              "value": "Mount Celestia"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "34–41"
+            },
+            {
+              "value": "Bytopia"
+            },
+            {
+              "value": "86–90"
+            },
+            {
+              "value": "Nine Hells"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "42–46"
+            },
+            {
+              "value": "Carceri"
+            },
+            {
+              "value": "91–95"
+            },
+            {
+              "value": "Pandemonium"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "47–54"
+            },
+            {
+              "value": "Elysium"
+            },
+            {
+              "value": "96–00"
+            },
+            {
+              "value": "Ysgard"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -7701,10 +8161,10 @@
       "name": "1d100 / Size",
       "section_id": "1433-13-26-36-carpet-of-flying",
       "page": 215,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
           "type": "string"
         },
@@ -7714,17 +8174,82 @@
           "type": "string"
         },
         {
-          "id": "capacity",
-          "name": "Capacity",
+          "id": "capacity-pounds",
+          "name": "Capacity (lb.)",
           "type": "integer"
         },
         {
-          "id": "fly-speed",
-          "name": "Fly Speed",
-          "type": "string"
+          "id": "fly-speed-feet",
+          "name": "Fly Speed (feet)",
+          "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01–20"
+            },
+            {
+              "value": "3 ft. × 5 ft."
+            },
+            {
+              "value": 200
+            },
+            {
+              "value": 80
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21–55"
+            },
+            {
+              "value": "4 ft. × 6 ft."
+            },
+            {
+              "value": 400
+            },
+            {
+              "value": 60
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "56–80"
+            },
+            {
+              "value": "5 ft. × 7 ft."
+            },
+            {
+              "value": 600
+            },
+            {
+              "value": 40
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "81–00"
+            },
+            {
+              "value": "6 ft. × 9 ft."
+            },
+            {
+              "value": 800
+            },
+            {
+              "value": 30
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
