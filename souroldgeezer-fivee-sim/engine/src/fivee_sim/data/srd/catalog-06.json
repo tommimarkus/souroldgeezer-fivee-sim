@@ -6674,8 +6674,37 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "subclass": "Thief",
+        "level": 3,
+        "activation_action": "Bonus Action",
+        "option_choice_count": 1,
+        "options": {
+          "Sleight of Hand": {
+            "check_ability": "Dexterity",
+            "check_skill": "Sleight of Hand",
+            "activities": {
+              "pick a lock": {
+                "requires_tool": "Thieves' Tools"
+              },
+              "disarm a trap": {
+                "requires_tool": "Thieves' Tools"
+              },
+              "pick a pocket": {}
+            }
+          },
+          "Use an Object": {
+            "action_options": [
+              "Utilize",
+              "Magic"
+            ],
+            "magic_action_requires_magic_item": true,
+            "magic_item_must_require_magic_action": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "405-6-41-rogue-subclass-thief"
     },
@@ -6690,8 +6719,15 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "subclass": "Thief",
+        "level": 3,
+        "climb_speed_equals_speed": true,
+        "jump_distance_ability": "Dexterity",
+        "replaced_jump_distance_ability": "Strength"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "405-6-41-rogue-subclass-thief"
     },
@@ -6706,8 +6742,22 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "subclass": "Thief",
+        "level": 9,
+        "grants_cunning_strike_option": "Stealth Attack",
+        "cost_formula": "1d6",
+        "required_condition": "Invisible",
+        "required_condition_source_action": "Hide",
+        "attack_does_not_end_condition": true,
+        "condition_preservation_requires_end_of_turn_cover": true,
+        "end_of_turn_cover_options": [
+          "Three-Quarters Cover",
+          "Total Cover"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "405-6-41-rogue-subclass-thief"
     },
@@ -6722,8 +6772,29 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "subclass": "Thief",
+        "level": 13,
+        "maximum_attuned_magic_items": 4,
+        "charge_preservation_roll": "1d6",
+        "charge_preservation_roll_result": 6,
+        "charge_preserved_on_result": true,
+        "scrolls": {
+          "usable_scroll": "any Spell Scroll",
+          "spellcasting_ability": "Intelligence",
+          "reliable_spell_levels": [
+            0,
+            1
+          ],
+          "higher_level_check_ability": "Intelligence",
+          "higher_level_check_skill": "Arcana",
+          "higher_level_check_dc_formula": "10 + spell level",
+          "successful_check_casts_spell": true,
+          "failed_check_disintegrates_scroll": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "405-6-41-rogue-subclass-thief"
     },
@@ -6738,8 +6809,18 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "subclass": "Thief",
+        "level": 17,
+        "combat_round": 1,
+        "turn_count": 2,
+        "initiative_offsets": [
+          0,
+          -10
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "405-6-41-rogue-subclass-thief"
     },
@@ -6754,8 +6835,12 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "core_traits_table_id": "064-core-sorcerer-traits",
+        "class_features_table_id": "065-sorcerer-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -6770,7 +6855,7 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -6786,8 +6871,15 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "064-core-sorcerer-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "065-sorcerer-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "412-6-43-becoming-a-sorcerer"
     },
@@ -6802,8 +6894,17 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "gained_core_traits": [
+          "Hit Point Die"
+        ],
+        "core_traits_table_id": "064-core-sorcerer-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "065-sorcerer-features",
+        "spell_slots_source": "multiclassing rules"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "412-6-43-becoming-a-sorcerer"
     },
@@ -6818,8 +6919,12 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "class_features_keyed_by": "Sorcerer level",
+        "class_features_table_id": "065-sorcerer-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -6835,8 +6940,39 @@
         64,
         65
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 1,
+        "spell_list": "Sorcerer",
+        "initial_cantrip_count": 4,
+        "recommended_cantrips": [
+          "Light",
+          "Prestidigitation",
+          "Shocking Grasp",
+          "Sorcerous Burst"
+        ],
+        "cantrips_replaceable_per_sorcerer_level": 1,
+        "additional_cantrip_levels": [
+          4,
+          10
+        ],
+        "spell_slot_table_id": "065-sorcerer-features",
+        "long_rest_spell_slots_recovered": "all",
+        "initial_prepared_spell_count": 2,
+        "initial_prepared_spell_level": 1,
+        "recommended_prepared_spells": [
+          "Burning Hands",
+          "Detect Magic"
+        ],
+        "prepared_spell_count_table_id": "065-sorcerer-features",
+        "prepared_spell_maximum_level_basis": "available spell slots",
+        "always_prepared_feature_spells_count_against_limit": false,
+        "always_prepared_feature_spells_are_sorcerer_spells": true,
+        "prepared_spells_replaceable_per_sorcerer_level": 1,
+        "spellcasting_ability": "Charisma",
+        "spellcasting_focus": "Arcane Focus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6852,8 +6988,17 @@
         65,
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 1,
+        "activation_action": "Bonus Action",
+        "duration_minutes": 1,
+        "sorcerer_spell_save_dc_bonus": 1,
+        "sorcerer_spell_attack_rolls_have_advantage": true,
+        "uses_per_recovery": 2,
+        "recovery": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6868,8 +7013,26 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 2,
+        "initial_sorcery_points": 2,
+        "sorcery_points_table_id": "065-sorcerer-features",
+        "sorcery_point_maximum_table_id": "065-sorcerer-features",
+        "long_rest_sorcery_points_recovered": "all",
+        "spell_slot_conversion": {
+          "expended_spell_slot_grants_sorcery_points_equal_to_slot_level": true,
+          "requires_action": false
+        },
+        "spell_slot_creation": {
+          "activation_action": "Bonus Action",
+          "created_spell_slot_count": 1,
+          "cost_table_id": "066-creating-spell-slots",
+          "maximum_spell_slot_level": 5,
+          "created_slots_vanish_on": "Long Rest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6884,8 +7047,27 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 2,
+        "initial_option_choice_count": 2,
+        "options_section_id": "426-6-45-metamagic-options",
+        "cost_resource": "Sorcery Points",
+        "maximum_options_per_spell": 1,
+        "option_specific_exceptions_allowed": true,
+        "options_replaceable_per_sorcerer_level": 1,
+        "additional_options": [
+          {
+            "sorcerer_level": 10,
+            "option_count": 2
+          },
+          {
+            "sorcerer_level": 17,
+            "option_count": 2
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6900,8 +7082,15 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 3,
+        "selection": "Sorcerer subclass",
+        "selection_count": 1,
+        "detailed_option": "Draconic Sorcery",
+        "subclass_features_gained_at_or_below_sorcerer_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6916,8 +7105,22 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -6932,8 +7135,16 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 5,
+        "trigger": "finish a Short Rest",
+        "regains_expended_sorcery_points": true,
+        "maximum_sorcery_points_regained_formula": "floor(Sorcerer level / 2)",
+        "uses_per_recovery": 1,
+        "recovery": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -27206,20 +27417,91 @@
       "name": "Core Sorcerer Traits",
       "section_id": "411-6-42-sorcerer",
       "page": 64,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D6 per Sorcerer level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Constitution and Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Arcana, Deception, Insight, Intimidation, Persuasion, or Religion"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "None"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Spear, 2 Daggers, Arcane Focus (crystal), Dungeoneer's Pack, and 28 GP; or (B) 50 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -27229,7 +27511,7 @@
       "name": "Sorcerer Features",
       "section_id": "416-6-44-1-level-1-spellcasting",
       "page": 65,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -27262,19 +27544,1498 @@
           "type": "integer"
         },
         {
-          "id": "1",
+          "id": "spell-level-1",
           "name": "1",
           "type": "integer"
         },
         {
-          "id": "spell-slots-per-spell-level-2-3-4-5-6-7-8-9",
-          "name": "——Spell Slots per Spell Level—— 2 3 4 5 6 7 8 9",
-          "type": "string"
+          "id": "spell-level-2",
+          "name": "2",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-3",
+          "name": "3",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-4",
+          "name": "4",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-5",
+          "name": "5",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-6",
+          "name": "6",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-7",
+          "name": "7",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-8",
+          "name": "8",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-9",
+          "name": "9",
+          "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Spellcasting, Innate Sorcery"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Font of Magic, Metamagic"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Sorcerer Subclass"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Sorcerous Restoration"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Sorcery Incarnate"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Metamagic"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 16
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 16
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 16
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Metamagic"
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 19
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 21
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Arcane Apotheosis"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 22
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "sorcery-points"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "spell-level-9"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -27282,7 +29043,7 @@
       "name": "Creating Spell Slots",
       "section_id": "418-6-44-3-level-2-font-of-magic",
       "page": 66,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell-slot-level",
@@ -27295,12 +29056,78 @@
           "type": "integer"
         },
         {
-          "id": "min-sorcerer-level",
+          "id": "minimum-sorcerer-level",
           "name": "Min. Sorcerer Level",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 9
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
