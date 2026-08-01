@@ -15,7 +15,7 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,12 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "core_traits_table_id": "028-core-barbarian-traits",
+        "class_features_table_id": "028-barbarian-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -46,7 +50,7 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -62,8 +66,15 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "028-core-barbarian-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "028-barbarian-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "164-6-2-becoming-a-barbarian"
     },
@@ -78,8 +89,18 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "Martial weapon proficiency",
+          "Shield training"
+        ],
+        "core_traits_table_id": "028-core-barbarian-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "028-barbarian-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "164-6-2-becoming-a-barbarian"
     },
@@ -94,8 +115,12 @@
       "pages": [
         28
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "class_features_keyed_by": "Barbarian level",
+        "class_features_table_id": "028-barbarian-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -5725,20 +5750,91 @@
       "name": "Core Barbarian Traits",
       "section_id": "163-6-1-barbarian",
       "page": 28,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Strength"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D12 per Barbarian level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Strength and Constitution"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Animal Handling, Athletics, Intimidation, Nature, Perception, or Survival"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple and Martial weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light and Medium armor and Shields"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Greataxe, 4 Handaxes, Explorer's Pack, and 15 GP; or (B) 75 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5748,7 +5844,7 @@
       "name": "Barbarian Features",
       "section_id": "165-6-2-1-as-a-level-1-character",
       "page": 28,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -5781,7 +5877,548 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Rage, Unarmored Defense, Weapon Mastery"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Danger Sense, Reckless Attack"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Barbarian Subclass, Primal Knowledge"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Extra Attack, Fast Movement"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Feral Instinct, Instinctive Pounce"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Brutal Strike"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Relentless Rage"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Improved Brutal Strike"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Persistent Rage"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Improved Brutal Strike"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Indomitable Might"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Primal Champion"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
       "omissions": [],
       "provenance": "SRD 5.2.1"

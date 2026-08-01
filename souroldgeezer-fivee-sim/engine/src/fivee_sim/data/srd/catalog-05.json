@@ -1144,8 +1144,32 @@
         25,
         26
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "multiple_spellcasting_classes_use_multiclass_spellcasting_rules": true,
+        "prepared_spells_determined_separately_by_class": true,
+        "prepared_spell_associated_with_preparing_class": true,
+        "prepared_spell_uses_associated_class_spellcasting_ability": true,
+        "cantrip_scaling_level_basis": "total character level",
+        "cantrip_scaling_exception": "spell-specific rule",
+        "multiclass_spellcaster_level_formula": "sum(Bard levels, Cleric levels, Druid levels, Sorcerer levels, Wizard levels, ceil(Paladin levels / 2), ceil(Ranger levels / 2))",
+        "full_level_classes": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "half_level_round_up_classes": [
+          "Paladin",
+          "Ranger"
+        ],
+        "spell_slot_table_id": "026-multiclass-spellcaster-spell-slots-per-spell-level",
+        "spell_slots_shared_across_spellcasting_classes": true,
+        "higher_level_slots_may_cast_prepared_lower_level_spells": true,
+        "pact_magic_slots_may_cast_spellcasting_prepared_spells": true,
+        "spellcasting_slots_may_cast_warlock_prepared_spells": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "157-5-20-class-features"
     },
@@ -1161,8 +1185,14 @@
         26,
         27
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trinket_size": "Tiny",
+        "character_creation_roll_count": 1,
+        "roll": "1d100",
+        "table_id": "026-trinkets",
+        "GM_may_use_table": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     }
@@ -2921,12 +2951,12 @@
       "name": "Trinkets",
       "section_id": "161-5-21-trinkets",
       "page": 26,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "d100",
           "name": "1d100",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "trinket",
@@ -2934,9 +2964,1711 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01",
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "02",
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "03",
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "04",
+              "numeric_value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "05",
+              "numeric_value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "06",
+              "numeric_value": 6
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "07",
+              "numeric_value": 7
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "08",
+              "numeric_value": 8
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "09",
+              "numeric_value": 9
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10",
+              "numeric_value": 10
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11",
+              "numeric_value": 11
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "12",
+              "numeric_value": 12
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13",
+              "numeric_value": 13
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "14",
+              "numeric_value": 14
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "15",
+              "numeric_value": 15
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "16",
+              "numeric_value": 16
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17",
+              "numeric_value": 17
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "18",
+              "numeric_value": 18
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "19",
+              "numeric_value": 19
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "20",
+              "numeric_value": 20
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21",
+              "numeric_value": 21
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "22",
+              "numeric_value": 22
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "23",
+              "numeric_value": 23
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "24",
+              "numeric_value": 24
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "25",
+              "numeric_value": 25
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "26",
+              "numeric_value": 26
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "27",
+              "numeric_value": 27
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "28",
+              "numeric_value": 28
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "29",
+              "numeric_value": 29
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "30",
+              "numeric_value": 30
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "31",
+              "numeric_value": 31
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "32",
+              "numeric_value": 32
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "33",
+              "numeric_value": 33
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "34",
+              "numeric_value": 34
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "35",
+              "numeric_value": 35
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36",
+              "numeric_value": 36
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "37",
+              "numeric_value": 37
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "38",
+              "numeric_value": 38
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "39",
+              "numeric_value": 39
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "40",
+              "numeric_value": 40
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "41",
+              "numeric_value": 41
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "42",
+              "numeric_value": 42
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "43",
+              "numeric_value": 43
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "44",
+              "numeric_value": 44
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "45",
+              "numeric_value": 45
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "46",
+              "numeric_value": 46
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "47",
+              "numeric_value": 47
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "48",
+              "numeric_value": 48
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "49",
+              "numeric_value": 49
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "50",
+              "numeric_value": 50
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51",
+              "numeric_value": 51
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "52",
+              "numeric_value": 52
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "53",
+              "numeric_value": 53
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "54",
+              "numeric_value": 54
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "55",
+              "numeric_value": 55
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "56",
+              "numeric_value": 56
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "57",
+              "numeric_value": 57
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "58",
+              "numeric_value": 58
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "59",
+              "numeric_value": 59
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "60",
+              "numeric_value": 60
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "61",
+              "numeric_value": 61
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "62",
+              "numeric_value": 62
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "63",
+              "numeric_value": 63
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "64",
+              "numeric_value": 64
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "65",
+              "numeric_value": 65
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "66",
+              "numeric_value": 66
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "67",
+              "numeric_value": 67
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "68",
+              "numeric_value": 68
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "69",
+              "numeric_value": 69
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "70",
+              "numeric_value": 70
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "71",
+              "numeric_value": 71
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "72",
+              "numeric_value": 72
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "73",
+              "numeric_value": 73
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "74",
+              "numeric_value": 74
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "75",
+              "numeric_value": 75
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "76",
+              "numeric_value": 76
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "77",
+              "numeric_value": 77
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "78",
+              "numeric_value": 78
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "79",
+              "numeric_value": 79
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "80",
+              "numeric_value": 80
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "81",
+              "numeric_value": 81
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "82",
+              "numeric_value": 82
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "83",
+              "numeric_value": 83
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "84",
+              "numeric_value": 84
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "85",
+              "numeric_value": 85
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "86",
+              "numeric_value": 86
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "87",
+              "numeric_value": 87
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "88",
+              "numeric_value": 88
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "89",
+              "numeric_value": 89
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "90",
+              "numeric_value": 90
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91",
+              "numeric_value": 91
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "92",
+              "numeric_value": 92
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "93",
+              "numeric_value": 93
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "94",
+              "numeric_value": 94
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "95",
+              "numeric_value": 95
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "96",
+              "numeric_value": 96
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "97",
+              "numeric_value": 97
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "98",
+              "numeric_value": 98
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "99",
+              "numeric_value": 99
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "00",
+              "numeric_value": 100
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 100,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "prose_only_cell",
+          "row": 0,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 1,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 2,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 3,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 4,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 5,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 6,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 7,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 8,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 9,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 10,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 11,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 12,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 13,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 14,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 15,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 16,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 17,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 18,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 19,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 20,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 21,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 22,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 23,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 24,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 25,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 26,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 27,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 28,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 29,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 30,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 31,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 32,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 33,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 34,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 35,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 36,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 37,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 38,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 39,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 40,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 41,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 42,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 43,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 44,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 45,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 46,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 47,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 48,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 49,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 50,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 51,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 52,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 53,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 54,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 55,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 56,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 57,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 58,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 59,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 60,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 61,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 62,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 63,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 64,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 65,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 66,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 67,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 68,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 69,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 70,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 71,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 72,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 73,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 74,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 75,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 76,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 77,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 78,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 79,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 80,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 81,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 82,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 83,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 84,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 85,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 86,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 87,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 88,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 89,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 90,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 91,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 92,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 93,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 94,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 95,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 96,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 97,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 98,
+          "column": "trinket"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 99,
+          "column": "trinket"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -2944,7 +4676,7 @@
       "name": "Multiclass Spellcaster: Spell Slots per Spell Level",
       "section_id": "160-5-20-3-spellcasting",
       "page": 26,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -2952,54 +4684,1296 @@
           "type": "integer"
         },
         {
-          "id": "1",
+          "id": "spell-level-1",
           "name": "1",
           "type": "integer"
         },
         {
-          "id": "2",
+          "id": "spell-level-2",
           "name": "2",
           "type": "integer"
         },
         {
-          "id": "3",
+          "id": "spell-level-3",
           "name": "3",
           "type": "integer"
         },
         {
-          "id": "4",
+          "id": "spell-level-4",
           "name": "4",
           "type": "integer"
         },
         {
-          "id": "5",
+          "id": "spell-level-5",
           "name": "5",
           "type": "integer"
         },
         {
-          "id": "6",
+          "id": "spell-level-6",
           "name": "6",
           "type": "integer"
         },
         {
-          "id": "7",
+          "id": "spell-level-7",
           "name": "7",
           "type": "integer"
         },
         {
-          "id": "8",
+          "id": "spell-level-8",
           "name": "8",
           "type": "integer"
         },
         {
-          "id": "9",
+          "id": "spell-level-9",
           "name": "9",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "spell-level-9"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     }
   ]
