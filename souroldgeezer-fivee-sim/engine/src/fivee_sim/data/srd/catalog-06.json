@@ -7572,7 +7572,7 @@
       "pages": [
         69
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -7588,8 +7588,16 @@
       "pages": [
         69
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "subclass": "Draconic Sorcery",
+        "level": 3,
+        "initial_hit_point_maximum_increase": 3,
+        "hit_point_maximum_increase_per_additional_sorcerer_level": 1,
+        "requires_no_armor": true,
+        "base_armor_class_formula": "10 + Dexterity modifier + Charisma modifier"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "438-6-47-sorcerer-subclass-draconic-sorcery"
     },
@@ -7604,8 +7612,15 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "subclass": "Draconic Sorcery",
+        "level": 3,
+        "spells_always_prepared": true,
+        "spells_gained_at_sorcerer_levels": true,
+        "spell_table_id": "070-draconic-spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "438-6-47-sorcerer-subclass-draconic-sorcery"
     },
@@ -7620,8 +7635,27 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "subclass": "Draconic Sorcery",
+        "level": 6,
+        "damage_type_choice_count": 1,
+        "damage_type_options": [
+          "Acid",
+          "Cold",
+          "Fire",
+          "Lightning",
+          "Poison"
+        ],
+        "grants_resistance_to_chosen_damage_type": true,
+        "spell_damage_bonus": {
+          "requires_chosen_damage_type": true,
+          "bonus_formula": "Charisma modifier",
+          "damage_rolls_per_spell": 1,
+          "optional": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "438-6-47-sorcerer-subclass-draconic-sorcery"
     },
@@ -7636,8 +7670,22 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "subclass": "Draconic Sorcery",
+        "level": 14,
+        "activation_action": "Bonus Action",
+        "duration_hours": 1,
+        "dismissal_action_required": false,
+        "fly_speed_feet": 60,
+        "uses_per_recovery": 1,
+        "recovery": "Long Rest",
+        "restore_use": {
+          "sorcery_point_cost": 3,
+          "action_required": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "438-6-47-sorcerer-subclass-draconic-sorcery"
     },
@@ -7652,8 +7700,22 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "subclass": "Draconic Sorcery",
+        "level": 18,
+        "spell": "Summon Dragon",
+        "material_component_required": false,
+        "casts_without_spell_slot": 1,
+        "expended_use_recovery": "Long Rest",
+        "casting_modification": {
+          "timing": "start casting",
+          "optional": true,
+          "requires_concentration": false,
+          "duration_minutes": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "438-6-47-sorcerer-subclass-draconic-sorcery"
     },
@@ -7668,8 +7730,12 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "core_traits_table_id": "070-core-warlock-traits",
+        "class_features_table_id": "071-warlock-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -7684,7 +7750,7 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -7700,8 +7766,15 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "070-core-warlock-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "071-warlock-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "445-6-49-becoming-a-warlock"
     },
@@ -7716,8 +7789,18 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "Light armor training"
+        ],
+        "core_traits_table_id": "070-core-warlock-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "071-warlock-features",
+        "spell_slots_determined_by_multiclassing_rules": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "445-6-49-becoming-a-warlock"
     },
@@ -7732,8 +7815,12 @@
       "pages": [
         70
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "class_features_keyed_by": "Warlock level",
+        "class_features_table_id": "071-warlock-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -7749,8 +7836,21 @@
         70,
         71
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 1,
+        "initial_invocation_choice_count": 1,
+        "recommended_invocation": "Pact of the Tome",
+        "options_section": "Eldritch Invocation Options",
+        "prerequisites_must_be_met": true,
+        "invocations_change_timing": "gain a Warlock level",
+        "invocations_replaceable_per_level": 1,
+        "replacement_must_meet_prerequisites": true,
+        "replacement_forbidden_if_invocation_is_prerequisite_for_owned_invocation": true,
+        "invocation_count_table_id": "071-warlock-features",
+        "duplicate_invocation_selection_allowed": "only if description permits"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -7766,8 +7866,54 @@
         71,
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 1,
+        "spell_list": "Warlock",
+        "cantrips": {
+          "initial_count": 2,
+          "recommended": [
+            "Eldritch Blast",
+            "Prestidigitation"
+          ],
+          "replaceable_per_warlock_level": 1,
+          "additional_cantrip_levels": [
+            4,
+            10
+          ],
+          "count_table_id": "071-warlock-features"
+        },
+        "pact_magic_spell_slots": {
+          "spell_level_minimum": 1,
+          "spell_level_maximum": 5,
+          "count_and_level_table_id": "071-warlock-features",
+          "all_slots_same_level": true,
+          "expended_slots_recovered": "all",
+          "recovery_options": [
+            "Short Rest",
+            "Long Rest"
+          ]
+        },
+        "prepared_spells": {
+          "initial_count": 2,
+          "initial_spell_level": 1,
+          "recommended": [
+            "Charm Person",
+            "Hex"
+          ],
+          "count_table_id": "071-warlock-features",
+          "maximum_level_table_column": "Slot Level",
+          "additional_choices_when_count_increases": true,
+          "always_prepared_feature_spells_count_against_limit": false,
+          "always_prepared_feature_spells_are_warlock_spells": true,
+          "change_timing": "gain a Warlock level",
+          "replaceable_per_level": 1,
+          "replacement_maximum_level_basis": "Slot Level"
+        },
+        "spellcasting_ability": "Charisma",
+        "spellcasting_focus": "Arcane Focus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -31841,7 +31987,7 @@
       "name": "Level 8 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 69,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -31859,9 +32005,107 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Demiplane"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dominate Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Earthquake"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Incendiary Cloud"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Power Word Stun"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sunburst"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -31869,7 +32113,7 @@
       "name": "Level 5 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 69,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -31887,9 +32131,185 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Animate Objects"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Arcane Hand"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cloudkill"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cone of Cold"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Creation"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dominate Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hold Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Insect Plague"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Seeming"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Telekinesis"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Teleportation Circle"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wall of Stone"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -31897,7 +32317,7 @@
       "name": "Level 9 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 69,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -31915,9 +32335,100 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Gate"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Meteor Swarm"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Power Word Kill"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Time Stop"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wish"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -31925,7 +32436,7 @@
       "name": "Level 6 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 69,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -31943,9 +32454,178 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Chain Lightning"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Circle of Death"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Disintegrate"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Eyebite"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flesh to Stone"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Freezing Sphere"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Globe of Invulnerability"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mass Suggestion"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Move Earth"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sunbeam"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "True Seeing"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 11,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -31953,20 +32633,91 @@
       "name": "Core Warlock Traits",
       "section_id": "444-6-48-warlock",
       "page": 70,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D8 per Warlock level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Wisdom and Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Arcana, Deception, History, Intimidation, Investigation, Nature, or Religion"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light armor"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Leather Armor, Sickle, 2 Daggers, Arcane Focus (orb), Book (occult lore), Scholar's Pack, and 15 GP; or (B) 100 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -31976,7 +32727,7 @@
       "name": "Draconic Spells",
       "section_id": "440-6-47-2-level-3-draconic-spells",
       "page": 70,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "sorcerer-level",
@@ -31989,7 +32740,48 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Alter Self, Chromatic Orb, Command, Dragon’s Breath"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Fear, Fly"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Arcane Eye, Charm Monster"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Legend Lore, Summon Dragon"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -31999,7 +32791,7 @@
       "name": "Warlock Features",
       "section_id": "449-6-50-1-level-1-eldritch-invocations",
       "page": 71,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -32042,9 +32834,589 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Eldritch Invocations, Pact Magic"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Magical Cunning"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Warlock Subclass"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Contact Patron"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Mystic Arcanum (level 6 spell)"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Mystic Arcanum (level 7 spell)"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Mystic Arcanum (level 8 spell)"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Mystic Arcanum (level 9 spell)"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Eldritch Master"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "class-features"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
