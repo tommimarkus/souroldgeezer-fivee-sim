@@ -764,8 +764,26 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool_functions": [
+          "specialized ability checks",
+          "item crafting"
+        ],
+        "description_fields": [
+          "cost",
+          "weight",
+          "ability",
+          "utilize",
+          "craft"
+        ],
+        "optional_description_fields": [
+          "variants"
+        ],
+        "utilize_action_option_limit": 1,
+        "utilize_options_include_dc": true,
+        "variants_require_separate_proficiency": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -780,8 +798,12 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "proficiency_bonus_applies_to_tool_ability_checks": true,
+        "relevant_skill_proficiency_also_grants_advantage": true,
+        "monster_tool_proficiencies_source": "stat block"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -796,8 +818,15 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool_category": "Artisan’s Tools",
+        "functions": [
+          "item crafting",
+          "trade"
+        ],
+        "each_tool_requires_separate_proficiency": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -812,8 +841,32 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Alchemist’s Supplies",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 50,
+        "ability": "Intelligence",
+        "weight_lb": 8,
+        "utilize_options": [
+          {
+            "activity": "identify substance",
+            "dc": 15
+          },
+          {
+            "activity": "start fire",
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Acid",
+          "Alchemist’s Fire",
+          "Component Pouch",
+          "Oil",
+          "Paper",
+          "Perfume"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -828,8 +881,27 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Brewer’s Supplies",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 20,
+        "ability": "Intelligence",
+        "weight_lb": 9,
+        "utilize_options": [
+          {
+            "activity": "detect poisoned drink",
+            "dc": 15
+          },
+          {
+            "activity": "identify alcohol",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Antitoxin"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -844,8 +916,25 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Calligrapher’s Supplies",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 10,
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "write flourished text",
+            "dc": 15,
+            "property": "guards against forgery"
+          }
+        ],
+        "craftable_items": [
+          "Ink",
+          "Spell Scroll"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -860,8 +949,31 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Carpenter’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 8,
+        "ability": "Strength",
+        "weight_lb": 6,
+        "utilize_options": [
+          {
+            "activity": "seal or pry open door or container",
+            "dc": 20
+          }
+        ],
+        "craftable_items": [
+          "Club",
+          "Greatclub",
+          "Quarterstaff",
+          "Barrel",
+          "Chest",
+          "Ladder",
+          "Pole",
+          "Portable Ram",
+          "Torch"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -876,8 +988,24 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Cartographer’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 15,
+        "ability": "Wisdom",
+        "weight_lb": 6,
+        "utilize_options": [
+          {
+            "activity": "draft map",
+            "scope": "small area",
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Map"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -892,8 +1020,25 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Cobbler’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 5,
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "modify footwear",
+            "dc": 10,
+            "effect": "Advantage",
+            "effect_check": "wearer’s next Dexterity (Acrobatics) check"
+          }
+        ],
+        "craftable_items": [
+          "Climber’s Kit"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -908,8 +1053,27 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Cook’s Utensils",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 1,
+        "ability": "Wisdom",
+        "weight_lb": 8,
+        "utilize_options": [
+          {
+            "activity": "improve food flavor",
+            "dc": 10
+          },
+          {
+            "activity": "detect spoiled or poisoned food",
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Rations"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -924,8 +1088,28 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Glassblower’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 30,
+        "ability": "Intelligence",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "discern prior contents",
+            "object_material": "glass",
+            "lookback_hours": 24,
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Glass Bottle",
+          "Magnifying Glass",
+          "Spyglass",
+          "Vial"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -940,8 +1124,24 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Jeweler’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 25,
+        "ability": "Intelligence",
+        "weight_lb": 2,
+        "utilize_options": [
+          {
+            "activity": "discern gem value",
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Arcane Focus",
+          "Holy Symbol"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -956,8 +1156,34 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Leatherworker’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 5,
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "add design to leather item",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Sling",
+          "Whip",
+          "Hide Armor",
+          "Leather Armor",
+          "Studded Leather Armor",
+          "Backpack",
+          "Crossbow Bolt Case",
+          "Map or Scroll Case",
+          "Parchment",
+          "Pouch",
+          "Quiver",
+          "Waterskin"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -972,8 +1198,23 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Mason’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 10,
+        "ability": "Strength",
+        "weight_lb": 8,
+        "utilize_options": [
+          {
+            "activity": "chisel symbol or hole in stone",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Block and Tackle"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -988,8 +1229,25 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Painter’s Supplies",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 10,
+        "ability": "Wisdom",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "paint recognizable image",
+            "subject_requirement": "previously seen",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Druidic Focus",
+          "Holy Symbol"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -1004,8 +1262,26 @@
       "pages": [
         93
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Potter’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 10,
+        "ability": "Intelligence",
+        "weight_lb": 3,
+        "utilize_options": [
+          {
+            "activity": "discern prior contents",
+            "object_material": "ceramic",
+            "lookback_hours": 24,
+            "dc": 15
+          }
+        ],
+        "craftable_items": [
+          "Jug",
+          "Lamp"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -1021,8 +1297,52 @@
         93,
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Smith’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 20,
+        "ability": "Strength",
+        "weight_lb": 8,
+        "utilize_options": [
+          {
+            "activity": "pry open door or container",
+            "dc": 20
+          }
+        ],
+        "craftable_items": [
+          "Ball Bearings",
+          "Bucket",
+          "Caltrops",
+          "Chain",
+          "Crowbar",
+          "Firearm Bullets",
+          "Grappling Hook",
+          "Iron Pot",
+          "Iron Spikes",
+          "Sling Bullets"
+        ],
+        "craftable_item_groups": [
+          {
+            "category": "Melee weapon",
+            "exclusions": [
+              "Club",
+              "Greatclub",
+              "Quarterstaff",
+              "Whip"
+            ]
+          },
+          {
+            "category": "Medium armor",
+            "exclusions": [
+              "Hide Armor"
+            ]
+          },
+          {
+            "category": "Heavy armor"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -1037,8 +1357,37 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Tinker’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 50,
+        "ability": "Dexterity",
+        "weight_lb": 10,
+        "utilize_options": [
+          {
+            "activity": "assemble scrap item",
+            "item_size": "Tiny",
+            "duration_minutes": 1,
+            "dc": 20
+          }
+        ],
+        "craftable_items": [
+          "Musket",
+          "Pistol",
+          "Bell",
+          "Bullseye Lantern",
+          "Flask",
+          "Hooded Lantern",
+          "Hunting Trap",
+          "Lock",
+          "Manacles",
+          "Mirror",
+          "Shovel",
+          "Signal Whistle",
+          "Tinderbox"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -1053,8 +1402,39 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Weaver’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 1,
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "mend tear in clothing",
+            "dc": 10
+          },
+          {
+            "activity": "sew design",
+            "design_size": "Tiny",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Padded Armor",
+          "Basket",
+          "Bedroll",
+          "Blanket",
+          "Fine Clothes",
+          "Net",
+          "Robe",
+          "Rope",
+          "Sack",
+          "String",
+          "Tent",
+          "Traveler’s Clothes"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
@@ -1069,8 +1449,41 @@
       "pages": [
         94
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool": "Woodcarver’s Tools",
+        "tool_category": "Artisan’s Tools",
+        "cost_gp": 1,
+        "ability": "Dexterity",
+        "weight_lb": 5,
+        "utilize_options": [
+          {
+            "activity": "carve pattern in wood",
+            "dc": 10
+          }
+        ],
+        "craftable_items": [
+          "Club",
+          "Greatclub",
+          "Quarterstaff",
+          "Arcane Focus",
+          "Arrows",
+          "Bolts",
+          "Druidic Focus",
+          "Ink Pen",
+          "Needles"
+        ],
+        "craftable_item_groups": [
+          {
+            "category": "Ranged weapon",
+            "exclusions": [
+              "Pistol",
+              "Musket",
+              "Sling"
+            ]
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "603-9-11-artisan-s-tools"
     },
