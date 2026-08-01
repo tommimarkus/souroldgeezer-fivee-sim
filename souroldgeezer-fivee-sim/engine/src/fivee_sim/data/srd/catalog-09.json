@@ -2138,8 +2138,16 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Barrel",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "capacity_liquid_gallons": 40,
+        "capacity_dry_volume_cubic_feet": 4
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2154,8 +2162,16 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Basket",
+        "price": {
+          "amount": 4,
+          "currency": "SP"
+        },
+        "capacity_weight_lb": 40,
+        "capacity_volume_cubic_feet": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2170,8 +2186,20 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Bedroll",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "sleeper_count": 1,
+        "eligible_sleeper_sizes": [
+          "Small",
+          "Medium"
+        ],
+        "extreme_cold_saving_throws_automatically_succeed_while_inside": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2186,8 +2214,16 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Bell",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "activation_action": "Utilize",
+        "audible_range_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2202,8 +2238,15 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Blanket",
+        "price": {
+          "amount": 5,
+          "currency": "SP"
+        },
+        "extreme_cold_saving_throws_have_advantage_while_wrapped": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2218,8 +2261,15 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Block and Tackle",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "normal_lift_weight_multiplier": 4
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2234,8 +2284,29 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Book",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "content_types": [
+          "fiction",
+          "nonfiction"
+        ],
+        "accurate_nonfiction_consultation": {
+          "topic_must_match_check": true,
+          "check_ability": "Intelligence",
+          "check_skill_options": [
+            "Arcana",
+            "History",
+            "Nature",
+            "Religion"
+          ],
+          "check_bonus": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2250,8 +2321,15 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Glass Bottle",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "capacity_pints": 1.5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2266,8 +2344,15 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Bucket",
+        "price": {
+          "amount": 5,
+          "currency": "CP"
+        },
+        "capacity_volume_cubic_feet": 0.5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2282,8 +2367,60 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Burglar's Pack",
+        "price": {
+          "amount": 16,
+          "currency": "GP"
+        },
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Ball Bearings",
+            "quantity": 1
+          },
+          {
+            "item": "Bell",
+            "quantity": 1
+          },
+          {
+            "item": "Candle",
+            "quantity": 10
+          },
+          {
+            "item": "Crowbar",
+            "quantity": 1
+          },
+          {
+            "item": "Hooded Lantern",
+            "quantity": 1
+          },
+          {
+            "item": "Oil flask",
+            "quantity": 7
+          },
+          {
+            "item": "Rations",
+            "days": 5
+          },
+          {
+            "item": "Rope",
+            "quantity": 1
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          },
+          {
+            "item": "Waterskin",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2298,8 +2435,33 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Caltrops",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "activation_action": "Utilize",
+        "deployment": "spread from bag",
+        "area": {
+          "shape": "square",
+          "side_feet": 5,
+          "maximum_distance_feet": 5
+        },
+        "entry_frequency": "first time on a turn",
+        "saving_throw": {
+          "ability": "Dexterity",
+          "dc": 15
+        },
+        "failed_save_damage": {
+          "amount": 1,
+          "type": "Piercing"
+        },
+        "failed_save_speed_feet": 0,
+        "speed_reduction_expires": "start of creature's next turn",
+        "recovery_minutes": 10
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2314,8 +2476,17 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Candle",
+        "price": {
+          "amount": 1,
+          "currency": "CP"
+        },
+        "lit_duration_hours": 1,
+        "bright_light_radius_feet": 5,
+        "additional_dim_light_feet": 5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2330,8 +2501,15 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Crossbow Bolt Case",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "bolt_capacity": 20
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2346,8 +2524,18 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Map or Scroll Case",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "capacity_options": {
+          "paper_sheets": 10,
+          "parchment_sheets": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2362,8 +2550,41 @@
       "pages": [
         96
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Chain",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "binding": {
+          "activation_action": "Utilize",
+          "target": "unwilling creature",
+          "range_feet": 5,
+          "required_target_condition_options": [
+            "Grappled",
+            "Incapacitated",
+            "Restrained"
+          ],
+          "check_ability": "Strength",
+          "check_skill": "Athletics",
+          "check_dc": 13
+        },
+        "legs_bound_condition": "Restrained",
+        "legs_bound_condition_expires": "escape",
+        "escape": {
+          "activation_action": "action",
+          "check_ability": "Dexterity",
+          "check_skill": "Acrobatics",
+          "check_dc": 18
+        },
+        "burst": {
+          "activation_action": "action",
+          "check_ability": "Strength",
+          "check_skill": "Athletics",
+          "check_dc": 20
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2378,8 +2599,15 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Chest",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "capacity_volume_cubic_feet": 12
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2394,8 +2622,26 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Climber's Kit",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "included_items": [
+          "boot tips",
+          "gloves",
+          "pitons",
+          "harness"
+        ],
+        "anchoring": {
+          "activation_action": "Utilize",
+          "maximum_fall_distance_from_anchor_feet": 25,
+          "maximum_movement_distance_from_anchor_feet": 25,
+          "undo_anchor_action": "Bonus Action"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2410,8 +2656,17 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Fine Clothes",
+        "price": {
+          "amount": 15,
+          "currency": "GP"
+        },
+        "fabric_cost_category": "expensive",
+        "expertly_crafted_details": true,
+        "may_be_required_for_admission": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2426,8 +2681,16 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Traveler's Clothes",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "resilient": true,
+        "designed_for_travel_environments": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2442,8 +2705,17 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Component Pouch",
+        "price": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "watertight": true,
+        "has_compartments": true,
+        "holds_spell_material_components_with_no_cost": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
