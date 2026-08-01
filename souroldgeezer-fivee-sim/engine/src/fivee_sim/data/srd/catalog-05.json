@@ -15,7 +15,7 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,15 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_sheet_function": "track character details",
+        "character_sheet_representation_types": [
+          "printed character sheet",
+          "digital character sheet",
+          "plain paper"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -46,8 +53,38 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_creation_step_count": 5,
+        "character_creation_steps": [
+          {
+            "order": 1,
+            "name": "Choose a Class"
+          },
+          {
+            "order": 2,
+            "name": "Determine Origin",
+            "components": [
+              "background",
+              "species"
+            ],
+            "languages_chosen": true
+          },
+          {
+            "order": 3,
+            "name": "Determine Ability Scores",
+            "ability_count": 6
+          },
+          {
+            "order": 4,
+            "name": "Choose an Alignment"
+          },
+          {
+            "order": 5,
+            "name": "Fill in Details"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -62,8 +99,14 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_creation_step": 1,
+        "selection": "class",
+        "record_location": "character sheet",
+        "class_overview_table_id": "019-class-overview",
+        "class_details_reference": "Classes"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -78,8 +121,16 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "typical_starting_level": 1,
+        "level_advancement_resource": "Experience Points",
+        "Experience_Points_abbreviation": "XP",
+        "level_1_starting_XP": 0,
+        "higher_starting_level_authority": "GM",
+        "subclass_recording_minimum_starting_level": 3,
+        "higher_level_reference": "Starting at Higher Levels"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "120-5-3-step-1-choose-class"
     },
@@ -94,8 +145,15 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "armor_training_source": "class",
+        "armor_training_scope": "armor categories",
+        "armor_training_effect": "effective wear",
+        "effective_wear_grants_defensive_bonuses": true,
+        "armor_category_reference": "Equipment",
+        "record_location": "character sheet"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "120-5-3-step-1-choose-class"
     },
@@ -110,8 +168,16 @@
       "pages": [
         19
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_creation_step": 2,
+        "origin_components": [
+          "background",
+          "species",
+          "languages"
+        ],
+        "language_count": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -127,8 +193,24 @@
         19,
         20
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background_source_reference": "Character Origins",
+        "additional_background_authority": "GM",
+        "background_influences_character_creation_step": 3,
+        "influenced_value": "ability scores",
+        "ability_scores_and_backgrounds_table_id": "019-ability-scores-and-backgrounds",
+        "background_grants": {
+          "feat_count": 1,
+          "skill_proficiency_count": 2,
+          "tool_proficiency_count": 1
+        },
+        "class_grants_proficiencies": true,
+        "Proficiency_Bonus_source": "class features table",
+        "level_1_Proficiency_Bonus": 2,
+        "feat_reference": "Feats",
+        "Proficiency_Bonus_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "123-5-4-step-2-character-origin"
     },
@@ -143,8 +225,17 @@
       "pages": [
         20
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "starting_equipment_sources": [
+          "background",
+          "class"
+        ],
+        "step_coins_can_be_spent_immediately": true,
+        "coin_spending_reference": "Equipment",
+        "equipment_details_reference": "Equipment",
+        "record_location": "character sheet"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "123-5-4-step-2-character-origin"
     },
@@ -159,8 +250,27 @@
       "pages": [
         20
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species_options": [
+          "Dragonborn",
+          "Dwarf",
+          "Elf",
+          "Gnome",
+          "Goliath",
+          "Halfling",
+          "Human",
+          "Orc",
+          "Tiefling"
+        ],
+        "species_option_count": 9,
+        "species_details_reference": "Character Origins",
+        "species_determines": [
+          "size",
+          "Speed"
+        ],
+        "record_location": "character sheet"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "123-5-4-step-2-character-origin"
     },
@@ -175,7 +285,7 @@
       "pages": [
         20
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "123-5-4-step-2-character-origin"
@@ -191,8 +301,39 @@
       "pages": [
         20
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "minimum_known_language_count": 3,
+        "automatic_language": "Common",
+        "additional_standard_language_count": 2,
+        "additional_standard_language_selection_methods": [
+          "roll",
+          "choose"
+        ],
+        "language_capabilities": [
+          "communicate",
+          "read",
+          "write"
+        ],
+        "additional_language_sources": [
+          "class",
+          "other features"
+        ],
+        "standard_languages_table_id": "020-standard-languages",
+        "rare_languages_table_id": "020-rare-languages",
+        "every_player_character_knows_Common": true,
+        "rare_language_classifications": [
+          "secret",
+          "derived from other planes of existence"
+        ],
+        "Primordial_dialects": [
+          "Aquan",
+          "Auran",
+          "Ignan",
+          "Terran"
+        ],
+        "Primordial_dialects_mutually_communicative": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "123-5-4-step-2-character-origin"
     },
@@ -736,7 +877,7 @@
       "name": "Class Overview",
       "section_id": "120-5-3-step-1-choose-class",
       "page": 19,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "class",
@@ -759,7 +900,200 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Barbarian"
+            },
+            {
+              "value": "Battle"
+            },
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Average"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bard"
+            },
+            {
+              "value": "Performing"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "High"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cleric"
+            },
+            {
+              "value": "Gods"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "Average"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Druid"
+            },
+            {
+              "value": "Nature"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "High"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fighter"
+            },
+            {
+              "value": "Weapons"
+            },
+            {
+              "value": "Strength or Dexterity"
+            },
+            {
+              "value": "Low"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Monk"
+            },
+            {
+              "value": "Unarmed combat"
+            },
+            {
+              "value": "Dexterity and Wisdom"
+            },
+            {
+              "value": "High"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Paladin"
+            },
+            {
+              "value": "Defense"
+            },
+            {
+              "value": "Strength and Charisma"
+            },
+            {
+              "value": "Average"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ranger"
+            },
+            {
+              "value": "Survival"
+            },
+            {
+              "value": "Dexterity and Wisdom"
+            },
+            {
+              "value": "Average"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rogue"
+            },
+            {
+              "value": "Stealth"
+            },
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Low"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerer"
+            },
+            {
+              "value": "Power"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "High"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warlock"
+            },
+            {
+              "value": "Occult lore"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "High"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wizard"
+            },
+            {
+              "value": "Spellbooks"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": "Average"
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -769,7 +1103,7 @@
       "name": "Ability Scores and Backgrounds",
       "section_id": "124-5-4-1-choose-a-background",
       "page": 19,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability",
@@ -782,8 +1116,69 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 5,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Soldier"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Soldier"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Constitution"
+            },
+            {
+              "value": "Soldier"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": "Acolyte"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "Acolyte"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "Acolyte"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
