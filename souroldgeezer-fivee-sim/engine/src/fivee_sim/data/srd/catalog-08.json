@@ -482,8 +482,33 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity",
+            "Constitution",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "blink_steps": {
+          "trigger_actions": [
+            "Attack",
+            "Magic"
+          ],
+          "timing": "immediately after action",
+          "teleport_distance_feet_maximum": 30,
+          "destination_requires_unoccupied_space": true,
+          "destination_requires_visibility": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
@@ -498,8 +523,41 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity",
+            "Constitution",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "improve_fate": {
+          "trigger": "D20 Test succeeds or fails",
+          "eligible_creatures": [
+            "self",
+            "another creature within range"
+          ],
+          "range_feet": 60,
+          "roll": "2d4",
+          "application_options": [
+            "bonus to d20 roll",
+            "penalty to d20 roll"
+          ],
+          "recharge_triggers": [
+            "roll Initiative",
+            "finish Short Rest",
+            "finish Long Rest"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
@@ -514,8 +572,32 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "overcome_defenses": {
+          "damage_types": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ],
+          "ignores_resistance": true
+        },
+        "overwhelming_strike": {
+          "trigger_attack_roll_d20": 20,
+          "extra_damage": "ability score increased by feat",
+          "extra_damage_type": "same as attack"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
@@ -530,8 +612,27 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "required_feature": "Spellcasting",
+        "free_casting": {
+          "spell_slot_level_minimum": 1,
+          "spell_slot_level_maximum": 4,
+          "roll": "1d4",
+          "spell_slot_not_expended_when": "roll equals spell slot level"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
@@ -546,8 +647,43 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity",
+            "Constitution",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "required_light_conditions": [
+          "Dim Light",
+          "Darkness"
+        ],
+        "merge_with_shadows": {
+          "activation_action": "Bonus Action",
+          "condition": "Invisible",
+          "condition_end_triggers": [
+            "take action",
+            "take Bonus Action",
+            "take Reaction"
+          ]
+        },
+        "shadowy_form": {
+          "damage_resistance": "all",
+          "exceptions": [
+            "Psychic",
+            "Radiant"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
@@ -562,8 +698,25 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_type": "Epic Boon",
+        "minimum_level": 19,
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity",
+            "Constitution",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "increase": 1,
+          "maximum": 30
+        },
+        "sense": "Truesight",
+        "range_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     }

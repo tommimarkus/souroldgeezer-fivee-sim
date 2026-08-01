@@ -15,7 +15,7 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,13 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "primary_coin": "Gold Piece",
+        "coin_values_table_id": "089-coin-values",
+        "approximate_coin_weight_ounces": "1/3",
+        "coins_per_pound": 50
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -46,8 +51,29 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "weapons_table_id": "091-weapons",
+        "weapon_categories": [
+          "Simple",
+          "Martial"
+        ],
+        "weapon_attack_classes": [
+          "Melee",
+          "Ranged"
+        ],
+        "melee_default_target_distance_feet_maximum": 5,
+        "ranged_attacks_beyond_melee_distance": true,
+        "table_fact_columns": [
+          "cost",
+          "weight",
+          "damage",
+          "damage type",
+          "properties",
+          "mastery"
+        ],
+        "mastery_property_requires_unlocking_feature": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -62,8 +88,15 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "sale_value_fraction_of_cost": {
+          "equipment": "1/2",
+          "trade goods": 1,
+          "valuables": 1
+        },
+        "magic_item_price_reference": "Magic Items"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "572-9-2-weapons"
     },
@@ -78,8 +111,13 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "weapon_can_be_wielded_without_proficiency": true,
+        "proficiency_required_to_add_proficiency_bonus_to_attack_roll": true,
+        "player_character_weapon_proficiency_source": "features",
+        "monster_weapon_proficiencies": "weapons in stat block"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -94,8 +132,22 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "weapon_table_column": "Properties",
+        "property_ids": [
+          "576-9-4-1-ammunition",
+          "577-9-4-2-finesse",
+          "578-9-4-3-heavy",
+          "579-9-4-4-light",
+          "580-9-4-5-loading",
+          "581-9-4-6-range",
+          "582-9-4-7-reach",
+          "583-9-4-8-thrown",
+          "584-9-4-9-two-handed",
+          "585-9-4-10-versatile"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -110,8 +162,20 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Ammunition",
+        "ranged_attack_requires_ammunition": true,
+        "ammunition_type_source": "weapon range",
+        "ammunition_expended_per_attack": 1,
+        "drawing_ammunition_part_of_attack": true,
+        "one_handed_weapon_loading_requires_free_hand": true,
+        "post_fight_recovery": {
+          "time_minutes": 1,
+          "fraction_used": "1/2",
+          "rounding": "down"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -126,8 +190,15 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Finesse",
+        "attack_and_damage_modifier_options": [
+          "Strength",
+          "Dexterity"
+        ],
+        "same_modifier_required_for_attack_and_damage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -142,8 +213,22 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Heavy",
+        "attack_roll_disadvantage_conditions": [
+          {
+            "weapon_class": "Melee",
+            "minimum_required_ability": "Strength",
+            "minimum_score": 13
+          },
+          {
+            "weapon_class": "Ranged",
+            "minimum_required_ability": "Dexterity",
+            "minimum_score": 13
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -158,8 +243,22 @@
       "pages": [
         89
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Light",
+        "trigger": {
+          "action": "Attack",
+          "timing": "own turn",
+          "attack_uses_light_weapon": true
+        },
+        "extra_attack": {
+          "count": 1,
+          "activation_action": "Bonus Action",
+          "timing": "later on same turn",
+          "requires_different_light_weapon": true,
+          "damage_ability_modifier_rule": "add only if negative"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -174,8 +273,17 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Loading",
+        "ammunition_fired_maximum": 1,
+        "activation_options": [
+          "action",
+          "Bonus Action",
+          "Reaction"
+        ],
+        "additional_attack_count_does_not_increase_limit": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -190,8 +298,21 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Range",
+        "listed_with_properties": [
+          "Ammunition",
+          "Thrown"
+        ],
+        "range_value_order": [
+          "normal range",
+          "long range"
+        ],
+        "range_unit": "feet",
+        "beyond_normal_range_attack_roll": "Disadvantage",
+        "beyond_long_range_attack_allowed": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -206,8 +327,15 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Reach",
+        "reach_bonus_feet": 5,
+        "applies_to": [
+          "weapon attacks",
+          "Opportunity Attack reach"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -2915,7 +3043,7 @@
       "name": "Coin Values",
       "section_id": "571-9-1-coins",
       "page": 89,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "coin",
@@ -2925,10 +3053,66 @@
         {
           "id": "value-in-gp",
           "name": "Value in GP",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Copper Piece (CP)"
+            },
+            {
+              "value": "1/100",
+              "numeric_value": 0.01
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Silver Piece (SP)"
+            },
+            {
+              "value": "1/10",
+              "numeric_value": 0.1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Electrum Piece (EP)"
+            },
+            {
+              "value": "1/2",
+              "numeric_value": 0.5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gold Piece (GP)"
+            },
+            {
+              "value": "1",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Platinum Piece (PP)"
+            },
+            {
+              "value": "10",
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
