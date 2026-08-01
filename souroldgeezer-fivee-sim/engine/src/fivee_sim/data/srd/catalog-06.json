@@ -7159,8 +7159,16 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 7,
+        "innate_sorcery_activation_without_remaining_uses": {
+          "activation_action": "Bonus Action",
+          "sorcery_point_cost": 2
+        },
+        "active_innate_sorcery_max_metamagic_options_per_spell": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -7175,8 +7183,17 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Dimensional Travel"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -7191,8 +7208,14 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "level": 20,
+        "requires_active_feature": "Innate Sorcery",
+        "free_metamagic_options_per_turn": 1,
+        "sorcery_point_cost": 0
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "415-6-44-sorcerer-class-features"
     },
@@ -7207,8 +7230,25 @@
       "pages": [
         66
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feature": "Metamagic",
+        "ordering": [
+          "alphabetical"
+        ],
+        "option_ids": [
+          "427-6-45-1-careful-spell",
+          "428-6-45-2-distant-spell",
+          "429-6-45-3-empowered-spell",
+          "430-6-45-4-extended-spell",
+          "431-6-45-5-heightened-spell",
+          "432-6-45-6-quickened-spell",
+          "433-6-45-7-seeking-spell",
+          "434-6-45-8-subtle-spell",
+          "435-6-45-9-transmuted-spell",
+          "436-6-45-10-twinned-spell"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -7224,8 +7264,17 @@
         66,
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Careful Spell",
+        "sorcery_point_cost": 1,
+        "trigger": {
+          "spell_forces_other_creatures_to_make_saving_throw": true
+        },
+        "maximum_protected_creatures_formula": "max(1, Charisma modifier)",
+        "protected_creature_automatically_succeeds_save": true,
+        "protected_creature_half_damage_on_success_replaced_with": 0
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7240,8 +7289,14 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Distant Spell",
+        "sorcery_point_cost": 1,
+        "minimum_qualifying_range_feet": 5,
+        "qualifying_range_multiplier": 2,
+        "touch_range_replacement_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7256,8 +7311,17 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Empowered Spell",
+        "sorcery_point_cost": 1,
+        "trigger": {
+          "spell_damage_roll": true
+        },
+        "maximum_damage_dice_rerolled_formula": "max(1, Charisma modifier)",
+        "new_rolls_required": true,
+        "permitted_after_different_metamagic_option": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7272,8 +7336,15 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Extended Spell",
+        "sorcery_point_cost": 1,
+        "minimum_qualifying_duration": "1 minute",
+        "duration_multiplier": 2,
+        "maximum_duration": "24 hours",
+        "concentration_saving_throw_advantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7288,8 +7359,16 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Heightened Spell",
+        "sorcery_point_cost": 2,
+        "trigger": {
+          "spell_forces_creature_to_make_saving_throw": true
+        },
+        "target_count": 1,
+        "target_saving_throws_against_spell": "Disadvantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7304,8 +7383,15 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Quickened Spell",
+        "sorcery_point_cost": 2,
+        "required_casting_time": "Action",
+        "replacement_casting_time": "Bonus Action",
+        "blocked_if_level_1_plus_spell_already_cast_this_turn": true,
+        "blocks_level_1_plus_spell_cast_later_this_turn": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7320,8 +7406,17 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Seeking Spell",
+        "sorcery_point_cost": 1,
+        "trigger": {
+          "spell_attack_roll_misses": true
+        },
+        "rerolled_die": "d20",
+        "new_roll_required": true,
+        "permitted_after_different_metamagic_option": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7336,8 +7431,20 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Subtle Spell",
+        "sorcery_point_cost": 1,
+        "components_removed": [
+          "Verbal",
+          "Somatic",
+          "Material"
+        ],
+        "material_component_exceptions": [
+          "consumed by spell",
+          "specified cost"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7352,8 +7459,28 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Transmuted Spell",
+        "sorcery_point_cost": 1,
+        "eligible_damage_types": [
+          "Acid",
+          "Cold",
+          "Fire",
+          "Lightning",
+          "Poison",
+          "Thunder"
+        ],
+        "replacement_damage_types": [
+          "Acid",
+          "Cold",
+          "Fire",
+          "Lightning",
+          "Poison",
+          "Thunder"
+        ],
+        "replacement_damage_type_must_differ": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7368,8 +7495,16 @@
       "pages": [
         67
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "metamagic_option": "Twinned Spell",
+        "sorcery_point_cost": 1,
+        "eligibility": {
+          "higher_level_spell_slot_adds_target": true
+        },
+        "effective_spell_level_increase": 1,
+        "example_spell": "Charm Person"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "426-6-45-metamagic-options"
     },
@@ -7386,8 +7521,43 @@
         68,
         69
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Sorcerer",
+        "spell_level_minimum": 0,
+        "spell_level_maximum": 9,
+        "ordering": [
+          "spell level",
+          "alphabetical"
+        ],
+        "special_codes": {
+          "C": "Concentration",
+          "R": "Ritual",
+          "M": "specific Material component"
+        },
+        "spell_tables_by_level": {
+          "0": "067-cantrips-level-0-sorcerer-spells",
+          "1": "068-level-1-sorcerer-spells",
+          "2": "068-level-2-sorcerer-spells",
+          "3": "068-level-3-sorcerer-spells",
+          "4": "069-level-4-sorcerer-spells-level-7-sorcerer-spells",
+          "5": "069-level-4-sorcerer-spells-level-7-sorcerer-spells",
+          "6": "069-level-4-sorcerer-spells-level-7-sorcerer-spells",
+          "7": "069-level-4-sorcerer-spells-level-7-sorcerer-spells",
+          "8": "069-level-4-sorcerer-spells-level-7-sorcerer-spells",
+          "9": "069-level-4-sorcerer-spells-level-7-sorcerer-spells"
+        },
+        "grouped_table_levels": {
+          "069-level-4-sorcerer-spells-level-7-sorcerer-spells": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -29137,7 +29307,7 @@
       "name": "Cantrips (Level 0 Sorcerer Spells)",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 67,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -29155,9 +29325,309 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Acid Splash"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chill Touch"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dancing Lights"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Elementalism"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fire Bolt"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Light"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mage Hand"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mending"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Message"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Minor Illusion"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poison Spray"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Prestidigitation"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ray of Frost"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shocking Grasp"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerous Burst"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "True Strike"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 16,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -29165,7 +29635,7 @@
       "name": "Level 1 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 68,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -29183,9 +29653,368 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Burning Hands"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charm Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chromatic Orb"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Color Spray"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Comprehend Languages"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Disguise Self"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Expeditious Retreat"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "False Life"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Feather Fall"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fog Cloud"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Grease"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ice Knife"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Jump"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mage Armor"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic Missile"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ray of Sickness"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shield"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Silent Image"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sleep"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Thunderwave"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 21,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 20,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -29193,7 +30022,7 @@
       "name": "Level 3 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 68,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -29211,9 +30040,326 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Blink"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Clairvoyance"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Counterspell"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Daylight"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dispel Magic"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fear"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fireball"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fly"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gaseous Form"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Haste"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hypnotic Pattern"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lightning Bolt"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Major Image"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Energy"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sleet Storm"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stinking Cloud"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tongues"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Vampiric Touch"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water Breathing"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water Walk"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        }
+      ],
       "source_row_count": 21,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -29221,7 +30367,7 @@
       "name": "Level 2 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 68,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -29239,9 +30385,390 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 12,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Alter Self"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blindness/Deafness"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blur"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Darkness"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Darkvision"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Thoughts"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dragon's Breath"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enhance Ability"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enlarge/Reduce"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flame Blade"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flaming Sphere"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gust of Wind"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hold Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Invisibility"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Knock"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Levitate"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic Weapon"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mirror Image"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Misty Step"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scorching Ray"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "See Invisibility"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shatter"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spider Climb"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Suggestion"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Web"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 25,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 18,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 19,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 20,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 21,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -29249,8 +30776,13 @@
       "name": "Level 4 Sorcerer Spells Level 7 Sorcerer Spells",
       "section_id": "437-6-46-sorcerer-spell-list",
       "page": 69,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
+        {
+          "id": "sorcerer-level",
+          "name": "Sorcerer Level",
+          "type": "integer"
+        },
         {
           "id": "spell",
           "name": "Spell",
@@ -29267,9 +30799,1041 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 13,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Banishment"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Blight"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Charm Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Confusion"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Dimension Door"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Dominate Beast"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Fire Shield"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Greater Invisibility"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Ice Storm"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Polymorph"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Stoneskin"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Vitriolic Sphere"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Wall of Fire"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Animate Objects"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Arcane Hand"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Cloudkill"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Cone of Cold"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Creation"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Dominate Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Hold Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Insect Plague"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Seeming"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Telekinesis"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Teleportation Circle"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Wall of Stone"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Chain Lightning"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Circle of Death"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Disintegrate"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Eyebite"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Flesh to Stone"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Freezing Sphere"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Globe of Invulnerability"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Mass Suggestion"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Move Earth"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Sunbeam"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "True Seeing"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Delayed Blast Fireball"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Etherealness"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Finger of Death"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Fire Storm"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Plane Shift"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Prismatic Spray"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Reverse Gravity"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Teleport"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Demiplane"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Dominate Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Earthquake"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Incendiary Cloud"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Power Word Stun"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Sunburst"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Gate"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Meteor Swarm"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Power Word Kill"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Time Stop"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Wish"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 55,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 21,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 25,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 27,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 30,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 32,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 37,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 38,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 39,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 41,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 43,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 44,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 48,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 49,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 51,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 52,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 53,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 54,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
