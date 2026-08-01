@@ -5049,8 +5049,14 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "service": "Paid spellcasting",
+        "typical_location": "Settlement",
+        "expensive_component_cost_added": true,
+        "availability_decreases_as_spell_level_increases": true,
+        "service_table_id": "102-spellcasting-services"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5065,8 +5071,12 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "finding_during_adventures_possible": true,
+        "finding_during_adventures_guaranteed": false,
+        "item_detail_reference": "Magic Items"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5081,8 +5091,39 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "visual_distinguishability": "Varies",
+        "handling_reveals_extraordinary_nature": true,
+        "handling_reveals_properties": false,
+        "identification_methods": [
+          {
+            "method": "Identify spell",
+            "speed": "Fastest"
+          },
+          {
+            "method": "Short Rest",
+            "items_focused_on": 1,
+            "physical_contact_required": true,
+            "reveals": [
+              "Properties",
+              "Use"
+            ],
+            "reveals_curse": false
+          },
+          {
+            "method": "Property clues"
+          },
+          {
+            "method": "Wear or experiment"
+          },
+          {
+            "method": "Taste",
+            "item_type": "Potion",
+            "reveals": "Potion effect"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5097,8 +5138,14 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "bond_name": "Attunement",
+        "required_by_some_magic_items": true,
+        "required_before_using_magical_properties": true,
+        "unattuned_benefits": "Nonmagical only",
+        "item_specific_exception_possible": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5113,8 +5160,28 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "rest_type": "Short Rest",
+        "items_focused_on": 1,
+        "physical_contact_required": true,
+        "property_identification_rest_can_be_reused": false,
+        "example_focus_activities": [
+          {
+            "item_type": "Weapon",
+            "activity": "Weapon practice"
+          },
+          {
+            "item_type": "Wand",
+            "activity": "Meditation"
+          }
+        ],
+        "interruption_result": "Attempt fails",
+        "successful_completion": [
+          "Attuned",
+          "Full magical capabilities accessible"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "735-9-32-attunement"
     },
@@ -5129,8 +5196,13 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "maximum_attuned_items": 3,
+        "fourth_attunement_attempt_result": "Fails",
+        "must_end_existing_attunement_before_replacement": true,
+        "maximum_attuned_copies_per_item": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "735-9-32-attunement"
     },
@@ -5146,8 +5218,24 @@
         102,
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "automatic_end_conditions": [
+          "Attunement prerequisites no longer satisfied",
+          "Item more than 100 feet away for at least 24 hours",
+          "Attuned creature dies",
+          "Another creature attunes to item"
+        ],
+        "distance_end_condition": {
+          "distance_feet_exclusive_minimum": 100,
+          "duration_hours_minimum": 24
+        },
+        "voluntary_end": {
+          "rest_type": "Short Rest",
+          "focus_on_item": true,
+          "allowed_for_cursed_item": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "735-9-32-attunement"
     },
@@ -5162,8 +5250,25 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "intended_use_required": true,
+        "worn_item_placements": {
+          "Boots": "Feet",
+          "Gloves": "Hands",
+          "Hats and Helmets": "Head",
+          "Rings": "Finger",
+          "Armor": "Donned",
+          "Shield": "Strapped to arm",
+          "Cloak": "Fastened around shoulders",
+          "Weapon": "Held"
+        },
+        "worn_item_generally_fits_any_size_or_build": true,
+        "garment_fit_methods": [
+          "Easily adjustable",
+          "Magically self-adjusting"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5178,8 +5283,36 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "normal_maximum_counts": [
+          {
+            "item": "Footwear",
+            "pairs": 1
+          },
+          {
+            "item": "Gloves or Gauntlets",
+            "pairs": 1
+          },
+          {
+            "item": "Bracers",
+            "pairs": 1
+          },
+          {
+            "item": "Armor",
+            "suits": 1
+          },
+          {
+            "item": "Headwear",
+            "quantity": 1
+          },
+          {
+            "item": "Cloak",
+            "quantity": 1
+          }
+        ],
+        "gm_exception_possible": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "739-9-33-wearing-and-wielding-items"
     },
@@ -5194,8 +5327,17 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "paired_item_examples": [
+          "Boots",
+          "Bracers",
+          "Gauntlets",
+          "Gloves"
+        ],
+        "benefit_requires_both_items_worn": true,
+        "mixed_pairs_grant_benefit": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "739-9-33-wearing-and-wielding-items"
     },
@@ -5210,8 +5352,19 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "requirements": [
+          "Tools",
+          "Raw materials",
+          "Time"
+        ],
+        "successful_result": "Item created",
+        "created_item_uses": [
+          "Use",
+          "Sell at normal price"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5226,8 +5379,14 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "listed_tool_source": "Equipment: Tools",
+        "unlisted_item_tool_selected_by": "GM",
+        "required_tool_must_be_used": true,
+        "crafter_tool_proficiency_required": true,
+        "helper_tool_proficiency_required": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5242,8 +5401,12 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "raw_material_value_fraction_of_purchase_cost": 0.5,
+        "rounding": "Down",
+        "availability_determined_by": "GM"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5258,8 +5421,16 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "workday_hours": 8,
+        "crafting_days_formula": "Purchase cost in GP divided by 10",
+        "fractional_day_rounding": "Up",
+        "multi_day_work_must_be_consecutive": false,
+        "collaboration_time_formula": "Base time divided by number of crafting characters",
+        "normal_maximum_assistants": 1,
+        "additional_assistants_allowed_by": "GM"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5274,8 +5445,18 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "created_item": "Potion of Healing",
+        "required_tool": "Herbalism Kit",
+        "tool_proficiency_required": true,
+        "raw_material_cost": {
+          "amount": 25,
+          "currency": "GP"
+        },
+        "work_days": 1,
+        "work_hours": 8
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5290,8 +5471,12 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "crafter_type": "Spellcaster",
+        "input": "Spell",
+        "output": "Spell Scroll"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5306,8 +5491,13 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "time_and_money_depend_on": "Spell level",
+        "cost_table_id": "103-spell-scroll-costs",
+        "inscription_hours_per_day": 8,
+        "multi_day_work_must_be_consecutive": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -5322,8 +5512,18 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "proficiency_any_of": [
+          "Arcana",
+          "Calligrapher's Supplies"
+        ],
+        "spell_must_be_prepared_each_inscription_day": true,
+        "material_components_must_be_available": true,
+        "consumed_material_components_timing": "Scroll completion",
+        "scroll_spell_save_dc_source": "Scribe",
+        "scroll_spell_attack_bonus_source": "Scribe"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -9716,7 +9916,7 @@
       "name": "Hirelings",
       "section_id": "731-9-28-hirelings",
       "page": 102,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "service",
@@ -9729,7 +9929,41 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Skilled hireling"
+            },
+            {
+              "value": "2 GP per day",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Untrained hireling"
+            },
+            {
+              "value": "2 SP per day",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Messenger"
+            },
+            {
+              "value": "2 CP per mile",
+              "numeric_value": 2
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -9739,12 +9973,12 @@
       "name": "Spellcasting Services",
       "section_id": "732-9-29-spellcasting",
       "page": 102,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell-level",
           "name": "Spell Level",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "availability",
@@ -9754,10 +9988,109 @@
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cantrip"
+            },
+            {
+              "value": "Village, town, or city"
+            },
+            {
+              "value": "30 GP",
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1"
+            },
+            {
+              "value": "Village, town, or city"
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2"
+            },
+            {
+              "value": "Village, town, or city"
+            },
+            {
+              "value": "200 GP",
+              "numeric_value": 200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "3"
+            },
+            {
+              "value": "Town or city only"
+            },
+            {
+              "value": "300 GP",
+              "numeric_value": 300
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "4–5"
+            },
+            {
+              "value": "Town or city only"
+            },
+            {
+              "value": "2,000 GP",
+              "numeric_value": 2000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "6–8"
+            },
+            {
+              "value": "City only"
+            },
+            {
+              "value": "20,000 GP",
+              "numeric_value": 20000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "9"
+            },
+            {
+              "value": "City only"
+            },
+            {
+              "value": "100,000 GP",
+              "numeric_value": 100000
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
