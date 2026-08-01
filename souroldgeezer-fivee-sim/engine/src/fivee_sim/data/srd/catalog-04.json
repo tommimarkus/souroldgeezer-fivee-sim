@@ -2682,7 +2682,7 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -2698,8 +2698,17 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "hit_point_maximum_state": "uninjured",
+        "current_hit_points_minimum": 0,
+        "current_hit_points_maximum": "hit_point_maximum",
+        "damage_application_formula": "current_hit_points = max(0, current_hit_points - damage)",
+        "hit_point_loss_affects_capabilities_above_zero": false,
+        "Bloodied_threshold_formula": "current_hit_points * 2 <= hit_point_maximum",
+        "Bloodied_intrinsic_game_effect": false,
+        "Bloodied_can_trigger_other_effects": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2714,8 +2723,24 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "eligible_creatures": "any",
+        "rest_types": [
+          {
+            "name": "Short Rest",
+            "duration_hours": 1,
+            "timing": "during_day"
+          },
+          {
+            "name": "Long Rest",
+            "duration_hours": 8,
+            "timing": "end_of_day"
+          }
+        ],
+        "rest_benefit": "regain_Hit_Points",
+        "rules_reference": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "092-4-39-hit-points"
     },
@@ -2730,8 +2755,24 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "damage_specifier_sources": [
+          "weapon",
+          "spell",
+          "damaging_monster_ability"
+        ],
+        "rolled_damage_formula": "damage_dice + applicable_modifiers",
+        "damage_minimum": 0,
+        "weapon_damage_ability_modifier_source": "attack_roll",
+        "spell_damage_dice_source": "spell",
+        "spell_damage_modifier_source": "spell",
+        "fixed_damage_ability_modifier_default": false,
+        "damage_dice_references": {
+          "weapon": "Equipment",
+          "spell": "Spells"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2746,8 +2787,18 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "attack_damage_dice_multiplier": 2,
+        "relevant_modifier_multiplier": 1,
+        "additional_attack_damage_dice_multiplier": 2,
+        "example": {
+          "weapon": "Dagger",
+          "normal_damage_dice": "1d4",
+          "critical_hit_damage_dice": "2d4",
+          "additional_damage_source": "Sneak Attack"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2762,7 +2813,7 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -2778,8 +2829,14 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "minimum_targets": 2,
+        "target_resolution": "simultaneous_saving_throws",
+        "damage_roll_count": 1,
+        "damage_roll_shared_across_targets": true,
+        "example_effect": "Fireball"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "096-4-42-saving-throws-and-damage"
     },
@@ -2794,8 +2851,14 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger": "successful_saving_throw",
+        "applicability": "effect_specifies_half_damage",
+        "damage_basis": "failed_save_damage",
+        "damage_formula": "floor(failed_save_damage / 2)",
+        "rounding": "down"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "096-4-42-saving-throws-and-damage"
     },
@@ -2811,8 +2874,17 @@
         16,
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "every_damage_instance_has_type": true,
+        "examples": [
+          "Fire",
+          "Slashing"
+        ],
+        "type_definitions_reference": "Rules Glossary",
+        "damage_types_have_intrinsic_rules": false,
+        "dependent_rule_example": "Resistance"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2827,8 +2899,23 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "eligible_subjects": [
+          "creature",
+          "object"
+        ],
+        "applicability_scope": "specified_damage_type",
+        "Resistance": {
+          "damage_formula": "floor(damage / 2)",
+          "rounding": "down",
+          "example_damage_type": "Cold"
+        },
+        "Vulnerability": {
+          "damage_formula": "damage * 2",
+          "example_damage_type": "Fire"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2843,8 +2930,24 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "nonstacking_effects": [
+          "Resistance",
+          "Vulnerability"
+        ],
+        "nonstacking_scope": "same_damage_type",
+        "maximum_effective_instances": 1,
+        "example": {
+          "damage_type": "Necrotic",
+          "matching_resistances": [
+            "Necrotic",
+            "all_damage"
+          ],
+          "effective_resistance_instances": 1,
+          "damage_formula": "floor(damage / 2)"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "100-4-44-resistance-and-vulnerability"
     },
@@ -2859,8 +2962,37 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "application_order": [
+          {
+            "order": 1,
+            "stage": "adjustments",
+            "types": [
+              "bonus",
+              "penalty",
+              "multiplier"
+            ]
+          },
+          {
+            "order": 2,
+            "stage": "Resistance"
+          },
+          {
+            "order": 3,
+            "stage": "Vulnerability"
+          }
+        ],
+        "example": {
+          "damage_type": "Fire",
+          "initial_damage": 28,
+          "adjustment": -5,
+          "after_adjustment": 23,
+          "after_Resistance": 11,
+          "Resistance_rounding": "down",
+          "after_Vulnerability": 22
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "100-4-44-resistance-and-vulnerability"
     },
@@ -2875,8 +3007,21 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "eligible_subjects": [
+          "creature",
+          "object"
+        ],
+        "immunity_types": {
+          "damage_type": {
+            "damage_taken": 0
+          },
+          "condition": {
+            "affected": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2891,8 +3036,27 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "restoration_sources": [
+          "magic",
+          "Short Rest",
+          "Long Rest"
+        ],
+        "magic_examples": [
+          "Cure Wounds",
+          "Potion of Healing"
+        ],
+        "current_hit_points_formula": "min(hit_point_maximum, current_hit_points + restored_hit_points)",
+        "actual_regained_formula": "min(restored_hit_points, hit_point_maximum - current_hit_points)",
+        "excess_restored_hit_points_lost": true,
+        "example": {
+          "restored_hit_points": 8,
+          "current_hit_points": 14,
+          "hit_point_maximum": 20,
+          "actual_regained_hit_points": 6
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2907,8 +3071,29 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger": {
+          "attack_type": "melee",
+          "normal_result_hit_points": 0
+        },
+        "alternative_is_optional": true,
+        "alternative_result": {
+          "hit_points": 1,
+          "condition": "Unconscious",
+          "starts": "Short Rest"
+        },
+        "Unconscious_end_triggers": [
+          "Short_Rest_end",
+          "regain_any_Hit_Points",
+          "successful_first_aid"
+        ],
+        "first_aid": {
+          "resource": "action",
+          "check": "Wisdom (Medicine)",
+          "DC": 10
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "104-4-46-healing"
     },
@@ -2923,8 +3108,14 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger_hit_points": 0,
+        "outcomes": [
+          "instant_death",
+          "Unconscious"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2939,8 +3130,37 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "instant_death_triggers": [
+          {
+            "name": "Monster Death",
+            "subject": "monster",
+            "trigger_hit_points": 0,
+            "game_master_override_allowed": true,
+            "override_treatment": "character"
+          },
+          {
+            "name": "Hit Point Maximum of 0",
+            "subject": "creature",
+            "trigger_hit_point_maximum": 0
+          },
+          {
+            "name": "Massive Damage",
+            "subject": "character",
+            "trigger_hit_points": 0,
+            "remaining_damage_formula": "damage - current_hit_points_before_damage",
+            "death_formula": "remaining_damage >= hit_point_maximum"
+          }
+        ],
+        "Massive_Damage_example": {
+          "hit_point_maximum": 12,
+          "current_hit_points": 6,
+          "damage": 18,
+          "remaining_damage": 12,
+          "dies": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "106-4-47-dropping-to-0-hit-points"
     },
@@ -2955,8 +3175,16 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "post_death_options": [
+          "magical_revival",
+          "new_character"
+        ],
+        "magical_revival_example": "Raise Dead",
+        "new_character_coordination": "game_master",
+        "death_reference": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "106-4-47-dropping-to-0-hit-points"
     },
@@ -2971,8 +3199,16 @@
       "pages": [
         17
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger_all": {
+          "hit_points": 0,
+          "instant_death": false
+        },
+        "condition": "Unconscious",
+        "condition_end_trigger": "regain_any_Hit_Points",
+        "Death_Saving_Throws_required": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "106-4-47-dropping-to-0-hit-points"
     },
@@ -2988,8 +3224,39 @@
         17,
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger": {
+          "turn_timing": "start",
+          "hit_points": 0
+        },
+        "ability_score_tied": false,
+        "roll": {
+          "die": "1d20",
+          "success_minimum": 10,
+          "failure_maximum": 9
+        },
+        "successes_required_for_Stable": 3,
+        "failures_required_for_death": 3,
+        "successes_and_failures_consecutive_required": false,
+        "success_and_failure_reset_triggers": [
+          "regain_any_Hit_Points",
+          "become_Stable"
+        ],
+        "special_rolls": {
+          "1": {
+            "failures": 2
+          },
+          "20": {
+            "hit_points_regained": 1
+          }
+        },
+        "damage_at_zero_hit_points": {
+          "default_failures": 1,
+          "Critical_Hit_failures": 2,
+          "instant_death_formula": "damage >= hit_point_maximum"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "106-4-47-dropping-to-0-hit-points"
     },
