@@ -686,7 +686,7 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -702,8 +702,18 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "subclass": "Path of the Berserker",
+        "level": 3,
+        "requires_feature_use": "Reckless Attack",
+        "requires_rage_active": true,
+        "trigger": "first target hit on own turn",
+        "attack_ability": "Strength",
+        "extra_damage_formula": "Rage Damage bonus d6",
+        "extra_damage_type": "weapon or Unarmed Strike damage type"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "188-6-4-barbarian-subclass-path-of-the-berserker"
     },
@@ -718,8 +728,20 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "subclass": "Path of the Berserker",
+        "level": 6,
+        "rage_active_condition_immunities": [
+          "Charmed",
+          "Frightened"
+        ],
+        "entering_rage_ends_conditions": [
+          "Charmed",
+          "Frightened"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "188-6-4-barbarian-subclass-path-of-the-berserker"
     },
@@ -734,8 +756,22 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "subclass": "Path of the Berserker",
+        "level": 10,
+        "trigger": "take damage from a creature",
+        "maximum_trigger_distance_feet": 5,
+        "response": "Reaction",
+        "attack_count": 1,
+        "attack_type": "melee",
+        "attack_sources": [
+          "weapon",
+          "Unarmed Strike"
+        ],
+        "attack_target": "triggering creature"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "188-6-4-barbarian-subclass-path-of-the-berserker"
     },
@@ -750,8 +786,25 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "subclass": "Path of the Berserker",
+        "level": 14,
+        "activation_action": "Bonus Action",
+        "area_shape": "Emanation",
+        "area_radius_feet": 30,
+        "targets": "creatures of choice",
+        "saving_throw_ability": "Wisdom",
+        "saving_throw_dc_formula": "8 + Strength modifier + Proficiency Bonus",
+        "failed_save_condition": "Frightened",
+        "duration_minutes": 1,
+        "repeat_save_timing": "end of affected creature's turn",
+        "successful_repeat_save_ends_effect": true,
+        "recharge": "Long Rest",
+        "restore_use_cost": "one Rage use",
+        "restore_use_action": "none"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "188-6-4-barbarian-subclass-path-of-the-berserker"
     },
@@ -766,8 +819,12 @@
       "pages": [
         31
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "core_traits_table_id": "031-core-bard-traits",
+        "class_features_table_id": "031-bard-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -782,7 +839,7 @@
       "pages": [
         31
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -798,8 +855,15 @@
       "pages": [
         31
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "031-core-bard-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "031-bard-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "194-6-6-becoming-a-bard"
     },
@@ -814,8 +878,20 @@
       "pages": [
         31
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "one skill proficiency",
+          "one Musical Instrument proficiency",
+          "Light armor training"
+        ],
+        "core_traits_table_id": "031-core-bard-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "031-bard-features",
+        "spell_slots_source": "multiclassing rules"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "194-6-6-becoming-a-bard"
     },
@@ -830,8 +906,12 @@
       "pages": [
         31
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "class_features_keyed_by": "Bard level",
+        "class_features_table_id": "031-bard-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -847,8 +927,33 @@
         31,
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 1,
+        "initial_die": "d6",
+        "activation_action": "Bonus Action",
+        "target": "another creature",
+        "range_feet": 60,
+        "target_perception_requirement": [
+          "can see you",
+          "can hear you"
+        ],
+        "maximum_dice_per_creature": 1,
+        "use_window_hours": 1,
+        "trigger": "failed D20 Test",
+        "die_added_to": "d20 roll",
+        "die_expended_when_rolled": true,
+        "uses_formula": "max(1, Charisma modifier)",
+        "long_rest_uses_recovered": "all",
+        "die_by_bard_level": {
+          "1": "d6",
+          "5": "d8",
+          "10": "d10",
+          "15": "d12"
+        },
+        "class_features_table_id": "031-bard-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -863,8 +968,39 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 1,
+        "spell_list": "Bard",
+        "initial_cantrip_count": 2,
+        "recommended_cantrips": [
+          "Dancing Lights",
+          "Vicious Mockery"
+        ],
+        "cantrips_replaceable_per_bard_level": 1,
+        "additional_cantrip_levels": [
+          4,
+          10
+        ],
+        "spell_slot_table_id": "031-bard-features",
+        "long_rest_spell_slots_recovered": "all",
+        "initial_prepared_spell_count": 4,
+        "initial_prepared_spell_level": 1,
+        "recommended_prepared_spells": [
+          "Charm Person",
+          "Color Spray",
+          "Dissonant Whispers",
+          "Healing Word"
+        ],
+        "prepared_spell_count_table_id": "031-bard-features",
+        "prepared_spell_maximum_level_basis": "available spell slots",
+        "always_prepared_feature_spells_count_against_limit": false,
+        "always_prepared_feature_spells_are_bard_spells": true,
+        "prepared_spells_replaceable_per_bard_level": 1,
+        "spellcasting_ability": "Charisma",
+        "spellcasting_focus": "Musical Instrument"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -879,8 +1015,19 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 2,
+        "expertise_skill_count": 2,
+        "eligible_skills": "skill proficiencies",
+        "recommended_skills": [
+          "Performance",
+          "Persuasion"
+        ],
+        "additional_expertise_level": 9,
+        "additional_expertise_skill_count": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -895,8 +1042,14 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 2,
+        "bonus_formula": "floor(Proficiency Bonus / 2)",
+        "applies_to": "ability check using an unproficient skill",
+        "requires_check_not_otherwise_use_proficiency_bonus": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -911,8 +1064,15 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 3,
+        "selection": "Bard subclass",
+        "selection_count": 1,
+        "detailed_option": "College of Lore",
+        "subclass_features_gained_at_or_below_bard_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -927,8 +1087,22 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -943,8 +1117,18 @@
       "pages": [
         32
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 5,
+        "rest_types_recovering_all_uses": [
+          "Short Rest",
+          "Long Rest"
+        ],
+        "spell_slot_cost": 1,
+        "bardic_inspiration_uses_recovered_per_slot": 1,
+        "spell_slot_recovery_action": "none"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -959,8 +1143,24 @@
       "pages": [
         33
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Bard",
+        "level": 7,
+        "trigger": "failed saving throw",
+        "eligible_creatures": [
+          "self",
+          "creature within range"
+        ],
+        "range_feet": 30,
+        "eligible_effect_conditions": [
+          "Charmed",
+          "Frightened"
+        ],
+        "response": "Reaction",
+        "save_rerolled": true,
+        "reroll_has_advantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "197-6-7-bard-class-features"
     },
@@ -6657,20 +6857,101 @@
       "name": "Core Bard Traits",
       "section_id": "193-6-5-bard",
       "page": 31,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D8 per Bard level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Dexterity and Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose any 3 skills (see \"Playing the Game\")"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tool Proficiencies"
+            },
+            {
+              "value": "Choose 3 Musical Instruments (see \"Equipment\")"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light armor"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Leather Armor, 2 Daggers, Musical Instrument of your choice, Entertainer's Pack, and 19 GP; or (B) 90 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6680,7 +6961,7 @@
       "name": "Bard Features",
       "section_id": "195-6-6-1-as-a-level-1-character",
       "page": 31,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -6713,19 +6994,1680 @@
           "type": "integer"
         },
         {
-          "id": "1",
+          "id": "spell-level-1",
           "name": "1",
           "type": "integer"
         },
         {
-          "id": "spell-slots-per-spell-level-2-3-4-5-6-7-8-9",
-          "name": "——Spell Slots per Spell Level—— 2 3 4 5 6 7 8 9",
-          "type": "string"
+          "id": "spell-level-2",
+          "name": "2",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-3",
+          "name": "3",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-4",
+          "name": "4",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-5",
+          "name": "5",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-6",
+          "name": "6",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-7",
+          "name": "7",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-8",
+          "name": "8",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-9",
+          "name": "9",
+          "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Bardic Inspiration, Spellcasting"
+            },
+            {
+              "value": "D6"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Expertise, Jack of All Trades"
+            },
+            {
+              "value": "D6"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Bard Subclass"
+            },
+            {
+              "value": "D6"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "D6"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Font of Inspiration"
+            },
+            {
+              "value": "D8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "D8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Countercharm"
+            },
+            {
+              "value": "D8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "D8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Expertise"
+            },
+            {
+              "value": "D8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Magical Secrets"
+            },
+            {
+              "value": "D10"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "D10"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "D10"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "D10"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "D10"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Superior Inspiration"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 21,
+              "numeric_value": 21
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Words of Creation"
+            },
+            {
+              "value": "D12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 22,
+              "numeric_value": 22
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "class-features"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
