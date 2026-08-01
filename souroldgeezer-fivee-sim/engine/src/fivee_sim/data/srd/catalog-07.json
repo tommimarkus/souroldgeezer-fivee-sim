@@ -267,8 +267,36 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background": "Criminal",
+        "ability_scores": [
+          "Dexterity",
+          "Constitution",
+          "Intelligence"
+        ],
+        "feat": "Alert",
+        "skill_proficiencies": [
+          "Sleight of Hand",
+          "Stealth"
+        ],
+        "tool_proficiency": "Thieves’ Tools",
+        "equipment_options": {
+          "A": {
+            "items": [
+              "Dagger x2",
+              "Thieves’ Tools",
+              "Crowbar",
+              "Pouch x2",
+              "Traveler’s Clothes"
+            ],
+            "gp": 16
+          },
+          "B": {
+            "gp": 50
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "525-7-3-background-descriptions"
     },
@@ -283,8 +311,36 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background": "Sage",
+        "ability_scores": [
+          "Constitution",
+          "Intelligence",
+          "Wisdom"
+        ],
+        "feat": "Magic Initiate (Wizard)",
+        "skill_proficiencies": [
+          "Arcana",
+          "History"
+        ],
+        "tool_proficiency": "Calligrapher’s Supplies",
+        "equipment_options": {
+          "A": {
+            "items": [
+              "Quarterstaff",
+              "Calligrapher’s Supplies",
+              "Book (history)",
+              "Parchment (8 sheets)",
+              "Robe"
+            ],
+            "gp": 8
+          },
+          "B": {
+            "gp": 50
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "525-7-3-background-descriptions"
     },
@@ -299,8 +355,39 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background": "Soldier",
+        "ability_scores": [
+          "Strength",
+          "Dexterity",
+          "Constitution"
+        ],
+        "feat": "Savage Attacker",
+        "skill_proficiencies": [
+          "Athletics",
+          "Intimidation"
+        ],
+        "tool_proficiency_choice_count": 1,
+        "tool_proficiency_category": "Gaming Set",
+        "equipment_options": {
+          "A": {
+            "items": [
+              "Spear",
+              "Shortbow",
+              "Arrow x20",
+              "chosen Gaming Set",
+              "Healer’s Kit",
+              "Quiver",
+              "Traveler’s Clothes"
+            ],
+            "gp": 14
+          },
+          "B": {
+            "gp": 50
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "525-7-3-background-descriptions"
     },
@@ -315,8 +402,15 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "selection": "character species",
+        "grants_species_game_traits": true,
+        "typical_lifespan_years": 80,
+        "typical_lifespan_has_exceptions": true,
+        "physical_maturity_age_is_species_independent": true,
+        "maximum_character_age_basis": "species normal lifespan"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
     },
@@ -331,8 +425,15 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "part_ids": [
+          "532-7-5-1-creature-type",
+          "533-7-5-2-size",
+          "534-7-5-3-speed",
+          "535-7-5-4-special-traits"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
     },
@@ -347,8 +448,12 @@
       "pages": [
         83
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species_determines_creature_type": true,
+        "character_origins_species_creature_type": "Humanoid",
+        "playable_non_humanoid_species_source": "other books"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "531-7-5-parts-of-a-species"
     },
@@ -364,8 +469,14 @@
         83,
         84
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species_determines_size": true,
+        "some_species_size_choice_options": [
+          "Small",
+          "Medium"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "531-7-5-parts-of-a-species"
     },
@@ -380,8 +491,10 @@
       "pages": [
         84
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species_determines_speed": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "531-7-5-parts-of-a-species"
     },
@@ -396,8 +509,11 @@
       "pages": [
         84
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species_grants_all_listed_special_traits": true,
+        "some_special_traits_require_option_choice": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "531-7-5-parts-of-a-species"
     },
@@ -412,7 +528,7 @@
       "pages": [
         84
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "517-7-character-origins"
@@ -428,8 +544,65 @@
       "pages": [
         84
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Dragonborn",
+        "creature_type": "Humanoid",
+        "size": "Medium",
+        "approximate_height_feet": [
+          5,
+          7
+        ],
+        "speed_feet": 30,
+        "draconic_ancestry": {
+          "choice_count": 1,
+          "table_id": "084-draconic-ancestors",
+          "determines_breath_weapon_damage_type": true,
+          "determines_damage_resistance_type": true
+        },
+        "breath_weapon": {
+          "trigger": "take Attack action on your turn",
+          "replaces_attacks": 1,
+          "shape_options": [
+            {
+              "shape": "Cone",
+              "length_feet": 15
+            },
+            {
+              "shape": "Line",
+              "length_feet": 30,
+              "width_feet": 5
+            }
+          ],
+          "shape_chosen_per_use": true,
+          "saving_throw_ability": "Dexterity",
+          "saving_throw_dc_formula": "8 + Constitution modifier + Proficiency Bonus",
+          "failed_save_damage_formula": "1d10",
+          "successful_save_damage": "half",
+          "damage_type_basis": "Draconic Ancestry",
+          "damage_by_character_level": {
+            "1": "1d10",
+            "5": "2d10",
+            "11": "3d10",
+            "17": "4d10"
+          },
+          "uses_formula": "Proficiency Bonus",
+          "expended_uses_recovered": "all",
+          "recovery": "Long Rest"
+        },
+        "damage_resistance_type_basis": "Draconic Ancestry",
+        "darkvision_feet": 60,
+        "draconic_flight": {
+          "character_level": 5,
+          "activation_action": "Bonus Action",
+          "duration_minutes": 10,
+          "dismissal_action_required": false,
+          "ends_on_condition": "Incapacitated",
+          "fly_speed": "equal to Speed",
+          "uses_per_recovery": 1,
+          "recovery": "Long Rest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -444,8 +617,44 @@
       "pages": [
         84
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Dwarf",
+        "creature_type": "Humanoid",
+        "size": "Medium",
+        "approximate_height_feet": [
+          4,
+          5
+        ],
+        "speed_feet": 30,
+        "darkvision_feet": 120,
+        "poison_damage_resistance": true,
+        "saving_throw_advantage": {
+          "condition": "Poisoned",
+          "purposes": [
+            "avoid",
+            "end"
+          ]
+        },
+        "hit_point_maximum_increase": {
+          "initial": 1,
+          "per_level": 1
+        },
+        "stonecunning": {
+          "activation_action": "Bonus Action",
+          "sense": "Tremorsense",
+          "range_feet": 60,
+          "duration_minutes": 10,
+          "requires_stone_surface_contact": true,
+          "stone_types": [
+            "natural",
+            "worked"
+          ],
+          "uses_formula": "Proficiency Bonus",
+          "expended_uses_recovered": "all",
+          "recovery": "Long Rest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -461,8 +670,60 @@
         84,
         85
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Elf",
+        "creature_type": "Humanoid",
+        "size": "Medium",
+        "approximate_height_feet": [
+          5,
+          6
+        ],
+        "speed_feet": 30,
+        "darkvision_feet": 60,
+        "elven_lineage": {
+          "choice_count": 1,
+          "table_id": "085-elven-lineages",
+          "initial_benefit_level": 1,
+          "additional_spell_character_levels": [
+            3,
+            5
+          ],
+          "spells_always_prepared": true,
+          "casts_without_spell_slot_per_spell": 1,
+          "expended_use_recovery": "Long Rest",
+          "can_use_spell_slots": true,
+          "spellcasting_ability_options": [
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "spellcasting_ability_choice_timing": "select lineage"
+        },
+        "fey_ancestry": {
+          "saving_throw_advantage": true,
+          "condition": "Charmed",
+          "purposes": [
+            "avoid",
+            "end"
+          ]
+        },
+        "keen_senses": {
+          "skill_proficiency_choice_count": 1,
+          "skill_options": [
+            "Insight",
+            "Perception",
+            "Survival"
+          ]
+        },
+        "trance": {
+          "requires_sleep": false,
+          "magic_can_cause_sleep": false,
+          "long_rest_hours": 4,
+          "meditation_required": true,
+          "retains_consciousness": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -477,8 +738,57 @@
       "pages": [
         85
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Gnome",
+        "creature_type": "Humanoid",
+        "size": "Small",
+        "approximate_height_feet": [
+          3,
+          4
+        ],
+        "speed_feet": 30,
+        "darkvision_feet": 60,
+        "saving_throw_advantage_abilities": [
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "lineage_choice_count": 1,
+        "lineage_spellcasting_ability_options": [
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "lineages": {
+          "Forest Gnome": {
+            "cantrip": "Minor Illusion",
+            "always_prepared_spell": "Speak with Animals",
+            "slotless_casts_formula": "Proficiency Bonus",
+            "expended_uses_recovered": "all",
+            "recovery": "Long Rest",
+            "can_use_spell_slots": true
+          },
+          "Rock Gnome": {
+            "cantrips": [
+              "Mending",
+              "Prestidigitation"
+            ],
+            "device_creation_minutes": 10,
+            "device_creation_spell": "Prestidigitation",
+            "device_size": "Tiny",
+            "device_armor_class": 5,
+            "device_hit_points": 1,
+            "device_effect_source": "Prestidigitation",
+            "device_activation_action": "Bonus Action",
+            "device_activation_requires_touch": true,
+            "maximum_devices": 3,
+            "device_duration_hours": 8,
+            "dismantle_action": "Utilize",
+            "dismantle_requires_touch": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -494,8 +804,74 @@
         85,
         86
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Goliath",
+        "creature_type": "Humanoid",
+        "size": "Medium",
+        "approximate_height_feet": [
+          7,
+          8
+        ],
+        "speed_feet": 35,
+        "giant_ancestry": {
+          "choice_count": 1,
+          "uses_formula": "Proficiency Bonus",
+          "expended_uses_recovered": "all",
+          "recovery": "Long Rest",
+          "options": {
+            "Cloud’s Jaunt": {
+              "activation_action": "Bonus Action",
+              "teleport_distance_feet": 30,
+              "destination": "visible unoccupied space"
+            },
+            "Fire’s Burn": {
+              "trigger": "attack roll hits and deals damage",
+              "extra_damage_formula": "1d10",
+              "extra_damage_type": "Fire"
+            },
+            "Frost’s Chill": {
+              "trigger": "attack roll hits and deals damage",
+              "extra_damage_formula": "1d6",
+              "extra_damage_type": "Cold",
+              "speed_reduction_feet": 10,
+              "expires": "start of your next turn"
+            },
+            "Hill’s Tumble": {
+              "trigger": "attack roll hits and deals damage",
+              "maximum_target_size": "Large",
+              "condition": "Prone"
+            },
+            "Stone’s Endurance": {
+              "trigger": "take damage",
+              "activation_action": "Reaction",
+              "damage_reduction_formula": "1d12 + Constitution modifier"
+            },
+            "Storm’s Thunder": {
+              "trigger": "take damage from creature within 60 feet",
+              "activation_action": "Reaction",
+              "damage_formula": "1d8",
+              "damage_type": "Thunder"
+            }
+          }
+        },
+        "large_form": {
+          "character_level": 5,
+          "activation_action": "Bonus Action",
+          "requires_sufficient_space": true,
+          "size": "Large",
+          "duration_minutes": 10,
+          "dismissal_action_required": false,
+          "strength_check_advantage": true,
+          "speed_bonus_feet": 10,
+          "uses_per_recovery": 1,
+          "recovery": "Long Rest"
+        },
+        "powerful_build": {
+          "ability_check_advantage_to_end_condition": "Grappled",
+          "carrying_capacity_size_increase": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -510,8 +886,38 @@
       "pages": [
         86
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Halfling",
+        "creature_type": "Humanoid",
+        "size": "Small",
+        "approximate_height_feet": [
+          2,
+          3
+        ],
+        "speed_feet": 30,
+        "brave": {
+          "saving_throw_advantage": true,
+          "condition": "Frightened",
+          "purposes": [
+            "avoid",
+            "end"
+          ]
+        },
+        "nimbleness": {
+          "can_move_through_larger_creatures": true,
+          "can_stop_in_same_space": false
+        },
+        "luck": {
+          "trigger": "roll 1 on D20 Test d20",
+          "reroll": true,
+          "must_use_new_roll": true
+        },
+        "naturally_stealthy": {
+          "can_hide_when_obscured_only_by_creature": true,
+          "minimum_obscuring_creature_relative_size_increase": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -526,8 +932,33 @@
       "pages": [
         86
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Human",
+        "creature_type": "Humanoid",
+        "size_options": [
+          {
+            "size": "Medium",
+            "approximate_height_feet": [
+              4,
+              7
+            ]
+          },
+          {
+            "size": "Small",
+            "approximate_height_feet": [
+              2,
+              4
+            ]
+          }
+        ],
+        "size_choice_timing": "select species",
+        "speed_feet": 30,
+        "heroic_inspiration_trigger": "finish a Long Rest",
+        "skill_proficiency_choice_count": 1,
+        "origin_feat_choice_count": 1,
+        "recommended_origin_feat": "Skilled"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -570,20 +1001,111 @@
       "name": "Draconic Ancestors",
       "section_id": "537-7-6-1-dragonborn",
       "page": 84,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "dragon-damage-type",
-          "name": "Dragon Damage Type",
+          "id": "dragon-1",
+          "name": "Dragon",
           "type": "string"
         },
         {
-          "id": "dragon-damage-type-2",
-          "name": "Dragon Damage Type",
+          "id": "damage-type-1",
+          "name": "Damage Type",
+          "type": "string"
+        },
+        {
+          "id": "dragon-2",
+          "name": "Dragon",
+          "type": "string"
+        },
+        {
+          "id": "damage-type-2",
+          "name": "Damage Type",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Black"
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "Gold"
+            },
+            {
+              "value": "Fire"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blue"
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Green"
+            },
+            {
+              "value": "Poison"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Brass"
+            },
+            {
+              "value": "Fire"
+            },
+            {
+              "value": "Red"
+            },
+            {
+              "value": "Fire"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bronze"
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Silver"
+            },
+            {
+              "value": "Cold"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Copper"
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "White"
+            },
+            {
+              "value": "Cold"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -593,7 +1115,7 @@
       "name": "Elven Lineages",
       "section_id": "539-7-6-3-elf",
       "page": 85,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "lineage",
@@ -616,7 +1138,56 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Drow"
+            },
+            {
+              "value": "Darkvision 120 feet; Dancing Lights cantrip"
+            },
+            {
+              "value": "Faerie Fire"
+            },
+            {
+              "value": "Darkness"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "High Elf"
+            },
+            {
+              "value": "Prestidigitation cantrip; replace after Long Rest with Wizard cantrip"
+            },
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Misty Step"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wood Elf"
+            },
+            {
+              "value": "Speed 35 feet; Druidcraft cantrip"
+            },
+            {
+              "value": "Longstrider"
+            },
+            {
+              "value": "Pass without Trace"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -626,7 +1197,7 @@
       "name": "Fiendish Legacies",
       "section_id": "543-7-6-7-human",
       "page": 86,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "legacy",
@@ -649,7 +1220,56 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Abyssal"
+            },
+            {
+              "value": "Poison resistance; Poison Spray cantrip"
+            },
+            {
+              "value": "Ray of Sickness"
+            },
+            {
+              "value": "Hold Person"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chthonic"
+            },
+            {
+              "value": "Necrotic resistance; Chill Touch cantrip"
+            },
+            {
+              "value": "False Life"
+            },
+            {
+              "value": "Ray of Enfeeblement"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Infernal"
+            },
+            {
+              "value": "Fire resistance; Fire Bolt cantrip"
+            },
+            {
+              "value": "Hellish Rebuke"
+            },
+            {
+              "value": "Darkness"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
