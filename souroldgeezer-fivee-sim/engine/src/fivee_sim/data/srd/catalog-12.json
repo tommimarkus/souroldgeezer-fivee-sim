@@ -155,8 +155,12 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "travel_rate_source": "vehicle speed in miles per hour",
+        "vehicle_speed_reference": "Equipment",
+        "travelers_choose_travel_pace": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -171,8 +175,20 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background_represents": "character's life before becoming an adventurer",
+        "options": [
+          "create unique background",
+          "customize existing background"
+        ],
+        "purposes": [
+          "reflect campaign theme",
+          "reflect world elements",
+          "support intended character story"
+        ],
+        "procedure": "step-by-step creation tailored to world and heroes"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -188,8 +204,40 @@
         192,
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background_ability_count": 3,
+        "selection_rule": "choose abilities appropriate for background",
+        "guidance": [
+          {
+            "abilities": [
+              "Strength",
+              "Dexterity"
+            ],
+            "background_focus": "physical exertion"
+          },
+          {
+            "abilities": [
+              "Constitution"
+            ],
+            "background_focus": "endurance or long hours of activity"
+          },
+          {
+            "abilities": [
+              "Intelligence",
+              "Wisdom"
+            ],
+            "selection": "one or both",
+            "background_focus": "cerebral or spiritual matters"
+          },
+          {
+            "abilities": [
+              "Charisma"
+            ],
+            "background_focus": "performance or social interaction"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -204,8 +252,12 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_count": 1,
+        "feat_category": "Origin",
+        "examples_reference": "Origin Feats"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -220,8 +272,12 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "skill_count": 2,
+        "selection_rule": "choose skills appropriate for background",
+        "relationship_to_increased_ability_scores_required": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -236,8 +292,11 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tool_proficiency_count": 1,
+        "selection_rule": "tool used in practice of background or often associated with it"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -252,8 +311,16 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "equipment_package_value_gp": 50,
+        "unspent_gold_included_in_value": true,
+        "excluded_categories": [
+          "Martial weapons",
+          "armor"
+        ],
+        "exclusion_reason": "received from class choices"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -268,8 +335,11 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "curse_definition": "magical burden lasting for specified time or until ended",
+        "magical_contagion_definition": "contagious adverse effect of magical origin"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -284,8 +354,16 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "forms": [
+          "Bestow Curse",
+          "Cursed Creatures",
+          "Cursed Magic Items",
+          "Narrative Curses",
+          "Environmental Curses"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -300,8 +378,22 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "simplest_curse_source": "Bestow Curse spell",
+        "effects": "limited",
+        "ending_spell": "Remove Curse",
+        "potency_benchmarks": [
+          {
+            "curse_duration": "1 minute",
+            "equivalent_spell_level": 3
+          },
+          {
+            "curse_duration": "until dispelled",
+            "equivalent_spell_level": 9
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1295-12-14-curses"
     },
@@ -316,8 +408,16 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "curse_associations": [
+          "origin",
+          "ability to spread curses"
+        ],
+        "example": "werewolves",
+        "remove_curse_effect_on_accursed_origin": "GM decides",
+        "example_ruling": "mummy created through curse is permanently destroyed only by casting Remove Curse on corpse"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1295-12-14-curses"
     },
@@ -332,8 +432,14 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "origins": [
+          "deliberate creation",
+          "supernatural event"
+        ],
+        "details_reference": "Magic Items"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1295-12-14-curses"
     },
@@ -348,8 +454,28 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "possible_trigger": "taboo violation warranting supernatural punishment",
+        "trigger_examples": [
+          "breaking a vow",
+          "defiling a tomb",
+          "murdering an innocent"
+        ],
+        "design_options": [
+          "any designed effects",
+          "customized version of another curse type"
+        ],
+        "affected_creature_should_know_punishment_reason": true,
+        "affected_creature_should_be_able_to_learn_ending": true,
+        "likely_ending": "symbolically right the committed wrong",
+        "remove_curse_effect": "GM decides; may only suppress effects temporarily",
+        "tone": [
+          "rare",
+          "potent",
+          "rooted in campaign lore"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1295-12-14-curses"
     },
@@ -364,8 +490,42 @@
       "pages": [
         193
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "source": "location suffused with evil",
+        "targeting": "creatures that linger there",
+        "example": {
+          "name": "Demonic Possession",
+          "origin": "chaos and evil of the Abyss",
+          "common_exposure": [
+            "interaction with demonic objects",
+            "lingering in desecrated locations"
+          ],
+          "initial_save": {
+            "ability": "Charisma",
+            "dc": 15,
+            "failed_save": "possessed by bodiless demonic entity"
+          },
+          "control_trigger": "possessed creature rolls 1 on a D20 Test",
+          "control_effect": "demonic entity determines creature behavior",
+          "regain_control_save": {
+            "timing": "end of each later turn",
+            "ability": "Charisma",
+            "dc": 15,
+            "successful_save": "creature regains control"
+          },
+          "long_rest_save": {
+            "timing": "after Long Rest",
+            "ability": "Charisma",
+            "dc": 15,
+            "successful_save": "effect ends"
+          },
+          "other_end_effects": [
+            "Dispel Evil and Good",
+            "magic that removes a curse"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1295-12-14-curses"
     },
@@ -380,8 +540,18 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "credited_first_sources": [
+          "alchemists",
+          "potion brewers",
+          "areas of wild magic"
+        ],
+        "outbreak_adventure_goals": [
+          "find cure",
+          "stop spread"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -396,8 +566,18 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target": "creature infected with magical contagion",
+        "recuperation_days": 3,
+        "activity_limit": "no activities that interrupt a Long Rest",
+        "end_save": {
+          "ability": "Constitution",
+          "dc": 15
+        },
+        "successful_save_benefit": "Advantage on saves to fight off magical contagion",
+        "benefit_duration_hours": 24
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1301-12-15-magical-contagions"
     },
@@ -412,8 +592,15 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "examples_are_customizable": true,
+        "customizable_properties": [
+          "saving throw DCs",
+          "effects",
+          "other characteristics"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1301-12-15-magical-contagions"
     },
@@ -428,8 +615,57 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "contagion": "Cackle Fever",
+        "possible_source": "cheaply made potions and elixirs",
+        "eligible_creature_type": "Humanoid",
+        "gnomes_immune": true,
+        "effect_onset_days": "1d4",
+        "effects": {
+          "fever": {
+            "exhaustion_levels_gained": 1,
+            "duration": "until contagion ends"
+          },
+          "uncontrollable_laughter": {
+            "active_while": "creature has Exhaustion condition",
+            "trigger": "takes non-Psychic damage",
+            "save": {
+              "ability": "Constitution",
+              "dc": 13
+            },
+            "failed_save_damage": 5,
+            "failed_save_damage_roll": "1d10",
+            "damage_type": "Psychic",
+            "failed_save_condition": "Incapacitated",
+            "repeat_save_timing": "end of each target turn",
+            "repeat_success": "ends laughter effect",
+            "automatic_success_after_minutes": 1
+          }
+        },
+        "fight_contagion": {
+          "save_timing": "end of each Long Rest",
+          "save": {
+            "ability": "Constitution",
+            "dc": 13
+          },
+          "successful_saves_required": 3,
+          "success_effects": [
+            "contagion ends",
+            "immunity to Cackle Fever for 1 year"
+          ]
+        },
+        "spread": {
+          "eligible_targets": "Humanoids other than gnomes",
+          "trigger": "starts turn within infected creature's 10-foot Emanation",
+          "save": {
+            "ability": "Constitution",
+            "dc": 10
+          },
+          "failed_save": "becomes infected",
+          "successful_save": "cannot catch contagion from that infected creature for 24 hours"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1301-12-15-magical-contagions"
     },
@@ -444,8 +680,58 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "contagion": "Sewer Plague",
+        "sources": [
+          "fouled potions",
+          "alchemical waste"
+        ],
+        "incubation_locations": [
+          "sewers",
+          "refuse heaps"
+        ],
+        "possible_carriers": [
+          "otyughs",
+          "rats",
+          "other creatures dwelling in affected areas"
+        ],
+        "eligible_creature_type": "Humanoid",
+        "exposure_routes": [
+          "wounded by carrier",
+          "contact with contaminated filth or offal"
+        ],
+        "infection_save": {
+          "ability": "Constitution",
+          "dc": 11,
+          "failed_save": "becomes infected"
+        },
+        "effect_onset_days": "1d4",
+        "effects": {
+          "fatigue": {
+            "exhaustion_levels_gained": 1
+          },
+          "weakness": {
+            "active_while": "any Exhaustion levels",
+            "hit_points_from_hit_point_dice_multiplier": 0.5
+          },
+          "restlessness": {
+            "active_while": "any Exhaustion levels",
+            "long_rest_restores_lost_hit_points": false,
+            "long_rest_reduces_exhaustion": false
+          }
+        },
+        "fight_contagion": {
+          "save_timing": "daily at dawn",
+          "save": {
+            "ability": "Constitution",
+            "dc": 11
+          },
+          "failed_save_exhaustion_increase": 1,
+          "successful_save_exhaustion_decrease": 1,
+          "ends_at_exhaustion_level": 0
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1301-12-15-magical-contagions"
     },
@@ -1356,7 +1642,7 @@
       "name": "Travel Terrain",
       "section_id": "1286-12-5-special-movement",
       "page": 192,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "terrain",
@@ -1364,17 +1650,275 @@
           "type": "string"
         },
         {
-          "id": "maximum-pace",
+          "id": "maximum_pace",
           "name": "Maximum Pace",
           "type": "string"
         },
         {
-          "id": "column",
-          "name": "Column 3",
+          "id": "encounter_distance",
+          "name": "Encounter Distance",
           "type": "string"
+        },
+        {
+          "id": "foraging_dc",
+          "name": "Foraging DC",
+          "type": "integer"
+        },
+        {
+          "id": "navigation_dc",
+          "name": "Navigation DC",
+          "type": "integer"
+        },
+        {
+          "id": "search_dc",
+          "name": "Search DC",
+          "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Arctic"
+            },
+            {
+              "value": "Fast; appropriate equipment such as skis required"
+            },
+            {
+              "value": "6d6 × 10 feet"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Coastal"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "2d10 × 10 feet"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Desert"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "6d6 × 10 feet"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Forest"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "2d8 × 10 feet"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Grassland"
+            },
+            {
+              "value": "Fast"
+            },
+            {
+              "value": "6d6 × 10 feet"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hill"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "2d10 × 10 feet"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mountain"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "4d10 × 10 feet"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Swamp"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "2d8 × 10 feet"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Underdark"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "2d6 × 10 feet"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Urban"
+            },
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "2d6 × 10 feet"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Waterborne"
+            },
+            {
+              "value": "Special; pace depends on carrying vehicle; see Vehicles"
+            },
+            {
+              "value": "6d6 × 10 feet"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 15
+            }
+          ]
+        }
+      ],
       "source_row_count": 11,
       "omissions": [],
       "provenance": "SRD 5.2.1"
