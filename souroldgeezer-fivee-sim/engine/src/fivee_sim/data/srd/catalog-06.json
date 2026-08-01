@@ -1972,7 +1972,7 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -1988,8 +1988,16 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Cleric",
+        "subclass": "Life Domain",
+        "level": 3,
+        "trigger": "a spell cast with a spell slot restores Hit Points",
+        "additional_healing_recipient": "creature healed by the spell",
+        "additional_healing_timing": "turn the spell is cast",
+        "additional_hit_points_formula": "2 + spell slot level"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "233-6-14-cleric-subclass-life-domain"
     },
@@ -2004,8 +2012,15 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Cleric",
+        "subclass": "Life Domain",
+        "level": 3,
+        "prepared_spells_table_id": "040-life-domain-spells",
+        "listed_spells_always_prepared": true,
+        "prepared_from_cleric_level_onward": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "233-6-14-cleric-subclass-life-domain"
     },
@@ -2020,8 +2035,21 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Cleric",
+        "subclass": "Life Domain",
+        "level": 3,
+        "activation_action": "Magic action",
+        "focus": "Holy Symbol",
+        "channel_divinity_uses_expended": 1,
+        "healing_pool_formula": "5 * Cleric level",
+        "eligible_targets": "Bloodied creatures",
+        "range_feet": 30,
+        "self_eligible": true,
+        "healing_pool_divisible_among_targets": true,
+        "maximum_resulting_hit_points": "half target Hit Point maximum"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "233-6-14-cleric-subclass-life-domain"
     },
@@ -2036,8 +2064,15 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Cleric",
+        "subclass": "Life Domain",
+        "level": 6,
+        "trigger": "cast a spell with a spell slot that restores Hit Points to one or more creatures other than the Cleric",
+        "trigger_timing": "immediately after the spell",
+        "self_healing_formula": "2 + spell slot level"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "233-6-14-cleric-subclass-life-domain"
     },
@@ -2052,8 +2087,22 @@
       "pages": [
         40
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Cleric",
+        "subclass": "Life Domain",
+        "level": 17,
+        "applies_to": [
+          "spell healing dice",
+          "Channel Divinity healing dice"
+        ],
+        "healing_dice_rolled": false,
+        "healing_die_result": "maximum possible number",
+        "example": {
+          "healing_dice": "2d6",
+          "restored_hit_points": 12
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "233-6-14-cleric-subclass-life-domain"
     },
@@ -2068,8 +2117,12 @@
       "pages": [
         41
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "core_traits_table_id": "041-core-druid-traits",
+        "class_features_table_id": "041-druid-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -2084,7 +2137,7 @@
       "pages": [
         41
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -13350,7 +13403,7 @@
       "name": "Level 1 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 38,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13368,9 +13421,248 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Bane"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bless"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Command"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Create or Destroy Water"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cure Wounds"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Evil and Good"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Poison and Disease"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Guiding Bolt"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Healing Word"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Inflict Wounds"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Evil and Good"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Purify Food and Drink"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sanctuary"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shield of Faith"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
       "source_row_count": 15,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13378,7 +13670,7 @@
       "name": "Level 2 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 38,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13396,9 +13688,274 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 12,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Aid"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Augury"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blindness/Deafness"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Calm Emotions"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Continual Flame"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enhance Ability"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Find Traps"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gentle Repose"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hold Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lesser Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Object"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Prayer of Healing"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Poison"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Silence"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spiritual Weapon"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warding Bond"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Zone of Truth"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 17,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13406,7 +13963,7 @@
       "name": "Level 5 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 39,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13424,9 +13981,204 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Commune"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Contagion"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dispel Evil and Good"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flame Strike"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Geas"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Greater Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hallow"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Insect Plague"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Legend Lore"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mass Cure Wounds"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Planar Binding"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Raise Dead"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scrying"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 13,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13434,7 +14186,7 @@
       "name": "Level 3 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 39,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13452,9 +14204,312 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Animate Dead"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Beacon of Hope"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bestow Curse"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Clairvoyance"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Create Food and Water"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Daylight"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dispel Magic"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Glyph of Warding"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic Circle"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mass Healing Word"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Meld into Stone"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Energy"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Remove Curse"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Revivify"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sending"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Speak with Dead"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spirit Guardians"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tongues"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water Walk"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        }
+      ],
       "source_row_count": 19,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 17,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13462,7 +14517,7 @@
       "name": "Level 6 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 39,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13480,9 +14535,178 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Blade Barrier"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Create Undead"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Find the Path"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Forbiddance"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Harm"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heal"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heroes' Feast"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Planar Ally"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sunbeam"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "True Seeing"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Word of Recall"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 11,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13490,7 +14714,7 @@
       "name": "Level 4 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 39,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13508,9 +14732,152 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Aura of Life"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Banishment"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Control Water"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Death Ward"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Freedom of Movement"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Guardian of Faith"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Creature"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stone Shape"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 9,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13518,7 +14885,7 @@
       "name": "Level 7 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 39,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13536,9 +14903,139 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Conjure Celestial"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Divine Word"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Etherealness"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fire Storm"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Plane Shift"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Regenerate"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Resurrection"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Symbol"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13546,7 +15043,7 @@
       "name": "Level 8 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 40,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13564,9 +15061,82 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Antimagic Field"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Control Weather"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Earthquake"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Holy Aura"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sunburst"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13574,7 +15144,7 @@
       "name": "Life Domain Spells",
       "section_id": "235-6-14-2-level-3-life-domain-spells",
       "page": 40,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "cleric-level",
@@ -13587,7 +15157,52 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Aid, Bless, Cure Wounds, Lesser Restoration"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Mass Healing Word, Revivify"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": "Aura of Life, Death Ward"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": "Greater Restoration, Mass Cure Wounds"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -13597,7 +15212,7 @@
       "name": "Level 9 Cleric Spells",
       "section_id": "232-6-13-cleric-spell-list",
       "page": 40,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -13615,9 +15230,88 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Astral Projection"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gate"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mass Heal"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Power Word Heal"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "True Resurrection"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -13625,20 +15319,101 @@
       "name": "Core Druid Traits",
       "section_id": "239-6-15-druid",
       "page": 41,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Wisdom"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D8 per Druid level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Intelligence and Wisdom"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Animal Handling, Arcana, Insight, Medicine, Nature, Perception, Religion, or Survival"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tool Proficiencies"
+            },
+            {
+              "value": "Herbalism Kit"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light armor and Shields"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Leather Armor, Shield, Sickle, Druidic Focus (Quarterstaff), Explorer's Pack, Herbalism Kit, and 9 GP; or (B) 50 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -13648,7 +15423,7 @@
       "name": "Druid Features",
       "section_id": "239-6-15-druid",
       "page": 41,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -13681,19 +15456,1705 @@
           "type": "integer"
         },
         {
-          "id": "1",
+          "id": "spell-level-1",
           "name": "1",
           "type": "integer"
         },
         {
-          "id": "spell-slots-per-spell-level-2-3-4-5-6-7-8-9",
-          "name": "——Spell Slots per Spell Level—— 2 3 4 5 6 7 8 9",
-          "type": "string"
+          "id": "spell-level-2",
+          "name": "2",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-3",
+          "name": "3",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-4",
+          "name": "4",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-5",
+          "name": "5",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-6",
+          "name": "6",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-7",
+          "name": "7",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-8",
+          "name": "8",
+          "type": "integer"
+        },
+        {
+          "id": "spell-level-9",
+          "name": "9",
+          "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Spellcasting, Druidic, Primal Order"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Wild Shape, Wild Companion"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Druid Subclass"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Wild Resurgence"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Elemental Fury"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Improved Elemental Fury"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Beast Spells"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 21,
+              "numeric_value": 21
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "Archdruid"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 22,
+              "numeric_value": 22
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "wild-shape"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-6"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-7"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-8"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "spell-level-9"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "class-features"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
