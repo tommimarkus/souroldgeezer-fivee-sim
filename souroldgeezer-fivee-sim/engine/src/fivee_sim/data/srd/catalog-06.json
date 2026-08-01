@@ -2925,7 +2925,7 @@
       "pages": [
         47
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -2941,8 +2941,15 @@
       "pages": [
         47
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "047-core-fighter-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "047-fighter-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "265-6-21-becoming-a-fighter"
     },
@@ -2957,8 +2964,20 @@
       "pages": [
         47
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "Martial weapon proficiency",
+          "Light armor training",
+          "Medium armor training",
+          "Shield training"
+        ],
+        "core_traits_table_id": "047-core-fighter-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "047-fighter-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "265-6-21-becoming-a-fighter"
     },
@@ -2973,8 +2992,12 @@
       "pages": [
         47
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "class_features_keyed_by": "Fighter level",
+        "class_features_table_id": "047-fighter-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -2989,8 +3012,15 @@
       "pages": [
         47
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 1,
+        "feat_type": "Fighting Style",
+        "selection_count": 1,
+        "recommended_feat": "Defense",
+        "replaceable_when_gaining_fighter_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3005,8 +3035,17 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 1,
+        "activation_action": "Bonus Action",
+        "healing_formula": "1d10 + Fighter level",
+        "initial_uses": 2,
+        "short_rest_uses_recovered": 1,
+        "long_rest_uses_recovered": "all",
+        "uses_table_id": "047-fighter-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3021,8 +3060,18 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 1,
+        "eligible_weapon_categories": [
+          "Simple",
+          "Martial"
+        ],
+        "initial_weapon_kind_count": 3,
+        "long_rest_replacements": 1,
+        "weapon_kind_count_table_id": "047-fighter-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3037,8 +3086,21 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 2,
+        "activation_timing": "on your turn",
+        "additional_actions": 1,
+        "excluded_action": "Magic",
+        "initial_uses": 1,
+        "uses_from_level_17": 2,
+        "maximum_uses_per_turn": 1,
+        "recharge": [
+          "Short Rest",
+          "Long Rest"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3053,8 +3115,16 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 2,
+        "trigger": "failed ability check",
+        "second_wind_uses_expended": 1,
+        "healing_replaced": true,
+        "ability_check_bonus": "1d10",
+        "second_wind_use_expended_if_check_still_fails": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3069,8 +3139,15 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 3,
+        "selection": "Fighter subclass",
+        "selection_count": 1,
+        "detailed_option": "Champion",
+        "subclass_features_gained_at_or_below_fighter_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3085,8 +3162,24 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 4,
+        "levels": [
+          4,
+          6,
+          8,
+          12,
+          14,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3101,8 +3194,12 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 5,
+        "attack_action_attacks": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3117,8 +3214,14 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 5,
+        "trigger": "activate Second Wind with a Bonus Action",
+        "maximum_movement": "half Speed",
+        "provokes_opportunity_attacks": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3133,8 +3236,21 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 9,
+        "trigger": "failed saving throw",
+        "effect": "reroll",
+        "reroll_bonus": "Fighter level",
+        "must_use_new_roll": true,
+        "initial_uses": 1,
+        "uses_by_level": {
+          "13": 2,
+          "17": 3
+        },
+        "recharge": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3149,8 +3265,18 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 9,
+        "trigger": "attack with a weapon whose mastery property is usable",
+        "replacement_properties": [
+          "Push",
+          "Sap",
+          "Slow"
+        ],
+        "replacement_scope": "that attack"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3165,8 +3291,12 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 11,
+        "attack_action_attacks": 3
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3181,8 +3311,14 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 13,
+        "trigger": "miss a creature with an attack roll",
+        "next_attack_against_same_creature_has_advantage": true,
+        "expires": "end of next turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3197,8 +3333,17 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Combat Prowess"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -3213,8 +3358,12 @@
       "pages": [
         48
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "level": 20,
+        "attack_action_attacks": 4
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "268-6-22-fighter-class-features"
     },
@@ -20331,7 +20480,7 @@
       "name": "Fighter Features",
       "section_id": "264-6-20-fighter",
       "page": 47,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -20359,7 +20508,388 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Fighting Style, Second Wind, Weapon Mastery"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Action Surge (one use), Tactical Mind"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Fighter Subclass"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Extra Attack, Tactical Shift"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Indomitable (one use), Tactical Master"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Two Extra Attacks"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Indomitable (two uses), Studied Attacks"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Action Surge (two uses), Indomitable (three uses)"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Three Extra Attacks"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 6
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
       "omissions": [],
       "provenance": "SRD 5.2.1"
