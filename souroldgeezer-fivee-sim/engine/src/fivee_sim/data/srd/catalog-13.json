@@ -6610,8 +6610,17 @@
       "pages": [
         232
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Necklace of Adaptation",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn": {
+          "breathe_normally_in_any_environment": true,
+          "advantage_on_saves_to_avoid_or_end": "Poisoned"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6626,8 +6635,26 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Necklace of Fireballs",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "beads": "1d6 + 3",
+        "single_bead": {
+          "action": "Magic",
+          "throw_range_feet": 60,
+          "spell": "Fireball",
+          "spell_level": 3,
+          "save_dc": 15
+        },
+        "multiple_beads": {
+          "may_throw_together": true,
+          "additional_damage_per_bead_after_first": "1d6",
+          "maximum_total_damage": "12d6"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6642,8 +6669,28 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Necklace of Prayer Beads",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Cleric, Druid, or Paladin",
+        "magic_beads": "1d4 + 2",
+        "magic_bead_types": 6,
+        "type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "duplicate_types_allowed": true,
+        "removed_magic_bead_loses_magic": true,
+        "spell_use": {
+          "must_be_wearing_necklace": true,
+          "action": "Bonus Action",
+          "save_dc": "user's spell save DC",
+          "each_bead_recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6658,8 +6705,33 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Nine Lives Stealer",
+        "item_category": "Weapon (Any Simple or Martial)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 2,
+        "damage_roll_bonus": 2,
+        "life_stealing": {
+          "initial_charges": "1d8 + 1",
+          "trigger": {
+            "target_hit_points_below": 100,
+            "d20_attack_roll": 20
+          },
+          "saving_throw": {
+            "ability": "Constitution",
+            "dc": 15
+          },
+          "failed_save": "slain instantly",
+          "automatic_success_creature_types": [
+            "Construct",
+            "Undead"
+          ],
+          "charge_lost_if_target_slain": 1,
+          "property_lost_at_zero_charges": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6674,8 +6746,32 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Oathbow",
+        "item_category": "Weapon (Longbow or Shortbow)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "sworn_enemy": {
+          "designation": "command while making a ranged attack",
+          "duration_until": [
+            "target dies",
+            "dawn 7 days later"
+          ],
+          "maximum_at_once": 1,
+          "new_target_after_death": "after next dawn"
+        },
+        "against_sworn_enemy": {
+          "ranged_attack_roll_advantage": true,
+          "ignores_cover": [
+            "Half Cover",
+            "Three-Quarters Cover"
+          ],
+          "ignores_long_range_disadvantage": true,
+          "extra_piercing_damage": "3d6"
+        },
+        "while_sworn_enemy_lives": "Disadvantage on attack rolls with all other weapons"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6690,8 +6786,21 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Oil of Etherealness",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "vial_coverage": {
+          "maximum_size": "Medium",
+          "includes_worn_and_carried_equipment": true
+        },
+        "additional_vials_per_size_category_above_medium": 1,
+        "application_minutes": 10,
+        "effect": "Etherealness",
+        "duration_hours": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6706,8 +6815,27 @@
       "pages": [
         233
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Oil of Sharpness",
+        "item_category": "Potion",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "vial_coats": {
+          "melee_weapons": 1,
+          "ammunition_pieces": 20
+        },
+        "eligible_objects": {
+          "nonmagical": true,
+          "damage_types": [
+            "Slashing",
+            "Piercing"
+          ]
+        },
+        "application_minutes": 1,
+        "weapon_result": "+3 Weapon",
+        "ammunition_result": "+3 Ammunition"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6723,8 +6851,27 @@
         233,
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Oil of Slipperiness",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "creature_application": {
+          "vial_maximum_size": "Medium",
+          "includes_worn_and_carried_equipment": true,
+          "additional_vials_per_size_category_above_medium": 1,
+          "application_minutes": 10,
+          "effect": "Freedom of Movement",
+          "duration_hours": 8
+        },
+        "ground_application": {
+          "action": "Magic",
+          "area": "10-foot square",
+          "effect": "Grease",
+          "duration_hours": 8
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6739,8 +6886,19 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Pearl of Power",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "must_be_on_person": true,
+        "action": "Magic",
+        "regains_expended_spell_slots": 1,
+        "maximum_slot_level": 3,
+        "recharge": "next dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6755,8 +6913,21 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Periapt of Health",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn": {
+          "healing": {
+            "action": "Magic",
+            "hit_points": "2d4 + 2",
+            "recharge": "next dawn"
+          },
+          "advantage_on_saves_to_avoid_or_end": "Poisoned"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6771,8 +6942,17 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Periapt of Proof against Poison",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_immunities": [
+          "Poisoned",
+          "Poison damage"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6787,8 +6967,17 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Periapt of Wound Closure",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn": {
+          "death_saving_throw_roll_9_or_lower_becomes": 10,
+          "hit_points_restored_by_hit_point_die_multiplier": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6803,8 +6992,17 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Philter of Love",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "trigger_window_after_drinking_minutes": 10,
+        "trigger": "next creature seen",
+        "effect": "Charmed by that creature",
+        "duration_hours": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6819,8 +7017,30 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Pipes of Haunting",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "charges": 3,
+        "charges_regained_at_dawn": "1d3",
+        "activation": {
+          "action": "Magic",
+          "charge_cost": 1,
+          "targets": "chosen creatures within 30 feet"
+        },
+        "saving_throw": {
+          "ability": "Wisdom",
+          "dc": 15
+        },
+        "failed_save": {
+          "condition": "Frightened",
+          "duration_minutes": 1,
+          "repeat_save": "end of each turn"
+        },
+        "successful_save_immunity_hours": 24
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6835,8 +7055,58 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Pipes of the Sewers",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_on_person": {
+          "rat_disposition": "Indifferent",
+          "rat_types": [
+            "ordinary rats",
+            "giant rats"
+          ],
+          "attacks_only_if_threatened_or_harmed": true
+        },
+        "charges": 3,
+        "charges_regained_at_dawn": "1d3",
+        "calling_swarms": {
+          "play_action": "Magic",
+          "expend_action": "Bonus Action",
+          "charges_spent_range": [
+            1,
+            3
+          ],
+          "swarm_per_charge": 1,
+          "required_rats_within_miles": 0.5,
+          "insufficient_rats_wastes_charge": true,
+          "called_swarms_move_by_shortest_route": true,
+          "called_swarms_initially_uncontrolled": true
+        },
+        "swaying_swarms": {
+          "eligible_swarm": "Swarm of Rats not controlled by another creature within 30 feet while pipes are played",
+          "saving_throw": {
+            "ability": "Wisdom",
+            "dc": 15
+          },
+          "successful_save": {
+            "behavior": "normal",
+            "immune_to_pipes_hours": 24
+          },
+          "failed_save": {
+            "disposition": "Friendly",
+            "obeys_commands": true,
+            "requires_magic_action_each_round_to_continue_playing": true
+          },
+          "without_commands": "defends itself but takes no other actions",
+          "control_ends_if_start_turn_beyond_feet": 30,
+          "after_control_ends": {
+            "behavior": "normal",
+            "immune_to_pipes_hours": 24
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6851,8 +7121,22 @@
       "pages": [
         234
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Plate Armor of Etherealness",
+        "item_category": "Armor (Half Plate Armor or Plate Armor)",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_worn": {
+          "activation": "Magic action and command word",
+          "effect": "Etherealness",
+          "ends_on": [
+            "armor removed",
+            "Magic action repeats command word"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6868,8 +7152,52 @@
         234,
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Portable Hole",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "unfolded_sheet_diameter_feet": 6,
+        "open": {
+          "action": "Magic",
+          "placement": "on or against solid surface",
+          "extradimensional_depth_feet": 10,
+          "cannot_create_open_passages": true,
+          "exit_open_hole": "climb out"
+        },
+        "close": {
+          "action": "Magic",
+          "method": "fold cloth by its edges",
+          "contents_remain_inside": true,
+          "weight_unaffected_by_contents": true
+        },
+        "escape_closed_hole": {
+          "action": true,
+          "check": "Strength (Athletics)",
+          "dc": 10,
+          "success_appearance_within_feet": 5
+        },
+        "closed_air": {
+          "total_breathing_hours": 1,
+          "divided_by": "number of breathing creatures"
+        },
+        "extradimensional_interaction": {
+          "containers": [
+            "Bag of Holding",
+            "Handy Haversack",
+            "similar item"
+          ],
+          "destroys_both_items": true,
+          "opens_gate_to": "Astral Plane",
+          "gate_radius_feet": 10,
+          "total_cover_prevents_transport": true,
+          "transport_destination": "random location on Astral Plane",
+          "gate_closes_afterward": true,
+          "gate_one_way": true,
+          "gate_cannot_be_reopened": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6884,8 +7212,18 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Animal Friendship",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "on_drink": {
+          "cast_spell": "Animal Friendship",
+          "spell_level": 3,
+          "save_dc": 13
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -6900,8 +7238,17 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Clairvoyance",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "effect": "Clairvoyance",
+          "concentration_required": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -12387,12 +12734,12 @@
       "name": "1d20 / Bead",
       "section_id": "1528-13-28-3-necklace-of-prayer-beads",
       "page": 233,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d20",
+          "id": "roll",
           "name": "1d20",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "bead",
@@ -12405,7 +12752,86 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1-6"
+            },
+            {
+              "value": "Bead of Blessing"
+            },
+            {
+              "value": "Bless"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "7-12"
+            },
+            {
+              "value": "Bead of Curing"
+            },
+            {
+              "value": "Cure Wounds (level 2 version)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13-16"
+            },
+            {
+              "value": "Bead of Favor"
+            },
+            {
+              "value": "Greater Restoration"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-18"
+            },
+            {
+              "value": "Bead of Smiting"
+            },
+            {
+              "value": "Shining Smite"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "19"
+            },
+            {
+              "value": "Bead of Summons"
+            },
+            {
+              "value": "Guardian of Faith"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "20"
+            },
+            {
+              "value": "Bead of Wind Walking"
+            },
+            {
+              "value": "Wind Walk"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
