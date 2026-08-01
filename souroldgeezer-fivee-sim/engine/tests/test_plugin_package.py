@@ -30,6 +30,7 @@ def test_codex_mcp_config_launches_the_shared_server_from_the_plugin_root() -> N
     assert server["command"] == "bash"
     assert server["args"] == ["./scripts/fivee-sim-mcp.sh"]
     assert server["cwd"] == "."
+    assert server["env"] == {"FIVEE_SIM_PLUGIN_HOST": "codex"}
     assert server["startup_timeout_sec"] >= 300
     assert (PLUGIN_ROOT / server["args"][0]).is_file()
 
