@@ -350,8 +350,13 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Thrown",
+        "enables_ranged_attack_by_throwing_weapon": true,
+        "weapon_draw_timing": "part of attack",
+        "melee_weapon_attack_and_damage_modifier": "same as melee attack with weapon"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -366,8 +371,11 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Two-Handed",
+        "hands_required_when_attacking": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -382,8 +390,16 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "property": "Versatile",
+        "hands_allowed": [
+          1,
+          2
+        ],
+        "two_handed_damage_source": "parenthetical property value",
+        "two_handed_damage_requires_melee_attack": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "575-9-4-properties"
     },
@@ -398,8 +414,22 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "weapons_have_mastery_property": true,
+        "mastery_requires_unlocking_feature": true,
+        "example_unlocking_feature": "Weapon Mastery",
+        "mastery_property_ids": [
+          "588-9-5-2-cleave",
+          "589-9-5-3-graze",
+          "590-9-5-4-nick",
+          "591-9-5-5-push",
+          "592-9-5-6-sap",
+          "593-9-5-7-slow",
+          "594-9-5-8-topple",
+          "595-9-5-9-vex"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -414,8 +444,15 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "rules_glossary_reference": "Improvised Weapons",
+        "applies_to": [
+          "makeshift object weapon",
+          "weapon used in unusual way"
+        ],
+        "unusual_use_example": "Ranged weapon used for melee attack"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -430,8 +467,19 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Cleave",
+        "trigger": "hit creature with melee attack roll using weapon",
+        "secondary_target": {
+          "distance_from_first_target_feet_maximum": 5,
+          "must_be_within_reach": true
+        },
+        "secondary_attack": "melee attack roll with weapon",
+        "secondary_hit_damage": "weapon damage",
+        "secondary_damage_ability_modifier_rule": "add only if negative",
+        "frequency": "once per turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -446,8 +494,14 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Graze",
+        "trigger": "attack roll with weapon misses creature",
+        "damage": "attack roll ability modifier",
+        "damage_type": "same as weapon",
+        "damage_increase_source": "increase to ability modifier only"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -462,8 +516,13 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Nick",
+        "light_property_extra_attack_action": "part of Attack action",
+        "replaces_bonus_action": true,
+        "frequency": "once per turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -478,8 +537,14 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Push",
+        "trigger": "hit creature with weapon",
+        "maximum_target_size": "Large",
+        "push_distance_feet_maximum": 10,
+        "push_direction": "straight away"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -494,8 +559,13 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Sap",
+        "trigger": "hit creature with weapon",
+        "target_next_attack_roll": "Disadvantage",
+        "effect_deadline": "start of your next turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -510,8 +580,14 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Slow",
+        "trigger": "hit creature with weapon and deal damage",
+        "speed_reduction_feet": 10,
+        "effect_end": "start of your next turn",
+        "maximum_speed_reduction_from_property_feet": 10
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -526,8 +602,14 @@
       "pages": [
         90
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Topple",
+        "trigger": "hit creature with weapon",
+        "saving_throw_ability": "Constitution",
+        "saving_throw_dc_formula": "8 + attack ability modifier + Proficiency Bonus",
+        "failed_save_condition": "Prone"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -543,8 +625,13 @@
         90,
         91
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mastery_property": "Vex",
+        "trigger": "hit creature with weapon and deal damage",
+        "next_attack_roll_against_target": "Advantage",
+        "effect_deadline": "end of your next turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "586-9-5-mastery-properties"
     },
@@ -559,8 +646,22 @@
       "pages": [
         92
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "armor_table_id": "092-armor",
+        "armor_categories": [
+          "Light",
+          "Medium",
+          "Heavy"
+        ],
+        "category_determines": [
+          "don time",
+          "doff time"
+        ],
+        "base_armor_class_source": "Armor Class column",
+        "insufficient_listed_strength_speed_reduction_feet": 10,
+        "stealth_disadvantage_applies_to": "Dexterity (Stealth) checks"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -575,8 +676,17 @@
       "pages": [
         92
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "armor_can_be_donned_without_training": true,
+        "shield_can_be_held_without_training": true,
+        "training_required_for_effective_use": true,
+        "player_character_training_sources": [
+          "class",
+          "other features"
+        ],
+        "monster_training": "armor in stat block"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -591,8 +701,18 @@
       "pages": [
         92
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "applies_to_armor_categories": [
+          "Light",
+          "Medium",
+          "Heavy"
+        ],
+        "lacking_training_effects": {
+          "strength_or_dexterity_d20_tests": "Disadvantage",
+          "spellcasting_allowed": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "597-9-7-armor-training"
     },
@@ -607,8 +727,10 @@
       "pages": [
         92
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "shield_armor_class_benefit_requires_training": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "597-9-7-armor-training"
     },
@@ -623,8 +745,11 @@
       "pages": [
         92
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "maximum_armor_suits_worn": 1,
+        "maximum_shields_wielded": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -3122,8 +3247,13 @@
       "name": "Weapons",
       "section_id": "595-9-5-9-vex",
       "page": 91,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
+        {
+          "id": "weapon-category",
+          "name": "Weapon Category",
+          "type": "string"
+        },
         {
           "id": "name",
           "name": "Name",
@@ -3147,17 +3277,1068 @@
         {
           "id": "weight",
           "name": "Weight",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Club"
+            },
+            {
+              "value": "1d4 Bludgeoning"
+            },
+            {
+              "value": "Light"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Dagger"
+            },
+            {
+              "value": "1d4 Piercing"
+            },
+            {
+              "value": "Finesse, Light, Thrown (Range 20/60)"
+            },
+            {
+              "value": "Nick"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Greatclub"
+            },
+            {
+              "value": "1d8 Bludgeoning"
+            },
+            {
+              "value": "Two-Handed"
+            },
+            {
+              "value": "Push"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Handaxe"
+            },
+            {
+              "value": "1d6 Slashing"
+            },
+            {
+              "value": "Light, Thrown (Range 20/60)"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Javelin"
+            },
+            {
+              "value": "1d6 Piercing"
+            },
+            {
+              "value": "Thrown (Range 30/120)"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Light Hammer"
+            },
+            {
+              "value": "1d4 Bludgeoning"
+            },
+            {
+              "value": "Light, Thrown (Range 20/60)"
+            },
+            {
+              "value": "Nick"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Mace"
+            },
+            {
+              "value": "1d6 Bludgeoning"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Quarterstaff"
+            },
+            {
+              "value": "1d6 Bludgeoning"
+            },
+            {
+              "value": "Versatile (1d8)"
+            },
+            {
+              "value": "Topple"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Sickle"
+            },
+            {
+              "value": "1d4 Slashing"
+            },
+            {
+              "value": "Light"
+            },
+            {
+              "value": "Nick"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Melee Weapons"
+            },
+            {
+              "value": "Spear"
+            },
+            {
+              "value": "1d6 Piercing"
+            },
+            {
+              "value": "Thrown (Range 20/60), Versatile (1d8)"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "1 GP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Ranged Weapons"
+            },
+            {
+              "value": "Dart"
+            },
+            {
+              "value": "1d4 Piercing"
+            },
+            {
+              "value": "Finesse, Thrown (Range 20/60)"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "1/4 lb.",
+              "numeric_value": 0.25
+            },
+            {
+              "value": "5 CP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Ranged Weapons"
+            },
+            {
+              "value": "Light Crossbow"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 80/320; Bolt), Loading, Two-Handed"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Ranged Weapons"
+            },
+            {
+              "value": "Shortbow"
+            },
+            {
+              "value": "1d6 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 80/320; Arrow), Two-Handed"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Simple Ranged Weapons"
+            },
+            {
+              "value": "Sling"
+            },
+            {
+              "value": "1d4 Bludgeoning"
+            },
+            {
+              "value": "Ammunition (Range 30/120; Bullet)"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Battleaxe"
+            },
+            {
+              "value": "1d8 Slashing"
+            },
+            {
+              "value": "Versatile (1d10)"
+            },
+            {
+              "value": "Topple"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Flail"
+            },
+            {
+              "value": "1d8 Bludgeoning"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Glaive"
+            },
+            {
+              "value": "1d10 Slashing"
+            },
+            {
+              "value": "Heavy, Reach, Two-Handed"
+            },
+            {
+              "value": "Graze"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "20 GP",
+              "numeric_value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Greataxe"
+            },
+            {
+              "value": "1d12 Slashing"
+            },
+            {
+              "value": "Heavy, Two-Handed"
+            },
+            {
+              "value": "Cleave"
+            },
+            {
+              "value": "7 lb.",
+              "numeric_value": 7
+            },
+            {
+              "value": "30 GP",
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Greatsword"
+            },
+            {
+              "value": "2d6 Slashing"
+            },
+            {
+              "value": "Heavy, Two-Handed"
+            },
+            {
+              "value": "Graze"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Halberd"
+            },
+            {
+              "value": "1d10 Slashing"
+            },
+            {
+              "value": "Heavy, Reach, Two-Handed"
+            },
+            {
+              "value": "Cleave"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "20 GP",
+              "numeric_value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Lance"
+            },
+            {
+              "value": "1d10 Piercing"
+            },
+            {
+              "value": "Heavy, Reach, Two-Handed (unless mounted)"
+            },
+            {
+              "value": "Topple"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Longsword"
+            },
+            {
+              "value": "1d8 Slashing"
+            },
+            {
+              "value": "Versatile (1d10)"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "15 GP",
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Maul"
+            },
+            {
+              "value": "2d6 Bludgeoning"
+            },
+            {
+              "value": "Heavy, Two-Handed"
+            },
+            {
+              "value": "Topple"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Morningstar"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "15 GP",
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Pike"
+            },
+            {
+              "value": "1d10 Piercing"
+            },
+            {
+              "value": "Heavy, Reach, Two-Handed"
+            },
+            {
+              "value": "Push"
+            },
+            {
+              "value": "18 lb.",
+              "numeric_value": 18
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Rapier"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": "Finesse"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Scimitar"
+            },
+            {
+              "value": "1d6 Slashing"
+            },
+            {
+              "value": "Finesse, Light"
+            },
+            {
+              "value": "Nick"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "25 GP",
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Shortsword"
+            },
+            {
+              "value": "1d6 Piercing"
+            },
+            {
+              "value": "Finesse, Light"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Trident"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": "Thrown (Range 20/60), Versatile (1d10)"
+            },
+            {
+              "value": "Topple"
+            },
+            {
+              "value": "4 lb.",
+              "numeric_value": 4
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Warhammer"
+            },
+            {
+              "value": "1d8 Bludgeoning"
+            },
+            {
+              "value": "Versatile (1d10)"
+            },
+            {
+              "value": "Push"
+            },
+            {
+              "value": "5 lb.",
+              "numeric_value": 5
+            },
+            {
+              "value": "15 GP",
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "War Pick"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": "Versatile (1d10)"
+            },
+            {
+              "value": "Sap"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Melee Weapons"
+            },
+            {
+              "value": "Whip"
+            },
+            {
+              "value": "1d4 Slashing"
+            },
+            {
+              "value": "Finesse, Reach"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Blowgun"
+            },
+            {
+              "value": "1 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 25/100; Needle), Loading"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "1 lb.",
+              "numeric_value": 1
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Hand Crossbow"
+            },
+            {
+              "value": "1d6 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 30/120; Bolt), Light, Loading"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "75 GP",
+              "numeric_value": 75
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Heavy Crossbow"
+            },
+            {
+              "value": "1d10 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 100/400; Bolt), Heavy, Loading, Two-Handed"
+            },
+            {
+              "value": "Push"
+            },
+            {
+              "value": "18 lb.",
+              "numeric_value": 18
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Longbow"
+            },
+            {
+              "value": "1d8 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 150/600; Arrow), Heavy, Two-Handed"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "2 lb.",
+              "numeric_value": 2
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Musket"
+            },
+            {
+              "value": "1d12 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 40/120; Bullet), Loading, Two-Handed"
+            },
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "500 GP",
+              "numeric_value": 500
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Martial Ranged Weapons"
+            },
+            {
+              "value": "Pistol"
+            },
+            {
+              "value": "1d10 Piercing"
+            },
+            {
+              "value": "Ammunition (Range 30/90; Bullet), Loading"
+            },
+            {
+              "value": "Vex"
+            },
+            {
+              "value": "3 lb.",
+              "numeric_value": 3
+            },
+            {
+              "value": "250 GP",
+              "numeric_value": 250
+            }
+          ]
+        }
+      ],
       "source_row_count": 38,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "properties"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "weight"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "properties"
+        },
+        {
+          "code": "not_applicable",
+          "row": 23,
+          "column": "properties"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -3165,17 +4346,32 @@
       "name": "Armor",
       "section_id": "596-9-6-armor",
       "page": 92,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
+        {
+          "id": "armor-category",
+          "name": "Armor Category",
+          "type": "string"
+        },
+        {
+          "id": "don-time",
+          "name": "Don Time",
+          "type": "string"
+        },
+        {
+          "id": "doff-time",
+          "name": "Doff Time",
+          "type": "string"
+        },
         {
           "id": "armor",
           "name": "Armor",
           "type": "string"
         },
         {
-          "id": "armor-class-ac",
+          "id": "armor-class",
           "name": "Armor Class (AC)",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "strength",
@@ -3190,17 +4386,552 @@
         {
           "id": "weight",
           "name": "Weight",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Light Armor"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Padded Armor"
+            },
+            {
+              "value": "11 + Dex modifier"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "8 lb.",
+              "numeric_value": 8
+            },
+            {
+              "value": "5 GP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Light Armor"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Leather Armor"
+            },
+            {
+              "value": "11 + Dex modifier"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "10 lb.",
+              "numeric_value": 10
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Light Armor"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Studded Leather Armor"
+            },
+            {
+              "value": "12 + Dex modifier"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "13 lb.",
+              "numeric_value": 13
+            },
+            {
+              "value": "45 GP",
+              "numeric_value": 45
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium Armor"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Hide Armor"
+            },
+            {
+              "value": "12 + Dex modifier (max 2)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "12 lb.",
+              "numeric_value": 12
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium Armor"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Chain Shirt"
+            },
+            {
+              "value": "13 + Dex modifier (max 2)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "20 lb.",
+              "numeric_value": 20
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium Armor"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Scale Mail"
+            },
+            {
+              "value": "14 + Dex modifier (max 2)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "45 lb.",
+              "numeric_value": 45
+            },
+            {
+              "value": "50 GP",
+              "numeric_value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium Armor"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Breastplate"
+            },
+            {
+              "value": "14 + Dex modifier (max 2)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "20 lb.",
+              "numeric_value": 20
+            },
+            {
+              "value": "400 GP",
+              "numeric_value": 400
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium Armor"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "1 Minute"
+            },
+            {
+              "value": "Half Plate Armor"
+            },
+            {
+              "value": "15 + Dex modifier (max 2)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "40 lb.",
+              "numeric_value": 40
+            },
+            {
+              "value": "750 GP",
+              "numeric_value": 750
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heavy Armor"
+            },
+            {
+              "value": "10 Minutes"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "Ring Mail"
+            },
+            {
+              "value": "14",
+              "numeric_value": 14
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "40 lb.",
+              "numeric_value": 40
+            },
+            {
+              "value": "30 GP",
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heavy Armor"
+            },
+            {
+              "value": "10 Minutes"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "Chain Mail"
+            },
+            {
+              "value": "16",
+              "numeric_value": 16
+            },
+            {
+              "value": "Str 13",
+              "numeric_value": 13
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "55 lb.",
+              "numeric_value": 55
+            },
+            {
+              "value": "75 GP",
+              "numeric_value": 75
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heavy Armor"
+            },
+            {
+              "value": "10 Minutes"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "Splint Armor"
+            },
+            {
+              "value": "17",
+              "numeric_value": 17
+            },
+            {
+              "value": "Str 15",
+              "numeric_value": 15
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "60 lb.",
+              "numeric_value": 60
+            },
+            {
+              "value": "200 GP",
+              "numeric_value": 200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heavy Armor"
+            },
+            {
+              "value": "10 Minutes"
+            },
+            {
+              "value": "5 Minutes"
+            },
+            {
+              "value": "Plate Armor"
+            },
+            {
+              "value": "18",
+              "numeric_value": 18
+            },
+            {
+              "value": "Str 15",
+              "numeric_value": 15
+            },
+            {
+              "value": "Disadvantage"
+            },
+            {
+              "value": "65 lb.",
+              "numeric_value": 65
+            },
+            {
+              "value": "1,500 GP",
+              "numeric_value": 1500
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shield"
+            },
+            {
+              "value": "Utilize Action"
+            },
+            {
+              "value": "Utilize Action"
+            },
+            {
+              "value": "Shield"
+            },
+            {
+              "value": "+2",
+              "numeric_value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "6 lb.",
+              "numeric_value": 6
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 13,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "stealth"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "stealth"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "stealth"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "stealth"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "stealth"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "strength"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "stealth"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
