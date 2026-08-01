@@ -534,14 +534,23 @@ def merge_reviewed(source_root: Path, reviewed_path: Path) -> dict[str, int]:
         if not isinstance(patch, dict) or str(patch.get("id", "")) not in table_locations:
             raise BatchError("reviewed table entry names an unknown id")
         target = table_locations[str(patch["id"])]
-        for key in ("fact_status", "columns", "rows", "omissions"):
+        for key in (
+            "fact_status",
+            "columns",
+            "rows",
+            "source_row_count",
+            "omissions",
+        ):
             if key in patch:
                 target[key] = patch[key]
         if target.get("fact_status") not in {"complete", "no_structured_facts"}:
             raise BatchError("reviewed table fact_status must close the pending entry")
-        if target.get("fact_status") == "complete" and len(target.get("rows", [])) != int(
-            target["source_row_count"]
-        ):
+        source_row_count = target.get("source_row_count")
+        if not isinstance(source_row_count, int) or isinstance(source_row_count, bool):
+            raise BatchError("reviewed table source_row_count must be an integer")
+        if target.get("fact_status") == "complete" and len(
+            target.get("rows", [])
+        ) != source_row_count:
             raise BatchError("a complete table must account for every source row")
         changed += 1
     _validate_pack_payloads(packs)
