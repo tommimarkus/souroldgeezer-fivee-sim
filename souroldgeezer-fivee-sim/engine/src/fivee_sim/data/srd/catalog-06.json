@@ -2153,8 +2153,15 @@
       "pages": [
         41
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "041-core-druid-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "041-druid-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "240-6-16-becoming-a-druid"
     },
@@ -2169,8 +2176,18 @@
       "pages": [
         41
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "Light armor and Shields training"
+        ],
+        "core_traits_table_id": "041-core-druid-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "041-druid-features",
+        "spell_slots_source": "multiclassing rules"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "240-6-16-becoming-a-druid"
     },
@@ -2185,8 +2202,12 @@
       "pages": [
         41
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "class_features_keyed_by": "Druid level",
+        "class_features_table_id": "041-druid-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -2202,8 +2223,41 @@
         41,
         42
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 1,
+        "spell_list": "Druid",
+        "initial_cantrip_count": 2,
+        "recommended_cantrips": [
+          "Druidcraft",
+          "Produce Flame"
+        ],
+        "cantrips_replaceable_per_druid_level": 1,
+        "additional_cantrip_levels": [
+          4,
+          10
+        ],
+        "spell_slot_table_id": "041-druid-features",
+        "long_rest_spell_slots_recovered": "all",
+        "initial_prepared_spell_count": 4,
+        "initial_prepared_spell_level": 1,
+        "recommended_prepared_spells": [
+          "Animal Friendship",
+          "Cure Wounds",
+          "Faerie Fire",
+          "Thunderwave"
+        ],
+        "prepared_spell_count_table_id": "041-druid-features",
+        "prepared_spell_maximum_level_basis": "available spell slots",
+        "always_prepared_feature_spells_count_against_limit": false,
+        "always_prepared_feature_spells_are_druid_spells": true,
+        "prepared_spells_change_timing": "finish a Long Rest",
+        "prepared_spells_replacement_scope": "any number",
+        "replacement_spell_maximum_level_basis": "available spell slots",
+        "spellcasting_ability": "Wisdom",
+        "spellcasting_focus": "Druidic Focus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2218,8 +2272,17 @@
       "pages": [
         42
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 1,
+        "language": "Druidic",
+        "always_prepared_spell": "Speak with Animals",
+        "hidden_message_automatic_detection": "creatures that know Druidic",
+        "other_creature_detection_check": "Intelligence (Investigation)",
+        "other_creature_detection_dc": 15,
+        "deciphering_without_druidic_requires_magic": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2234,8 +2297,27 @@
       "pages": [
         42
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 1,
+        "selection": "Primal Order",
+        "selection_count": 1,
+        "options": {
+          "Magician": {
+            "extra_druid_cantrip_count": 1,
+            "intelligence_check_skills": [
+              "Arcana",
+              "Nature"
+            ],
+            "intelligence_check_bonus_formula": "max(1, Wisdom modifier)"
+          },
+          "Warden": {
+            "weapon_proficiency": "Martial weapons",
+            "armor_training": "Medium armor"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2251,8 +2333,77 @@
         42,
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 2,
+        "activation_action": "Bonus Action",
+        "form_type": "learned Beast form",
+        "duration_hours_formula": "Druid level / 2",
+        "ends_on_another_wild_shape": true,
+        "ends_if_druid_incapacitated": true,
+        "ends_if_druid_dies": true,
+        "early_exit_action": "Bonus Action",
+        "initial_uses": 2,
+        "short_rest_uses_recovered": 1,
+        "long_rest_uses_recovered": "all",
+        "uses_table_id": "041-druid-features",
+        "initial_known_forms": 4,
+        "initial_maximum_challenge_rating": "1/4",
+        "initial_fly_speed_eligible": false,
+        "recommended_forms": [
+          "Rat",
+          "Riding Horse",
+          "Spider",
+          "Wolf"
+        ],
+        "known_forms_replaceable_after_long_rest": 1,
+        "beast_shapes_table_id": "042-beast-shapes",
+        "fly_speed_eligible_from_druid_level": 8,
+        "other_source_forms_require_gm_permission": true,
+        "retained_in_form": [
+          "personality",
+          "memories",
+          "speech",
+          "creature type",
+          "Hit Points",
+          "Hit Point Dice",
+          "Intelligence",
+          "Wisdom",
+          "Charisma",
+          "class features",
+          "languages",
+          "feats",
+          "skill proficiencies",
+          "saving throw proficiencies"
+        ],
+        "temporary_hit_points_formula": "Druid level",
+        "other_statistics_source": "Beast stat block",
+        "proficiency_bonus_source": "Druid",
+        "beast_proficiencies_gained": true,
+        "skill_and_save_modifier_choice": "higher modifier",
+        "can_cast_spells": false,
+        "concentration_broken": false,
+        "existing_spell_interference": false,
+        "object_handling_basis": "form limbs",
+        "equipment_options": [
+          "falls in Druid space",
+          "merges into form",
+          "worn by form"
+        ],
+        "worn_equipment_functions_normally": true,
+        "worn_equipment_practicality_decider": "GM",
+        "worn_equipment_practicality_basis": [
+          "creature size",
+          "creature shape"
+        ],
+        "equipment_resizes": false,
+        "unwearable_equipment_options": [
+          "falls to ground",
+          "merges into form"
+        ],
+        "merged_equipment_has_effect": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2267,8 +2418,21 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 2,
+        "activation_action": "Magic action",
+        "resource_options": [
+          "spell slot",
+          "Wild Shape use"
+        ],
+        "resource_cost": 1,
+        "spell": "Find Familiar",
+        "material_components_required": false,
+        "familiar_creature_type": "Fey",
+        "familiar_disappears_timing": "finish a Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2283,8 +2447,15 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 3,
+        "selection": "Druid subclass",
+        "selection_count": 1,
+        "detailed_option": "Circle of the Land",
+        "subclass_features_gained_at_or_below_druid_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2299,8 +2470,22 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2315,8 +2500,24 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 5,
+        "wild_shape_recovery": {
+          "frequency": "once on each Druid turn",
+          "requires_no_remaining_uses": true,
+          "spell_slots_expended": 1,
+          "wild_shape_uses_recovered": 1,
+          "action_required": false
+        },
+        "spell_slot_recovery": {
+          "wild_shape_uses_expended": 1,
+          "spell_slot_level": 1,
+          "action_required": false,
+          "recharge": "Long Rest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2331,8 +2532,29 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 7,
+        "selection_count": 1,
+        "options": {
+          "Potent Spellcasting": {
+            "applies_to": "damage dealt with a Druid cantrip",
+            "damage_bonus": "Wisdom modifier"
+          },
+          "Primal Strike": {
+            "frequency": "once on each Druid turn",
+            "trigger": "hit with a weapon or Wild Shape Beast-form attack roll",
+            "extra_damage": "1d8",
+            "damage_types": [
+              "Cold",
+              "Fire",
+              "Lightning",
+              "Thunder"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2347,8 +2569,16 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 15,
+        "potent_spellcasting": {
+          "minimum_cantrip_range_feet": 10,
+          "range_increase_feet": 300
+        },
+        "primal_strike_extra_damage": "2d8"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2363,8 +2593,16 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 18,
+        "spellcasting_in_wild_shape": true,
+        "ineligible_material_components": [
+          "specified cost",
+          "consumed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2379,8 +2617,17 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Dimensional Travel"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2395,8 +2642,28 @@
       "pages": [
         43
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "level": 20,
+        "evergreen_wild_shape": {
+          "trigger": "roll Initiative with no Wild Shape uses",
+          "wild_shape_uses_recovered": 1
+        },
+        "nature_magician": {
+          "action_required": false,
+          "resource": "unexpended Wild Shape uses",
+          "spell_levels_per_use": 2,
+          "result": "one spell slot",
+          "example_wild_shape_uses": 2,
+          "example_spell_slot_level": 4,
+          "recharge": "Long Rest"
+        },
+        "longevity": {
+          "elapsed_years": 10,
+          "body_age_years": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "243-6-17-druid-class-features"
     },
@@ -2412,8 +2679,39 @@
         44,
         45
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Druid",
+        "spell_level_minimum": 0,
+        "spell_level_maximum": 9,
+        "ordering": [
+          "spell level",
+          "alphabetical"
+        ],
+        "special_codes": {
+          "C": "Concentration",
+          "R": "Ritual",
+          "M": "specific Material component"
+        },
+        "spell_tables_by_level": {
+          "0": "044-cantrips-level-0-druid-spells",
+          "1": "044-level-1-druid-spells",
+          "2": "044-level-2-druid-spells",
+          "3": "044-level-3-druid-spells",
+          "4": "045-level-4-druid-spells-level-6-druid-spells",
+          "5": "045-level-5-druid-spells",
+          "6": "045-level-4-druid-spells-level-6-druid-spells",
+          "7": "045-level-7-druid-spells",
+          "8": "045-level-8-druid-spells",
+          "9": "045-level-9-druid-spells"
+        },
+        "grouped_table_levels": {
+          "045-level-4-druid-spells-level-6-druid-spells": [
+            4,
+            6
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -17162,7 +17460,7 @@
       "name": "Beast Shapes",
       "section_id": "247-6-17-4-level-2-wild-shape",
       "page": 42,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "druid-level",
@@ -17177,15 +17475,73 @@
         {
           "id": "max-cr",
           "name": "Max CR",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "fly-speed",
           "name": "Fly Speed",
-          "type": "string"
+          "type": "boolean"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "1/4",
+              "numeric_value": 0.25
+            },
+            {
+              "value": false
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": "1/2",
+              "numeric_value": 0.5
+            },
+            {
+              "value": false
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": "1",
+              "numeric_value": 1
+            },
+            {
+              "value": true
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -17195,7 +17551,7 @@
       "name": "Level 2 Druid Spells",
       "section_id": "257-6-18-druid-spell-list",
       "page": 44,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -17213,9 +17569,320 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Aid"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Animal Messenger"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Augury"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Barkskin"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Continual Flame"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Darkvision"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enhance Ability"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enlarge/Reduce"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Find Traps"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flame Blade"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Flaming Sphere"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gust of Wind"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heat Metal"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hold Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lesser Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Animals or Plants"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Object"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Moonbeam"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Pass without Trace"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Poison"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spike Growth"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
       "source_row_count": 21,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 19,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -17223,7 +17890,7 @@
       "name": "Cantrips (Level 0 Druid Spells)",
       "section_id": "257-6-18-druid-spell-list",
       "page": 44,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -17241,9 +17908,208 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Druidcraft"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Elementalism"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Guidance"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mending"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Message"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poison Spray"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Produce Flame"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Resistance"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shillelagh"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Spare the Dying"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starry Wisp"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 11,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
