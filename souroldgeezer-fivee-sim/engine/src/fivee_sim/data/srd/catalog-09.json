@@ -3340,8 +3340,20 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Bullseye Lantern",
+        "price": {
+          "amount": 10,
+          "currency": "GP"
+        },
+        "fuel": "Oil",
+        "bright_light": {
+          "shape": "Cone",
+          "distance_feet": 60
+        },
+        "additional_dim_light_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3356,8 +3368,23 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Hooded Lantern",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "fuel": "Oil",
+        "raised_hood": {
+          "bright_light_radius_feet": 30,
+          "additional_dim_light_feet": 30
+        },
+        "lowered_hood": {
+          "dim_light_radius_feet": 5
+        },
+        "change_hood_position_action": "Bonus Action"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3372,8 +3399,21 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Lock",
+        "price": {
+          "amount": 10,
+          "currency": "GP"
+        },
+        "key_included": true,
+        "pick_lock": {
+          "tool": "Thieves' Tools",
+          "ability": "Dexterity",
+          "skill": "Sleight of Hand",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3388,8 +3428,20 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Magnifying Glass",
+        "price": {
+          "amount": 100,
+          "currency": "GP"
+        },
+        "detailed_item_appraisal_or_inspection_checks": "Advantage",
+        "fire_lighting": {
+          "required_light": "as bright as sunlight",
+          "requires_tinder": true,
+          "approximate_ignition_minutes": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3404,8 +3456,60 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Manacles",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "bind": {
+          "action": "Utilize",
+          "target_disposition": "unwilling",
+          "eligible_target_sizes": [
+            "Small",
+            "Medium"
+          ],
+          "range_feet": 5,
+          "required_target_conditions": [
+            "Grappled",
+            "Incapacitated",
+            "Restrained"
+          ],
+          "check": {
+            "ability": "Dexterity",
+            "skill": "Sleight of Hand",
+            "dc": 13
+          }
+        },
+        "bound_effects": {
+          "attack_rolls": "Disadvantage",
+          "restrained_when_attached_to_fixed_chain_or_hook": true
+        },
+        "escape": {
+          "action": "Action",
+          "check": {
+            "ability": "Dexterity",
+            "skill": "Sleight of Hand",
+            "dc": 20
+          }
+        },
+        "burst": {
+          "action": "Action",
+          "check": {
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": 25
+          }
+        },
+        "key_included": true,
+        "pick_lock": {
+          "tool": "Thieves' Tools",
+          "ability": "Dexterity",
+          "skill": "Sleight of Hand",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3420,8 +3524,23 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Map",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "navigation_check": {
+          "ability": "Wisdom",
+          "skill": "Survival",
+          "bonus": 5,
+          "requirements": [
+            "map is accurate",
+            "destination is represented on map"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3436,8 +3555,21 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Mirror",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "material": "Steel",
+        "form": "Handheld",
+        "uses": [
+          "personal cosmetics",
+          "peeking around corners",
+          "reflecting light as a signal"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3452,8 +3584,51 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Net",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "throw": {
+          "action": "Attack",
+          "replaces_attacks": 1,
+          "target": "visible creature",
+          "range_feet": 15,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc_formula": "8 + Dexterity modifier + Proficiency Bonus"
+          },
+          "failed_save_condition": "Restrained",
+          "automatic_save_sizes": [
+            "Huge",
+            "Gargantuan"
+          ]
+        },
+        "escape": {
+          "action": "Action",
+          "eligible_creatures": [
+            "target",
+            "creature within 5 feet of target"
+          ],
+          "check": {
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": 10
+          }
+        },
+        "object_statistics": {
+          "armor_class": 10,
+          "hit_points": 5,
+          "damage_immunities": [
+            "Bludgeoning",
+            "Poison",
+            "Psychic"
+          ]
+        },
+        "destroying_net_frees_target": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3469,8 +3644,55 @@
         98,
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Oil",
+        "price": {
+          "amount": 1,
+          "currency": "SP"
+        },
+        "douse_creature_or_object": {
+          "action": "Attack",
+          "replaces_attacks": 1,
+          "delivery": "thrown flask",
+          "range_feet": 20,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc_formula": "8 + Dexterity modifier + Proficiency Bonus"
+          },
+          "failed_save_effect": "covered in oil",
+          "drying_time_minutes": 1,
+          "extra_damage_when_fire_damage_taken_before_drying": 5,
+          "extra_damage_type": "Fire"
+        },
+        "douse_space": {
+          "action": "Utilize",
+          "required_surface": "level ground",
+          "area_shape": "Square",
+          "area_size_feet": 5,
+          "range_feet": 5,
+          "burn_duration_rounds": 2,
+          "burn_duration_seconds": 12,
+          "burn_end_timing": "end of turn 2 rounds after lighting",
+          "damage": 5,
+          "damage_type": "Fire",
+          "damage_triggers": [
+            "enter area",
+            "end turn in area"
+          ],
+          "maximum_damage_instances_per_turn": 1
+        },
+        "fuel": {
+          "compatible_items": [
+            "Lamp",
+            "Lantern"
+          ],
+          "burn_time_hours_per_flask": 6,
+          "burn_time_may_be_nonconsecutive": true,
+          "extinguish_action": "Utilize",
+          "may_rekindle_until_total_burn_time_exhausted": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3485,8 +3707,16 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Paper",
+        "price": {
+          "amount": 2,
+          "currency": "SP"
+        },
+        "unit": "sheet",
+        "approximate_handwritten_word_capacity": 250
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3501,8 +3731,16 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Parchment",
+        "price": {
+          "amount": 1,
+          "currency": "SP"
+        },
+        "unit": "sheet",
+        "approximate_handwritten_word_capacity": 250
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3517,8 +3755,25 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Perfume",
+        "price": {
+          "amount": 5,
+          "currency": "GP"
+        },
+        "vial_ounces": 4,
+        "applied_effect": {
+          "duration_hours": 1,
+          "check_effect": "Advantage",
+          "ability": "Charisma",
+          "skill": "Persuasion",
+          "purpose": "influence",
+          "target_attitude": "Indifferent",
+          "target_type": "Humanoid",
+          "target_range_feet": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3533,8 +3788,28 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Basic Poison",
+        "price": {
+          "amount": 100,
+          "currency": "GP"
+        },
+        "application": {
+          "action": "Bonus Action",
+          "vials_expended": 1,
+          "weapon_count": 1,
+          "maximum_ammunition_count": 3
+        },
+        "damage_trigger_types": [
+          "Piercing",
+          "Slashing"
+        ],
+        "extra_damage": "1d4",
+        "extra_damage_type": "Poison",
+        "maximum_potency_minutes": 1,
+        "potency_ends_after_damage_dealt": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3549,8 +3824,27 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Pole",
+        "price": {
+          "amount": 5,
+          "currency": "CP"
+        },
+        "length_feet": 10,
+        "touch_reach_feet": 10,
+        "vault": {
+          "effect": "Advantage",
+          "check": {
+            "ability": "Strength",
+            "skill": "Athletics"
+          },
+          "eligible_jumps": [
+            "High Jump",
+            "Long Jump"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3565,8 +3859,15 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Iron Pot",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "capacity_gallons": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3581,8 +3882,22 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Potion of Healing",
+        "price": {
+          "amount": 50,
+          "currency": "GP"
+        },
+        "magic_item": true,
+        "use_action": "Bonus Action",
+        "use_modes": [
+          "drink",
+          "administer"
+        ],
+        "administer_range_feet": 5,
+        "healing": "2d4 + 2"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3597,8 +3912,16 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Pouch",
+        "price": {
+          "amount": 5,
+          "currency": "SP"
+        },
+        "capacity_weight_lb": 6,
+        "capacity_volume_cubic_feet": 0.2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3613,8 +3936,45 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Priest's Pack",
+        "price": {
+          "amount": 33,
+          "currency": "GP"
+        },
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Blanket",
+            "quantity": 1
+          },
+          {
+            "item": "Holy Water",
+            "quantity": 1
+          },
+          {
+            "item": "Lamp",
+            "quantity": 1
+          },
+          {
+            "item": "Rations",
+            "quantity": 7,
+            "unit": "days"
+          },
+          {
+            "item": "Robe",
+            "quantity": 1
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3629,8 +3989,15 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Quiver",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "capacity_arrows": 20
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3645,8 +4012,18 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Portable Ram",
+        "price": {
+          "amount": 4,
+          "currency": "GP"
+        },
+        "use": "break down doors",
+        "strength_check_bonus": 4,
+        "maximum_helpers": 1,
+        "check_with_helper": "Advantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
