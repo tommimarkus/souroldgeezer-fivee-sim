@@ -15,7 +15,7 @@
       "pages": [
         1
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     }

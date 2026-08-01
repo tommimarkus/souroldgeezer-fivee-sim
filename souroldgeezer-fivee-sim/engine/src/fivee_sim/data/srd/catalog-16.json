@@ -7619,8 +7619,81 @@
       "pages": [
         361
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Seahorse",
+        "size": "Tiny",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speeds_feet": {
+          "walk": 5,
+          "swim": 20
+        },
+        "abilities": {
+          "str": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "dex": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "con": {
+            "score": 8,
+            "mod": -1,
+            "save": -1
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "0",
+        "experience_points": 0,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Perception": 2,
+          "Stealth": 5
+        },
+        "senses": {
+          "passive_perception": 12
+        },
+        "traits": {
+          "Water Breathing": {
+            "breathes_only": "underwater"
+          }
+        },
+        "actions": {
+          "Bubble Dash": {
+            "requires_environment": "underwater",
+            "movement_up_to_speed": "Swim",
+            "provokes_opportunity_attacks": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7635,8 +7708,98 @@
       "pages": [
         361
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Spider",
+        "size": "Tiny",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speeds_feet": {
+          "walk": 20,
+          "climb": 20
+        },
+        "abilities": {
+          "str": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "dex": {
+            "score": 14,
+            "mod": 2,
+            "save": 2
+          },
+          "con": {
+            "score": 8,
+            "mod": -1,
+            "save": -1
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Stealth": 4
+        },
+        "senses": {
+          "darkvision_feet": 30,
+          "passive_perception": 10
+        },
+        "traits": {
+          "Spider Climb": {
+            "difficult_surfaces": true,
+            "ceilings": true,
+            "ability_check_required": false
+          },
+          "Web Walker": {
+            "ignores_web_movement_restrictions": true,
+            "knows_location_of_creatures_in_same_web": true
+          }
+        },
+        "actions": {
+          "Bite": {
+            "attack": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 1,
+                "type": "Piercing"
+              },
+              {
+                "average": 2,
+                "type": "Poison",
+                "roll": "1d4"
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7651,8 +7814,106 @@
       "pages": [
         361
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Bats",
+        "size": "Large Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d10"
+        },
+        "speeds_feet": {
+          "walk": 5,
+          "fly": 30
+        },
+        "abilities": {
+          "str": {
+            "score": 5,
+            "mod": -3,
+            "save": -3
+          },
+          "dex": {
+            "score": 15,
+            "mod": 2,
+            "save": 2
+          },
+          "con": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 4,
+            "mod": -3,
+            "save": -3
+          }
+        },
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny bat",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          }
+        },
+        "senses": {
+          "blindsight_feet": 60,
+          "passive_perception": 11
+        },
+        "actions": {
+          "Bites": {
+            "attack": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "normal_damage": {
+              "average": 5,
+              "type": "Piercing",
+              "roll": "2d4"
+            },
+            "bloodied_damage": {
+              "average": 2,
+              "type": "Piercing",
+              "roll": "1d4"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7667,8 +7928,120 @@
       "pages": [
         361
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Insects",
+        "size": "Medium Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 19,
+          "hit_dice": "3d8 + 6"
+        },
+        "speeds_feet": {
+          "walk": 20,
+          "fly": 20
+        },
+        "abilities": {
+          "str": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          },
+          "dex": {
+            "score": 13,
+            "mod": 1,
+            "save": 1
+          },
+          "con": {
+            "score": 14,
+            "mod": 2,
+            "save": 2
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 7,
+            "mod": -2,
+            "save": -2
+          },
+          "cha": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          }
+        },
+        "challenge_rating": "1/2",
+        "experience_points": 100,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Spider Climb": {
+            "requires_speed": "Climb",
+            "difficult_surfaces": true,
+            "ceilings": true,
+            "ability_check_required": false
+          },
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny insect",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          }
+        },
+        "speed_mode_choice": {
+          "chooser": "GM",
+          "options": [
+            "Climb",
+            "Fly"
+          ],
+          "speed_feet": 20
+        },
+        "senses": {
+          "blindsight_feet": 30,
+          "passive_perception": 8
+        },
+        "actions": {
+          "Bites": {
+            "attack": "Melee",
+            "attack_bonus": 3,
+            "reach_feet": 5,
+            "normal_damage": {
+              "average": 6,
+              "type": "Poison",
+              "roll": "2d4 + 1"
+            },
+            "bloodied_damage": {
+              "average": 3,
+              "type": "Poison",
+              "roll": "1d4 + 1"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7683,8 +8056,110 @@
       "pages": [
         362
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Piranhas",
+        "size": "Medium Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 28,
+          "hit_dice": "8d8 - 8"
+        },
+        "speeds_feet": {
+          "walk": 5,
+          "swim": 40
+        },
+        "abilities": {
+          "str": {
+            "score": 13,
+            "mod": 1,
+            "save": 1
+          },
+          "dex": {
+            "score": 16,
+            "mod": 3,
+            "save": 3
+          },
+          "con": {
+            "score": 9,
+            "mod": -1,
+            "save": -1
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 7,
+            "mod": -2,
+            "save": -2
+          },
+          "cha": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny piranha",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          },
+          "Water Breathing": {
+            "breathes_only": "underwater"
+          }
+        },
+        "senses": {
+          "darkvision_feet": 60,
+          "passive_perception": 8
+        },
+        "actions": {
+          "Bites": {
+            "attack": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "attack_roll_advantage_if_target_below_maximum_hit_points": true,
+            "normal_damage": {
+              "average": 8,
+              "type": "Piercing",
+              "roll": "2d4 + 3"
+            },
+            "bloodied_damage": {
+              "average": 5,
+              "type": "Piercing",
+              "roll": "1d4 + 3"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7699,8 +8174,106 @@
       "pages": [
         362
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Rats",
+        "size": "Medium Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 14,
+          "hit_dice": "4d8 - 4"
+        },
+        "speeds_feet": {
+          "walk": 30,
+          "climb": 30
+        },
+        "abilities": {
+          "str": {
+            "score": 9,
+            "mod": -1,
+            "save": -1
+          },
+          "dex": {
+            "score": 11,
+            "mod": 0,
+            "save": 2
+          },
+          "con": {
+            "score": 9,
+            "mod": -1,
+            "save": -1
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny rat",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          }
+        },
+        "senses": {
+          "darkvision_feet": 30,
+          "passive_perception": 10
+        },
+        "actions": {
+          "Bites": {
+            "attack": "Melee",
+            "attack_bonus": 2,
+            "reach_feet": 5,
+            "normal_damage": {
+              "average": 5,
+              "type": "Piercing",
+              "roll": "2d4"
+            },
+            "bloodied_damage": {
+              "average": 2,
+              "type": "Piercing",
+              "roll": "1d4"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7715,8 +8288,122 @@
       "pages": [
         362
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Ravens",
+        "size": "Medium Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d8 + 2"
+        },
+        "speeds_feet": {
+          "walk": 10,
+          "fly": 50
+        },
+        "abilities": {
+          "str": {
+            "score": 6,
+            "mod": -2,
+            "save": -2
+          },
+          "dex": {
+            "score": 14,
+            "mod": 2,
+            "save": 2
+          },
+          "con": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "int": {
+            "score": 5,
+            "mod": -3,
+            "save": -3
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 6,
+            "mod": -2,
+            "save": -2
+          }
+        },
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny raven",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          }
+        },
+        "skills": {
+          "Perception": 5
+        },
+        "senses": {
+          "passive_perception": 15
+        },
+        "actions": {
+          "Beaks": {
+            "attack": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "normal_damage": {
+              "average": 5,
+              "type": "Piercing",
+              "roll": "1d6 + 2"
+            },
+            "bloodied_damage": {
+              "average": 2,
+              "type": "Piercing",
+              "roll": "1d4"
+            }
+          },
+          "Cacophony": {
+            "recharge": "6",
+            "save": {
+              "ability": "Wisdom",
+              "dc": 10
+            },
+            "target": "one creature in swarm space",
+            "failure_condition": "Deafened",
+            "failure_condition_duration": "until start of swarm next turn",
+            "while_deafened_disadvantage": [
+              "ability checks",
+              "attack rolls"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7732,8 +8419,111 @@
         362,
         363
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Swarm of Venomous Snakes",
+        "size": "Medium Swarm of Tiny",
+        "type": "Beasts",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 36,
+          "hit_dice": "8d8"
+        },
+        "speeds_feet": {
+          "walk": 30,
+          "swim": 30
+        },
+        "abilities": {
+          "str": {
+            "score": 8,
+            "mod": -1,
+            "save": -1
+          },
+          "dex": {
+            "score": 18,
+            "mod": 4,
+            "save": 4
+          },
+          "con": {
+            "score": 11,
+            "mod": 0,
+            "save": 0
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Frightened",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Prone",
+          "Restrained",
+          "Stunned"
+        ],
+        "traits": {
+          "Swarm": {
+            "can_share_other_creature_space": true,
+            "opening_minimum_size": "Tiny snake",
+            "can_regain_hit_points": false,
+            "can_gain_temporary_hit_points": false
+          }
+        },
+        "senses": {
+          "blindsight_feet": 10,
+          "passive_perception": 10
+        },
+        "actions": {
+          "Bites": {
+            "attack": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "normal_piercing_damage": {
+              "average": 8,
+              "type": "Piercing",
+              "roll": "1d8 + 4"
+            },
+            "bloodied_piercing_damage": {
+              "average": 6,
+              "type": "Piercing",
+              "roll": "1d4 + 4"
+            },
+            "additional_damage": {
+              "average": 10,
+              "type": "Poison",
+              "roll": "3d6"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7748,8 +8538,92 @@
       "pages": [
         363
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Tiger",
+        "size": "Large",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 30,
+          "hit_dice": "4d10 + 8"
+        },
+        "speeds_feet": {
+          "walk": 40
+        },
+        "abilities": {
+          "str": {
+            "score": 17,
+            "mod": 3,
+            "save": 3
+          },
+          "dex": {
+            "score": 16,
+            "mod": 3,
+            "save": 3
+          },
+          "con": {
+            "score": 14,
+            "mod": 2,
+            "save": 2
+          },
+          "int": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 8,
+            "mod": -1,
+            "save": -1
+          }
+        },
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Perception": 3,
+          "Stealth": 7
+        },
+        "senses": {
+          "darkvision_feet": 60,
+          "passive_perception": 13
+        },
+        "actions": {
+          "Rend": {
+            "attack": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 10,
+                "type": "Slashing",
+                "roll": "2d6 + 3"
+              }
+            ],
+            "large_or_smaller_target_condition": "Prone"
+          }
+        },
+        "bonus_actions": {
+          "Nimble Escape": {
+            "action_choice": [
+              "Disengage",
+              "Hide"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7764,8 +8638,94 @@
       "pages": [
         363
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Triceratops",
+        "size": "Huge",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 114,
+          "hit_dice": "12d12 + 36"
+        },
+        "speeds_feet": {
+          "walk": 50
+        },
+        "abilities": {
+          "str": {
+            "score": 22,
+            "mod": 6,
+            "save": 6
+          },
+          "dex": {
+            "score": 9,
+            "mod": -1,
+            "save": -1
+          },
+          "con": {
+            "score": 17,
+            "mod": 3,
+            "save": 3
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 11,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 5,
+            "mod": -3,
+            "save": -3
+          }
+        },
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "subtype": "Dinosaur",
+        "languages": [],
+        "senses": {
+          "passive_perception": 10
+        },
+        "actions": {
+          "Multiattack": {
+            "attack_count": 2,
+            "attack": "Gore"
+          },
+          "Gore": {
+            "attack": "Melee",
+            "attack_bonus": 9,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 19,
+                "type": "Piercing",
+                "roll": "2d12 + 6"
+              }
+            ],
+            "charge_requirement": {
+              "target_maximum_size": "Huge",
+              "minimum_straight_movement_feet": 20,
+              "timing": "immediately before hit"
+            },
+            "charge_extra_damage": {
+              "average": 9,
+              "type": "Piercing",
+              "roll": "2d8"
+            },
+            "charge_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7780,8 +8740,103 @@
       "pages": [
         363
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Tyrannosaurus Rex",
+        "size": "Huge",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 136,
+          "hit_dice": "13d12 + 52"
+        },
+        "speeds_feet": {
+          "walk": 50
+        },
+        "abilities": {
+          "str": {
+            "score": 25,
+            "mod": 7,
+            "save": 10
+          },
+          "dex": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "con": {
+            "score": 19,
+            "mod": 4,
+            "save": 4
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 4
+          },
+          "cha": {
+            "score": 9,
+            "mod": -1,
+            "save": -1
+          }
+        },
+        "challenge_rating": "8",
+        "experience_points": 3900,
+        "proficiency_bonus": 3,
+        "subtype": "Dinosaur",
+        "languages": [],
+        "skills": {
+          "Perception": 4
+        },
+        "senses": {
+          "passive_perception": 14
+        },
+        "actions": {
+          "Multiattack": {
+            "Bite_attack_count": 1,
+            "Tail_attack_count": 1
+          },
+          "Bite": {
+            "attack": "Melee",
+            "attack_bonus": 10,
+            "reach_feet": 10,
+            "damage": [
+              {
+                "average": 33,
+                "type": "Piercing",
+                "roll": "4d12 + 7"
+              }
+            ],
+            "large_or_smaller_target_condition": "Grappled",
+            "escape_dc": 17,
+            "while_grappled_condition": "Restrained",
+            "while_grappled_cannot_be_targeted_by": "Tyrannosaurus Rex Tail"
+          },
+          "Tail": {
+            "attack": "Melee",
+            "attack_bonus": 10,
+            "reach_feet": 15,
+            "damage": [
+              {
+                "average": 25,
+                "type": "Bludgeoning",
+                "roll": "4d8 + 7"
+              }
+            ],
+            "huge_or_smaller_target_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7796,8 +8851,85 @@
       "pages": [
         363
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Venomous Snake",
+        "size": "Tiny",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 5,
+          "hit_dice": "2d4"
+        },
+        "speeds_feet": {
+          "walk": 30,
+          "swim": 30
+        },
+        "abilities": {
+          "str": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "dex": {
+            "score": 15,
+            "mod": 2,
+            "save": 2
+          },
+          "con": {
+            "score": 11,
+            "mod": 0,
+            "save": 0
+          },
+          "int": {
+            "score": 1,
+            "mod": -5,
+            "save": -5
+          },
+          "wis": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "cha": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "senses": {
+          "blindsight_feet": 10,
+          "passive_perception": 10
+        },
+        "actions": {
+          "Bite": {
+            "attack": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 4,
+                "type": "Piercing",
+                "roll": "1d4 + 2"
+              },
+              {
+                "average": 3,
+                "type": "Poison",
+                "roll": "1d6"
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7813,8 +8945,90 @@
         363,
         364
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Vulture",
+        "size": "Medium",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 5,
+          "hit_dice": "1d8 + 1"
+        },
+        "speeds_feet": {
+          "walk": 10,
+          "fly": 50
+        },
+        "abilities": {
+          "str": {
+            "score": 7,
+            "mod": -2,
+            "save": -2
+          },
+          "dex": {
+            "score": 10,
+            "mod": 0,
+            "save": 0
+          },
+          "con": {
+            "score": 13,
+            "mod": 1,
+            "save": 1
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 4,
+            "mod": -3,
+            "save": -3
+          }
+        },
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Perception": 3
+        },
+        "senses": {
+          "passive_perception": 13
+        },
+        "traits": {
+          "Pack Tactics": {
+            "attack_roll_advantage": true,
+            "ally_within_feet_of_target": 5,
+            "ally_cannot_have_condition": "Incapacitated",
+            "subject": "vulture"
+          }
+        },
+        "actions": {
+          "Beak": {
+            "attack": "Melee",
+            "attack_bonus": 2,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 2,
+                "type": "Piercing",
+                "roll": "1d4"
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7829,8 +9043,89 @@
       "pages": [
         364
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Warhorse",
+        "size": "Large",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 19,
+          "hit_dice": "3d10 + 3"
+        },
+        "speeds_feet": {
+          "walk": 60
+        },
+        "abilities": {
+          "str": {
+            "score": 18,
+            "mod": 4,
+            "save": 4
+          },
+          "dex": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "con": {
+            "score": 13,
+            "mod": 1,
+            "save": 1
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 3
+          },
+          "cha": {
+            "score": 7,
+            "mod": -2,
+            "save": -2
+          }
+        },
+        "challenge_rating": "1/2",
+        "experience_points": 100,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "senses": {
+          "passive_perception": 11
+        },
+        "actions": {
+          "Hooves": {
+            "attack": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 9,
+                "type": "Bludgeoning",
+                "roll": "2d4 + 4"
+              }
+            ],
+            "charge_requirement": {
+              "target_maximum_size": "Large",
+              "minimum_straight_movement_feet": 20,
+              "timing": "immediately before hit"
+            },
+            "charge_extra_damage": {
+              "average": 5,
+              "type": "Bludgeoning",
+              "roll": "2d4"
+            },
+            "charge_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7845,8 +9140,84 @@
       "pages": [
         364
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Weasel",
+        "size": "Tiny",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speeds_feet": {
+          "walk": 30,
+          "climb": 30
+        },
+        "abilities": {
+          "str": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          },
+          "dex": {
+            "score": 16,
+            "mod": 3,
+            "save": 3
+          },
+          "con": {
+            "score": 8,
+            "mod": -1,
+            "save": -1
+          },
+          "int": {
+            "score": 2,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          }
+        },
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Acrobatics": 5,
+          "Perception": 3,
+          "Stealth": 5
+        },
+        "senses": {
+          "darkvision_feet": 60,
+          "passive_perception": 13
+        },
+        "actions": {
+          "Bite": {
+            "attack": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 1,
+                "type": "Piercing"
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -7861,8 +9232,92 @@
       "pages": [
         364
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Wolf",
+        "size": "Medium",
+        "type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d8 + 2"
+        },
+        "speeds_feet": {
+          "walk": 40
+        },
+        "abilities": {
+          "str": {
+            "score": 14,
+            "mod": 2,
+            "save": 2
+          },
+          "dex": {
+            "score": 15,
+            "mod": 2,
+            "save": 2
+          },
+          "con": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "int": {
+            "score": 3,
+            "mod": -4,
+            "save": -4
+          },
+          "wis": {
+            "score": 12,
+            "mod": 1,
+            "save": 1
+          },
+          "cha": {
+            "score": 6,
+            "mod": -2,
+            "save": -2
+          }
+        },
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "languages": [],
+        "skills": {
+          "Perception": 5,
+          "Stealth": 4
+        },
+        "senses": {
+          "darkvision_feet": 60,
+          "passive_perception": 15
+        },
+        "traits": {
+          "Pack Tactics": {
+            "attack_roll_advantage": true,
+            "ally_within_feet_of_target": 5,
+            "ally_cannot_have_condition": "Incapacitated",
+            "subject": "wolf"
+          }
+        },
+        "actions": {
+          "Bite": {
+            "attack": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 5,
+                "type": "Piercing",
+                "roll": "1d6 + 2"
+              }
+            ],
+            "medium_or_smaller_target_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals",
       "content_ref": {
