@@ -14,6 +14,7 @@ All provenance: SRD 5.2 (see NOTICE).
 
 from __future__ import annotations
 
+import heapq
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
@@ -84,6 +85,7 @@ from .battlemap import (
     MapPlane,
     MapState,
     SquareClaim,
+    TriggerMode,
 )
 from .creature import AttackOption, Creature, DeathRule
 
@@ -326,6 +328,69 @@ def _segment_samples(origin: Point, destination: Point) -> list[Point]:
     return samples
 
 
+def _trigger_cycle(edges: Mapping[str, tuple[str, ...]]) -> tuple[str, ...] | None:
+    """One deterministic trigger cycle, rotated to its smallest fixture id."""
+    visited: set[str] = set()
+    active: dict[str, int] = {}
+    path: list[str] = []
+
+    def visit(node: str) -> tuple[str, ...] | None:
+        if node in active:
+            cycle = path[active[node] :]
+            smallest = min(range(len(cycle)), key=lambda index: cycle[index])
+            ordered = cycle[smallest:] + cycle[:smallest]
+            return (*ordered, ordered[0])
+        if node in visited:
+            return None
+        active[node] = len(path)
+        path.append(node)
+        for dependency in sorted(edges.get(node, ())):
+            found = visit(dependency)
+            if found is not None:
+                return found
+        path.pop()
+        active.pop(node)
+        visited.add(node)
+        return None
+
+    for start in sorted(edges):
+        found = visit(start)
+        if found is not None:
+            return found
+    return None
+
+
+def _dependency_order(features: Mapping[str, MapFeature]) -> tuple[str, ...]:
+    """All fixtures dependency-first, with lexical ties."""
+    indegree = {name: 0 for name in features}
+    followers: dict[str, set[str]] = {name: set() for name in features}
+    edges: dict[str, tuple[str, ...]] = {}
+    for target, feature in features.items():
+        if feature.trigger is None:
+            continue
+        dependencies = tuple(name for name, _ in feature.trigger.when if name in features)
+        edges[target] = dependencies
+        for dependency in dependencies:
+            if target not in followers[dependency]:
+                followers[dependency].add(target)
+                indegree[target] += 1
+    ready = list(name for name, count in indegree.items() if count == 0)
+    heapq.heapify(ready)
+    ordered: list[str] = []
+    while ready:
+        name = heapq.heappop(ready)
+        ordered.append(name)
+        for target in sorted(followers[name]):
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                heapq.heappush(ready, target)
+    if len(ordered) != len(features):
+        cycle = _trigger_cycle(edges)
+        rendered = " -> ".join(cycle or ())
+        raise EncounterError(f"trigger cycle: {rendered}")
+    return tuple(ordered)
+
+
 class Encounter:
     """A fight in progress."""
 
@@ -367,6 +432,8 @@ class Encounter:
         )
         self.battle_map = battle_map
         self.map_state: MapState | None = None
+        self._trigger_sequence: tuple[str, ...] = ()
+        self._trigger_active: dict[str, bool] = {}
         # Every square any fixture decides, flattened once at adoption: the two
         # resolvers below sit inside pathfinding loops, so what they need is an
         # index, not a list of features to scan.
@@ -541,16 +608,82 @@ class Encounter:
                 )
             if feature.initially_open != partner.initially_open:
                 raise EncounterError("linked doors must start in the same state")
+            if feature.trigger != partner.trigger:
+                raise EncounterError("linked doors must have identical triggers")
             contract = (feature.requires, feature.costs_action, feature.check)
             partner_contract = (partner.requires, partner.costs_action, partner.check)
             if contract != partner_contract:
                 raise EncounterError(
                     "linked doors must have the same requires, costs_action, and check"
                 )
-        self.map_state = MapState(open_features={
+        initially_open = {
             name for name, feature in battle_map.features.items()
             if feature.initially_open
-        })
+        }
+        for name, feature in sorted(catalogue.items()):
+            trigger = feature.trigger
+            if trigger is None:
+                continue
+            if not trigger.when:
+                raise EncounterError(
+                    f"feature {name!r} trigger must name at least one fixture"
+                )
+            if type(trigger.set_open) is not bool or not isinstance(
+                trigger.mode, TriggerMode
+            ):
+                raise EncounterError(
+                    f"feature {name!r} has a malformed trigger state or mode"
+                )
+            seen_dependencies: set[str] = set()
+            for condition in trigger.when:
+                if not isinstance(condition, tuple) or len(condition) != 2:
+                    raise EncounterError(
+                        f"feature {name!r} has a malformed trigger condition"
+                    )
+                dependency, expected = condition
+                if (
+                    not isinstance(dependency, str)
+                    or not dependency.strip()
+                    or type(expected) is not bool
+                    or dependency in seen_dependencies
+                ):
+                    raise EncounterError(
+                        f"feature {name!r} has a malformed trigger condition"
+                    )
+                seen_dependencies.add(dependency)
+            for dependency, _ in trigger.when:
+                if dependency not in catalogue:
+                    raise EncounterError(
+                        f"feature {name!r} trigger references {dependency!r}, which this "
+                        "map does not have"
+                    )
+            if trigger.set_open:
+                conditions = dict(trigger.when)
+                for required in feature.requires:
+                    if conditions.get(required) is not True:
+                        raise EncounterError(
+                            f"trigger opens feature {name!r} but does not require "
+                            f"{required!r} to be open"
+                        )
+            if (
+                trigger.mode is TriggerMode.MAINTAINED
+                and trigger.active(initially_open)
+                and feature.initially_open is not trigger.set_open
+            ):
+                raise EncounterError(
+                    f"feature {name!r} maintained trigger is true initially and sets "
+                    f"it {'open' if trigger.set_open else 'closed'}, but it starts "
+                    f"{'open' if feature.initially_open else 'closed'}"
+                )
+        ordered = _dependency_order(catalogue)
+        self.map_state = MapState(open_features=initially_open)
+        self._trigger_sequence = tuple(
+            name for name in ordered if catalogue[name].trigger is not None
+        )
+        for name in self._trigger_sequence:
+            trigger = catalogue[name].trigger
+            assert trigger is not None
+            self._trigger_active[name] = trigger.active(initially_open)
 
         placed: dict[tuple[int, Square], str] = {}
         for creature in combatants:
@@ -977,7 +1110,7 @@ class Encounter:
         below is omitted at its default, so the common case stays exactly as
         wide as it was and the keys that do appear are the ones a caller has to
         act on: what else moves with it, what it waits for, what is still
-        missing, and what operating it costs.
+        missing, what may operate it automatically, and what operating it costs.
         """
         assert self.battle_map is not None and self.map_state is not None
         summary: dict[str, Any] = {
@@ -1008,6 +1141,15 @@ class Encounter:
             }
         if feature.linked_to is not None:
             summary["linked_to"] = feature.linked_to
+        if feature.trigger is not None:
+            summary["trigger"] = {
+                "when": {
+                    dependency: "open" if expected else "closed"
+                    for dependency, expected in feature.trigger.when
+                },
+                "set": "open" if feature.trigger.set_open else "closed",
+                "mode": feature.trigger.mode.value,
+            }
         return summary
 
     def _level_summary(self, level: int) -> dict[str, Any]:
@@ -2731,6 +2873,19 @@ class Encounter:
         wants_open = (not was_open) if action.set_open is None else action.set_open
         linked = [feature.linked_to] if feature.linked_to is not None else []
         operated = [feature.name, *linked]
+        for operated_name in operated:
+            operated_feature = self.battle_map.features[operated_name]
+            trigger = operated_feature.trigger
+            if (
+                trigger is not None
+                and trigger.mode is TriggerMode.MAINTAINED
+                and trigger.active(self.map_state.open_features)
+                and wants_open is not trigger.set_open
+            ):
+                raise EncounterError(
+                    f"{feature.name} is held "
+                    f"{'open' if trigger.set_open else 'closed'} by its maintained trigger"
+                )
         # Prerequisites gate *opening* only. Held as an invariant they would also
         # bar closing the gate once a spike went back in, which is not the
         # fiction: a thing that opened can always be shut again.
@@ -2790,6 +2945,66 @@ class Encounter:
         self._emit("interact", actor.name,
                    detail=f"{'opens' if wants_open else 'closes'} {subjects}{note}",
                    feature=feature.name, open=wants_open, **extras)
+        self._drain_triggers(feature.name, operated)
+
+    def _drain_triggers(self, initiating_feature: str, changed: Sequence[str]) -> None:
+        """Apply automatic fixture transitions in deterministic dependency order."""
+        assert self.battle_map is not None and self.map_state is not None
+        revision = 1
+        changed_at = {name: revision for name in changed}
+        changed_by = {name: initiating_feature for name in changed}
+
+        for name in self._trigger_sequence:
+            feature = self.battle_map.features[name]
+            trigger = feature.trigger
+            assert trigger is not None
+            active = trigger.active(self.map_state.open_features)
+            was_active = self._trigger_active[name]
+            self._trigger_active[name] = active
+            is_open = name in self.map_state.open_features
+            should_apply = active and is_open is not trigger.set_open and (
+                trigger.mode is TriggerMode.MAINTAINED or not was_active
+            )
+            if not should_apply:
+                continue
+
+            changed_dependencies = [
+                dependency
+                for dependency, _ in trigger.when
+                if dependency in changed_at
+            ]
+            if changed_dependencies:
+                dependency = max(
+                    changed_dependencies,
+                    key=lambda item: (changed_at[item], item),
+                )
+                triggered_by = changed_by[dependency]
+            else:  # pragma: no cover - an active transition needs a changed predicate
+                triggered_by = initiating_feature
+
+            linked = [feature.linked_to] if feature.linked_to is not None else []
+            operated = [name, *linked]
+            if trigger.set_open:
+                self.map_state.open_features.update(operated)
+            else:
+                self.map_state.open_features.difference_update(operated)
+            subjects = name if not linked else f"{name} and {linked[0]}"
+            extras: dict[str, Any] = {"linked": linked} if linked else {}
+            self._emit(
+                "interact",
+                detail=(
+                    f"trigger {'opens' if trigger.set_open else 'closes'} {subjects}"
+                ),
+                automatic=True,
+                triggered_by=triggered_by,
+                feature=name,
+                open=trigger.set_open,
+                **extras,
+            )
+            revision += 1
+            for operated_name in operated:
+                changed_at[operated_name] = revision
+                changed_by[operated_name] = name
 
     def stand_cost(self, actor_name: str) -> int:
         """Feet of movement standing from Prone costs the named creature.

@@ -1132,7 +1132,7 @@ if (typeof FiveeRenderer === "undefined") {
       lines.push("light: " + feature.light.bright + " ft bright / "
         + feature.light.dim + " ft dim · " + feature.light.color);
     }
-    /* The six keys that make a feature a fixture. Without them the block
+    /* The seven keys that make a feature a fixture. Without them the block
        showed a `state` and stopped, so a loaded sluice read as a bare door and
        nothing on the page said what operating it would do. Each line appears
        only when the record carries the key, the way the document itself omits
@@ -1156,6 +1156,20 @@ if (typeof FiveeRenderer === "undefined") {
     }
     if (Array.isArray(feature.requires) && feature.requires.length) {
       lines.push("requires: " + feature.requires.join(", "));
+    }
+    if (feature.trigger && typeof feature.trigger === "object"
+      && !Array.isArray(feature.trigger)
+      && feature.trigger.when && typeof feature.trigger.when === "object"
+      && !Array.isArray(feature.trigger.when)
+      && typeof feature.trigger.set === "string"
+      && typeof feature.trigger.mode === "string") {
+      var predicates = Object.keys(feature.trigger.when).sort().map(function (id) {
+        return id + "=" + feature.trigger.when[id];
+      });
+      if (predicates.length) {
+        lines.push("trigger: " + feature.trigger.mode + " → " + feature.trigger.set
+          + " when " + predicates.join(" AND "));
+      }
     }
     /* Carried and false is not the same as absent: the document only writes
        this key when it is true, so a `false` came from a hand and is worth
@@ -1723,7 +1737,7 @@ if (typeof FiveeRenderer === "undefined") {
 
   /* A fixture is any feature carrying a `state`: that is the document's own
      test for what a fight can operate — see map_document.py, where the same
-     one decides whether the six fixture keys are allowed. A kind check here
+     one decides whether the seven fixture keys are allowed. A kind check here
      would preview doors and miss every lever and sluice gate. */
   function fixturesOnPlane() {
     return (plane().features || []).filter(function (f) {
@@ -2151,6 +2165,17 @@ if (typeof FiveeRenderer === "undefined") {
         var other = featureById.get(id);
         if (other && !survives(other)) { blocked = { needs: id, by: f.id }; }
       });
+      var triggerWhen = f.trigger && typeof f.trigger === "object"
+        && !Array.isArray(f.trigger) && f.trigger.when
+        && typeof f.trigger.when === "object" && !Array.isArray(f.trigger.when)
+        ? f.trigger.when : {};
+      Object.keys(triggerWhen).forEach(function (id) {
+        if (blocked) { return; }
+        var observed = featureById.get(id);
+        if (observed && !survives(observed)) {
+          blocked = { observed: id, by: f.id };
+        }
+      });
       if (!blocked && f.linked_to) {
         var mate = featureById.get(f.linked_to);
         if (mate && !survives(mate)) { blocked = { linked: mate.id, by: f.id }; }
@@ -2160,8 +2185,11 @@ if (typeof FiveeRenderer === "undefined") {
       setStatus(blocked.linked
         ? "resizing would push linked door '" + blocked.linked
           + "' off the map while '" + blocked.by + "' survives; unlink or move the pair first"
-        : "resizing would push '" + blocked.needs + "' off the map, and '"
-          + blocked.by + "' requires it; move or remove it first", "error");
+        : blocked.observed
+          ? "resizing would push '" + blocked.observed + "' off the map, and '"
+            + blocked.by + "' has a trigger that observes it; move or remove it first"
+          : "resizing would push '" + blocked.needs + "' off the map, and '"
+            + blocked.by + "' requires it; move or remove it first", "error");
       return;
     }
     snapshot();

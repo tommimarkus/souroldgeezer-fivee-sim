@@ -37,10 +37,11 @@ The format, ``fivee-sim-map`` version 1:
   **Carrying ``state`` is what makes a feature a fixture the fight owns**, and
   not being a door: a spawn hint and a drawn stairway have none and stay
   document-level, while a spike, a lever and a sluice gate have one and cross
-  to the battle map. Six optional keys say what operating one does and costs —
+  to the battle map. Seven optional keys say what operating one does and costs —
   ``terrain`` and ``elevation`` for its own square, ``affects`` for the squares
   it reaches past it, ``requires`` for what must already stand open,
-  ``costs_action`` and ``check`` for what the attempt spends and rolls. All six
+  ``trigger`` for automatic state changes, and ``costs_action`` and ``check``
+  for what the attempt spends and rolls. All seven
   are omitted on write when absent, so the format version does not move and a
   file written before fixtures existed round-trips to the same bytes.
 
@@ -80,12 +81,14 @@ from .model.battlemap import (
     BattleMap,
     FeatureCheck,
     FeatureOverlay,
+    FeatureTrigger,
     HeightPair,
     LightLevel,
     LightSource,
     MapFeature,
     MapPlane,
     TerrainPair,
+    TriggerMode,
 )
 from .validation import Diagnostic, Reader, Severity
 
@@ -170,15 +173,19 @@ _FEATURE_KEYS = frozenset(
         "id", "kind", "at", "orientation", "hinge", "swing", "state",
         "linked_to", "team", "to_level", "sight_to_levels", "light",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
+        "trigger",
     }
 )
-#: The keys the six fixture keys add on top of a plain annotation. A feature
+#: The keys the seven fixture keys add on top of a plain annotation. A feature
 #: carrying any of them without a ``state`` is refused: a fixture nothing can
 #: operate would flip nothing, silently.
-_FIXTURE_KEYS = ("affects", "check", "costs_action", "elevation", "requires", "terrain")
+_FIXTURE_KEYS = (
+    "affects", "check", "costs_action", "elevation", "requires", "terrain", "trigger",
+)
 _OVERLAY_KEYS = frozenset({"cells", "terrain", "elevation"})
 _CHECK_KEYS = frozenset({"ability", "dc"})
 _LIGHT_KEYS = frozenset({"bright", "dim", "color"})
+_TRIGGER_KEYS = frozenset({"when", "set", "mode"})
 #: A fixture's two states, and so the two keys of every pair in the format.
 _PAIR_STATES = frozenset({"closed", "open"})
 #: The same two, in the order they are read and written — closed first, because
@@ -287,11 +294,12 @@ class MapFeatureRecord:
     on. A feature without it is an ordinary fixture that goes nowhere.
 
     ``state`` is what makes a feature something the fight can *operate*, and the
-    six keys after it are what operating it does and costs: what its own square
+    seven keys after it are what operating it does and costs: what its own square
     becomes (``terrain``, ``elevation``), what else changes with it
     (``affects``), what must already stand open (``requires``), and what the
-    attempt spends and rolls (``costs_action``, ``check``). All six are optional
-    and all six are omitted on write, so a file that predates them is unchanged
+    attempt spends and rolls (``costs_action``, ``check``), and what may operate
+    it automatically (``trigger``). All seven are optional and omitted on write,
+    so a file that predates them is unchanged
     by a round trip.
     """
 
@@ -311,6 +319,7 @@ class MapFeatureRecord:
     elevation: HeightPair | None = None
     affects: tuple[MapOverlayRecord, ...] = ()
     requires: tuple[str, ...] = ()
+    trigger: FeatureTrigger | None = None
     costs_action: bool = False
     check: FeatureCheck | None = None
 
@@ -777,6 +786,62 @@ def _feature_check(
     return FeatureCheck(ability=ability, dc=dc)
 
 
+def _feature_trigger(
+    raw: Any, reader: Reader, diagnostics: list[Diagnostic], source: str, *, name: str
+) -> FeatureTrigger | None:
+    """Parse one target-local fixture-state predicate."""
+    if not isinstance(raw, Mapping):
+        reader.fail("trigger", "trigger must be an object with when, set, and mode")
+        return None
+    sub = Reader(raw, diagnostics, source=source, section="map", name=f"{name}.trigger")
+    sub.unknown_keys(_TRIGGER_KEYS)
+
+    conditions: list[tuple[str, bool]] = []
+    when = raw.get("when")
+    if when is None:
+        sub.fail("when", "when is required")
+    elif not isinstance(when, Mapping):
+        sub.fail("when", "when must be an object mapping fixture ids to open or closed")
+    elif not when:
+        sub.fail("when", "when must name at least one fixture")
+    else:
+        for fixture, state in sorted(when.items(), key=lambda item: str(item[0])):
+            if not isinstance(fixture, str) or not fixture.strip():
+                sub.fail("when", f"fixture ids must be non-empty text, got {fixture!r}")
+                continue
+            if state not in _DOOR_STATES:
+                sub.fail(
+                    "when",
+                    f"state for {fixture!r} must be one of: open, closed; got {state!r}",
+                )
+                continue
+            conditions.append((fixture, state == "open"))
+
+    raw_set = raw.get("set")
+    if raw_set is None:
+        sub.fail("set", "set is required")
+    elif raw_set not in _DOOR_STATES:
+        sub.fail("set", f"set must be one of: open, closed; got {raw_set!r}")
+
+    raw_mode = raw.get("mode")
+    if raw_mode is None:
+        sub.fail("mode", "mode is required")
+    elif raw_mode not in {mode.value for mode in TriggerMode}:
+        sub.fail(
+            "mode", f"mode must be one of: edge, maintained; got {raw_mode!r}"
+        )
+
+    if not sub.ok or raw_set not in _DOOR_STATES or raw_mode not in {
+        mode.value for mode in TriggerMode
+    }:
+        return None
+    return FeatureTrigger(
+        when=tuple(conditions),
+        set_open=raw_set == "open",
+        mode=TriggerMode(raw_mode),
+    )
+
+
 def _overlay_cells(raw: Any, reader: Reader, grid: MapGrid | None) -> tuple[Square, ...] | None:
     """One overlay's squares: at least one, on the grid, sorted row then column."""
     if raw is None:
@@ -1089,6 +1154,11 @@ def _parse_features(
                 name=label, terrain=terrain,
             )
         requires = tuple(sub.string_list("requires"))
+        trigger: FeatureTrigger | None = None
+        if "trigger" in entry:
+            trigger = _feature_trigger(
+                entry["trigger"], sub, diagnostics, source, name=label
+            )
         costs_action = sub.boolean("costs_action")
         check: FeatureCheck | None = None
         if entry.get("check") is not None:
@@ -1100,6 +1170,7 @@ def _parse_features(
                 ("elevation", own_height),
                 ("affects", overlays),
                 ("check", check),
+                ("trigger", trigger),
             )
         )
 
@@ -1111,7 +1182,8 @@ def _parse_features(
                     linked_to=linked_to, team=team, to_level=to_level,
                     sight_to_levels=sight_to_levels, light=light,
                     terrain=own_terrain, elevation=own_height, affects=overlays or (),
-                    requires=requires, costs_action=costs_action, check=check,
+                    requires=requires, trigger=trigger,
+                    costs_action=costs_action, check=check,
                 )
             )
     return tuple(features)
@@ -1386,6 +1458,70 @@ def _check_requires(document_levels: Mapping[int, MapLevel], reader: Reader) -> 
         )
 
 
+def _check_triggers(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
+    """Validate trigger references, ordering, and authored maintained state."""
+    catalogue = {
+        feature.id: feature
+        for level in sorted(document_levels)
+        for feature in document_levels[level].features
+    }
+    declared = ", ".join(sorted(catalogue)) or "none"
+    edges: dict[str, tuple[str, ...]] = {}
+    for feature_id in sorted(catalogue):
+        feature = catalogue[feature_id]
+        trigger = feature.trigger
+        if trigger is None:
+            continue
+        satisfiable: list[str] = []
+        condition = dict(trigger.when)
+        for dependency, _ in trigger.when:
+            referenced = catalogue.get(dependency)
+            if referenced is None:
+                reader.fail(
+                    "features",
+                    f"feature '{feature.id}' trigger references {dependency!r}, but "
+                    f"there is no feature {dependency!r} in this map. Declared: {declared}",
+                )
+            elif referenced.state is None:
+                reader.fail(
+                    "features",
+                    f"feature '{feature.id}' trigger references {dependency!r}, which "
+                    "carries no state and so can never satisfy a fixture-state predicate",
+                )
+            else:
+                satisfiable.append(dependency)
+        if satisfiable:
+            edges[feature.id] = tuple(sorted(set(satisfiable)))
+        if trigger.set_open:
+            for required in feature.requires:
+                if condition.get(required) is not True:
+                    reader.fail(
+                        "features",
+                        f"trigger opens feature '{feature.id}' but does not require "
+                        f"{required!r} to be open; automatic opening may not bypass "
+                        "the fixture's physical prerequisites",
+                    )
+        if trigger.mode is TriggerMode.MAINTAINED and len(satisfiable) == len(trigger.when):
+            initially_active = all(
+                (catalogue[name].state == "open") is expected
+                for name, expected in trigger.when
+            )
+            starts_open = feature.state == "open"
+            if initially_active and starts_open is not trigger.set_open:
+                reader.fail(
+                    "features",
+                    f"feature '{feature.id}' maintained trigger is true initially and "
+                    f"sets it {'open' if trigger.set_open else 'closed'}, but its state is "
+                    f"{'open' if starts_open else 'closed'}",
+                )
+    for path in _requirement_cycles(edges):
+        reader.fail(
+            "features",
+            f"feature '{path[0]}' is in a trigger cycle: {' -> '.join(path)}; "
+            "automatic fixture transitions must be acyclic",
+        )
+
+
 def _check_linked_doors(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
     """A linked door is one reciprocal, adjacent, interaction-compatible pair."""
     catalogue = {
@@ -1440,6 +1576,8 @@ def _check_linked_doors(document_levels: Mapping[int, MapLevel], reader: Reader)
             )
         if feature.state != partner.state:
             reader.fail("features", "linked doors must have the same state")
+        if feature.trigger != partner.trigger:
+            reader.fail("features", "linked doors must have identical triggers")
         contract = (feature.requires, feature.costs_action, feature.check)
         partner_contract = (partner.requires, partner.costs_action, partner.check)
         if contract != partner_contract:
@@ -1548,6 +1686,7 @@ def _parse(
     _check_connectors(levels, reader)
     _check_claims(levels, reader)
     _check_requires(levels, reader)
+    _check_triggers(levels, reader)
     _check_linked_doors(levels, reader)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
@@ -1638,6 +1777,15 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
         entry["affects"] = [_overlay_payload(overlay) for overlay in feature.affects]
     if feature.requires:
         entry["requires"] = list(feature.requires)
+    if feature.trigger is not None:
+        entry["trigger"] = {
+            "when": {
+                name: "open" if expected else "closed"
+                for name, expected in feature.trigger.when
+            },
+            "set": "open" if feature.trigger.set_open else "closed",
+            "mode": feature.trigger.mode.value,
+        }
     if feature.costs_action:
         entry["costs_action"] = True
     if feature.check is not None:
@@ -1977,6 +2125,7 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
                 for overlay in feature.affects
             ),
             requires=feature.requires,
+            trigger=feature.trigger,
             costs_action=feature.costs_action,
             check=feature.check,
             linked_to=feature.linked_to,

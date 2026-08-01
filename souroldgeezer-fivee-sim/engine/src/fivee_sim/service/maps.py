@@ -346,7 +346,7 @@ _OP_KEYS = {
     for name, keys in _OP_KEYS.items()
 }
 #: What ``add_feature`` and ``set_feature`` accept — the document's own feature
-#: keys, entire. The six after ``to_level`` are the fixture keys: what operating
+#: keys, entire. The seven after ``to_level`` are the fixture keys: what operating
 #: a feature changes, needs, costs and rolls. They ride through to
 #: :func:`apply_edits`' final ``parse_document``, which is the one arbiter of
 #: them, exactly as ``palette`` entries do; only an overlay's *shape* is checked
@@ -361,12 +361,13 @@ _FEATURE_FIELDS = frozenset(
         "id", "kind", "at", "orientation", "hinge", "swing", "state",
         "linked_to", "team", "to_level",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
+        "trigger",
     }
 )
 #: The keys that need no shaping at all: copied across as written.
 _PASSED_THROUGH = (
     "hinge", "swing", "linked_to", "to_level", "terrain", "elevation",
-    "requires", "costs_action", "check",
+    "requires", "trigger", "costs_action", "check",
 )
 #: Said on every ``set_feature`` refusal a merge-shaped call trips, because the
 #: difference is otherwise silent: a caller who believes the op merges writes
@@ -660,8 +661,9 @@ def _op_set_feature(state: _EditState, op: Mapping[str, Any], terrain: TerrainTa
     than patching one, and replacement is what makes this one's result a
     function of the call alone: a merge would make it depend on state the call
     never names, and — with no delete convention anywhere in the feature keys —
-    would leave a fixture's ``affects``, ``requires`` or ``check`` impossible to
-    clear at all. The cost is that a key left out is a key removed, which is why
+    would leave a fixture's ``affects``, ``requires``, ``trigger``, or ``check``
+    impossible to clear at all. The cost is that a key left out is a key removed,
+    which is why
     :data:`_REPLACES_WHOLE` rides on every refusal a merge-shaped call trips.
 
     Position and identity are what it preserves: the record goes back at the
@@ -781,6 +783,17 @@ def _refuse_orphaned_prerequisites(
                     f"resizing would push {str(wanted)!r} off the map, and "
                     f"{str(entry['id'])!r} requires it; move or remove it first"
                 )
+        trigger = entry.get("trigger")
+        when = trigger.get("when") if isinstance(trigger, Mapping) else None
+        if isinstance(when, Mapping):
+            for wanted in when:
+                other = by_id.get(str(wanted))
+                if other is not None and not survives(other):
+                    _refuse(
+                        f"resizing would push {str(wanted)!r} off the map, and "
+                        f"{str(entry['id'])!r}'s trigger observes it; move or remove "
+                        "the observing fixture first"
+                    )
 
 
 def _op_resize(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:

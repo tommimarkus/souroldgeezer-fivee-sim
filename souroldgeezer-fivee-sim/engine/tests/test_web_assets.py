@@ -672,9 +672,9 @@ class TestEditorFixturePreview:
             start = source.index(handler)
             assert "renderFixtureList();" in source[start : source.index("\n  }", start)], handler
 
-    def test_the_inspector_shows_the_six_keys_that_make_a_fixture(self) -> None:
-        # Five fields left a loaded sluice indistinguishable from a bare door:
-        # the block showed a `state` and stopped, so nothing on the page said
+    def test_the_inspector_shows_the_seven_keys_that_make_a_fixture(self) -> None:
+        # A state alone left a loaded sluice indistinguishable from a bare door:
+        # the block stopped there, so nothing on the page said
         # what operating it would do. Anchored on the rendered label of each
         # line, not the bare word — every one of these names also appears in
         # the resize code and in the prose around it.
@@ -689,6 +689,7 @@ class TestEditorFixturePreview:
             '"elevation: "',
             '"affects: "',
             '"requires: "',
+            '"trigger: "',
             '"costs_action: "',
             '"check: "',
         ):

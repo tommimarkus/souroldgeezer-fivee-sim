@@ -18,7 +18,10 @@ from typing import Any
 import pytest
 
 from fivee_sim import __version__
+from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.map_document import parse_document
 from fivee_sim.mcp_server import server as api
+from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
 from fivee_sim.service import replay as replay_service
 
 from .conftest import (
@@ -164,6 +167,42 @@ class TestBundleV2:
         assert bundle["map"]["legend"][bundle["map"]["tiles"][0][0]] == "wall"
         assert bundle["map"]["legend"][bundle["map"]["tiles"][1][1]] == "normal"
         assert bundle["initial"]["map_open_features"] == ["door-east"]
+
+    def test_runtime_map_capture_keeps_trigger_definitions(self) -> None:
+        battle_map = BattleMap.flat(
+            name="trigger hall",
+            width=3,
+            height=1,
+            default_terrain="floor",
+            features={
+                "lever": MapFeature(
+                    name="lever", square=(0, 0), kind="lever",
+                    closed_terrain="floor", open_terrain="floor",
+                ),
+                "gate": MapFeature(
+                    name="gate", square=(2, 0), kind="gate",
+                    closed_terrain="floor", open_terrain="floor",
+                    trigger=FeatureTrigger(
+                        when=(("lever", True),), set_open=True,
+                        mode=TriggerMode.MAINTAINED,
+                    ),
+                ),
+            },
+            provenance=FIXTURE,
+        )
+
+        payload = replay_service.battle_map_payload(battle_map)
+
+        gate = next(feature for feature in payload["features"] if feature["id"] == "gate")
+        assert gate["trigger"] == {
+            "when": {"lever": "open"},
+            "set": "open",
+            "mode": "maintained",
+        }
+        parsed = parse_document(payload, source="replay", terrain=TERRAIN)
+        assert next(feature for feature in parsed.features if feature.id == "gate").trigger == (
+            battle_map.features["gate"].trigger
+        )
 
     def test_v2_records_normalized_inputs_actions_checkpoints_and_integrity(self) -> None:
         encounter_id = mapless_fight(seed=73)

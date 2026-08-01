@@ -752,7 +752,7 @@ class TestFixtureEdits:
         )
 
     def test_every_fixture_key_rides_through_to_the_document(self) -> None:
-        # The service checks the shape of an overlay and nothing else: the six
+        # The service checks the shape of an overlay and nothing else: the seven
         # keys are the document's to arbitrate, which is why one edit can add a
         # fixture the format understands without the service knowing the rules.
         feature: dict[str, Any] = {
@@ -764,6 +764,11 @@ class TestFixtureEdits:
                  "terrain": {"closed": "floor", "open": "water"}},
             ],
             "requires": ["door-1"],
+            "trigger": {
+                "when": {"door-1": "open"},
+                "set": "open",
+                "mode": "maintained",
+            },
             "costs_action": True,
             "check": {"ability": "strength", "dc": 15},
         }
@@ -834,6 +839,26 @@ class TestFixtureEdits:
             json.loads(serialize(before))["features"]
         )
 
+    def test_an_unrelated_edit_keeps_a_trigger_definition(self) -> None:
+        raw = sluice_payload()
+        raw["features"] += [
+            {"id": "lever", "kind": "lever", "at": [1, 1], "state": "closed"}
+        ]
+        raw["features"][0]["trigger"] = {
+            "when": {"lever": "open"},
+            "set": "open",
+            "mode": "edge",
+        }
+        before = parse_document(raw, source="triggered", terrain=TERRAIN)
+
+        after = edited(before, {"op": "paint", "cells": [[1, 4]], "terrain": "difficult"})
+
+        assert json.loads(serialize(after))["features"][0]["trigger"] == {
+            "when": {"lever": "open"},
+            "set": "open",
+            "mode": "edge",
+        }
+
     def test_a_resize_moves_overlay_cells_with_the_anchor(self) -> None:
         # A layer nested inside a record is still a layer: only 'at' used to
         # move, so a fixture's overlay cells stayed where they were and
@@ -881,6 +906,21 @@ class TestFixtureEdits:
                 spiked(),
                 {"op": "resize", "width": 5, "height": 6, "anchor": "top-right"},
             )
+
+    def test_a_resize_refuses_to_drop_a_fixture_a_trigger_observes(self) -> None:
+        raw = sluice_payload()
+        raw["features"] += [
+            {"id": "lever", "kind": "lever", "at": [5, 4], "state": "closed"}
+        ]
+        raw["features"][0]["trigger"] = {
+            "when": {"lever": "open"},
+            "set": "open",
+            "mode": "edge",
+        }
+        triggered = parse_document(raw, source="triggered", terrain=TERRAIN)
+
+        with pytest.raises(MapEditError, match="trigger observes it"):
+            edited(triggered, {"op": "resize", "width": 5, "height": 6})
 
     def test_a_prerequisite_is_protected_across_a_storey(self) -> None:
         # A prerequisite is not a reach: which floor the thing a fixture waits
@@ -1031,6 +1071,11 @@ class TestSetFeature:
                  "terrain": {"closed": "floor", "open": "water"}},
             ],
             "requires": ["south spike"],
+            "trigger": {
+                "when": {"south spike": "open"},
+                "set": "open",
+                "mode": "maintained",
+            },
             "costs_action": True,
             "check": {"ability": "strength", "dc": 15},
         }

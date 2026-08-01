@@ -104,9 +104,10 @@ one, and a loaded map may hold levers, spikes, and sluice gates as well. A
 fixture can govern squares beyond its own, so working it changes terrain *and*
 ground height immediately, under whoever is standing there. Read
 `state["map"]["features"]` before promising anything — a fixture reports
-`affects`, `requires`, `blocked_by`, `costs_action`, and `check` whenever it
-carries them, so you can tell the party what a thing will cost before they spend
-a turn on it. Four things to state out loud rather than let a player assume:
+`affects`, `requires`, `blocked_by`, `trigger`, `costs_action`, and `check`
+whenever it carries them, so you can tell the party what a thing will cost
+before they spend a turn on it. Five things to state out loud rather than let a
+player assume:
 
 - **`costs_action` spends the action**, not the free interaction, so a chain of
   three such fixtures is three actions — three turns unless the party splits
@@ -117,6 +118,13 @@ a turn on it. Four things to state out loud rather than let a player assume:
   Help.
 - **`blocked_by` names what is still shut.** Prerequisites gate *opening* only;
   closing is never blocked.
+- **A `trigger` is automatic fixture logic.** `when` is an AND predicate over
+  fixture states. `edge` fires on false→true and rearms after false;
+  `maintained` holds its configured state while true and refuses a contrary
+  manual interaction before spending anything. When maintained becomes false,
+  it leaves the fixture where it is. Automatic `interact` events have an empty
+  actor and carry `automatic: true` plus `triggered_by`; narrate the mechanism,
+  not an invisible creature operating it.
 - **Nobody is moved by a fixture.** A creature standing where the ground turns
   impassable stays and may walk out — entry cost governs entering a square, not
   remaining in one, and there is no forced movement to shove it.

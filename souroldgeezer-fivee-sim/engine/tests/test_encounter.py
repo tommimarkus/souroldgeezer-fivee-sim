@@ -35,10 +35,12 @@ from fivee_sim.model.battlemap import (
     BattleMap,
     FeatureCheck,
     FeatureOverlay,
+    FeatureTrigger,
     HeightPair,
     MapFeature,
     MapPlane,
     TerrainPair,
+    TriggerMode,
 )
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
@@ -2529,6 +2531,65 @@ def sluice(
     )
 
 
+def fixture_trigger(
+    when: dict[str, bool], *, set_open: bool = True, mode: TriggerMode = TriggerMode.EDGE
+) -> FeatureTrigger:
+    return FeatureTrigger(
+        when=tuple(sorted(when.items())), set_open=set_open, mode=mode
+    )
+
+
+def trigger_fixture(
+    name: str,
+    square: Square,
+    *,
+    initially_open: bool = False,
+    trigger: FeatureTrigger | None = None,
+    requires: tuple[str, ...] = (),
+    costs_action: bool = False,
+    check: FeatureCheck | None = None,
+    linked_to: str | None = None,
+    orientation: str | None = None,
+    elevation: HeightPair | None = None,
+    affects: tuple[FeatureOverlay, ...] = (),
+) -> MapFeature:
+    return MapFeature(
+        name=name,
+        square=square,
+        kind="door" if linked_to is not None else "fixture",
+        orientation=orientation,
+        closed_terrain="floor",
+        open_terrain="floor",
+        initially_open=initially_open,
+        elevation=elevation,
+        affects=affects,
+        requires=requires,
+        trigger=trigger,
+        costs_action=costs_action,
+        check=check,
+        linked_to=linked_to,
+    )
+
+
+def trigger_fight(*features: MapFeature) -> tuple[Encounter, Random]:
+    rng = Random(37)
+    encounter = Encounter(
+        [
+            fighter(position=square_center((0, 1))),
+            fighter("Brute", team="foes", position=square_center((7, 1))),
+        ],
+        rng,
+        battle_map=strip(8, 3, features=features),
+    )
+    advance_to(encounter, "Thora", rng)
+    return encounter, rng
+
+
+def next_turn_for(encounter: Encounter, actor: str, rng: Random) -> None:
+    encounter.advance(rng)
+    advance_to(encounter, actor, rng)
+
+
 class TestMapFixtures:
     """Operable fixtures that move the ground under a running fight."""
 
@@ -3076,6 +3137,315 @@ class TestMapFixtures:
         assert elevation["flat"] is False
         assert self.elevation_of(encounter, "Wader") == elevation["min"]
 
+
+class TestFixtureTriggers:
+    def test_a_true_edge_predicate_at_creation_does_not_fire(self) -> None:
+        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        gate = trigger_fixture(
+            "gate",
+            (1, 2),
+            trigger=fixture_trigger({"lever": True}),
+        )
+
+        encounter, _ = trigger_fight(lever, gate)
+
+        assert encounter.map_state is not None
+        assert encounter.map_state.open_features == {"lever"}
+        assert not any(event.kind == "interact" for event in encounter.log)
+
+    def test_an_edge_fires_rearms_only_while_false_and_fires_again(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        gate = trigger_fixture(
+            "gate", (1, 2), trigger=fixture_trigger({"lever": True})
+        )
+        encounter, rng = trigger_fight(lever, gate)
+
+        first = encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+        assert [event.data["feature"] for event in first] == ["lever", "gate"]
+        assert first[1].actor == ""
+        assert first[1].data == {
+            "automatic": True,
+            "triggered_by": "lever",
+            "feature": "gate",
+            "open": True,
+        }
+
+        next_turn_for(encounter, "Thora", rng)
+        while_active = encounter.act(
+            Action(ActionKind.INTERACT, feature="gate", set_open=False), rng
+        )
+        assert [event.data["feature"] for event in while_active] == ["gate"]
+        assert encounter.map_state is not None
+        assert "gate" not in encounter.map_state.open_features
+
+        next_turn_for(encounter, "Thora", rng)
+        closing_lever = encounter.act(
+            Action(ActionKind.INTERACT, feature="lever", set_open=False), rng
+        )
+        assert len(closing_lever) == 1
+
+        next_turn_for(encounter, "Thora", rng)
+        second = encounter.act(
+            Action(ActionKind.INTERACT, feature="lever", set_open=True), rng
+        )
+        assert [event.data["feature"] for event in second] == ["lever", "gate"]
+
+    def test_a_maintained_trigger_can_close_and_hold_a_fixture(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        gate = trigger_fixture(
+            "gate",
+            (1, 2),
+            initially_open=True,
+            trigger=fixture_trigger(
+                {"lever": True}, set_open=False, mode=TriggerMode.MAINTAINED
+            ),
+        )
+        encounter, rng = trigger_fight(lever, gate)
+
+        events = encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+        assert [event.data["open"] for event in events] == [True, False]
+
+        next_turn_for(encounter, "Thora", rng)
+        with pytest.raises(EncounterError, match="held closed by its maintained trigger"):
+            encounter.act(
+                Action(ActionKind.INTERACT, feature="gate", set_open=True), rng
+            )
+
+    def test_maintained_refuses_a_contrary_interaction_before_spending_or_rolling(
+        self,
+    ) -> None:
+        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        gate = trigger_fixture(
+            "gate",
+            (1, 2),
+            initially_open=True,
+            trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
+            costs_action=True,
+            check=SPIKE_CHECK,
+        )
+        encounter, _ = trigger_fight(lever, gate)
+
+        with pytest.raises(EncounterError, match="held open by its maintained trigger"):
+            encounter.act(
+                Action(ActionKind.INTERACT, feature="gate", set_open=False),
+                FixedRandom(1),
+            )
+
+        turn = encounter.state()["turn_state"]
+        assert turn["action_used"] is False
+        assert turn["interaction_used"] is False
+        assert not any(event.kind == "interact" for event in encounter.log)
+
+    def test_a_maintained_trigger_does_not_reverse_when_its_predicate_becomes_false(
+        self,
+    ) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        gate = trigger_fixture(
+            "gate",
+            (1, 2),
+            trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
+        )
+        encounter, rng = trigger_fight(lever, gate)
+        encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+
+        next_turn_for(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(ActionKind.INTERACT, feature="lever", set_open=False), rng
+        )
+
+        assert len(events) == 1
+        assert encounter.map_state is not None
+        assert "gate" in encounter.map_state.open_features
+        next_turn_for(encounter, "Thora", rng)
+        encounter.act(Action(ActionKind.INTERACT, feature="gate", set_open=False), rng)
+        assert "gate" not in encounter.map_state.open_features
+
+    def test_a_failed_direct_check_causes_no_trigger_transition(self) -> None:
+        lever = trigger_fixture(
+            "lever", (1, 1), costs_action=True, check=SPIKE_CHECK
+        )
+        gate = trigger_fixture(
+            "gate",
+            (5, 1),
+            requires=("lever",),
+            trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
+        )
+        encounter, _ = trigger_fight(lever, gate)
+
+        events = encounter.act(
+            Action(ActionKind.INTERACT, feature="lever"), FixedRandom(1)
+        )
+
+        assert len(events) == 1
+        assert events[0].data["success"] is False
+        assert encounter.map_state is not None
+        assert encounter.map_state.open_features == set()
+
+    def test_an_automatic_transition_bypasses_target_reach_cost_and_check(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        gate = trigger_fixture(
+            "gate",
+            (5, 1),
+            requires=("lever",),
+            trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
+            costs_action=True,
+            check=SPIKE_CHECK,
+            affects=(
+                FeatureOverlay(
+                    squares=((6, 1),),
+                    terrain=TerrainPair(closed="floor", open="water"),
+                    elevation=HeightPair(closed=0, open=-5),
+                ),
+            ),
+        )
+        encounter, rng = trigger_fight(lever, gate)
+
+        events = encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+
+        assert events[-1].data == {
+            "automatic": True,
+            "triggered_by": "lever",
+            "feature": "gate",
+            "open": True,
+        }
+        turn = encounter.state()["turn_state"]
+        assert turn["interaction_used"] is True
+        assert turn["action_used"] is False
+        route = encounter.route("Brute", (6, 1))
+        assert route is not None and route.cost_feet == 10
+        assert encounter.state()["map"]["elevation"]["min"] == -5
+
+    def test_cascades_use_dependency_order_with_lexical_tie_breaking(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        zeta = trigger_fixture(
+            "zeta", (4, 1), trigger=fixture_trigger({"lever": True})
+        )
+        alpha = trigger_fixture(
+            "alpha", (3, 1), trigger=fixture_trigger({"lever": True})
+        )
+        final = trigger_fixture(
+            "final",
+            (5, 1),
+            trigger=fixture_trigger({"alpha": True, "zeta": True}),
+        )
+        encounter, rng = trigger_fight(zeta, final, lever, alpha)
+
+        events = encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+
+        assert [event.data["feature"] for event in events] == [
+            "lever", "alpha", "zeta", "final",
+        ]
+        assert [event.data["triggered_by"] for event in events[1:]] == [
+            "lever", "lever", "zeta",
+        ]
+
+    def test_one_automatic_event_operates_both_linked_leaves(self) -> None:
+        trigger = fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED)
+        lever = trigger_fixture("lever", (1, 1))
+        left = trigger_fixture(
+            "left door", (4, 1), trigger=trigger, linked_to="right door",
+            orientation="horizontal",
+        )
+        right = trigger_fixture(
+            "right door", (5, 1), trigger=trigger, linked_to="left door",
+            orientation="horizontal",
+        )
+        encounter, rng = trigger_fight(right, lever, left)
+
+        events = encounter.act(Action(ActionKind.INTERACT, feature="lever"), rng)
+
+        assert len(events) == 2
+        assert events[1].data == {
+            "automatic": True,
+            "triggered_by": "lever",
+            "feature": "left door",
+            "open": True,
+            "linked": ["right door"],
+        }
+        assert encounter.map_state is not None
+        assert encounter.map_state.open_features == {"lever", "left door", "right door"}
+
+    def test_encounter_state_exposes_the_authored_trigger(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        gate = trigger_fixture(
+            "gate",
+            (1, 2),
+            trigger=fixture_trigger(
+                {"lever": True}, set_open=False, mode=TriggerMode.MAINTAINED
+            ),
+        )
+        encounter, _ = trigger_fight(lever, gate)
+
+        assert encounter.state()["map"]["features"]["gate"]["trigger"] == {
+            "when": {"lever": "open"},
+            "set": "closed",
+            "mode": "maintained",
+        }
+
+
+class TestRuntimeTriggerValidation:
+    def encounter_with(self, *features: MapFeature) -> Encounter:
+        return Encounter(
+            [fighter(), fighter("Brute", team="foes", position=square_center((7, 1)))],
+            Random(1),
+            battle_map=strip(8, 3, features=features),
+        )
+
+    def test_a_hand_built_trigger_reference_must_exist(self) -> None:
+        gate = trigger_fixture(
+            "gate", (1, 1), trigger=fixture_trigger({"ghost": True})
+        )
+        with pytest.raises(EncounterError, match="trigger references 'ghost'"):
+            self.encounter_with(gate)
+
+    def test_a_hand_built_trigger_predicate_must_not_be_empty(self) -> None:
+        gate = trigger_fixture("gate", (1, 1), trigger=fixture_trigger({}))
+        with pytest.raises(EncounterError, match="must name at least one fixture"):
+            self.encounter_with(gate)
+
+    def test_a_hand_built_trigger_graph_must_be_acyclic(self) -> None:
+        alpha = trigger_fixture(
+            "alpha", (1, 1), trigger=fixture_trigger({"beta": True})
+        )
+        beta = trigger_fixture(
+            "beta", (2, 1), trigger=fixture_trigger({"alpha": True})
+        )
+        with pytest.raises(EncounterError, match="trigger cycle: alpha -> beta -> alpha"):
+            self.encounter_with(alpha, beta)
+
+    def test_a_hand_built_opening_trigger_must_imply_requirements(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        latch = trigger_fixture("latch", (2, 1))
+        gate = trigger_fixture(
+            "gate", (3, 1), requires=("latch",),
+            trigger=fixture_trigger({"lever": True}),
+        )
+        with pytest.raises(EncounterError, match="does not require 'latch' to be open"):
+            self.encounter_with(lever, latch, gate)
+
+    def test_a_hand_built_maintained_initial_state_must_be_consistent(self) -> None:
+        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        gate = trigger_fixture(
+            "gate", (2, 1),
+            trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
+        )
+        with pytest.raises(EncounterError, match="true initially and sets it open"):
+            self.encounter_with(lever, gate)
+
+    def test_hand_built_linked_leaves_must_have_identical_triggers(self) -> None:
+        lever = trigger_fixture("lever", (1, 1))
+        left = trigger_fixture(
+            "left", (3, 1), trigger=fixture_trigger({"lever": True}),
+            linked_to="right", orientation="horizontal",
+        )
+        right = trigger_fixture(
+            "right", (4, 1), linked_to="left", orientation="horizontal",
+        )
+        with pytest.raises(EncounterError, match="identical triggers"):
+            self.encounter_with(lever, left, right)
+
+
+class TestMapFixtureTerrainSummaries:
     def test_a_claim_decides_a_square_the_plane_never_raised(self) -> None:
         """A claimed square never falls back, so it covers the plane too.
 
