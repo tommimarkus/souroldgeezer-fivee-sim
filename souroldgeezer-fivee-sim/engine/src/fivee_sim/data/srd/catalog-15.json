@@ -15,7 +15,7 @@
       "pages": [
         258
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,175 @@
       "pages": [
         258
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Aboleth",
+        "size": "Large",
+        "creature_type": "Aberration",
+        "alignment": "Lawful Evil",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 7,
+          "score": 17
+        },
+        "hit_points": {
+          "average": 150,
+          "hit_dice": "20d10 + 40"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 9,
+            "modifier": -1,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 18,
+            "modifier": 4,
+            "save": 8
+          },
+          "Wisdom": {
+            "score": 15,
+            "modifier": 2,
+            "save": 6
+          },
+          "Charisma": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          }
+        },
+        "skills": {
+          "History": 12,
+          "Perception": 10
+        },
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 20
+        },
+        "languages": [
+          "Deep Speech",
+          "telepathy 120 feet"
+        ],
+        "challenge_rating": "10",
+        "experience_points": {
+          "normal": 5900,
+          "in_lair": 7200
+        },
+        "proficiency_bonus": 4,
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          },
+          "eldritch_restoration": {
+            "trigger": "destroyed",
+            "new_body_after_days": "5d10",
+            "revives_with_all_hit_points": true,
+            "location": "Far Realm or GM-chosen location"
+          },
+          "legendary_resistance": {
+            "uses_per_day": 3,
+            "uses_per_day_in_lair": 4,
+            "failed_save_becomes_success": true
+          },
+          "mucus_cloud": {
+            "active_underwater": true,
+            "save": {
+              "ability": "Constitution",
+              "dc": 14
+            },
+            "target_timing": "each creature in 5-foot Emanation at end of aboleth turn",
+            "failure": {
+              "cursed": true,
+              "breathes": [
+                "air",
+                "water"
+              ],
+              "cannot_regain_hit_points_unless_underwater": true,
+              "outside_water_acid_damage_every_10_minutes": "1d12",
+              "moisture_prevents_interval_damage": true
+            }
+          },
+          "probing_telepathy": {
+            "trigger": "visible creature communicates telepathically",
+            "learns": "creature's greatest desires"
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "tentacle_attacks": 2,
+            "additional_action_choice": [
+              "Consume Memories",
+              "Dominate Mind if available"
+            ]
+          },
+          "tentacle": {
+            "type": "Melee",
+            "attack_bonus": 9,
+            "reach_feet": 15,
+            "damage": "2d6 + 5 Bludgeoning",
+            "maximum_grappled_target_size": "Large",
+            "escape_dc": 14,
+            "tentacles_available": 4
+          },
+          "consume_memories": {
+            "save": {
+              "ability": "Intelligence",
+              "dc": 16
+            },
+            "target": "one Charmed or Grappled creature within 30 feet",
+            "failure_damage": "3d6 Psychic",
+            "success_damage": "half",
+            "memory_gain": "Humanoid reduced to 0 Hit Points by action"
+          },
+          "dominate_mind": {
+            "uses_per_day": 2,
+            "save": {
+              "ability": "Wisdom",
+              "dc": 16
+            },
+            "target": "visible creature within 30 feet",
+            "failure_condition": "Charmed",
+            "ends_when": [
+              "aboleth dies",
+              "aboleth and target are on different planes",
+              "successful repeat save"
+            ],
+            "controlled_within_feet": 60,
+            "telepathy_distance": "unlimited",
+            "repeat_save_triggers": [
+              "takes damage",
+              "every 24 hours spent at least 1 mile away"
+            ]
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "lash": "one Tentacle attack",
+          "psychic_drain": {
+            "requires_charmed_or_grappled_creature": true,
+            "uses": "Consume Memories",
+            "heals": "1d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -47,8 +214,117 @@
         258,
         259
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Air Elemental",
+        "size": "Large",
+        "creature_type": "Elemental",
+        "alignment": "Neutral",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 5,
+          "score": 15
+        },
+        "hit_points": {
+          "average": 90,
+          "hit_dice": "12d10 + 24"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 90,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "resistances": [
+          "Bludgeoning",
+          "Lightning",
+          "Piercing",
+          "Slashing"
+        ],
+        "immunities": [
+          "Poison",
+          "Thunder",
+          "Exhaustion",
+          "Grappled",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned",
+          "Prone",
+          "Restrained",
+          "Unconscious"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "Primordial (Auran)"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "traits": {
+          "air_form": {
+            "can_enter_and_stop_in_creature_space": true,
+            "minimum_gap_inches": 1,
+            "extra_movement_for_narrow_space": false
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "thunderous_slam_attacks": 2
+          },
+          "thunderous_slam": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "reach_feet": 10,
+            "damage": "2d8 + 5 Thunder"
+          },
+          "whirlwind": {
+            "recharge": "4-6",
+            "save": {
+              "ability": "Strength",
+              "dc": 13
+            },
+            "target": "one Medium or smaller creature in elemental's space",
+            "failure_damage": "4d10 + 2 Thunder",
+            "failure_push_feet": 20,
+            "failure_condition": "Prone",
+            "success_damage": "half only"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -63,7 +339,7 @@
       "pages": [
         259
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -79,8 +355,87 @@
       "pages": [
         259
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Animated Armor",
+        "size": "Medium",
+        "creature_type": "Construct",
+        "alignment": "Unaligned",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 33,
+          "hit_dice": "6d8 + 6"
+        },
+        "speed": {
+          "walk_feet": 25
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Charisma": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          }
+        },
+        "immunities": [
+          "Poison",
+          "Psychic",
+          "Charmed",
+          "Deafened",
+          "Exhaustion",
+          "Frightened",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Passive_Perception": 6
+        },
+        "languages": [],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "slam_attacks": 2
+          },
+          "slam": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d6 + 2 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -95,8 +450,86 @@
       "pages": [
         259
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Animated Flying Sword",
+        "size": "Small",
+        "creature_type": "Construct",
+        "alignment": "Unaligned",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 14,
+          "hit_dice": "4d6"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "fly_feet": 50,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 4
+          },
+          "Constitution": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Charisma": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          }
+        },
+        "immunities": [
+          "Poison",
+          "Psychic",
+          "Charmed",
+          "Deafened",
+          "Exhaustion",
+          "Frightened",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Passive_Perception": 7
+        },
+        "languages": [],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "slash": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d8 + 2 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -111,8 +544,97 @@
       "pages": [
         259
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Animated Rug of Smothering",
+        "size": "Large",
+        "creature_type": "Construct",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 27,
+          "hit_dice": "5d10"
+        },
+        "speed": {
+          "walk_feet": 10
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Charisma": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          }
+        },
+        "immunities": [
+          "Poison",
+          "Psychic",
+          "Charmed",
+          "Deafened",
+          "Exhaustion",
+          "Frightened",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Passive_Perception": 6
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "smother": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "2d6 + 3 Bludgeoning",
+            "maximum_grappled_target_size": "Medium",
+            "grapple_instead_of_damage": true,
+            "escape_dc": 13,
+            "while_grappled_target_conditions": [
+              "Blinded",
+              "Restrained",
+              "suffocating"
+            ],
+            "start_turn_damage": "2d6 + 3 Bludgeoning",
+            "maximum_targets": 1,
+            "rug_cannot_repeat_action_while_grappling": true,
+            "rug_damage_taken_multiplier_while_grappling": 0.5,
+            "target_takes_same_damage_as_rug": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -127,8 +649,98 @@
       "pages": [
         259
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ankheg",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 45,
+          "hit_dice": "6d10 + 12"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "burrow_feet": 10
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Tremorsense_feet": 60,
+          "Passive_Perception": 11
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "tunneler": {
+            "solid_rock_burrow_speed_multiplier": 0.5,
+            "tunnel_diameter_feet": 10,
+            "leaves_tunnel": true
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "advantage_if_target_grappled_by_ankheg": true,
+            "reach_feet": 5,
+            "damage": [
+              "2d6 + 3 Slashing",
+              "1d6 Acid"
+            ],
+            "maximum_grappled_target_size": "Large",
+            "escape_dc": 13
+          },
+          "acid_spray": {
+            "recharge": "6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 12
+            },
+            "area": "30-foot-long, 5-foot-wide Line",
+            "failure_damage": "4d6 Acid",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -143,8 +755,129 @@
       "pages": [
         260
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Assassin",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 16,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 97,
+          "hit_dice": "15d8 + 30"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Dexterity": {
+            "score": 18,
+            "modifier": 4,
+            "save": 7
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 6
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "skills": {
+          "Acrobatics": 7,
+          "Perception": 6,
+          "Stealth": 10
+        },
+        "resistances": [
+          "Poison"
+        ],
+        "gear": [
+          "Light Crossbow",
+          "Shortsword",
+          "Studded Leather Armor"
+        ],
+        "senses": {
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "Common",
+          "Thieves' Cant"
+        ],
+        "challenge_rating": "8",
+        "experience_points": 3900,
+        "proficiency_bonus": 3,
+        "traits": {
+          "evasion": {
+            "dexterity_save_success_damage": "none",
+            "dexterity_save_failure_damage": "half",
+            "unavailable_while_incapacitated": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "attacks": 3,
+            "options": [
+              "Shortsword",
+              "Light Crossbow"
+            ],
+            "any_combination": true
+          },
+          "shortsword": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": [
+              "1d6 + 4 Piercing",
+              "5d6 Poison"
+            ],
+            "condition": "Poisoned until start of assassin's next turn"
+          },
+          "light_crossbow": {
+            "type": "Ranged",
+            "attack_bonus": 7,
+            "range_feet": [
+              80,
+              320
+            ],
+            "damage": [
+              "1d8 + 4 Piercing",
+              "6d6 Poison"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "cunning_action": [
+            "Dash",
+            "Disengage",
+            "Hide"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -159,7 +892,7 @@
       "pages": [
         260
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -175,8 +908,81 @@
       "pages": [
         260
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Awakened Shrub",
+        "size": "Small",
+        "creature_type": "Plant",
+        "alignment": "Neutral",
+        "armor_class": 9,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 10,
+          "hit_dice": "3d6"
+        },
+        "speed": {
+          "walk_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Constitution": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "vulnerabilities": [
+          "Fire"
+        ],
+        "resistances": [
+          "Piercing"
+        ],
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "actions": {
+          "rake": {
+            "type": "Melee",
+            "attack_bonus": 1,
+            "reach_feet": 5,
+            "damage": "1 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -191,8 +997,82 @@
       "pages": [
         260
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Awakened Tree",
+        "size": "Huge",
+        "creature_type": "Plant",
+        "alignment": "Neutral",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": -2,
+          "score": 8
+        },
+        "hit_points": {
+          "average": 59,
+          "hit_dice": "7d12 + 14"
+        },
+        "speed": {
+          "walk_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "vulnerabilities": [
+          "Fire"
+        ],
+        "resistances": [
+          "Bludgeoning",
+          "Piercing"
+        ],
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "slam": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 10,
+            "damage": "3d6 + 4 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -207,8 +1087,72 @@
       "pages": [
         260
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Axe Beak",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 19,
+          "hit_dice": "3d10 + 3"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "beak": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d8 + 2 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },

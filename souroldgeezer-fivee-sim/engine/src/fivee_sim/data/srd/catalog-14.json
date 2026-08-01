@@ -748,8 +748,19 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "damage_entry_forms": [
+          "fixed number",
+          "die expression in parentheses"
+        ],
+        "resolution": "choose one form",
+        "use_both": false,
+        "example": {
+          "fixed_damage": 4,
+          "die_expression": "1d4 + 2"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1684-14-19-actions"
     },
@@ -764,8 +775,12 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "location": "Actions section",
+        "used_as_part_of": "Attack action",
+        "purpose": "specifies multiple attacks and any additional usable abilities"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1684-14-19-actions"
     },
@@ -780,8 +795,33 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block_fields": [
+          "spells",
+          "spellcasting ability",
+          "spell save DC when needed",
+          "spell attack bonus when needed"
+        ],
+        "level_1_or_higher_default_casting_level": "lowest possible",
+        "upcasting_allowed_by_default": false,
+        "special_rules_and_target_restrictions_allowed": true,
+        "components": {
+          "trait_identifies_ignored_components": true,
+          "required_material_components_are_possessed": true,
+          "possible_required_types": [
+            "Verbal",
+            "Somatic",
+            "Material"
+          ]
+        },
+        "casting_time_at_least_1_minute": {
+          "single_action_cast_by_default": false,
+          "requires_magic_action_each_turn": true,
+          "requires_concentration": true,
+          "action_description_can_override": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1684-14-19-actions"
     },
@@ -796,8 +836,10 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "section_lists": "monster Bonus Action options"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -812,8 +854,13 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "section_lists": [
+          "monster Reaction options",
+          "their triggers"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -828,8 +875,18 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "timing": "immediately after another creature's turn ends",
+        "maximum_per_trigger": 1,
+        "unavailable_if": [
+          "Incapacitated",
+          "otherwise unable to take actions"
+        ],
+        "uses": "limited number specified in stat block",
+        "cost_per_action": 1,
+        "regains_all_uses": "start of each of monster's turns"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -844,8 +901,31 @@
       "pages": [
         257
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "notations": {
+          "X/Day": {
+            "uses": "X",
+            "recharge": "Long Rest"
+          },
+          "Recharge X-Y": {
+            "initial_uses": 1,
+            "recharge_roll": "1d6 at start of each turn",
+            "recharge_on": "result within X-Y",
+            "also_recharges_on": [
+              "Short Rest",
+              "Long Rest"
+            ]
+          },
+          "Recharge after a Short or Long Rest": {
+            "initial_uses": 1,
+            "recharge": [
+              "Short Rest",
+              "Long Rest"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     }
