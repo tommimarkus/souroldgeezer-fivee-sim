@@ -188,6 +188,77 @@ class TestEncounterFlow:
         assert names == {"Thora", "Goblin"}
         assert all("hp" in entry for entry in state["combatants"])
 
+    def test_inline_combatants_accept_the_modelled_movement_and_morale_fields(
+        self,
+    ) -> None:
+        scout = {
+            **HERO,
+            "name": "Scout",
+            "climb_speed": 20,
+            "swim_speed": 15,
+            "fly_speed": 40,
+            "terrain_cost_overrides": ["grain"],
+            "darkvision": 60,
+            "blindsight": 10,
+            "death_rule": "instant",
+            "bonus_actions": ["dash", "disengage"],
+            "surrender_when_last": True,
+            "arrival_round": 2,
+        }
+
+        created = api.encounter_create([scout, GOBLIN], seed=3)
+        state = next(
+            creature
+            for creature in created["state"]["combatants"]
+            if creature["name"] == "Scout"
+        )
+
+        assert state["speeds"] == {
+            "walk": 30,
+            "climb": 20,
+            "swim": 15,
+            "fly": 40,
+        }
+        assert state["senses"] == {"darkvision": 60, "blindsight": 10}
+        assert state["terrain_cost_overrides"] == ["grain"]
+        assert state["death_rule"] == "instant"
+        assert state["bonus_actions"] == ["dash", "disengage"]
+        assert state["arrival_round"] == 2
+        assert state["present"] is False
+
+    def test_public_action_tool_passes_bonus_action_and_movement_mode(self) -> None:
+        skirmisher = {
+            **HERO,
+            "name": "Skirmisher",
+            "fly_speed": 40,
+            "bonus_actions": ["dash"],
+        }
+        foe = {
+            **HERO,
+            "name": "Foe",
+            "team": "monsters",
+            "position": 5,
+            "bonus_actions": ["dash"],
+            "fly_speed": 40,
+        }
+        created = api.encounter_create([skirmisher, foe], seed=3)
+        encounter_id = str(created["encounter_id"])
+
+        acted = api.encounter_act(
+            encounter_id,
+            kind="dash",
+            movement_mode="fly",
+            as_bonus_action=True,
+        )
+
+        assert acted["events"][0]["data"] == {
+            "movement_left": 80,
+            "movement_mode": "fly",
+            "as_bonus_action": True,
+        }
+        assert acted["state"]["turn_state"]["action_used"] is False
+        assert acted["state"]["turn_state"]["bonus_action_used"] is True
+
     def test_an_unknown_encounter_id_lists_the_active_ones(self) -> None:
         api.encounter_create([HERO, GOBLIN], seed=1)
         with pytest.raises(api.ToolError, match="active:"):
@@ -223,6 +294,20 @@ class TestEncounterFlow:
 
         with pytest.raises(api.ToolError, match="Thora is not prone"):
             api.encounter_act(encounter_id, kind="stand")
+
+
+class TestScenarioTiming:
+    def test_route_response_window_is_available_through_the_tool_surface(self) -> None:
+        result = api.scenario_timing(
+            distance_feet=105,
+            speed_feet=30,
+            dash=True,
+            response_after_rounds=3,
+        )
+
+        assert result["traveller"]["travel_rounds"] == 2
+        assert result["lead_rounds"] == 1
+        assert result["can_intercept"] is True
 
 
 class TestPlanarPositions:

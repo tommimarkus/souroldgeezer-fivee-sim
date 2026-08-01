@@ -40,6 +40,8 @@ __all__ = [
     "FeatureOverlay",
     "FeatureTrigger",
     "HeightPair",
+    "LightLevel",
+    "LightSource",
     "MapFeature",
     "MapPlane",
     "MapState",
@@ -50,6 +52,22 @@ __all__ = [
 
 #: The level every fight starts on, and the only one a map without storeys has.
 GROUND_LEVEL = 0
+
+
+class LightLevel(StrEnum):
+    BRIGHT = "bright"
+    DIM = "dim"
+    DARKNESS = "darkness"
+
+
+@dataclass(frozen=True, slots=True)
+class LightSource:
+    """An authored point light, with radii measured from its square."""
+
+    square: Square
+    bright: int = 0
+    dim: int = 0
+    color: str = "#ffffff"
 
 
 @dataclass(frozen=True, slots=True)
@@ -215,6 +233,11 @@ class MapPlane:
     elevation: Mapping[Square, int] = field(default_factory=dict)
     features: Mapping[str, MapFeature] = field(default_factory=dict)
     connectors: Mapping[Square, int] = field(default_factory=dict)
+    #: Explicit openings from a square on this plane to visible levels. Floors
+    #: remain opaque everywhere else.
+    sight_links: Mapping[Square, frozenset[int]] = field(default_factory=dict)
+    ambient_light: LightLevel = LightLevel.BRIGHT
+    lights: tuple[LightSource, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

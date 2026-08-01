@@ -154,6 +154,20 @@ class TestEditorGroundControls:
     def test_the_editor_carries_the_level_switcher_exactly_once(self) -> None:
         assert read("editor.html").count('id="level-select"') == 1
 
+    def test_the_editor_carries_environment_authoring_controls_exactly_once(self) -> None:
+        source = read("editor.html")
+        for element_id in (
+            "ambient-light",
+            "feature-config",
+            "feature-sight-levels",
+            "feature-light-bright",
+            "feature-light-dim",
+            "feature-light-color",
+        ):
+            assert source.count(f'id="{element_id}"') == 1
+        assert source.count('<option value="opening">') == 1
+        assert source.count('<option value="light">') == 1
+
     def test_the_editor_lifecycle_carries_the_storeys(self) -> None:
         # The layer-left-unwired failure, checked the only way this file can:
         # every place that snapshots or replaces the document has to name

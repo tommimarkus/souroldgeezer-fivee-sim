@@ -83,14 +83,16 @@ Every section is optional, and record shapes match the bundled files.
 ### `creatures`
 
 Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
-`hit_dice`, `abilities`, `save_bonuses`, `attacks`, `attacks_per_action`,
+`climb_speed`, `swim_speed`, `fly_speed`, `terrain_cost_overrides`, `darkvision`,
+`blindsight`, `death_rule`, `hit_dice`, `abilities`, `save_bonuses`, `attacks`,
+`attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `items`, `conditions`, `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
 
-There is deliberately no `hp` or `position`. A creature starts a fight at full hit
-points, and position is per-instance — you set it when you add a combatant to an
-encounter, not in the stat block.
+There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
+placement, and reinforcement timing are per-instance — set them when adding a
+combatant to an encounter, not in its reusable stat block.
 
 Attacks carry their own bonus and damage expression rather than deriving them from
 ability scores and proficiency. That is how a stat block presents an attack, and it
@@ -102,7 +104,9 @@ separately, doubled on a critical hit, and defended (resistance, vulnerability,
 immunity) against its own type, the way a mephit's claw adds fire to its
 slashing. `advantage_bonus_damage` adds dice of the main damage type only when
 the attack roll actually resolved with Advantage, after every source has
-combined and cancelled — the goblin pattern. `on_hit_condition` names a
+combined and cancelled — the goblin pattern. Set
+`advantage_bonus_with_adjacent_ally` to also apply those dice when a capable ally
+stands within 5 feet of the target. `on_hit_condition` names a
 condition the hit imposes, and any loaded condition qualifies, including one
 your own pack defines. Give `on_hit_save_ability` and `on_hit_save_dc` together
 to let the target save first; leave both out and the condition is automatic on
@@ -112,6 +116,18 @@ something removes it), `"start_of_attacker_next_turn"`, or
 even if the attacker has died by then, and expiry never strips a condition
 something else is still imposing — a stat block that starts with it, or another
 effect still holding it.
+
+An attachment rider sets `on_hit_attach`, `attached_damage`,
+`attached_damage_type`, and optionally `detach_after_damage`. A hit fastens the
+attacker to the target; the damage repeats automatically at the start of the
+attacker's turns until the source detaches after taking at least the threshold.
+
+`bonus_actions` currently accepts `dash` and `disengage`; callers pass
+`as_bonus_action: true` when using that budget. `surrender_when_last` lets the
+batch policy yield when no capable ally remains. `redirect_attack` spends the
+target's reaction to exchange places with an adjacent Small or Medium ally and
+make that ally the target instead. `death_rule` is `instant` for combatants that
+die at 0 HP or `death_saves` for characters; pack creatures default to `instant`.
 
 Two printed traits are flags on the creature rather than anything you write out.
 `pack_tactics: true` gives its attack rolls — weapon and spell alike — Advantage
@@ -131,7 +147,8 @@ fire, so a trait you list is a trait nobody will be surprised by.
 
 Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
-`half_on_save`, `upcast_damage`, `shape`, `radius`, `range_feet`, `max_targets`,
+`heal`, `half_on_save`, `upcast_damage`, `upcast_heal`, `shape`, `radius`,
+`range_feet`, `max_targets`,
 `condition`, `concentration`, `unmodelled`, `overrides`.
 
 A spell cannot both require an attack roll and offer a saving throw. Set `radius`
@@ -143,6 +160,11 @@ to `"ranged"` so packs written before this field existed keep their behaviour. T
 kind matters when a capable enemy is within 5 ft and can see the caster: ranged
 spell attacks take the same close-combat Disadvantage as ranged weapon attacks;
 melee spell attacks do not.
+
+`heal` is a healing dice expression resolved once for every chosen target;
+`upcast_heal` adds its dice for every slot level above the spell's base level.
+Healing a creature at 0 HP restores it to the fight and the slot is spent by the
+same cast that produced the healing — no parallel item charge is needed.
 
 `max_targets` caps how many creatures may be **named** on one cast, and naming more
 is refused rather than quietly trimmed. It does not apply to an area spell: there,
@@ -212,6 +234,15 @@ as well as weapon ones, because the rules treat both as the same D20 Test.
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.
 
+### `terrain`
+
+Required: `name`, `provenance`. Optional: `effects`, `description`, `unmodelled`,
+`overrides`. Effects are `move_cost_multiplier`, `passable`, `opaque`, `cover`,
+and `underwater`. Underwater terrain activates weapon restrictions and fire
+resistance; a creature using its Swim speed ignores the ordinary doubled cost.
+A creature's `terrain_cost_overrides` names kinds whose extra multiplier it
+ignores, for burrowing or otherwise specialised movement through that material.
+
 ### `items`
 
 Required: `name`, `use`, `provenance`. Optional: `description`, `unmodelled`,
@@ -219,7 +250,8 @@ Required: `name`, `use`, `provenance`. Optional: `description`, `unmodelled`,
 
 An item is a **use with a known effect**, and nothing more. Inside `use`: `heal`,
 `damage` with `damage_type`, `save_ability` with `save_dc` and `half_on_save`, and
-`condition`. At least one of `heal`, `damage`, or `condition` must be present — an
+`condition`, plus optional `action_cost` (`action` by default or `bonus_action`).
+At least one of `heal`, `damage`, or `condition` must be present — an
 item that does nothing costs an action for no reason, so it is refused.
 
 ```json
@@ -239,7 +271,7 @@ Give a creature items with `"items": { "Potion of Healing": 2 }`. **Quantity is 
 charge count** — modelling both would be two ways of saying one thing.
 
 Use one with `encounter_act(kind="use_item", item="Potion of Healing")`. It spends
-the action. Healing defaults to the user; damage and conditions need a `target`.
+its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
 Targeting another creature requires being within 5 ft.
 
 ## Rules the loader enforces
@@ -314,9 +346,10 @@ diagnostic, not the first, and the content you had keeps working.
 
 ## Two things to know
 
-**`simulate_rounds` does not use items.** The auto-play policy attacks, casts, and
-closes distance; it never drinks a potion. Items on a combatant are simply ignored
-in a batch. Play the fight by hand if items matter to the question.
+**`simulate_rounds` uses healing, not arbitrary item tactics.** The auto-play
+policy revives a downed ally and heals one at half HP or below with a healing
+spell or item, respecting action and Bonus Action costs. It does not value other
+item effects, control spells, or long-term resource conservation.
 
 **Bundled items: none.** The category is modelled but the SRD slice ships no items,
 so potions reach a session through a pack. That is a data gap, not a missing

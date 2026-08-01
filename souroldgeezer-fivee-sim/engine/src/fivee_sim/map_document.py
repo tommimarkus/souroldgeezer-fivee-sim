@@ -83,6 +83,8 @@ from .model.battlemap import (
     FeatureOverlay,
     FeatureTrigger,
     HeightPair,
+    LightLevel,
+    LightSource,
     MapFeature,
     MapPlane,
     TerrainPair,
@@ -104,6 +106,7 @@ __all__ = [
     "MapError",
     "MapFeatureRecord",
     "MapGrid",
+    "MapLight",
     "MapLevel",
     "MapOverlayRecord",
     "MapProvenance",
@@ -152,7 +155,7 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
 _DOCUMENT_KEYS = frozenset(
     {
         "format", "format_version", "name", "grid", "legend", "palette", "tiles",
-        "elevation", "features", "levels", "provenance",
+        "elevation", "features", "levels", "ambient_light", "provenance",
     }
 )
 #: The two themes a palette entry may name; one color for both is the short form.
@@ -162,11 +165,13 @@ _PALETTE_THEMES = frozenset({"light", "dark"})
 _HEX_COLOR = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})\Z")
 _GRID_KEYS = frozenset({"width", "height", "cell_feet"})
 _ELEVATION_KEYS = frozenset({"default", "squares"})
-_LEVEL_KEYS = frozenset({"index", "name", "tiles", "elevation", "features"})
+_LEVEL_KEYS = frozenset(
+    {"index", "name", "tiles", "elevation", "features", "ambient_light"}
+)
 _FEATURE_KEYS = frozenset(
     {
         "id", "kind", "at", "orientation", "hinge", "swing", "state",
-        "linked_to", "team", "to_level",
+        "linked_to", "team", "to_level", "sight_to_levels", "light",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
         "trigger",
     }
@@ -179,6 +184,7 @@ _FIXTURE_KEYS = (
 )
 _OVERLAY_KEYS = frozenset({"cells", "terrain", "elevation"})
 _CHECK_KEYS = frozenset({"ability", "dc"})
+_LIGHT_KEYS = frozenset({"bright", "dim", "color"})
 _TRIGGER_KEYS = frozenset({"when", "set", "mode"})
 #: A fixture's two states, and so the two keys of every pair in the format.
 _PAIR_STATES = frozenset({"closed", "open"})
@@ -271,6 +277,15 @@ class MapOverlayRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class MapLight:
+    """An authored light attached to a feature square."""
+
+    bright: int = 0
+    dim: int = 0
+    color: str = "#ffffff"
+
+
+@dataclass(frozen=True, slots=True)
 class MapFeatureRecord:
     """One feature as the document records it — defaults, not live state.
 
@@ -298,6 +313,8 @@ class MapFeatureRecord:
     linked_to: str | None = None
     team: str | None = None
     to_level: int | None = None
+    sight_to_levels: tuple[int, ...] = ()
+    light: MapLight | None = None
     terrain: TerrainPair | None = None
     elevation: HeightPair | None = None
     affects: tuple[MapOverlayRecord, ...] = ()
@@ -322,6 +339,7 @@ class MapLevel:
     tiles: tuple[str, ...]
     features: tuple[MapFeatureRecord, ...]
     elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
+    ambient_light: str = "bright"
 
 
 @dataclass(frozen=True, slots=True)
@@ -1021,6 +1039,43 @@ def _parse_features(
             else:
                 to_level = int(raw_target)
 
+        sight_to_levels: tuple[int, ...] = ()
+        if "sight_to_levels" in entry:
+            raw_sight = entry["sight_to_levels"]
+            if not isinstance(raw_sight, list):
+                sub.fail("sight_to_levels", "must be a list of level numbers")
+            elif any(isinstance(value, bool) or not isinstance(value, int) for value in raw_sight):
+                sub.fail("sight_to_levels", "every entry must be a whole-number level")
+            else:
+                sight_to_levels = tuple(sorted(set(int(value) for value in raw_sight)))
+
+        light: MapLight | None = None
+        if "light" in entry:
+            raw_light = entry["light"]
+            if not isinstance(raw_light, Mapping):
+                sub.fail("light", "must be an object with bright, dim, and optional color")
+            else:
+                light_reader = Reader(
+                    raw_light,
+                    diagnostics,
+                    source=source,
+                    section="map",
+                    name=f"{label} light",
+                )
+                light_reader.unknown_keys(_LIGHT_KEYS)
+                bright = light_reader.integer("bright", minimum=0)
+                dim = light_reader.integer("dim", minimum=0)
+                raw_color = raw_light.get("color", "#ffffff")
+                color = canonical_color(raw_color) if isinstance(raw_color, str) else None
+                if color is None:
+                    light_reader.fail("color", _bad_color("light", raw_color))
+                if bright <= 0 and dim <= 0:
+                    light_reader.fail("bright", "bright or dim must be greater than 0 feet")
+                if light_reader.ok and color is not None:
+                    light = MapLight(bright=bright, dim=dim, color=color)
+                else:
+                    sub.ok = False
+
         # A door must be fully resolved, like provenance params: reading the
         # document alone must answer how it starts and how it hangs.
         if kind == "door":
@@ -1125,6 +1180,7 @@ def _parse_features(
                     id=feature_id, kind=kind, at=at,
                     orientation=orientation, hinge=hinge, swing=swing, state=state,
                     linked_to=linked_to, team=team, to_level=to_level,
+                    sight_to_levels=sight_to_levels, light=light,
                     terrain=own_terrain, elevation=own_height, affects=overlays or (),
                     requires=requires, trigger=trigger,
                     costs_action=costs_action, check=check,
@@ -1197,8 +1253,21 @@ def _parse_levels(
             tiles=tiles,
             features=features,
             elevation=elevation if elevation is not None else MapElevation(),
+            ambient_light=_parse_ambient_light(entry, sub),
         )
     return levels
+
+
+def _parse_ambient_light(payload: Mapping[str, Any], reader: Reader) -> str:
+    raw = payload.get("ambient_light", LightLevel.BRIGHT.value)
+    if not isinstance(raw, str):
+        reader.fail("ambient_light", "must be bright, dim, or darkness")
+        return LightLevel.BRIGHT.value
+    try:
+        return LightLevel(raw).value
+    except ValueError:
+        reader.fail("ambient_light", f"must be bright, dim, or darkness; got {raw!r}")
+        return LightLevel.BRIGHT.value
 
 
 def _check_connectors(
@@ -1212,21 +1281,34 @@ def _check_connectors(
     """
     for index in sorted(document_levels):
         for feature in document_levels[index].features:
-            if feature.to_level is None:
-                continue
-            if feature.to_level == index:
-                reader.fail(
-                    "features",
-                    f"feature '{feature.id}' leads to its own level ({index}); "
-                    f"a connector joins two different levels",
-                )
-            elif feature.to_level not in document_levels:
-                available = ", ".join(str(i) for i in sorted(document_levels))
-                reader.fail(
-                    "features",
-                    f"feature '{feature.id}' leads to level {feature.to_level}, but "
-                    f"there is no level {feature.to_level} in this map. Declared: {available}",
-                )
+            if feature.to_level is not None:
+                if feature.to_level == index:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' leads to its own level ({index}); "
+                        f"a connector joins two different levels",
+                    )
+                elif feature.to_level not in document_levels:
+                    available = ", ".join(str(i) for i in sorted(document_levels))
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' leads to level {feature.to_level}, but "
+                        f"there is no level {feature.to_level} in this map. Declared: {available}",
+                    )
+            for target in feature.sight_to_levels:
+                if target == index:
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' exposes its own level ({index}); "
+                        "a sight link joins different levels",
+                    )
+                elif target not in document_levels:
+                    available = ", ".join(str(i) for i in sorted(document_levels))
+                    reader.fail(
+                        "features",
+                        f"feature '{feature.id}' exposes level {target}, but there is no "
+                        f"level {target} in this map. Declared: {available}",
+                    )
 
 
 def _claimed_squares(feature: MapFeatureRecord) -> Iterator[Square]:
@@ -1599,6 +1681,7 @@ def _parse(
         tiles=tiles,
         features=features,
         elevation=elevation if elevation is not None else MapElevation(),
+        ambient_light=_parse_ambient_light(payload, reader),
     )
     _check_connectors(levels, reader)
     _check_claims(levels, reader)
@@ -1678,6 +1761,14 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
         entry["team"] = feature.team
     if feature.to_level is not None:
         entry["to_level"] = feature.to_level
+    if feature.sight_to_levels:
+        entry["sight_to_levels"] = list(feature.sight_to_levels)
+    if feature.light is not None:
+        entry["light"] = {
+            "bright": feature.light.bright,
+            "dim": feature.light.dim,
+            "color": feature.light.color,
+        }
     if feature.terrain is not None:
         entry["terrain"] = _pair_payload(feature.terrain)
     if feature.elevation is not None:
@@ -1759,6 +1850,8 @@ def _level_payload(level: MapLevel) -> dict[str, Any]:
     elevation = _elevation_payload(level.elevation)
     if elevation is not None:
         entry["elevation"] = elevation
+    if level.ambient_light != LightLevel.BRIGHT.value:
+        entry["ambient_light"] = level.ambient_light
     entry["features"] = [feature_payload(feature) for feature in level.features]
     return entry
 
@@ -1803,6 +1896,8 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
             kind: _color_payload(document.palette[kind]) for kind in sorted(document.palette)
         }
     payload["tiles"] = list(document.tiles)
+    if document.ground.ambient_light != LightLevel.BRIGHT.value:
+        payload["ambient_light"] = document.ground.ambient_light
     elevation = _elevation_payload(document.elevation)
     if elevation is not None:
         payload["elevation"] = elevation
@@ -1990,9 +2085,22 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
 
     features: dict[str, MapFeature] = {}
     connectors: dict[Square, int] = {}
+    sight_links: dict[Square, frozenset[int]] = {}
+    lights: list[LightSource] = []
     for feature in level.features:
         if feature.to_level is not None:
             connectors[feature.at] = feature.to_level
+        if feature.sight_to_levels:
+            sight_links[feature.at] = frozenset(feature.sight_to_levels)
+        if feature.light is not None:
+            lights.append(
+                LightSource(
+                    square=feature.at,
+                    bright=feature.light.bright,
+                    dim=feature.light.dim,
+                    color=feature.light.color,
+                )
+            )
         # Carrying a state is what makes a feature one the fight owns — not
         # being a door. A spawn hint and a drawn stairway have none and stay
         # document-level; a spike, a lever and a sluice gate have one.
@@ -2029,6 +2137,9 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
         elevation=dict(level.elevation.squares),
         features=features,
         connectors=connectors,
+        sight_links=sight_links,
+        ambient_light=LightLevel(level.ambient_light),
+        lights=tuple(lights),
     )
 
 

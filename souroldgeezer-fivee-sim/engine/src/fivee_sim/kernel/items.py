@@ -23,6 +23,7 @@ target and a critical is never in play.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from random import Random
 
 from .dice import Advantage, Dice, DiceRoll, roll_dice
@@ -31,6 +32,11 @@ from .rules import Ability, D20Test, DamageType, effective_damage, make_d20_test
 
 class ItemError(ValueError):
     """An item cannot be used as asked."""
+
+
+class ActionCost(StrEnum):
+    ACTION = "action"
+    BONUS_ACTION = "bonus_action"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +58,7 @@ class ItemEffect:
     #: Free-text, shown in narration and in ``lookup_rule``.
     description: str = ""
     provenance: str = "SRD 5.2"
+    action_cost: ActionCost = ActionCost.ACTION
 
     def __post_init__(self) -> None:
         if self.heal is None and self.damage is None and self.condition is None:

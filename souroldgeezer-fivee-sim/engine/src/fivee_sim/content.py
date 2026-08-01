@@ -56,10 +56,10 @@ from typing import Any
 from .kernel.actions import AttackKind, RiderExpiry
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect, ConditionTable
 from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
-from .kernel.items import ItemEffect, ItemError
+from .kernel.items import ActionCost, ItemEffect, ItemError
 from .kernel.rules import Ability, DamageType, Size
 from .kernel.spells import Spell, SpellShape
-from .model.creature import Creature
+from .model.creature import Creature, DeathRule
 
 # Re-exported under their historical home: the diagnostic machinery grew up in
 # this module and every import site — packs, tests, the server — still reads it
@@ -100,21 +100,28 @@ SECTIONS = ("creatures", "spells", "conditions", "terrain", "items")
 _PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
 _COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
-    "team", "ac", "max_hp", "hit_dice", "speed", "size", "abilities", "save_bonuses",
-    "attacks", "attacks_per_action", "spells", "spell_slots", "spell_save_dc",
+    "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
+    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "size", "abilities", "save_bonuses",
+    "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
+    "redirect_attack",
+    "spells", "spell_slots", "spell_save_dc",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
     "long_range", "bonus_damage", "bonus_damage_type", "advantage_bonus_damage",
+    "advantage_bonus_with_adjacent_ally",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
-    "on_hit_max_size", "provenance",
+    "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
+    "detach_after_damage", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
-    "damage_type",
-    "half_on_save", "upcast_damage", "shape", "radius", "length", "size", "width",
+    "damage_type", "heal",
+    "half_on_save", "upcast_damage", "upcast_heal", "shape", "radius", "length",
+    "size", "width",
     "range_feet", "max_targets", "condition", "concentration",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -122,7 +129,7 @@ _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
 _USE_KEYS = frozenset({
     "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
-    "condition",
+    "condition", "action_cost",
 })
 
 
@@ -302,8 +309,26 @@ def _parse_creature(
     reader.integer("ac", required=True, minimum=0)
     reader.integer("max_hp", required=True, minimum=1)
     reader.integer("speed", default=30, minimum=0)
+    reader.integer("climb_speed", default=0, minimum=0)
+    reader.integer("swim_speed", default=0, minimum=0)
+    reader.integer("fly_speed", default=0, minimum=0)
+    reader.string_list("terrain_cost_overrides")
+    reader.integer("darkvision", default=0, minimum=0)
+    reader.integer("blindsight", default=0, minimum=0)
+    reader.enum("death_rule", DeathRule)
     reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
+    bonus_actions = reader.string_list("bonus_actions")
+    allowed_bonus_actions = {"dash", "disengage"}
+    for value in bonus_actions:
+        if value not in allowed_bonus_actions:
+            reader.fail(
+                "bonus_actions",
+                f"{value!r} is not supported. Valid values: "
+                f"{', '.join(sorted(allowed_bonus_actions))}",
+            )
+    reader.boolean("surrender_when_last")
+    reader.boolean("redirect_attack")
     reader.boolean("pack_tactics")
     reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
@@ -365,11 +390,36 @@ def _parse_creature(
         ):
             sub.fail("bonus_damage", "bonus_damage_type names a type for no damage")
         sub.dice("advantage_bonus_damage")
+        sub.boolean("advantage_bonus_with_adjacent_ally")
+        if attack.get("advantage_bonus_with_adjacent_ally") and (
+            attack.get("advantage_bonus_damage") is None
+        ):
+            sub.fail(
+                "advantage_bonus_with_adjacent_ally",
+                "needs advantage_bonus_damage — there are no bonus dice to apply",
+            )
         sub.string("on_hit_condition")
         sub.enum("on_hit_save_ability", Ability)
         sub.integer("on_hit_save_dc", minimum=1)
         sub.enum("on_hit_expiry", RiderExpiry)
         sub.enum("on_hit_max_size", Size)
+        sub.boolean("on_hit_attach")
+        sub.dice("attached_damage")
+        sub.enum("attached_damage_type", DamageType)
+        sub.integer("detach_after_damage", minimum=0)
+        if attack.get("on_hit_attach"):
+            if attack.get("attached_damage") is None:
+                sub.fail("attached_damage", "required when on_hit_attach is true")
+            if attack.get("attached_damage_type") is None:
+                sub.fail("attached_damage_type", "required when on_hit_attach is true")
+        elif any(
+            attack.get(key) is not None
+            for key in ("attached_damage", "attached_damage_type", "detach_after_damage")
+        ):
+            sub.fail(
+                "on_hit_attach",
+                "must be true when attachment damage or a detach threshold is declared",
+            )
         if attack.get("on_hit_condition") is None:
             for dependent in (
                 "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry", "on_hit_max_size",
@@ -415,8 +465,10 @@ def _parse_spell(
         save_ability=reader.enum("save_ability", Ability),
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),
+        heal=reader.dice("heal"),
         half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
+        upcast_heal=reader.dice("upcast_heal"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
         length=reader.integer("length", minimum=0),
@@ -528,7 +580,7 @@ def _parse_terrain(
                 f"{', '.join(TERRAIN_FLAGS)}",
             )
             continue
-        if flag in ("passable", "opaque"):
+        if flag in ("passable", "opaque", "underwater"):
             if not isinstance(value, bool):
                 reader.fail("effects", f"{flag} must be true or false, got {value!r}")
                 continue
@@ -558,6 +610,7 @@ def _parse_terrain(
                                             defaults.move_cost_multiplier)),
         passable=bool(values.get("passable", defaults.passable)),
         opaque=bool(values.get("opaque", defaults.opaque)),
+        underwater=bool(values.get("underwater", defaults.underwater)),
         cover=int(values.get("cover", defaults.cover)),
     )
     return effect, dict(record)
@@ -583,6 +636,7 @@ def _parse_item(
     save_dc = sub.integer("save_dc", minimum=1) if save_ability is not None else 0
     half_on_save = sub.boolean("half_on_save", default=False)
     condition = sub.string("condition") or None
+    action_cost = sub.enum("action_cost", ActionCost) or ActionCost.ACTION
     if not (reader.ok and sub.ok):
         return None
     try:
@@ -594,6 +648,7 @@ def _parse_item(
             save_dc=save_dc,
             half_on_save=half_on_save,
             condition=condition,
+            action_cost=action_cost,
             description=description,
             provenance=provenance,
         )
@@ -1318,6 +1373,7 @@ def make_creature(
     team: str | None = None,
     position: Point | int = 0,
     level: int = 0,
+    arrival_round: int = 1,
 ) -> Creature:
     """Look ``name`` up in the active content and build it.
 
@@ -1342,6 +1398,7 @@ def make_creature(
         team=team,
         position=position,
         level=level,
+        arrival_round=arrival_round,
     )
 
 

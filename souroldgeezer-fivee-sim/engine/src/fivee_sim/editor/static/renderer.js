@@ -328,6 +328,26 @@ var FiveeRenderer = (function () {
     ctx.stroke();
   }
 
+  function drawOpening(ctx, px, py, size, dark) {
+    ctx.save();
+    ctx.strokeStyle = dark ? "#79b8ff" : "#1769aa";
+    ctx.lineWidth = Math.max(1.5, size * 0.08);
+    ctx.setLineDash([Math.max(2, size * 0.15), Math.max(2, size * 0.1)]);
+    ctx.strokeRect(px + size * 0.18, py + size * 0.18, size * 0.64, size * 0.64);
+    ctx.restore();
+  }
+
+  function drawLight(ctx, px, py, size, feature) {
+    var color = feature.light && feature.light.color || "#ffffff";
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath();
+    ctx.arc(px + size / 2, py + size / 2, size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawToken(ctx, px, py, size, token, dark) {
     var cx = px + size / 2;
     var cy = py + size / 2;
@@ -490,6 +510,14 @@ var FiveeRenderer = (function () {
       }
     }
 
+    if (doc.ambient_light === "dim" || doc.ambient_light === "darkness") {
+      ctx.save();
+      ctx.fillStyle = "#07111f";
+      ctx.globalAlpha = doc.ambient_light === "darkness" ? 0.38 : 0.18;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.restore();
+    }
+
     drawGrid(ctx, doc, view, dark);
 
     var features = doc.features || [];
@@ -515,7 +543,10 @@ var FiveeRenderer = (function () {
         drawStairs(ctx, fpx, fpy, s, false, dark);
       } else if (feature.kind === "spawn") {
         drawSpawn(ctx, fpx, fpy, s, dark);
+      } else if (feature.kind === "opening") {
+        drawOpening(ctx, fpx, fpy, s, dark);
       }
+      if (feature.light) { drawLight(ctx, fpx, fpy, s, feature); }
     }
 
     /* One save for the whole pass, not one per mark: the relief overlay hands

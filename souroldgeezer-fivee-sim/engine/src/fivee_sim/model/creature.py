@@ -37,6 +37,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any
 
 from ..kernel.actions import AttackKind, RiderExpiry
@@ -51,12 +52,19 @@ from ..kernel.dice import Dice
 from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, Size, ability_modifier
 
-__all__ = ["AttackKind", "AttackOption", "Creature", "RiderExpiry"]
+__all__ = ["AttackKind", "AttackOption", "Creature", "DeathRule", "RiderExpiry"]
 
 #: Failures that kill. Duplicated from ``model.encounter``, which owns the death
 #: save *roll* but cannot be imported here — it imports this module. Damage taken
 #: at 0 hit points accrues a failure too, so the threshold is needed on both sides.
 DEATH_SAVES_TO_DIE = 3
+
+
+class DeathRule(StrEnum):
+    """What reaching 0 hit points means for this combatant."""
+
+    DEATH_SAVES = "death_saves"
+    INSTANT = "instant"
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,11 +98,21 @@ class AttackOption:
     bonus_damage: Dice | None = None
     bonus_damage_type: DamageType | None = None
     advantage_bonus_damage: Dice | None = None
+    #: Extend that same rider to a hit made while a capable ally is beside the
+    #: target (the common Sneak Attack eligibility shape).
+    advantage_bonus_with_adjacent_ally: bool = False
     on_hit_condition: str | None = None
     on_hit_save_ability: Ability | None = None
     on_hit_save_dc: int = 0
     on_hit_expiry: RiderExpiry = RiderExpiry.NONE
     on_hit_max_size: Size | None = None
+    #: Attachment riders such as a blood-draining parasite.  The first damage
+    #: pool still lands on the hit; ``attached_damage`` repeats at the start of
+    #: the attacker's turns until detached.
+    on_hit_attach: bool = False
+    attached_damage: Dice | None = None
+    attached_damage_type: DamageType | None = None
+    detach_after_damage: int = 0
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
@@ -116,6 +134,13 @@ class AttackOption:
             raise ValueError(
                 f"{self.name}: on_hit_max_size needs on_hit_condition — there is "
                 f"no condition to ride the hit"
+            )
+        if self.on_hit_attach and (
+            self.attached_damage is None or self.attached_damage_type is None
+        ):
+            raise ValueError(
+                f"{self.name}: on_hit_attach needs attached_damage and "
+                "attached_damage_type"
             )
 
     @classmethod
@@ -142,6 +167,9 @@ class AttackOption:
                 Dice.parse(str(record["advantage_bonus_damage"]))
                 if record.get("advantage_bonus_damage") is not None else None
             ),
+            advantage_bonus_with_adjacent_ally=bool(
+                record.get("advantage_bonus_with_adjacent_ally", False)
+            ),
             on_hit_condition=(
                 str(record["on_hit_condition"])
                 if record.get("on_hit_condition") is not None else None
@@ -150,6 +178,16 @@ class AttackOption:
             on_hit_save_dc=int(record.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(record.get("on_hit_expiry", "none")),
             on_hit_max_size=Size(max_size) if max_size is not None else None,
+            on_hit_attach=bool(record.get("on_hit_attach", False)),
+            attached_damage=(
+                Dice.parse(str(record["attached_damage"]))
+                if record.get("attached_damage") is not None else None
+            ),
+            attached_damage_type=(
+                DamageType(record["attached_damage_type"])
+                if record.get("attached_damage_type") is not None else None
+            ),
+            detach_after_damage=int(record.get("detach_after_damage", 0)),
             provenance=str(record.get("provenance", "SRD 5.2")),
         )
 
@@ -173,6 +211,13 @@ class Creature:
     ac: int
     max_hp: int
     speed: int = 30
+    climb_speed: int = 0
+    swim_speed: int = 0
+    fly_speed: int = 0
+    #: Terrain names whose extra movement cost this creature ignores.
+    terrain_cost_overrides: frozenset[str] = frozenset()
+    darkvision: int = 0
+    blindsight: int = 0
     hp: int = -1
     #: Size category. Defaults to Medium, which is what every record written
     #: before the field existed means — and what a character is unless its
@@ -184,6 +229,16 @@ class Creature:
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
+    #: Action kinds this stat block may take as a Bonus Action.  The strings use
+    #: encounter action names but stay strings here to preserve the model's
+    #: one-way dependency: creatures do not import the encounter that owns them.
+    bonus_actions: frozenset[str] = frozenset()
+    #: A simple authored morale endpoint: give up when no conscious ally remains.
+    surrender_when_last: bool = False
+    #: May spend its reaction to exchange places with an adjacent Small or
+    #: Medium ally and make that ally the target of an attack.
+    redirect_attack: bool = False
+    surrendered: bool = False
     #: Pack Tactics, as a flag: the stat block prints it, the encounter resolves
     #: it, because whether a capable ally is within 5 feet of the target is a
     #: question about the whole fight, not about this creature.
@@ -216,13 +271,21 @@ class Creature:
     #: of plane are different kinds of fact: two creatures at the same point on
     #: different levels are not near each other at all.
     level: int = 0
+    #: Scenario timing, not a stat-block trait. Round 1 means present when the
+    #: encounter is created; a later value keeps the combatant off-map until
+    #: that round begins.
+    arrival_round: int = 1
+    arrived: bool = True
     death_save_successes: int = 0
     death_save_failures: int = 0
     stable: bool = False
     dead: bool = False
+    death_rule: DeathRule = DeathRule.DEATH_SAVES
     provenance: str = "SRD 5.2"
 
     def __post_init__(self) -> None:
+        if self.arrival_round < 1:
+            raise ValueError("arrival_round must be at least 1")
         if self.hp < 0:
             self.hp = self.max_hp
         self.position = as_point(self.position)
@@ -239,6 +302,7 @@ class Creature:
         team: str | None = None,
         position: Point | int = 0,
         level: int = 0,
+        arrival_round: int = 1,
     ) -> Creature:
         """Build a fresh creature from a validated content record.
 
@@ -256,6 +320,14 @@ class Creature:
             ac=int(record["ac"]),
             max_hp=int(record["max_hp"]),
             speed=int(record.get("speed", 30)),
+            climb_speed=int(record.get("climb_speed", 0)),
+            swim_speed=int(record.get("swim_speed", 0)),
+            fly_speed=int(record.get("fly_speed", 0)),
+            terrain_cost_overrides=frozenset(
+                str(entry) for entry in record.get("terrain_cost_overrides", [])
+            ),
+            darkvision=int(record.get("darkvision", 0)),
+            blindsight=int(record.get("blindsight", 0)),
             size=Size(record.get("size", Size.MEDIUM)),
             abilities={
                 Ability(key): int(value)
@@ -269,6 +341,11 @@ class Creature:
                 AttackOption.from_record(entry) for entry in record.get("attacks", [])
             ),
             attacks_per_action=int(record.get("attacks_per_action", 1)),
+            bonus_actions=frozenset(
+                str(entry) for entry in record.get("bonus_actions", [])
+            ),
+            surrender_when_last=bool(record.get("surrender_when_last", False)),
+            redirect_attack=bool(record.get("redirect_attack", False)),
             pack_tactics=bool(record.get("pack_tactics", False)),
             undead_fortitude=bool(record.get("undead_fortitude", False)),
             spells=tuple(str(entry) for entry in record.get("spells", [])),
@@ -289,7 +366,9 @@ class Creature:
             condition_effects=condition_effects,
             position=position,
             level=level,
+            arrival_round=arrival_round,
             provenance=str(record.get("provenance", source)),
+            death_rule=DeathRule(record.get("death_rule", DeathRule.INSTANT)),
         )
 
     # --- derived values ---------------------------------------------------
@@ -310,13 +389,23 @@ class Creature:
         return not self.dead and self.hp > 0
 
     @property
+    def combat_active(self) -> bool:
+        """Still opposing the other teams, rather than dead, down, or yielded."""
+        return self.conscious and not self.surrendered and self.arrived
+
+    @property
+    def contesting(self) -> bool:
+        """Still belongs to a side the fight must resolve, even before arrival."""
+        return self.conscious and not self.surrendered
+
+    @property
     def dying(self) -> bool:
         return not self.dead and self.hp == 0 and not self.stable
 
     @property
     def active(self) -> bool:
         """Able to act: conscious and not held by an incapacitating condition."""
-        if not self.conscious:
+        if not self.combat_active:
             return False
         return not any(self._effect(condition).incapacitated for condition in self.conditions)
 
@@ -366,6 +455,11 @@ class Creature:
         overflow = amount - self.hp
         self.hp = max(0, self.hp - amount)
         if self.hp > 0:
+            return
+        if self.death_rule is DeathRule.INSTANT:
+            self.dead = True
+            self.concentrating_on = None
+            self.conditions.discard(Condition.UNCONSCIOUS)
             return
         if overflow >= self.max_hp:
             self.dead = True

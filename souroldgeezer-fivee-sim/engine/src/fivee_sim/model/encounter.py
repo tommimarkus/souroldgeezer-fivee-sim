@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import heapq
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from random import Random
 from typing import Any
@@ -39,12 +39,13 @@ from ..kernel.conditions import (
     is_incapacitated,
     speed_is_zero,
 )
-from ..kernel.dice import Advantage, roll_d20
+from ..kernel.dice import Advantage, roll_d20, roll_dice
 from ..kernel.grid import (
     FEET_PER_SQUARE,
     TERRAIN,
     CoverGrade,
     DiagonalRule,
+    MovementMode,
     Path,
     Point,
     Square,
@@ -65,11 +66,12 @@ from ..kernel.grid import (
     to_square,
 )
 from ..kernel.grid import cover_between as grid_cover_between
-from ..kernel.items import ItemEffect, resolve_item_use
+from ..kernel.items import ActionCost, ItemEffect, resolve_item_use
 from ..kernel.rules import (
     Ability,
     D20Test,
     DamageType,
+    Size,
     concentration_dc,
     fits_within,
     make_d20_test,
@@ -78,13 +80,14 @@ from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
 from .battlemap import (
     GROUND_LEVEL,
     BattleMap,
+    LightLevel,
     MapFeature,
     MapPlane,
     MapState,
     SquareClaim,
     TriggerMode,
 )
-from .creature import AttackOption, Creature
+from .creature import AttackOption, Creature, DeathRule
 
 DEATH_SAVE_DC = 10
 DEATH_SAVES_TO_STABILISE = 3
@@ -103,6 +106,7 @@ class ActionKind(StrEnum):
     USE_ITEM = "use_item"
     INTERACT = "interact"
     STAND = "stand"
+    SURRENDER = "surrender"
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +142,12 @@ class Action:
     #: The storey a move ends on. Only meaningful for a move, and only over a
     #: connector: walk to the stairway on your own level, and it carries you.
     to_level: int | None = None
+    #: Which movement speed pays for this move. Omitted preserves the legacy
+    #: walking default.
+    movement_mode: MovementMode | None = None
+    #: Explicit intent for action kinds that can use either budget. Effects with
+    #: a fixed cost validate this against their declaration.
+    as_bonus_action: bool = False
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -147,6 +157,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "attack", "cast", "concentration", "damage", "dash", "death", "death_save",
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
+    "attach", "attached_damage", "detach", "surrender", "redirect_attack", "arrival",
     "turn_end", "turn_start", "undead_fortitude", "use_item",
 })
 
@@ -215,10 +226,13 @@ class ActionRecord:
             # how ``to_level`` went missing from every cross-storey move.
             for name in ("target", "attack", "item", "spell", "slot_level",
                          "to_position", "center", "direction", "toward", "feature",
-                         "set_open", "to_level"):
+                         "set_open", "to_level", "movement_mode", "as_bonus_action"):
                 value = getattr(self.action, name)
                 if value is not None:
-                    action[name] = list(value) if isinstance(value, tuple) else value
+                    action[name] = (
+                        value.value if isinstance(value, StrEnum)
+                        else list(value) if isinstance(value, tuple) else value
+                    )
             if self.action.targets:
                 action["targets"] = list(self.action.targets)
             if self.action.path:
@@ -243,6 +257,7 @@ class TurnState:
     action_used: bool = False
     attacks_left: int = 0
     interaction_used: bool = False
+    bonus_action_used: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,6 +294,18 @@ class OngoingEffect:
     #: strings mean no timer — the effect lasts until something else releases it.
     expires_phase: str = ""
     expires_anchor: str = ""
+
+
+@dataclass(slots=True)
+class Attachment:
+    """A source fastened to a target and its periodic damage rider."""
+
+    source: str
+    target: str
+    damage: Any
+    damage_type: DamageType
+    detach_after_damage: int = 0
+    damage_dealt: int = 0
 
 
 def _segment_samples(origin: Point, destination: Point) -> list[Point]:
@@ -388,6 +415,8 @@ class Encounter:
                 "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
             )
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
+        for creature in combatants:
+            creature.arrived = creature.arrival_round <= 1
         #: How diagonals are measured, for every distance this fight takes.
         self.movement_rule = movement_rule
         self.spellbook: dict[str, Spell] = dict(spellbook or {})
@@ -424,6 +453,7 @@ class Encounter:
         # unordered container would let the order of releases — and so the order of
         # log entries — vary between a live fight and its analytics replay.
         self._effects: list[OngoingEffect] = []
+        self._attachments: list[Attachment] = []
         self._next_effect_id = 0
         self._dodging: dict[str, bool] = {name: False for name in names}
         self._disengaged: dict[str, bool] = {name: False for name in names}
@@ -724,6 +754,18 @@ class Encounter:
     def _terrain_effect(self, level: int, square: Square) -> TerrainEffect:
         return terrain_effect_of(self._terrain_at_level(level, square), self.terrain_effects)
 
+    def _is_underwater(self, creature: Creature) -> bool:
+        if self.battle_map is None:
+            return False
+        return self._terrain_effect(
+            creature.level, to_square(as_point(creature.position))
+        ).underwater
+
+    def _resisted_by_target(self, target: Creature, damage_type: DamageType) -> bool:
+        return target.resists(damage_type) or (
+            damage_type is DamageType.FIRE and self._is_underwater(target)
+        )
+
     def _elevation_at(self, level: int, square: Square) -> int:
         """The ground height of a square in feet. Off-map ground is the default.
 
@@ -755,7 +797,14 @@ class Encounter:
         return FEET_PER_SQUARE * effect.move_cost_multiplier
 
     def _step_cost(
-        self, level: int, origin: Square, step_to: Square, doubled_diagonal: bool = False
+        self,
+        level: int,
+        origin: Square,
+        step_to: Square,
+        doubled_diagonal: bool = False,
+        *,
+        actor: Creature | None = None,
+        movement_mode: MovementMode = MovementMode.WALK,
     ) -> int | None:
         """Feet to step between two adjacent squares, or ``None`` if it cannot be taken.
 
@@ -770,9 +819,22 @@ class Encounter:
         """
         if not self._on_map(step_to):
             return None
+        effect = self._terrain_effect(level, step_to)
+        kind = self._terrain_at_level(level, step_to)
+        if movement_mode is MovementMode.FLY:
+            # Flight ignores ground drag and elevation, not solid architecture.
+            # Replacing the whole effect made a wall passable as a side effect.
+            effect = replace(effect, move_cost_multiplier=1)
+        elif movement_mode is MovementMode.SWIM and effect.underwater:
+            effect = replace(effect, move_cost_multiplier=1)
+        elif actor is not None and kind in actor.terrain_cost_overrides:
+            effect = replace(effect, move_cost_multiplier=1)
+        rise = self._elevation_at(level, step_to) - self._elevation_at(level, origin)
+        if movement_mode is MovementMode.CLIMB:
+            rise = 0
         return step_cost_feet(
-            self._terrain_effect(level, step_to),
-            self._elevation_at(level, step_to) - self._elevation_at(level, origin),
+            effect,
+            rise,
             doubled_diagonal=doubled_diagonal,
         )
 
@@ -812,7 +874,7 @@ class Encounter:
         return {
             to_square(as_point(creature.position)): creature.name
             for creature in self.creatures.values()
-            if creature.conscious and creature.level == level
+            if creature.combat_active and creature.level == level
         }
 
     def route(
@@ -822,6 +884,7 @@ class Encounter:
         *,
         stop_adjacent: bool = False,
         max_cost: int | None = None,
+        movement_mode: MovementMode = MovementMode.WALK,
     ) -> Path | None:
         """The cheapest route the named creature could walk to ``goal``, or ``None``.
 
@@ -844,7 +907,12 @@ class Encounter:
             to_square(as_point(actor.position)),
             goal,
             step_cost=lambda origin, step_to, doubled: self._step_cost(
-                level, origin, step_to, doubled
+                level,
+                origin,
+                step_to,
+                doubled,
+                actor=actor,
+                movement_mode=movement_mode,
             ),
             rule=self.movement_rule,
             bounds=(self.battle_map.width, self.battle_map.height),
@@ -852,6 +920,36 @@ class Encounter:
             stop_adjacent=stop_adjacent,
             max_cost=max_cost,
         )
+
+    def flight_cost(
+        self,
+        actor_name: str,
+        destination: Point,
+        to_level: int,
+    ) -> int | None:
+        """Cost of a legal direct flight, or ``None`` when it cannot end there.
+
+        This is the planning seam used by auto-play.  It mirrors the live
+        action's destination, occupancy, and vertical-distance gates so a
+        proposed cross-storey move will not be refused when resolved.
+        """
+        if self.battle_map is None or to_level not in self.battle_map.levels:
+            return None
+        actor = self.creatures[actor_name]
+        if actor.fly_speed <= 0:
+            return None
+        dest_sq = to_square(destination)
+        if not self._on_map(dest_sq) or self._entry_cost(to_level, dest_sq) is None:
+            return None
+        holder = self._occupied(to_level).get(dest_sq)
+        if holder is not None and holder != actor_name:
+            return None
+        origin = as_point(actor.position)
+        vertical = abs(
+            self._elevation_at(to_level, dest_sq)
+            - self._elevation_at(actor.level, to_square(origin))
+        )
+        return max(distance_feet(origin, destination, self.movement_rule), vertical)
 
     def cover_between(self, attacker_name: str, target_name: str) -> CoverGrade:
         """The cover the target has against the attacker, on this fight's map.
@@ -887,7 +985,9 @@ class Encounter:
             return CoverGrade.NONE
         target = self.creatures[target_name]
         if target.level != level:
-            return CoverGrade.TOTAL
+            visible = self._plane(level).sight_links.get(origin, frozenset())
+            if target.level not in visible:
+                return CoverGrade.TOTAL
         occupied = frozenset(
             square for square, name in self._occupied(level).items()
             if name != target_name
@@ -908,6 +1008,14 @@ class Encounter:
     def current(self) -> Creature:
         return self.creatures[self.current_name]
 
+    @property
+    def action_available(self) -> bool:
+        return not self._turn.action_used
+
+    @property
+    def bonus_action_available(self) -> bool:
+        return not self._turn.bonus_action_used
+
     def teams(self) -> dict[str, list[str]]:
         grouped: dict[str, list[str]] = {}
         for creature in self.creatures.values():
@@ -915,7 +1023,7 @@ class Encounter:
         return grouped
 
     def living_teams(self) -> set[str]:
-        return {c.team for c in self.creatures.values() if c.conscious}
+        return {c.team for c in self.creatures.values() if c.contesting}
 
     @property
     def over(self) -> bool:
@@ -934,9 +1042,13 @@ class Encounter:
         threatens nothing down here and cannot be threatened from here either.
         """
         actor = self.creatures[name]
+        visible_levels = {actor.level}
+        if self.battle_map is not None:
+            origin = to_square(as_point(actor.position))
+            visible_levels.update(self._plane(actor.level).sight_links.get(origin, ()))
         return [
             c for c in self.creatures.values()
-            if c.team != actor.team and c.conscious and c.level == actor.level
+            if c.team != actor.team and c.combat_active and c.level in visible_levels
         ]
 
     def state(self) -> dict[str, Any]:
@@ -952,6 +1064,7 @@ class Encounter:
                 "action_used": self._turn.action_used,
                 "attacks_left": self._turn.attacks_left,
                 "interaction_used": self._turn.interaction_used,
+                "bonus_action_used": self._turn.bonus_action_used,
             },
             "map": self._map_state(),
             "ongoing_effects": [
@@ -1093,6 +1206,22 @@ class Encounter:
             "hp": creature.hp,
             "max_hp": creature.max_hp,
             "ac": creature.ac,
+            "speeds": {
+                "walk": creature.speed,
+                "climb": creature.climb_speed,
+                "swim": creature.swim_speed,
+                "fly": creature.fly_speed,
+            },
+            "senses": {
+                "darkvision": creature.darkvision,
+                "blindsight": creature.blindsight,
+            },
+            "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
+            "death_rule": creature.death_rule.value,
+            "bonus_actions": sorted(creature.bonus_actions),
+            "redirect_attack": creature.redirect_attack,
+            "arrival_round": creature.arrival_round,
+            "present": creature.arrived,
             "position": list(as_point(creature.position)),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
@@ -1101,6 +1230,7 @@ class Encounter:
             "disengaged": self._disengaged[creature.name],
             "reaction_available": self._reaction_available[creature.name],
             "conscious": creature.conscious,
+            "surrendered": creature.surrendered,
             "dying": creature.dying,
             "dead": creature.dead,
             "stable": creature.stable,
@@ -1128,6 +1258,15 @@ class Encounter:
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
         self._reaction_available[creature.name] = True
+        if not creature.arrived:
+            self._turn = TurnState(
+                movement_left=0,
+                action_used=True,
+                bonus_action_used=True,
+                attacks_left=0,
+            )
+            return
+        self._resolve_attached_damage(creature, rng)
         if creature.dying:
             self._death_save(creature, rng)
         # The budget is derived *after* the death save: a natural 20 regains
@@ -1136,14 +1275,87 @@ class Encounter:
         # the rules forfeits its movement for having been down when the turn
         # began. Deriving it first froze ``movement_left`` at 0 for the whole
         # turn while ``attacks_left`` was granted regardless.
+        maximum_speed = max(
+            creature.speed,
+            creature.climb_speed,
+            creature.swim_speed,
+            creature.fly_speed,
+        )
+        if any(link.source == creature.name for link in self._attachments):
+            maximum_speed = 0
         self._turn = TurnState(
-            movement_left=0 if not creature.conscious else creature.speed,
+            movement_left=0 if not creature.conscious else maximum_speed,
             action_used=False,
             attacks_left=creature.attacks_per_action,
         )
         # A death save can kill, and :meth:`_death_save` marks the creature dead
         # without going through ``take_damage``, so nothing else would notice.
         self._reconcile_concentration()
+
+    def _attach(
+        self, source: Creature, target: Creature, option: AttackOption
+    ) -> None:
+        assert option.attached_damage is not None
+        assert option.attached_damage_type is not None
+        for link in list(self._attachments):
+            if link.source == source.name:
+                self._detach(link, detail="attaches to a new target")
+        link = Attachment(
+            source=source.name,
+            target=target.name,
+            damage=option.attached_damage,
+            damage_type=option.attached_damage_type,
+            detach_after_damage=option.detach_after_damage,
+        )
+        self._attachments.append(link)
+        self._emit(
+            "attach",
+            source.name,
+            target.name,
+            detail=f"{source.name} attaches to {target.name}",
+            damage=str(option.attached_damage),
+            damage_type=option.attached_damage_type.value,
+            detach_after_damage=option.detach_after_damage,
+        )
+
+    def _resolve_attached_damage(self, source: Creature, rng: Random) -> None:
+        for link in list(self._attachments):
+            if link.source != source.name:
+                continue
+            target = self.creatures[link.target]
+            if source.dead or target.dead:
+                self._detach(link, detail="attachment ended")
+                continue
+            roll = roll_dice(link.damage, rng)
+            damage = roll.total
+            if self._resisted_by_target(target, link.damage_type):
+                damage //= 2
+            if link.damage_type in target.immunities:
+                damage = 0
+            elif link.damage_type in target.vulnerabilities:
+                damage *= 2
+            link.damage_dealt += damage
+            self._emit(
+                "attached_damage",
+                source.name,
+                target.name,
+                detail=f"attached damage {roll.describe()} -> {damage}",
+                damage=damage,
+                damage_type=link.damage_type.value,
+                total_drained=link.damage_dealt,
+            )
+            self._apply_damage(target, damage, rng, damage_types=(link.damage_type,))
+            if target.dead or (
+                link.detach_after_damage > 0
+                and link.damage_dealt >= link.detach_after_damage
+            ):
+                self._detach(link, detail="detaches after feeding")
+
+    def _detach(self, link: Attachment, *, detail: str) -> None:
+        if link not in self._attachments:
+            return
+        self._attachments.remove(link)
+        self._emit("detach", link.source, link.target, detail=detail)
 
     def _death_save(self, creature: Creature, rng: Random) -> None:
         roll = roll_d20(rng)
@@ -1193,6 +1405,21 @@ class Encounter:
             creature.death_save_failures = 0
             self._emit("stabilised", creature.name, detail="three successful death saves")
 
+    def _arrive_for_round(self) -> None:
+        """Make every scheduled reinforcement for the current round present."""
+        for creature in sorted(self.creatures.values(), key=lambda entry: entry.name):
+            if creature.arrived or creature.arrival_round > self.round:
+                continue
+            creature.arrived = True
+            self._emit(
+                "arrival",
+                creature.name,
+                detail=f"{creature.name} arrives in round {self.round}",
+                arrival_round=creature.arrival_round,
+                position=list(as_point(creature.position)),
+                level=creature.level,
+            )
+
     def advance(self, rng: Random) -> list[Event]:
         """End the current turn and begin the next, wrapping the round."""
         before = len(self.log)
@@ -1207,7 +1434,11 @@ class Encounter:
                     self.round += 1
                     self._emit("round", detail=f"round {self.round} begins",
                                round=self.round)
-                if not self.creatures[self.current_name].dead:
+                    self._arrive_for_round()
+                if (
+                    not self.creatures[self.current_name].dead
+                    and not self.creatures[self.current_name].surrendered
+                ):
                     break
                 # A dead creature's slot still passes: both its turn boundaries
                 # go by without it acting, and a rider anchored to either must
@@ -1232,6 +1463,10 @@ class Encounter:
         actor = self.current
         if self.over:
             raise EncounterError("the encounter is over")
+        if not actor.arrived:
+            raise EncounterError(
+                f"{actor.name} does not arrive until round {actor.arrival_round}"
+            )
         if not actor.conscious:
             raise EncounterError(f"{actor.name} is not conscious and cannot act")
         if not actor.active:
@@ -1246,17 +1481,23 @@ class Encounter:
             case ActionKind.MOVE:
                 self._do_move(actor, action, rng)
             case ActionKind.DASH:
-                self._require_action(actor)
-                self._turn.action_used = True
-                self._turn.movement_left += actor.speed
+                self._spend_action_budget(actor, action, "dash")
+                dash_mode = action.movement_mode or MovementMode.WALK
+                dash_speed = self._movement_speed(actor, dash_mode)
+                self._turn.movement_left += dash_speed
                 self._emit("dash", actor.name,
                            detail=f"movement now {self._turn.movement_left} ft",
-                           movement_left=self._turn.movement_left)
+                           movement_left=self._turn.movement_left,
+                           movement_mode=dash_mode.value,
+                           as_bonus_action=action.as_bonus_action)
             case ActionKind.DISENGAGE:
-                self._require_action(actor)
-                self._turn.action_used = True
+                self._spend_action_budget(actor, action, "disengage")
                 self._disengaged[actor.name] = True
-                self._emit("disengage", actor.name, detail="no opportunity attacks this turn")
+                self._emit(
+                    "disengage", actor.name,
+                    detail="no opportunity attacks this turn",
+                    as_bonus_action=action.as_bonus_action,
+                )
             case ActionKind.USE_ITEM:
                 self._do_use_item(actor, action, rng)
             case ActionKind.INTERACT:
@@ -1269,6 +1510,12 @@ class Encounter:
                 self._dodging[actor.name] = True
                 self._emit("dodge", actor.name,
                            detail="attacks against this creature have disadvantage")
+            case ActionKind.SURRENDER:
+                actor.surrendered = True
+                self._emit(
+                    "surrender", actor.name,
+                    detail=f"{actor.name} surrenders and leaves the fight",
+                )
         # The fourth route: an action can land an incapacitating condition on a
         # creature that is concentrating, and ``Creature.add_condition`` clears the
         # field from inside the model, where no release could be issued. A spell or
@@ -1287,6 +1534,24 @@ class Encounter:
     def _require_action(self, actor: Creature) -> None:
         if self._turn.action_used:
             raise EncounterError(f"{actor.name} has already taken an action this turn")
+
+    def _spend_action_budget(
+        self, actor: Creature, action: Action, action_name: str
+    ) -> None:
+        """Spend the ordinary or explicitly authored Bonus Action budget."""
+        if action.as_bonus_action:
+            if action_name not in actor.bonus_actions:
+                raise EncounterError(
+                    f"{actor.name} cannot {action_name} as a bonus action"
+                )
+            if self._turn.bonus_action_used:
+                raise EncounterError(
+                    f"{actor.name} has already taken a bonus action this turn"
+                )
+            self._turn.bonus_action_used = True
+            return
+        self._require_action(actor)
+        self._turn.action_used = True
 
     def _resolve_target(self, name: str | None) -> Creature:
         if name is None:
@@ -1316,6 +1581,10 @@ class Encounter:
         ``dead`` is the one refusal that survives, because a corpse is not a
         creature a spell or an attack can target.
         """
+        if not target.arrived:
+            raise EncounterError(
+                f"{target.name} does not arrive until round {target.arrival_round}"
+            )
         if target.dead:
             raise EncounterError(f"{target.name} is dead and cannot be targeted")
 
@@ -1341,12 +1610,35 @@ class Encounter:
             # yet rather than checking action_used alone.
             raise EncounterError(f"{actor.name} has already taken an action this turn")
         option = self._pick_attack(actor, action.attack)
+        target = self._redirect_attack_target(actor, target)
         distance = actor.distance_to(target, self.movement_rule)
         reach = option.max_distance()
         if distance > reach:
             self._emit("attack", actor.name, target.name,
                        f"{option.name} cannot reach ({distance} ft > {reach} ft)",
                        attack=option.name, out_of_range=True)
+            return
+        underwater = self._is_underwater(actor)
+        if (
+            underwater
+            and option.kind is AttackKind.RANGED
+            and option.normal_range > 0
+            and distance > option.normal_range
+        ):
+            self._turn.attacks_left -= 1
+            if self._turn.attacks_left == actor.attacks_per_action - 1:
+                self._turn.action_used = True
+            self._emit(
+                "attack",
+                actor.name,
+                target.name,
+                f"{option.name} automatically misses beyond normal range underwater",
+                attack=option.name,
+                hit=False,
+                underwater=True,
+                underwater_auto_miss=True,
+                damage=0,
+            )
             return
         # Total cover refuses the attack before it is spent, exactly as being out
         # of reach does: there is no roll to make against a target that cannot be
@@ -1370,16 +1662,19 @@ class Encounter:
             damage=option.damage,
             advantage=self.attack_advantage(actor, target, option),
             forced_critical=self.attack_forced_critical(actor, target),
-            resisted=target.resists(option.damage_type),
+            resisted=self._resisted_by_target(target, option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
-            **self._rider_damage_arguments(option, target),
+            **self._rider_damage_arguments(actor, option, target),
         )
         cover_note = ""
         if grade is not CoverGrade.NONE:
             label = "half" if grade is CoverGrade.HALF else "three-quarters"
             cover_note = f" ({label} cover, +{cover_bonus} AC)"
         extras: dict[str, Any] = {}
+        if resolution.advantage_damage is not None:
+            extras["advantage_bonus_damage"] = resolution.advantage_damage.total
+            extras["advantage_bonus_reason"] = resolution.advantage_damage_reason
         if resolution.bonus_damage is not None:
             extras["bonus_damage"] = resolution.bonus_damage_dealt
         self._emit("attack", actor.name, target.name,
@@ -1392,6 +1687,7 @@ class Encounter:
                    advantage=resolution.advantage.value,
                    damage=resolution.total_damage_dealt,
                    cover=int(grade),
+                   underwater=underwater,
                    **extras)
         if resolution.hit:
             self._apply_damage(
@@ -1401,6 +1697,8 @@ class Encounter:
             )
             if option.on_hit_condition is not None:
                 self._apply_attack_rider(actor, target, option, rng)
+            if option.on_hit_attach and target.conscious:
+                self._attach(actor, target, option)
 
     @staticmethod
     def _attack_damage_types(option: AttackOption) -> tuple[DamageType, ...]:
@@ -1413,9 +1711,8 @@ class Encounter:
             return (option.damage_type,)
         return (option.damage_type, option.bonus_damage_type)
 
-    @staticmethod
     def _rider_damage_arguments(
-        option: AttackOption, target: Creature
+        self, actor: Creature, option: AttackOption, target: Creature
     ) -> dict[str, Any]:
         """The damage-rider keywords one attack passes to ``resolve_attack``.
 
@@ -1426,9 +1723,13 @@ class Encounter:
         """
         return {
             "advantage_bonus_damage": option.advantage_bonus_damage,
+            "advantage_bonus_damage_applies": (
+                option.advantage_bonus_with_adjacent_ally
+                and self._capable_ally_adjacent(actor=actor, target=target)
+            ),
             "bonus_damage": option.bonus_damage,
             "bonus_resisted": (
-                target.resists(option.bonus_damage_type)
+                self._resisted_by_target(target, option.bonus_damage_type)
                 if option.bonus_damage_type is not None else False
             ),
             "bonus_vulnerable": (
@@ -1440,6 +1741,48 @@ class Encounter:
                 if option.bonus_damage_type is not None else False
             ),
         }
+
+    def _redirect_attack_target(
+        self, attacker: Creature, target: Creature
+    ) -> Creature:
+        """Apply an authored Redirect Attack reaction, returning the new target."""
+        if (
+            not target.redirect_attack
+            or not self._reaction_available.get(target.name, False)
+            or not target.active
+            or not self._can_see(target, attacker)
+        ):
+            return target
+        eligible = sorted(
+            (
+                ally
+                for ally in self.creatures.values()
+                if ally is not target
+                and ally.team == target.team
+                and ally.active
+                and ally.level == target.level
+                and fits_within(ally.size, Size.MEDIUM)
+                and ally.distance_to(target, self.movement_rule) <= MELEE_THRESHOLD
+            ),
+            key=lambda ally: (ally.hp, ally.name),
+        )
+        if not eligible:
+            return target
+        redirected = eligible[0]
+        target.position, redirected.position = redirected.position, target.position
+        self._reaction_available[target.name] = False
+        self._emit(
+            "redirect_attack",
+            target.name,
+            redirected.name,
+            f"{target.name} swaps places with {redirected.name}, redirecting the attack",
+            attacker=attacker.name,
+            original_target=target.name,
+            redirected_target=redirected.name,
+            original_position=as_point(target.position),
+            redirected_position=as_point(redirected.position),
+        )
+        return redirected
 
     def attack_advantage(
         self, actor: Creature, target: Creature, option: AttackOption
@@ -1456,19 +1799,36 @@ class Encounter:
             target_conditions=target.conditions,
             distance=distance,
             long_range_penalty=option.has_long_range_penalty(distance),
-            extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
+            extra_advantage=(
+                int(self._pack_tactics_applies(actor, target))
+                + int(not self._can_see(target, actor))
+            ),
             extra_disadvantage=(
                 int(self._dodge_benefits(target))
                 + int(
                     option.kind is AttackKind.RANGED
                     and self._ranged_close_combat_penalty(actor)
                 )
+                + int(self._underwater_attack_penalty(actor, option))
+                + int(not self._can_see(actor, target))
             ),
             condition_effects=self.condition_effects,
         )
 
+    def _underwater_attack_penalty(
+        self, actor: Creature, option: AttackOption
+    ) -> bool:
+        if not self._is_underwater(actor):
+            return False
+        if option.kind is AttackKind.RANGED:
+            return True
+        return actor.swim_speed <= 0 and option.damage_type is not DamageType.PIERCING
+
     def _can_see(self, observer: Creature, subject: Creature) -> bool:
         """Whether ``observer`` can see ``subject`` for a rule that requires sight."""
+        distance = observer.distance_to(subject, self.movement_rule)
+        if observer.blindsight > 0 and distance <= observer.blindsight:
+            return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
         if any(
             effect_of(condition, self.condition_effects).cannot_see
             for condition in observer.conditions
@@ -1479,7 +1839,28 @@ class Encounter:
             for condition in subject.conditions
         ):
             return False
-        return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
+        if self.cover_between(observer.name, subject.name) is CoverGrade.TOTAL:
+            return False
+        illumination = self._illumination_at(subject)
+        if illumination is not LightLevel.DARKNESS:
+            return True
+        return observer.darkvision > 0 and distance <= observer.darkvision
+
+    def _illumination_at(self, creature: Creature) -> LightLevel:
+        if self.battle_map is None:
+            return LightLevel.BRIGHT
+        plane = self._plane(creature.level)
+        square = to_square(as_point(creature.position))
+        brightest = plane.ambient_light
+        for light in plane.lights:
+            distance = distance_feet(
+                square_center(light.square), square_center(square), self.movement_rule
+            )
+            if light.bright > 0 and distance <= light.bright:
+                return LightLevel.BRIGHT
+            if light.dim > 0 and distance <= light.dim:
+                brightest = LightLevel.DIM
+        return brightest
 
     def _ranged_close_combat_penalty(self, actor: Creature) -> bool:
         """Whether a capable, nearby enemy can see a ranged attacker."""
@@ -1508,8 +1889,15 @@ class Encounter:
         """
         if not actor.pack_tactics:
             return False
+        return self._capable_ally_adjacent(actor=actor, target=target)
+
+    def _capable_ally_adjacent(
+        self, *, actor: Creature, target: Creature
+    ) -> bool:
+        """Whether the attacking team has another capable creature by the target."""
         return any(
-            ally is not actor and ally is not target
+            ally is not actor
+            and ally is not target
             and ally.team == actor.team
             and ally.active
             and ally.distance_to(target, self.movement_rule) <= MELEE_THRESHOLD
@@ -1577,7 +1965,6 @@ class Encounter:
         raise EncounterError(f"{actor.name} is not carrying {wanted!r}; has: {carrying}")
 
     def _do_use_item(self, actor: Creature, action: Action, rng: Random) -> None:
-        self._require_action(actor)
         if action.item is None:
             raise EncounterError("using an item needs 'item'")
         name = self._pick_item(actor, action.item)
@@ -1587,6 +1974,13 @@ class Encounter:
             raise EncounterError(
                 f"{name!r} is not defined by the loaded content; defined: {available}"
             )
+        if effect.action_cost is ActionCost.BONUS_ACTION:
+            if self._turn.bonus_action_used:
+                raise EncounterError(f"{actor.name} has already used a bonus action this turn")
+        else:
+            if action.as_bonus_action:
+                raise EncounterError(f"{name} takes an action, not a bonus action")
+            self._require_action(actor)
 
         if action.target is not None:
             target = self._resolve_target(action.target)
@@ -1603,7 +1997,10 @@ class Encounter:
                 )
         self._require_targetable(target)
 
-        self._turn.action_used = True
+        if effect.action_cost is ActionCost.BONUS_ACTION:
+            self._turn.bonus_action_used = True
+        else:
+            self._turn.action_used = True
         actor.items[name] -= 1
 
         resolution = resolve_item_use(
@@ -1633,6 +2030,7 @@ class Encounter:
             "use_item", actor.name, target.name,
             f"{resolution.describe()} ({actor.items[name]} left)",
             item=name, remaining=actor.items[name],
+            action_cost=effect.action_cost.value,
         )
         if resolution.healed:
             before = target.hp
@@ -1689,6 +2087,8 @@ class Encounter:
         chosen, area_origin = self._spell_targets(actor, spell, action)
         if not chosen:
             raise EncounterError(f"{spell.name} has no valid targets")
+        if spell.requires_attack_roll:
+            chosen = [self._redirect_attack_target(actor, target) for target in chosen]
 
         # Cover shields a spell exactly as it shields a weapon swing: +2 behind
         # half cover, +5 behind three-quarters, on AC and on Dexterity saves
@@ -1776,6 +2176,8 @@ class Encounter:
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
             detail += f", damage {resolution.damage_roll.describe()}"
+        if resolution.healing_roll is not None:
+            detail += f", healing {resolution.healing_roll.describe()}"
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
@@ -1817,6 +2219,20 @@ class Encounter:
                     damage_types=(
                         (spell.damage_type,) if spell.damage_type is not None else ()
                     ),
+                )
+            if result.healed:
+                before = target.hp
+                target.heal(result.healed)
+                self._emit(
+                    "heal",
+                    actor.name,
+                    target.name,
+                    detail=f"{target.hp - before} hit points restored, "
+                    f"{target.hp}/{target.max_hp}",
+                    spell=spell.name,
+                    amount=target.hp - before,
+                    hp=target.hp,
+                    max_hp=target.max_hp,
                 )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(
@@ -1896,7 +2312,7 @@ class Encounter:
                 if self.battle_map is None:
                     return [
                         c for c in self.creatures.values()
-                        if not c.dead
+                        if c.arrived and not c.dead
                         and distance_feet(
                             as_point(c.position), centre, self.movement_rule
                         ) <= spell.radius
@@ -1938,7 +2354,7 @@ class Encounter:
                 raise EncounterError(f"{spell.name} is not an area spell")
         caught = [
             c for c in self.creatures.values()
-            if not c.dead and to_square(as_point(c.position)) in squares
+            if c.arrived and not c.dead and to_square(as_point(c.position)) in squares
         ]
         if self.battle_map is None:
             return caught
@@ -2189,10 +2605,17 @@ class Encounter:
         dest_sq = to_square(as_point(action.to_position))
         destination = square_center(dest_sq)
         level = actor.level
+        movement_mode = action.movement_mode or MovementMode.WALK
+        self._movement_speed(actor, movement_mode)
         # The connector is the last leg: walk to the stairway on this level, then
         # ride it. So every check below is about the square the walk ends on, on
         # the level the walk happens on, and the arrival is checked after.
         to_level = level if action.to_level is None else action.to_level
+        if to_level != level and movement_mode is MovementMode.FLY:
+            self._do_flying_level_change(
+                actor, destination, dest_sq, to_level, movement_mode
+            )
+            return
         if to_level != level:
             if to_level not in self.battle_map.levels:
                 declared = ", ".join(str(i) for i in sorted(self.battle_map.levels))
@@ -2245,7 +2668,14 @@ class Encounter:
                 diagonal = bool(dx and dy) and (
                     self.movement_rule is DiagonalRule.FIVE_TEN_FIVE
                 )
-                entering = self._step_cost(level, previous, step, diagonal and bool(parity))
+                entering = self._step_cost(
+                    level,
+                    previous,
+                    step,
+                    diagonal and bool(parity),
+                    actor=actor,
+                    movement_mode=movement_mode,
+                )
                 if entering is None:
                     raise EncounterError(
                         f"the path enters impassable "
@@ -2259,7 +2689,7 @@ class Encounter:
                 if diagonal:
                     parity ^= 1
         else:
-            found = self.route(actor.name, dest_sq)
+            found = self.route(actor.name, dest_sq, movement_mode=movement_mode)
             if found is None:
                 raise EncounterError(
                     f"no route to {dest_sq}: walls, terrain, or enemies block the way"
@@ -2297,6 +2727,7 @@ class Encounter:
                    destination=destination, cost=cost,
                    from_level=level, planned_to_level=to_level,
                    to_level=to_level, completed=True,
+                   movement_mode=movement_mode.value,
                    squares=[list(square) for square in route])
         move_event = self.log[-1]
         suppressed = self._disengaged[actor.name]
@@ -2328,6 +2759,64 @@ class Encounter:
         # dropped on the stairs falls at its foot, on the level it was walking.
         if to_level != level:
             actor.level = to_level
+
+    @staticmethod
+    def _movement_speed(actor: Creature, mode: MovementMode) -> int:
+        speed = {
+            MovementMode.WALK: actor.speed,
+            MovementMode.CLIMB: actor.climb_speed,
+            MovementMode.SWIM: actor.swim_speed,
+            MovementMode.FLY: actor.fly_speed,
+        }[mode]
+        if speed <= 0:
+            raise EncounterError(f"{actor.name} has no {mode.value} speed")
+        return speed
+
+    def _do_flying_level_change(
+        self,
+        actor: Creature,
+        destination: Point,
+        dest_sq: Square,
+        to_level: int,
+        mode: MovementMode,
+    ) -> None:
+        """Fly directly between planes; a connector is unnecessary."""
+        assert self.battle_map is not None
+        if to_level not in self.battle_map.levels:
+            declared = ", ".join(str(i) for i in sorted(self.battle_map.levels))
+            raise EncounterError(f"there is no level {to_level} on this map. Levels: {declared}")
+        if not self._on_map(dest_sq) or self._entry_cost(to_level, dest_sq) is None:
+            raise EncounterError(f"cannot end a flight at {dest_sq} on level {to_level}")
+        holder = self._occupied(to_level).get(dest_sq)
+        if holder is not None and holder != actor.name:
+            raise EncounterError(f"square {dest_sq} on level {to_level} is occupied by {holder}")
+        origin = as_point(actor.position)
+        vertical = abs(
+            self._elevation_at(to_level, dest_sq)
+            - self._elevation_at(actor.level, to_square(origin))
+        )
+        cost = max(distance_feet(origin, destination, self.movement_rule), vertical)
+        if cost > self._turn.movement_left:
+            raise EncounterError(
+                f"{actor.name} has {self._turn.movement_left} ft of movement, needs {cost} ft"
+            )
+        self._turn.movement_left -= cost
+        prior_level = actor.level
+        actor.position = destination
+        actor.level = to_level
+        self._emit(
+            "move",
+            actor.name,
+            detail=f"{origin} on level {prior_level} -> {destination} on level {to_level} "
+            f"({cost} ft used)",
+            origin=origin,
+            destination=destination,
+            cost=cost,
+            from_level=prior_level,
+            to_level=to_level,
+            movement_mode=mode.value,
+            squares=[list(to_square(origin)), list(dest_sq)],
+        )
 
     def _do_interact(self, actor: Creature, action: Action, rng: Random) -> None:
         """Operate a named map fixture — a door, in the common case.
@@ -2608,7 +3097,7 @@ class Encounter:
             resisted=mover.resists(melee.damage_type),
             vulnerable=melee.damage_type in mover.vulnerabilities,
             immune=melee.damage_type in mover.immunities,
-            **self._rider_damage_arguments(melee, mover),
+            **self._rider_damage_arguments(attacker, melee, mover),
         )
         self._emit("opportunity_attack", attacker.name, mover.name,
                    f"{melee.name}: {resolution.describe()}",
@@ -2918,6 +3407,8 @@ class Encounter:
             self._emit("death", target.name, detail=(
                 "a third failed death save"
                 if target.death_save_failures > failures_before
+                else "drops to 0 hit points"
+                if target.death_rule is DeathRule.INSTANT
                 else "damage exceeded maximum hit points"
             ))
         elif was_conscious and not target.conscious:

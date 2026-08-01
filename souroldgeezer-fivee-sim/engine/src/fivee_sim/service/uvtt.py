@@ -26,9 +26,8 @@ What travels, and what deliberately does not:
   themes at draw time. Pack-defined kinds with no authored color get the same
   deterministic hue-hash fallback formula the renderer uses, so an unknown kind
   is the same color in every export.
-- ``lights`` and ``objects_line_of_sight`` ship empty, and elevation does not
-  exist here: the engine models none of them, and inventing values would
-  misrepresent the map.
+- ``lights`` and ambient illumination carry the map's authored light facts;
+  ``objects_line_of_sight`` stays empty, and elevation does not exist here.
 
 ``open`` names the fixtures standing open — a fight's live set. Given one, the
 walls and the image are derived from what those fixtures *make* of each square
@@ -423,7 +422,26 @@ def to_uvtt(
         "line_of_sight": walls,
         "objects_line_of_sight": [],
         "portals": _portals(plane, open_names),
-        "environment": {"baked_lighting": False, "ambient_light": "ffffffff"},
-        "lights": [],
+        "environment": {
+            "baked_lighting": False,
+            "ambient_light": {
+                "bright": "ffffffff",
+                "dim": "808080ff",
+                "darkness": "000000ff",
+            }[plane.ambient_light],
+        },
+        "lights": [
+            {
+                "position": _point(feature.at[0] + 0.5, feature.at[1] + 0.5),
+                "range": float(max(feature.light.bright, feature.light.dim) / 5),
+                "intensity": (
+                    feature.light.bright / max(feature.light.bright, feature.light.dim)
+                ),
+                "color": feature.light.color.removeprefix("#") + "ff",
+                "shadows": True,
+            }
+            for feature in sorted(plane.features, key=lambda item: item.id)
+            if feature.light is not None
+        ],
         "image": image,
     }

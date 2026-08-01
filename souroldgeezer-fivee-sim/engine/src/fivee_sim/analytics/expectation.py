@@ -163,6 +163,7 @@ def attack_damage_expectation(
     vulnerable: bool = False,
     immune: bool = False,
     advantage_bonus_damage: Dice | None = None,
+    advantage_bonus_damage_applies: bool = False,
     bonus_damage: Dice | None = None,
     bonus_resisted: bool = False,
     bonus_vulnerable: bool = False,
@@ -178,7 +179,11 @@ def attack_damage_expectation(
     against its own type. Every rider's dice double on a critical hit exactly as
     the main dice do.
     """
-    extra = advantage_bonus_damage if advantage is Advantage.ADVANTAGE else None
+    extra = (
+        advantage_bonus_damage
+        if advantage is Advantage.ADVANTAGE or advantage_bonus_damage_applies
+        else None
+    )
     normal = _hit_damage(
         damage, extra, resisted=resisted, vulnerable=vulnerable, immune=immune
     )

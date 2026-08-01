@@ -169,7 +169,8 @@ const replayInvalidCorpus = JSON.parse(readFileSync(path.join(
 const EDITOR_IDS = [
   "map", "status", "fixture-list", "btn-preview", "feature-info", "level-select",
   "btn-download", "btn-save", "map-name", "elevation-default", "btn-heights",
-  "btn-delete-feature",
+  "btn-delete-feature", "ambient-light", "feature-config", "feature-sight-levels",
+  "feature-light-bright", "feature-light-dim", "feature-light-color", "btn-undo",
   "provenance", "dlg-resize", "dlg-resize-go", "rs-width", "rs-height", "rs-anchor",
   "rs-fill", "door-config", "door-orientation", "door-hinge", "door-swing",
   "door-linked",
@@ -1349,6 +1350,35 @@ const TOWER_MAP = {
   provenance: { generator: "hand", seed: 3, params: {}, edited: false, source: "test" },
 };
 
+const ENVIRONMENT_MAP = {
+  format: "fivee-sim-map",
+  format_version: 1,
+  name: "dark mill",
+  grid: { width: 8, height: 8, cell_feet: 5 },
+  legend: { ".": "floor", "#": "wall" },
+  tiles: [
+    "########", "#......#", "#......#", "#......#",
+    "#......#", "#......#", "#......#", "########",
+  ],
+  ambient_light: "darkness",
+  features: [{
+    id: "roof-opening", kind: "opening", at: [3, 3],
+    sight_to_levels: [1],
+    light: { bright: 20, dim: 40, color: "#ffcc66" },
+  }],
+  levels: [{
+    index: 1,
+    name: "rafters",
+    tiles: [
+      "########", "#......#", "#......#", "#......#",
+      "#......#", "#......#", "#......#", "########",
+    ],
+    ambient_light: "dim",
+    features: [],
+  }],
+  provenance: { generator: "hand", seed: 6, params: {}, edited: false, source: "test" },
+};
+
 const LINKED_DOOR_MAP = {
   format: "fivee-sim-map",
   format_version: 1,
@@ -1641,6 +1671,79 @@ await suite("editor.html: the inspector", "the page sandbox in makePage()", asyn
   check("and the inspector still reports the rest of the record",
     partial.indexOf("costs_action: no") !== -1 && partial.indexOf("affects:") === -1,
     show(partial));
+});
+
+await suite("editor.html: environment authoring", "the page sandbox in makePage()", async () => {
+  const page = makeEditorPage();
+  await page.drop(copy(ENVIRONMENT_MAP));
+
+  check("a loaded plane selects its authored ambient light",
+    page.element("ambient-light").value === "darkness",
+    page.element("ambient-light").value);
+  const wash = page.last().fills.filter(
+    (fill) => fill[4] === "#07111f" && Math.abs(fill[5] - 0.38) < 0.001
+  );
+  check("darkness reaches the renderer as the stronger ambient wash",
+    wash.length === 1, show(wash));
+
+  page.element("ambient-light").value = "dim";
+  page.element("ambient-light").dispatch("change");
+  let saved = JSON.parse(page.downloaded());
+  check("changing ambient light writes the active plane",
+    saved.ambient_light === "dim", show(saved.ambient_light));
+  page.element("btn-undo").click();
+  saved = JSON.parse(page.downloaded());
+  check("ambient light participates in undo",
+    saved.ambient_light === "darkness", show(saved.ambient_light));
+
+  const canvas = page.element("map");
+  const view = page.last().view;
+  const point = {
+    clientX: (3 - view.x) * view.scale + view.scale / 2,
+    clientY: (3 - view.y) * view.scale + view.scale / 2,
+    button: 0, pointerId: 1,
+  };
+  canvas.dispatch("pointerdown", point);
+  canvas.dispatch("pointerup", point);
+  check("selecting an opening reveals its environment controls",
+    page.element("feature-config").hidden === false,
+    String(page.element("feature-config").hidden));
+  check("the controls read authored visibility and light",
+    page.element("feature-sight-levels").value === "1"
+      && page.element("feature-light-bright").value === 20
+      && page.element("feature-light-dim").value === 40
+      && page.element("feature-light-color").value === "#ffcc66",
+    show([
+      page.element("feature-sight-levels").value,
+      page.element("feature-light-bright").value,
+      page.element("feature-light-dim").value,
+      page.element("feature-light-color").value,
+    ]));
+
+  page.element("feature-sight-levels").value = "1, 0, 1";
+  page.element("feature-light-bright").value = "30";
+  page.element("feature-light-dim").value = "60";
+  page.element("feature-light-color").value = "#66ccff";
+  page.element("feature-light-color").dispatch("change");
+  saved = JSON.parse(page.downloaded());
+  const opening = saved.features.find((feature) => feature.id === "roof-opening");
+  check("visibility is de-duplicated and light edits round-trip",
+    show(opening.sight_to_levels) === "[0,1]"
+      && show(opening.light) === '{"bright":30,"dim":60,"color":"#66ccff"}',
+    show(opening));
+
+  page.element("level-select").value = "1";
+  page.element("level-select").dispatch("change");
+  check("changing storeys selects that plane's ambient light",
+    page.element("ambient-light").value === "dim",
+    page.element("ambient-light").value);
+  page.element("ambient-light").value = "bright";
+  page.element("ambient-light").dispatch("change");
+  saved = JSON.parse(page.downloaded());
+  check("bright is canonicalised by omitting only the active plane's key",
+    saved.ambient_light === "darkness"
+      && saved.levels[0].ambient_light === undefined,
+    show([saved.ambient_light, saved.levels[0].ambient_light]));
 });
 
 await suite("editor.html: door configuration", "the page sandbox in makePage()", async () => {

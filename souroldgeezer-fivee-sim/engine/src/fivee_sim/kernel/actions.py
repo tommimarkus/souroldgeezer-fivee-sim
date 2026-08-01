@@ -158,6 +158,7 @@ class AttackResolution:
     #: Advantage and the attack landed. Its total is already inside
     #: ``damage_dealt`` — it is kept so a narrator can show the extra dice.
     advantage_damage: DiceRoll | None = None
+    advantage_damage_reason: str = ""
     #: The secondary damage roll — a different type, on every hit.
     bonus_damage: DiceRoll | None = None
     bonus_damage_dealt: int = 0
@@ -182,7 +183,8 @@ class AttackResolution:
             text += f"; damage {self.damage.describe()}"
             rolled = self.damage.total
             if self.advantage_damage is not None:
-                text += f" plus {self.advantage_damage.describe()} for advantage"
+                reason = self.advantage_damage_reason or "advantage"
+                text += f" plus {self.advantage_damage.describe()} for {reason}"
                 rolled += self.advantage_damage.total
             if self.damage_dealt != rolled:
                 text += f" -> {self.damage_dealt} after defenses"
@@ -205,6 +207,7 @@ def resolve_attack(
     vulnerable: bool = False,
     immune: bool = False,
     advantage_bonus_damage: Dice | None = None,
+    advantage_bonus_damage_applies: bool = False,
     bonus_damage: Dice | None = None,
     bonus_resisted: bool = False,
     bonus_vulnerable: bool = False,
@@ -237,7 +240,9 @@ def resolve_attack(
 
     damage_roll = roll_damage(damage, rng, critical=attack.critical)
     advantage_roll: DiceRoll | None = None
-    if advantage_bonus_damage is not None and advantage is Advantage.ADVANTAGE:
+    if advantage_bonus_damage is not None and (
+        advantage is Advantage.ADVANTAGE or advantage_bonus_damage_applies
+    ):
         advantage_roll = roll_damage(advantage_bonus_damage, rng, critical=attack.critical)
     dealt = effective_damage(
         damage_roll.total + (advantage_roll.total if advantage_roll is not None else 0),
@@ -261,6 +266,9 @@ def resolve_attack(
         damage=damage_roll,
         damage_dealt=dealt,
         advantage_damage=advantage_roll,
+        advantage_damage_reason=(
+            "advantage" if advantage is Advantage.ADVANTAGE else "an adjacent ally"
+        ) if advantage_roll is not None else "",
         bonus_damage=bonus_roll,
         bonus_damage_dealt=bonus_dealt,
     )

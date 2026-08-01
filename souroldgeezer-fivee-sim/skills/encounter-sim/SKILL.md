@@ -31,7 +31,9 @@ narrating from memory puts it straight back.
    stat block — `{"monster": "Goblin Warrior", "label": "Goblin A", "team":
    "monsters", "position": [15, 0]}` — or an explicit build with at least `name`,
    `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they identify
-   combatants in every later call. A position is `[x, y]` in feet on a flat plane
+   combatants in every later call. `arrival_round` schedules a reinforcement:
+   before that round it is absent, untargetable, and unable to act, but its side
+   still keeps the encounter open. A position is `[x, y]` in feet on a flat plane
    (a bare number still means feet along the x-axis), and `encounter_state`
    reports positions in the same `[x, y]` form. Diagonals cost 5 ft by default;
    pass `movement_rule: "5-10-5"` for the every-second-diagonal-costs-double
@@ -41,7 +43,9 @@ narrating from memory puts it straight back.
 2. **`encounter_state`** to see whose turn it is and what the situation is.
 3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
    `dash`, `disengage`, `dodge`, `stand` (up from Prone — half Speed in
-   movement, no action). It returns the events it generated plus fresh state.
+   movement, no action), or `surrender`. A creature whose pack lists Dash or
+   Disengage in `bonus_actions` uses it with `as_bonus_action=true`. It returns
+   the events it generated plus fresh state.
 4. **`encounter_advance`** to end the turn. Death saves for dying creatures are
    rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
@@ -130,6 +134,14 @@ there. Use it whenever you drive a fixture to a known state, because `interact`
 alone **toggles**: "open the sluice" on a sluice that already stands open closes
 it.
 
+Movement defaults to Walk. Pass `movement_mode` as `climb`, `swim`, or `fly` to
+use that authored speed. A Swim speed avoids underwater terrain's doubled cost;
+Fly can change storeys without a connector. `encounter_state` reports all four
+speeds, Darkvision/Blindsight, terrain overrides, death rule, Bonus Actions, and
+reaction availability plus `arrival_round`/`present`, so narration never has to
+infer them from the pack. Auto-play chooses among authored movement modes when it
+closes, including swimming through underwater terrain and flying between storeys.
+
 ## Maps
 
 Six tools manage maps as first-class documents. **`map_generate`** builds a
@@ -174,7 +186,8 @@ the spell's range legitimately; the origin is what has to be reachable.
 
 ## Items
 
-`encounter_act(kind="use_item", item="Potion of Healing")` spends the action.
+`encounter_act(kind="use_item", item="Potion of Healing")` spends the item's
+declared action or Bonus Action.
 Healing defaults to the user; a damaging or condition-applying item needs a
 `target`, and any item used on another creature needs to be within 5 ft. Quantity
 is the charge count, and `encounter_state` shows what each combatant has left.
@@ -195,7 +208,8 @@ handling is the interesting part, and hiding it makes the fight feel arbitrary.
 ## Analysis rather than play
 
 - **`simulate_rounds`** auto-plays the same encounter many times and reports win
-  rates and how long fights last. Use it for "is this encounter too hard?"
+  rates, rounds, and per-team HP, casualty, spell-slot, and item-use
+  distributions. Use it for "is this encounter too hard?"
 - **`simulate_dpr`** measures damage a build lands over N rounds against a given
   AC, at a `distance` you choose (5 ft by default). Use it for "is this build
   actually better?"
@@ -212,8 +226,9 @@ spell to catch as many enemies as it can without catching an ally. Its blind spo
 become yours the moment you quote one of these numbers, so state them when they
 bear on the question:
 
-- **It never uses an item.** No potion is ever drunk in a batch. If the question
-  turns on one, play the fight by hand instead.
+- **It uses healing deliberately, not arbitrary items.** A downed ally is revived
+  first; an ally at half HP or below may receive a healing spell or item. Other
+  item effects are not valued.
 - **It never casts a spell that deals no damage.** Hold Person is loaded,
   implemented, and still never chosen, because valuing a condition means modelling
   the turns it buys the rest of the party. A batch is a **floor** for a control
@@ -223,6 +238,8 @@ bear on the question:
   measure a fixture by running two batches — one map authored open, one shut —
   rather than expecting the policy to find the lever.
 - **It does not husband spell slots.** Best slot first, weapon afterwards.
+- **It closes with Dash.** An authored Bonus Action Dash is spent before the
+  action so a newly reachable attack can still happen that turn.
 - **It is greedy, not tactical.** No focus-fire planning, no retreating, no
   readying. Treat a win rate as "what these statistics do when both sides swing
   hard", not as what a good table would achieve.
@@ -232,14 +249,19 @@ it before trusting a damage figure — a spell that does not appear there was ne
 cast, and the number is measuring something narrower than you asked for.
 
 When comparing options, hold the seed and iteration count fixed and change one
-thing. Report the distribution, not just the mean: `p90` and `max` are what a
-player feels on a lucky round.
+thing. Report the distribution, not just the mean: `p10`, median, `p90`, and the
+resource/casualty tails are the play experience a win percentage hides.
 
 ## Primitives
 
 `roll`, `check`, and `save` handle one-off rolls outside a tracked encounter.
 Every one accepts an optional `seed` and **always reports the seed it used**, so
 any result can be replayed exactly. Quote the seed when a roll matters.
+
+`scenario_timing` handles one narrow route-level check outside combat: fixed
+distance and Speed (optionally Dashing and starting late) against an authored
+response delay. It reports travel rounds and the lead or deficit. It does not
+carry campaign state or decide which events reinforce which encounter.
 
 `lookup_rule` returns loaded conditions, spells, creatures, and items, each naming
 the pack it came from in `source`. Call it with no topic to see everything
@@ -290,20 +312,23 @@ State these when they bear on a ruling rather than papering over them:
   difficult terrain, a cliff is climbed at an extra foot per foot, and climbing
   down costs the same as up. Sight, cover, and areas are measured flat, so say so
   plainly when a player counts on high ground — a ridge screens nobody, and being
-  atop it grants no bonus to hit and none to AC. Still absent either way: falling
-  and fall damage, flying, jumping, Climb Speeds, creature size and squeezing,
-  flanking, and forced movement — so nothing can shove anyone off a ledge.
+  atop it grants no bonus to hit and none to AC. Walk, Climb, Swim, and Fly speeds,
+  storey-changing flight, underwater movement, Darkvision/Blindsight, local light,
+  and authored sight openings are supported. Still absent either way: falling and
+  fall damage, jumping, creature size and squeezing, flanking, and forced movement
+  — so nothing can shove anyone off a ledge.
 - **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
   `content_status` before concluding it does not exist. Either way, do not invent
   the missing stat block: say it is not available and offer a loaded alternative.
 - **Stat blocks list what is not implemented.** Every creature carries an
-  `unmodelled` field naming printed traits the engine skips — Nimble Escape, the
-  wolf's knock-Prone bite. Check it before promising a trait will fire, and
-  mention it if a player is counting on one. Pack creatures carry the field too,
-  empty unless their author filled it in. Pack Tactics and Undead Fortitude are
-  modelled now, as `pack_tactics` and `undead_fortitude` flags on the stat
-  block, so they fire on their own — do not re-apply them by hand.
+  `unmodelled` field naming printed traits the engine skips. Check it before
+  promising a trait will fire, and mention it if a player is counting on one.
+  Pack creatures carry the field too, empty unless their author filled it in.
+  Pack Tactics, Undead Fortitude, authored Bonus Action Dash/Disengage, last-one-
+  standing surrender, Redirect Attack, attack attachment damage, and conditional
+  adjacent-ally damage are modelled as explicit stat-block fields, so they fire on
+  their own — do not re-apply them by hand.
 - **Frightened always applies** its disadvantage. The encounter can answer simple
   sight questions, but a condition does not record which creature caused the fear,
   so it cannot test whether that particular source remains in line of sight.

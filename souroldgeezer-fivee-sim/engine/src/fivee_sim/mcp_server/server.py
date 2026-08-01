@@ -39,6 +39,8 @@ from mcp.server.mcpserver import MCPServer
 from .. import __version__
 from ..analytics.montecarlo import simulate_dpr as _simulate_dpr
 from ..analytics.montecarlo import simulate_rounds as _simulate_rounds
+from ..analytics.scenario import response_window as _response_window
+from ..analytics.scenario import travel_timing as _travel_timing
 from ..content import (
     BUILTIN_ENV,
     CONTENT_ENV,
@@ -60,6 +62,7 @@ from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import (
     DiagonalRule,
+    MovementMode,
     Point,
     Square,
     TerrainEffect,
@@ -71,7 +74,7 @@ from ..kernel.rules import Ability, DamageType, Size, make_d20_test
 from ..map_document import GROUND_LEVEL, MapDocument, MapLevel, as_payload, to_grid
 from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
-from ..model.creature import AttackOption, Creature
+from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from ..service import encounter_journal as _journal_service
 from ..service import maps as _map_service
@@ -515,6 +518,9 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
                 Dice.parse(str(spec["advantage_bonus_damage"]))
                 if spec.get("advantage_bonus_damage") is not None else None
             ),
+            advantage_bonus_with_adjacent_ally=bool(
+                spec.get("advantage_bonus_with_adjacent_ally", False)
+            ),
             on_hit_condition=(
                 str(spec["on_hit_condition"])
                 if spec.get("on_hit_condition") is not None else None
@@ -525,6 +531,16 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
             on_hit_save_dc=int(spec.get("on_hit_save_dc", 0)),
             on_hit_expiry=RiderExpiry(spec.get("on_hit_expiry", "none")),
             on_hit_max_size=Size(max_size) if max_size is not None else None,
+            on_hit_attach=bool(spec.get("on_hit_attach", False)),
+            attached_damage=(
+                Dice.parse(str(spec["attached_damage"]))
+                if spec.get("attached_damage") is not None else None
+            ),
+            attached_damage_type=(
+                DamageType(spec["attached_damage_type"])
+                if spec.get("attached_damage_type") is not None else None
+            ),
+            detach_after_damage=int(spec.get("detach_after_damage", 0)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -537,12 +553,18 @@ def _attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: before the constructor is reached and so reads none of the description keys —
 #: folding them into one set would accept ``{"monster": "...", "ac": 22}`` and
 #: silently ignore the AC, which is the very failure this guard exists to stop.
-_LOOKUP_SPEC_KEYS = frozenset({"creature", "monster", "label", "team", "position", "level"})
+_LOOKUP_SPEC_KEYS = frozenset({
+    "creature", "monster", "label", "team", "position", "level", "arrival_round",
+})
 _DESCRIBED_SPEC_KEYS = frozenset({
-    "name", "team", "ac", "max_hp", "hp", "speed", "size", "abilities", "save_bonuses",
-    "attacks", "attacks_per_action", "pack_tactics", "undead_fortitude", "spells",
+    "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
+    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "size", "abilities", "save_bonuses", "attacks", "attacks_per_action",
+    "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
+    "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
-    "vulnerabilities", "items", "conditions", "position", "level", "provenance",
+    "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
+    "provenance",
 })
 
 
@@ -582,9 +604,17 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
                 team=spec.get("team"),
                 position=_point(spec.get("position", 0), "position"),
                 level=int(spec.get("level", 0)),
+                arrival_round=int(spec.get("arrival_round", 1)),
             )
         except DataError as error:
             raise ToolError(str(error)) from error
+    bonus_actions = frozenset(str(value) for value in spec.get("bonus_actions", []))
+    unsupported_bonus_actions = sorted(bonus_actions - {"dash", "disengage"})
+    if unsupported_bonus_actions:
+        raise ToolError(
+            "bonus_actions must contain only dash or disengage; got: "
+            + ", ".join(unsupported_bonus_actions)
+        )
     try:
         return Creature(
             name=str(spec["name"]),
@@ -593,6 +623,14 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             max_hp=int(spec["max_hp"]),
             hp=int(spec.get("hp", -1)),
             speed=int(spec.get("speed", 30)),
+            climb_speed=int(spec.get("climb_speed", 0)),
+            swim_speed=int(spec.get("swim_speed", 0)),
+            fly_speed=int(spec.get("fly_speed", 0)),
+            terrain_cost_overrides=frozenset(
+                str(value) for value in spec.get("terrain_cost_overrides", [])
+            ),
+            darkvision=int(spec.get("darkvision", 0)),
+            blindsight=int(spec.get("blindsight", 0)),
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
             # route. Size gates attack riders like the Wolf's Prone.
@@ -607,6 +645,9 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             },
             attacks=tuple(_attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),
+            bonus_actions=bonus_actions,
+            surrender_when_last=bool(spec.get("surrender_when_last", False)),
+            redirect_attack=bool(spec.get("redirect_attack", False)),
             pack_tactics=bool(spec.get("pack_tactics", False)),
             undead_fortitude=bool(spec.get("undead_fortitude", False)),
             spells=tuple(str(name) for name in spec.get("spells", [])),
@@ -625,6 +666,8 @@ def _creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Crea
             condition_effects=registry.condition_effects,
             position=_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),
+            arrival_round=int(spec.get("arrival_round", 1)),
+            death_rule=DeathRule(spec.get("death_rule", DeathRule.DEATH_SAVES)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
@@ -902,6 +945,41 @@ def _audited_primitive(
         result=result,
     )
     return result
+
+
+@server.tool()
+def scenario_timing(
+    distance_feet: int,
+    speed_feet: int,
+    dash: bool = False,
+    start_delay_rounds: int = 0,
+    response_after_rounds: int | None = None,
+) -> dict[str, Any]:
+    """Measure route arrival and, optionally, its lead over a timed response.
+
+    This is scenario evidence rather than combat state: supply the authored route
+    distance, movement speed, and response delay.  ``dash`` means the traveller
+    spends its action to move twice its speed every round.
+    """
+    try:
+        if response_after_rounds is None:
+            return {
+                "traveller": _travel_timing(
+                    distance_feet=distance_feet,
+                    speed_feet=speed_feet,
+                    dash=dash,
+                    start_delay_rounds=start_delay_rounds,
+                ).as_dict()
+            }
+        return _response_window(
+            distance_feet=distance_feet,
+            speed_feet=speed_feet,
+            dash=dash,
+            start_delay_rounds=start_delay_rounds,
+            response_after_rounds=response_after_rounds,
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
 
 
 @server.tool()
@@ -1394,9 +1472,11 @@ def encounter_create(
     "team": "monsters", "position": [15, 0]}`` for a bundled stat block, or an
     explicit description with at least name, team, ac, and max_hp. A key the spec
     does not define is refused rather than ignored, so a misspelling or an
-    unmodelled field such as ``fly_speed`` is reported instead of silently
-    dropped; the two forms take different keys, and the refusal lists the ones
-    that would have worked. Names must be
+    unsupported field is reported instead of silently dropped; the two forms
+    take different keys, and the refusal lists the ones that would have worked.
+    ``arrival_round`` is per-instance reinforcement timing: a combatant scheduled
+    after round 1 is absent, untargetable, and unable to act until that round
+    begins. Names must be
     unique — they identify combatants in every later call. A position is ``[x, y]``
     in feet on a flat plane; a bare number is accepted and means feet along the
     x-axis. ``movement_rule`` is how diagonals are measured: "5-5-5" (the default)
@@ -1612,6 +1692,8 @@ def _execute_encounter_act(
     feature: str | None = None,
     set_open: bool | None = None,
     to_level: int | None = None,
+    movement_mode: str | None = None,
+    as_bonus_action: bool = False,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -1639,7 +1721,9 @@ def _execute_encounter_act(
     pins the exact route as ``[x, y]`` waypoints, one per square. ``to_level``
     ends a move on another storey: walk to a stairway on your own level — the
     square named by ``to_position`` — and it carries you, charging the rise
-    between the two floors as a climb. Illegal actions are refused with the
+    between the two floors as a climb. ``movement_mode`` selects walk, climb,
+    swim, or fly; the creature must have that speed, and flight does not need a
+    connector. Illegal actions are refused with the
     reason rather than silently adjusted.
     """
     session = _session(encounter_id)
@@ -1648,6 +1732,13 @@ def _execute_encounter_act(
     except ValueError as error:
         allowed = ", ".join(item.value for item in ActionKind)
         raise ToolError(f"kind must be one of: {allowed}") from error
+    selected_mode: MovementMode | None = None
+    if movement_mode is not None:
+        try:
+            selected_mode = MovementMode(movement_mode)
+        except ValueError as error:
+            allowed = ", ".join(mode.value for mode in MovementMode)
+            raise ToolError(f"movement_mode must be one of: {allowed}") from error
     waypoints: list[tuple[int, int]] = []
     for step in path or []:
         point = _point(step, "each path waypoint")
@@ -1687,6 +1778,8 @@ def _execute_encounter_act(
         feature=feature,
         set_open=set_open,
         to_level=to_level,
+        movement_mode=selected_mode,
+        as_bonus_action=as_bonus_action,
     )
     try:
         events = session.encounter.act(action, session.rng)
@@ -1719,6 +1812,8 @@ def encounter_act(
     feature: str | None = None,
     set_open: bool | None = None,
     to_level: int | None = None,
+    movement_mode: str | None = None,
+    as_bonus_action: bool = False,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Take the current creature's action and durably audit success or refusal.
@@ -1747,6 +1842,8 @@ def encounter_act(
         "feature": feature,
         "set_open": set_open,
         "to_level": to_level,
+        "movement_mode": movement_mode,
+        "as_bonus_action": as_bonus_action,
     }
     index, started_at = _attempt_started(
         encounter_id, session, "encounter_act", arguments, request_id
@@ -1771,6 +1868,8 @@ def encounter_act(
             feature,
             set_open,
             to_level,
+            movement_mode,
+            as_bonus_action,
         )
     except (ToolError, EncounterError) as error:
         _attempt_finished(
@@ -2859,8 +2958,10 @@ def simulate_rounds(
     Combatant specs match ``encounter_create``, as do ``movement_rule``, the
     inline ``map`` spec, and ``map_id`` (a loaded map session; one or the
     other, not both) — with a map, every iteration fights on it: terrain
-    costs, cover, sight, and pathfinding all apply, and doors reset to their
-    initial state between iterations. Iteration ``i`` uses ``seed + i``, so one
+    costs, cover, sight, and pathfinding all apply, the policy chooses authored
+    Walk/Climb/Swim/Fly modes, and doors reset to their initial state between
+    iterations. ``arrival_round`` schedules the same reinforcement in every
+    iteration. Iteration ``i`` uses ``seed + i``, so one
     iteration reproduces a single hand-played encounter at that seed. With
     ``map_id`` the result's ``map_source`` records the exact map generation
     and hash the batch ran on.

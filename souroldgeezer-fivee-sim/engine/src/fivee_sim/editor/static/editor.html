@@ -196,6 +196,8 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <option value="stairs_up">stairs up</option>
       <option value="stairs_down">stairs down</option>
       <option value="spawn">spawn</option>
+      <option value="opening">opening</option>
+      <option value="light">light</option>
     </select>
     <button class="tool" data-tool="erase">Eraser</button>
     <button class="tool" data-tool="height">Height</button>
@@ -203,6 +205,12 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <h3>Map</h3>
     <label for="level-select">Level</label>
     <select id="level-select" aria-label="level"></select>
+    <label for="ambient-light">Ambient light</label>
+    <select id="ambient-light" aria-label="ambient light">
+      <option value="bright">bright</option>
+      <option value="dim">dim</option>
+      <option value="darkness">darkness</option>
+    </select>
     <button id="btn-stack" title="show the other storeys through this one">Stack</button>
     <button id="btn-preview"
       title="draw the map as if the ticked fixtures stood open">Preview</button>
@@ -225,6 +233,16 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     </div>
     <h3>Selected feature</h3>
     <div id="feature-info">none</div>
+    <div id="feature-config" hidden>
+      <label for="feature-sight-levels">visible levels</label>
+      <input id="feature-sight-levels" type="text" placeholder="0, 1">
+      <label for="feature-light-bright">bright ft</label>
+      <input id="feature-light-bright" type="number" min="0" step="5" value="0">
+      <label for="feature-light-dim">dim ft</label>
+      <input id="feature-light-dim" type="number" min="0" step="5" value="0">
+      <label for="feature-light-color">light color</label>
+      <input id="feature-light-color" type="color" value="#ffffff">
+    </div>
     <div id="door-config" hidden>
       <label for="door-orientation">orientation</label>
       <select id="door-orientation">
@@ -533,7 +551,8 @@ if (typeof FiveeRenderer === "undefined") {
      the shape it already draws. */
   function renderable() {
     return { grid: doc.grid, legend: doc.legend, palette: doc.palette,
-      tiles: plane().tiles, features: plane().features };
+      tiles: plane().tiles, features: plane().features,
+      ambient_light: plane().ambient_light || "bright" };
   }
   /* Every layer the document carries. The page paints ground elevation and
      terrain color now, and keeps both in the server's canonical shape —
@@ -546,7 +565,7 @@ if (typeof FiveeRenderer === "undefined") {
       name: payload.name, grid: payload.grid, legend: payload.legend,
       tiles: payload.tiles, features: payload.features,
       elevation: payload.elevation, levels: payload.levels,
-      palette: payload.palette
+      palette: payload.palette, ambient_light: payload.ambient_light
     });
   }
   function snapshot() {
@@ -568,6 +587,8 @@ if (typeof FiveeRenderer === "undefined") {
     else { doc.elevation = previous.elevation; }
     if (previous.levels === undefined) { delete doc.levels; }
     else { doc.levels = previous.levels; }
+    if (previous.ambient_light === undefined) { delete doc.ambient_light; }
+    else { doc.ambient_light = previous.ambient_light; }
     if (levelIndices().indexOf(activeLevel) === -1) { activeLevel = 0; }
     renderLevels();
     if (previous.palette === undefined) { delete doc.palette; }
@@ -579,6 +600,7 @@ if (typeof FiveeRenderer === "undefined") {
     renderFixtureList();
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
+    byId("ambient-light").value = plane().ambient_light || "bright";
     byId("map-name").value = doc.name;
     renderLegend();
     redraw();
@@ -630,6 +652,7 @@ if (typeof FiveeRenderer === "undefined") {
     byId("btn-heights").classList.toggle("active", heightsOn);
     renderElevationLegend();  /* the cache rebuilt before heightsOn was known */
     byId("elevation-default").value = elevationDefault();
+    byId("ambient-light").value = plane().ambient_light || "bright";
     byId("map-name").value = doc.name;
     var box = canvas.getBoundingClientRect();
     view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
@@ -973,6 +996,11 @@ if (typeof FiveeRenderer === "undefined") {
       var kind = byId("feature-kind").value;
       var id = nextFeatureId(kind.replace(/_/g, "-"));
       plane().features.push({ id: id, kind: kind, at: [cell[0], cell[1]] });
+      if (kind === "light") {
+        plane().features[plane().features.length - 1].light = {
+          bright: 20, dim: 40, color: "#ffffff"
+        };
+      }
       setStatus("placed " + id + " at [" + cell + "]");
     }
     renderFeatureInfo();
@@ -1086,6 +1114,7 @@ if (typeof FiveeRenderer === "undefined") {
       info.textContent = "none";
       remove.hidden = true;
       renderDoorControls(null);
+      renderFeatureControls(null);
       return;
     }
     var lines = ["id: " + feature.id, "kind: " + feature.kind,
@@ -1096,6 +1125,13 @@ if (typeof FiveeRenderer === "undefined") {
     if (feature.state) { lines.push("state: " + feature.state); }
     if (feature.linked_to) { lines.push("linked_to: " + feature.linked_to); }
     if (feature.team) { lines.push("team: " + feature.team); }
+    if (Array.isArray(feature.sight_to_levels) && feature.sight_to_levels.length) {
+      lines.push("visible levels: " + feature.sight_to_levels.join(", "));
+    }
+    if (feature.light && typeof feature.light === "object") {
+      lines.push("light: " + feature.light.bright + " ft bright / "
+        + feature.light.dim + " ft dim · " + feature.light.color);
+    }
     /* The seven keys that make a feature a fixture. Without them the block
        showed a `state` and stopped, so a loaded sluice read as a bare door and
        nothing on the page said what operating it would do. Each line appears
@@ -1147,7 +1183,56 @@ if (typeof FiveeRenderer === "undefined") {
     info.textContent = lines.join("\n");
     remove.hidden = false;
     renderDoorControls(feature.kind === "door" ? feature : null);
+    renderFeatureControls(feature);
   }
+  function renderFeatureControls(feature) {
+    var host = byId("feature-config");
+    host.hidden = feature === null;
+    if (feature === null) { return; }
+    byId("feature-sight-levels").value = Array.isArray(feature.sight_to_levels)
+      ? feature.sight_to_levels.join(", ") : "";
+    var light = feature.light && typeof feature.light === "object" ? feature.light : {};
+    byId("feature-light-bright").value = Number.isInteger(light.bright) ? light.bright : 0;
+    byId("feature-light-dim").value = Number.isInteger(light.dim) ? light.dim : 0;
+    byId("feature-light-color").value = /^#[0-9a-fA-F]{6}$/.test(light.color || "")
+      ? light.color : "#ffffff";
+  }
+  function updateSelectedFeatureEnvironment() {
+    var feature = selectedFeatureId === null ? null : featureById(selectedFeatureId);
+    if (!feature) { return; }
+    var rawLevels = byId("feature-sight-levels").value.trim();
+    var levels = rawLevels ? rawLevels.split(",").map(function (value) {
+      return Number(value.trim());
+    }) : [];
+    if (levels.some(function (value) { return !Number.isInteger(value); })) {
+      setStatus("visible levels must be comma-separated whole numbers", "error");
+      renderFeatureControls(feature);
+      return;
+    }
+    var bright = Number(byId("feature-light-bright").value);
+    var dim = Number(byId("feature-light-dim").value);
+    if (!Number.isInteger(bright) || bright < 0 || !Number.isInteger(dim) || dim < 0) {
+      setStatus("light ranges must be whole numbers of 0 feet or more", "error");
+      renderFeatureControls(feature);
+      return;
+    }
+    snapshot();
+    levels = levels.filter(function (value, index) { return levels.indexOf(value) === index; })
+      .sort(function (left, right) { return left - right; });
+    if (levels.length) { feature.sight_to_levels = levels; }
+    else { delete feature.sight_to_levels; }
+    if (bright > 0 || dim > 0) {
+      feature.light = {
+        bright: bright, dim: dim, color: byId("feature-light-color").value
+      };
+    } else { delete feature.light; }
+    renderFeatureInfo();
+    redraw();
+  }
+  ["feature-sight-levels", "feature-light-bright", "feature-light-dim",
+    "feature-light-color"].forEach(function (id) {
+    byId(id).addEventListener("change", updateSelectedFeatureEnvironment);
+  });
   /* One {closed, open} pair as the panel shows it: what the square is, and
      what operating the fixture makes it. */
   function pairText(pair) {
@@ -1996,6 +2081,7 @@ if (typeof FiveeRenderer === "undefined") {
     selectedFeatureId = null;
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
+    byId("ambient-light").value = plane().ambient_light || "bright";
     renderFeatureInfo();
     /* Which storeys are ghosted is relative to the one selected, so the key
        and the ghosts both move when the selection does. */
@@ -2004,6 +2090,14 @@ if (typeof FiveeRenderer === "undefined") {
        be too: the ground's fixtures left listed here would offer checkboxes
        for squares this storey has never heard of. */
     renderFixtureList();
+    redraw();
+  });
+  byId("ambient-light").addEventListener("change", function () {
+    if (!doc) { return; }
+    snapshot();
+    var value = byId("ambient-light").value;
+    if (value === "bright") { delete plane().ambient_light; }
+    else { plane().ambient_light = value; }
     redraw();
   });
 

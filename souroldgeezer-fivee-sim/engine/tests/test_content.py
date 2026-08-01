@@ -45,7 +45,7 @@ from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.rules import Size
 from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.mcp_server import server as api
-from fivee_sim.model.creature import Creature
+from fivee_sim.model.creature import Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 
 from .conftest import advance_to
@@ -183,6 +183,87 @@ class TestLoading:
         assert stalker.attacks[0].name == "Claw"
 
 
+class TestPlaytestFieldsSchema:
+    def test_environment_lifecycle_and_healing_fields_round_trip(
+        self, tmp_path: Path
+    ) -> None:
+        from fivee_sim.kernel.dice import Dice
+        from fivee_sim.kernel.items import ActionCost
+
+        path = write_pack(tmp_path, "playtest.json", {
+            "pack": "playtest", "provenance": "test",
+            "creatures": [{
+                "name": "Skirmisher", "ac": 13, "max_hp": 9,
+                "speed": 10, "climb_speed": 20, "swim_speed": 30,
+                "fly_speed": 40, "terrain_cost_overrides": ["grain"],
+                "darkvision": 60, "blindsight": 10,
+                "death_rule": "instant",
+                "bonus_actions": ["dash", "disengage"],
+                "surrender_when_last": True,
+                "redirect_attack": True,
+                "attacks": [{
+                    "name": "Proboscis", "attack_bonus": 5,
+                    "damage": "1d4", "damage_type": "piercing",
+                    "advantage_bonus_damage": "1d6",
+                    "advantage_bonus_with_adjacent_ally": True,
+                    "on_hit_attach": True, "attached_damage": "2d4",
+                    "attached_damage_type": "necrotic",
+                    "detach_after_damage": 5,
+                }],
+                "provenance": "test",
+            }],
+            "spells": [{
+                "name": "Restore", "level": 1, "heal": "1d8+3",
+                "upcast_heal": "1d8", "range_feet": 5,
+                "provenance": "test",
+            }],
+            "terrain": [{
+                "name": "deep-water", "effects": {
+                    "move_cost_multiplier": 2, "underwater": True,
+                }, "provenance": "test",
+            }],
+            "items": [{
+                "name": "Second Wind", "use": {
+                    "heal": "1d10+1", "action_cost": "bonus_action",
+                }, "provenance": "test",
+            }],
+        })
+
+        registry = load_packs([path], builtin="exclude", include_environment=False)
+        creature = make_creature("Skirmisher", registry=registry)
+        attack = creature.attacks[0]
+
+        assert (creature.speed, creature.climb_speed, creature.swim_speed) == (10, 20, 30)
+        assert creature.fly_speed == 40
+        assert creature.terrain_cost_overrides == frozenset({"grain"})
+        assert (creature.darkvision, creature.blindsight) == (60, 10)
+        assert creature.death_rule is DeathRule.INSTANT
+        assert creature.bonus_actions == frozenset({"dash", "disengage"})
+        assert creature.surrender_when_last is True
+        assert creature.redirect_attack is True
+        assert attack.advantage_bonus_damage == Dice(1, 6)
+        assert attack.advantage_bonus_with_adjacent_ally is True
+        assert attack.on_hit_attach is True
+        assert attack.attached_damage == Dice(2, 4)
+        assert attack.detach_after_damage == 5
+        assert registry.spells["Restore"].heal == Dice(1, 8, 3)
+        assert registry.spells["Restore"].upcast_heal == Dice(1, 8)
+        assert registry.terrain_effects["deep-water"].underwater is True
+        assert registry.items["Second Wind"].action_cost is ActionCost.BONUS_ACTION
+
+    def test_an_unknown_bonus_action_is_refused_by_name(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "bad-bonus.json", {
+            "pack": "x", "provenance": "test", "creatures": [{
+                "name": "Thing", "ac": 10, "max_hp": 10,
+                "bonus_actions": ["teleport"], "provenance": "test",
+            }],
+        })
+
+        found = problems(validate([path], builtin="exclude", include_environment=False))
+
+        assert any("Valid values: dash, disengage" in problem for problem in found)
+
+
 class TestExcludeMode:
     def test_bundled_content_is_absent(self, pack: Path) -> None:
         registry = load_packs([pack], builtin="exclude", include_environment=False)
@@ -223,6 +304,7 @@ class TestExcludeMode:
         victim = make_creature("Vale Stalker", registry=registry, label="B", team="b")
         victim.max_hp = 1
         victim.hp = 1
+        victim.death_rule = DeathRule.DEATH_SAVES
         rng = Random(3)
         encounter = Encounter(
             [attacker, victim], rng,
