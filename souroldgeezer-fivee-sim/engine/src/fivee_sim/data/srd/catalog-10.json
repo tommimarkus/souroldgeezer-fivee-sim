@@ -1133,8 +1133,61 @@
       "pages": [
         108
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Animal Shapes",
+        "level": 8,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "targets": {
+            "count": "Any",
+            "willing": true,
+            "visible": true,
+            "type": "Creature"
+          },
+          "form": {
+            "type": "Beast",
+            "maximum_size": "Large",
+            "maximum_challenge_rating": 4,
+            "may_differ_by_target": true
+          },
+          "later_transformation_action": "Magic",
+          "statistics_replaced_by_form": true,
+          "retained_statistics": [
+            "Creature type",
+            "Hit Points",
+            "Hit Point Dice",
+            "Alignment",
+            "Communication ability",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "actions_limited_by_form_anatomy": true,
+          "spellcasting_allowed": false,
+          "equipment_melds_into_form": true,
+          "melded_equipment_usable": false,
+          "temporary_hit_points": "Hit Points of first form",
+          "remaining_temporary_hit_points_end_with_spell": true,
+          "target_end_action": "Bonus Action"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1149,8 +1202,66 @@
       "pages": [
         108
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Animate Dead",
+        "level": 3,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 minute"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of blood, piece of flesh, and pinch of bone dust"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": {
+            "type": "Medium or Small Humanoid remains",
+            "options": {
+              "Bones": "Skeleton",
+              "Corpse": "Zombie"
+            }
+          },
+          "created_creature_type": "Undead",
+          "stat_block_reference": "Monsters",
+          "command": {
+            "action": "Bonus Action",
+            "maximum_distance_feet": 60,
+            "multiple_creatures_receive_same_command": true,
+            "choices": [
+              "Next-turn action",
+              "Next-turn movement",
+              "General task"
+            ],
+            "no_command_action": "Dodge",
+            "no_command_movement": "Avoid harm only",
+            "order_duration": "Until task complete"
+          },
+          "control_hours": 24,
+          "control_extension": {
+            "recast_before_expiration": true,
+            "hours": 24,
+            "maximum_existing_creatures": 4,
+            "animates_new_creature": false
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "additional_creatures_per_slot_level": 2,
+            "distinct_remains_required": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1166,8 +1277,77 @@
         108,
         109
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Animate Objects",
+        "level": 5,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "targets": {
+            "type": "Nonmagical object",
+            "not_worn_or_carried": true,
+            "not_fixed_to_surface": true,
+            "maximum_size": "Huge",
+            "maximum_count": "Spellcasting ability modifier",
+            "count_cost_by_size": {
+              "Medium or smaller": 1,
+              "Large": 2,
+              "Huge": 3
+            }
+          },
+          "created_creature": {
+            "type": "Construct",
+            "stat_block_id": "790-10-14-animated-object"
+          },
+          "control_ends": [
+            "Spell ends",
+            "Creature reaches 0 Hit Points"
+          ],
+          "ally_to": [
+            "Caster",
+            "Caster allies"
+          ],
+          "initiative": {
+            "shares_caster_count": true,
+            "turn": "Immediately after caster"
+          },
+          "command": {
+            "action": "Bonus Action",
+            "maximum_distance_feet": 500,
+            "multiple_creatures_receive_same_command": true,
+            "no_command_action": "Dodge",
+            "no_command_movement": "Avoid harm only"
+          },
+          "zero_hit_points": {
+            "reverts_to_object": true,
+            "remaining_damage_carries_over": true
+          },
+          "higher_level_slot_slam_damage_per_level": {
+            "Medium or smaller": "1d4",
+            "Large": "1d6",
+            "Huge": "1d12"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1182,8 +1362,84 @@
       "pages": [
         109
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Animated Object",
+        "size": "Huge or Smaller",
+        "type": "Construct",
+        "alignment": "Unaligned",
+        "armor_class": 15,
+        "hit_points_by_size": {
+          "Medium or smaller": 10,
+          "Large": 20,
+          "Huge": 40
+        },
+        "speed_feet": 30,
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Charisma": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          }
+        },
+        "damage_immunities": [
+          "Poison",
+          "Psychic"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Exhaustion",
+          "Frightened",
+          "Paralyzed",
+          "Poisoned"
+        ],
+        "senses": {
+          "blindsight_feet": 30,
+          "passive_perception": 6
+        },
+        "languages": "Understands languages known by caster",
+        "challenge_rating": "None",
+        "experience_points": 0,
+        "proficiency_bonus": "Caster's Proficiency Bonus",
+        "actions": {
+          "Slam": {
+            "attack": "Melee Attack Roll",
+            "attack_bonus": "Caster's spell attack modifier",
+            "reach_feet": 5,
+            "damage_type": "Force",
+            "damage_by_size": {
+              "Medium or smaller": "1d4 + 3",
+              "Large": "2d6 + 3 + spellcasting ability modifier",
+              "Huge": "2d12 + 3 + spellcasting ability modifier"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "789-10-13-10-animate-objects"
     },
@@ -1198,8 +1454,49 @@
       "pages": [
         109
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Antilife Shell",
+        "level": 5,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 10
+          },
+          "excluded_creature_types": [
+            "Construct",
+            "Undead"
+          ],
+          "barrier_prevents": [
+            "Passing through",
+            "Reaching through"
+          ],
+          "allowed_through_barrier": [
+            "Spells",
+            "Ranged weapon attacks",
+            "Reach weapon attacks"
+          ],
+          "ends_if_caster_movement_forces_affected_creature_through": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1214,8 +1511,55 @@
       "pages": [
         109
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Antimagic Field",
+        "level": 8,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "iron filings"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 10
+          },
+          "prohibited_inside": [
+            "Cast spells",
+            "Magic actions",
+            "Create magical effects"
+          ],
+          "magic_cannot_target_or_affect_inside": true,
+          "magic_item_properties_function": false,
+          "magical_areas_extend_inside": false,
+          "teleportation_allowed": false,
+          "planar_travel_allowed": false,
+          "portals_temporarily_close": true,
+          "ongoing_magic": {
+            "suppressed": true,
+            "artifact_or_deity_exception": true,
+            "duration_continues": true
+          },
+          "dispel_magic_effect": "None",
+          "overlapping_fields_cancel_each_other": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1231,8 +1575,61 @@
         109,
         110
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Antipathy/Sympathy",
+        "level": 8,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 hour"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mixture of vinegar and honey"
+        },
+        "duration": {
+          "days": 10
+        },
+        "effect": {
+          "mode_choice": [
+            "Antipathy",
+            "Sympathy"
+          ],
+          "target": {
+            "types": [
+              "Creature",
+              "Object"
+            ],
+            "maximum_size": "Huge"
+          },
+          "affected_creature_kind_chosen_by_caster": true,
+          "trigger_distance_feet": 120,
+          "saving_throw_ability": "Wisdom",
+          "failed_save_modes": {
+            "Antipathy": {
+              "condition": "Frightened",
+              "movement": "Safest route as far from target as possible"
+            },
+            "Sympathy": {
+              "condition": "Charmed",
+              "movement": "Safest route as close to target as possible",
+              "cannot_willingly_leave_within_feet": 5,
+              "target_damage_allows_end_save": true
+            }
+          },
+          "end_turn_beyond_feet_allows_end_save": 120,
+          "successful_save_immunity_minutes": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1247,8 +1644,47 @@
       "pages": [
         110
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Arcane Eye",
+        "level": 4,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of bat fur"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "sensor": {
+            "visible": false,
+            "invulnerable": true,
+            "hovering": true,
+            "vision": "All directions",
+            "darkvision_feet": 30
+          },
+          "caster_receives_visual_information": true,
+          "movement": {
+            "action": "Bonus Action",
+            "feet": 30,
+            "directions": "Any"
+          },
+          "solid_barrier_blocks_movement": true,
+          "minimum_opening_diameter_inches": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1263,8 +1699,89 @@
       "pages": [
         110
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Arcane Hand",
+        "level": 5,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "eggshell and glove"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "hand": {
+            "size": "Large",
+            "type": "Object",
+            "placement": "Visible unoccupied space",
+            "armor_class": 20,
+            "hit_points": "Caster Hit Point maximum",
+            "occupies_space": false,
+            "zero_hit_points_ends_spell": true,
+            "mimics_caster_hand": true
+          },
+          "activation": {
+            "on_cast": true,
+            "later_action": "Bonus Action",
+            "move_feet": 60
+          },
+          "options": {
+            "Clenched Fist": {
+              "target_distance_feet": 5,
+              "attack": "Melee spell attack",
+              "hit_damage": "5d8",
+              "damage_type": "Force"
+            },
+            "Forceful Hand": {
+              "maximum_target_size": "Huge",
+              "target_distance_feet": 5,
+              "saving_throw_ability": "Strength",
+              "failed_save_maximum_push_feet": "5 + five times spellcasting ability modifier",
+              "hand_moves_with_target": true
+            },
+            "Grasping Hand": {
+              "maximum_target_size": "Huge",
+              "target_distance_feet": 5,
+              "saving_throw_ability": "Dexterity",
+              "failed_save_condition": "Grappled",
+              "escape_dc": "Spell save DC",
+              "crush_action": "Bonus Action",
+              "crush_requires_grapple": true,
+              "crush_damage": "4d6 + spellcasting ability modifier",
+              "crush_damage_type": "Bludgeoning"
+            },
+            "Interposing Hand": {
+              "cover": "Half Cover",
+              "cover_against": [
+                "Attacks and effects originating from hand's space",
+                "Attacks and effects passing through hand's space"
+              ],
+              "enemy_terrain": "Difficult Terrain"
+            }
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 6,
+            "damage_per_level": {
+              "Clenched Fist": "2d8",
+              "Grasping Hand": "2d6"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1279,8 +1796,46 @@
       "pages": [
         110
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Arcane Lock",
+        "level": 2,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "gold dust worth 25+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "target_options": [
+            "Closed door",
+            "Closed window",
+            "Closed gate",
+            "Closed container",
+            "Closed hatch"
+          ],
+          "nonmagical_unlocking_allowed": false,
+          "designated_creatures_can_open_and_close": true,
+          "password": {
+            "optional": true,
+            "spoken_within_feet": 5,
+            "unlock_duration_minutes": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1295,8 +1850,50 @@
       "pages": [
         110
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Arcane Sword",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "miniature sword worth 250+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "sword": {
+            "spectral": true,
+            "hovering": true
+          },
+          "initial_attack": {
+            "type": "Melee spell attack",
+            "target_distance_feet": 5,
+            "hit_damage": "4d12 + spellcasting ability modifier",
+            "damage_type": "Force"
+          },
+          "later_turns": {
+            "action": "Bonus Action",
+            "move_feet": 30,
+            "destination_visible": true,
+            "repeat_attack": true,
+            "retarget_allowed": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1312,8 +1909,55 @@
         110,
         111
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Arcanist's Magic Aura",
+        "level": 2,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "small square of silk"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "targets": {
+            "Creature": {
+              "willing": true,
+              "effect": "Mask"
+            },
+            "Object": {
+              "not_worn_or_carried": true,
+              "effect": "False Aura"
+            }
+          },
+          "permanent_until_dispelled_after_daily_castings": 30,
+          "same_target_required": true,
+          "Mask": {
+            "chosen_type_must_differ": true,
+            "magical_effects_treat_as_chosen_creature_type": true
+          },
+          "False Aura": {
+            "affects_magical_aura_detection": true,
+            "options": [
+              "Nonmagical appears magical",
+              "Magic item appears nonmagical",
+              "Aura appears as chosen school of magic"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1328,8 +1972,63 @@
       "pages": [
         111
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Astral Projection",
+        "level": 9,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 hour"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "per target: jacinth worth 1,000+ GP and silver bar worth 100+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "maximum_additional_targets": 8,
+          "targets_willing": true,
+          "destination": "Astral Plane",
+          "fails_if_caster_already_there": true,
+          "body_state": {
+            "condition": "Unconscious",
+            "needs_food": false,
+            "needs_air": false,
+            "ages": false
+          },
+          "astral_form": {
+            "replicates_statistics": true,
+            "replicates_possessions": true,
+            "silvery_cord": true,
+            "can_travel_astral_plane": true
+          },
+          "cord_can_only_be_cut_by_explicit_effect": true,
+          "cord_cut_result": {
+            "body_dies": true,
+            "astral_form_dies": true
+          },
+          "leaving_astral_plane": "Body and possessions travel along cord and target re-enters body on new plane",
+          "effects_transfer_between_body_and_form": false,
+          "zero_hit_points_ends_for_target": true,
+          "caster_dismissal": {
+            "action": "Magic",
+            "ends_for_all": true
+          },
+          "living_target_end_result": "Reappears in body and leaves suspended animation"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1344,8 +2043,43 @@
       "pages": [
         111
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Augury",
+        "level": 2,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 minute",
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "divinatory tokens worth 25+ GP"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "planned_action_window_minutes": 30,
+          "omen_source": "Otherworldly entity",
+          "omen_selected_by": "GM",
+          "omens_table_id": "111-omens",
+          "accounts_for_result_changing_circumstances": false,
+          "repeat_before_long_rest": {
+            "first_casting_with_answer": true,
+            "no_answer_chance_increase_percent_per_additional_casting": 25
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1360,8 +2094,42 @@
       "pages": [
         111
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Aura of Life",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30
+          },
+          "beneficiaries": [
+            "Caster",
+            "Caster allies"
+          ],
+          "necrotic_damage": "Resistance",
+          "hit_point_maximum_reduction_allowed": false,
+          "ally_zero_hit_points_start_turn_healing": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1377,8 +2145,61 @@
         111,
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Awaken",
+        "level": 5,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid"
+        ],
+        "casting_time": {
+          "time": "8 hours"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "agate worth 1,000+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "eligible_targets": [
+            {
+              "type": "Beast",
+              "maximum_intelligence": 3
+            },
+            {
+              "type": "Plant creature",
+              "maximum_intelligence": 3
+            },
+            {
+              "type": "Natural non-creature plant"
+            }
+          ],
+          "intelligence_score": 10,
+          "language_gained": "One known by caster",
+          "natural_plant_changes": {
+            "becomes_creature_type": "Plant",
+            "movement": true,
+            "humanlike_senses": true,
+            "statistics_selected_by": "GM"
+          },
+          "condition": "Charmed",
+          "condition_maximum_days": 30,
+          "condition_ends_if_damaged_by": [
+            "Caster",
+            "Caster allies"
+          ],
+          "post_condition_attitude_selected_by": "Awakened creature"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1393,8 +2214,46 @@
       "pages": [
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Bane",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of blood"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "maximum_targets": 3,
+          "targets_visible": true,
+          "saving_throw_ability": "Charisma",
+          "failed_save_penalty": "1d4",
+          "penalty_applies_to": [
+            "Attack rolls",
+            "Saving throws"
+          ],
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1409,8 +2268,62 @@
       "pages": [
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Banishment",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pentacle"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": {
+            "count": 1,
+            "type": "Creature",
+            "visible": true
+          },
+          "saving_throw_ability": "Charisma",
+          "failed_save": {
+            "destination": "Harmless demiplane",
+            "condition": "Incapacitated"
+          },
+          "normal_return": {
+            "when": "Spell ends",
+            "space": "Departure space or nearest unoccupied space"
+          },
+          "one_minute_permanent_banishment_types": [
+            "Aberration",
+            "Celestial",
+            "Elemental",
+            "Fey",
+            "Fiend"
+          ],
+          "permanent_destination": "Random location on GM-selected plane associated with creature type",
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -1425,8 +2338,38 @@
       "pages": [
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Barkskin",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "handful of bark"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": {
+            "type": "Creature",
+            "willing": true
+          },
+          "armor_class_floor": 17,
+          "appearance": "Bark-like skin"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6808,7 +7751,7 @@
       "name": "Omens",
       "section_id": "800-10-14-10-augury",
       "page": 111,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "omen",
@@ -6816,12 +7759,53 @@
           "type": "string"
         },
         {
-          "id": "for-results-that-will-be",
+          "id": "result",
           "name": "For Results That Will Be ...",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Weal"
+            },
+            {
+              "value": "Good"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Woe"
+            },
+            {
+              "value": "Bad"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weal and woe"
+            },
+            {
+              "value": "Good and bad"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Indifference"
+            },
+            {
+              "value": "Neither good nor bad"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
