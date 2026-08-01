@@ -23,8 +23,8 @@ Generated totals for the bundled SRD 5.2.1 structured catalog and the smaller ex
 
 | Status | Sections | Tables |
 | --- | ---: | ---: |
-| pending | 39 | 0 |
-| complete | 1930 | 224 |
+| pending | 19 | 0 |
+| complete | 1950 | 224 |
 | no_structured_facts | 93 | 3 |
 
 ## Simulation support

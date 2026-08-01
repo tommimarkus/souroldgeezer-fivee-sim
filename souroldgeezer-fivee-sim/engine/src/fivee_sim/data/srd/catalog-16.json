@@ -5774,8 +5774,100 @@
         356,
         357
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Lion",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 22,
+          "hit_dice": "4d10"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "skills": {
+          "Perception": 3,
+          "Stealth": 4
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 13
+        },
+        "languages": [],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "traits": {
+          "pack_tactics": {
+            "advantage_on_attack_when": "at least one of lion's allies is within 5 feet of target",
+            "ally_must_not_be_incapacitated": true
+          },
+          "running_leap": {
+            "actor": "lion",
+            "running_start_feet": 10,
+            "long_jump_feet": 25
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2,
+            "may_replace_one_with": "Roar"
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d8 + 3 Slashing"
+          },
+          "roar": {
+            "save": {
+              "ability": "Wisdom",
+              "dc": 11
+            },
+            "target": "one creature within 15 feet",
+            "failure_condition": "Frightened until start of lion's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5790,8 +5882,81 @@
       "pages": [
         357
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Lizard",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 2,
+          "hit_dice": "1d4"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "climb_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Charisma": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Darkvision_feet": 30,
+          "Passive_Perception": 9
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "spider_climb": {
+            "can_climb_difficult_surfaces": true,
+            "can_climb_ceilings": true,
+            "ability_check_required": false
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 2,
+            "reach_feet": 5,
+            "damage": "1 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5806,8 +5971,92 @@
       "pages": [
         357
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mammoth",
+        "size": "Huge",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 126,
+          "hit_dice": "11d12 + 55"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 24,
+            "modifier": 7,
+            "save": 10
+          },
+          "Dexterity": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Constitution": {
+            "score": 21,
+            "modifier": 5,
+            "save": 8
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "6",
+        "experience_points": 2300,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "gore_attacks": 2
+          },
+          "gore": {
+            "type": "Melee",
+            "attack_bonus": 10,
+            "reach_feet": 10,
+            "damage": "2d10 + 7 Piercing",
+            "charge": {
+              "maximum_target_size": "Huge",
+              "minimum_straight_movement_feet": 20,
+              "timing": "immediately before hit",
+              "hit_condition": "Prone"
+            }
+          }
+        },
+        "bonus_actions": {
+          "trample": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 18
+            },
+            "target": "one Prone creature within 5 feet",
+            "failure_damage": "4d10 + 7 Bludgeoning",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5822,8 +6071,78 @@
       "pages": [
         357
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mastiff",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 5,
+          "hit_dice": "1d8 + 1"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 5
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "reach_feet": 5,
+            "damage": "1d6 + 1 Piercing",
+            "maximum_target_size_for_condition": "Medium",
+            "hit_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5838,8 +6157,77 @@
       "pages": [
         357
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mule",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d8 + 2"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "traits": {
+          "beast_of_burden": {
+            "counts_as_one_size_larger_for_carrying_capacity": true
+          }
+        },
+        "actions": {
+          "hooves": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d4 + 2 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5855,8 +6243,101 @@
         357,
         358
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Octopus",
+        "size": "Small",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 3,
+          "hit_dice": "1d6"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "skills": {
+          "Perception": 2,
+          "Stealth": 6
+        },
+        "senses": {
+          "Darkvision_feet": 30,
+          "Passive_Perception": 12
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "compression": {
+            "minimum_gap_inches": 1,
+            "extra_movement_required": false
+          },
+          "water_breathing": {
+            "breathes_only_underwater": true,
+            "actor": "octopus"
+          }
+        },
+        "actions": {
+          "tentacles": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1 Bludgeoning"
+          }
+        },
+        "reactions": {
+          "ink_cloud": {
+            "uses_per_day": 1,
+            "trigger": "creature ends turn within 5 feet while octopus is underwater",
+            "response": {
+              "area": "5-foot Cube centered on octopus",
+              "condition": "Heavily Obscured",
+              "duration_minutes": 1,
+              "ends_early_if": "strong current or similar effect disperses ink",
+              "octopus_moves": "up to Swim Speed"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5871,8 +6352,84 @@
       "pages": [
         358
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Owl",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 5,
+          "Stealth": 5
+        },
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 15
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "flyby": {
+            "opportunity_attack_provoked_when_flying_out_of_enemy_reach": false,
+            "actor": "owl"
+          }
+        },
+        "actions": {
+          "talons": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "reach_feet": 5,
+            "damage": "1 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5887,8 +6444,86 @@
       "pages": [
         358
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Panther",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 13,
+          "hit_dice": "3d8"
+        },
+        "speed": {
+          "walk_feet": 50,
+          "climb_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 4,
+          "Stealth": 7
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d6 + 3 Slashing"
+          }
+        },
+        "bonus_actions": {
+          "nimble_escape": {
+            "action_choices": [
+              "Disengage",
+              "Hide"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5903,8 +6538,81 @@
       "pages": [
         358
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Piranha",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Charisma": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 8
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "water_breathing": {
+            "breathes_only_underwater": true,
+            "actor": "piranha"
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1 Piercing",
+            "advantage_if_target_missing_hit_points": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5920,8 +6628,85 @@
         358,
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Plesiosaurus",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 68,
+          "hit_dice": "8d10 + 24"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "descriptive_tags": [
+          "Dinosaur"
+        ],
+        "skills": {
+          "Perception": 3,
+          "Stealth": 4
+        },
+        "senses": {
+          "Passive_Perception": 13
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "hold_breath": {
+            "duration_hours": 1
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 10,
+            "damage": "2d6 + 4 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5936,8 +6721,84 @@
       "pages": [
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Polar Bear",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 42,
+          "hit_dice": "5d10 + 15"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 5,
+          "Stealth": 4
+        },
+        "resistances": [
+          "Cold"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "1d8 + 5 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5952,8 +6813,72 @@
       "pages": [
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pony",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d8 + 2"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "actions": {
+          "hooves": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d4 + 2 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5968,8 +6893,85 @@
       "pages": [
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pteranodon",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 13,
+          "hit_dice": "3d8"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "descriptive_tags": [
+          "Dinosaur"
+        ],
+        "skills": {
+          "Perception": 1
+        },
+        "senses": {
+          "Passive_Perception": 11
+        },
+        "languages": [],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "traits": {
+          "flyby": {
+            "opportunity_attack_provoked_when_flying_out_of_enemy_reach": false,
+            "actor": "pteranodon"
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d8 + 2 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -5984,8 +6986,82 @@
       "pages": [
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Rat",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "climb_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "skills": {
+          "Perception": 2
+        },
+        "senses": {
+          "Darkvision_feet": 30,
+          "Passive_Perception": 12
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "agile": {
+            "opportunity_attack_provoked_when_moving_out_of_enemy_reach": false
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 2,
+            "reach_feet": 5,
+            "damage": "1 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6000,8 +7076,86 @@
       "pages": [
         359
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Raven",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 2,
+          "hit_dice": "1d4"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 3
+        },
+        "senses": {
+          "Passive_Perception": 13
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "traits": {
+          "mimicry": {
+            "can_mimic_simple_heard_sounds": true,
+            "discernment_check": {
+              "ability": "Wisdom",
+              "skill": "Insight",
+              "dc": 10
+            }
+          }
+        },
+        "actions": {
+          "beak": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6016,8 +7170,87 @@
       "pages": [
         360
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Reef Shark",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 22,
+          "hit_dice": "4d8 + 4"
+        },
+        "speed": {
+          "walk_feet": 5,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "skills": {
+          "Perception": 2
+        },
+        "senses": {
+          "Blindsight_feet": 30,
+          "Passive_Perception": 12
+        },
+        "languages": [],
+        "challenge_rating": "1/2",
+        "experience_points": 100,
+        "proficiency_bonus": 2,
+        "traits": {
+          "pack_tactics": {
+            "advantage_on_attack_when": "at least one of shark's allies is within 5 feet of target",
+            "ally_must_not_be_incapacitated": true
+          },
+          "water_breathing": {
+            "breathes_only_underwater": true,
+            "actor": "shark"
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "2d4 + 2 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6032,8 +7265,79 @@
       "pages": [
         360
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Rhinoceros",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 45,
+          "hit_dice": "6d10 + 12"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 11
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "gore": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 5 Piercing",
+            "charge": {
+              "maximum_target_size": "Large",
+              "minimum_straight_movement_feet": 20,
+              "timing": "immediately before hit",
+              "extra_damage": "2d8 Piercing",
+              "hit_condition": "Prone"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6048,8 +7352,72 @@
       "pages": [
         360
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Riding Horse",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 13,
+          "hit_dice": "2d10 + 2"
+        },
+        "speed": {
+          "walk_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "hooves": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d8 + 3 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6064,8 +7432,95 @@
       "pages": [
         360
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Saber-Toothed Tiger",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 52,
+          "hit_dice": "7d10 + 14"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 6
+          },
+          "Dexterity": {
+            "score": 17,
+            "modifier": 3,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "skills": {
+          "Perception": 5,
+          "Stealth": 7
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "running_leap": {
+            "actor": "tiger",
+            "running_start_feet": 10,
+            "long_jump_feet": 25
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "2d6 + 4 Slashing"
+          }
+        },
+        "bonus_actions": {
+          "nimble_escape": {
+            "action_choices": [
+              "Disengage",
+              "Hide"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -6080,8 +7535,76 @@
       "pages": [
         360
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Scorpion",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speed": {
+          "walk_feet": 10
+        },
+        "abilities": {
+          "Strength": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Charisma": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Blindsight_feet": 10,
+          "Passive_Perception": 9
+        },
+        "languages": [],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "actions": {
+          "sting": {
+            "type": "Melee",
+            "attack_bonus": 2,
+            "reach_feet": 5,
+            "damage": [
+              "1 Piercing",
+              "1d6 Poison"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
