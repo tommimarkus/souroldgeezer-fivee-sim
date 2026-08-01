@@ -348,8 +348,16 @@
       "pages": [
         20
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_creation_step": 3,
+        "ability_score_count": 6,
+        "procedure": [
+          "generate six numbers",
+          "assign one number to each ability"
+        ],
+        "ability_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -364,8 +372,31 @@
       "pages": [
         21
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "generation_methods": [
+          "Standard Array",
+          "Random Generation",
+          "Point Cost"
+        ],
+        "Standard_Array": [
+          15,
+          14,
+          13,
+          12,
+          10,
+          8
+        ],
+        "Random_Generation": {
+          "roll": "4d6",
+          "keep_highest_dice": 3,
+          "result_count": 6
+        },
+        "Point_Cost": {
+          "point_budget": 27,
+          "table_id": "021-ability-score-point-costs"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "129-5-5-step-3-ability-scores"
     },
@@ -380,8 +411,20 @@
       "pages": [
         21
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "assigned_abilities": [
+          "Strength",
+          "Dexterity",
+          "Constitution",
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "assignment_considers_class_primary_ability": true,
+        "record_ability_modifiers": true,
+        "Standard_Array_by_Class_table_id": "021-standard-array-by-class"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "129-5-5-step-3-ability-scores"
     },
@@ -396,8 +439,24 @@
       "pages": [
         21
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "background_listed_ability_count": 3,
+        "increase_options": [
+          [
+            2,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            1
+          ]
+        ],
+        "plus_2_and_plus_1_apply_to_different_abilities": true,
+        "maximum_score_after_increase": 20
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "129-5-5-step-3-ability-scores"
     },
@@ -412,8 +471,10 @@
       "pages": [
         21
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "ability_scores_and_modifiers_table_id": "021-ability-scores-and-modifiers"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "129-5-5-step-3-ability-scores"
     },
@@ -428,8 +489,12 @@
       "pages": [
         21
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_creation_step": 4,
+        "selection": "alignment",
+        "evil_player_character_requires_GM_consultation": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -442,10 +507,63 @@
       ],
       "chapter_id": "117-5-character-creation",
       "pages": [
-        21
+        21,
+        22
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "alignment_factor_count": 2,
+        "alignment_factors": {
+          "morality": [
+            "good",
+            "evil",
+            "neutral"
+          ],
+          "order": [
+            "lawful",
+            "chaotic",
+            "neutral"
+          ]
+        },
+        "alignments": [
+          {
+            "name": "Lawful Good",
+            "code": "LG"
+          },
+          {
+            "name": "Neutral Good",
+            "code": "NG"
+          },
+          {
+            "name": "Chaotic Good",
+            "code": "CG"
+          },
+          {
+            "name": "Lawful Neutral",
+            "code": "LN"
+          },
+          {
+            "name": "Neutral",
+            "code": "N"
+          },
+          {
+            "name": "Chaotic Neutral",
+            "code": "CN"
+          },
+          {
+            "name": "Lawful Evil",
+            "code": "LE"
+          },
+          {
+            "name": "Neutral Evil",
+            "code": "NE"
+          },
+          {
+            "name": "Chaotic Evil",
+            "code": "CE"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "134-5-6-step-4-alignment"
     },
@@ -460,8 +578,12 @@
       "pages": [
         22
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lack_of_rational_thought_can_mean_unaligned": true,
+        "unaligned_is_not_evil": true,
+        "example": "Shark"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "134-5-6-step-4-alignment"
     },
@@ -476,7 +598,7 @@
       "pages": [
         22
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
@@ -492,8 +614,12 @@
       "pages": [
         22
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "record_level_1_class_features": true,
+        "feature_source": "class feature table",
+        "offered_feature_choices_must_be_made": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "137-5-7-step-5-character-creation-details"
     },
@@ -509,8 +635,24 @@
         22,
         23
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "formulas": {
+          "proficient_saving_throw_modifier": "ability modifier + Proficiency Bonus",
+          "unproficient_saving_throw_modifier": "ability modifier",
+          "proficient_skill_modifier": "associated ability modifier + Proficiency Bonus",
+          "unproficient_skill_modifier": "associated ability modifier",
+          "Passive_Perception": "10 + Wisdom (Perception) check modifier",
+          "level_1_Hit_Point_maximum": "class base + Constitution modifier",
+          "Initiative": "Dexterity modifier",
+          "unarmored_unshielded_base_Armor_Class": "10 + Dexterity modifier",
+          "proficient_melee_weapon_attack_bonus": "Strength modifier + Proficiency Bonus",
+          "proficient_ranged_weapon_attack_bonus": "Dexterity modifier + Proficiency Bonus",
+          "weapon_damage_modifier": "ability modifier used for the weapon attack",
+          "spell_save_DC": "8 + spellcasting ability modifier + Proficiency Bonus",
+          "spell_attack_bonus": "spellcasting ability modifier + Proficiency Bonus"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "137-5-7-step-5-character-creation-details"
     },
@@ -525,8 +667,13 @@
       "pages": [
         23
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "advancement_resource": "Experience Points",
+        "Experience_Points_abbreviation": "XP",
+        "level_reached_when_XP_meets_or_exceeds_threshold": true,
+        "character_advancement_table_id": "023-character-advancement"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -541,8 +688,21 @@
       "pages": [
         23
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "level_gain_steps": [
+          "Choose a Class",
+          "Adjust Hit Points and Hit Point Dice",
+          "Record New Class Features",
+          "Adjust Proficiency Bonus",
+          "Adjust Ability Modifiers"
+        ],
+        "additional_Hit_Dice_per_level": 1,
+        "rolled_Hit_Point_gain_formula": "max(1, Hit Die roll + Constitution modifier)",
+        "fixed_hit_points_by_class_table_id": "023-fixed-hit-points-by-class",
+        "proficiency_bonus_table_id": "023-character-advancement",
+        "Constitution_modifier_increase_Hit_Point_maximum_formula": "modifier increase × attained levels"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -1187,12 +1347,12 @@
       "name": "Standard Languages",
       "section_id": "128-5-4-5-choose-languages",
       "page": 20,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "1d12",
           "name": "1d12",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "language",
@@ -1200,7 +1360,114 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "—"
+            },
+            {
+              "value": "Common"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1",
+              "numeric_value": 1
+            },
+            {
+              "value": "Common Sign Language"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2",
+              "numeric_value": 2
+            },
+            {
+              "value": "Draconic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "3-4"
+            },
+            {
+              "value": "Dwarvish"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "5-6"
+            },
+            {
+              "value": "Elvish"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "7",
+              "numeric_value": 7
+            },
+            {
+              "value": "Giant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "8",
+              "numeric_value": 8
+            },
+            {
+              "value": "Gnomish"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "9",
+              "numeric_value": 9
+            },
+            {
+              "value": "Goblin"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10-11"
+            },
+            {
+              "value": "Halfling"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "12",
+              "numeric_value": 12
+            },
+            {
+              "value": "Orc"
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1210,7 +1477,7 @@
       "name": "Rare Languages",
       "section_id": "128-5-4-5-choose-languages",
       "page": 20,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "language",
@@ -1223,9 +1490,67 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Abyssal"
+            },
+            {
+              "value": "Primordial*"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Celestial"
+            },
+            {
+              "value": "Sylvan"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Deep Speech"
+            },
+            {
+              "value": "Thieves' Cant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Druidic"
+            },
+            {
+              "value": "Undercommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Infernal"
+            },
+            {
+              "value": null,
+              "omission_code": "empty_source_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "empty_source_cell",
+          "row": 4,
+          "column": "language-2"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -1233,12 +1558,12 @@
       "name": "Ability Scores and Modifiers",
       "section_id": "133-5-5-4-determine-ability-modifiers",
       "page": 21,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "score",
           "name": "Score",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "modifier",
@@ -1248,7 +1573,7 @@
         {
           "id": "score-2",
           "name": "Score",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "modifier-2",
@@ -1256,7 +1581,100 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "3",
+              "numeric_value": 3
+            },
+            {
+              "value": -4,
+              "numeric_value": -4
+            },
+            {
+              "value": "12-13"
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "4-5"
+            },
+            {
+              "value": -3,
+              "numeric_value": -3
+            },
+            {
+              "value": "14-15"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "6-7"
+            },
+            {
+              "value": -2,
+              "numeric_value": -2
+            },
+            {
+              "value": "16-17"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "8-9"
+            },
+            {
+              "value": -1,
+              "numeric_value": -1
+            },
+            {
+              "value": "18-19"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10-11"
+            },
+            {
+              "value": 0,
+              "numeric_value": 0
+            },
+            {
+              "value": "20",
+              "numeric_value": 20
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1266,7 +1684,7 @@
       "name": "Ability Score Point Costs",
       "section_id": "130-5-5-1-generate-your-scores",
       "page": 21,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "score",
@@ -1289,7 +1707,88 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 0,
+              "numeric_value": 0
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 7,
+              "numeric_value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 9,
+              "numeric_value": 9
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1299,7 +1798,7 @@
       "name": "Standard Array by Class",
       "section_id": "131-5-5-2-assign-ability-scores",
       "page": 21,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "class",
@@ -1337,7 +1836,380 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Barbarian"
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bard"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cleric"
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Druid"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fighter"
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Monk"
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Paladin"
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ranger"
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rogue"
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerer"
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warlock"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wizard"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1347,7 +2219,7 @@
       "name": "Level 1 Hit Points by Class",
       "section_id": "139-5-7-2-fill-in-numbers",
       "page": 22,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "class",
@@ -1360,8 +2232,53 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 5,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Barbarian"
+            },
+            {
+              "value": "12 + Con. modifier",
+              "numeric_value": 12
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fighter, Paladin, or Ranger"
+            },
+            {
+              "value": "10 + Con. modifier",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bard, Cleric, Druid, Monk, Rogue, or Warlock"
+            },
+            {
+              "value": "8 + Con. modifier",
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerer or Wizard"
+            },
+            {
+              "value": "6 + Con. modifier",
+              "numeric_value": 6
+            }
+          ]
+        }
+      ],
+      "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -1393,7 +2310,7 @@
       "name": "Character Advancement",
       "section_id": "140-5-8-level-advancement",
       "page": 23,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -1411,7 +2328,328 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": 0,
+              "numeric_value": 0
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": 300,
+              "numeric_value": 300
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": 900,
+              "numeric_value": 900
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": 2700,
+              "numeric_value": 2700
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": 6500,
+              "numeric_value": 6500
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6,
+              "numeric_value": 6
+            },
+            {
+              "value": 14000,
+              "numeric_value": 14000
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7,
+              "numeric_value": 7
+            },
+            {
+              "value": 23000,
+              "numeric_value": 23000
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8,
+              "numeric_value": 8
+            },
+            {
+              "value": 34000,
+              "numeric_value": 34000
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9,
+              "numeric_value": 9
+            },
+            {
+              "value": 48000,
+              "numeric_value": 48000
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": 64000,
+              "numeric_value": 64000
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11,
+              "numeric_value": 11
+            },
+            {
+              "value": 85000,
+              "numeric_value": 85000
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12,
+              "numeric_value": 12
+            },
+            {
+              "value": 100000,
+              "numeric_value": 100000
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13,
+              "numeric_value": 13
+            },
+            {
+              "value": 120000,
+              "numeric_value": 120000
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14,
+              "numeric_value": 14
+            },
+            {
+              "value": 140000,
+              "numeric_value": 140000
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": 165000,
+              "numeric_value": 165000
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16,
+              "numeric_value": 16
+            },
+            {
+              "value": 195000,
+              "numeric_value": 195000
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17,
+              "numeric_value": 17
+            },
+            {
+              "value": 225000,
+              "numeric_value": 225000
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18,
+              "numeric_value": 18
+            },
+            {
+              "value": 265000,
+              "numeric_value": 265000
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19,
+              "numeric_value": 19
+            },
+            {
+              "value": 305000,
+              "numeric_value": 305000
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": 355000,
+              "numeric_value": 355000
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
       "omissions": [],
       "provenance": "SRD 5.2.1"
