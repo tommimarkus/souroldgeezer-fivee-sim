@@ -2730,8 +2730,15 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Costume",
+        "cost_gp": 5,
+        "worn_effect": {
+          "effect": "Advantage",
+          "checks": "ability checks to impersonate represented person or person type"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2746,8 +2753,14 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Crowbar",
+        "cost_gp": 2,
+        "effect": "Advantage",
+        "checks": "Strength checks",
+        "requirement": "crowbar leverage applies"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2762,8 +2775,57 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Diplomat’s Pack",
+        "cost_gp": 39,
+        "contents": [
+          {
+            "item": "Chest",
+            "quantity": 1
+          },
+          {
+            "item": "Fine Clothes",
+            "quantity": 1
+          },
+          {
+            "item": "Ink",
+            "quantity": 1
+          },
+          {
+            "item": "Ink Pen",
+            "quantity": 5
+          },
+          {
+            "item": "Lamp",
+            "quantity": 1
+          },
+          {
+            "item": "Map or Scroll Case",
+            "quantity": 2
+          },
+          {
+            "item": "Oil flask",
+            "quantity": 4
+          },
+          {
+            "item": "Paper sheet",
+            "quantity": 5
+          },
+          {
+            "item": "Parchment sheet",
+            "quantity": 5
+          },
+          {
+            "item": "Perfume",
+            "quantity": 1
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2778,8 +2840,17 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Druidic Focus",
+        "cost_varies": true,
+        "forms_table_id": "097-druidic-focuses",
+        "magic_channel": "primal",
+        "spellcasting_focus_for_classes": [
+          "Druid",
+          "Ranger"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2794,8 +2865,50 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Dungeoneer’s Pack",
+        "cost_gp": 12,
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Caltrops",
+            "quantity": 1
+          },
+          {
+            "item": "Crowbar",
+            "quantity": 1
+          },
+          {
+            "item": "Oil flask",
+            "quantity": 2
+          },
+          {
+            "item": "Rations",
+            "quantity": 10,
+            "unit": "days"
+          },
+          {
+            "item": "Rope",
+            "quantity": 1
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          },
+          {
+            "item": "Torch",
+            "quantity": 10
+          },
+          {
+            "item": "Waterskin",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2810,8 +2923,54 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Entertainer’s Pack",
+        "cost_gp": 40,
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Bedroll",
+            "quantity": 1
+          },
+          {
+            "item": "Bell",
+            "quantity": 1
+          },
+          {
+            "item": "Bullseye Lantern",
+            "quantity": 1
+          },
+          {
+            "item": "Costume",
+            "quantity": 3
+          },
+          {
+            "item": "Mirror",
+            "quantity": 1
+          },
+          {
+            "item": "Oil flask",
+            "quantity": 8
+          },
+          {
+            "item": "Rations",
+            "quantity": 9,
+            "unit": "days"
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          },
+          {
+            "item": "Waterskin",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2826,8 +2985,46 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Explorer’s Pack",
+        "cost_gp": 10,
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Bedroll",
+            "quantity": 1
+          },
+          {
+            "item": "Oil flask",
+            "quantity": 2
+          },
+          {
+            "item": "Rations",
+            "quantity": 10,
+            "unit": "days"
+          },
+          {
+            "item": "Rope",
+            "quantity": 1
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          },
+          {
+            "item": "Torch",
+            "quantity": 10
+          },
+          {
+            "item": "Waterskin",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2842,8 +3039,12 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Flask",
+        "cost_cp": 2,
+        "capacity_pints": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2858,8 +3059,24 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Grappling Hook",
+        "cost_gp": 2,
+        "use_action": "Utilize",
+        "throw_range_feet": 50,
+        "catch_targets": [
+          "railing",
+          "ledge",
+          "other catch"
+        ],
+        "catch_check": {
+          "ability": "Dexterity",
+          "skill": "Acrobatics",
+          "dc": 13
+        },
+        "rope_required_for_climbing": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2874,8 +3091,20 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Healer’s Kit",
+        "cost_gp": 5,
+        "uses": 10,
+        "use_action": "Utilize",
+        "uses_expended_per_use": 1,
+        "target_requirements": {
+          "condition": "Unconscious",
+          "hit_points": 0
+        },
+        "effect": "stabilize",
+        "wisdom_medicine_check_required": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2890,8 +3119,24 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Holy Symbol",
+        "cost_varies": true,
+        "forms_table_id": "097-holy-symbols",
+        "magic_channel": "divine",
+        "spellcasting_focus_for_classes": [
+          "Cleric",
+          "Paladin"
+        ],
+        "use_modes_are_form_specific": true,
+        "use_modes": [
+          "held",
+          "worn",
+          "borne on fabric",
+          "borne on Shield"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2906,8 +3151,24 @@
       "pages": [
         97
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Holy Water",
+        "cost_gp": 25,
+        "trigger_action": "Attack",
+        "replaces_attacks": 1,
+        "delivery": "thrown flask",
+        "target": "visible creature",
+        "range_feet": 20,
+        "saving_throw_ability": "Dexterity",
+        "saving_throw_dc_formula": "8 + Dexterity modifier + Proficiency Bonus",
+        "affected_creature_types": [
+          "Fiend",
+          "Undead"
+        ],
+        "failed_save_damage": "2d8",
+        "damage_type": "Radiant"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2923,8 +3184,40 @@
         97,
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Hunting Trap",
+        "cost_gp": 5,
+        "set_action": "Utilize",
+        "trigger": "creature steps on pressure plate",
+        "anchoring": {
+          "chain": "heavy",
+          "anchor": "immobile object"
+        },
+        "trigger_saving_throw": {
+          "ability": "Dexterity",
+          "dc": 13
+        },
+        "failed_save": {
+          "damage": "1d4",
+          "damage_type": "Piercing",
+          "speed": 0,
+          "speed_duration": "until start of creature’s next turn"
+        },
+        "movement_limit_until_escape_feet": 3,
+        "escape": {
+          "action": "Action",
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 13,
+          "eligible_targets": [
+            "self",
+            "creature within reach"
+          ],
+          "failed_check_damage": 1,
+          "failed_check_damage_type": "Piercing"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2939,8 +3232,13 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Ink",
+        "cost_gp": 10,
+        "bottle_ounces": 1,
+        "approximate_page_capacity": 500
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2955,8 +3253,16 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Ink Pen",
+        "cost_cp": 2,
+        "requires": "Ink",
+        "functions": [
+          "write",
+          "draw"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2971,8 +3277,12 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Jug",
+        "cost_cp": 2,
+        "capacity_gallons": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -2987,8 +3297,13 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Ladder",
+        "cost_sp": 1,
+        "height_feet": 10,
+        "vertical_traversal_mode": "climb"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -3003,8 +3318,14 @@
       "pages": [
         98
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Lamp",
+        "cost_sp": 5,
+        "fuel": "Oil",
+        "bright_light_radius_feet": 15,
+        "additional_dim_light_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -7570,7 +7891,7 @@
       "name": "Holy Symbols",
       "section_id": "668-9-13-38-holy-symbol-varies",
       "page": 97,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "symbol",
@@ -7578,19 +7899,66 @@
           "type": "string"
         },
         {
-          "id": "weight",
-          "name": "Weight",
+          "id": "weight_lb",
+          "name": "Weight (lb.)",
           "type": "integer"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost_gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Amulet (worn or held)"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Emblem (borne on fabric or a Shield)"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Reliquary (held)"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 5
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "weight_lb"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -7598,7 +7966,7 @@
       "name": "Druidic Focuses",
       "section_id": "661-9-13-31-druidic-focus-varies",
       "page": 97,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "focus",
@@ -7606,19 +7974,66 @@
           "type": "string"
         },
         {
-          "id": "weight",
-          "name": "Weight",
+          "id": "weight_lb",
+          "name": "Weight (lb.)",
           "type": "integer"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost_gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Sprig of mistletoe"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wooden staff (also a Quarterstaff)"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Yew wand"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "weight_lb"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
