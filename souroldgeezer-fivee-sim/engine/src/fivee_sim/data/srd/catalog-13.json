@@ -3386,8 +3386,29 @@
         218,
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dragon Scale Mail",
+        "item_category": "Armor (Scale Mail)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "material": "scales of one dragon kind",
+        "benefits_while_worn": {
+          "armor_class_bonus": 1,
+          "dragon_breath_weapon_saving_throws": "Advantage",
+          "damage_resistance": "determined by source dragon kind"
+        },
+        "dragon_sense": {
+          "action": "Magic",
+          "detects": "closest dragon matching armor type",
+          "range_miles": 30,
+          "information": [
+            "distance",
+            "direction"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3402,8 +3423,19 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dragon Slayer",
+        "item_category": "Weapon (any Simple or Martial)",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "attack_roll_bonus": 1,
+        "damage_roll_bonus": 1,
+        "extra_damage_against_dragons": {
+          "dice": "3d6",
+          "type": "weapon damage type"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3418,8 +3450,37 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dust of Disappearance",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "uses": 1,
+        "activation": {
+          "action": "Utilize",
+          "method": "throw into air"
+        },
+        "area": {
+          "shape": "Emanation",
+          "radius_feet": 10,
+          "origin": "user"
+        },
+        "subjects": [
+          "user",
+          "creatures in area",
+          "objects in area"
+        ],
+        "condition": "Invisible",
+        "duration_minutes": "2d4",
+        "same_duration_for_all_subjects": true,
+        "consumed_on_effect": true,
+        "creature_condition_ends_after": [
+          "attack roll",
+          "deals damage",
+          "casts spell"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3434,8 +3495,42 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dust of Dryness",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "pinches": "1d6 + 4",
+        "water_absorption": {
+          "action": "Utilize",
+          "pinches_used": 1,
+          "maximum_water_cube_feet": 15,
+          "result": "one marble-sized pellet",
+          "pellet_weight": "negligible",
+          "pellet_location": "floats or rests near application point"
+        },
+        "water_release": {
+          "action": "Utilize",
+          "method": "smash pellet on hard surface",
+          "pellet_destroyed": true,
+          "magic_ends": true
+        },
+        "water_elemental_use": {
+          "action": "Utilize",
+          "range_feet": 5,
+          "target": "Elemental composed mostly of water",
+          "saving_throw": {
+            "ability": "Constitution",
+            "dc": 13
+          },
+          "failed_save_damage": {
+            "dice": "10d6",
+            "type": "Necrotic"
+          },
+          "successful_save_damage": "half"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3450,8 +3545,44 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dust of Sneezing and Choking",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "resembles": "Dust of Disappearance",
+        "identify_reports_as": "Dust of Disappearance",
+        "uses": 1,
+        "activation": {
+          "action": "Utilize",
+          "method": "throw into air"
+        },
+        "area": {
+          "shape": "Emanation",
+          "radius_feet": 30,
+          "origin": "user"
+        },
+        "targets": "user and every creature in area",
+        "saving_throw": {
+          "ability": "Constitution",
+          "dc": 15
+        },
+        "automatic_success_types": [
+          "Construct",
+          "Elemental",
+          "Ooze",
+          "Plant",
+          "Undead"
+        ],
+        "failed_save_effects": [
+          "Incapacitated",
+          "suffocating"
+        ],
+        "repeat_save_timing": "end of each affected creature turn",
+        "repeat_save_success": "ends effect on creature",
+        "other_end": "targeted by Lesser Restoration"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3466,8 +3597,18 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dwarven Plate",
+        "item_category": "Armor (Half Plate Armor or Plate Armor)",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "armor_class_bonus_while_worn": 2,
+        "forced_ground_movement_reduction": {
+          "cost": "Reaction",
+          "maximum_feet": 10
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3482,8 +3623,26 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Dwarven Thrower",
+        "item_category": "Weapon (Warhammer)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 3,
+        "damage_roll_bonus": 3,
+        "thrown_property": {
+          "normal_range_feet": 20,
+          "long_range_feet": 60
+        },
+        "ranged_hit_extra_force_damage": "1d8",
+        "ranged_hit_extra_force_damage_against_giant": "2d8",
+        "returns_to_hand_immediately_after": [
+          "hit",
+          "miss"
+        ],
+        "attunement_requirement": "Dwarf or creature attuned to Belt of Dwarvenkind"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3498,8 +3657,43 @@
       "pages": [
         219
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Efficient Quiver",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "compartments": 3,
+        "spaces": "extradimensional",
+        "maximum_total_weight_pounds": 2,
+        "capacities": {
+          "shortest": {
+            "count": 60,
+            "items": [
+              "Arrows",
+              "Bolts",
+              "similar objects"
+            ]
+          },
+          "midsize": {
+            "count": 18,
+            "items": [
+              "Javelins",
+              "similar objects"
+            ]
+          },
+          "longest": {
+            "count": 6,
+            "items": [
+              "bows",
+              "Quarterstaffs",
+              "Spears",
+              "similar long objects"
+            ]
+          }
+        },
+        "draw_behavior": "as regular quiver or scabbard"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3514,8 +3708,20 @@
       "pages": [
         220
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Efreeti Bottle",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "activation": {
+          "action": "Magic",
+          "method": "remove stopper"
+        },
+        "appearance_timing": "end of user's turn",
+        "appearance_space": "unoccupied within 30 feet",
+        "first_opening_result": "1d10 table roll by GM"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3530,8 +3736,30 @@
       "pages": [
         220
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Elemental Gem",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "activation": {
+          "action": "Utilize",
+          "method": "break gem"
+        },
+        "gem_ceases_to_be_magical": true,
+        "summon_location": "nearest unoccupied space to broken gem",
+        "summoned_elemental": {
+          "understands_user_languages": true,
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "duration_until": [
+            "1 hour",
+            "elemental dies",
+            "user dismisses as Bonus Action"
+          ]
+        },
+        "elemental_type_determined_by": "gem type table"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3546,8 +3774,22 @@
       "pages": [
         220
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Elixir of Health",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "cures": "all magical contagions",
+          "ends_conditions": [
+            "Blinded",
+            "Deafened",
+            "Paralyzed",
+            "Poisoned"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3562,8 +3804,16 @@
       "pages": [
         220
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Elven Chain",
+        "item_category": "Armor (Chain Mail or Chain Shirt)",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "armor_class_bonus_while_worn": 1,
+        "wearer_considered_trained": true,
+        "training_prerequisite": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3578,8 +3828,54 @@
       "pages": [
         220
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Energy Bow",
+        "item_category": "Weapon (Longbow or Shortbow)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 1,
+        "damage_roll_bonus": 1,
+        "has_string": false,
+        "generated_arrow": {
+          "damage_type": "Force instead of Piercing",
+          "disappears_after": [
+            "hit",
+            "miss"
+          ],
+          "bright_light_feet": 20,
+          "additional_dim_light_feet": 20
+        },
+        "arrow_of_restraint": {
+          "choice": "restrain instead of deal damage",
+          "trigger": "ranged attack against creature",
+          "on_hit_saving_throw": {
+            "ability": "Strength",
+            "dc": 15
+          },
+          "failure_condition": "Restrained",
+          "duration_minutes": 1,
+          "escape": {
+            "action": true,
+            "check": "Strength (Athletics)",
+            "dc": 20
+          }
+        },
+        "arrow_of_transport": {
+          "action": "Magic",
+          "target_range_feet": 60,
+          "target_visibility_required": true,
+          "creature_target": "willing Medium or smaller",
+          "object_target": "not worn or carried and fits in 5-foot Cube",
+          "destination": "visible unoccupied space within 10 feet of user"
+        },
+        "energy_ladder": {
+          "action": "Magic",
+          "wall_range_feet": 60,
+          "maximum_length_feet": 60,
+          "duration_minutes": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3595,8 +3891,27 @@
         220,
         221
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Eversmoking Bottle",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "open_or_close_action": "Magic",
+        "open_cloud": {
+          "shape": "Emanation",
+          "initial_radius_feet": 60,
+          "origin": "bottle",
+          "obscurement": "Heavily Obscured",
+          "growth_per_minute_feet": 10,
+          "maximum_radius_feet": 120
+        },
+        "after_closing": {
+          "cloud_fixed": true,
+          "dispersal_minutes": 10
+        },
+        "strong_wind_dispersal_minutes": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3611,8 +3926,20 @@
       "pages": [
         221
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Eyes of Charming",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "charges": 3,
+        "spell_while_worn": "Charm Person",
+        "spell_save_dc": 13,
+        "base_charge_cost": 1,
+        "base_spell_level": 1,
+        "additional_charge_effect": "increase spell level by 1 per charge",
+        "recharge": "all charges daily at dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -3627,8 +3954,16 @@
       "pages": [
         221
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Eyes of Minute Seeing",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "benefit_range_feet": 1,
+        "darkvision_in_range": true,
+        "intelligence_investigation_to_examine_in_range": "Advantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -9119,7 +9454,7 @@
       "name": "Spell / Charge Cost",
       "section_id": "1457-13-26-60-dragon-orb",
       "page": 218,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -9132,7 +9467,58 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cure Wounds (level 9 version)"
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Daylight"
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Death Ward"
+            },
+            {
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scrying (save DC 18)"
+            },
+            {
+              "value": 3
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -9142,30 +9528,111 @@
       "name": "Dragon / Resistance",
       "section_id": "1458-13-26-61-dragon-scale-mail",
       "page": 219,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "dragon",
+          "id": "left-dragon",
           "name": "Dragon",
           "type": "string"
         },
         {
-          "id": "resistance",
+          "id": "left-resistance",
           "name": "Resistance",
           "type": "string"
         },
         {
-          "id": "dragon-2",
+          "id": "right-dragon",
           "name": "Dragon",
           "type": "string"
         },
         {
-          "id": "resistance-2",
+          "id": "right-resistance",
           "name": "Resistance",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Black"
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "Gold"
+            },
+            {
+              "value": "Fire"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blue"
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Green"
+            },
+            {
+              "value": "Poison"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Brass"
+            },
+            {
+              "value": "Fire"
+            },
+            {
+              "value": "Red"
+            },
+            {
+              "value": "Fire"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bronze"
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Silver"
+            },
+            {
+              "value": "Cold"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Copper"
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "White"
+            },
+            {
+              "value": "Cold"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -9175,12 +9642,12 @@
       "name": "1d10 / Effect",
       "section_id": "1466-13-26-69-efreeti-bottle",
       "page": 220,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10",
+          "id": "roll",
           "name": "1d10",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "effect",
@@ -9188,7 +9655,38 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1"
+            },
+            {
+              "value": "Efreeti attacks user for 5 rounds, then disappears and bottle loses magic."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2-9"
+            },
+            {
+              "value": "Efreeti obeys user for 1 hour, then returns; stopper locks 24 hours. Effect repeats for next two openings; fourth opening frees efreeti and ends bottle magic."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10"
+            },
+            {
+              "value": "Efreeti can cast Wish once for user; disappears after granting it or after 1 hour, and bottle loses magic."
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -9198,7 +9696,7 @@
       "name": "Gem / Summoned Elemental",
       "section_id": "1467-13-26-70-elemental-gem",
       "page": 220,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "gem",
@@ -9211,7 +9709,48 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Blue sapphire"
+            },
+            {
+              "value": "Air Elemental"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Emerald"
+            },
+            {
+              "value": "Water Elemental"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Red corundum"
+            },
+            {
+              "value": "Fire Elemental"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Yellow diamond"
+            },
+            {
+              "value": "Earth Elemental"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
