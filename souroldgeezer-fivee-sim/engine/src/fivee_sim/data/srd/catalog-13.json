@@ -4963,8 +4963,35 @@
         224,
         225
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Hat of Many Spells",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Wizard",
+        "spellcasting_focus": {
+          "while_holding": true,
+          "spells": "Wizard",
+          "special_somatic_component": "reach into hat and pull spell out"
+        },
+        "unknown_spell": {
+          "while_holding": true,
+          "minimum_level": 1,
+          "must_be_unknown": true,
+          "spell_list": "Wizard",
+          "maximum_level": "level user can cast",
+          "maximum_material_component_cost_gp": 1000,
+          "spell_slot_expended": "spell level",
+          "check": "Intelligence (Arcana)",
+          "dc": "10 + spell level",
+          "success": "cast with normal casting time",
+          "success_recharge": "Short or Long Rest",
+          "failure": "spell fails and random table effect occurs"
+        },
+        "hat_spell_save_dc": "user's spell save DC",
+        "hat_spell_attack_bonus": "user's spell attack bonus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4979,8 +5006,15 @@
       "pages": [
         225
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Headband of Intellect",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "intelligence_while_worn": 19,
+        "no_effect_if_unmodified_intelligence_at_least": 19
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -4996,8 +5030,65 @@
         225,
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Helm of Brilliance",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "initial_gems": {
+          "diamonds": "1d10",
+          "rubies": "2d10",
+          "fire_opals": "3d10",
+          "opals": "4d10"
+        },
+        "removed_gem": "crumbles to dust",
+        "loses_magic_when_no_gems": true,
+        "diamond_light": {
+          "requires_diamond": true,
+          "emanation_feet": 30,
+          "dim_when_undead_present": true,
+          "undead_start_turn_radiant_damage": "1d6"
+        },
+        "fire_opal_flames": {
+          "requires_fire_opal": true,
+          "action": "Magic",
+          "target": "one held weapon",
+          "bright_light_feet": 10,
+          "additional_dim_light_feet": 10,
+          "extra_fire_damage_on_hit": "1d6",
+          "ends_on": [
+            "Bonus Action to extinguish",
+            "drop weapon",
+            "stow weapon"
+          ]
+        },
+        "ruby_resistance": {
+          "requires_ruby": true,
+          "damage_type": "Fire"
+        },
+        "spells": {
+          "save_dc": 18,
+          "gem_components": {
+            "Daylight": "opal",
+            "Fireball": "fire opal",
+            "Prismatic Spray": "diamond",
+            "Wall of Fire": "ruby"
+          },
+          "component_destroyed": true
+        },
+        "fire_failure_destruction": {
+          "trigger": "wearer takes Fire damage after failing saving throw against spell",
+          "trigger_roll": "1 on 1d20",
+          "helm_destroyed": true,
+          "emanation_feet": 60,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 17
+          },
+          "failure_damage": "Radiant equal to remaining gem count"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5012,8 +5103,14 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Helm of Comprehending Languages",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "cast_while_worn": "Comprehend Languages"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5028,8 +5125,20 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Helm of Telepathy",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "telepathy_range_feet": 30,
+        "cast_while_worn": [
+          "Detect Thoughts",
+          "Suggestion"
+        ],
+        "suggestion_save_dc": 13,
+        "each_spell_recharge": "next dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5044,8 +5153,17 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Helm of Teleportation",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 3,
+        "cast_while_worn": "Teleport",
+        "charge_cost": 1,
+        "charges_regained_at_dawn": "1d3"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5060,8 +5178,30 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Holy Avenger",
+        "item_category": "Weapon (any Simple or Martial)",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "attunement_requirement": "Paladin",
+        "attack_roll_bonus": 3,
+        "damage_roll_bonus": 3,
+        "extra_radiant_damage": {
+          "dice": "2d10",
+          "targets": [
+            "Fiend",
+            "Undead"
+          ]
+        },
+        "drawn_aura": {
+          "shape": "Emanation",
+          "radius_feet": 10,
+          "beneficiaries": "user and Friendly creatures",
+          "benefit": "Advantage on saves against spells and magical effects",
+          "radius_at_paladin_level_17_feet": 30
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5076,8 +5216,35 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Horn of Blasting",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "activation": {
+          "action": "Magic",
+          "shape": "Cone",
+          "length_feet": 30,
+          "audible_feet": 600
+        },
+        "saving_throw": {
+          "ability": "Constitution",
+          "dc": 15
+        },
+        "failed_save": {
+          "thunder_damage": "5d8",
+          "condition": "Deafened",
+          "duration_minutes": 1
+        },
+        "successful_save_damage": "half only",
+        "unworn_unheld_glass_or_crystal_damage": "10d8 Thunder",
+        "explosion_chance_percent_per_use": 20,
+        "explosion": {
+          "user_force_damage": "10d6",
+          "horn_destroyed": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5092,8 +5259,38 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Horn of Valhalla",
+        "item_category": "Wondrous Item",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "rarity_by_type": {
+          "Silver": "Rare",
+          "Brass": "Rare",
+          "Bronze": "Very Rare",
+          "Iron": "Legendary"
+        },
+        "activation": "Magic action to blow",
+        "summon_range_feet": 60,
+        "summon_space": "unoccupied",
+        "spirit_stat_block": "Berserker",
+        "spirit_duration_until": [
+          "1 hour",
+          "0 Hit Points"
+        ],
+        "spirit_condition_immunities": [
+          "Charmed",
+          "Frightened"
+        ],
+        "recharge_days": 7,
+        "type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "requirement_met": "spirits Friendly and obey commands",
+        "requirement_unmet": "spirits attack user"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5108,8 +5305,23 @@
       "pages": [
         226
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Horseshoes of a Zephyr",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "quantity": 4,
+        "attach_or_remove_action": "Magic",
+        "target": "horse or similar creature",
+        "all_four_effects": {
+          "float_above_surface_inches": 4,
+          "cross_or_stand_on_nonsolid_or_unstable_surfaces": true,
+          "leaves_tracks": false,
+          "ignores_difficult_terrain": true,
+          "daily_extended_travel_hours_without_exhaustion": 12
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5124,8 +5336,17 @@
       "pages": [
         227
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Horseshoes of Speed",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "quantity": 4,
+        "attach_or_remove_action": "Magic",
+        "target": "horse or similar creature",
+        "all_four_speed_bonus_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5140,8 +5361,23 @@
       "pages": [
         227
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Immovable Rod",
+        "item_category": "Rod",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "toggle_action": "Utilize",
+        "fixed_even_against_gravity": true,
+        "maximum_weight_pounds": 8000,
+        "excess_weight": "deactivates and falls",
+        "forced_move": {
+          "action": "Utilize",
+          "check": "Strength (Athletics)",
+          "dc": 30,
+          "success_distance_feet": 10
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5156,8 +5392,52 @@
       "pages": [
         227
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Instant Fortress",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "statuette": {
+          "material": "adamantine",
+          "size_inches": 1
+        },
+        "expand_action": "Magic with command word",
+        "revert_command_requires_empty_tower": true,
+        "appearance_pushes_creatures_to_adjacent_unoccupied_space": true,
+        "appearance_pushes_unworn_unheld_objects_clear": true,
+        "tower": {
+          "side_feet": 20,
+          "height_feet": 30,
+          "floors": 2,
+          "roof_access_choice": [
+            "ladder",
+            "staircase",
+            "ramp"
+          ],
+          "door_location": "ground-level side facing user",
+          "door_open_cost": "Bonus Action command",
+          "immune_to_knock_and_similar_magic": true,
+          "cannot_be_tipped": true
+        },
+        "sections": {
+          "parts": [
+            "roof",
+            "door",
+            "walls"
+          ],
+          "armor_class": 20,
+          "hit_points": 100,
+          "physical_damage_immunity_except_siege": true,
+          "other_damage": "Resistance"
+        },
+        "shrinking_repairs_damage": false,
+        "repair": {
+          "spell": "Wish",
+          "restores_all_hit_points": true,
+          "counts_as_spell_level_at_most": 8
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5173,8 +5453,100 @@
         227,
         228
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ioun Stone",
+        "item_category": "Wondrous Item",
+        "rarity": "Varies",
+        "requires_attunement": true,
+        "activation": {
+          "action": "Magic",
+          "method": "toss into air"
+        },
+        "orbit_distance_feet": "1d3",
+        "maximum_orbiting": 3,
+        "orbiting_counts_as_worn": true,
+        "avoids_collisions_and_other_creature_interference": true,
+        "stow_action": "Utilize",
+        "can_stow_any_number": true,
+        "falls_if_attunement_ends": true,
+        "types": {
+          "Absorption": {
+            "rarity": "Very Rare",
+            "reaction_cancel_spell_max_level": 4,
+            "visible_caster_required": true,
+            "capacity_spell_levels": 20
+          },
+          "Agility": {
+            "rarity": "Very Rare",
+            "dexterity_bonus": 2,
+            "maximum": 20
+          },
+          "Awareness": {
+            "rarity": "Rare",
+            "advantage": [
+              "Initiative rolls",
+              "Wisdom (Perception) checks"
+            ]
+          },
+          "Fortitude": {
+            "rarity": "Very Rare",
+            "constitution_bonus": 2,
+            "maximum": 20
+          },
+          "Greater Absorption": {
+            "rarity": "Legendary",
+            "reaction_cancel_spell_max_level": 8,
+            "visible_caster_required": true,
+            "capacity_spell_levels": 20
+          },
+          "Insight": {
+            "rarity": "Very Rare",
+            "wisdom_bonus": 2,
+            "maximum": 20
+          },
+          "Intellect": {
+            "rarity": "Very Rare",
+            "intelligence_bonus": 2,
+            "maximum": 20
+          },
+          "Leadership": {
+            "rarity": "Very Rare",
+            "charisma_bonus": 2,
+            "maximum": 20
+          },
+          "Mastery": {
+            "rarity": "Legendary",
+            "proficiency_bonus_increase": 1
+          },
+          "Protection": {
+            "rarity": "Rare",
+            "armor_class_bonus": 1
+          },
+          "Regeneration": {
+            "rarity": "Legendary",
+            "hit_points_per_hour": 15,
+            "requires_at_least_hit_points": 1
+          },
+          "Reserve": {
+            "rarity": "Rare",
+            "spell_level_capacity": 4,
+            "found_spell_levels": "1d4",
+            "accepted_spell_levels": "1-4",
+            "uses_original_caster_parameters": true
+          },
+          "Strength": {
+            "rarity": "Very Rare",
+            "strength_bonus": 2,
+            "maximum": 20
+          },
+          "Sustenance": {
+            "rarity": "Rare",
+            "need_to_eat_or_drink": false
+          }
+        },
+        "absorption_burnout": "after 20 canceled spell levels, turns dull gray and loses magic"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5189,8 +5561,34 @@
       "pages": [
         228
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Iron Bands",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "sphere": {
+          "diameter_inches": 3,
+          "weight_pounds": 1
+        },
+        "activation": {
+          "action": "Magic",
+          "range_feet": 60,
+          "target": "visible Huge or smaller creature"
+        },
+        "attack_bonus": "Dexterity modifier + Proficiency Bonus",
+        "hit_condition": "Restrained",
+        "release": "Bonus Action command",
+        "hit_release_or_miss": "returns to sphere",
+        "break": {
+          "action": true,
+          "check": "Strength (Athletics)",
+          "dc": 20,
+          "success": "item destroyed and target freed",
+          "failed_retry_lockout_hours": 24
+        },
+        "recharge": "next dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5205,8 +5603,44 @@
       "pages": [
         228
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Iron Flask",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "capture": {
+          "action": "Magic",
+          "range_feet": 60,
+          "visible_target": true,
+          "requires_empty_flask": true,
+          "target_native_to_other_plane": true,
+          "saving_throw": {
+            "ability": "Wisdom",
+            "dc": 17
+          },
+          "previously_trapped_save": "Advantage"
+        },
+        "capacity_creatures": 1,
+        "trapped_creature_ages": false,
+        "trapped_creature_needs": {
+          "breathe": false,
+          "eat": false,
+          "drink": false
+        },
+        "release": {
+          "action": "Magic",
+          "method": "remove stopper",
+          "obeys_for_hours": 1,
+          "understands_commands_regardless_of_language": true,
+          "self_preservation_override": true,
+          "afterward": "normal disposition and alignment"
+        },
+        "identify_reveals_contents_present": true,
+        "identify_reveals_creature_type": false,
+        "creature_type_revealed_by": "opening flask",
+        "new_flask_may_contain_gm_chosen_creature": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5221,8 +5655,28 @@
       "pages": [
         228
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Javelin of Lightning",
+        "item_category": "Weapon (Javelin)",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "hit_damage_choice": "Lightning instead of Piercing",
+        "lightning_bolt": {
+          "maximum_target_range_feet": 120,
+          "forgoes_attack_roll": true,
+          "shape": "5-foot-wide Line",
+          "targets": "target and other creatures in line except user",
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 13
+          },
+          "failed_save_damage": "4d6 Lightning",
+          "successful_save_damage": "half",
+          "returns_to_hand": true,
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5238,8 +5692,23 @@
         228,
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Lantern of Revealing",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "oil_pints": 1,
+        "burn_hours": 6,
+        "bright_light_feet": 30,
+        "additional_dim_light_feet": 30,
+        "invisible_creatures_and_objects_visible_in_bright_light": true,
+        "lower_hood": {
+          "action": "Utilize",
+          "light": "Dim",
+          "radius_feet": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -10517,10 +10986,10 @@
       "name": "1d100 / Effect",
       "section_id": "1493-13-27-16-hat-of-many-spells",
       "page": 225,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
           "type": "string"
         },
@@ -10530,8 +10999,119 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 8,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-50"
+            },
+            {
+              "value": "Cast random 1d10 spell: Enlarge, Reduce, Faerie Fire, Fireball, Gust of Wind, self Invisibility, Lightning Bolt, Phantasmal Force, Polymorph, or Stinking Cloud."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51-55"
+            },
+            {
+              "value": "Stunned until end of next turn."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "56-60"
+            },
+            {
+              "value": "Harmless butterflies fill a 10-foot Cube within 30 feet for 1 minute."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "61-65"
+            },
+            {
+              "value": "Pull 1d4 nonmagical item: vial of Acid, Alchemist's Fire, Crowbar, or lit Torch."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "66-70"
+            },
+            {
+              "value": "Poisoned for 1 hour."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "71-75"
+            },
+            {
+              "value": "Petrified until end of next turn."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "76-80"
+            },
+            {
+              "value": "Pull 1d4 nonmagical item: Dagger, Rope with Grappling Hook, Caltrops, or 50 GP gem."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "81-85"
+            },
+            {
+              "value": "Uncontrolled 1d4 creature appears nearby: Camel, Constrictor Snake, Elephant, or Mule; lasts 1 hour or until 0 Hit Points."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "86-90"
+            },
+            {
+              "value": "Hostile Swarm of Bats occupies user's space and attacks."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91-95"
+            },
+            {
+              "value": "10-foot-diameter two-way portal appears within 30 feet until end of next turn; GM chooses destination plane."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "96-00"
+            },
+            {
+              "value": "Pull GM-chosen magic item: Common on 1-3, Uncommon on 4-5, Rare on 6; disappears after 1 hour unless consumed or destroyed."
+            }
+          ]
+        }
+      ],
+      "source_row_count": 11,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -10540,10 +11120,10 @@
       "name": "1d100 / Horn Type",
       "section_id": "1501-13-27-24-horn-of-valhalla",
       "page": 226,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
           "type": "string"
         },
@@ -10563,7 +11143,72 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-40"
+            },
+            {
+              "value": "Silver"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "None"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "41-75"
+            },
+            {
+              "value": "Brass"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Proficiency with all Simple weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "76-90"
+            },
+            {
+              "value": "Bronze"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Training with all Medium armor"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91-00"
+            },
+            {
+              "value": "Iron"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Proficiency with all Martial weapons"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
