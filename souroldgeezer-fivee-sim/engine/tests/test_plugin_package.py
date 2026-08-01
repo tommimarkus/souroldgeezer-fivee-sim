@@ -41,3 +41,11 @@ def test_host_manifests_identify_the_same_plugin() -> None:
 
     for field in ("name", "description", "author", "license"):
         assert codex[field] == claude[field]
+
+
+def test_claude_mcp_lets_the_launcher_own_the_host_runtime_layout() -> None:
+    manifest = _json(".claude-plugin/plugin.json")
+    environment = manifest["mcpServers"]["fivee_sim"].get("env", {})
+
+    assert "UV_PROJECT_ENVIRONMENT" not in environment
+    assert "UV_CACHE_DIR" not in environment

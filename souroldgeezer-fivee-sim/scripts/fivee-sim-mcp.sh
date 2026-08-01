@@ -20,13 +20,13 @@
 # than looping. Session start is non-blocking, so only a turn that actually needs a
 # tool waits on a cold build.
 #
-# An explicit uv location wins; otherwise the launcher derives durable storage from
+# An explicit uv environment wins; otherwise the launcher derives durable storage from
 # ${PLUGIN_DATA}, then ${CLAUDE_PLUGIN_DATA}, then a host-specific fallback. Codex
 # currently needs that fallback under ${CODEX_HOME}; a direct checkout still uses
-# engine/.venv. Installed plugin roots are versioned caches that must not be written
-# into. That split is also this script's main hazard, and the reason for the build
-# stamp below: host data is durable while the plugin root can change on upgrade, so
-# the venv may outlive the engine it was built from.
+# engine/.venv. A host-managed environment is a non-editable, content-addressed
+# runtime copy under plugin data. Old and new sessions never mutate one another's
+# runtime, and the server changes into that durable directory before exec so a
+# retired plugin cache cannot invalidate its working directory.
 set -euo pipefail
 
 log() { printf 'fivee-sim-mcp: %s\n' "$1" >&2; }
@@ -39,8 +39,8 @@ if [ ! -f "$engine_dir/pyproject.toml" ]; then
   exit 1
 fi
 
-# Absolute from here on: this path goes into the build stamp and is compared
-# against on the next start, so it has to be the same string every time.
+# Absolute from here on: an explicit/development environment records this path in
+# its build stamp, and the host-managed build reads source from it once.
 engine_dir="$(cd "$engine_dir" && pwd)"
 plugin_data="${PLUGIN_DATA:-${CLAUDE_PLUGIN_DATA:-}}"
 if [ -z "$plugin_data" ] && [ "${FIVEE_SIM_PLUGIN_HOST:-}" = "codex" ]; then
@@ -54,9 +54,51 @@ if [ -z "$plugin_data" ] && [ "${FIVEE_SIM_PLUGIN_HOST:-}" = "codex" ]; then
   fi
   plugin_data="$codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
 fi
+if [ -n "$plugin_data" ]; then
+  if ! mkdir -p "$plugin_data"; then
+    log "could not create the durable runtime directory at $plugin_data; server not started."
+    exit 1
+  fi
+  plugin_data="$(cd "$plugin_data" && pwd)"
+fi
+
+# A host-managed runtime is an immutable copy of one exact engine build. The
+# plugin root is replaceable — Codex may retire it when another session starts —
+# so an editable install would leave a live process with imports and resources
+# pointing into a directory the host is free to remove. Content-addressing the
+# environment also means an upgrade builds beside an older live runtime instead
+# of mutating it underneath that process.
+runtime_copy=0
+runtime_build_id=""
+runtime_build_identity() {
+  (
+    cd "$engine_dir" || exit 1
+    cksum pyproject.toml uv.lock
+    find src -type f ! -path '*/__pycache__/*' ! -name '*.pyc' \
+      | LC_ALL=C sort \
+      | while IFS= read -r source_file; do
+          cksum "$source_file"
+        done
+  )
+}
+runtime_build_key() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    runtime_build_identity | sha256sum | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    runtime_build_identity | shasum -a 256 | cut -d' ' -f1
+  else
+    # POSIX fallback for a minimal host. The full per-file checksums still feed
+    # the key; the byte count makes the aggregate less collision-prone.
+    local crc bytes
+    read -r crc bytes _ < <(runtime_build_identity | cksum)
+    printf '%s-%s\n' "$crc" "$bytes"
+  fi
+}
 if [ -z "${UV_PROJECT_ENVIRONMENT:-}" ]; then
   if [ -n "$plugin_data" ]; then
-    export UV_PROJECT_ENVIRONMENT="$plugin_data/venv"
+    runtime_build_id="$(runtime_build_key)"
+    export UV_PROJECT_ENVIRONMENT="$plugin_data/venvs/$runtime_build_id"
+    runtime_copy=1
   else
     export UV_PROJECT_ENVIRONMENT="$engine_dir/.venv"
   fi
@@ -92,15 +134,20 @@ venv_is_usable() {
   [ -n "$interpreter" ] && [ -x "$interpreter" ]
 }
 
-# Which engine the venv was built from. `uv sync` installs the engine editable, so
-# the venv pins one version's source directory — and an upgrade changes only that
-# path, leaving everything the usability check looks at perfectly valid. Without
-# this the server starts happily and answers from the previous version.
+# Which engine an explicit/development venv was built from. `uv sync` installs
+# that case editable, so the venv pins one source directory and needs the path in
+# its stamp. A host-managed runtime instead records the build identity already in
+# its directory name and contains a non-editable copy.
 #
 # A development checkout never moves, so the path alone would miss what changes in
 # place there; the manifest and lock cover dependencies, entry points, and
 # requires-python. Both files are read, never executed, and only at start.
 build_stamp() {
+  if [ "$runtime_copy" = "1" ]; then
+    printf 'mode=immutable-copy\n'
+    printf 'build=%s\n' "$runtime_build_id"
+    return
+  fi
   printf 'engine=%s\n' "$engine_dir"
   cksum "$engine_dir/pyproject.toml" "$engine_dir/uv.lock" 2>/dev/null || true
 }
@@ -217,7 +264,7 @@ if sync_is_needed; then
         log "building the virtual environment (first run for this plugin version)..."
       fi
     else
-      log "virtual environment at $venv_dir was built from a different engine (usually a plugin upgrade); refreshing..."
+      log "virtual environment at $venv_dir was built from a different engine; refreshing..."
     fi
 
     if ! command -v uv >/dev/null 2>&1; then
@@ -226,7 +273,11 @@ if sync_is_needed; then
     fi
     # --no-dev keeps the runtime environment to what the server actually imports;
     # test and lint tooling belongs to the development environment only.
-    if ! bounded uv sync --project "$engine_dir" --frozen --no-dev 1>&2; then
+    sync_args=(sync --project "$engine_dir" --frozen --no-dev)
+    if [ "$runtime_copy" = "1" ]; then
+      sync_args+=(--no-editable)
+    fi
+    if ! bounded uv "${sync_args[@]}" 1>&2; then
       log "environment build failed; server not started (it will retry next session)."
       exit 1
     fi
@@ -245,4 +296,8 @@ if sync_is_needed; then
   trap - EXIT HUP INT TERM
 fi
 
+if [ -n "$plugin_data" ] && ! cd "$plugin_data"; then
+  log "durable runtime directory disappeared at $plugin_data; server not started."
+  exit 1
+fi
 exec "$server_bin"
