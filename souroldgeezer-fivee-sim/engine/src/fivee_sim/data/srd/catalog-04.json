@@ -785,8 +785,20 @@
       "pages": [
         9
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifier": "proficiency_bonus",
+        "applies_to": "saving_throw",
+        "proficiency_is_ability_specific": true,
+        "monster_proficiency_source": "stat_block",
+        "class_minimum_proficient_saving_throws": 2,
+        "example_class_proficiencies": {
+          "Wizard": [
+            "Intelligence",
+            "Wisdom"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -801,8 +813,30 @@
       "pages": [
         9
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_proficiency_sources": [
+          "class",
+          "background"
+        ],
+        "proficiency_category_count": 2,
+        "proficiency_categories": [
+          "weapon",
+          "tool"
+        ],
+        "weapon_proficiency": {
+          "modifier": "proficiency_bonus",
+          "applies_to": "attack_roll",
+          "requires_proficient_weapon": true
+        },
+        "tool_proficiency": {
+          "modifier": "proficiency_bonus",
+          "applies_to": "ability_check",
+          "requires_tool_use": true,
+          "matching_skill_proficiency_grants_advantage": true,
+          "skill_and_tool_proficiency_benefits_combine": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -818,8 +852,136 @@
         9,
         10
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action_table_id": "009-actions",
+        "definition_source": "Rules Glossary",
+        "definition_refs": {
+          "Attack": "1136-11-2-11-attack-action",
+          "Dash": "1174-11-2-49-dash-action",
+          "Disengage": "1183-11-2-58-disengage-action",
+          "Dodge": "1184-11-2-59-dodge-action",
+          "Help": "1201-11-2-76-help-action",
+          "Hide": "1203-11-2-78-hide-action",
+          "Influence": "1214-11-2-89-influence-action",
+          "Magic": "1223-11-2-98-magic-action",
+          "Ready": "1242-11-2-117-ready-action",
+          "Search": "1249-11-2-124-search-action",
+          "Study": "1262-11-2-137-study-action",
+          "Utilize": "1277-11-2-152-utilize-action"
+        },
+        "action_count": 12,
+        "typical_action_scope_excludes": [
+          "movement",
+          "communication"
+        ],
+        "actions": {
+          "Attack": {
+            "attack_modes": [
+              "weapon",
+              "Unarmed Strike"
+            ]
+          },
+          "Dash": {
+            "duration": "rest_of_turn",
+            "extra_movement_formula": "Speed"
+          },
+          "Disengage": {
+            "duration": "rest_of_turn",
+            "movement_provokes_opportunity_attacks": false
+          },
+          "Dodge": {
+            "duration": "until_start_of_next_turn",
+            "attack_rolls_against_actor": "disadvantage",
+            "dexterity_saving_throws": "advantage",
+            "benefit_loss_conditions": [
+              {
+                "condition": "Incapacitated"
+              },
+              {
+                "speed_equals": 0
+              }
+            ]
+          },
+          "Help": {
+            "modes": [
+              "ability_check",
+              "attack_roll",
+              "first_aid"
+            ]
+          },
+          "Hide": {
+            "check": {
+              "ability": "Dexterity",
+              "skill": "Stealth"
+            }
+          },
+          "Influence": {
+            "check_options": [
+              {
+                "ability": "Charisma",
+                "skills": [
+                  "Deception",
+                  "Intimidation",
+                  "Performance",
+                  "Persuasion"
+                ]
+              },
+              {
+                "ability": "Wisdom",
+                "skills": [
+                  "Animal Handling"
+                ]
+              }
+            ],
+            "target_property": "creature_attitude"
+          },
+          "Magic": {
+            "use_categories": [
+              "spell",
+              "magic_item",
+              "magical_feature"
+            ]
+          },
+          "Ready": {
+            "timing": "response_to_trigger",
+            "trigger_definer": "actor"
+          },
+          "Search": {
+            "check": {
+              "ability": "Wisdom",
+              "skills": [
+                "Insight",
+                "Medicine",
+                "Perception",
+                "Survival"
+              ]
+            }
+          },
+          "Study": {
+            "check": {
+              "ability": "Intelligence",
+              "skills": [
+                "Arcana",
+                "History",
+                "Investigation",
+                "Nature",
+                "Religion"
+              ]
+            }
+          },
+          "Utilize": {
+            "object_category": "nonmagical"
+          }
+        },
+        "additional_action_sources": [
+          "class_feature",
+          "other_ability",
+          "improvised"
+        ],
+        "improvised_action_adjudicator": "game_master",
+        "improvised_action_may_require_d20_test": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -834,8 +996,10 @@
       "pages": [
         10
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "simultaneous_action_limit": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -850,8 +1014,24 @@
       "pages": [
         10
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action_type": "additional",
+        "availability_requires_explicit_grant": true,
+        "grant_sources": [
+          "special_ability",
+          "spell",
+          "other_feature"
+        ],
+        "maximum_per_turn": 1,
+        "default_timing": "during_turn",
+        "specified_timing_overrides_default": true,
+        "action_deprivation_prevents_bonus_action": true,
+        "example_grant": {
+          "class": "Rogue",
+          "feature": "Cunning Action"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -866,8 +1046,24 @@
       "pages": [
         10
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action_type": "special",
+        "requires_trigger": true,
+        "trigger_turn_scope": [
+          "own_turn",
+          "other_creature_turn"
+        ],
+        "maximum_before_reset": 1,
+        "reset_timing": "start_of_next_turn",
+        "interrupt_resolution_order": [
+          "reaction",
+          "interrupted_creature_resumes_turn"
+        ],
+        "default_timing": "immediately_after_trigger",
+        "specific_timing_overrides_default": true,
+        "common_example": "Opportunity Attack"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -882,8 +1078,24 @@
       "pages": [
         10
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "nonplayer_character_role_owner": "game_master",
+        "nonplayer_character_attitudes": [
+          "Friendly",
+          "Indifferent",
+          "Hostile"
+        ],
+        "attitude_dispositions": {
+          "Friendly": "predisposed_to_help",
+          "Hostile": "inclined_to_hinder"
+        },
+        "progress_mode_count": 2,
+        "progress_modes": [
+          "roleplaying",
+          "ability_check"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -899,8 +1111,19 @@
         10,
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "approaches": [
+          "active",
+          "descriptive"
+        ],
+        "nonplayer_character_reaction_determiner": "game_master",
+        "nonplayer_character_reaction_inputs": [
+          "nonplayer_character_personality",
+          "player_character_actions",
+          "player_character_attitudes"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -915,8 +1138,13 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "roleplaying_can_alter_nonplayer_character_attitude": true,
+        "dice_use_decider": "game_master",
+        "typical_action": "Influence",
+        "approach_selection_basis": "group_skill_proficiencies"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -931,7 +1159,7 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -947,8 +1175,29 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "referenced_sections": [
+          "Equipment",
+          "Tools",
+          "Adventuring Gear"
+        ],
+        "example_items": [
+          "Ladder",
+          "Torch",
+          "Thieves' Tools",
+          "Caltrops",
+          "Quarterstaff"
+        ],
+        "example_item_functions": {
+          "Ladder": "reach_out_of_the_way_place",
+          "Torch": "light_source",
+          "Thieves' Tools": "bypass_locked_doors_and_containers",
+          "Caltrops": "create_obstacles",
+          "Quarterstaff": "remote_object_interaction"
+        },
+        "noncombat_weapon_use_possible": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -963,8 +1212,19 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "sight_affected_task_categories": [
+          "noticing_danger",
+          "hitting_enemy",
+          "targeting_certain_spells"
+        ],
+        "subsection_ids": [
+          "047-4-24-1-obscured-areas",
+          "048-4-24-2-light",
+          "049-4-24-3-special-senses"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -979,8 +1239,37 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "obscuration_categories": [
+          "Lightly Obscured",
+          "Heavily Obscured"
+        ],
+        "Lightly Obscured": {
+          "examples": [
+            "Dim Light",
+            "patchy fog",
+            "moderate foliage"
+          ],
+          "sight_check": {
+            "ability": "Wisdom",
+            "skill": "Perception",
+            "disadvantage": true
+          }
+        },
+        "Heavily Obscured": {
+          "examples": [
+            "Darkness",
+            "heavy fog",
+            "dense foliage"
+          ],
+          "opaque": true,
+          "condition": {
+            "name": "Blinded",
+            "scope": "trying_to_see_something_in_area"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "046-4-24-vision-and-light"
     },
@@ -995,8 +1284,54 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "illumination_categories": [
+          "Bright Light",
+          "Dim Light",
+          "Darkness"
+        ],
+        "aliases": {
+          "Dim Light": [
+            "shadows"
+          ]
+        },
+        "obscuration_by_category": {
+          "Dim Light": "Lightly Obscured",
+          "Darkness": "Heavily Obscured"
+        },
+        "normal_vision_for": {
+          "Bright Light": "most_creatures"
+        },
+        "usual_boundary_between": {
+          "Dim Light": [
+            "Bright Light",
+            "Darkness"
+          ]
+        },
+        "example_sources": {
+          "Bright Light": [
+            "gloomy_day",
+            "torch",
+            "lantern",
+            "fire"
+          ],
+          "Dim Light": [
+            "twilight",
+            "dawn"
+          ],
+          "Darkness": [
+            "outdoor_night",
+            "unlit_dungeon",
+            "magical_darkness"
+          ]
+        },
+        "possible_example_sources": {
+          "Dim Light": [
+            "full_moon"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "046-4-24-vision-and-light"
     },
@@ -1011,8 +1346,16 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "special_sense_count": 4,
+        "special_senses": [
+          "Blindsight",
+          "Darkvision",
+          "Tremorsense",
+          "Truesight"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "046-4-24-vision-and-light"
     },
@@ -1027,8 +1370,11 @@
       "pages": [
         11
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action": "Hide",
+        "availability_adjudicator": "game_master"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -1044,7 +1390,7 @@
         11,
         12
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -1060,8 +1406,27 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "required_properties": [
+          "discrete",
+          "inanimate"
+        ],
+        "examples": [
+          "window",
+          "door",
+          "sword",
+          "book",
+          "table",
+          "chair",
+          "stone"
+        ],
+        "excluded_categories": [
+          "building",
+          "vehicle"
+        ],
+        "excluded_categories_are_composed_of_multiple_objects": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -1076,8 +1441,17 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "scope": "time_limited",
+        "example_scope": "combat",
+        "free_interactions_per_turn": 1,
+        "free_interaction_timing": [
+          "movement",
+          "action"
+        ],
+        "additional_interaction_action": "Utilize"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -3333,7 +3707,7 @@
       "name": "Actions",
       "section_id": "037-4-15-actions",
       "page": 9,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "action",
@@ -3346,9 +3720,203 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Attack"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dash"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Disengage"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dodge"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Help"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hide"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Influence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ready"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Search"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Study"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Utilize"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "prose_only_cell",
+          "row": 0,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 1,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 2,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 3,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 4,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 5,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 6,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 7,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 8,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 9,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 10,
+          "column": "summary"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 11,
+          "column": "summary"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
