@@ -718,8 +718,13 @@
         23,
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tier_count": 4,
+        "level_minimum": 1,
+        "level_maximum": 20,
+        "tiers_have_associated_rules": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -734,8 +739,21 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tier": 1,
+        "level_minimum": 1,
+        "level_maximum": 4,
+        "capability_labels": [
+          "apprentice",
+          "starting class features",
+          "subclass"
+        ],
+        "threat_labels": [
+          "farmstead",
+          "village"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "142-5-10-tiers-of-play"
     },
@@ -750,8 +768,21 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tier": 2,
+        "level_minimum": 5,
+        "level_maximum": 10,
+        "capability_labels": [
+          "full-fledged",
+          "iconic spells",
+          "multiple weapon attacks per round"
+        ],
+        "threat_labels": [
+          "city",
+          "kingdom"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "142-5-10-tiers-of-play"
     },
@@ -766,8 +797,20 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tier": 3,
+        "level_minimum": 11,
+        "level_maximum": 16,
+        "capability_labels": [
+          "special among adventurers",
+          "reality-altering spells",
+          "enhanced attacks"
+        ],
+        "threat_labels": [
+          "region"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "142-5-10-tiers-of-play"
     },
@@ -782,8 +825,20 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "tier": 4,
+        "level_minimum": 17,
+        "level_maximum": 20,
+        "capability_labels": [
+          "pinnacle class features",
+          "heroic archetype"
+        ],
+        "threat_labels": [
+          "world",
+          "multiverse"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "142-5-10-tiers-of-play"
     },
@@ -798,8 +853,11 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "starting_level_may_exceed": 1,
+        "recommended_starting_level_for_seasoned_players": 3
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -814,8 +872,17 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "uses_standard_character_creation_steps": true,
+        "uses_advancement_beyond_level_1_rules": true,
+        "starting_experience_points": "minimum required for starting level",
+        "example": {
+          "starting_level": 10,
+          "experience_points": 64000
+        },
+        "starting_equipment_at_higher_levels_table_id": "024-starting-equipment-at-higher-levels"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -830,8 +897,15 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "minimum_character_level": 20,
+        "experience_points_baseline": 355000,
+        "experience_points_per_bonus_feat": 30000,
+        "bonus_feat_count_formula": "floor((XP - 355000) / 30000)",
+        "epic_boon_feats_especially_appropriate": true,
+        "any_qualifying_feat_allowed": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "148-5-12-creating-your-character"
     },
@@ -846,8 +920,13 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "GM_decides_equipment_above_level_1_standard": true,
+        "additional_magic_items_possible": true,
+        "starting_equipment_at_higher_levels_table_id": "024-starting-equipment-at-higher-levels",
+        "purchasable_equipment_requires_GM_availability": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -862,8 +941,11 @@
       "pages": [
         24
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "levels_in_multiple_classes_allowed": true,
+        "on_level_advancement_option": "gain a level in a new class instead of the current class"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -879,8 +961,22 @@
         24,
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "minimum_primary_ability_score": 13,
+        "required_for": [
+          "new class",
+          "all current classes"
+        ],
+        "example": {
+          "current_class": "Barbarian",
+          "new_class": "Druid",
+          "required_scores": {
+            "Strength": 13,
+            "Wisdom": 13
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -895,8 +991,12 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "level_advancement_experience_points_basis": "total character level",
+        "total_character_level_formula": "sum of all class levels",
+        "character_advancement_table_id": "023-character-advancement"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -911,8 +1011,14 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "new_class_hit_points_use": "levels after 1",
+        "class_level_1_hit_points_only_when_total_character_level": 1,
+        "hit_dice_pool": "all class Hit Dice",
+        "same_die_types_pool_together": true,
+        "different_die_types_tracked_separately": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -927,8 +1033,18 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "proficiency_bonus_basis": "total character level",
+        "character_advancement_table_id": "023-character-advancement",
+        "example": {
+          "class_levels": {
+            "Fighter": 3,
+            "Rogue": 2
+          },
+          "proficiency_bonus": 3
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -943,8 +1059,12 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "trigger": "first level in a class other than the initial class",
+        "starting_proficiencies_gained": "class-specific subset",
+        "source": "class description"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -959,8 +1079,16 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "features_gained_by": "level in each class",
+        "multiclass_feature_rules_source": "class descriptions",
+        "special_multiclass_rules": [
+          "Extra Attack",
+          "Spellcasting",
+          "alternative Armor Class calculations"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "117-5-character-creation"
     },
@@ -975,8 +1103,11 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "simultaneous_armor_class_calculation_methods": 1,
+        "multiple_available_methods_require_choice": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "157-5-20-class-features"
     },
@@ -991,8 +1122,13 @@
       "pages": [
         25
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "extra_attack_features_stack": false,
+        "maximum_attacks_from_extra_attack": 2,
+        "explicit_more_attacks_feature_can_override_maximum": true,
+        "thirsting_blade_adds_attacks_when_extra_attack_already_present": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "157-5-20-class-features"
     },
@@ -2287,7 +2423,7 @@
       "name": "Fixed Hit Points by Class",
       "section_id": "141-5-9-gaining-a-level",
       "page": 23,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "class",
@@ -2300,8 +2436,53 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 5,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Barbarian"
+            },
+            {
+              "value": "7 + Con. modifier",
+              "numeric_value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fighter, Paladin, or Ranger"
+            },
+            {
+              "value": "6 + Con. modifier",
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bard, Cleric, Druid, Monk, Rogue, or Warlock"
+            },
+            {
+              "value": "5 + Con. modifier",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerer or Wizard"
+            },
+            {
+              "value": "4 + Con. modifier",
+              "numeric_value": 4
+            }
+          ]
+        }
+      ],
+      "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -2659,7 +2840,7 @@
       "name": "Starting Equipment at Higher Levels",
       "section_id": "148-5-12-creating-your-character",
       "page": 24,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "starting-level",
@@ -2677,7 +2858,60 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "2-4"
+            },
+            {
+              "value": "Normal starting equipment"
+            },
+            {
+              "value": "1 Common"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "5-10"
+            },
+            {
+              "value": "500 GP plus 1d10 × 25 GP plus normal starting equipment"
+            },
+            {
+              "value": "1 Common, 1 Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-16"
+            },
+            {
+              "value": "5,000 GP plus 1d10 × 250 GP plus normal starting equipment"
+            },
+            {
+              "value": "2 Common, 3 Uncommon, 1 Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-20"
+            },
+            {
+              "value": "20,000 GP plus 1d10 × 250 GP plus normal starting equipment"
+            },
+            {
+              "value": "2 Common, 4 Uncommon, 3 Rare, 1 Very Rare"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
