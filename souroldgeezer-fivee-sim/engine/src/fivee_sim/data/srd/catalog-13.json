@@ -7263,8 +7263,27 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Climbing",
+        "item_category": "Potion",
+        "rarity": "Common",
+        "requires_attunement": false,
+        "on_drink": {
+          "climb_speed": "equal to Speed",
+          "duration_hours": 1,
+          "strength_athletics_checks_to_climb": "Advantage"
+        },
+        "appearance": {
+          "layers": [
+            "brown",
+            "silver",
+            "gray"
+          ],
+          "resembles": "bands of stone",
+          "shaking_mixes_colors": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7279,8 +7298,23 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Diminution",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "spell_effect": "Enlarge/Reduce (reduce)",
+          "duration_hours": "1d4",
+          "requires_concentration": false
+        },
+        "appearance": {
+          "liquid": "clear with red coloration",
+          "motion": "red continuously contracts to tiny bead then expands",
+          "shaking_interrupts_motion": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7295,8 +7329,20 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Flying",
+        "item_category": "Potion",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "fly_speed": "equal to Speed",
+          "can_hover": true,
+          "duration_hours": 1,
+          "on_expiration_while_airborne": "fall unless another means keeps drinker aloft"
+        },
+        "appearance": "clear liquid floating at container top with cloudy white impurities"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7311,8 +7357,20 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Gaseous Form",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "spell_effect": "Gaseous Form",
+          "duration_hours": 1,
+          "requires_concentration": false,
+          "early_end_action": "Bonus Action"
+        },
+        "appearance": "container appears to hold fog that moves and pours like water"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7327,8 +7385,20 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Giant Strength",
+        "item_category": "Potion",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "on_drink": {
+          "strength_score": "determined by giant type table",
+          "duration_hours": 1,
+          "no_effect_if_current_strength_at_least_table_score": true
+        },
+        "strength_table_id": "235-potion-str",
+        "appearance": "transparent liquid containing sliver of light resembling giant fingernail"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7343,8 +7413,23 @@
       "pages": [
         235
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Growth",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "on_drink": {
+          "spell_effect": "Enlarge/Reduce (enlarge)",
+          "duration_minutes": 10,
+          "requires_concentration": false
+        },
+        "appearance": {
+          "liquid": "clear with red coloration",
+          "motion": "red continuously expands from tiny bead then contracts",
+          "shaking_interrupts_motion": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7359,8 +7444,16 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potions of Healing",
+        "item_category": "Potion",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "on_drink": "regain Hit Points determined by potion rarity table",
+        "healing_table_id": "236-potion-hp-regained",
+        "appearance": "red liquid glimmers when agitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7375,8 +7468,21 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Heroism",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "temporary_hit_points": 10,
+          "temporary_hit_point_duration_hours": 1,
+          "spell_effect": "Bless",
+          "spell_effect_duration_hours": 1,
+          "requires_concentration": false
+        },
+        "appearance": "blue liquid bubbles and steams as if boiling"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7391,8 +7497,23 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Invisibility",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "appearance": "container looks empty but feels as though it holds liquid",
+        "on_drink": {
+          "condition": "Invisible",
+          "duration_hours": 1,
+          "early_end_conditions": [
+            "make attack roll",
+            "deal damage",
+            "cast spell"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7407,8 +7528,18 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Invulnerability",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "damage_resistance": "all damage",
+          "duration_minutes": 1
+        },
+        "appearance": "syrupy liquid resembling liquefied iron"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7423,8 +7554,23 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Longevity",
+        "item_category": "Potion",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "first_drink": {
+          "physical_age_reduction_years": "1d6 + 6",
+          "minimum_resulting_age_years": 13
+        },
+        "subsequent_drinks": {
+          "cumulative_reverse_effect_chance_percent_per_drink": 10,
+          "reverse_effect": "physical age increases by 1d6 + 6 years"
+        },
+        "appearance": "amber liquid containing tiny beating heart",
+        "ingredients_vanish_when_opened": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7439,8 +7585,20 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Mind Reading",
+        "item_category": "Potion",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "spell_effect": "Detect Thoughts",
+          "save_dc": 13,
+          "duration_minutes": 10,
+          "requires_concentration": false
+        },
+        "appearance": "dense purple liquid with floating ovoid pink cloud"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7455,8 +7613,38 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Poison",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "disguise": {
+          "resembles": [
+            "Potion of Healing",
+            "other beneficial potion"
+          ],
+          "senses": [
+            "appearance",
+            "smell",
+            "taste"
+          ],
+          "method": "illusion magic",
+          "identify_reveals_true_nature": true
+        },
+        "on_drink": {
+          "damage": {
+            "dice": "4d6",
+            "type": "Poison"
+          },
+          "saving_throw": {
+            "ability": "Constitution",
+            "dc": 13
+          },
+          "failure_condition": "Poisoned",
+          "failure_duration_hours": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7471,8 +7659,22 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Resistance",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "on_drink": {
+          "damage_resistance": "one damage type",
+          "duration_hours": 1
+        },
+        "damage_type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "damage_type_table_id": "236-1d10-damage-type-1d10-damage-type"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7487,8 +7689,20 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Speed",
+        "item_category": "Potion",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "on_drink": {
+          "spell_effect": "Haste",
+          "duration_minutes": 1,
+          "requires_concentration": false,
+          "end_wave_of_lethargy": false
+        },
+        "appearance": "yellow fluid streaked with black and swirling on its own"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7503,8 +7717,21 @@
       "pages": [
         236
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Vitality",
+        "item_category": "Potion",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "on_drink_immediate": {
+          "removes": [
+            "all Exhaustion levels",
+            "Poisoned condition"
+          ]
+        },
+        "next_24_hours": "Hit Point Dice restore maximum possible Hit Points when spent",
+        "appearance": "crimson liquid pulses regularly with dull light"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7520,8 +7747,18 @@
         236,
         237
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Potion of Water Breathing",
+        "item_category": "Potion",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "on_drink": {
+          "can_breathe_underwater": true,
+          "duration_hours": 24
+        },
+        "appearance": "cloudy green sea-scented fluid with jellyfish-like bubble"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -12841,7 +13078,7 @@
       "name": "Potion / Str.",
       "section_id": "1549-13-28-24-potion-of-giant-strength",
       "page": 235,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "potion",
@@ -12849,7 +13086,7 @@
           "type": "string"
         },
         {
-          "id": "str",
+          "id": "strength",
           "name": "Str.",
           "type": "integer"
         },
@@ -12859,8 +13096,74 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 6,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Potion of Giant Strength (hill)"
+            },
+            {
+              "value": 21
+            },
+            {
+              "value": "Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Giant Strength (frost or stone)"
+            },
+            {
+              "value": 23
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Giant Strength (fire)"
+            },
+            {
+              "value": 25
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Giant Strength (cloud)"
+            },
+            {
+              "value": 27
+            },
+            {
+              "value": "Very Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Giant Strength (storm)"
+            },
+            {
+              "value": 29
+            },
+            {
+              "value": "Legendary"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -12869,7 +13172,7 @@
       "name": "Potion / HP Regained",
       "section_id": "1551-13-28-26-potions-of-healing",
       "page": 236,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "potion",
@@ -12877,7 +13180,7 @@
           "type": "string"
         },
         {
-          "id": "hp-regained",
+          "id": "hit-points-regained",
           "name": "HP Regained",
           "type": "string"
         },
@@ -12887,8 +13190,61 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 7,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Potion of Healing"
+            },
+            {
+              "value": "2d4 + 2"
+            },
+            {
+              "value": "Common"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Healing (greater)"
+            },
+            {
+              "value": "4d4 + 4"
+            },
+            {
+              "value": "Uncommon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Healing (superior)"
+            },
+            {
+              "value": "8d4 + 8"
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion of Healing (supreme)"
+            },
+            {
+              "value": "10d4 + 20"
+            },
+            {
+              "value": "Very Rare"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -12897,20 +13253,111 @@
       "name": "1d10 Damage Type / 1d10 Damage Type",
       "section_id": "1558-13-28-33-potion-of-resistance",
       "page": 236,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10-damage-type",
-          "name": "1d10 Damage Type",
+          "id": "left-roll",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "left-damage-type",
+          "name": "Damage Type",
           "type": "string"
         },
         {
-          "id": "1d10-damage-type-2",
-          "name": "1d10 Damage Type",
+          "id": "right-roll",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "right-damage-type",
+          "name": "Damage Type",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Necrotic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Cold"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Poison"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Fire"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Psychic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Force"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": "Radiant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "Thunder"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
