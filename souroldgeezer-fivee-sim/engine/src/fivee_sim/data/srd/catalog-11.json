@@ -3571,8 +3571,13 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Search [Action]",
+        "check_ability": "Wisdom",
+        "purpose": "discern something not obvious",
+        "skill_suggestions_table_id": "187-search"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3587,8 +3592,22 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Shape-Shifting",
+        "example_effects": [
+          "Wild Shape",
+          "Polymorph"
+        ],
+        "transformation_details_specified_by_effect": true,
+        "ongoing_effects_carry_between_forms_by_default": true,
+        "ongoing_effect_examples": [
+          "conditions",
+          "spells",
+          "curses"
+        ],
+        "reverts_to_true_form_on_death": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3603,8 +3622,34 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Short Rest",
+        "duration_hours": 1,
+        "maximum_activity": "no more strenuous than light activity",
+        "activity_examples": [
+          "reading",
+          "talking",
+          "eating",
+          "standing watch"
+        ],
+        "minimum_hit_points_to_start": 1,
+        "completion_benefits": {
+          "hit_point_dice": {
+            "can_spend_one_or_more": true,
+            "hit_points_per_die": "die roll + Constitution modifier",
+            "minimum_hit_points_per_die": 1,
+            "can_decide_additional_die_after_each_roll": true
+          },
+          "eligible_features_recharged_as_specified": true
+        },
+        "interruptions": [
+          "rolling Initiative",
+          "casting a spell other than a cantrip",
+          "taking any damage"
+        ],
+        "interrupted_rest_benefits": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3619,8 +3664,13 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Simultaneous Effects",
+        "applies_when_count_at_least": 2,
+        "timing": "same time on a turn",
+        "order_decided_by": "player or GM whose turn it is"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3635,8 +3685,28 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Size",
+        "applies_to": [
+          "creature",
+          "object"
+        ],
+        "categories": [
+          "Tiny",
+          "Small",
+          "Medium",
+          "Large",
+          "Huge",
+          "Gargantuan"
+        ],
+        "creature_size_determines_combat_space": true,
+        "object_size_affects_hit_points": true,
+        "related_terms": [
+          "Breaking Objects",
+          "Playing the Game: Combat"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3651,8 +3721,14 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Skill",
+        "meaning": "area of specialization associated with an ability check",
+        "proficiency_allows_proficiency_bonus": true,
+        "bonus_applies_to_associated_ability_check": true,
+        "related_term": "Playing the Game: Proficiency"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3667,8 +3743,36 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Speed",
+        "unit": "feet",
+        "meaning": "distance a creature can cover when it moves on its turn",
+        "special_speeds": [
+          "Burrow Speed",
+          "Climb Speed",
+          "Fly Speed",
+          "Swim Speed"
+        ],
+        "multiple_speeds": {
+          "choose_speed_when_moving": true,
+          "can_switch_during_move": true,
+          "remaining_distance_formula": "new speed - distance already moved",
+          "new_speed_unusable_when_result_zero_or_less": true
+        },
+        "speed_change_propagation": {
+          "base_speed_change_applies_equally_to_special_speeds": true,
+          "same_duration": true
+        },
+        "related_terms": [
+          "Climbing",
+          "Crawling",
+          "Flying",
+          "Jumping",
+          "Swimming",
+          "Playing the Game: Combat"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3683,8 +3787,12 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Spell",
+        "is_magical_effect": true,
+        "characteristics_defined_in": "Spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3699,8 +3807,16 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Spell Attack",
+        "is_attack_roll": true,
+        "possible_sources": [
+          "spell",
+          "other magical effect"
+        ],
+        "related_term": "Spells: Casting Spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3715,8 +3831,18 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Spellcasting Focus",
+        "is_object": true,
+        "can_replace_material_components": true,
+        "replacement_requirements": {
+          "component_consumed_by_spell": false,
+          "component_has_specified_cost": false
+        },
+        "availability_and_types_can_be_class_specific": true,
+        "related_term": "Spells: Casting Spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3731,8 +3857,15 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Sphere [Area of Effect]",
+        "extends_from_origin_in_straight_lines": true,
+        "directions": "all",
+        "extension_distance_is_radius": true,
+        "radius_specified_by_effect": true,
+        "origin_included": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3747,8 +3880,13 @@
       "pages": [
         188
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Stable",
+        "hit_points": 0,
+        "death_saving_throws_required": false,
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3764,8 +3902,95 @@
         188,
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Stat Block",
+        "contains": "monster game statistics",
+        "position": "after monster name",
+        "entries": {
+          "size": {
+            "values": [
+              "Tiny",
+              "Small",
+              "Medium",
+              "Large",
+              "Huge",
+              "Gargantuan"
+            ]
+          },
+          "creature_type": {
+            "includes_family": true,
+            "includes_descriptive_tags": true
+          },
+          "alignment": {
+            "listed_value_is_suggestion": true,
+            "actual_alignment_determined_by": "GM"
+          },
+          "armor_class_initiative_hit_points": {
+            "hit_point_dice_in_parentheses_after_hit_points": true,
+            "constitution_contribution_included_if_any": true,
+            "initiative_score_follows_initiative_modifier": true,
+            "magically_created_creatures_may_lack_hit_dice_and_initiative": true
+          },
+          "speed": {
+            "includes_base_speed": true,
+            "includes_special_speeds": true
+          },
+          "ability_scores": {
+            "table_includes_scores": true,
+            "table_includes_modifiers": true,
+            "table_includes_saving_throw_modifiers": true
+          },
+          "skills": "skill proficiencies if any",
+          "resistances_and_vulnerabilities": "values if any",
+          "immunities": [
+            "damage Immunities if any",
+            "condition Immunities if any"
+          ],
+          "gear": "equipment that can be given away or retrieved",
+          "senses": {
+            "includes_special_senses": true,
+            "includes_passive_perception": true
+          },
+          "languages": "languages known",
+          "challenge_rating": {
+            "followed_by_experience_points": true,
+            "followed_by_proficiency_bonus": true,
+            "magically_created_creatures_may_lack_cr": true
+          },
+          "traits": "features active continuously or in certain situations",
+          "actions": "additional monster actions",
+          "bonus_actions": "options if any",
+          "reactions": "special reactions if any"
+        },
+        "notations": {
+          "attack": {
+            "fields": [
+              "melee or ranged",
+              "attack roll bonus",
+              "reach or range",
+              "on-hit outcome"
+            ],
+            "default_target_count": 1
+          },
+          "saving_throw_effect": {
+            "fields": [
+              "saving throw kind",
+              "save DC",
+              "creatures required to save",
+              "failed-save outcome",
+              "successful-save outcome"
+            ]
+          },
+          "damage": {
+            "usually_includes_static_number": true,
+            "usually_includes_die_expression": true,
+            "use_determined_by": "GM",
+            "use_both": false,
+            "example": "4 (1d4 + 2)"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3780,8 +4005,19 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Study [Action]",
+        "check_ability": "Intelligence",
+        "knowledge_sources": [
+          "memory",
+          "book",
+          "clue",
+          "other source of knowledge"
+        ],
+        "purpose": "recall important information",
+        "skill_suggestions_table_id": "189-areas-of-knowledge"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3796,8 +4032,16 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Stunned [Condition]",
+        "condition_applied": "Incapacitated",
+        "automatically_failed_saving_throws": [
+          "Strength",
+          "Dexterity"
+        ],
+        "attack_rolls_against_creature": "Advantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3812,8 +4056,20 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Suffocation [Hazard]",
+        "hold_breath_duration": {
+          "minutes": "1 + Constitution modifier",
+          "minimum_seconds": 30
+        },
+        "suffocation_starts_when_breath_hold_ends": true,
+        "out_of_breath_or_choking": {
+          "exhaustion_levels_per_turn": 1,
+          "timing": "end of each turn"
+        },
+        "breathing_again_removes_all_suffocation_exhaustion": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3828,8 +4084,13 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Surprise",
+        "trigger": "caught unawares by start of combat",
+        "initiative_roll": "Disadvantage",
+        "related_term": "Playing the Game: Combat"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3844,8 +4105,20 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Swimming",
+        "extra_movement_cost_per_foot": 1,
+        "extra_movement_cost_per_foot_in_difficult_terrain": 2,
+        "extra_cost_ignored_when_using_swim_speed": true,
+        "rough_water_optional_check": {
+          "any_distance_can_require_check": true,
+          "determined_by": "GM",
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4670,7 +4943,7 @@
       "name": "Search",
       "section_id": "1249-11-2-124-search-action",
       "page": 187,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "skill",
@@ -4683,7 +4956,48 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Insight"
+            },
+            {
+              "value": "Creature's state of mind"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medicine"
+            },
+            {
+              "value": "Creature's ailment or cause of death"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Perception"
+            },
+            {
+              "value": "Concealed creature or object"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Survival"
+            },
+            {
+              "value": "Tracks or food"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -4693,7 +5007,7 @@
       "name": "Areas of Knowledge",
       "section_id": "1262-11-2-137-study-action",
       "page": 189,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "skill",
@@ -4706,8 +5020,59 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 4,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Arcana"
+            },
+            {
+              "value": "Spells, magic items, eldritch symbols, magical traditions, planes of existence, and certain creatures (Aberrations, Constructs, Elementals, Fey, and Monstrosities)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "History"
+            },
+            {
+              "value": "Historic events and people, ancient civilizations, wars, and certain creatures (Giants and Humanoids)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Investigation"
+            },
+            {
+              "value": "Traps, ciphers, riddles, and gadgetry"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Nature"
+            },
+            {
+              "value": "Terrain, flora, weather, and certain creatures (Beasts, Dragons, Oozes, and Plants)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Religion"
+            },
+            {
+              "value": "Deities, religious hierarchies and rites, holy symbols, cults, and certain creatures (Celestials, Fiends, and Undead)"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     }
