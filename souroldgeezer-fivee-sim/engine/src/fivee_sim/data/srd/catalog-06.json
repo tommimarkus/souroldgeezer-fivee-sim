@@ -3378,7 +3378,7 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -3394,8 +3394,20 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 3,
+        "applies_to": [
+          "weapon attack rolls",
+          "Unarmed Strike attack rolls"
+        ],
+        "critical_hit_rolls": [
+          19,
+          20
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3410,8 +3422,19 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 3,
+        "initiative_rolls_have_advantage": true,
+        "strength_athletics_checks_have_advantage": true,
+        "critical_hit_movement": {
+          "trigger": "immediately after scoring a Critical Hit",
+          "maximum_distance": "half Speed",
+          "provokes_opportunity_attacks": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3426,8 +3449,14 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 7,
+        "feat_type": "Fighting Style",
+        "additional_feat_count": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3442,8 +3471,14 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 10,
+        "trigger": "start turn during combat without Heroic Inspiration",
+        "grants_heroic_inspiration": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3458,8 +3493,21 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 15,
+        "applies_to": [
+          "weapon attack rolls",
+          "Unarmed Strike attack rolls"
+        ],
+        "critical_hit_rolls": [
+          18,
+          19,
+          20
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3474,8 +3522,26 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Fighter",
+        "subclass": "Champion",
+        "level": 18,
+        "defy_death": {
+          "death_saving_throws_have_advantage": true,
+          "rolls_gaining_20_benefit": [
+            18,
+            19,
+            20
+          ]
+        },
+        "heroic_rally": {
+          "trigger": "start of turn",
+          "requires_bloodied": true,
+          "minimum_hit_points": 1,
+          "healing_formula": "5 + Constitution modifier"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "284-6-23-fighter-subclass-champion"
     },
@@ -3490,8 +3556,12 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "core_traits_table_id": "049-core-monk-traits",
+        "class_features_table_id": "050-monk-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -3506,7 +3576,7 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -3522,8 +3592,15 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "049-core-monk-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "050-monk-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "292-6-25-becoming-a-monk"
     },
@@ -3538,8 +3615,16 @@
       "pages": [
         49
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "gained_core_traits": [
+          "Hit Point Die"
+        ],
+        "core_traits_table_id": "049-core-monk-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "050-monk-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "292-6-25-becoming-a-monk"
     },
@@ -3555,8 +3640,12 @@
         49,
         50
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "class_features_keyed_by": "Monk level",
+        "class_features_table_id": "050-monk-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -3571,8 +3660,41 @@
       "pages": [
         50
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 1,
+        "monk_weapons": [
+          "Simple Melee weapons",
+          "Martial Melee weapons with the Light property"
+        ],
+        "benefit_requirements": {
+          "weapon_state": [
+            "unarmed",
+            "wielding only Monk weapons"
+          ],
+          "wearing_armor": false,
+          "wielding_shield": false
+        },
+        "bonus_unarmed_strike": {
+          "activation_action": "Bonus Action",
+          "strike_count": 1
+        },
+        "initial_martial_arts_die": "1d6",
+        "martial_arts_die_table_id": "050-monk-features",
+        "martial_arts_die_replaces_damage_for": [
+          "Unarmed Strike",
+          "Monk weapons"
+        ],
+        "dexterity_replaces_strength_for": [
+          "Unarmed Strike attack rolls",
+          "Unarmed Strike damage rolls",
+          "Monk weapon attack rolls",
+          "Monk weapon damage rolls",
+          "Grapple save DC",
+          "Shove save DC"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3587,8 +3709,14 @@
       "pages": [
         50
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 1,
+        "requires_no_armor": true,
+        "base_armor_class_formula": "10 + Dexterity modifier + Wisdom modifier",
+        "shield_allowed": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3604,8 +3732,65 @@
         50,
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 2,
+        "resource": "Focus Points",
+        "focus_points_table_id": "050-monk-features",
+        "recovery": [
+          "Short Rest",
+          "Long Rest"
+        ],
+        "expended_points_recovered": "all",
+        "save_dc_formula": "8 + Wisdom modifier + Proficiency Bonus",
+        "initial_known_features": [
+          "Flurry of Blows",
+          "Patient Defense",
+          "Step of the Wind"
+        ],
+        "features": {
+          "Flurry of Blows": {
+            "focus_point_cost": 1,
+            "activation_action": "Bonus Action",
+            "unarmed_strikes": 2
+          },
+          "Patient Defense": {
+            "free": {
+              "activation_action": "Bonus Action",
+              "actions": [
+                "Disengage"
+              ]
+            },
+            "focused": {
+              "focus_point_cost": 1,
+              "activation_action": "Bonus Action",
+              "actions": [
+                "Disengage",
+                "Dodge"
+              ]
+            }
+          },
+          "Step of the Wind": {
+            "free": {
+              "activation_action": "Bonus Action",
+              "actions": [
+                "Dash"
+              ]
+            },
+            "focused": {
+              "focus_point_cost": 1,
+              "activation_action": "Bonus Action",
+              "actions": [
+                "Disengage",
+                "Dash"
+              ],
+              "jump_distance_multiplier": 2,
+              "duration": "turn"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3620,8 +3805,15 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 2,
+        "initial_speed_bonus_feet": 10,
+        "requires_no_armor": true,
+        "requires_no_shield": true,
+        "speed_bonus_table_id": "050-monk-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3636,8 +3828,15 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 2,
+        "trigger": "roll Initiative",
+        "focus_points_recovered": "all expended",
+        "healing_formula": "Monk level + Martial Arts die roll",
+        "recharge": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3652,8 +3851,35 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 3,
+        "trigger": {
+          "attack_roll_hits": true,
+          "damage_includes_any": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ]
+        },
+        "activation_action": "Reaction",
+        "damage_reduction_formula": "1d10 + Dexterity modifier + Monk level",
+        "redirect": {
+          "requires_damage_reduced_to": 0,
+          "focus_point_cost": 1,
+          "requires_visible_target": true,
+          "target_range_feet": {
+            "melee_attack": 5,
+            "ranged_attack": 60
+          },
+          "ranged_target_total_cover_allowed": false,
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "2 Martial Arts dice + Dexterity modifier",
+          "successful_save_damage": 0,
+          "damage_type": "same as triggering attack"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -20899,20 +21125,101 @@
       "name": "Core Monk Traits",
       "section_id": "291-6-24-monk",
       "page": 49,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Dexterity and Wisdom"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D8 per Monk level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Strength and Dexterity"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Acrobatics, Athletics, History, Insight, Religion, or Stealth"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons and Martial weapons that have the Light property"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tool Proficiencies"
+            },
+            {
+              "value": "Choose one type of Artisan's Tools or Musical Instrument (see \"Equipment\")"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "None"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Spear, 5 Daggers, Artisan's Tools or Musical Instrument chosen for the tool proficiency above, Explorer's Pack, and 11 GP; or (B) 50 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -20922,7 +21229,7 @@
       "name": "Monk Features",
       "section_id": "295-6-26-monk-class-features",
       "page": 50,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -20955,9 +21262,463 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Martial Arts, Unarmored Defense"
+            },
+            {
+              "value": "1d6"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Monk's Focus, Unarmored Movement, Uncanny Metabolism"
+            },
+            {
+              "value": "1d6"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Deflect Attacks, Monk Subclass"
+            },
+            {
+              "value": "1d6"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement, Slow Fall"
+            },
+            {
+              "value": "1d6"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Extra Attack, Stunning Strike"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Empowered Strikes, Subclass feature"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Evasion"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Acrobatic Movement"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Heightened Focus, Self-Restoration"
+            },
+            {
+              "value": "1d8"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Deflect Energy"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Disciplined Survivor"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Perfect Focus"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "1d10"
+            },
+            {
+              "value": 16
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "1d12"
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Superior Defense"
+            },
+            {
+              "value": "1d12"
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": "1d12"
+            },
+            {
+              "value": 19
+            },
+            {
+              "value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Body and Mind"
+            },
+            {
+              "value": "1d12"
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 30
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "focus-points"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "unarmored-movement"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
