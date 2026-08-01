@@ -2645,8 +2645,13 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "challenge_rating": 0,
+        "particularly_cautious_when_xp": 0,
+        "usage": "sparingly",
+        "many_cr_0_creatures_recommendation": "use swarms"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     },
@@ -2661,8 +2666,16 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "recommended_design": "pair one creature kind with another",
+        "example_pair": [
+          "fire giants",
+          "hell hounds"
+        ],
+        "daunting_stat_block_count": "more than two or three",
+        "complex_creatures_increase_difficulty": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     },
@@ -2677,8 +2690,17 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "risk_trigger": "creature Challenge Rating exceeds party level",
+        "risk": "single action may deal enough damage to take out one or more characters",
+        "example": {
+          "creature": "Ogre",
+          "challenge_rating": 2,
+          "target": "level 1 Wizard",
+          "outcome": "can kill with one blow"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     },
@@ -2693,8 +2715,10 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "avoid_monster_when": "lower-level characters cannot easily overcome its feature and character level is below monster Challenge Rating"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     }

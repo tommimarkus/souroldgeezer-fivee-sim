@@ -15,8 +15,17 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "discovery_sources": [
+          "hoards of felled monsters",
+          "long-lost vaults"
+        ],
+        "benefits": [
+          "grant otherwise rare capabilities",
+          "complement owner's capabilities"
+        ]
+      },
       "provenance": "SRD 5.2.1"
     },
     {
@@ -30,8 +39,13 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "every_magic_item_has_category": true,
+        "category_count": 9,
+        "categories_table_id": "204-magic-item-categories",
+        "category_rules_follow_table": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -46,8 +60,21 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Armor",
+        "typical_form": "magical version of armor from Equipment",
+        "default_activation_requirement": "worn",
+        "description_can_override_default": true,
+        "type_examples": [
+          "Chain Mail",
+          "Plate Armor"
+        ],
+        "if_type_unspecified": [
+          "choose type",
+          "determine type randomly"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -62,8 +89,31 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Potion",
+        "forms": [
+          "magical brew to imbibe",
+          "oil applied to creature or object"
+        ],
+        "typical_volume_ounces": 1,
+        "typical_container": "vial",
+        "consumable": true,
+        "drink_or_administer_action": "Bonus Action",
+        "oil_application_time": "specified by description",
+        "takes_effect": "immediately when used",
+        "used_up_after_use": true,
+        "mixing": {
+          "situations": [
+            "drink while another potion remains active",
+            "combine potions in one container"
+          ],
+          "two_potions": "roll once on Potion Miscibility table",
+          "more_than_two": "roll for each subsequent potion and combine results",
+          "nonobvious_results_revealed": "when evident",
+          "table_id": "204-potion-miscibility"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -78,8 +128,12 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Ring",
+        "default_activation_requirement": "worn on finger or similar digit",
+        "description_can_override_default": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -94,8 +148,22 @@
       "pages": [
         204
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Rod",
+        "form": "scepter",
+        "typical_materials": [
+          "metal",
+          "wood",
+          "bone"
+        ],
+        "typical_weight_lb": {
+          "minimum": 2,
+          "maximum": 5
+        },
+        "default_use": "Arcane Focus",
+        "description_can_override_default": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -110,8 +178,31 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Scroll",
+        "form": "roll of paper or parchment",
+        "may_attach_to_wooden_rods": true,
+        "typical_storage_tube_materials": [
+          "ivory",
+          "jade",
+          "leather",
+          "metal",
+          "wood"
+        ],
+        "most_prevalent": {
+          "item": "Spell Scroll",
+          "contents": "spell stored in written form"
+        },
+        "consumable": true,
+        "activation_requirement": "read scroll",
+        "after_activation": [
+          "cannot be used again",
+          "words fade or scroll crumbles to dust"
+        ],
+        "default_eligible_user": "creature that understands a written language",
+        "description_can_override_default": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -126,8 +217,32 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Staff",
+        "appearance_variations": [
+          "smooth with nearly equal diameter",
+          "gnarled and twisted"
+        ],
+        "materials": [
+          "wood",
+          "polished metal",
+          "crystal"
+        ],
+        "weight_lb": {
+          "minimum": 2,
+          "maximum": 7
+        },
+        "mundane_uses": [
+          "walking stick",
+          "cane"
+        ],
+        "default_game_uses": [
+          "nonmagical Quarterstaff",
+          "Arcane Focus"
+        ],
+        "description_can_override_default": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -142,8 +257,27 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Wand",
+        "typical_length_inches": {
+          "minimum": 12,
+          "maximum": 15
+        },
+        "body_materials": [
+          "metal",
+          "bone",
+          "wood"
+        ],
+        "tip_materials": [
+          "metal",
+          "crystal",
+          "stone",
+          "other material"
+        ],
+        "default_use": "Arcane Focus",
+        "description_can_override_default": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -158,8 +292,20 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Weapon",
+        "typical_form": "magical version of weapon from Equipment",
+        "specified_type_examples": [
+          "Longsword",
+          "Longbow"
+        ],
+        "if_type_unspecified": [
+          "choose type",
+          "determine type randomly"
+        ],
+        "ammunition_property": "ammunition fired from weapon counts as magical for rules that distinguish magical weapons"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -174,8 +320,25 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "category": "Wondrous Item",
+        "wearable_examples": [
+          "boots",
+          "belts",
+          "capes",
+          "amulets",
+          "brooches",
+          "circlets"
+        ],
+        "other_examples": [
+          "bags",
+          "carpets",
+          "figurines",
+          "horns",
+          "musical instruments"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -190,8 +353,22 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "identifying_attuning_and_using_reference": "Equipment",
+        "attunement_prerequisites": {
+          "class_prerequisite": "creature must be member of class",
+          "spellcaster_prerequisite": "creature must cast at least one spell using traits or features",
+          "magic_item_spellcasting_qualifies": false
+        },
+        "items_made_for_specific_creatures": {
+          "worn_items_default": "magically adjust to wearer",
+          "gm_can_disable_size_adjustment": true
+        },
+        "unusual_anatomy": "GM decides whether creature can wear item not made for its anatomy",
+        "paired_items": "GM can allow exception to requirement that both items be worn",
+        "paired_item_example": "one-armed character may use one Glove of Missile Snaring while carrying matching glove"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1372-13-10-wondrous-items"
     },
@@ -206,8 +383,20 @@
       "pages": [
         205
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "every_magic_item_has_rarity": true,
+        "rarity_measures": "rough relative power",
+        "rarities_and_values_table_id": "206-magic-item-rarities-and-values",
+        "common_items": "most plentiful",
+        "common_example": "Potion of Healing",
+        "artifacts": [
+          "priceless",
+          "unique",
+          "difficult to acquire"
+        ],
+        "artifact_example": "Dragon Orb"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -223,8 +412,27 @@
         205,
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "typical_availability": {
+          "Common": "town or city",
+          "Uncommon": "city",
+          "Rare": "city",
+          "rarer": "wondrous locations such as a city on another plane"
+        },
+        "rarity_can_set_prices": true,
+        "seller_may_request_service_instead_of_coin": true,
+        "incorporated_equipment_cost_added_to_magic_item_value": true,
+        "value_example": {
+          "item": "+1 Armor (Plate Armor)",
+          "total_gp": 5500,
+          "rare_magic_item_gp": 4000,
+          "plate_armor_gp": 1500
+        },
+        "rarities_and_values_table_id": "206-magic-item-rarities-and-values",
+        "consumable_value_multiplier_except_spell_scroll": 0.5,
+        "spell_scroll_value": "double scribing cost"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -4779,12 +4987,12 @@
       "name": "Potion Miscibility",
       "section_id": "1365-13-3-potions",
       "page": 204,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "result",
@@ -4792,8 +5000,89 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 5,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01"
+            },
+            {
+              "value": "Both potions lose their effects. Mixture explodes in a 5-foot-radius Sphere centered on itself; each creature in the area takes 4d10 Force damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "02–08"
+            },
+            {
+              "value": "Both potions lose their effects. Mixture becomes a chosen ingested poison."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "09–15"
+            },
+            {
+              "value": "Both potions lose their effects."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "16–25"
+            },
+            {
+              "value": "One potion loses its effect."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "26–35"
+            },
+            {
+              "value": "Both potions work with numerical effects and durations halved. A potion with neither a numerical effect nor duration loses its effect."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36–90"
+            },
+            {
+              "value": "Both potions work normally."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91–99"
+            },
+            {
+              "value": "Both potions work; one potion's numerical effects and duration are doubled. If neither has anything to double, both work normally."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "00"
+            },
+            {
+              "value": "Only one potion works and its effects are permanent. Choose the simplest or most fun effect. Potion of Healing may add 2d4 + 2 to Hit Point maximum; Potion of Invisibility may grant Invisible indefinitely. Dispel Magic or similar magic may end the effect at GM discretion."
+            }
+          ]
+        }
+      ],
+      "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -4802,7 +5091,7 @@
       "name": "Magic Item Categories",
       "section_id": "1363-13-1-magic-item-categories",
       "page": 204,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "category",
@@ -4815,7 +5104,98 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Armor"
+            },
+            {
+              "value": "+1 Leather Armor; +1 Shield"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potions"
+            },
+            {
+              "value": "Potion of Healing"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rings"
+            },
+            {
+              "value": "Ring of Invisibility"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rods"
+            },
+            {
+              "value": "Immovable Rod"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scrolls"
+            },
+            {
+              "value": "Spell Scroll"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Staffs"
+            },
+            {
+              "value": "Staff of Striking"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wands"
+            },
+            {
+              "value": "Wand of Fireballs"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapons"
+            },
+            {
+              "value": "+1 Ammunition; +1 Longsword"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wondrous Items"
+            },
+            {
+              "value": "Bag of Holding; Boots of Elvenkind"
+            }
+          ]
+        }
+      ],
       "source_row_count": 9,
       "omissions": [],
       "provenance": "SRD 5.2.1"
