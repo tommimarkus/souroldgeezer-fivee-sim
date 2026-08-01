@@ -316,8 +316,15 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "monster_ability_score_count": 6,
+        "associated_values": [
+          "ability score modifiers",
+          "saving throw modifiers"
+        ],
+        "rules_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -332,8 +339,17 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_lists": "monster skill proficiencies",
+        "entry_present_when": "monster has skill proficiencies",
+        "example_skills": [
+          "Wisdom (Perception)",
+          "Dexterity (Stealth)"
+        ],
+        "skill_bonus_formula": "relevant ability modifier + Proficiency Bonus",
+        "other_modifiers_may_apply": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -348,8 +364,15 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entries_list": [
+          "monster Resistances",
+          "monster Vulnerabilities"
+        ],
+        "entries_present_when": "monster has applicable defenses or weaknesses",
+        "rules_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -364,8 +387,15 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "goal": "monster acts in accordance with Challenge Rating",
+        "combat_guidance": {
+          "limited_use_high_damage_special_abilities": "use as quickly and often as possible",
+          "multiattack": "use on turns not using a more powerful ability",
+          "bonus_actions_reactions_legendary_actions": "use as often as possible"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1671-14-12-resistances-and-vulnerabilities"
     },
@@ -380,8 +410,16 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_lists": "monster Immunities",
+        "entry_present_when": "monster has Immunities",
+        "ordering_when_damage_and_condition_immunities": [
+          "damage types",
+          "conditions"
+        ],
+        "rules_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -396,8 +434,22 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "monster_proficient_with_equipment": true,
+        "gear_entry_lists": "items that can be given away or retrieved",
+        "stat_block_may_override_equipment_rules_with_special_flourishes": true,
+        "retrievable_item_used_by_another": {
+          "uses_equipment_rules": true,
+          "ignores_stat_block_special_flourishes": true
+        },
+        "gear_entry_is_exhaustive": false,
+        "unlisted_clothing_assumed_appropriate": true,
+        "equipment_mentioned_outside_gear_entry": {
+          "classification": "supernatural or highly specialized",
+          "usable_after_monster_defeated": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -412,8 +464,10 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "monster_requiring_ammunition_for_ranged_attacks_carries_necessary_ammunition": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1674-14-14-gear"
     },
@@ -429,8 +483,19 @@
         255,
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "gm_may_add_gear": true,
+        "inspiration_reference": "Equipment",
+        "gm_decides": [
+          "recoverable equipment amount",
+          "whether recovered equipment remains usable"
+        ],
+        "combat_magic_items_may_change_challenge_rating": true,
+        "monster_can_attune_to_magic_items": true,
+        "attunement_rules_reference": "Equipment",
+        "class_tag_after_creature_type_counts_as_class_membership_for_attunement": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1674-14-14-gear"
     },
@@ -445,8 +510,14 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_includes": [
+          "Passive Perception score",
+          "special senses"
+        ],
+        "rules_reference": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -461,8 +532,12 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_lists": "languages monster can use to communicate",
+        "understands_but_cannot_communicate_is_noted": true,
+        "none_means": "creature comprehends no language"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -477,8 +552,13 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "magical_ability": true,
+        "communication_mode": "mental",
+        "target": "another creature within specified range",
+        "rules_reference": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1678-14-16-languages"
     },
@@ -493,8 +573,11 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "definition_reference": "Rules Glossary",
+        "encounter_planning_reference": "Gameplay Toolbox"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -509,8 +592,17 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "xp_based_on": "Challenge Rating",
+        "xp_table_id": "256-experience-points-by-challenge-rating",
+        "xp_awarded_for": [
+          "defeating monster in combat",
+          "otherwise neutralizing monster"
+        ],
+        "summoned_monster_default": "worth XP in stat block",
+        "summoned_monster_default_can_be_overridden": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1680-14-17-challenge-rating"
     },
@@ -525,8 +617,16 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "proficiency_bonus_based_on": "Challenge Rating",
+        "proficiency_bonus_table_id": "256-proficiency-bonus-by-challenge-rating",
+        "reflected_in": [
+          "saving throws",
+          "skills",
+          "other exceptional-aptitude statistics"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1680-14-17-challenge-rating"
     },
@@ -541,8 +641,14 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_lists": "monster traits",
+        "traits_active": [
+          "at all times",
+          "in specified situations"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -557,8 +663,14 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "available_actions": [
+          "actions in stat block section",
+          "actions available to all creatures"
+        ],
+        "general_actions_reference": "Playing the Game"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -573,8 +685,26 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "attack_entry_includes": [
+          "melee or ranged classification",
+          "attack roll bonus",
+          "reach or range",
+          "hit effects"
+        ],
+        "default_target_count": 1,
+        "entry_can_override_target_count": true,
+        "notation": {
+          "Hit": "damage or effects occurring when attack hits",
+          "Miss": "effects occurring when attack misses",
+          "Hit or Miss": "effects occurring regardless of hit or miss"
+        },
+        "rules_references": [
+          "Playing the Game",
+          "Spells"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1684-14-19-actions"
     },
@@ -589,8 +719,21 @@
       "pages": [
         256
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "saving_throw_effect_identifies": [
+          "save ability",
+          "save DC",
+          "creatures making save",
+          "failed-save outcome",
+          "successful-save outcome"
+        ],
+        "half_damage_only_on_success": {
+          "damage": "half failed-save damage",
+          "rounding": "down",
+          "other_effect_parts": "ignored"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1684-14-19-actions"
     },
@@ -820,30 +963,95 @@
       "name": "Proficiency Bonus by Challenge Rating",
       "section_id": "1682-14-17-2-proficiency-bonus",
       "page": 256,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "cr",
+          "id": "left-cr",
           "name": "CR",
           "type": "string"
         },
         {
-          "id": "pb",
+          "id": "left-pb",
           "name": "PB",
           "type": "integer"
         },
         {
-          "id": "cr-2",
+          "id": "right-cr",
           "name": "CR",
           "type": "string"
         },
         {
-          "id": "pb-2",
+          "id": "right-pb",
           "name": "PB",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "0–4"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "17–20"
+            },
+            {
+              "value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "5–8"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "21–24"
+            },
+            {
+              "value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "9–12"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "25–28"
+            },
+            {
+              "value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13–16"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "29–30"
+            },
+            {
+              "value": 9
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -853,30 +1061,303 @@
       "name": "Experience Points by Challenge Rating",
       "section_id": "1681-14-17-1-experience-points",
       "page": 256,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "cr",
+          "id": "left-cr",
           "name": "CR",
-          "type": "integer"
+          "type": "string"
         },
         {
-          "id": "xp",
+          "id": "left-xp",
           "name": "XP",
-          "type": "integer"
+          "type": "string"
         },
         {
-          "id": "cr-2",
+          "id": "right-cr",
           "name": "CR",
-          "type": "integer"
+          "type": "string"
         },
         {
-          "id": "xp-2",
+          "id": "right-xp",
           "name": "XP",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "0"
+            },
+            {
+              "value": "0 or 10"
+            },
+            {
+              "value": "14"
+            },
+            {
+              "value": "11,500"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1/8"
+            },
+            {
+              "value": "25"
+            },
+            {
+              "value": "15"
+            },
+            {
+              "value": "13,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1/4"
+            },
+            {
+              "value": "50"
+            },
+            {
+              "value": "16"
+            },
+            {
+              "value": "15,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1/2"
+            },
+            {
+              "value": "100"
+            },
+            {
+              "value": "17"
+            },
+            {
+              "value": "18,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1"
+            },
+            {
+              "value": "200"
+            },
+            {
+              "value": "18"
+            },
+            {
+              "value": "20,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2"
+            },
+            {
+              "value": "450"
+            },
+            {
+              "value": "19"
+            },
+            {
+              "value": "22,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "3"
+            },
+            {
+              "value": "700"
+            },
+            {
+              "value": "20"
+            },
+            {
+              "value": "25,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "4"
+            },
+            {
+              "value": "1,100"
+            },
+            {
+              "value": "21"
+            },
+            {
+              "value": "33,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "5"
+            },
+            {
+              "value": "1,800"
+            },
+            {
+              "value": "22"
+            },
+            {
+              "value": "41,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "6"
+            },
+            {
+              "value": "2,300"
+            },
+            {
+              "value": "23"
+            },
+            {
+              "value": "50,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "7"
+            },
+            {
+              "value": "2,900"
+            },
+            {
+              "value": "24"
+            },
+            {
+              "value": "62,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "8"
+            },
+            {
+              "value": "3,900"
+            },
+            {
+              "value": "25"
+            },
+            {
+              "value": "75,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "9"
+            },
+            {
+              "value": "5,000"
+            },
+            {
+              "value": "26"
+            },
+            {
+              "value": "90,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10"
+            },
+            {
+              "value": "5,900"
+            },
+            {
+              "value": "27"
+            },
+            {
+              "value": "105,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11"
+            },
+            {
+              "value": "7,200"
+            },
+            {
+              "value": "28"
+            },
+            {
+              "value": "120,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "12"
+            },
+            {
+              "value": "8,400"
+            },
+            {
+              "value": "29"
+            },
+            {
+              "value": "135,000"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13"
+            },
+            {
+              "value": "10,000"
+            },
+            {
+              "value": "30"
+            },
+            {
+              "value": "155,000"
+            }
+          ]
+        }
+      ],
       "source_row_count": 17,
       "omissions": [],
       "provenance": "SRD 5.2.1"
