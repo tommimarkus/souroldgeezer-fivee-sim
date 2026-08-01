@@ -4726,8 +4726,41 @@
       "pages": [
         119
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Continual Flame",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "ruby dust worth 50+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "target": "Object",
+          "bright_light_radius_feet": 20,
+          "additional_dim_light_feet": 20,
+          "produces_heat": false,
+          "consumes_fuel": false,
+          "can_be_covered_or_hidden": true,
+          "can_be_smothered_or_quenched": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4743,8 +4776,103 @@
         119,
         120
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Control Water",
+        "level": 4,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 300
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mixture of water and dust"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "maximum_side_feet": 100,
+            "contains": "Water"
+          },
+          "effect_choice_count": 1,
+          "later_action": "Magic",
+          "later_action_options": [
+            "Repeat current effect",
+            "Choose different effect"
+          ],
+          "options": {
+            "Flood": {
+              "standing_water_maximum_rise_feet": 20,
+              "large_body_wave": {
+                "height_feet": 20,
+                "travels_across_area": true,
+                "crashes": true
+              },
+              "maximum_affected_vehicle_size": "Huge",
+              "vehicles_carried_across": true,
+              "vehicle_capsize_chance_percent": 25,
+              "water_level_end": [
+                "Spell ends",
+                "Different effect selected"
+              ],
+              "wave_repeats_at_start_of_next_turn": true
+            },
+            "Part Water": {
+              "creates_trench_across_area": true,
+              "water_walls_on_both_sides": true,
+              "end": [
+                "Spell ends",
+                "Different effect selected"
+              ],
+              "refill_duration_rounds": 1
+            },
+            "Redirect Flow": {
+              "direction_chosen_by_caster": true,
+              "can_flow_over_obstacles_or_up_walls": true,
+              "outside_area_resumes_terrain_based_flow": true,
+              "end": [
+                "Spell ends",
+                "Different effect selected"
+              ]
+            },
+            "Whirlpool": {
+              "area_minimum_side_feet": 50,
+              "area_minimum_depth_feet": 25,
+              "base_width_feet": 5,
+              "maximum_top_width_feet": 50,
+              "height_feet": 25,
+              "pull_trigger_distance_feet": 25,
+              "pull_distance_feet": 10,
+              "saving_throw_trigger": [
+                "First entry on a turn",
+                "Ends turn in whirlpool"
+              ],
+              "saving_throw_ability": "Strength",
+              "failed_save_damage": "2d8",
+              "damage_type": "Bludgeoning",
+              "successful_save_damage": "Half",
+              "swim_away": {
+                "action_required": true,
+                "check": "Strength (Athletics)",
+                "dc": "Spell save DC"
+              }
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4759,8 +4887,56 @@
       "pages": [
         120
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Control Weather",
+        "level": 8,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "10 minutes"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "burning incense"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 8
+        },
+        "effect": {
+          "radius_miles": 5,
+          "outdoors_required_to_cast": true,
+          "entering_indoors_ends_spell": true,
+          "initial_conditions_selected_by": "GM",
+          "controllable_conditions": [
+            "Precipitation",
+            "Temperature",
+            "Wind"
+          ],
+          "change_delay_minutes": "1d4 × 10",
+          "may_change_again_after_effect": true,
+          "weather_returns_gradually_when_spell_ends": true,
+          "maximum_stage_change": 1,
+          "stage_directions": [
+            "Up",
+            "Down"
+          ],
+          "wind_direction_change_allowed": true,
+          "tables": [
+            "120-precipitation",
+            "120-temperature-wind"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4775,8 +4951,38 @@
       "pages": [
         120
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Counterspell",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Reaction",
+          "trigger": "See creature within 60 feet casting spell with Verbal, Somatic, or Material components"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target_saving_throw_ability": "Constitution",
+          "failed_save": {
+            "spell_effect": "None",
+            "casting_action_wasted": true,
+            "spell_slot_expended": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4791,8 +4997,44 @@
       "pages": [
         120
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Create Food and Water",
+        "level": 3,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "food_pounds": 45,
+          "fresh_water_gallons": 30,
+          "placement": [
+            "Ground",
+            "Containers"
+          ],
+          "food": {
+            "nourishing": true,
+            "bland": true,
+            "appearance_chosen_by_caster": true,
+            "spoilage_hours_if_uneaten": 24
+          },
+          "water_clean": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4807,8 +5049,63 @@
       "pages": [
         121
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Create or Destroy Water",
+        "level": 1,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mixture of water and sand"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "option_choice_count": 1,
+          "options": {
+            "Create Water": {
+              "maximum_gallons": 10,
+              "container": "Open",
+              "rain_alternative": {
+                "area": {
+                  "shape": "Cube",
+                  "side_feet": 30
+                },
+                "extinguishes_exposed_flames": true
+              }
+            },
+            "Destroy Water": {
+              "maximum_gallons": 10,
+              "container": "Open",
+              "fog_alternative": {
+                "destroyed_in_area": {
+                  "shape": "Cube",
+                  "side_feet": 30
+                }
+              }
+            }
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "increase_choice_per_level": {
+              "additional_gallons": 10,
+              "cube_side_increase_feet": 5
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4823,8 +5120,98 @@
       "pages": [
         121
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Create Undead",
+        "level": 6,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 minute"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "one black onyx stone worth 150+ GP per corpse"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "casting_time_of_day": "Night",
+          "base_targets": {
+            "maximum": 3,
+            "type": "Medium or Small Humanoid corpse"
+          },
+          "base_created_creature": "Ghoul",
+          "stat_block_reference": "Monsters",
+          "command": {
+            "action": "Bonus Action",
+            "maximum_distance_feet": 120,
+            "multiple_creatures_receive_same_command": true,
+            "choices": [
+              "Next-turn action",
+              "Next-turn movement",
+              "General task"
+            ],
+            "no_command_action": "Dodge",
+            "no_command_movement": "Avoid harm only",
+            "order_duration": "Until task complete"
+          },
+          "control_hours": 24,
+          "control_extension": {
+            "recast_before_expiration": true,
+            "hours": 24,
+            "maximum_existing_creatures": 3,
+            "animates_new_creatures": false
+          },
+          "higher_level_slot_options": {
+            "7": [
+              {
+                "creature": "Ghoul",
+                "count": 4
+              }
+            ],
+            "8": [
+              {
+                "creature": "Ghoul",
+                "count": 5
+              },
+              {
+                "creature_options": [
+                  "Ghast",
+                  "Wight"
+                ],
+                "count": 2
+              }
+            ],
+            "9": [
+              {
+                "creature": "Ghoul",
+                "count": 6
+              },
+              {
+                "creature_options": [
+                  "Ghast",
+                  "Wight"
+                ],
+                "count": 3
+              },
+              {
+                "creature": "Mummy",
+                "count": 2
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4839,8 +5226,49 @@
       "pages": [
         121
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Creation",
+        "level": 5,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 minute"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "paintbrush"
+        },
+        "duration": {
+          "type": "Special"
+        },
+        "effect": {
+          "source_material": "Shadowfell shadow material",
+          "object_material_categories": [
+            "Vegetable matter",
+            "Mineral matter"
+          ],
+          "maximum_area": {
+            "shape": "Cube",
+            "side_feet": 5
+          },
+          "form_and_material_must_have_been_seen": true,
+          "duration_table_id": "121-materials",
+          "multiple_material_duration": "Shortest applicable duration",
+          "use_as_other_spell_material_component": "Other spell fails",
+          "higher_level_slot": {
+            "minimum_slot_level": 6,
+            "cube_side_increase_feet_per_level": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4855,8 +5283,40 @@
       "pages": [
         121
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Cure Wounds",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "Creature",
+          "healing": "2d8 + spellcasting ability modifier",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_healing_per_level": "2d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4872,8 +5332,59 @@
         121,
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dancing Lights",
+        "level": 0,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of phosphorus"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "forms": [
+            {
+              "maximum_lights": 4,
+              "size": "Torch-size",
+              "appearances": [
+                "Torch",
+                "Lantern",
+                "Glowing orb"
+              ]
+            },
+            {
+              "combined_lights": 4,
+              "size": "Medium",
+              "appearance": "Vaguely humanlike"
+            }
+          ],
+          "hovering": true,
+          "dim_light_radius_feet": 10,
+          "movement": {
+            "action": "Bonus Action",
+            "maximum_feet": 60,
+            "destination_within_spell_range": true
+          },
+          "maximum_separation_from_another_spell_light_feet": 20,
+          "vanishes_beyond_spell_range": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4888,8 +5399,53 @@
       "pages": [
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Darkness",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "M": "bat fur and piece of coal"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "point_area": {
+            "shape": "Sphere",
+            "radius_feet": 15,
+            "light": "Magical Darkness"
+          },
+          "darkvision_can_see_through": false,
+          "nonmagical_light_can_illuminate": false,
+          "object_alternative": {
+            "not_worn_or_carried": true,
+            "area": {
+              "shape": "Emanation",
+              "radius_feet": 15
+            },
+            "opaque_cover_blocks": true
+          },
+          "overlapping_light_spell_maximum_level_dispelled": 2,
+          "overlapping_light_types": [
+            "Bright Light",
+            "Dim Light"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4904,8 +5460,39 @@
       "pages": [
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Darkvision",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "dried carrot"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "target": {
+            "type": "Creature",
+            "willing": true
+          },
+          "darkvision_feet": 150
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4920,8 +5507,50 @@
       "pages": [
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Daylight",
+        "level": 3,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "point_area": {
+            "shape": "Sphere",
+            "radius_feet": 60,
+            "bright_light": true
+          },
+          "additional_dim_light_feet": 60,
+          "light_is_sunlight": true,
+          "object_alternative": {
+            "not_worn_or_carried": true,
+            "area": {
+              "shape": "Emanation",
+              "radius_feet": 60
+            },
+            "opaque_cover_blocks": true
+          },
+          "overlapping_darkness_spell_maximum_level_dispelled": 3
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4936,8 +5565,40 @@
       "pages": [
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Death Ward",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "target": "Creature",
+          "first_zero_hit_point_trigger": {
+            "replacement_hit_points": 1,
+            "ends_spell": true
+          },
+          "instant_death_without_damage_trigger": {
+            "effect_negated": true,
+            "ends_spell": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4952,8 +5613,55 @@
       "pages": [
         122
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Delayed Blast Fireball",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "ball of bat guano and sulfur"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "bead_location": "Chosen point",
+          "explosion_trigger": "Spell ends",
+          "explosion_area": {
+            "shape": "Sphere",
+            "radius_feet": 20
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "Accumulated Fire damage",
+          "successful_save_damage": "Half",
+          "base_damage": "12d6",
+          "damage_accumulation_per_caster_turn_end": "1d6",
+          "touch_bead": {
+            "saving_throw_ability": "Dexterity",
+            "failed_save": "Spell ends and bead explodes",
+            "successful_save_throw_distance_feet": 40,
+            "thrown_collision_result": "Spell ends and bead explodes"
+          },
+          "unworn_unheld_flammable_objects_ignite": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 8,
+            "base_damage_increase_per_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4969,8 +5677,65 @@
         122,
         123
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Demiplane",
+        "level": 8,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "door": {
+            "size": "Medium",
+            "appearance": "Shadowy",
+            "surface": "Flat solid",
+            "surface_visible": true,
+            "opens_and_closes": true
+          },
+          "room": {
+            "dimensions_feet": [
+              30,
+              30,
+              30
+            ],
+            "contents": "Empty",
+            "material_choice": [
+              "Wood",
+              "Stone"
+            ]
+          },
+          "spell_end": {
+            "door_vanishes": true,
+            "objects_remain": true,
+            "creatures_remain_by_default": true,
+            "creature_exit_option": {
+              "shunted_to_nearest_unoccupied_spaces": true,
+              "condition": "Prone"
+            }
+          },
+          "casting_destination_options": [
+            "New demiplane",
+            "Caster's prior demiplane",
+            "Known demiplane created by another creature"
+          ],
+          "other_creature_demiplane_requires_known_nature_and_contents": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -4985,8 +5750,48 @@
       "pages": [
         123
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Detect Evil and Good",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "sensing_radius_feet": 30,
+          "sensed_creature_types": [
+            "Aberration",
+            "Celestial",
+            "Elemental",
+            "Fey",
+            "Fiend",
+            "Undead"
+          ],
+          "senses_hallow_active": true,
+          "senses_hallow_location": true,
+          "blocked_by": {
+            "stone_dirt_or_wood_feet": 1,
+            "metal_inches": 1,
+            "lead": "Thin sheet"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9526,7 +10331,7 @@
       "name": "Precipitation",
       "section_id": "847-10-14-57-control-weather",
       "page": 120,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "stage",
@@ -9539,7 +10344,58 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Clear"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Light clouds"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Overcast or ground fog"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Rain, hail, or snow"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Torrential rain, driving hail, or blizzard"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -9549,32 +10405,142 @@
       "name": "Temperature Wind",
       "section_id": "847-10-14-57-control-weather",
       "page": 120,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "stage",
-          "name": "Stage",
+          "id": "temperature-stage",
+          "name": "Temperature Stage",
           "type": "integer"
         },
         {
-          "id": "condition",
-          "name": "Condition",
+          "id": "temperature-condition",
+          "name": "Temperature Condition",
           "type": "string"
         },
         {
-          "id": "stage-2",
-          "name": "Stage",
+          "id": "wind-stage",
+          "name": "Wind Stage",
           "type": "integer"
         },
         {
-          "id": "condition-2",
-          "name": "Condition",
+          "id": "wind-condition",
+          "name": "Wind Condition",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Heat wave"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": "Calm"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Hot"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Moderate wind"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Warm"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Strong wind"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Cool"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Gale"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Cold"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Storm"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Freezing"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "wind-stage"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "wind-condition"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -9582,7 +10548,7 @@
       "name": "Materials",
       "section_id": "852-10-14-62-creation",
       "page": 121,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "material",
@@ -9595,7 +10561,58 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Vegetable matter"
+            },
+            {
+              "value": "24 hours"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stone or crystal"
+            },
+            {
+              "value": "12 hours"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Precious metals"
+            },
+            {
+              "value": "1 hour"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gems"
+            },
+            {
+              "value": "10 minutes"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Adamantine or mithral"
+            },
+            {
+              "value": "1 minute"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
