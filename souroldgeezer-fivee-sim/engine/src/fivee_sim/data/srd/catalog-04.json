@@ -15,7 +15,7 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,33 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "pillars": [
+          "social_interaction",
+          "exploration",
+          "combat"
+        ],
+        "sequence": [
+          {
+            "order": 1,
+            "actor": "game_master",
+            "operation": "describe_scene"
+          },
+          {
+            "order": 2,
+            "actor": "players",
+            "operation": "describe_character_actions"
+          },
+          {
+            "order": 3,
+            "actor": "game_master",
+            "operation": "narrate_results"
+          }
+        ],
+        "sequence_repeats": true,
+        "combat_uses_turns": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -46,8 +71,22 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "exception_overrides_general_rule": true,
+        "exception_sources": [
+          "class_feature",
+          "feat",
+          "weapon_property",
+          "spell",
+          "magic_item",
+          "monster_ability"
+        ],
+        "general_attack_abilities": {
+          "melee": "Strength",
+          "ranged": "Dexterity"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "005-4-1-rhythm-of-play"
     },
@@ -62,8 +101,23 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "ability_count": 6,
+        "abilities": [
+          "Strength",
+          "Dexterity",
+          "Constitution",
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "creature_categories": [
+          "character",
+          "monster"
+        ],
+        "table_id": "005-ability-descriptions"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -78,8 +132,15 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "normal_score_minimum": 1,
+        "effect_reduction_reference": 0,
+        "adventurer_standard_maximum": 20,
+        "documented_monster_maximum": 30,
+        "absolute_maximum": 30,
+        "score_table_id": "005-ability-scores"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -94,8 +155,14 @@
       "pages": [
         5
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifier_formula": "floor((score - 10) / 2)",
+        "applies_to": [
+          "d20_test"
+        ],
+        "modifier_table_id": "006-ability-modifiers"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -111,8 +178,15 @@
         5,
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "operations": [
+          "division",
+          "multiplication"
+        ],
+        "fraction_rounding_default": "down",
+        "explicit_exception": "round_up"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "009-4-4-ability-modifiers"
     },
@@ -127,8 +201,35 @@
       "pages": [
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "test_kinds": [
+          "ability_check",
+          "saving_throw",
+          "attack_roll"
+        ],
+        "die": "1d20",
+        "preferred_result": "high",
+        "advantage": {
+          "dice": "2d20",
+          "selection": "highest"
+        },
+        "disadvantage": {
+          "dice": "2d20",
+          "selection": "lowest"
+        },
+        "modifier_categories": [
+          "relevant_ability_modifier",
+          "proficiency_bonus_if_relevant",
+          "circumstantial_bonus_or_penalty"
+        ],
+        "success_operator": ">=",
+        "target_number_names": {
+          "ability_check": "Difficulty Class",
+          "saving_throw": "Difficulty Class",
+          "attack_roll": "Armor Class"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -143,8 +244,15 @@
       "pages": [
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "activity_category": "non_attack",
+        "call_conditions": [
+          "uncertain_outcome",
+          "meaningful_failure"
+        ],
+        "resolution": "dice"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -159,8 +267,11 @@
       "pages": [
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "check_name_source": "ability_modifier",
+        "example_table_id": "006-ability-check-examples"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "012-4-6-ability-checks"
     },
@@ -175,8 +286,16 @@
       "pages": [
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifier": "proficiency_bonus",
+        "eligible_proficiency_kinds": [
+          "skill",
+          "tool"
+        ],
+        "requires_relevance": true,
+        "requires_proficiency": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "012-4-6-ability-checks"
     },
@@ -191,8 +310,15 @@
       "pages": [
         6
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_for": [
+          "ability_check"
+        ],
+        "setter": "game_master",
+        "increases_with_task_difficulty": true,
+        "typical_table_id": "006-typical-difficulty-classes"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "012-4-6-ability-checks"
     },
@@ -207,8 +333,14 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "alias": "save",
+        "trigger": "effect",
+        "result_source": "causing_effect",
+        "voluntary_failure_allowed": true,
+        "voluntary_failure_roll_required": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -223,8 +355,11 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "saving_throw_name_source": "ability_modifier",
+        "example_table_id": "007-saving-throw-examples"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "016-4-7-saving-throws"
     },
@@ -1827,7 +1962,7 @@
       "name": "Ability Descriptions",
       "section_id": "007-4-2-the-six-abilities",
       "page": 5,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability",
@@ -1840,7 +1975,68 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Physical might"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Agility, reflexes, and balance"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Constitution"
+            },
+            {
+              "value": "Health and stamina"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": "Reasoning and memory"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "Perceptiveness and mental fortitude"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "Confidence, poise, and charm"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1850,12 +2046,12 @@
       "name": "Ability Scores",
       "section_id": "008-4-3-ability-scores",
       "page": 5,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "score",
           "name": "Score",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "meaning",
@@ -1863,9 +2059,126 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1",
+              "numeric_value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2-9"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10-11"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "12-19"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "20",
+              "numeric_value": 20
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21-29"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "30",
+              "numeric_value": 30
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "prose_only_cell",
+          "row": 0,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 1,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 2,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 3,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 4,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 5,
+          "column": "meaning"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 6,
+          "column": "meaning"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -1873,12 +2186,12 @@
       "name": "Ability Modifiers",
       "section_id": "010-4-4-1-round-down",
       "page": 6,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "score",
           "name": "Score",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "modifier",
@@ -1888,7 +2201,7 @@
         {
           "id": "score-2",
           "name": "Score",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "modifier-2",
@@ -1896,7 +2209,154 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1",
+              "numeric_value": 1
+            },
+            {
+              "value": -5,
+              "numeric_value": -5
+            },
+            {
+              "value": "16-17"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2-3"
+            },
+            {
+              "value": -4,
+              "numeric_value": -4
+            },
+            {
+              "value": "18-19"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "4-5"
+            },
+            {
+              "value": -3,
+              "numeric_value": -3
+            },
+            {
+              "value": "20-21"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "6-7"
+            },
+            {
+              "value": -2,
+              "numeric_value": -2
+            },
+            {
+              "value": "22-23"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "8-9"
+            },
+            {
+              "value": -1,
+              "numeric_value": -1
+            },
+            {
+              "value": "24-25"
+            },
+            {
+              "value": 7,
+              "numeric_value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10-11"
+            },
+            {
+              "value": 0,
+              "numeric_value": 0
+            },
+            {
+              "value": "26-27"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "12-13"
+            },
+            {
+              "value": 1,
+              "numeric_value": 1
+            },
+            {
+              "value": "28-29"
+            },
+            {
+              "value": 9,
+              "numeric_value": 9
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "14-15"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "30",
+              "numeric_value": 30
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1906,7 +2366,7 @@
       "name": "Ability Check Examples",
       "section_id": "013-4-6-1-ability-modifier",
       "page": 6,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability",
@@ -1919,7 +2379,68 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Lift, push, pull, or break something"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Move nimbly, quickly, or quietly"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Constitution"
+            },
+            {
+              "value": "Push your body beyond normal limits"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": "Reason or remember"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "Notice things in the environment or in creatures' behavior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "Influence, entertain, or deceive"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -1929,7 +2450,7 @@
       "name": "Typical Difficulty Classes",
       "section_id": "015-4-6-3-difficulty-class",
       "page": 6,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "task-difficulty",
@@ -1952,9 +2473,105 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Very easy"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "Very hard"
+            },
+            {
+              "value": 25,
+              "numeric_value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Easy"
+            },
+            {
+              "value": 10,
+              "numeric_value": 10
+            },
+            {
+              "value": "Nearly impossible"
+            },
+            {
+              "value": 30,
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium"
+            },
+            {
+              "value": 15,
+              "numeric_value": 15
+            },
+            {
+              "value": null,
+              "omission_code": "empty_source_cell"
+            },
+            {
+              "value": null,
+              "omission_code": "empty_source_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hard"
+            },
+            {
+              "value": 20,
+              "numeric_value": 20
+            },
+            {
+              "value": null,
+              "omission_code": "empty_source_cell"
+            },
+            {
+              "value": null,
+              "omission_code": "empty_source_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "empty_source_cell",
+          "row": 2,
+          "column": "task-difficulty-2"
+        },
+        {
+          "code": "empty_source_cell",
+          "row": 2,
+          "column": "dc-2"
+        },
+        {
+          "code": "empty_source_cell",
+          "row": 3,
+          "column": "task-difficulty-2"
+        },
+        {
+          "code": "empty_source_cell",
+          "row": 3,
+          "column": "dc-2"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -1985,7 +2602,7 @@
       "name": "Saving Throw Examples",
       "section_id": "017-4-7-1-ability-modifier",
       "page": 7,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability",
@@ -1998,7 +2615,68 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Physically resist direct force"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Dodge out of harm's way"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Constitution"
+            },
+            {
+              "value": "Endure a toxic hazard"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": "Recognize an illusion as fake"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": "Resist a mental assault"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": "Assert your identity"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
