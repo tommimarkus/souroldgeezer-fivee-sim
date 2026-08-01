@@ -17458,8 +17458,48 @@
       "pages": [
         161
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shatter",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "chip of mica"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 10,
+            "origin": "chosen point"
+          },
+          "saving_throw_ability": "Constitution",
+          "constructs_have_save_disadvantage": true,
+          "failed_save_damage": "3d8",
+          "successful_save_damage": "half",
+          "damage_type": "Thunder",
+          "damages_nonmagical_objects_not_worn_or_carried": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions",
       "content_ref": {
@@ -17479,8 +17519,36 @@
         161,
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shield",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Reaction",
+          "trigger": "caster hit by attack roll or targeted by Magic Missile"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "rounds": 1
+        },
+        "effect": {
+          "armor_class_bonus": 5,
+          "bonus_applies_to_triggering_attack": true,
+          "ends": "start of caster's next turn",
+          "magic_missile_damage": 0
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17495,8 +17563,35 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shield of Faith",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "prayer scroll"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "target": "one creature",
+          "armor_class_bonus": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17511,8 +17606,50 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shillelagh",
+        "level": 0,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mistletoe"
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "target_weapon": [
+            "held Club",
+            "held Quarterstaff"
+          ],
+          "melee_attack_and_damage_ability": "spellcasting ability instead of Strength",
+          "base_damage_die": "d8",
+          "damage_type_choice": [
+            "Force",
+            "weapon's normal damage type"
+          ],
+          "early_end_triggers": [
+            "caster recasts spell",
+            "caster releases weapon"
+          ],
+          "cantrip_upgrade_damage_die": {
+            "5": "d10",
+            "11": "d12",
+            "17": "2d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17527,8 +17664,40 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shining Smite",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Bonus Action",
+          "trigger": "immediately after hit with melee weapon or Unarmed Strike"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "extra_damage": "2d6",
+          "damage_type": "Radiant",
+          "target_bright_light_radius_feet": 5,
+          "attacks_against_target_have_advantage": true,
+          "target_cannot_benefit_from_invisible": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17543,8 +17712,41 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shocking Grasp",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one creature",
+          "attack_roll": "melee spell attack",
+          "hit_damage": "1d8",
+          "damage_type": "Lightning",
+          "hit_blocks_opportunity_attacks_until": "start of target's next turn",
+          "cantrip_upgrade": {
+            "5": "2d8",
+            "11": "3d8",
+            "17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17559,8 +17761,44 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Silence",
+        "level": 2,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "chosen point"
+          },
+          "sound_created_inside": false,
+          "sound_passes_through": false,
+          "entirely_inside_thunder_immunity": true,
+          "entirely_inside_creature_condition": "Deafened",
+          "verbal_component_spellcasting_possible": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17575,8 +17813,51 @@
       "pages": [
         162
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Silent Image",
+        "level": 1,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of fleece"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "image_type": "object, creature, or visible phenomenon",
+          "maximum_size": "15-foot Cube",
+          "sensory_modes": [
+            "visual"
+          ],
+          "move_image": {
+            "action": "Magic",
+            "destination": "any spot in range",
+            "appearance_can_change_naturally": true
+          },
+          "physical_interaction_reveals_illusion": true,
+          "discernment": {
+            "action": "Study",
+            "check": "Intelligence (Investigation)",
+            "dc": "spell save DC",
+            "success_allows_seeing_through": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17592,8 +17873,64 @@
         162,
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Simulacrum",
+        "level": 7,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "hours": 12
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "powdered ruby",
+            "minimum_value_gp": 1500,
+            "consumed": true
+          }
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "original_type": [
+            "Beast",
+            "Humanoid"
+          ],
+          "original_must_remain_within_feet": 10,
+          "material_form": "same-size pile of ice or snow",
+          "casting_completion_touch_targets": [
+            "original creature",
+            "ice or snow pile"
+          ],
+          "statistics_source": "original creature at casting",
+          "differences": {
+            "creature_type": "Construct",
+            "hit_point_maximum_multiplier": 0.5,
+            "can_cast_simulacrum": false
+          },
+          "attitude": "Friendly to caster and designated creatures",
+          "obeys_caster_commands": true,
+          "combat_turn": "caster's turn",
+          "can_gain_levels": false,
+          "can_take_short_rests": false,
+          "can_take_long_rests": false,
+          "repair": {
+            "during_caster_long_rest": true,
+            "component_cost_gp_per_hit_point": 100,
+            "maximum_distance_feet": 5
+          },
+          "zero_hit_points_result": "reverts to snow and melts",
+          "recasting_destroys_prior_simulacrum": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17608,8 +17945,52 @@
       "pages": [
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sleep",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pinch of sand or rose petals"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 5,
+            "origin": "chosen point"
+          },
+          "targets": "chosen creatures in area",
+          "saving_throw_ability": "Wisdom",
+          "first_failed_save_condition": "Incapacitated until end of target's next turn",
+          "second_save_timing": "end of target's next turn",
+          "second_failed_save_condition": "Unconscious for duration",
+          "target_end_triggers": [
+            "target takes damage",
+            "creature within 5 feet takes action to shake target"
+          ],
+          "automatic_save_success": [
+            "creature that does not sleep",
+            "creature immune to Exhaustion"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17624,8 +18005,52 @@
       "pages": [
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sleet Storm",
+        "level": 3,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "miniature umbrella"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cylinder",
+            "radius_feet": 20,
+            "height_feet": 40,
+            "origin": "chosen point"
+          },
+          "area_condition": "Heavily Obscured",
+          "exposed_flames_doused": true,
+          "ground_condition": "Difficult Terrain",
+          "save_triggers": [
+            "first entry on a turn",
+            "starts turn in area"
+          ],
+          "saving_throw_ability": "Dexterity",
+          "failed_save": [
+            "Prone",
+            "loses Concentration"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17640,8 +18065,51 @@
       "pages": [
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Slow",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of molasses"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "side_feet": 40
+          },
+          "maximum_targets": 6,
+          "saving_throw_ability": "Wisdom",
+          "failed_save": {
+            "speed_multiplier": 0.5,
+            "armor_class_penalty": -2,
+            "dexterity_save_penalty": -2,
+            "can_take_reactions": false,
+            "turn_action_choice": "Action or Bonus Action, not both",
+            "maximum_attacks_with_attack_action": 1,
+            "somatic_spell_failure_chance_percent": 25
+          },
+          "repeat_save_timing": "end of each target turn",
+          "successful_repeat_save_ends_spell": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17656,8 +18124,52 @@
       "pages": [
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sorcerous Burst",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one creature or object",
+          "attack_roll": "ranged spell attack",
+          "base_hit_damage": "1d8",
+          "damage_type_choice": [
+            "Acid",
+            "Cold",
+            "Fire",
+            "Lightning",
+            "Poison",
+            "Psychic",
+            "Thunder"
+          ],
+          "exploding_die": {
+            "trigger_roll": 8,
+            "additional_die": "d8",
+            "maximum_additional_dice": "spellcasting ability modifier"
+          },
+          "cantrip_upgrade": {
+            "5": "2d8",
+            "11": "3d8",
+            "17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17672,8 +18184,38 @@
       "pages": [
         163
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Spare the Dying",
+        "level": 0,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 15
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one living creature at 0 Hit Points",
+          "result": "Stable",
+          "cantrip_upgrade_range_feet": {
+            "5": 30,
+            "11": 60,
+            "17": 120
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17688,8 +18230,42 @@
       "pages": [
         164
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Speak with Animals",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Ranger",
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "comprehend_beasts": true,
+          "verbally_communicate_with_beasts": true,
+          "influence_action_skill_options_available": true,
+          "minimum_beast_information": [
+            "nearby locations",
+            "nearby monsters",
+            "perceptions within past day"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17704,8 +18280,44 @@
       "pages": [
         164
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Speak with Dead",
+        "level": 3,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "burning incense"
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "target": "corpse with a mouth",
+          "fails_if_undead_at_death": true,
+          "fails_if_targeted_within_days": 10,
+          "maximum_questions": 5,
+          "knowledge": "knowledge and languages from life",
+          "truthful_answer_compelled": false,
+          "soul_returned": false,
+          "animating_spirit_only": true,
+          "can_learn_new_information": false,
+          "knows_events_after_death": false,
+          "can_speculate_about_future": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17720,8 +18332,56 @@
       "pages": [
         164
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Speak with Plants",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30,
+            "immobile": true
+          },
+          "plants_gain": [
+            "limited sentience",
+            "limited animation",
+            "communication with caster",
+            "ability to follow simple commands"
+          ],
+          "plant_information_period_hours": 24,
+          "plant_information_topics": [
+            "creatures that passed",
+            "weather",
+            "other circumstances"
+          ],
+          "terrain_toggle": [
+            "plant-caused Difficult Terrain to ordinary terrain",
+            "ordinary terrain with plants to Difficult Terrain"
+          ],
+          "plants_can_uproot_and_move": false,
+          "plants_can_move_branches_tendrils_and_stalks": true,
+          "plant_creature_communication": "shared common language"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17736,8 +18396,45 @@
       "pages": [
         164
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Spider Climb",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of bitumen and a spider"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "one willing creature",
+          "movement_surfaces": [
+            "vertical surfaces",
+            "ceilings"
+          ],
+          "hands_free": true,
+          "climb_speed": "equal to Speed",
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17752,8 +18449,47 @@
       "pages": [
         164
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Spike Growth",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "seven thorns"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "chosen ground point"
+          },
+          "area_condition": "Difficult Terrain",
+          "movement_damage": "2d4 per 5 feet",
+          "damage_type": "Piercing",
+          "transformation_camouflaged_as_natural": true,
+          "unseen_at_cast_recognition": {
+            "action": "Search",
+            "check": "Wisdom (Perception or Survival)",
+            "dc": "spell save DC"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17769,8 +18505,62 @@
         164,
         165
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Spirit Guardians",
+        "level": 3,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "prayer scroll"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 15
+          },
+          "spirit_form": {
+            "good_or_neutral": [
+              "angelic",
+              "fey"
+            ],
+            "evil": "fiendish"
+          },
+          "caster_designates_unaffected_creatures": true,
+          "other_creature_speed_multiplier": 0.5,
+          "save_triggers": [
+            "Emanation enters creature space",
+            "creature enters Emanation",
+            "creature ends turn in Emanation"
+          ],
+          "maximum_saves_per_turn": 1,
+          "saving_throw_ability": "Wisdom",
+          "failed_save_damage": "3d8",
+          "successful_save_damage": "half",
+          "damage_type": {
+            "good_or_neutral": "Radiant",
+            "evil": "Necrotic"
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
