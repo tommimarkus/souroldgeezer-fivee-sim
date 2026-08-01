@@ -4422,8 +4422,31 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "subclass": "Warrior of the Open Hand",
+        "level": 17,
+        "setup": {
+          "trigger": "hit a creature with an Unarmed Strike",
+          "focus_point_cost": 4,
+          "duration_days_formula": "Monk level"
+        },
+        "vibrations_harmless_until_ended": true,
+        "maximum_affected_creatures": 1,
+        "ending": {
+          "same_plane_required": true,
+          "action_options": [
+            "Action",
+            "forgo one attack during the Attack action on your turn"
+          ],
+          "saving_throw_ability": "Constitution",
+          "failed_save_damage": "10d12",
+          "successful_save_damage": "half",
+          "damage_type": "Force"
+        },
+        "harmless_end_action_required": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "318-6-27-monk-subclass-warrior-of-the-open-hand"
     },
@@ -4438,8 +4461,12 @@
       "pages": [
         53
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "core_traits_table_id": "053-core-paladin-traits",
+        "class_features_table_id": "053-paladin-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -4454,7 +4481,7 @@
       "pages": [
         53
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -4470,8 +4497,15 @@
       "pages": [
         53
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "053-core-paladin-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "053-paladin-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "324-6-29-becoming-a-paladin"
     },
@@ -4486,8 +4520,21 @@
       "pages": [
         53
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "Martial weapon proficiency",
+          "Light armor training",
+          "Medium armor training",
+          "Shield training"
+        ],
+        "core_traits_table_id": "053-core-paladin-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "053-paladin-features",
+        "spell_slots_source": "multiclassing rules"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "324-6-29-becoming-a-paladin"
     },
@@ -4502,8 +4549,12 @@
       "pages": [
         53
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "class_features_keyed_by": "Paladin level",
+        "class_features_table_id": "053-paladin-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -4519,8 +4570,21 @@
         53,
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 1,
+        "healing_pool_formula": "5 * Paladin level",
+        "healing_pool_recharge": "Long Rest",
+        "activation_action": "Bonus Action",
+        "range": "touch",
+        "eligible_targets": "creature including self",
+        "maximum_healing_per_use": "remaining healing pool",
+        "poisoned_condition_removal": {
+          "healing_pool_cost": 5,
+          "also_restores_hit_points": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4535,8 +4599,29 @@
       "pages": [
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 1,
+        "spell_list": "Paladin",
+        "spell_slot_table_id": "053-paladin-features",
+        "long_rest_spell_slots_recovered": "all",
+        "initial_prepared_spell_count": 2,
+        "initial_prepared_spell_level": 1,
+        "recommended_prepared_spells": [
+          "Heroism",
+          "Searing Smite"
+        ],
+        "prepared_spell_count_table_id": "053-paladin-features",
+        "prepared_spell_maximum_level_basis": "available spell slots",
+        "always_prepared_feature_spells_count_against_limit": false,
+        "always_prepared_feature_spells_are_paladin_spells": true,
+        "prepared_spells_change_timing": "finish a Long Rest",
+        "prepared_spells_replaceable_per_long_rest": 1,
+        "replacement_spell_maximum_level_basis": "available spell slots",
+        "spellcasting_ability": "Charisma",
+        "spellcasting_focus": "Holy Symbol"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4551,8 +4636,15 @@
       "pages": [
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 1,
+        "initial_weapon_kind_count": 2,
+        "requires_weapon_proficiency": true,
+        "selection_change_timing": "finish a Long Rest",
+        "selection_change_scope": "any chosen weapon kinds"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4567,8 +4659,26 @@
       "pages": [
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 2,
+        "selection_count": 1,
+        "selection_options": [
+          "Fighting Style feat",
+          "Blessed Warrior"
+        ],
+        "blessed_warrior": {
+          "cleric_cantrip_count": 2,
+          "recommended_cantrips": [
+            "Guidance",
+            "Sacred Flame"
+          ],
+          "chosen_cantrips_are_paladin_spells": true,
+          "spellcasting_ability": "Charisma",
+          "cantrips_replaceable_per_paladin_level": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4583,8 +4693,15 @@
       "pages": [
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 2,
+        "always_prepared_spell": "Divine Smite",
+        "free_casts": 1,
+        "free_cast_spell_slot_expended": false,
+        "free_cast_recharge": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4599,8 +4716,36 @@
       "pages": [
         54
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 3,
+        "initial_effects": [
+          "Divine Sense"
+        ],
+        "effect_selection_count_per_use": 1,
+        "initial_uses": 2,
+        "short_rest_uses_recovered": 1,
+        "long_rest_uses_recovered": "all",
+        "uses_from_level_11": 3,
+        "saving_throw_dc": "Paladin spell save DC",
+        "effects": {
+          "Divine Sense": {
+            "activation_action": "Bonus Action",
+            "duration_minutes": 10,
+            "ends_early_on_condition": "Incapacitated",
+            "range_feet": 60,
+            "detected_creature_types": [
+              "Celestial",
+              "Fiend",
+              "Undead"
+            ],
+            "knows_creature_location": true,
+            "knows_creature_type": true,
+            "detects_consecrated_or_desecrated_places_and_objects": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4616,7 +4761,7 @@
         54,
         55
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
@@ -4632,8 +4777,15 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 3,
+        "selection": "Paladin subclass",
+        "selection_count": 1,
+        "detailed_option": "Oath of Devotion",
+        "subclass_features_gained_at_or_below_paladin_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4648,8 +4800,22 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4664,8 +4830,12 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 5,
+        "attack_action_attacks": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4680,8 +4850,15 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 5,
+        "always_prepared_spell": "Find Steed",
+        "free_casts": 1,
+        "free_cast_spell_slot_expended": false,
+        "free_cast_recharge": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4696,8 +4873,21 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 6,
+        "area_shape": "Emanation",
+        "area_radius_feet": 10,
+        "inactive_condition": "Incapacitated",
+        "beneficiaries": [
+          "self",
+          "allies in aura"
+        ],
+        "saving_throw_bonus_formula": "max(1, Charisma modifier)",
+        "maximum_auras_of_protection_per_creature": 1,
+        "overlap_choice_made_by": "benefiting creature"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -21933,20 +22123,91 @@
       "name": "Core Paladin Traits",
       "section_id": "323-6-28-paladin",
       "page": 53,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Strength and Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D10 per Paladin level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Wisdom and Charisma"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 2: Athletics, Insight, Intimidation, Medicine, Persuasion, or Religion"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple and Martial weapons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light, Medium, and Heavy armor and Shields"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Chain Mail, Shield, Longsword, 6 Javelins, Holy Symbol, Priest's Pack, and 9 GP; or (B) 150 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -21956,7 +22217,7 @@
       "name": "Paladin Features",
       "section_id": "325-6-29-1-as-a-level-1-character",
       "page": 53,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -21984,34 +22245,980 @@
           "type": "integer"
         },
         {
-          "id": "spell-1",
-          "name": "—Spell 1",
+          "id": "spell-level-1",
+          "name": "1",
           "type": "integer"
         },
         {
-          "id": "slots-2",
-          "name": "Slots 2",
+          "id": "spell-level-2",
+          "name": "2",
           "type": "integer"
         },
         {
-          "id": "per-3",
-          "name": "per 3",
+          "id": "spell-level-3",
+          "name": "3",
           "type": "integer"
         },
         {
-          "id": "spell-4",
-          "name": "Spell 4",
+          "id": "spell-level-4",
+          "name": "4",
           "type": "integer"
         },
         {
-          "id": "level-5",
-          "name": "Level— 5",
+          "id": "spell-level-5",
+          "name": "5",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Lay On Hands, Spellcasting, Weapon Mastery"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Fighting Style, Paladin's Smite"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Channel Divinity, Paladin Subclass"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Extra Attack, Faithful Steed"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Aura of Protection"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Abjure Foes"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Aura of Courage"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Radiant Strikes"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Restoring Touch"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Aura Expansion"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 14
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "channel-divinity"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "channel-divinity"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-2"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-3"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-4"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "class-features"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 13,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 14,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "spell-level-5"
+        },
+        {
+          "code": "not_applicable",
+          "row": 16,
+          "column": "class-features"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
