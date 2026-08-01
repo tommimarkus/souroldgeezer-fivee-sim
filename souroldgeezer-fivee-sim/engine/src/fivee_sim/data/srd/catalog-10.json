@@ -15,7 +15,7 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,17 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "casting_access_requirements": [
+          "spell prepared",
+          "spell accessible from magic item"
+        ],
+        "example_magic_item_access": "Spell Scroll",
+        "spell_access_defined_by_features": true,
+        "always_prepared_status_defined_by_features": true,
+        "prepared_list_change_rules_defined_by_features": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -46,8 +55,15 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "applies_to_prepared_spell_levels": "1+",
+        "change_timing_defined_by_spellcasting_feature": true,
+        "change_count_defined_by_spellcasting_feature": true,
+        "spell_preparation_by_class_table_id": "104-spell-preparation-by-class",
+        "spellcasting_monsters_normally_change_prepared_lists": false,
+        "gm_may_alter_monster_prepared_lists": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -62,8 +78,11 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "always_prepared_spells_may_be_granted_by_features": true,
+        "count_against_changeable_prepared_spell_limit": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -78,8 +97,11 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell_descriptions_include_casting_detail_entries": true,
+        "casting_detail_entries_follow_spell_name": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -94,8 +116,10 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "armor_training_required_to_cast_while_wearing_armor": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "755-10-4-casting-spells"
     },
@@ -110,8 +134,14 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "minimum_spell_level": 0,
+        "maximum_spell_level": 9,
+        "spell_level_indicates_power": true,
+        "cantrip_spell_level": 0,
+        "class_rules_define_spell_level_access": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -126,8 +156,14 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell_slots_apply_to_spell_levels": "1+",
+        "spell_slot_counts_defined_by_class_and_slot_level": true,
+        "cast_slot_level_minimum": "spell level",
+        "casting_expends_one_spell_slot": true,
+        "long_rest_restores_expended_spell_slots": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "757-10-5-spell-level"
     },
@@ -142,8 +178,25 @@
       "pages": [
         104
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "cantrips_expend_spell_slot": false,
+        "ritual_casting": {
+          "requires_ritual_tag": true,
+          "additional_casting_time_minutes": 10,
+          "expends_spell_slot": false,
+          "spell_must_be_prepared": true
+        },
+        "special_ability_casting": {
+          "expends_spell_slot": false,
+          "usually_has_another_usage_limit": true
+        },
+        "magic_item_casting": {
+          "expends_spell_slot": false,
+          "usage_count_defined_by_item": true,
+          "example_item": "Spell Scroll"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "757-10-5-spell-level"
     },
@@ -159,8 +212,11 @@
         104,
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell_takes_used_slot_level_when_slot_is_higher": true,
+        "higher_slot_effects_defined_by_spell_description": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "757-10-5-spell-level"
     },
@@ -175,8 +231,13 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "every_spell_has_one_school_of_magic": true,
+        "schools_of_magic_table_id": "105-schools-of-magic",
+        "school_categories_have_rules_of_their_own": false,
+        "other_rules_may_reference_schools": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -191,8 +252,13 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell_list_classes_appear_after_school": true,
+        "spell_list_classes_format": "parentheses",
+        "features_may_add_spells_to_character_spell_lists": true,
+        "class_membership_required_for_feature_added_spell": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -207,8 +273,16 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "most_common_casting_action": "Magic",
+        "other_casting_times": [
+          "Bonus Action",
+          "Reaction",
+          "1 minute or more"
+        ],
+        "required_casting_time_defined_by_spell_entry": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -223,8 +297,10 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "maximum_spell_slots_expended_to_cast_spells_per_turn": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "763-10-8-casting-time"
     },
@@ -239,8 +315,11 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "reaction_spells_have_casting_time_entry_trigger": true,
+        "some_bonus_action_spells_have_casting_time_entry_trigger": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "763-10-8-casting-time"
     },
@@ -255,8 +334,18 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "longer_casting_time_threshold_minutes": 1,
+        "magic_action_required_each_turn": true,
+        "concentration_required": true,
+        "broken_concentration": {
+          "spell_fails": true,
+          "spell_slot_expended": false,
+          "retry_requires_restart": true
+        },
+        "rituals_may_have_longer_casting_times": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "763-10-8-casting-time"
     },
@@ -6031,7 +6120,7 @@
       "name": "Spell Preparation by Class",
       "section_id": "753-10-2-preparing-spells",
       "page": 104,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "class",
@@ -6039,17 +6128,122 @@
           "type": "string"
         },
         {
-          "id": "change-when-you",
+          "id": "change_when",
           "name": "Change When You ...",
           "type": "string"
         },
         {
-          "id": "number-of-spells",
+          "id": "number_of_spells",
           "name": "Number of Spells",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Bard"
+            },
+            {
+              "value": "Gain a level"
+            },
+            {
+              "value": "One"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cleric"
+            },
+            {
+              "value": "Finish a Long Rest"
+            },
+            {
+              "value": "Any"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Druid"
+            },
+            {
+              "value": "Finish a Long Rest"
+            },
+            {
+              "value": "Any"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Paladin"
+            },
+            {
+              "value": "Finish a Long Rest"
+            },
+            {
+              "value": "One"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ranger"
+            },
+            {
+              "value": "Finish a Long Rest"
+            },
+            {
+              "value": "One"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sorcerer"
+            },
+            {
+              "value": "Gain a level"
+            },
+            {
+              "value": "One"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warlock"
+            },
+            {
+              "value": "Gain a level"
+            },
+            {
+              "value": "One"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wizard"
+            },
+            {
+              "value": "Finish a Long Rest"
+            },
+            {
+              "value": "Any"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6059,7 +6253,7 @@
       "name": "Schools of Magic",
       "section_id": "761-10-6-school-of-magic",
       "page": 105,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "school",
@@ -6067,13 +6261,94 @@
           "type": "string"
         },
         {
-          "id": "typical-effects",
+          "id": "typical_effects",
           "name": "Typical Effects",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 7,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "Prevents or reverses harmful effects"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "Transports creatures or objects"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "Reveals information"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "Influences minds"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "Channels energy to create effects that are often destructive"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "Deceives the mind or senses"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "Manipulates life and death"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "Transforms creatures or objects"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },

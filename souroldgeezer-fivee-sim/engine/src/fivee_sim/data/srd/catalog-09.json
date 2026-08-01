@@ -5538,8 +5538,11 @@
       "pages": [
         103
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "scribed_cantrip_scroll_effective_caster_level": "scribe level",
+        "spell_scroll_costs_table_id": "103-spell-scroll-costs"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     }
@@ -10100,25 +10103,156 @@
       "name": "Spell Scroll Costs",
       "section_id": "750-9-42-cantrips",
       "page": 103,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "spell-level",
+          "id": "spell_level",
           "name": "Spell Level",
           "type": "integer"
         },
         {
-          "id": "time",
-          "name": "Time",
-          "type": "string"
+          "id": "time_days",
+          "name": "Time (days)",
+          "type": "integer"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost_gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 0
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": 150
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 25
+            },
+            {
+              "value": 1500
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 40
+            },
+            {
+              "value": 10000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 50
+            },
+            {
+              "value": 12500
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 60
+            },
+            {
+              "value": 15000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 120
+            },
+            {
+              "value": 50000
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
       "omissions": [],
       "provenance": "SRD 5.2.1"
