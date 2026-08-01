@@ -7928,8 +7928,16 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 2,
+        "rite_duration_minutes": 1,
+        "resource_recovered": "expended Pact Magic spell slots",
+        "maximum_slots_recovered_formula": "ceil(maximum Pact Magic spell slots / 2)",
+        "uses_per_recovery": 1,
+        "recovery": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -7944,8 +7952,15 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 3,
+        "selection": "Warlock subclass",
+        "selection_count": 1,
+        "detailed_option": "Fiend Patron",
+        "subclass_features_gained_at_or_below_warlock_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -7960,8 +7975,22 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -7976,8 +8005,17 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 9,
+        "spell": "Contact Other Plane",
+        "always_prepared": true,
+        "casts_without_spell_slot": 1,
+        "casting_purpose": "contact your patron",
+        "automatically_succeeds_on_spell_saving_throw": true,
+        "expended_use_recovery": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -7992,8 +8030,36 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 11,
+        "initial_arcanum": {
+          "warlock_spell_choice_count": 1,
+          "spell_level": 6
+        },
+        "casts_without_spell_slot_per_arcanum": 1,
+        "additional_arcana": [
+          {
+            "warlock_level": 13,
+            "spell_level": 7
+          },
+          {
+            "warlock_level": 15,
+            "spell_level": 8
+          },
+          {
+            "warlock_level": 17,
+            "spell_level": 9
+          }
+        ],
+        "expended_uses_recovered": "all",
+        "recovery": "Long Rest",
+        "arcanum_change_timing": "gain a Warlock level",
+        "arcana_replaceable_per_level": 1,
+        "replacement_requires_same_spell_level": true,
+        "replacement_spell_list": "Warlock"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -8008,8 +8074,17 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Fate"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -8024,8 +8099,13 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "level": 20,
+        "modified_feature": "Magical Cunning",
+        "expended_pact_magic_spell_slots_recovered": "all"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "448-6-50-warlock-class-features"
     },
@@ -8040,8 +8120,12 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "ordering": "alphabetical"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -8056,8 +8140,19 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 2,
+          "known_warlock_cantrip_deals_damage": true
+        },
+        "eligible_cantrip_choice_count": 1,
+        "damage_roll_bonus_formula": "Charisma modifier",
+        "repeatable": true,
+        "repeat_selection_requires_different_cantrip": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8072,8 +8167,14 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "spell": "Mage Armor",
+        "target": "self",
+        "expends_spell_slot": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8088,8 +8189,17 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 5
+        },
+        "spell": "Levitate",
+        "target": "self",
+        "expends_spell_slot": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8104,8 +8214,24 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 2
+        },
+        "vision_distance_feet": 120,
+        "light_conditions": [
+          "Dim Light",
+          "Darkness"
+        ],
+        "darkness_sources": [
+          "magical",
+          "nonmagical"
+        ],
+        "vision_quality": "normal"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8120,8 +8246,17 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 12,
+          "invocation": "Thirsting Blade"
+        },
+        "modified_feature": "Thirsting Blade Extra Attack",
+        "extra_attacks": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8136,8 +8271,14 @@
       "pages": [
         72
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "saving_throw_ability": "Constitution",
+        "saving_throw_purpose": "maintain Concentration",
+        "grants_advantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8153,8 +8294,22 @@
         72,
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 5,
+          "invocation": "Pact of the Blade"
+        },
+        "maximum_uses_per_turn": 1,
+        "trigger": "hit a creature with pact weapon",
+        "pact_magic_spell_slot_cost": 1,
+        "extra_damage_formula": "1d8 + 1d8 per spell slot level",
+        "extra_damage_type": "Force",
+        "optional_condition": "Prone",
+        "maximum_condition_target_size": "Huge"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8169,8 +8324,20 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 2,
+          "known_warlock_cantrip_deals_damage": true
+        },
+        "eligible_cantrip_choice_count": 1,
+        "minimum_cantrip_range_feet": 10,
+        "range_increase_formula_feet": "30 * Warlock level",
+        "repeatable": true,
+        "repeat_selection_requires_different_cantrip": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8185,8 +8352,18 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 2
+        },
+        "spell": "False Life",
+        "target": "self",
+        "expends_spell_slot": false,
+        "temporary_hit_point_die_result": "maximum"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8201,8 +8378,27 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 5
+        },
+        "activation_action": "Bonus Action",
+        "target": "willing creature touched",
+        "effect": "perceive through target senses",
+        "expires": "end of your next turn",
+        "maintenance_action": "Bonus Action",
+        "maintenance_timing": "subsequent turns",
+        "requires_same_plane": true,
+        "grants_target_special_senses": true,
+        "spell_origin_options": [
+          "your space",
+          "target space"
+        ],
+        "maximum_spell_origin_separation_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8217,8 +8413,19 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 5
+        },
+        "can_breathe_underwater": true,
+        "swim_speed": "equal to Speed",
+        "spell": "Water Breathing",
+        "casts_without_spell_slot": 1,
+        "expended_use_recovery": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8233,8 +8440,32 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "option_type": "Eldritch Invocation",
+        "prerequisites": {
+          "minimum_warlock_level": 9,
+          "invocation": "Pact of the Tome"
+        },
+        "book": "Book of Shadows",
+        "write_name": {
+          "requires_your_permission": true,
+          "creature_action": "Action",
+          "maximum_names_formula": "max(1, Charisma modifier)"
+        },
+        "protection_trigger": {
+          "named_creature_reduced_to_hit_points": 0,
+          "requires_not_killed_outright": true
+        },
+        "protected_hit_points": 1,
+        "shared_uses_per_recovery": 1,
+        "recovery": "Long Rest",
+        "erase_name": {
+          "activation_action": "Magic",
+          "requires_touching_page": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
