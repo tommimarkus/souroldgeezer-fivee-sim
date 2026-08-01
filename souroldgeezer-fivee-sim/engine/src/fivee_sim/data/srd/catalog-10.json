@@ -360,8 +360,25 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "meaning": "maximum origin distance from spellcaster",
+        "limited_effect_part_source": "spell description",
+        "forms": {
+          "Distance": {
+            "unit": "feet"
+          },
+          "Touch": {
+            "origin": "touched subject",
+            "maximum": "spellcaster reach"
+          },
+          "Self": {
+            "origin_or_target": "spellcaster"
+          }
+        },
+        "movable_effects_remain_range_limited_by_default": false,
+        "spell_description_can_restrict_movable_effects": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -376,8 +393,16 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "components_are_physical_casting_requirements": true,
+        "component_types": {
+          "V": "Verbal",
+          "S": "Somatic",
+          "M": "Material"
+        },
+        "all_listed_components_required_to_cast": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -392,8 +417,16 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "component": "Verbal",
+        "abbreviation": "V",
+        "required_voice": "normal speaking voice",
+        "preventing_conditions": [
+          "gagged",
+          "area of magical silence"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "768-10-10-components"
     },
@@ -408,8 +441,12 @@
       "pages": [
         105
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "component": "Somatic",
+        "abbreviation": "S",
+        "minimum_hands": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "768-10-10-components"
     },
@@ -425,8 +462,31 @@
         105,
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "component": "Material",
+        "abbreviation": "M",
+        "materials_location": "Components entry parentheses",
+        "consumed_by_default": false,
+        "spell_description_can_consume": true,
+        "free_hand_required_for_access": true,
+        "access_hand_can_also_perform_somatic": true,
+        "substitution_requirements": {
+          "material_consumed": false,
+          "material_cost_specified": false
+        },
+        "substitution_options": [
+          {
+            "item": "Component Pouch",
+            "free_hand_required": true
+          },
+          {
+            "item": "Spellcasting Focus",
+            "requires_allowing_feature": true,
+            "held_by_default": true
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "768-10-10-components"
     },
@@ -441,8 +501,28 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "meaning": "persistence after casting",
+        "forms": {
+          "Concentration": {
+            "uses_concentration_rules": true
+          },
+          "Instantaneous": {
+            "magic_persists_after_moment": false
+          },
+          "Time Span": {
+            "example_units": [
+              "rounds",
+              "minutes",
+              "hours"
+            ]
+          }
+        },
+        "caster_can_dismiss_own_ongoing_time_span_spell": true,
+        "dismissal_action_required": false,
+        "dismissal_blocking_condition": "Incapacitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -457,8 +537,17 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "location_in_spell_entry": "after duration",
+        "listed_effects_are_exhaustive": true,
+        "outcomes_beyond_listed_effects_decided_by": "GM",
+        "typical_effect_elements": [
+          "targets",
+          "saving throws",
+          "attack rolls"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
     },
@@ -473,8 +562,36 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_categories_source": "spell description",
+        "clear_path_required": true,
+        "total_cover_blocks_targeting": true,
+        "self_target_allowed_for_creature_of_choice": true,
+        "self_target_exceptions": [
+          "target must be Hostile",
+          "target must be another creature"
+        ],
+        "area_of_effect_shapes": [
+          "Cone",
+          "Cube",
+          "Cylinder",
+          "Emanation",
+          "Line",
+          "Sphere"
+        ],
+        "area_determines_targets": true,
+        "target_awareness_requires": [
+          "perceptible effect",
+          "spell description exception"
+        ],
+        "invalid_target": {
+          "effect": "none",
+          "spell_slot_expended": true,
+          "appears_to_save_if_successful_save_normally_has_no_effect": true,
+          "otherwise_caster_perceives_no_effect": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "773-10-12-effects"
     },
@@ -489,8 +606,12 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "saving_throw_ability_source": "spell",
+        "success_and_failure_effect_source": "spell",
+        "spell_save_dc_formula": "8 + spellcasting ability modifier + Proficiency Bonus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "773-10-12-effects"
     },
@@ -505,8 +626,10 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell_attack_modifier_formula": "spellcasting ability modifier + Proficiency Bonus"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "773-10-12-effects"
     },
@@ -521,8 +644,14 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "different_spell_effects_combine_during_overlap": true,
+        "multiple_castings_of_same_spell_combine": false,
+        "same_spell_overlap_selection": "most potent",
+        "equal_potency_overlap_selection": "most recent",
+        "selected_effect_persists_until_its_own_duration_ends": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "773-10-12-effects"
     },
@@ -537,8 +666,17 @@
       "pages": [
         106
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "eligible_spell_duration": "non-instantaneous and ongoing",
+        "requires_observable_effects": true,
+        "action": "Study",
+        "check": {
+          "ability": "Intelligence",
+          "skill": "Arcana",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "773-10-12-effects"
     },
@@ -553,7 +691,7 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "751-10-spells"
@@ -569,8 +707,47 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Acid Arrow",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "powdered rhubarb leaf"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "attack": "ranged spell attack",
+          "hit": {
+            "initial_damage": "4d4",
+            "later_damage": "2d4",
+            "later_damage_timing": "end of target’s next turn",
+            "damage_type": "Acid"
+          },
+          "miss": {
+            "initial_damage": "half",
+            "later_damage": 0
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "initial_damage_increase_per_level": "1d4",
+            "later_damage_increase_per_level": "1d4"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -585,8 +762,46 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Acid Splash",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "origin": "point within range",
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 5
+          },
+          "targets": "each creature in area",
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "1d6",
+          "damage_type": "Acid",
+          "cantrip_damage_by_character_level": {
+            "1": "1d6",
+            "5": "2d6",
+            "11": "3d6",
+            "17": "4d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -601,8 +816,43 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Aid",
+        "level": 2,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "strip of white cloth"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "maximum_targets": 3,
+          "target_type": "creature",
+          "hit_point_maximum_increase": 5,
+          "current_hit_point_increase": 5,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "both_increases_per_slot_level": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -617,8 +867,60 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Alarm",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Ranger",
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 minute",
+          "ritual": true
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bell and silver wire"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "ward_options": [
+            "door",
+            "window",
+            "area"
+          ],
+          "maximum_area": {
+            "shape": "Cube",
+            "size_feet": 20
+          },
+          "triggers": [
+            "creature touches warded area",
+            "creature enters warded area"
+          ],
+          "designated_creatures_can_be_exempt": true,
+          "alarm_mode_choice": [
+            "audible",
+            "mental"
+          ],
+          "audible": {
+            "sound": "handbell",
+            "duration_seconds": 10,
+            "audible_within_feet": 60
+          },
+          "mental": {
+            "maximum_caster_distance_miles": 1,
+            "awakens_sleeping_caster": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -633,8 +935,67 @@
       "pages": [
         107
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Alter Self",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "option_choice_count": 1,
+          "switch_option_action": "Magic",
+          "options": {
+            "Aquatic Adaptation": {
+              "underwater_breathing": true,
+              "swim_speed": "equal to Speed"
+            },
+            "Change Appearance": {
+              "modifiable_traits": [
+                "height",
+                "weight",
+                "facial features",
+                "voice",
+                "hair length",
+                "coloration",
+                "distinguishing characteristics"
+              ],
+              "other_species_appearance_allowed": true,
+              "statistics_change": false,
+              "size_change_allowed": false,
+              "basic_shape_change_allowed": false,
+              "repeat_change_action": "Magic"
+            },
+            "Natural Weapons": {
+              "options": {
+                "claws": "Slashing",
+                "fangs": "Piercing",
+                "horns": "Piercing",
+                "hooves": "Bludgeoning"
+              },
+              "unarmed_strike_damage": "1d6",
+              "replaces_normal_unarmed_damage": true,
+              "attack_and_damage_ability": "spellcasting ability"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -650,8 +1011,49 @@
         107,
         108
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Animal Friendship",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "morsel of food"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "target": {
+            "type": "Beast",
+            "visible": true,
+            "count": 1
+          },
+          "saving_throw_ability": "Wisdom",
+          "failed_save_condition": "Charmed",
+          "condition_duration": "spell duration",
+          "ends_if_damaged_by": [
+            "caster",
+            "caster ally"
+          ],
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -666,8 +1068,57 @@
       "pages": [
         108
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Animal Messenger",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "morsel of food"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "target": {
+            "type": "Beast",
+            "size": "Tiny",
+            "visible": true,
+            "count": 1
+          },
+          "saving_throw_ability": "Charisma",
+          "challenge_rating_above_zero_automatically_succeeds": true,
+          "failed_save_task": "deliver message",
+          "destination_requirement": "location visited by caster",
+          "recipient_specification": "general description",
+          "maximum_message_words": 25,
+          "travel_miles_per_24_hours": 25,
+          "flying_travel_miles_per_24_hours": 50,
+          "delivery_uses_caster_communication": true,
+          "failure_if_destination_not_reached": {
+            "message_delivered": false,
+            "beast_returns_to_casting_location": true
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "duration_increase_hours_per_slot_level": 48
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
