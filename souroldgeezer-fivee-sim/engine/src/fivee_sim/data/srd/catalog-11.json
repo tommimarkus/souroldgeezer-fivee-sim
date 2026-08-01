@@ -895,8 +895,14 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Charmed [Condition]",
+        "can_attack_charmer": false,
+        "can_target_charmer_with_damaging_abilities": false,
+        "can_target_charmer_with_damaging_magical_effects": false,
+        "charmer_social_ability_checks": "Advantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -912,8 +918,23 @@
         178,
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Climbing",
+        "extra_movement_cost_per_foot": 1,
+        "extra_movement_cost_per_foot_in_difficult_terrain": 2,
+        "extra_cost_ignored_when_using_climb_speed": true,
+        "optional_check": {
+          "circumstances": [
+            "slippery surface",
+            "few handholds"
+          ],
+          "determined_by": "GM",
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -928,8 +949,16 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Climb Speed",
+        "can_replace_speed_on_vertical_surface": true,
+        "normal_climbing_extra_movement_cost": false,
+        "related_terms": [
+          "Climbing",
+          "Speed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -944,8 +973,37 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Concentration",
+        "requirement_specified_by_effect": true,
+        "effect_ends_when_creator_loses_concentration": true,
+        "maximum_duration_specified_by_effect": true,
+        "duration_examples": [
+          "1 minute",
+          "1 hour"
+        ],
+        "creator_can_end_at_any_time": true,
+        "ending_requires_action": false,
+        "breaking_factors": {
+          "another_concentration_effect": {
+            "casting_concentration_spell": true,
+            "activating_concentration_effect": true,
+            "timing": "immediate"
+          },
+          "damage": {
+            "save_ability": "Constitution",
+            "dc_minimum": 10,
+            "dc_damage_fraction": "half, rounded down",
+            "dc_uses_higher_value": true,
+            "dc_maximum": 30
+          },
+          "conditions_or_states": [
+            "Incapacitated",
+            "dead"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -960,8 +1018,30 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Condition",
+        "state_type": "temporary game state",
+        "defined_conditions": [
+          "Blinded",
+          "Charmed",
+          "Deafened",
+          "Exhaustion",
+          "Frightened",
+          "Grappled",
+          "Incapacitated",
+          "Invisible",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned",
+          "Prone",
+          "Restrained",
+          "Stunned",
+          "Unconscious"
+        ],
+        "stacks_with_itself": false,
+        "stacking_exception": "Exhaustion"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -976,8 +1056,16 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Cone [Area of Effect]",
+        "extends_from_origin_in_straight_lines": true,
+        "direction_chosen_by": "creator",
+        "width_at_point": "distance from point of origin",
+        "maximum_length_specified_by_effect": true,
+        "origin_included_by_default": false,
+        "creator_can_include_origin": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -992,8 +1080,25 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Cover",
+        "degrees": {
+          "Half Cover": {
+            "armor_class_bonus": 2,
+            "dexterity_saving_throw_bonus": 2
+          },
+          "Three-Quarters Cover": {
+            "armor_class_bonus": 5,
+            "dexterity_saving_throw_bonus": 5
+          },
+          "Total Cover": {
+            "can_be_targeted_directly": false
+          }
+        },
+        "multiple_degrees": "most protective only",
+        "related_term": "Playing the Game: Combat"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1008,8 +1113,13 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Crawling",
+        "extra_movement_cost_per_foot": 1,
+        "extra_movement_cost_per_foot_in_difficult_terrain": 2,
+        "related_term": "Speed"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1024,8 +1134,13 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Creature",
+        "meaning": "any being in the game",
+        "includes_player_character": true,
+        "related_term": "Creature Type"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1040,8 +1155,31 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Creature Type",
+        "applies_to_every_creature": true,
+        "identified_by_rules_tag": true,
+        "most_player_characters_type": "Humanoid",
+        "types": [
+          "Aberration",
+          "Beast",
+          "Celestial",
+          "Construct",
+          "Dragon",
+          "Elemental",
+          "Fey",
+          "Fiend",
+          "Giant",
+          "Humanoid",
+          "Monstrosity",
+          "Ooze",
+          "Plant",
+          "Undead"
+        ],
+        "types_have_intrinsic_rules": false,
+        "other_rules_can_affect_types_differently": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1056,8 +1194,17 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Critical Hit",
+        "attack_roll_d20_result": 20,
+        "hits_regardless_of_modifiers": true,
+        "hits_regardless_of_target_armor_class": true,
+        "damage_dice_rolls": 2,
+        "damage_dice_results_added_together": true,
+        "relevant_modifiers_added_after_dice": true,
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1072,8 +1219,16 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Cube [Area of Effect]",
+        "extends_from_origin_in_straight_lines": true,
+        "origin_location": "anywhere on a face",
+        "size_measurement": "length of each side",
+        "size_specified_by_effect": true,
+        "origin_included_by_default": false,
+        "creator_can_include_origin": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1088,8 +1243,20 @@
       "pages": [
         179
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Curses",
+        "possible_targets": [
+          "creature",
+          "object"
+        ],
+        "effects_defined_by": "effect that confers the curse",
+        "removal_spells": [
+          "Remove Curse",
+          "Greater Restoration"
+        ],
+        "other_explicit_curse-ending_magic_works": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1104,8 +1271,20 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Cylinder [Area of Effect]",
+        "extends_from_origin_in_straight_lines": true,
+        "origin_location_options": [
+          "center of circular top",
+          "center of circular bottom"
+        ],
+        "dimensions_specified_by_effect": [
+          "base radius",
+          "height"
+        ],
+        "origin_included": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1120,8 +1299,18 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "D20 Test",
+        "roll_types": [
+          "ability check",
+          "attack roll",
+          "saving throw"
+        ],
+        "effect_on_d20_tests_applies_to_all_roll_types": true,
+        "test_warranted_determined_by": "GM",
+        "related_term": "Playing the Game: D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1136,8 +1325,16 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Damage",
+        "represents": "harm",
+        "possible_targets": [
+          "creature",
+          "object"
+        ],
+        "causes_hit_point_loss": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1152,8 +1349,14 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Damage Roll",
+        "is_die_roll": true,
+        "adjusted_by_applicable_modifiers": true,
+        "deals_damage_to_target": true,
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1168,8 +1371,28 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Damage Threshold",
+        "possible_holders": [
+          "creature",
+          "object"
+        ],
+        "below_threshold": {
+          "damage_immunity": true,
+          "damage_is_superficial": true,
+          "reduces_hit_points": false
+        },
+        "threshold_met_or_exceeded": {
+          "damage_source_scope": "single attack or effect",
+          "takes_entire_damage_instance": true
+        },
+        "example": {
+          "threshold": 10,
+          "damage_9_taken": 0,
+          "damage_11_taken": 11
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1184,8 +1407,18 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Damage Types",
+        "sources": [
+          "attacks",
+          "other harmful effects"
+        ],
+        "types_have_intrinsic_rules": false,
+        "relied_on_by_example": "Resistance",
+        "examples_table_id": "180-damage-types",
+        "table_use": "GM assignment of a type to a new effect"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3136,7 +3369,7 @@
       "name": "Damage Types",
       "section_id": "1171-11-2-46-damage-types",
       "page": 180,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "type",
@@ -3149,7 +3382,138 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "Corrosive liquids, digestive enzymes"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bludgeoning"
+            },
+            {
+              "value": "Blunt objects, constriction, falling"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cold"
+            },
+            {
+              "value": "Freezing water, icy blasts"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fire"
+            },
+            {
+              "value": "Flames, unbearable heat"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Force"
+            },
+            {
+              "value": "Pure magical energy"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Electricity"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Necrotic"
+            },
+            {
+              "value": "Life-draining energy"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Piercing"
+            },
+            {
+              "value": "Fangs, puncturing objects"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poison"
+            },
+            {
+              "value": "Toxic gas, venom"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Psychic"
+            },
+            {
+              "value": "Mind-rending energy"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Radiant"
+            },
+            {
+              "value": "Holy energy, searing radiation"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Slashing"
+            },
+            {
+              "value": "Claws, cutting objects"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Thunder"
+            },
+            {
+              "value": "Concussive sound"
+            }
+          ]
+        }
+      ],
       "source_row_count": 13,
       "omissions": [],
       "provenance": "SRD 5.2.1"
