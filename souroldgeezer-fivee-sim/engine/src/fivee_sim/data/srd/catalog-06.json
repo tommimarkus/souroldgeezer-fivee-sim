@@ -4902,8 +4902,31 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 9,
+        "activation_action": "Magic action",
+        "channel_divinity_uses_expended": 1,
+        "presented_focus_options": [
+          "Holy Symbol",
+          "weapon"
+        ],
+        "target_count_formula": "Charisma modifier",
+        "minimum_target_count": 1,
+        "requires_visible_targets": true,
+        "target_range_feet": 60,
+        "saving_throw_ability": "Wisdom",
+        "failed_save_condition": "Frightened",
+        "duration": "1 minute",
+        "ends_for_target_when_target_takes_damage": true,
+        "frightened_turn_option_limit": 1,
+        "frightened_turn_options": [
+          "move",
+          "action",
+          "Bonus Action"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4918,8 +4941,18 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 10,
+        "aura": "Aura of Protection",
+        "beneficiaries": [
+          "Paladin",
+          "allies"
+        ],
+        "condition_immunity": "Frightened",
+        "entering_frightened_ally_condition_suppressed_while_in_aura": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4934,8 +4967,18 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 11,
+        "trigger": "hit a target with an attack roll",
+        "eligible_attacks": [
+          "Melee weapon",
+          "Unarmed Strike"
+        ],
+        "extra_damage": "1d8",
+        "damage_type": "Radiant"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4950,8 +4993,22 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 14,
+        "trigger": "use Lay On Hands on a creature",
+        "removable_conditions": [
+          "Blinded",
+          "Charmed",
+          "Deafened",
+          "Frightened",
+          "Paralyzed",
+          "Stunned"
+        ],
+        "lay_on_hands_pool_cost_per_condition": 5,
+        "condition_removal_pool_points_restore_hit_points": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4966,8 +5023,14 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 18,
+        "aura": "Aura of Protection",
+        "area_shape": "Emanation",
+        "area_radius_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4982,8 +5045,17 @@
       "pages": [
         55
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Truesight"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "327-6-30-paladin-class-features"
     },
@@ -4999,8 +5071,28 @@
         55,
         56
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "spell_level_minimum": 1,
+        "spell_level_maximum": 5,
+        "ordering": [
+          "spell level",
+          "alphabetical"
+        ],
+        "special_codes": {
+          "C": "Concentration",
+          "R": "Ritual",
+          "M": "specific Material component"
+        },
+        "spell_tables_by_level": {
+          "1": "055-level-1-paladin-spells",
+          "2": "056-level-2-paladin-spells",
+          "3": "056-level-3-paladin-spells",
+          "4": "056-level-4-paladin-spells",
+          "5": "056-level-5-paladin-spells"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -5015,7 +5107,7 @@
       "pages": [
         56
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -5031,8 +5123,15 @@
       "pages": [
         56
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "subclass": "Oath of Devotion",
+        "level": 3,
+        "prepared_spells_table_id": "056-oath-of-devotion-spells",
+        "listed_spells_always_prepared": true,
+        "prepared_from_listed_paladin_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "347-6-32-paladin-subclass-oath-of-devotion"
     },
@@ -5047,8 +5146,27 @@
       "pages": [
         56
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "subclass": "Oath of Devotion",
+        "level": 3,
+        "trigger": "take the Attack action",
+        "channel_divinity_uses_expended": 1,
+        "target": "one held Melee weapon",
+        "duration": "10 minutes",
+        "ends_when_feature_used_again": true,
+        "attack_roll_bonus": "Charisma modifier",
+        "minimum_attack_roll_bonus": 1,
+        "damage_type_options": [
+          "normal weapon damage type",
+          "Radiant"
+        ],
+        "bright_light_radius_feet": 20,
+        "additional_dim_light_feet": 20,
+        "can_end_early_without_action": true,
+        "ends_when_weapon_not_carried": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "347-6-32-paladin-subclass-oath-of-devotion"
     },
@@ -5063,8 +5181,19 @@
       "pages": [
         56
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "subclass": "Oath of Devotion",
+        "level": 7,
+        "aura": "Aura of Protection",
+        "beneficiaries": [
+          "Paladin",
+          "allies"
+        ],
+        "condition_immunity": "Charmed",
+        "entering_charmed_ally_condition_suppressed_while_in_aura": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "347-6-32-paladin-subclass-oath-of-devotion"
     },
@@ -5079,8 +5208,20 @@
       "pages": [
         57
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "subclass": "Oath of Devotion",
+        "level": 15,
+        "trigger": "cast Divine Smite",
+        "aura": "Aura of Protection",
+        "beneficiaries": [
+          "Paladin",
+          "allies"
+        ],
+        "cover": "Half Cover",
+        "duration": "until the start of the Paladin's next turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "347-6-32-paladin-subclass-oath-of-devotion"
     },
@@ -5095,8 +5236,36 @@
       "pages": [
         57
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Paladin",
+        "subclass": "Oath of Devotion",
+        "level": 20,
+        "activation_action": "Bonus Action",
+        "aura": "Aura of Protection",
+        "duration": "10 minutes",
+        "can_end_early_without_action": true,
+        "recharge": "Long Rest",
+        "alternate_recovery": {
+          "spell_slot_level": 5,
+          "action_required": false
+        },
+        "holy_ward": {
+          "saving_throw_advantage_against_sources": [
+            "Fiend",
+            "Undead"
+          ]
+        },
+        "radiant_damage": {
+          "trigger": "enemy starts its turn in the aura",
+          "formula": "Charisma modifier + Proficiency Bonus",
+          "damage_type": "Radiant"
+        },
+        "sunlight": {
+          "light": "Bright Light",
+          "is_sunlight": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "347-6-32-paladin-subclass-oath-of-devotion"
     },
@@ -5111,8 +5280,12 @@
       "pages": [
         57
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "core_traits_table_id": "057-core-ranger-traits",
+        "class_features_table_id": "058-ranger-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -23226,7 +23399,7 @@
       "name": "Level 1 Paladin Spells",
       "section_id": "346-6-31-paladin-spell-list",
       "page": 55,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -23244,9 +23417,210 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 6,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Bless"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Command"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cure Wounds"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Evil and Good"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Poison and Disease"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Divine Favor"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Divine Smite"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Heroism"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Evil and Good"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Purify Food and Drink"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Searing Smite"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shield of Faith"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 13,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -23254,7 +23628,7 @@
       "name": "Level 2 Paladin Spells",
       "section_id": "346-6-31-paladin-spell-list",
       "page": 56,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -23272,9 +23646,196 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 18,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Aid"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Find Steed"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gentle Repose"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lesser Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Object"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic Weapon"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Prayer of Healing"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Poison"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shining Smite"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warding Bond"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Zone of Truth"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 11,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -23282,7 +23843,7 @@
       "name": "Oath of Devotion Spells",
       "section_id": "348-6-32-1-level-3-oath-of-devotion-spells",
       "page": 56,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "paladin-level",
@@ -23295,7 +23856,58 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Protection from Evil and Good, Shield of Faith"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Aid, Zone of Truth"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Beacon of Hope, Dispel Magic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": "Freedom of Movement, Guardian of Faith"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": "Commune, Flame Strike"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -23305,7 +23917,7 @@
       "name": "Level 3 Paladin Spells",
       "section_id": "346-6-31-paladin-spell-list",
       "page": 56,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -23323,9 +23935,113 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Create Food and Water"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Daylight"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dispel Magic"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Magic Circle"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Remove Curse"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Revivify"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -23333,7 +24049,7 @@
       "name": "Level 4 Paladin Spells",
       "section_id": "346-6-31-paladin-spell-list",
       "page": 56,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -23351,9 +24067,69 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Aura of Life"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Banishment"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Death Ward"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Creature"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -23361,7 +24137,7 @@
       "name": "Level 5 Paladin Spells",
       "section_id": "346-6-31-paladin-spell-list",
       "page": 56,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -23379,9 +24155,69 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Dispel Evil and Good"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Geas"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Greater Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Raise Dead"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
