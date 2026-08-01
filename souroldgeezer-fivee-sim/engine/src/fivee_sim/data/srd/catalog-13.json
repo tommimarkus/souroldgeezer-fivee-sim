@@ -447,8 +447,16 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Activating a Magic Item",
+        "usual_action": "Magic",
+        "may_require_special_steps": true,
+        "activation_defined_by": [
+          "item category description",
+          "individual item description"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -463,8 +471,20 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Command Word",
+        "form": [
+          "word",
+          "short phrase"
+        ],
+        "delivery": [
+          "spoken",
+          "signed"
+        ],
+        "spoken_word_must_be_audible": true,
+        "spoken_word_works_when_all_sound_suppressed": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -479,8 +499,16 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Consumable Items",
+        "consumed_on_activation": true,
+        "loses_magic_after_use": true,
+        "examples": {
+          "Potion of Healing": "swallowed",
+          "scroll": "writing vanishes when read"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -495,8 +523,32 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Spells Cast from Items",
+        "default_rules": {
+          "spell_level": "lowest possible",
+          "caster_level": "lowest possible",
+          "expends_user_spell_slots": false,
+          "components_required": false,
+          "casting_time": "spell normal",
+          "range": "spell normal",
+          "duration": "spell normal",
+          "concentration_required_when_spell_requires_it": true
+        },
+        "item_description_can_override_defaults": true,
+        "effect_only_items": {
+          "can_bypass_spellcasting": true,
+          "effect_duration": "spell usual duration",
+          "example_category": "Potions"
+        },
+        "item_may_require_user_spellcasting_ability": true,
+        "multiple_spellcasting_abilities": "user chooses",
+        "no_spellcasting_ability": {
+          "spellcasting_ability_modifier": 0,
+          "proficiency_bonus_applies": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1378-13-15-consumable-items"
     },
@@ -511,8 +563,16 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Charges",
+        "expended_to_activate_properties": true,
+        "remaining_charges_revealed_by": "Identify spell",
+        "attuned_creature_knows": [
+          "remaining charges",
+          "charges regained"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1378-13-15-consumable-items"
     },
@@ -527,8 +587,15 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "The Next Dawn",
+        "recharge_time": [
+          "next dawn",
+          "other specified time"
+        ],
+        "specified_event_absent": "GM determines recharge time"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -543,8 +610,15 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Cursed Items",
+        "curse_presence_specified_by": "item description",
+        "most_identification_methods_reveal_curse": false,
+        "identify_spell_reveals_curse": false,
+        "voluntary_attunement_end_requires": "curse broken first",
+        "example_curse_breaker": "Remove Curse spell"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -559,8 +633,24 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Magic Item Resilience",
+        "minimum_durability": "nonmagical item of same kind",
+        "most_items_resistance": "all damage",
+        "usual_resistance_exceptions": [
+          "Potions",
+          "Scrolls"
+        ],
+        "artifact": {
+          "normal_damage": "impervious",
+          "destroyed_only_by": "special method",
+          "method_discovery_usually_requires": [
+            "research",
+            "quest completion"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -575,8 +665,16 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Crafting Magic Items",
+        "special_equipment_rules": [
+          "brewing Potions of Healing",
+          "scribing Spell Scrolls"
+        ],
+        "following_rules_apply_to": "other magic items",
+        "second_person_reference": "character crafting item"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -591,8 +689,15 @@
       "pages": [
         206
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Arcana Proficiency",
+        "required_proficiency": "Arcana",
+        "required_for": [
+          "primary crafter",
+          "all assistants"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -608,8 +713,17 @@
         206,
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Tools",
+        "required_tool_by_category_reference": "Magic Item Tools table",
+        "required_tool_must_be_used": true,
+        "required_tool_proficiency_for": [
+          "primary crafter",
+          "all assistants"
+        ],
+        "related_term": "Equipment"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -624,8 +738,12 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Spells",
+        "when_item_casts_spells": "all item spells must be prepared",
+        "preparation_frequency": "every crafting day"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -640,8 +758,54 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Time and Cost",
+        "rarity_schedule": [
+          {
+            "rarity": "Common",
+            "time_days": 5,
+            "cost_gp": 50
+          },
+          {
+            "rarity": "Uncommon",
+            "time_days": 10,
+            "cost_gp": 200
+          },
+          {
+            "rarity": "Rare",
+            "time_days": 50,
+            "cost_gp": 2000
+          },
+          {
+            "rarity": "Very Rare",
+            "time_days": 125,
+            "cost_gp": 20000
+          },
+          {
+            "rarity": "Legendary",
+            "time_days": 250,
+            "cost_gp": 100000
+          }
+        ],
+        "consumable_other_than_spell_scroll_multiplier": {
+          "time": 0.5,
+          "cost": 0.5
+        },
+        "spell_scroll_schedule_reference": "Equipment",
+        "work_hours_per_crafting_day": 8,
+        "multiple_crafting_days_must_be_consecutive": false,
+        "assistant_time_formula": "base time divided by number of participating characters",
+        "usual_maximum_assistants": 1,
+        "gm_can_allow_more_assistants": true,
+        "listed_cost_represents": "raw materials",
+        "material_availability_percent": {
+          "city": 75,
+          "other settlement": 25
+        },
+        "minimum_days_before_rechecking_unavailable_materials": 7,
+        "incorporated_purchased_item": "pay full purchase cost in addition or craft it"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -656,8 +820,30 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Sentient Magic Items",
+        "traits": [
+          "sentience",
+          "personality"
+        ],
+        "possible_origins": [
+          "possessed",
+          "haunted by previous owner's spirit",
+          "magically self-aware"
+        ],
+        "most_common_item_category": "weapons",
+        "other_categories_can_be_sentient": true,
+        "never_sentient": [
+          "potions",
+          "scrolls",
+          "other single-use items"
+        ],
+        "controlled_by": "GM",
+        "gm_controls_activated_properties": true,
+        "good_relationship_effect": "bearer can access activated properties",
+        "strained_relationship_effect": "conflict can occur"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -672,8 +858,11 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Sentient Magic Item Traits",
+        "persona_creation_basis": "NPC creation with listed exceptions"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -688,8 +877,20 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Abilities",
+        "ability_scores": [
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "determination_methods": [
+          "choose",
+          "random"
+        ],
+        "random_formula_each_ability": "roll 4d6, drop lowest die, total remaining dice"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -704,8 +905,19 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Alignment",
+        "has_alignment": true,
+        "possible_guides": [
+          "creator",
+          "nature"
+        ],
+        "determination_methods": [
+          "choose",
+          "Sentient Item's Alignment table"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -720,8 +932,19 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Communication",
+        "modes": [
+          "share emotions",
+          "broadcast thoughts telepathically",
+          "speak aloud"
+        ],
+        "determination_methods": [
+          "choose",
+          "Sentient Item's Communication table"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -5205,30 +5428,84 @@
       "name": "Magic Item Rarities and Values",
       "section_id": "1375-13-12-magic-item-values-by-rarity",
       "page": 206,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "rarity",
+          "id": "left-rarity",
           "name": "Rarity",
           "type": "string"
         },
         {
-          "id": "value",
+          "id": "left-value",
           "name": "Value*",
-          "type": "integer"
+          "type": "string"
         },
         {
-          "id": "rarity-2",
+          "id": "right-rarity",
           "name": "Rarity",
           "type": "string"
         },
         {
-          "id": "value-2",
+          "id": "right-value",
           "name": "Value*",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Common"
+            },
+            {
+              "value": "100 GP",
+              "numeric_value": 100
+            },
+            {
+              "value": "Very Rare"
+            },
+            {
+              "value": "40,000 GP",
+              "numeric_value": 40000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Uncommon"
+            },
+            {
+              "value": "400 GP",
+              "numeric_value": 400
+            },
+            {
+              "value": "Legendary"
+            },
+            {
+              "value": "200,000 GP",
+              "numeric_value": 200000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rare"
+            },
+            {
+              "value": "4,000 GP",
+              "numeric_value": 4000
+            },
+            {
+              "value": "Artifact"
+            },
+            {
+              "value": "Priceless"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5238,7 +5515,7 @@
       "name": "Magic Item Crafting Time and Cost Magic Item Tools",
       "section_id": "1388-13-23-time-and-cost",
       "page": 207,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "item-category",
@@ -5251,7 +5528,98 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Armor"
+            },
+            {
+              "value": "Leatherworker's Tools, Smith's Tools, or Weaver's Tools depending on the kind of armor as noted in the tools' descriptions"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Potion"
+            },
+            {
+              "value": "Alchemist's Supplies or Herbalism Kit"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ring"
+            },
+            {
+              "value": "Jeweler's Tools"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rod"
+            },
+            {
+              "value": "Woodcarver's Tools"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Scroll"
+            },
+            {
+              "value": "Calligrapher's Supplies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Staff"
+            },
+            {
+              "value": "Woodcarver's Tools"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wand"
+            },
+            {
+              "value": "Woodcarver's Tools"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon"
+            },
+            {
+              "value": "Leatherworker's Tools, Smith's Tools, or Woodcarver's Tools depending on the kind of weapon as noted in the tools' descriptions"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wondrous Item"
+            },
+            {
+              "value": "Tinker's Tools or the tool required to make the nonmagical item on which the magic item is based"
+            }
+          ]
+        }
+      ],
       "source_row_count": 9,
       "omissions": [],
       "provenance": "SRD 5.2.1"
