@@ -136,8 +136,44 @@
         28,
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 1,
+        "activation_action": "Bonus Action",
+        "activation_requires_not_wearing": "Heavy armor",
+        "uses_by_level_table_id": "028-barbarian-features",
+        "short_rest_uses_recovered": 1,
+        "long_rest_uses_recovered": "all",
+        "damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "rage_damage_bonus_table_id": "028-barbarian-features",
+        "rage_damage_attack_ability": "Strength",
+        "rage_damage_attack_types": [
+          "weapon",
+          "Unarmed Strike"
+        ],
+        "rage_damage_requires_damage_dealt": true,
+        "strength_checks_have_advantage": true,
+        "strength_saving_throws_have_advantage": true,
+        "can_maintain_concentration": false,
+        "can_cast_spells": false,
+        "initial_duration": "until end of next turn",
+        "early_end_conditions": [
+          "don Heavy armor",
+          "Incapacitated"
+        ],
+        "extension_triggers": [
+          "attack roll against an enemy",
+          "force an enemy to make a saving throw",
+          "Bonus Action"
+        ],
+        "extended_duration": "until end of next turn",
+        "maximum_duration_minutes": 10
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -152,8 +188,14 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 1,
+        "requires_no_armor": true,
+        "base_armor_class_formula": "10 + Dexterity modifier + Constitution modifier",
+        "shield_allowed": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -168,8 +210,23 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 1,
+        "initial_weapon_choice_count": 2,
+        "eligible_weapon_categories": [
+          "Simple Melee",
+          "Martial Melee"
+        ],
+        "example_weapon_choices": [
+          "Greataxe",
+          "Handaxe"
+        ],
+        "mastery_properties_enabled_for_chosen_weapons": true,
+        "choices_by_level_table_id": "028-barbarian-features",
+        "long_rest_weapon_choices_changeable": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -184,8 +241,13 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 2,
+        "dexterity_saving_throws_have_advantage": true,
+        "disabled_condition": "Incapacitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -200,8 +262,14 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 2,
+        "decision_trigger": "first attack roll on own turn",
+        "strength_attack_rolls_have_advantage_until": "start of next turn",
+        "attack_rolls_against_self_have_advantage_until": "start of next turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -216,8 +284,15 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 3,
+        "selection": "Barbarian subclass",
+        "selection_count": 1,
+        "detailed_option": "Path of the Berserker",
+        "subclass_features_gained_at_or_below_barbarian_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -232,8 +307,21 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 3,
+        "additional_skill_proficiency_count": 1,
+        "skill_choice_source": "Barbarian level 1 skill list",
+        "rage_active_ability_check_substitution": "Strength",
+        "eligible_skills": [
+          "Acrobatics",
+          "Intimidation",
+          "Perception",
+          "Stealth",
+          "Survival"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -248,8 +336,22 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -264,8 +366,14 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 5,
+        "action": "Attack",
+        "attacks_per_action": 2,
+        "turn_restriction": "own turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -280,8 +388,13 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 5,
+        "speed_bonus_feet": 10,
+        "requires_not_wearing": "Heavy armor"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -296,8 +409,12 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 7,
+        "initiative_rolls_have_advantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -312,8 +429,13 @@
       "pages": [
         29
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 7,
+        "trigger": "Bonus Action to enter Rage",
+        "movement_distance_formula": "Speed / 2"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -329,8 +451,34 @@
         29,
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 9,
+        "requires_feature_use": "Reckless Attack",
+        "cost": "forgo Advantage on one Strength-based attack roll on own turn",
+        "chosen_attack_must_not_have_disadvantage": true,
+        "hit_extra_damage": "1d10",
+        "extra_damage_type": "weapon or Unarmed Strike damage type",
+        "effect_choice_count": 1,
+        "effect_options": [
+          {
+            "name": "Forceful Blow",
+            "target_push_feet": 15,
+            "target_push_direction": "straight away",
+            "self_followup_movement_formula": "Speed / 2",
+            "self_followup_movement_direction": "straight toward target",
+            "self_followup_movement_provokes_opportunity_attacks": false
+          },
+          {
+            "name": "Hamstring Blow",
+            "target_speed_reduction_feet": 15,
+            "duration": "until start of next turn",
+            "maximum_concurrent_effects_per_target": 1,
+            "replacement_rule": "most recent"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -345,8 +493,22 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 11,
+        "trigger_hit_points": 0,
+        "requires_rage_active": true,
+        "requires_not_dead_outright": true,
+        "saving_throw_ability": "Constitution",
+        "saving_throw_dc_formula": "10 + 5 * prior uses since last Short or Long Rest",
+        "success_hit_points_formula": "2 * Barbarian level",
+        "dc_reset_value": 10,
+        "dc_reset_rest_types": [
+          "Short Rest",
+          "Long Rest"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -361,8 +523,28 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 13,
+        "extends_feature": "Brutal Strike",
+        "added_effect_options": [
+          {
+            "name": "Staggering Blow",
+            "target_next_saving_throw_has_disadvantage": true,
+            "target_can_make_opportunity_attacks": false,
+            "opportunity_attack_restriction_duration": "until start of next turn"
+          },
+          {
+            "name": "Sundering Blow",
+            "eligible_attack_source": "another creature",
+            "eligible_attack_target": "Brutal Strike target",
+            "next_attack_roll_bonus": 5,
+            "trigger_deadline": "before start of next turn",
+            "maximum_sundering_bonuses_per_attack_roll": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -377,8 +559,22 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 15,
+        "rage_use_recovery_trigger": "roll Initiative",
+        "rage_uses_recovered": "all expended",
+        "rage_use_recovery_optional": true,
+        "rage_use_recovery_recharge": "Long Rest",
+        "rage_duration_minutes": 10,
+        "round_extension_required": false,
+        "early_end_conditions": [
+          "Unconscious",
+          "don Heavy armor"
+        ],
+        "incapacitated_alone_ends_rage": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -393,8 +589,14 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 17,
+        "extends_feature": "Brutal Strike",
+        "extra_damage": "2d10",
+        "different_effects_per_use": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -409,8 +611,18 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 18,
+        "eligible_rolls": [
+          "Strength check",
+          "Strength saving throw"
+        ],
+        "replacement_condition": "roll total < Strength score",
+        "replacement_value": "Strength score",
+        "replacement_optional": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -425,8 +637,17 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Irresistible Offense"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
@@ -441,8 +662,16 @@
       "pages": [
         30
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Barbarian",
+        "level": 20,
+        "ability_score_increases": {
+          "Strength": 4,
+          "Constitution": 4
+        },
+        "ability_score_maximum": 25
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "167-6-3-barbarian-class-features"
     },
