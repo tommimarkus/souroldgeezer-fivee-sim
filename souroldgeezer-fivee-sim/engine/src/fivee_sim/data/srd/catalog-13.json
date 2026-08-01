@@ -11052,8 +11052,24 @@
         249,
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Tome of Leadership and Influence",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "study": {
+          "hours": 48,
+          "maximum_period_days": 6,
+          "requires_practice": true
+        },
+        "ability_increase": {
+          "ability": "Charisma",
+          "increase": 2,
+          "maximum": 30
+        },
+        "magic_recovery_years": 100
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11068,8 +11084,24 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Tome of Understanding",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "study": {
+          "hours": 48,
+          "maximum_period_days": 6,
+          "requires_practice": true
+        },
+        "ability_increase": {
+          "ability": "Wisdom",
+          "increase": 2,
+          "maximum": 30
+        },
+        "magic_recovery_years": 100
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11084,8 +11116,26 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Trident of Fish Command",
+        "item_category": "Weapon",
+        "weapon_type": "Trident",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_carrying": true,
+          "spell": "Dominate Beast",
+          "save_dc": 15,
+          "charge_cost": 1,
+          "target": "Beast with a Swim Speed"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11100,8 +11150,22 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Universal Solvent",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "found_quantity_ounces": "1d6 + 1",
+        "use": {
+          "action": "Utilize",
+          "minimum_ounces": 1,
+          "target_distance": "within reach",
+          "adhesive_area_per_ounce_square_feet": 1,
+          "effect": "instant dissolution",
+          "includes": "Sovereign Glue"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11116,8 +11180,19 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Vicious Weapon",
+        "item_category": "Weapon",
+        "eligible_weapon_types": [
+          "Any Simple",
+          "Any Martial"
+        ],
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "on_hit_extra_damage": "2d6",
+        "extra_damage_type": "weapon's normal damage type"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11132,8 +11207,39 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Vorpal Sword",
+        "item_category": "Weapon",
+        "eligible_weapon_types": [
+          "Glaive",
+          "Greatsword",
+          "Longsword",
+          "Scimitar"
+        ],
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "attack_bonus": 3,
+        "damage_bonus": 3,
+        "ignores_resistance_to": "Slashing",
+        "attack_roll_20": {
+          "target_requirement": "creature with at least one head",
+          "effect": "one head removed",
+          "death_if_head_required": true,
+          "immune_if": [
+            "immune to Slashing damage",
+            "has no head",
+            "does not need a head",
+            "GM determines head is too large to remove"
+          ],
+          "immune_target_extra_slashing_damage": 30,
+          "legendary_resistance_option": {
+            "daily_use_cost": 1,
+            "prevents_head_loss": true,
+            "extra_slashing_damage": 30
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11148,8 +11254,28 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Binding",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "save_dc": 17,
+          "table_id": "250-spell-charge-cost"
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11164,8 +11290,41 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Enemy Detection",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "detection": {
+          "requires_holding": true,
+          "action": "Magic",
+          "charge_cost": 1,
+          "duration": "1 minute",
+          "range_feet": 60,
+          "target": "nearest creature Hostile to user",
+          "reveals": "direction",
+          "reveals_distance": false,
+          "detectable_states": [
+            "Invisible",
+            "ethereal",
+            "disguised",
+            "hidden",
+            "plain sight"
+          ],
+          "ends_if_not_held": true
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11180,8 +11339,28 @@
       "pages": [
         250
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Fear",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "save_dc": 15,
+          "table_id": "250-spell-cost"
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11197,8 +11376,33 @@
         250,
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Fireballs",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Fireball",
+          "save_dc": 15,
+          "maximum_charge_cost": 3,
+          "base_charge_cost": 1,
+          "base_spell_level": 3,
+          "spell_levels_per_additional_charge": 1
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11213,8 +11417,33 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Lightning Bolts",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Lightning Bolt",
+          "save_dc": 15,
+          "maximum_charge_cost": 3,
+          "base_charge_cost": 1,
+          "base_spell_level": 3,
+          "spell_levels_per_additional_charge": 1
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11229,8 +11458,23 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Magic Detection",
+        "item_category": "Wand",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Detect Magic",
+          "charge_cost": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11245,8 +11489,31 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Magic Missiles",
+        "item_category": "Wand",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Magic Missile",
+          "maximum_charge_cost": 3,
+          "base_charge_cost": 1,
+          "base_spell_level": 1,
+          "spell_levels_per_additional_charge": 1
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11261,8 +11528,38 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Paralysis",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "paralysis": {
+          "requires_holding": true,
+          "action": "Magic",
+          "charge_cost": 1,
+          "target": "one visible creature",
+          "range_feet": 60,
+          "save": {
+            "ability": "Constitution",
+            "dc": 15
+          },
+          "failed_save_condition": "Paralyzed",
+          "duration": "1 minute",
+          "repeat_save": "end of each target turn"
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11277,8 +11574,30 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Polymorph",
+        "item_category": "Wand",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Polymorph",
+          "save_dc": 15,
+          "charge_cost": 1
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11293,8 +11612,29 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Secrets",
+        "item_category": "Wand",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "detection": {
+          "requires_holding": true,
+          "action": "Magic",
+          "charge_cost": 1,
+          "detects": [
+            "secret door",
+            "trap"
+          ],
+          "range_feet": 60,
+          "result": "pulses and points at nearest detected feature"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11309,8 +11649,29 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of the War Mage, +1, +2, or +3",
+        "item_category": "Wand",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "variants": [
+          {
+            "rarity": "Uncommon",
+            "spell_attack_bonus": 1
+          },
+          {
+            "rarity": "Rare",
+            "spell_attack_bonus": 2
+          },
+          {
+            "rarity": "Very Rare",
+            "spell_attack_bonus": 3
+          }
+        ],
+        "requires_holding": true,
+        "ignores_cover_for_spell_attacks": "Half Cover"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11325,8 +11686,30 @@
       "pages": [
         251
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Wand of Web",
+        "item_category": "Wand",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "attunement_requirement": "Spellcaster",
+        "charges": {
+          "maximum": 7,
+          "recovery": "1d6 + 1",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "requires_holding": true,
+          "spell": "Web",
+          "save_dc": 13,
+          "charge_cost": 1
+        },
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1,
+          "result": "crumbles into ashes"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -16267,7 +16650,7 @@
       "name": "Spell / Charge Cost",
       "section_id": "1639-13-28-114-wand-of-binding",
       "page": 250,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -16280,7 +16663,28 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Hold Monster"
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hold Person"
+            },
+            {
+              "value": 2
+            }
+          ]
+        }
+      ],
       "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -16290,7 +16694,7 @@
       "name": "Spell / Cost",
       "section_id": "1641-13-28-116-wand-of-fear",
       "page": 250,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -16298,12 +16702,33 @@
           "type": "string"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "charge-cost",
+          "name": "Charge Cost",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Command (flee or grovel only)"
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fear (60-foot Cone)"
+            },
+            {
+              "value": 3
+            }
+          ]
+        }
+      ],
       "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
