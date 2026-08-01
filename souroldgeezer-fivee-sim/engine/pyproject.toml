@@ -1,6 +1,6 @@
 [project]
 name = "fivee-sim"
-version = "2026.8.18"
+version = "2026.8.19"
 description = "5E-compatible rules kernel and MCP server: seeded, deterministic combat resolution."
 requires-python = ">=3.11"
 dependencies = [
