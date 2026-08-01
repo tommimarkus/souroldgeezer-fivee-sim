@@ -2096,8 +2096,25 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "size_category_determines": "map_space_width",
+        "size_table_id": "014-creature-size-and-space",
+        "size_order_smallest_to_largest": [
+          "Tiny",
+          "Small",
+          "Medium",
+          "Large",
+          "Huge",
+          "Gargantuan"
+        ],
+        "space_functions": [
+          "effective_combat_control_area",
+          "effective_fighting_area"
+        ],
+        "character_size_source": "species",
+        "monster_size_source": "stat_block"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "069-4-31-movement-and-position"
     },
@@ -2112,8 +2129,46 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "pass_through_space_allowed_when": [
+          {
+            "relation": "ally"
+          },
+          {
+            "condition": "Incapacitated"
+          },
+          {
+            "creature_size": "Tiny"
+          },
+          {
+            "size_difference_categories": 2,
+            "directions": [
+              "larger",
+              "smaller"
+            ]
+          }
+        ],
+        "other_creature_space_is_difficult_terrain": true,
+        "difficult_terrain_exceptions": [
+          {
+            "other_creature_size": "Tiny"
+          },
+          {
+            "relation": "ally"
+          }
+        ],
+        "willing_move_end_in_occupied_space_allowed": false,
+        "shared_space_turn_end_condition": "Prone",
+        "shared_space_turn_end_exceptions": [
+          {
+            "self_size": "Tiny"
+          },
+          {
+            "self_size_relation_to_other": "larger"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "069-4-31-movement-and-position"
     },
@@ -2126,10 +2181,66 @@
       ],
       "chapter_id": "004-4-playing-the-game",
       "pages": [
-        14
+        14,
+        15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "attack_granting_activity_types": [
+          "Attack action",
+          "other actions",
+          "Bonus Actions",
+          "Reactions"
+        ],
+        "attack_form_examples": [
+          "Melee weapon",
+          "Ranged weapon",
+          "spell attack roll"
+        ],
+        "structure_step_count": 3,
+        "structure": [
+          {
+            "order": 1,
+            "name": "Choose a Target",
+            "range_requirement": "within_attack_range",
+            "target_types": [
+              "creature",
+              "object",
+              "location"
+            ]
+          },
+          {
+            "order": 2,
+            "name": "Determine Modifiers",
+            "game_master_determinations": [
+              "Cover",
+              "Advantage",
+              "Disadvantage"
+            ],
+            "additional_modifier_sources": [
+              "spells",
+              "special abilities",
+              "other effects"
+            ],
+            "additional_modifier_types": [
+              "penalty",
+              "bonus"
+            ]
+          },
+          {
+            "order": 3,
+            "name": "Resolve the Attack",
+            "resolution_roll": "attack roll",
+            "roll_reference": "Playing the Game",
+            "hit_default_result": "damage roll",
+            "hit_damage_exception_source": "particular_attack",
+            "special_effect_damage_relationships": [
+              "in_addition_to",
+              "instead_of"
+            ]
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2142,11 +2253,22 @@
       ],
       "chapter_id": "004-4-playing-the-game",
       "pages": [
-        14,
-        15
+        14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "unseen_target_attack_roll_modifier": "Disadvantage",
+        "unseen_target_modes": [
+          "guessed_location",
+          "heard_not_seen"
+        ],
+        "incorrect_target_location_result": "miss",
+        "target_cannot_see_attacker_modifier": "Advantage",
+        "hidden_attack_location_reveal_outcomes": [
+          "hit",
+          "miss"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "075-4-32-making-an-attack"
     },
@@ -2161,8 +2283,24 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "obstacle_examples": [
+          "walls",
+          "trees",
+          "creatures"
+        ],
+        "degree_count": 3,
+        "degrees_smallest_to_largest": [
+          "Half",
+          "Three-Quarters",
+          "Total"
+        ],
+        "degree_table_id": "015-cover",
+        "benefit_origin_relation": "opposite_side_of_cover",
+        "multiple_source_resolution": "most_protective_degree",
+        "degrees_stack": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2177,8 +2315,25 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_distance": "at_a_distance",
+        "delivery_modes": [
+          "fired_projectile",
+          "hurled_projectile"
+        ],
+        "delivery_examples": [
+          {
+            "mode": "fired_projectile",
+            "object": "bow"
+          },
+          {
+            "mode": "hurled_projectile",
+            "object": "axe"
+          }
+        ],
+        "spell_ranged_attacks_present": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2193,8 +2348,18 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_range_requirement": "within_specified_range",
+        "single_range_beyond_range_allowed": false,
+        "dual_range_example": "Longbow",
+        "dual_range_number_roles": {
+          "smaller": "normal_range",
+          "larger": "long_range"
+        },
+        "beyond_normal_range_modifier": "Disadvantage",
+        "beyond_long_range_allowed": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "078-4-34-ranged-attacks"
     },
@@ -2209,8 +2374,21 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "attack_roll_type": "ranged",
+        "attack_means": [
+          "weapon",
+          "spell",
+          "other"
+        ],
+        "close_combat_modifier": "Disadvantage",
+        "modifier_conditions_all": {
+          "enemy_distance_feet_max": 5,
+          "enemy_can_see_attacker": true,
+          "enemy_condition_excluded": "Incapacitated"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "078-4-34-ranged-attacks"
     },
@@ -2225,8 +2403,20 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_range_limit": "reach",
+        "typical_attack_forms": [
+          "handheld weapon",
+          "Unarmed Strike"
+        ],
+        "monster_body_part_examples": [
+          "claws",
+          "teeth",
+          "other body parts"
+        ],
+        "spell_melee_attacks_present": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2241,8 +2431,13 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "default_reach_feet": 5,
+        "default_melee_target_distance_feet_max": 5,
+        "greater_reach_allowed": true,
+        "greater_reach_source": "creature_description"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "081-4-35-melee-attacks"
     },
@@ -2257,8 +2452,37 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "avoidance_action": "Disengage",
+        "non_provoking_movement_modes": [
+          "Teleport",
+          "movement_without_own_movement_or_action_resources"
+        ],
+        "non_provoking_resource_nonuse": [
+          "movement",
+          "action",
+          "Bonus Action",
+          "Reaction"
+        ],
+        "non_provoking_movement_examples": [
+          "explosion_displacement",
+          "falling_past_enemy"
+        ],
+        "trigger": {
+          "creature_visibility": "visible",
+          "movement_relation": "leaves_reach"
+        },
+        "cost": "Reaction",
+        "attack_count": 1,
+        "attack_type": "melee",
+        "attack_options": [
+          "weapon",
+          "Unarmed Strike"
+        ],
+        "target": "triggering_creature",
+        "timing": "immediately_before_leaving_reach"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "081-4-35-melee-attacks"
     },
@@ -2273,8 +2497,14 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mount_requirements_all": {
+          "willing": true,
+          "minimum_size_categories_larger_than_rider": 1,
+          "anatomy": "appropriate"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -2289,8 +2519,18 @@
       "pages": [
         15
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "timing": "during_move",
+        "mount_distance_feet_max": 5,
+        "movement_cost_formula": "floor(Speed / 2)",
+        "movement_cost_rounding": "down",
+        "example": {
+          "speed_feet": 30,
+          "movement_cost_feet": 15,
+          "mount": "horse"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "084-4-36-mounted-combat"
     },
@@ -2305,8 +2545,32 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "control_requirement": "trained_to_accept_rider",
+        "trained_mount_examples": [
+          "domesticated horses",
+          "mules",
+          "similar creatures"
+        ],
+        "controlled_mount_initiative_change": "match_rider",
+        "initiative_change_timing": "when_mounted",
+        "controlled_mount_turn": "rider_turn",
+        "controlled_mount_direction_source": "rider",
+        "controlled_mount_action_option_count": 3,
+        "controlled_mount_action_options": [
+          "Dash",
+          "Disengage",
+          "Dodge"
+        ],
+        "controlled_mount_can_move_and_act_on_mounting_turn": true,
+        "independent_mount_definition": [
+          "permits_rider",
+          "ignores_rider_control"
+        ],
+        "independent_mount_initiative_change": "none",
+        "independent_mount_movement_and_action_control": "self"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "084-4-36-mounted-combat"
     },
@@ -2321,8 +2585,24 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "saving_throw": {
+          "ability": "Dexterity",
+          "dc": 10
+        },
+        "saving_throw_triggers": [
+          "effect_about_to_move_mount_against_its_will",
+          "mounted_rider_knocked_Prone",
+          "mount_knocked_Prone"
+        ],
+        "failure_results": {
+          "falls_off_mount": true,
+          "condition": "Prone",
+          "landing_space_occupancy": "unoccupied",
+          "landing_distance_from_mount_feet_max": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "084-4-36-mounted-combat"
     },
@@ -2337,7 +2617,7 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -2353,8 +2633,20 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "melee_weapon_attack_underwater": {
+          "modifier": "Disadvantage",
+          "conditions_all": {
+            "attacker_lacks": "Swim Speed",
+            "weapon_damage_type_not": "Piercing"
+          }
+        },
+        "ranged_weapon_attack_underwater": {
+          "beyond_normal_range_result": "automatic_miss",
+          "within_normal_range_modifier": "Disadvantage"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "088-4-37-underwater-combat"
     },
@@ -2369,8 +2661,13 @@
       "pages": [
         16
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "scope": "anything_underwater",
+        "damage_type": "Fire",
+        "damage_interaction": "Resistance",
+        "reference": "Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "088-4-37-underwater-combat"
     },
@@ -4340,7 +4637,7 @@
       "name": "Creature Size and Space",
       "section_id": "073-4-31-4-creature-size",
       "page": 14,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "size",
@@ -4358,7 +4655,98 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Tiny"
+            },
+            {
+              "value": "2½ by 2½ feet",
+              "numeric_value": 2.5
+            },
+            {
+              "value": "4 per square",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Small"
+            },
+            {
+              "value": "5 by 5 feet",
+              "numeric_value": 5
+            },
+            {
+              "value": "1 square",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium"
+            },
+            {
+              "value": "5 by 5 feet",
+              "numeric_value": 5
+            },
+            {
+              "value": "1 square",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Large"
+            },
+            {
+              "value": "10 by 10 feet",
+              "numeric_value": 10
+            },
+            {
+              "value": "4 squares (2 by 2)",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Huge"
+            },
+            {
+              "value": "15 by 15 feet",
+              "numeric_value": 15
+            },
+            {
+              "value": "9 squares (3 by 3)",
+              "numeric_value": 9
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gargantuan"
+            },
+            {
+              "value": "20 by 20 feet",
+              "numeric_value": 20
+            },
+            {
+              "value": "16 squares (4 by 4)",
+              "numeric_value": 16
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -4368,7 +4756,7 @@
       "name": "Cover",
       "section_id": "077-4-33-cover",
       "page": 15,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "degree",
@@ -4386,8 +4774,50 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 4,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Half"
+            },
+            {
+              "value": "+2 bonus to AC and Dexterity saving throws",
+              "numeric_value": 2
+            },
+            {
+              "value": "Another creature or an object that covers at least half of the target"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Three-Quarters"
+            },
+            {
+              "value": "+5 bonus to AC and Dexterity saving throws",
+              "numeric_value": 5
+            },
+            {
+              "value": "An object that covers at least three-quarters of the target"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Total"
+            },
+            {
+              "value": "Can't be targeted directly"
+            },
+            {
+              "value": "An object that covers the whole target"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     }
