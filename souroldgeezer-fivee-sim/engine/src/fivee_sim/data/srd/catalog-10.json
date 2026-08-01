@@ -8354,8 +8354,49 @@
       "pages": [
         131
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Find the Path",
+        "level": 6,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "set of divination tools, such as cards or runes",
+            "minimum_value_gp": 100
+          }
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 24
+        },
+        "effect": {
+          "destination_requirements": {
+            "named": true,
+            "familiar_to_caster": true,
+            "same_plane": true,
+            "stationary": true,
+            "specific": true
+          },
+          "reveals": [
+            "distance to destination",
+            "direction to destination",
+            "most direct path at each choice"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8370,8 +8411,38 @@
       "pages": [
         131
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Find Traps",
+        "level": 2,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "detects": "objects and mechanisms created to cause damage or danger",
+          "requires_line_of_sight": true,
+          "natural_hazards_detected": false,
+          "reveals_presence": true,
+          "reveals_location": false,
+          "reveals_general_danger": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8386,8 +8457,43 @@
       "pages": [
         131
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Finger of Death",
+        "level": 7,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one visible creature",
+          "saving_throw_ability": "Constitution",
+          "failed_save_damage": "7d8 + 30",
+          "successful_save_damage": "half",
+          "damage_type": "Necrotic",
+          "humanoid_killed": {
+            "rises_as": "Zombie",
+            "timing": "start of caster's next turn",
+            "follows_verbal_orders": true,
+            "stat_block_reference": "Monsters"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8402,8 +8508,46 @@
       "pages": [
         131
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fireball",
+        "level": 3,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "ball of bat guano and sulfur"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "chosen point"
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "8d6",
+          "successful_save_damage": "half",
+          "damage_type": "Fire",
+          "ignites_flammable_objects_not_worn_or_carried": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions",
       "content_ref": {
@@ -8422,8 +8566,41 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fire Bolt",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "creature or object",
+          "attack_roll": "ranged spell attack",
+          "hit_damage": "1d10",
+          "damage_type": "Fire",
+          "ignites_flammable_object_not_worn_or_carried": true,
+          "cantrip_upgrade": {
+            "5": "2d10",
+            "11": "3d10",
+            "17": "4d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8438,8 +8615,48 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fire Shield",
+        "level": 4,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of phosphorus or a firefly"
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "light": {
+            "bright_radius_feet": 10,
+            "additional_dim_radius_feet": 10
+          },
+          "shield_options": {
+            "warm": {
+              "resistance": "Cold",
+              "retaliation_damage": "2d8 Fire"
+            },
+            "chill": {
+              "resistance": "Fire",
+              "retaliation_damage": "2d8 Cold"
+            }
+          },
+          "retaliation_trigger": "creature within 5 feet hits caster with melee attack roll"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8454,8 +8671,42 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fire Storm",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "maximum_cube_count": 10,
+            "cube_size_feet": 10,
+            "cubes_must_be_contiguous": true
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "7d10",
+          "successful_save_damage": "half",
+          "damage_type": "Fire",
+          "ignites_flammable_objects_not_worn_or_carried": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8470,8 +8721,48 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Flame Blade",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "sumac leaf"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "requires_free_hand": true,
+          "disappears_when_released": true,
+          "reevoke_action": "Bonus Action",
+          "attack_action": "Magic",
+          "attack_roll": "melee spell attack",
+          "hit_damage": "3d6 + spellcasting ability modifier",
+          "damage_type": "Fire",
+          "light": {
+            "bright_radius_feet": 10,
+            "additional_dim_radius_feet": 10
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8486,8 +8777,50 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Flame Strike",
+        "level": 5,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pinch of sulfur"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Cylinder",
+            "radius_feet": 10,
+            "height_feet": 40,
+            "origin": "chosen point"
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": {
+            "Fire": "5d6",
+            "Radiant": "5d6"
+          },
+          "successful_save_damage": "half",
+          "higher_level_slot": {
+            "minimum_slot_level": 6,
+            "damage_increase_per_slot_level": {
+              "Fire": "1d6",
+              "Radiant": "1d6"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8502,8 +8835,60 @@
       "pages": [
         132
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Flaming Sphere",
+        "level": 2,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "ball of wax"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "sphere": {
+            "diameter_feet": 5,
+            "placement": "unoccupied ground space"
+          },
+          "end_turn_trigger_radius_feet": 5,
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "2d6",
+          "successful_save_damage": "half",
+          "damage_type": "Fire",
+          "move": {
+            "action": "Bonus Action",
+            "maximum_feet": 30,
+            "barrier_height_feet": 5,
+            "pit_width_feet": 10
+          },
+          "enter_creature_space_triggers_save": true,
+          "enter_creature_space_ends_movement": true,
+          "ignites_flammable_objects_not_worn_or_carried": true,
+          "light": {
+            "bright_radius_feet": 20,
+            "additional_dim_radius_feet": 20
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8518,8 +8903,45 @@
       "pages": [
         133
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Flesh to Stone",
+        "level": 6,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "cockatrice feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "one visible creature",
+          "saving_throw_ability": "Constitution",
+          "constructs_automatically_succeed": true,
+          "initial_failed_save_condition": "Restrained",
+          "initial_success_speed": 0,
+          "initial_success_ends": "start of caster's next turn",
+          "restrained_repeat_save_timing": "end of each target turn",
+          "successes_to_end_spell": 3,
+          "failures_to_petrify": 3,
+          "results_need_not_be_consecutive": true,
+          "full_duration_result": "Petrified until ended by Greater Restoration or similar magic"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8534,8 +8956,44 @@
       "pages": [
         133
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Floating Disk",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of mercury"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "disk": {
+            "diameter_feet": 3,
+            "thickness_inches": 1,
+            "height_above_ground_feet": 3,
+            "maximum_load_pounds": 500
+          },
+          "placement": "visible unoccupied space",
+          "overload_ends_spell": true,
+          "immobile_within_caster_distance_feet": 20,
+          "follow_distance_feet": 20,
+          "blocked_elevation_change_feet": 10,
+          "caster_distance_ending_spell_feet": 100
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8550,8 +9008,42 @@
       "pages": [
         133
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fly",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "target": "one willing creature",
+          "fly_speed_feet": 60,
+          "can_hover": true,
+          "falls_when_spell_ends_unless_fall_can_be_stopped": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8566,8 +9058,45 @@
       "pages": [
         133
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fog Cloud",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "chosen point"
+          },
+          "area_condition": "Heavily Obscured",
+          "strong_wind_dispels": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "radius_increase_feet_per_slot_level": 20
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8582,8 +9111,72 @@
       "pages": [
         133
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Forbiddance",
+        "level": 6,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "minutes": 10,
+          "ritual": true
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "ruby dust",
+            "minimum_value_gp": 1000,
+            "consumed_on_permanent_casting": true
+          }
+        },
+        "duration": {
+          "days": 1
+        },
+        "effect": {
+          "ward": {
+            "maximum_floor_area_square_feet": 40000,
+            "height_feet": 30
+          },
+          "blocks_entry_by": [
+            "teleportation",
+            "portals",
+            "Astral Plane",
+            "Ethereal Plane",
+            "Feywild",
+            "Shadowfell",
+            "Plane Shift"
+          ],
+          "damaged_creature_type_choices": [
+            "Aberration",
+            "Celestial",
+            "Elemental",
+            "Fey",
+            "Fiend",
+            "Undead"
+          ],
+          "damage_trigger": [
+            "first entry on a turn",
+            "ending a turn in area"
+          ],
+          "damage": "5d10",
+          "damage_type_choice": [
+            "Radiant",
+            "Necrotic"
+          ],
+          "password_prevents_damage": true,
+          "overlap_with_another_forbiddance_allowed": false,
+          "permanent_casting": {
+            "consecutive_daily_castings": 30,
+            "duration": "Until dispelled"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8598,8 +9191,60 @@
       "pages": [
         134
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Forcecage",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 100
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "ruby dust",
+            "minimum_value_gp": 1500,
+            "consumed": true
+          }
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "prison": {
+            "immobile": true,
+            "invisible": true,
+            "shape": "Cube"
+          },
+          "cage_option": {
+            "maximum_side_feet": 20,
+            "bar_diameter_inches": 0.5,
+            "bar_spacing_inches": 0.5
+          },
+          "box_option": {
+            "maximum_side_feet": 10,
+            "matter_passage_blocked": true,
+            "spell_passage_blocked": true
+          },
+          "fully_inside_creatures_trapped": true,
+          "partly_inside_or_too_large_creatures_pushed_out": true,
+          "nonmagical_escape_allowed": false,
+          "teleportation_or_interplanar_escape_save": "Charisma",
+          "failed_escape_save_wastes_spell_or_effect": true,
+          "extends_into_ethereal_plane": true,
+          "dispel_magic_can_end": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8614,8 +9259,38 @@
       "pages": [
         134
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Foresight",
+        "level": 9,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "hummingbird feather"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "target": "one willing creature",
+          "target_advantage_on": "D20 Tests",
+          "attacks_against_target_have_disadvantage": true,
+          "recasting_ends_previous_spell": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8630,8 +9305,48 @@
       "pages": [
         134
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Freedom of Movement",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "leather strap"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "one willing creature",
+          "difficult_terrain_ignored": true,
+          "magical_speed_reduction_prevented": true,
+          "magical_paralyzed_condition_prevented": true,
+          "magical_restrained_condition_prevented": true,
+          "swim_speed": "equal to Speed",
+          "nonmagical_restraint_escape": {
+            "movement_cost_feet": 5,
+            "automatic": true
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8646,8 +9361,62 @@
       "pages": [
         134
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Freezing Sphere",
+        "level": 6,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 300
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "miniature crystal sphere"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 60,
+            "origin": "chosen point"
+          },
+          "saving_throw_ability": "Constitution",
+          "failed_save_damage": "10d6",
+          "successful_save_damage": "half",
+          "damage_type": "Cold",
+          "water_freezing": {
+            "depth_inches": 6,
+            "area_square_feet": 900,
+            "duration_minutes": 1,
+            "surface_swimmers_condition": "Restrained",
+            "escape_action": "Action",
+            "escape_check": "Strength (Athletics)",
+            "escape_dc": "spell save DC"
+          },
+          "delayed_globe": {
+            "optional": true,
+            "throw_range_feet": 40,
+            "sling_range": "normal",
+            "maximum_delay_minutes": 1,
+            "explodes_on_impact": true,
+            "explodes_at_delay_end": true
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -8663,8 +9432,68 @@
         134,
         135
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Gaseous Form",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of gauze"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "one willing creature and worn or carried equipment",
+          "form": "misty cloud",
+          "target_can_end_with_magic_action": true,
+          "ends_at_zero_hit_points": true,
+          "only_movement": {
+            "type": "Fly",
+            "speed_feet": 10,
+            "can_hover": true
+          },
+          "can_occupy_other_creature_space": true,
+          "damage_resistances": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ],
+          "condition_immunity": [
+            "Prone"
+          ],
+          "saving_throw_advantage": [
+            "Strength",
+            "Dexterity",
+            "Constitution"
+          ],
+          "can_pass_through_narrow_openings": true,
+          "liquids_treated_as_solid": true,
+          "can_talk": false,
+          "can_manipulate_objects": false,
+          "carried_or_held_objects_interactable": false,
+          "can_attack": false,
+          "can_cast_spells": false,
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
