@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # Tests for the venv freshness decision in fivee-sim-mcp.sh.
 #
-# The launcher straddles two directories with different lifetimes:
-# The plugin root is replaced per version, while the host's plugin-data directory
-# — where the launcher puts the venv — is durable. Because `uv sync` installs the
-# engine editable, the venv pins a version-specific source path, so an upgrade
-# leaves a venv that works perfectly and answers from the *previous* version.
-# The cases below are mostly about that: what the launcher must notice, and what
-# it must not waste a process on.
+# The launcher straddles two directories with different lifetimes: the plugin
+# root can be replaced while a host's plugin-data directory is durable. A
+# host-managed launch therefore gets a content-addressed, non-editable runtime
+# copy and a stable cwd. Explicit development venvs retain the older freshness
+# stamp semantics. The cases below pin both paths and their concurrency rules.
 #
 # Hermetic and offline. Each case plants a throwaway plugin root and drives the
 # real launcher against a fake `uv` that materialises just enough of a venv for
@@ -61,10 +59,22 @@ while [ $# -gt 0 ]; do
 done
 project="$(cd "$project" && pwd)"
 mkdir -p "${UV_PROJECT_ENVIRONMENT:?}/bin"
+printf '%s\n' "$project" > "$UV_PROJECT_ENVIRONMENT/runtime-engine"
 {
   printf '#!/bin/sh\n'
   printf 'printf "launch=%%s\\n" "$$" >> "${SERVER_LOG:-/dev/null}"\n'
-  printf 'echo engine=%s\n' "$project"
+  printf 'if [ -n "${SERVER_PROBE_READY:-}" ]; then\n'
+  printf '  : > "$SERVER_PROBE_READY"\n'
+  printf '  while IFS= read -r command; do\n'
+  printf '    case "$command" in\n'
+  printf '      cwd) if location="$(/bin/pwd -P 2>/dev/null)"; then echo "cwd=$location"; else echo cwd-error; fi ;;\n'
+  printf '      engine) printf "engine="; cat "$(dirname "$0")/../runtime-engine" ;;\n'
+  printf '      stop) exit 0 ;;\n'
+  printf '    esac\n'
+  printf '  done\n'
+  printf 'else\n'
+  printf '  printf "engine="; cat "$(dirname "$0")/../runtime-engine"\n'
+  printf 'fi\n'
 } > "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
 chmod +x "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
 FAKE_UV
@@ -90,7 +100,7 @@ fi
 # --- harness --------------------------------------------------------------
 plant() { # plant <label> — a throwaway plugin root at $tmp/<label>
   local root="$tmp/$1"
-  mkdir -p "$root/scripts" "$root/engine"
+  mkdir -p "$root/scripts" "$root/engine/src"
   cp "$launcher" "$root/scripts/fivee-sim-mcp.sh"
   printf '[project]\nname = "fivee-sim"\nversion = "0.0.0"\n' > "$root/engine/pyproject.toml"
   printf 'version = 1\nrequires-python = ">=3.11"\n' > "$root/engine/uv.lock"
@@ -187,6 +197,11 @@ wait_for_text() { # wait_for_text <path> <literal>
   return 1
 }
 
+runtime_server() { # runtime_server <plugin-data>
+  find "$1/venvs" -mindepth 3 -maxdepth 3 -type f \
+    -path '*/bin/fivee-sim-mcp' -print -quit 2>/dev/null
+}
+
 mkdir -p "$tmp/venvs"
 V1="$(plant v1)"
 V2="$(plant v2)"
@@ -197,10 +212,10 @@ launch_with_host_data v1 PLUGIN_DATA="$codex_data"
 want_rc    "Codex plugin data builds successfully" 0
 want_syncs "Codex plugin data syncs once" 1
 want_uv_args "Codex plugin data owns the uv cache" "cache=$codex_data/uv-cache"
-if [ -x "$codex_data/venv/bin/fivee-sim-mcp" ]; then
+if [ -x "$(runtime_server "$codex_data")" ]; then
   report 0 "Codex plugin data owns the venv" ""
 else
-  report 1 "Codex plugin data owns the venv" "missing: $codex_data/venv/bin/fivee-sim-mcp"
+  report 1 "Codex plugin data owns the venv" "no immutable runtime under: $codex_data/venvs"
 fi
 
 claude_data="$tmp/claude-data"
@@ -208,10 +223,10 @@ launch_with_host_data v1 CLAUDE_PLUGIN_DATA="$claude_data"
 want_rc    "Claude plugin data still builds successfully" 0
 want_syncs "Claude plugin data still syncs once" 1
 want_uv_args "Claude plugin data owns the uv cache" "cache=$claude_data/uv-cache"
-if [ -x "$claude_data/venv/bin/fivee-sim-mcp" ]; then
+if [ -x "$(runtime_server "$claude_data")" ]; then
   report 0 "Claude plugin data owns the venv" ""
 else
-  report 1 "Claude plugin data owns the venv" "missing: $claude_data/venv/bin/fivee-sim-mcp"
+  report 1 "Claude plugin data owns the venv" "no immutable runtime under: $claude_data/venvs"
 fi
 
 preferred_data="$tmp/preferred-data"
@@ -219,7 +234,7 @@ fallback_data="$tmp/fallback-data"
 launch_with_host_data v1 \
   PLUGIN_DATA="$preferred_data" CLAUDE_PLUGIN_DATA="$fallback_data"
 want_rc "Codex data wins when both host variables exist" 0
-if [ -x "$preferred_data/venv/bin/fivee-sim-mcp" ] && [ ! -e "$fallback_data/venv" ]; then
+if [ -x "$(runtime_server "$preferred_data")" ] && [ ! -e "$fallback_data/venvs" ]; then
   report 0 "Codex data precedes the Claude fallback" ""
 else
   report 1 "Codex data precedes the Claude fallback" \
@@ -253,7 +268,8 @@ launch_with_host_data codex-cache-v1 \
 want_rc    "Codex fallback storage builds successfully" 0
 want_syncs "Codex fallback storage syncs once" 1
 want_uv_args "Codex fallback owns the uv cache" "cache=$codex_runtime/uv-cache"
-if [ -x "$codex_runtime/venv/bin/fivee-sim-mcp" ] && \
+want_uv_args "Codex installs an independent runtime copy" "--no-editable"
+if [ -x "$(runtime_server "$codex_runtime")" ] && \
     [ ! -e "$CODEX_V1/engine/.venv" ]; then
   report 0 "Codex runtime storage is outside the plugin cache" ""
 else
@@ -261,16 +277,72 @@ else
     "durable venv missing or cache-local venv unexpectedly created"
 fi
 
+# The server must leave the replaceable plugin root before exec. Codex can
+# retire that root when another session refreshes the plugin cache; the first
+# process still has a live fight and must be able to resolve durable paths.
+live_codex_home="$tmp/live-codex-home"
+live_codex_data="$live_codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
+LIVE_CODEX_ROOT="$(plant codex-live-root)"
+live_commands="$tmp/live-codex-commands"
+live_ready="$tmp/live-codex-ready"
+live_out="$tmp/live-codex.out"
+mkfifo "$live_commands"
+exec 9<> "$live_commands"
+(
+  cd "$LIVE_CODEX_ROOT" || exit 1
+  env -u UV_PROJECT_ENVIRONMENT -u UV_CACHE_DIR \
+    -u PLUGIN_DATA -u CLAUDE_PLUGIN_DATA \
+    PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" \
+    FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$live_codex_home" \
+    SERVER_PROBE_READY="$live_ready" \
+    bash scripts/fivee-sim-mcp.sh < "$live_commands"
+) > "$live_out" 2> "$tmp/live-codex.err" &
+live_pid=$!
+if wait_for_path "$live_ready"; then
+  rm -rf "$LIVE_CODEX_ROOT"
+  LIVE_CODEX_REPLACEMENT="$(plant codex-live-replacement)"
+  printf '[project]\nname = "fivee-sim"\nversion = "0.0.1"\n' \
+    > "$LIVE_CODEX_REPLACEMENT/engine/pyproject.toml"
+  launch_with_host_data codex-live-replacement \
+    FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$live_codex_home"
+  printf 'engine\n' >&9
+  if wait_for_text "$live_out" "engine=$LIVE_CODEX_ROOT/engine"; then
+    report 0 "a newer session cannot mutate a live server runtime" ""
+  else
+    report 1 "a newer session cannot mutate a live server runtime" \
+      "stdout: $(cat "$live_out")
+replacement stderr: ${err:-<empty>}"
+  fi
+  printf 'cwd\n' >&9
+  if wait_for_text "$live_out" "cwd=$live_codex_data"; then
+    report 0 "a live server survives replacement of its plugin root" ""
+  else
+    report 1 "a live server survives replacement of its plugin root" \
+      "stdout: $(cat "$live_out")
+stderr: $(cat "$tmp/live-codex.err")"
+  fi
+  printf 'stop\n' >&9
+  wait "$live_pid" || true
+else
+  report 1 "a live server survives replacement of its plugin root" \
+    "server did not become ready: $(cat "$tmp/live-codex.err")"
+  kill "$live_pid" 2>/dev/null || true
+  wait "$live_pid" 2>/dev/null || true
+fi
+exec 9>&-
+
 # Removing the whole plugin root must leave runtime state intact. A replacement
 # version then refreshes that same durable environment from its new engine.
 rm -rf "$CODEX_V1"
-if [ -x "$codex_runtime/venv/bin/fivee-sim-mcp" ]; then
+if [ -x "$(runtime_server "$codex_runtime")" ]; then
   report 0 "Codex runtime survives plugin-root replacement" ""
 else
   report 1 "Codex runtime survives plugin-root replacement" \
     "durable venv disappeared with the plugin root"
 fi
 CODEX_V2="$(plant codex-cache-v2)"
+printf '[project]\nname = "fivee-sim"\nversion = "0.0.1"\n' \
+  > "$CODEX_V2/engine/pyproject.toml"
 launch_with_host_data codex-cache-v2 \
   FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$codex_home"
 want_rc     "replacement plugin root starts successfully" 0
@@ -282,7 +354,7 @@ launch_with_host_data v1 \
   FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$tmp/ignored-codex-home" \
   CLAUDE_PLUGIN_DATA="$codex_claude_data"
 want_rc "Claude plugin data still precedes the Codex fallback" 0
-if [ -x "$codex_claude_data/venv/bin/fivee-sim-mcp" ] && \
+if [ -x "$(runtime_server "$codex_claude_data")" ] && \
     [ ! -e "$tmp/ignored-codex-home/plugin-data" ]; then
   report 0 "host plugin data precedes the Codex fallback" ""
 else
@@ -326,8 +398,8 @@ fi
 rm -rf "$warm_lock"
 
 # --- upgrade: the reported bug --------------------------------------------
-# Same durable venv, engine now at a different path. The old console script is
-# still perfectly executable and its interpreter still resolves, so a
+# Explicit development venv, engine now at a different path. The old console
+# script is still perfectly executable and its interpreter still resolves, so a
 # usability check alone sees nothing wrong and serves the previous version.
 launch v2 upgrade
 want_rc     "after an upgrade the launcher exits 0" 0

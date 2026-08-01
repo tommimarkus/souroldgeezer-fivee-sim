@@ -394,31 +394,32 @@ that exists and looks executable but cannot start — this bit the rename to
 still resolves, and rebuilds. If you relocate the repo and something behaves
 oddly, `rm -rf` the venv rather than debugging it.
 
-**A venv also outlives the engine it was built from**, and that failure is quiet
-rather than loud. The launcher puts the venv in the active host's durable plugin
-data directory. Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex's
+**A host-managed runtime must outlive the plugin root without outliving its own
+engine build.** Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex's
 bundled MCP children do not currently receive `${PLUGIN_DATA}`, so `.mcp.json`
 marks the host and the launcher derives Codex's plugin-data location from
 `${CODEX_HOME}` (or `${HOME}/.codex`); an explicit host variable still wins.
-Meanwhile the installed plugin root changes by version — and `uv sync` installs
-the engine *editable*, so the venv pins one version's `src`. After an upgrade
-every file the portability check looks at is still perfectly valid, the previous
-version is still on disk because installs are retained per version, and the
-server starts cleanly and answers from the old engine. It reached users: an
-engine several releases behind, against skills and tool descriptions loaded
-fresh from the new install.
+The installed plugin root can disappear when another session refreshes the host
+cache, so host-managed environments live at
+`$plugin_data/venvs/<engine-build-id>` and are installed with `--no-editable`.
+The build identity covers `pyproject.toml`, `uv.lock`, and every shipped source
+file. A new build is created beside old ones rather than refreshing a venv that a
+live server still uses. Old runtimes are deliberately retained: the launcher
+cannot know which other host process still owns one.
 
-So the launcher records what it built from in `$venv/.fivee-sim-build-stamp` — the
-engine's absolute path, plus `cksum` of `pyproject.toml` and `uv.lock` to catch what
-changes in place in a checkout that never moves — and re-syncs on a mismatch. Stale
-and unable to rebuild is a refusal to start, not a fall back to the old engine: a
-wrong answer from a server that owns authoritative state is worse than a dead one.
+Before exec the launcher also changes into the durable plugin-data directory.
+That is load-bearing: maps and encounter journals may resolve a default from
+`Path.cwd()` at tool time, and a process left inside a retired plugin cache would
+otherwise turn its next journal append into raw `ENOENT`. Explicit project-root,
+content, map, and encounter environment variables continue to win.
 
-The durable directory is shared by sessions, so every cold build or refresh is
-guarded by an atomic sibling-directory lock. Only the lock owner may mutate the
-venv; a waiter rechecks freshness after acquiring it, dead owners are reclaimed,
-and handled termination releases it. The warm path does not inspect the lock at
-all, preserving the one-process startup this launcher is designed around.
+Every cold build of the same identity is guarded by an atomic sibling-directory
+lock. Only the lock owner may mutate that venv; a waiter rechecks freshness after
+acquiring it, dead owners are reclaimed, and handled termination releases it.
+Different builds use different environments and locks, so they cannot rewrite one
+another. The warm path does not inspect the lock at all, preserving the one-process
+startup this launcher is designed around. Explicit/development environments keep
+the path-and-input build stamp and fail closed if a stale runtime cannot rebuild.
 
 `bash scripts/test-launcher-freshness.sh` pins those decisions against a fake `uv`.
 Keep the warm-path cases green in particular — an unconditional `uv sync` would fix

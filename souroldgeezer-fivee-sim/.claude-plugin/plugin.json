@@ -9,11 +9,7 @@
   "license": "MIT",
   "mcpServers": {
     "fivee_sim": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/fivee-sim-mcp.sh",
-      "env": {
-        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/venv",
-        "UV_CACHE_DIR": "${CLAUDE_PLUGIN_DATA}/uv-cache"
-      }
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/fivee-sim-mcp.sh"
     }
   }
 }
