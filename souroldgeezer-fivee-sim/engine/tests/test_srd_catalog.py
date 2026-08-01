@@ -93,6 +93,17 @@ def test_bundled_catalog_progress_obeys_the_fact_lifecycle() -> None:
             assert not table.rows
 
 
+def test_trinkets_d100_keys_preserve_printed_boundaries_and_numeric_rolls() -> None:
+    table = builtin_registry().catalog_tables["026-trinkets"]
+    key_cells = [row.cells[0] for row in table.rows]
+
+    assert [cell.value for cell in key_cells] == [
+        *(f"{roll:02d}" for roll in range(1, 100)),
+        "00",
+    ]
+    assert [cell.numeric_value for cell in key_cells] == list(range(1, 101))
+
+
 def test_bundled_catalog_is_facts_only_and_record_bounded() -> None:
     registry = builtin_registry()
     prose_keys = {"body", "description", "flavor", "rules", "text"}
