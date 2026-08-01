@@ -8480,8 +8480,44 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Investment of the Chain Master",
+        "minimum_warlock_level": 5,
+        "required_invocation": "Pact of the Chain",
+        "trigger_spell": "Find Familiar",
+        "familiar_benefits": {
+          "movement": {
+            "choice": [
+              "Fly Speed",
+              "Swim Speed"
+            ],
+            "speed_feet": 40
+          },
+          "attack_command": {
+            "activation_action": "Bonus Action",
+            "familiar_action": "Attack"
+          },
+          "damage_type_replacement": {
+            "eligible_types": [
+              "Bludgeoning",
+              "Piercing",
+              "Slashing"
+            ],
+            "replacement_types": [
+              "Necrotic",
+              "Radiant"
+            ]
+          },
+          "saving_throw_dc": "Warlock spell save DC",
+          "damage_resistance": {
+            "trigger": "familiar takes damage",
+            "activation_action": "Reaction",
+            "applies_to": "triggering damage"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8496,8 +8532,16 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Lessons of the First Ones",
+        "minimum_warlock_level": 2,
+        "feat_type": "Origin",
+        "selection_count": 1,
+        "repeatable": true,
+        "repeated_selection_must_differ": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8512,8 +8556,26 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Lifedrinker",
+        "minimum_warlock_level": 9,
+        "required_invocation": "Pact of the Blade",
+        "frequency": "once per turn",
+        "trigger": "hit with pact weapon",
+        "extra_damage": "1d6",
+        "extra_damage_type_options": [
+          "Necrotic",
+          "Psychic",
+          "Radiant"
+        ],
+        "healing": {
+          "hit_point_dice_expended": 1,
+          "healing_formula": "Hit Point Die roll + Constitution modifier",
+          "minimum_hit_points": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8528,8 +8590,14 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Mask of Many Faces",
+        "minimum_warlock_level": 2,
+        "spell": "Disguise Self",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8544,8 +8612,14 @@
       "pages": [
         73
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Master of Myriad Forms",
+        "minimum_warlock_level": 5,
+        "spell": "Alter Self",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8560,8 +8634,14 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Misty Visions",
+        "minimum_warlock_level": 2,
+        "spell": "Silent Image",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8576,8 +8656,19 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "One with Shadows",
+        "minimum_warlock_level": 5,
+        "required_light_conditions": [
+          "Dim Light",
+          "Darkness"
+        ],
+        "spell": "Invisibility",
+        "target": "self",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8592,8 +8683,15 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Otherworldly Leap",
+        "minimum_warlock_level": 2,
+        "spell": "Jump",
+        "target": "self",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8608,8 +8706,45 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Pact of the Blade",
+        "activation_action": "Bonus Action",
+        "bond_options": [
+          "conjured weapon",
+          "touched magic weapon"
+        ],
+        "conjured_weapon_categories": [
+          "Simple Melee weapon",
+          "Martial Melee weapon"
+        ],
+        "magic_weapon_bond_blocked_if": [
+          "another creature is attuned",
+          "another Warlock is bonded"
+        ],
+        "bonded_weapon_benefits": {
+          "proficiency": true,
+          "spellcasting_focus": true,
+          "attack_and_damage_ability_options": [
+            "Charisma",
+            "Strength",
+            "Dexterity"
+          ],
+          "damage_type_options": [
+            "normal",
+            "Necrotic",
+            "Psychic",
+            "Radiant"
+          ]
+        },
+        "bond_end_conditions": [
+          "use feature Bonus Action again",
+          "weapon more than 5 feet away for at least 1 minute",
+          "Warlock dies"
+        ],
+        "conjured_weapon_disappears_when_bond_ends": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8624,8 +8759,31 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Pact of the Chain",
+        "learned_spell": "Find Familiar",
+        "free_cast": {
+          "activation_action": "Magic action",
+          "spell_slot_expended": false
+        },
+        "special_familiar_forms": [
+          "Imp",
+          "Pseudodragon",
+          "Quasit",
+          "Skeleton",
+          "Sphinx of Wonder",
+          "Sprite",
+          "Venomous Snake"
+        ],
+        "familiar_attack": {
+          "trigger_action": "Attack",
+          "warlock_attacks_forgone": 1,
+          "familiar_attacks": 1,
+          "familiar_action": "Reaction"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8640,8 +8798,35 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Pact of the Tome",
+        "conjuration_timing": [
+          "end of Short Rest",
+          "end of Long Rest"
+        ],
+        "conjured_item": "Book of Shadows",
+        "book_disappears_when": [
+          "another book is conjured",
+          "Warlock dies"
+        ],
+        "spell_selections": {
+          "cantrips": {
+            "count": 3,
+            "spell_lists": "any class",
+            "must_not_already_be_prepared": true
+          },
+          "level_1_ritual_spells": {
+            "count": 2,
+            "spell_lists": "any class",
+            "must_not_already_be_prepared": true
+          }
+        },
+        "selected_spells_prepared_while_book_carried": true,
+        "selected_spells_count_as_warlock_spells": true,
+        "book_is_spellcasting_focus": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8656,8 +8841,24 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Repelling Blast",
+        "minimum_warlock_level": 2,
+        "eligible_cantrip": {
+          "class": "Warlock",
+          "known": true,
+          "deals_damage": true,
+          "requires_attack_roll": true
+        },
+        "trigger": "eligible cantrip hits",
+        "maximum_target_size": "Large",
+        "push_distance_feet_maximum": 10,
+        "push_direction": "straight away",
+        "repeatable": true,
+        "repeated_selection_must_differ": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8672,8 +8873,18 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Thirsting Blade",
+        "minimum_warlock_level": 5,
+        "required_invocation": "Pact of the Blade",
+        "feature": "Extra Attack",
+        "eligible_weapon": "pact weapon",
+        "attacks_with_weapon": 2,
+        "trigger_action": "Attack",
+        "timing": "own turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8688,8 +8899,14 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Visions of Distant Realms",
+        "minimum_warlock_level": 9,
+        "spell": "Arcane Eye",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8704,8 +8921,14 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Whispers of the Grave",
+        "minimum_warlock_level": 7,
+        "spell": "Speak with Dead",
+        "spell_slot_expended": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8720,8 +8943,14 @@
       "pages": [
         74
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "invocation": "Witch Sight",
+        "minimum_warlock_level": 15,
+        "sense": "Truesight",
+        "range_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "458-6-51-eldritch-invocation-options"
     },
@@ -8738,8 +8967,33 @@
         75,
         76
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Warlock",
+        "spell_level_minimum": 0,
+        "spell_level_maximum": 9,
+        "ordering": [
+          "spell level",
+          "alphabetical"
+        ],
+        "special_codes": {
+          "C": "Concentration",
+          "R": "Ritual",
+          "M": "specific Material component"
+        },
+        "spell_tables_by_level": {
+          "0": "075-cantrips-level-0-warlock-spells",
+          "1": "075-level-1-warlock-spells",
+          "2": "075-level-2-warlock-spells",
+          "3": "075-level-3-warlock-spells",
+          "4": "075-level-4-warlock-spells",
+          "5": "075-level-5-warlock-spells",
+          "6": "075-level-6-warlock-spells",
+          "7": "075-level-7-warlock-spells",
+          "8": "076-level-8-warlock-spells-fiend-spells",
+          "9": "076-level-9-warlock-spells"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -33655,7 +33909,7 @@
       "name": "Cantrips (Level 0 Warlock Spells)",
       "section_id": "487-6-52-warlock-spell-list",
       "page": 75,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -33673,9 +33927,144 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Chill Touch"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Eldritch Blast"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mage Hand"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Minor Illusion"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poison Spray"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Prestidigitation"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "True Strike"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -33683,7 +34072,7 @@
       "name": "Level 4 Warlock Spells",
       "section_id": "487-6-52-warlock-spell-list",
       "page": 75,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -33701,9 +34090,100 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Banishment"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Blight"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charm Monster"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dimension Door"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hallucinatory Terrain"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -33711,7 +34191,7 @@
       "name": "Level 1 Warlock Spells",
       "section_id": "487-6-52-warlock-spell-list",
       "page": 75,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -33729,9 +34209,179 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Bane"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charm Person"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Comprehend Languages"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Expeditious Retreat"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hellish Rebuke"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hex"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hideous Laughter"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Illusory Script"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "R, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Evil and Good"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Speak with Animals"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Unseen Servant"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
