@@ -5760,8 +5760,12 @@
       "pages": [
         59
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "level": 18,
+        "blindsight_range_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "357-6-35-ranger-class-features"
     },
@@ -5776,8 +5780,17 @@
       "pages": [
         59
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "recommended_feat": "Boon of Dimensional Travel",
+        "selection_count": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "357-6-35-ranger-class-features"
     },
@@ -5792,8 +5805,14 @@
       "pages": [
         59
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "level": 20,
+        "spell": "Hunter’s Mark",
+        "damage_die": "d10",
+        "replaces_damage_die": "d6"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "357-6-35-ranger-class-features"
     },
@@ -5808,8 +5827,34 @@
       "pages": [
         60
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "spell_level_minimum": 1,
+        "spell_level_maximum": 5,
+        "ordering": [
+          "spell level",
+          "alphabetical"
+        ],
+        "special_codes": {
+          "C": "Concentration",
+          "R": "Ritual",
+          "M": "specific Material component"
+        },
+        "spell_tables_by_level": {
+          "1": "060-level-1-ranger-spells",
+          "2": "060-level-5-ranger-spells-level-2-ranger-spells",
+          "3": "060-level-3-ranger-spells",
+          "4": "060-level-4-ranger-spells",
+          "5": "060-level-5-ranger-spells-level-2-ranger-spells"
+        },
+        "grouped_table_levels": {
+          "060-level-5-ranger-spells-level-2-ranger-spells": [
+            2,
+            5
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -5824,7 +5869,7 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -5840,8 +5885,19 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "subclass": "Hunter",
+        "level": 3,
+        "target_requirement": "marked by Hunter’s Mark",
+        "revealed_defenses": [
+          "Immunities",
+          "Resistances",
+          "Vulnerabilities"
+        ],
+        "reveals_defense_details": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "376-6-37-ranger-subclass-hunter"
     },
@@ -5856,8 +5912,35 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "subclass": "Hunter",
+        "level": 3,
+        "option_choice_count": 1,
+        "option_change_recovery": [
+          "Short Rest",
+          "Long Rest"
+        ],
+        "options": {
+          "Colossus Slayer": {
+            "trigger": "weapon hit",
+            "target_requires_missing_hit_points": true,
+            "extra_damage": "1d8",
+            "frequency": "once per turn"
+          },
+          "Horde Breaker": {
+            "frequency": "once on each own turn",
+            "trigger": "weapon attack",
+            "additional_attack_count": 1,
+            "uses_same_weapon": true,
+            "requires_different_target": true,
+            "different_target_within_original_target_feet": 5,
+            "different_target_within_weapon_range": true,
+            "different_target_not_previously_attacked_this_turn": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "376-6-37-ranger-subclass-hunter"
     },
@@ -5872,8 +5955,27 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "subclass": "Hunter",
+        "level": 7,
+        "option_choice_count": 1,
+        "option_change_recovery": [
+          "Short Rest",
+          "Long Rest"
+        ],
+        "options": {
+          "Escape the Horde": {
+            "opportunity_attacks_against_self_have_disadvantage": true
+          },
+          "Multiattack Defense": {
+            "trigger": "creature hits self with attack roll",
+            "same_creature_subsequent_attack_rolls_against_self_have_disadvantage": true,
+            "duration": "current turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "376-6-37-ranger-subclass-hunter"
     },
@@ -5888,8 +5990,18 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "subclass": "Hunter",
+        "level": 11,
+        "frequency": "once per turn",
+        "trigger": "deal damage to creature marked by Hunter’s Mark",
+        "secondary_damage": "Hunter’s Mark extra damage",
+        "requires_different_secondary_target": true,
+        "requires_visible_secondary_target": true,
+        "secondary_target_range_from_first_feet": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "376-6-37-ranger-subclass-hunter"
     },
@@ -5904,8 +6016,17 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Ranger",
+        "subclass": "Hunter",
+        "level": 15,
+        "trigger": "take damage",
+        "activation_action": "Reaction",
+        "grants_resistance_to_triggering_damage": true,
+        "grants_resistance_to_same_damage_type": true,
+        "duration": "until end of current turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "376-6-37-ranger-subclass-hunter"
     },
@@ -5920,8 +6041,12 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "core_traits_table_id": "061-core-rogue-traits",
+        "class_features_table_id": "062-rogue-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -5936,7 +6061,7 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -5952,8 +6077,15 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "character_level": 1,
+        "gains_all_core_traits": true,
+        "core_traits_table_id": "061-core-rogue-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "062-rogue-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "383-6-39-becoming-a-rogue"
     },
@@ -5968,8 +6100,19 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "gained_core_traits": [
+          "Hit Point Die",
+          "one Rogue skill proficiency",
+          "Thieves’ Tools proficiency",
+          "Light armor training"
+        ],
+        "core_traits_table_id": "061-core-rogue-traits",
+        "gains_class_features_for_class_level": 1,
+        "class_features_table_id": "062-rogue-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "383-6-39-becoming-a-rogue"
     },
@@ -5984,8 +6127,12 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "class_features_keyed_by": "Rogue level",
+        "class_features_table_id": "062-rogue-features"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
     },
@@ -25474,7 +25621,7 @@
       "name": "Level 3 Ranger Spells",
       "section_id": "375-6-36-ranger-spell-list",
       "page": 60,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -25492,9 +25639,191 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Conjure Animals"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Daylight"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dispel Magic"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Meld into Stone"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Nondetection"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Plant Growth"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Protection from Energy"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Revivify"
+            },
+            {
+              "value": "Necromancy"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Speak with Plants"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water Breathing"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water Walk"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wind Wall"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -25502,7 +25831,7 @@
       "name": "Level 1 Ranger Spells",
       "section_id": "375-6-36-ranger-spell-list",
       "page": 60,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -25520,9 +25849,210 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Alarm"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Animal Friendship"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cure Wounds"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Magic"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Detect Poison and Disease"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Ensnaring Strike"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Entangle"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fog Cloud"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Goodberry"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hunter’s Mark"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Jump"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Longstrider"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Speak with Animals"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        }
+      ],
       "source_row_count": 13,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 8,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 11,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -25530,7 +26060,7 @@
       "name": "Level 4 Ranger Spells",
       "section_id": "375-6-36-ranger-spell-list",
       "page": 60,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -25548,9 +26078,82 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Conjure Woodland Beings"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dominate Beast"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Freedom of Movement"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Locate Creature"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stoneskin"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C, M"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -25558,8 +26161,13 @@
       "name": "Level 5 Ranger Spells Level 2 Ranger Spells",
       "section_id": "375-6-36-ranger-spell-list",
       "page": 60,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
+        {
+          "id": "ranger-level",
+          "name": "Ranger Level",
+          "type": "integer"
+        },
         {
           "id": "spell",
           "name": "Spell",
@@ -25574,26 +26182,343 @@
           "id": "special",
           "name": "Special",
           "type": "string"
-        },
-        {
-          "id": "spell-2",
-          "name": "Spell",
-          "type": "string"
-        },
-        {
-          "id": "school-2",
-          "name": "School",
-          "type": "string"
-        },
-        {
-          "id": "special-2",
-          "name": "Special",
-          "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 4,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Aid"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Animal Messenger"
+            },
+            {
+              "value": "Enchantment"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Barkskin"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Darkvision"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Enhance Ability"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Find Traps"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Gust of Wind"
+            },
+            {
+              "value": "Evocation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Lesser Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Locate Animals or Plants"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Locate Object"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Magic Weapon"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Pass without Trace"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Protection from Poison"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Silence"
+            },
+            {
+              "value": "Illusion"
+            },
+            {
+              "value": "C, R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Spike Growth"
+            },
+            {
+              "value": "Transmutation"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Commune with Nature"
+            },
+            {
+              "value": "Divination"
+            },
+            {
+              "value": "R"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Greater Restoration"
+            },
+            {
+              "value": "Abjuration"
+            },
+            {
+              "value": "M"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Tree Stride"
+            },
+            {
+              "value": "Conjuration"
+            },
+            {
+              "value": "C"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 18,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 5,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 10,
+          "column": "special"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "special"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -25601,20 +26526,101 @@
       "name": "Core Rogue Traits",
       "section_id": "382-6-38-rogue",
       "page": 61,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "trait",
+          "name": "Trait",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "value",
+          "name": "Value",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Primary Ability"
+            },
+            {
+              "value": "Dexterity"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Hit Point Die"
+            },
+            {
+              "value": "D8 per Rogue level"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saving Throw Proficiencies"
+            },
+            {
+              "value": "Dexterity and Intelligence"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Skill Proficiencies"
+            },
+            {
+              "value": "Choose 4: Acrobatics, Athletics, Deception, Insight, Intimidation, Investigation, Perception, Persuasion, Sleight of Hand, or Stealth"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Weapon Proficiencies"
+            },
+            {
+              "value": "Simple weapons and Martial weapons that have the Finesse or Light property"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tool Proficiencies"
+            },
+            {
+              "value": "Thieves' Tools"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Armor Training"
+            },
+            {
+              "value": "Light armor"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Starting Equipment"
+            },
+            {
+              "value": "Choose A or B: (A) Leather Armor, 2 Daggers, Shortsword, Shortbow, 20 Arrows, Quiver, Thieves' Tools, Burglar's Pack, and 8 GP; or (B) 100 GP"
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
