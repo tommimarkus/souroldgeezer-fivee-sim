@@ -973,8 +973,35 @@
       "pages": [
         86
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Orc",
+        "creature_type": "Humanoid",
+        "size": "Medium",
+        "approximate_height_feet": [
+          6,
+          7
+        ],
+        "speed_feet": 30,
+        "adrenaline_rush": {
+          "activation_action": "Bonus Action",
+          "action_taken": "Dash",
+          "temporary_hit_points_formula": "Proficiency Bonus",
+          "uses_formula": "Proficiency Bonus",
+          "recovery_options": [
+            "Short Rest",
+            "Long Rest"
+          ],
+          "expended_uses_recovered": "all"
+        },
+        "darkvision_feet": 120,
+        "relentless_endurance": {
+          "trigger": "reduced to 0 Hit Points but not killed outright",
+          "replacement_hit_points": 1,
+          "uses_per_recovery": 1,
+          "recovery": "Long Rest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     },
@@ -989,8 +1016,53 @@
       "pages": [
         86
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "species": "Tiefling",
+        "creature_type": "Humanoid",
+        "size_options": [
+          {
+            "size": "Medium",
+            "approximate_height_feet": [
+              4,
+              7
+            ]
+          },
+          {
+            "size": "Small",
+            "approximate_height_feet": [
+              3,
+              4
+            ]
+          }
+        ],
+        "size_choice_timing": "select species",
+        "speed_feet": 30,
+        "darkvision_feet": 60,
+        "fiendish_legacy": {
+          "choice_count": 1,
+          "table_id": "086-fiendish-legacies",
+          "initial_benefit_level": 1,
+          "additional_spell_character_levels": [
+            3,
+            5
+          ],
+          "spells_always_prepared": true,
+          "casts_without_spell_slot_per_spell": 1,
+          "expended_use_recovery": "Long Rest",
+          "can_use_spell_slots": true,
+          "spellcasting_ability_options": [
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "spellcasting_ability_choice_timing": "select legacy"
+        },
+        "otherworldly_presence": {
+          "known_cantrip": "Thaumaturgy",
+          "spellcasting_ability_basis": "Fiendish Legacy"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "536-7-6-species-descriptions"
     }

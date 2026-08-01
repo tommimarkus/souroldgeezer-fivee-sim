@@ -15,7 +15,7 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,19 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat_categories": [
+          "Origin",
+          "General",
+          "Fighting Style",
+          "Epic Boon"
+        ],
+        "organization": [
+          "category",
+          "alphabetical within category"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
     },
@@ -46,8 +57,22 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "description_parts": [
+          "Category",
+          "Prerequisite",
+          "Benefit",
+          "Repeatable"
+        ],
+        "category_specific_selection_requires_matching_category": true,
+        "unspecified_category_allows_any_category": true,
+        "prerequisites_required_unless_feature_overrides": true,
+        "class_prerequisite_minimum_class_level": 1,
+        "feat_benefits_gained_when_feat_owned": true,
+        "default_repeatable": false,
+        "repeatable_requires_repeatable_subsection": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
     },
@@ -62,7 +87,7 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
@@ -78,8 +103,18 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Alert",
+        "category": "Origin",
+        "initiative_roll_bonus": "Proficiency Bonus",
+        "initiative_swap": {
+          "timing": "immediately after rolling Initiative",
+          "target": "one willing ally in the same combat",
+          "blocked_self_condition": "Incapacitated",
+          "blocked_ally_condition": "Incapacitated"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "549-8-3-origin-feats"
     },
@@ -94,8 +129,38 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Magic Initiate",
+        "category": "Origin",
+        "spell_list_options": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "chosen_spell_list_count": 1,
+        "cantrips_learned": 2,
+        "spellcasting_ability_options": [
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "spellcasting_ability_choice_timing": "select feat",
+        "level_1_spells_chosen": 1,
+        "level_1_spell_uses_chosen_cantrip_spell_list": true,
+        "level_1_spell_always_prepared": true,
+        "level_1_spell_free_casts_per_recovery": 1,
+        "free_cast_recovery": "Long Rest",
+        "level_1_spell_castable_with_spell_slots": true,
+        "spell_change": {
+          "timing": "gain a new level",
+          "replacement_count": 1,
+          "replacement_must_have_same_spell_level": true,
+          "replacement_uses_chosen_spell_list": true
+        },
+        "repeatable": true,
+        "repeated_selection_requires_different_spell_list": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "549-8-3-origin-feats"
     },
@@ -110,8 +175,15 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Savage Attacker",
+        "category": "Origin",
+        "frequency": "once per turn",
+        "trigger": "hit a target with a weapon",
+        "weapon_damage_dice_roll_count": 2,
+        "chosen_damage_roll_count": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "549-8-3-origin-feats"
     },
@@ -126,8 +198,18 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Skilled",
+        "category": "Origin",
+        "proficiency_choice_count": 3,
+        "proficiency_choice_types": [
+          "skill",
+          "tool"
+        ],
+        "choice_types_combinable": true,
+        "repeatable": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "549-8-3-origin-feats"
     },
@@ -142,7 +224,7 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
@@ -158,8 +240,24 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Ability Score Improvement",
+        "category": "General",
+        "minimum_character_level": 4,
+        "increase_options": [
+          {
+            "ability_score_choice_count": 1,
+            "increase_per_score": 2
+          },
+          {
+            "ability_score_choice_count": 2,
+            "increase_per_score": 1
+          }
+        ],
+        "ability_score_maximum": 20,
+        "repeatable": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "554-8-4-general-feats"
     },
@@ -174,8 +272,38 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Grappler",
+        "category": "General",
+        "minimum_character_level": 4,
+        "ability_score_prerequisite": {
+          "ability_options": [
+            "Strength",
+            "Dexterity"
+          ],
+          "minimum_score": 13
+        },
+        "ability_score_increase": {
+          "ability_options": [
+            "Strength",
+            "Dexterity"
+          ],
+          "increase": 1,
+          "maximum": 20
+        },
+        "punch_and_grab": {
+          "trigger": "Unarmed Strike hits as part of Attack action on own turn",
+          "applies_options": [
+            "Damage",
+            "Grapple"
+          ],
+          "maximum_uses_per_turn": 1
+        },
+        "attack_rolls_against_creature_grappled_by_self_have_advantage": true,
+        "grappled_creature_move_extra_movement_required": false,
+        "fast_wrestler_maximum_relative_size": "same size"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "554-8-4-general-feats"
     },
@@ -190,7 +318,7 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
@@ -206,8 +334,13 @@
       "pages": [
         87
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Archery",
+        "category": "Fighting Style",
+        "prerequisite": "Fighting Style feature",
+        "ranged_weapon_attack_roll_bonus": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "557-8-5-fighting-style-feats"
     },
@@ -222,8 +355,18 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Defense",
+        "category": "Fighting Style",
+        "prerequisite": "Fighting Style feature",
+        "eligible_armor_categories": [
+          "Light",
+          "Medium",
+          "Heavy"
+        ],
+        "armor_class_bonus": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "557-8-5-fighting-style-feats"
     },
@@ -238,8 +381,23 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Great Weapon Fighting",
+        "category": "Fighting Style",
+        "prerequisite": "Fighting Style feature",
+        "attack_weapon_category": "Melee",
+        "weapon_held_with_two_hands": true,
+        "eligible_weapon_properties": [
+          "Two-Handed",
+          "Versatile"
+        ],
+        "damage_die_results_replaced": [
+          1,
+          2
+        ],
+        "replacement_damage_die_result": 3
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "557-8-5-fighting-style-feats"
     },
@@ -254,8 +412,15 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Two-Weapon Fighting",
+        "category": "Fighting Style",
+        "prerequisite": "Fighting Style feature",
+        "trigger": "extra attack from using a weapon with the Light property",
+        "adds_ability_modifier_to_damage": true,
+        "requires_ability_modifier_not_already_added": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "557-8-5-fighting-style-feats"
     },
@@ -270,7 +435,7 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "546-8-feats"
@@ -286,8 +451,23 @@
       "pages": [
         88
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "feat": "Boon of Combat Prowess",
+        "category": "Epic Boon",
+        "minimum_character_level": 19,
+        "ability_score_increase": {
+          "ability_score_choice_count": 1,
+          "increase": 1,
+          "maximum": 30
+        },
+        "peerless_aim": {
+          "trigger": "miss with an attack roll",
+          "miss_replaced_with_hit": true,
+          "uses_per_recovery": 1,
+          "recovery": "start of next turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "562-8-6-epic-boon-feats"
     },
