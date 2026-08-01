@@ -1,6 +1,6 @@
 {
   "name": "souroldgeezer-fivee-sim",
-  "version": "2026.8.21",
+  "version": "2026.8.22",
   "description": "5E-compatible combat simulation over a single seeded rules kernel, exposed as MCP tools. Stateful encounters whose hit points, initiative, and conditions the engine owns so they cannot be misremembered, plus Monte Carlo damage and win-rate analytics replayed through the same stepper. Covers weapon attacks, movement and reactions, conditions, death saves, and a curated spell set with saving throws, areas, and concentration.",
   "author": {
     "name": "Sour Old Geezer",
