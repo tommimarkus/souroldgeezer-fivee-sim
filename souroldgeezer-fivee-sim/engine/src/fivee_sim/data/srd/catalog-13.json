@@ -5723,8 +5723,45 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Luck Blade",
+        "item_category": "Weapon",
+        "eligible_weapon_types": [
+          "Glaive",
+          "Greatsword",
+          "Longsword",
+          "Rapier",
+          "Scimitar",
+          "Sickle",
+          "Shortsword"
+        ],
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "attack_bonus": 1,
+        "damage_bonus": 1,
+        "saving_throw_bonus": {
+          "value": 1,
+          "requires_on_person": true
+        },
+        "luck": {
+          "action_required": false,
+          "requires_on_person": true,
+          "requires_not_incapacitated": true,
+          "trigger": "failed D20 Test",
+          "effect": "reroll and use the second roll",
+          "recharge": "dawn"
+        },
+        "wish": {
+          "initial_charges": "1d3",
+          "charge_cost": 1,
+          "requires_holding": true,
+          "spell": "Wish",
+          "use_frequency": "once per dawn",
+          "charges_recover": false,
+          "property_lost_at_zero_charges": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5739,8 +5776,35 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mace of Disruption",
+        "item_category": "Weapon",
+        "weapon_type": "Mace",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "on_hit": {
+          "target_types": [
+            "Fiend",
+            "Undead"
+          ],
+          "extra_damage": "2d6 Radiant",
+          "hit_point_threshold_after_damage": 25,
+          "save": {
+            "ability": "Wisdom",
+            "dc": 15
+          },
+          "failed_save": "destroyed",
+          "successful_save": {
+            "condition": "Frightened",
+            "duration": "until end of wielder's next turn"
+          }
+        },
+        "light_while_held": {
+          "bright_radius_feet": 20,
+          "additional_dim_radius_feet": 20
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5755,8 +5819,23 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mace of Smiting",
+        "item_category": "Weapon",
+        "weapon_type": "Mace",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "attack_and_damage_bonus": {
+          "normal": 1,
+          "against_construct": 3
+        },
+        "attack_roll_20": {
+          "extra_bludgeoning_damage": 7,
+          "extra_damage_against_construct": 14,
+          "construct_destroyed_if_hit_points_after_damage_at_most": 25
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5771,8 +5850,44 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mace of Terror",
+        "item_category": "Weapon",
+        "weapon_type": "Mace",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "terror": {
+          "requires_holding": true,
+          "action": "Magic",
+          "charge_cost": 1,
+          "targets": "creatures chosen by user",
+          "range_feet": 30,
+          "save": {
+            "ability": "Wisdom",
+            "dc": 15
+          },
+          "failed_save": {
+            "condition": "Frightened",
+            "duration": "1 minute"
+          },
+          "affected_turn": {
+            "movement": "move as far from user as possible",
+            "opportunity_attacks_allowed": false,
+            "allowed_actions": [
+              "Dash",
+              "attempt escape from movement-preventing effect"
+            ],
+            "if_no_movement_possible": "Dodge"
+          },
+          "repeat_save": "end of each affected turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5787,8 +5902,15 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mantle of Spell Resistance",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "saving_throw_advantage_against": "spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5803,8 +5925,24 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Manual of Bodily Health",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "study": {
+          "hours": 48,
+          "maximum_period_days": 6,
+          "requires_practice": true
+        },
+        "ability_increase": {
+          "ability": "Constitution",
+          "increase": 2,
+          "maximum": 30
+        },
+        "magic_recovery_years": 100
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5819,8 +5957,24 @@
       "pages": [
         229
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Manual of Gainful Exercise",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "study": {
+          "hours": 48,
+          "maximum_period_days": 6,
+          "requires_practice": true
+        },
+        "ability_increase": {
+          "ability": "Strength",
+          "increase": 2,
+          "maximum": 30
+        },
+        "magic_recovery_years": 100
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5836,8 +5990,36 @@
         229,
         230
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Manual of Golems",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "golem_type_selection": [
+          "GM choice",
+          "random table roll"
+        ],
+        "user_requirements": {
+          "spellcaster": true,
+          "minimum_level_5_spell_slots": 2
+        },
+        "ineligible_reader_damage": "6d6 Psychic",
+        "creation": {
+          "requires_uninterrupted_work": true,
+          "manual_present": true,
+          "maximum_daily_rest_hours": 8,
+          "supply_cost_required": true,
+          "table_id": "230-1d20-golem"
+        },
+        "completion": {
+          "manual_consumed": true,
+          "animation_trigger": "manual ashes sprinkled on golem",
+          "golem_controlled_by_creator": true,
+          "golem_understands_and_obeys_commands": true,
+          "statblock_location": "Monsters"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5852,8 +6034,24 @@
       "pages": [
         230
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Manual of Quickness of Action",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "study": {
+          "hours": 48,
+          "maximum_period_days": 6,
+          "requires_practice": true
+        },
+        "ability_increase": {
+          "ability": "Dexterity",
+          "increase": 2,
+          "maximum": 30
+        },
+        "magic_recovery_years": 100
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5868,8 +6066,40 @@
       "pages": [
         230
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Marvelous Pigments",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "contents": {
+          "pigment_pots": "1d4",
+          "brush_included": true,
+          "total_weight_pounds": 1
+        },
+        "creation": {
+          "pot_cost": 1,
+          "area": {
+            "shape": "Cube",
+            "size_feet": 20
+          },
+          "duration_minutes": 10,
+          "concentration_required": true,
+          "creator_must_remain_in_area": true,
+          "interruption_result": [
+            "painted elements vanish",
+            "pigment pot wasted"
+          ],
+          "completed_elements_become_real": true,
+          "pit_depth_must_remain_in_area": true
+        },
+        "value_limits_per_pot_gp": {
+          "per_object": 25,
+          "all_objects_total": 500
+        },
+        "over_value_result": "authentic appearance but worthless material",
+        "painted_energy_result": "dissipates harmlessly at completion"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5884,8 +6114,24 @@
       "pages": [
         230
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Medallion of Thoughts",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "charges": {
+          "maximum": 5,
+          "recovery": "1d4",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": {
+          "spell": "Detect Thoughts",
+          "save_dc": 13,
+          "charge_cost": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5900,8 +6146,92 @@
       "pages": [
         230
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mirror of Life Trapping",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "dimensions_feet": {
+          "height": 4,
+          "width": 2
+        },
+        "weight_pounds": 50,
+        "object_statistics": {
+          "armor_class": 11,
+          "hit_points": 10,
+          "damage_immunities": [
+            "Poison",
+            "Psychic"
+          ],
+          "damage_vulnerability": "Bludgeoning",
+          "destroyed_at_zero_hit_points": true
+        },
+        "activation": {
+          "mounting": "vertical surface",
+          "user_range_feet": 5,
+          "action": "Magic",
+          "command_word": true,
+          "same_action_deactivates": true
+        },
+        "trapping": {
+          "excludes_user": true,
+          "trigger": "creature sees its reflection while mirror is active",
+          "range_feet": 30,
+          "save": {
+            "ability": "Charisma",
+            "dc": 15
+          },
+          "known_nature_grants_advantage": true,
+          "constructs_automatically_succeed": true,
+          "worn_and_carried_items_trapped": true,
+          "cell_count": 12
+        },
+        "cell": {
+          "extent": "infinite",
+          "fog_visibility_feet": 10,
+          "aging": false,
+          "food_required": false,
+          "drink_required": false,
+          "sleep_required": false,
+          "escape_method": "planar travel magic"
+        },
+        "full_cells_result": {
+          "random_existing_prisoner_freed": true,
+          "arrival": "unoccupied space within sight of mirror, facing away"
+        },
+        "shattering_result": "all prisoners freed into unoccupied spaces near mirror",
+        "communication": {
+          "user_range_feet": 5,
+          "action": "Magic",
+          "selection": [
+            "creature name",
+            "cell number"
+          ],
+          "selected_creature_appears_on_surface": true,
+          "two_way_communication": true
+        },
+        "commanded_release": {
+          "user_range_feet": 5,
+          "action": "Magic",
+          "second_command_word": true,
+          "released_with_possessions": true,
+          "arrival": "nearest unoccupied space, facing away from mirror"
+        },
+        "extradimensional_interaction": {
+          "examples": [
+            "Bag of Holding",
+            "Portable Hole"
+          ],
+          "destroys_both_items": true,
+          "opens_gate_to": "Astral Plane",
+          "gate_range_feet": 10,
+          "total_cover_protects": true,
+          "destination": "random Astral Plane location",
+          "one_way": true,
+          "reopenable": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5916,8 +6246,20 @@
       "pages": [
         231
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mithral Armor",
+        "item_category": "Armor",
+        "eligible_armor_types": [
+          "Any Medium except Hide Armor",
+          "Any Heavy"
+        ],
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "wearable_under_normal_clothes": true,
+        "removes_normal_stealth_disadvantage": true,
+        "removes_normal_strength_requirement": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5933,8 +6275,209 @@
         231,
         232
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mysterious Deck",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "deck_sizes": [
+          {
+            "cards": 13,
+            "prevalence_percent": 75
+          },
+          {
+            "cards": 22,
+            "prevalence_percent": 25
+          }
+        ],
+        "draw_process": {
+          "declare_draw_count_first": true,
+          "random_draw_required": true,
+          "excess_draws_have_effect": false,
+          "effect_timing": "immediate",
+          "maximum_hours_between_draws": 1,
+          "incomplete_declared_draw_result": "remaining cards self-draw and take effect simultaneously",
+          "drawn_card_disappears": true,
+          "cards_returning_to_deck": "all except Fool and Jester",
+          "repeat_fool_or_jester_result": "reroll"
+        },
+        "table_id": "231-mysterious-deck",
+        "card_effects": {
+          "Balance": {
+            "increase": {
+              "one_ability": 2,
+              "maximum": 22
+            },
+            "required_decrease": {
+              "different_ability": 2,
+              "cannot_choose_score_at_most": 5
+            },
+            "may_decline_adjustment": true
+          },
+          "Comet": {
+            "trigger": "next combat against one or more Hostile creatures",
+            "foe_selected_at": "Initiative roll",
+            "success": "drawer reduces selected foe to 0 Hit Points",
+            "reward": {
+              "Death Saving Throw advantage": "1 year"
+            },
+            "no_effect_if": [
+              "another creature reduces foe to 0 Hit Points",
+              "no foe selected"
+            ]
+          },
+          "Donjon": {
+            "drawer_state": "suspended animation in extradimensional sphere",
+            "worn_and_carried_items_accompany": true,
+            "artifacts_accompany": false,
+            "ends_when": "found and removed from sphere",
+            "divination_can_locate": false,
+            "Wish_reveals_location": true,
+            "further_draws": false
+          },
+          "Euryale": {
+            "saving_throw_penalty": -2,
+            "curse_end_methods": [
+              "a god",
+              "Fates card"
+            ]
+          },
+          "Fates": {
+            "effect": "avoid or erase one event",
+            "use_window": "from drawing until death"
+          },
+          "Flames": {
+            "enemy": "powerful devil",
+            "enmity_ends_when": "drawer or devil dies"
+          },
+          "Fool": {
+            "D20_Test_disadvantage": "72 hours",
+            "additional_draws": 1,
+            "additional_draw_counts_toward_declared": false
+          },
+          "Gem": {
+            "choices": [
+              {
+                "jewelry_pieces": 25,
+                "value_each_gp": 2000
+              },
+              {
+                "gems": 50,
+                "value_each_gp": 1000
+              }
+            ]
+          },
+          "Jester": {
+            "choices": [
+              {
+                "D20_Test_advantage": "72 hours"
+              },
+              {
+                "additional_draws": 2,
+                "beyond_declared": true
+              }
+            ]
+          },
+          "Key": {
+            "item": "Rare or rarer magic weapon",
+            "drawer_must_be_proficient": true,
+            "chosen_by": "GM"
+          },
+          "Knight": {
+            "service": "Knight",
+            "appearance_range_feet": 30,
+            "alignment": "same as drawer",
+            "service_duration": "until death",
+            "alternative_stat_block_allowed": true
+          },
+          "Moon": {
+            "Wish_casts": "1d3"
+          },
+          "Puzzle": {
+            "ability_choice": [
+              "Intelligence",
+              "Wisdom"
+            ],
+            "permanent_reduction": "1d4 + 1",
+            "minimum_score": 1,
+            "additional_draws": 1
+          },
+          "Rogue": {
+            "effect": "GM-chosen NPC becomes Hostile",
+            "identity_initially_unknown": true,
+            "end_methods": [
+              "Wish",
+              "divine intervention"
+            ]
+          },
+          "Ruin": {
+            "lost": [
+              "portable wealth",
+              "businesses",
+              "buildings",
+              "land",
+              "ownership documentation"
+            ],
+            "magic_items_lost": false,
+            "reality_change": "minimum necessary"
+          },
+          "Sage": {
+            "use_window": "1 year",
+            "method": "meditation",
+            "effect": "truthful mental answer to one question"
+          },
+          "Skull": {
+            "summon": "Avatar of Death",
+            "appearance": "nearest unoccupied space",
+            "target": "drawer only",
+            "avatar_disappears_if": [
+              "avatar reaches 0 Hit Points",
+              "drawer dies"
+            ],
+            "ally_damage_summons_avatar_for_ally": true,
+            "maximum_avatar_per_creature": 1,
+            "avatar_kill_prevents_restoration_to_life": true
+          },
+          "Star": {
+            "increase_one_ability": 2,
+            "maximum": 24
+          },
+          "Sun": {
+            "magic_item_chosen_by": "GM",
+            "temporary_hit_points_at_dawn": 10,
+            "duration": "until death"
+          },
+          "Talons": {
+            "magic_items_worn_or_carried": "disintegrate",
+            "artifacts": "vanish"
+          },
+          "Throne": {
+            "proficiency_and_expertise_choice": [
+              "History",
+              "Insight",
+              "Intimidation",
+              "Persuasion"
+            ],
+            "property": "small keep",
+            "keep_initially_occupied_by_monsters": true
+          },
+          "Void": {
+            "soul_container": "object in GM-chosen place",
+            "guarded": true,
+            "physical_form_state": [
+              "inert",
+              "does not age",
+              "requires no food",
+              "requires no air",
+              "requires no water"
+            ],
+            "Wish_returns_soul": false,
+            "Wish_reveals_location": true,
+            "further_draws": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1477-13-27-giant-fly"
     },
@@ -5949,8 +6492,110 @@
       "pages": [
         232
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "creature": "Avatar of Death",
+        "size": "Medium",
+        "type": "Undead",
+        "alignment": "Neutral Evil",
+        "armor_class": 20,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": "half the summoner's Hit Point maximum",
+        "speeds_feet": {
+          "walk": 60,
+          "fly": 60
+        },
+        "hover": true,
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Wisdom": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "damage_immunities": [
+          "Necrotic",
+          "Poison"
+        ],
+        "condition_immunities": [
+          "Charmed",
+          "Exhaustion",
+          "Frightened",
+          "Paralyzed",
+          "Petrified",
+          "Poisoned",
+          "Unconscious"
+        ],
+        "senses": {
+          "truesight_feet": 60,
+          "passive_perception": 13
+        },
+        "languages": "all languages known to summoner",
+        "challenge_rating": "None",
+        "experience_points": 0,
+        "proficiency_bonus": "summoner's Proficiency Bonus",
+        "traits": {
+          "Incorporeal Movement": {
+            "may_move_through_creatures_and_objects": true,
+            "treated_as": "Difficult Terrain",
+            "end_turn_inside_object_damage": {
+              "average": 5,
+              "roll": "1d10",
+              "type": "Force"
+            }
+          }
+        },
+        "actions": {
+          "Multiattack": {
+            "Reaping_Scythe_attacks": "half summoner's Proficiency Bonus, rounded up"
+          },
+          "Reaping Scythe": {
+            "attack": "Melee Attack Roll",
+            "automatic_hit": true,
+            "reach_feet": 5,
+            "damage": [
+              {
+                "average": 7,
+                "roll": "1d8 + 3",
+                "type": "Slashing"
+              },
+              {
+                "average": 4,
+                "roll": "1d8",
+                "type": "Necrotic"
+              }
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -9876,15 +10521,15 @@
       "name": "Mysterious Deck",
       "section_id": "1524-13-27-47-mysterious-deck",
       "page": 231,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100-13-card-deck",
+          "id": "d100-13-card-deck",
           "name": "1d100 (13-Card Deck)",
           "type": "string"
         },
         {
-          "id": "1d100-22-card-deck",
+          "id": "d100-22-card-deck",
           "name": "1d100 (22-Card Deck)",
           "type": "string"
         },
@@ -9894,9 +10539,351 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 16,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "01-05"
+            },
+            {
+              "value": "Balance"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "06-10"
+            },
+            {
+              "value": "Comet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "11-14"
+            },
+            {
+              "value": "Donjon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "01-08"
+            },
+            {
+              "value": "15-18"
+            },
+            {
+              "value": "Euryale"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "19-23"
+            },
+            {
+              "value": "Fates"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "09-16"
+            },
+            {
+              "value": "24-27"
+            },
+            {
+              "value": "Flames"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "28-31"
+            },
+            {
+              "value": "Fool"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "32-36"
+            },
+            {
+              "value": "Gem"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-24"
+            },
+            {
+              "value": "37-41"
+            },
+            {
+              "value": "Jester"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "25-32"
+            },
+            {
+              "value": "42-46"
+            },
+            {
+              "value": "Key"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "33-40"
+            },
+            {
+              "value": "47-51"
+            },
+            {
+              "value": "Knight"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "41-48"
+            },
+            {
+              "value": "52-56"
+            },
+            {
+              "value": "Moon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "57-60"
+            },
+            {
+              "value": "Puzzle"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "49-56"
+            },
+            {
+              "value": "61-64"
+            },
+            {
+              "value": "Rogue"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "57-64"
+            },
+            {
+              "value": "65-68"
+            },
+            {
+              "value": "Ruin"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "69-73"
+            },
+            {
+              "value": "Sage"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "65-72"
+            },
+            {
+              "value": "74-77"
+            },
+            {
+              "value": "Skull"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "73-80"
+            },
+            {
+              "value": "78-82"
+            },
+            {
+              "value": "Star"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "81-88"
+            },
+            {
+              "value": "83-87"
+            },
+            {
+              "value": "Sun"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "88-91"
+            },
+            {
+              "value": "Talons"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "89-96"
+            },
+            {
+              "value": "92-96"
+            },
+            {
+              "value": "Throne"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "97-00"
+            },
+            {
+              "value": "97-00"
+            },
+            {
+              "value": "Void"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 22,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 2,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 6,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 7,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 12,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 15,
+          "column": "d100-13-card-deck"
+        },
+        {
+          "code": "not_applicable",
+          "row": 19,
+          "column": "d100-13-card-deck"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -11218,12 +12205,12 @@
       "name": "1d20 / Golem",
       "section_id": "1518-13-27-41-manual-of-golems",
       "page": 230,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d20",
+          "id": "d20",
           "name": "1d20",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "golem",
@@ -11236,12 +12223,77 @@
           "type": "string"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost-gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1-5"
+            },
+            {
+              "value": "Clay Golem"
+            },
+            {
+              "value": "30 days"
+            },
+            {
+              "value": 65000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "6-17"
+            },
+            {
+              "value": "Flesh Golem"
+            },
+            {
+              "value": "60 days"
+            },
+            {
+              "value": 50000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "18"
+            },
+            {
+              "value": "Iron Golem"
+            },
+            {
+              "value": "120 days"
+            },
+            {
+              "value": 100000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "19-20"
+            },
+            {
+              "value": "Stone Golem"
+            },
+            {
+              "value": "90 days"
+            },
+            {
+              "value": 80000
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -11251,7 +12303,7 @@
       "name": "1d100 Deck) / 1d100 (22-Card Deck)",
       "section_id": "1524-13-27-47-mysterious-deck",
       "page": 231,
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "columns": [
         {
           "id": "1d100-deck",
@@ -11279,7 +12331,7 @@
       "name": "(13-Card Deck) / (22-Card Deck)",
       "section_id": "1524-13-27-47-mysterious-deck",
       "page": 231,
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "columns": [
         {
           "id": "13-card-deck",
@@ -11307,7 +12359,7 @@
       "name": "Deck) / Deck)",
       "section_id": "1524-13-27-47-mysterious-deck",
       "page": 231,
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "columns": [
         {
           "id": "deck",
