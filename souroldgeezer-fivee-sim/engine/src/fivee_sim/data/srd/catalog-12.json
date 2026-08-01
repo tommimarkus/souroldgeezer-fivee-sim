@@ -15,7 +15,7 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,18 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Travel Pace",
+        "travel_type": "overland",
+        "paces": [
+          "Normal",
+          "Fast",
+          "Slow"
+        ],
+        "maximum_pace_determined_by": "predominant terrain during journey stage",
+        "maximum_pace_reference": "Travel Terrain table"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -46,8 +56,15 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Good Roads",
+        "maximum_pace_step_increase": 1,
+        "pace_transitions": [
+          "Slow to Normal",
+          "Normal to Fast"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -62,8 +79,12 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Slower Travelers",
+        "required_pace": "Slow",
+        "trigger": "any group member's Speed is half normal or less"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -78,8 +99,15 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Extended Travel",
+        "ordinary_daily_hours": 8,
+        "check_timing": "end of each additional hour beyond 8",
+        "saving_throw": "Constitution",
+        "dc_formula": "10 + hours past 8",
+        "failure_exhaustion_levels": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -94,8 +122,25 @@
       "pages": [
         192
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Special Movement",
+        "applies_when": "party sustains high Speed for extended time",
+        "examples": [
+          "Wind Walk spell",
+          "Carpet of Flying magic item"
+        ],
+        "travel_rate_formulas": {
+          "miles_per_hour": "Speed divided by 10",
+          "normal_miles_per_day": "miles per hour multiplied by hours traveled, typically 8",
+          "fast_miles_per_day": "normal miles per day multiplied by 1⅓, rounded down",
+          "slow_miles_per_day": "normal miles per day multiplied by 2/3, rounded down"
+        },
+        "fast_pace_regardless_of_terrain_if": [
+          "characters are flying",
+          "special movement ignores Difficult Terrain"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },

@@ -4133,8 +4133,16 @@
       "pages": [
         189
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Swim Speed",
+        "use": "swimming",
+        "extra_swimming_movement_cost": false,
+        "related_terms": [
+          "Swimming",
+          "Speed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4149,8 +4157,19 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Target",
+        "eligible_kinds": [
+          "creature",
+          "object"
+        ],
+        "targeting_contexts": [
+          "target of attack roll",
+          "forced to make saving throw by effect",
+          "selected to receive spell or other phenomenon effects"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4165,8 +4184,32 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Telepathy",
+        "ability_type": "magical communication",
+        "communication_mode": "mental",
+        "range": "specified by source",
+        "shared_language_required": false,
+        "contacted_creature_comprehension_requirement": [
+          "understands at least one language",
+          "is telepathic"
+        ],
+        "line_of_sight_required": false,
+        "start_or_end_cost": "no action",
+        "contact_cannot_start_if_incapacitated_party": true,
+        "contact_breaks_if": [
+          "either party becomes Incapacitated",
+          "contacted creature leaves range",
+          "telepath contacts a different creature"
+        ],
+        "nontelepath": {
+          "can_receive_messages": true,
+          "can_initiate_conversation": false,
+          "can_reply_after_contact_starts": true,
+          "reply_duration": "until connection ends"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4181,8 +4224,22 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Teleportation",
+        "transportation_type": "magical",
+        "timing": "instantaneous",
+        "passes_through_intervening_space": false,
+        "expends_movement_by_default": false,
+        "provokes_opportunity_attacks": false,
+        "equipment_transported": [
+          "worn",
+          "carried"
+        ],
+        "touching_creature_transported_by_default": false,
+        "blocked_or_occupied_destination": "nearest unoccupied space of teleporter's choice",
+        "destination_visibility_requirement": "specified by teleportation effect"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4197,8 +4254,13 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Temporary Hit Points",
+        "granted_by": "effects",
+        "function": "buffer against losing Hit Points",
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4213,8 +4275,27 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Tremorsense",
+        "detects": [
+          "creature locations",
+          "moving object locations"
+        ],
+        "range": "specified by source",
+        "shared_medium_required": true,
+        "eligible_shared_media": [
+          "surface",
+          "liquid"
+        ],
+        "surface_examples": [
+          "ground",
+          "wall",
+          "ceiling"
+        ],
+        "detects_airborne_targets": false,
+        "is_sight": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4229,8 +4310,20 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Truesight",
+        "range": "specified by source",
+        "capabilities": {
+          "see_in_normal_darkness": true,
+          "see_in_magical_darkness": true,
+          "see_invisible_creatures_and_objects": true,
+          "visual_illusions_appear": "transparent",
+          "visual_illusion_saving_throws": "automatic success",
+          "discern_magic_transformed_true_forms": true,
+          "see_into_ethereal_plane": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4245,8 +4338,46 @@
       "pages": [
         190
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Unarmed Strike",
+        "attack_type": "melee",
+        "uses_weapon": false,
+        "uses_body": true,
+        "target_range_feet": 5,
+        "effect_options": {
+          "damage": {
+            "resolution": "attack roll",
+            "attack_bonus": "Strength modifier + Proficiency Bonus",
+            "hit_damage": "1 + Strength modifier",
+            "damage_type": "Bludgeoning"
+          },
+          "grapple": {
+            "resolution": "target saving throw",
+            "ability_choice": [
+              "Strength",
+              "Dexterity"
+            ],
+            "failure_condition": "Grappled",
+            "save_and_escape_dc": "8 + Strength modifier + Proficiency Bonus",
+            "maximum_target_relative_size": "one size larger",
+            "free_hand_required": true
+          },
+          "shove": {
+            "resolution": "target saving throw",
+            "ability_choice": [
+              "Strength",
+              "Dexterity"
+            ],
+            "save_dc": "8 + Strength modifier + Proficiency Bonus",
+            "failure_choice": [
+              "push target 5 feet away",
+              "give target Prone condition"
+            ],
+            "maximum_target_relative_size": "one size larger"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4261,8 +4392,25 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Unconscious [Condition]",
+        "also_has_conditions": [
+          "Incapacitated",
+          "Prone"
+        ],
+        "drops_held_objects": true,
+        "remains_prone_when_condition_ends": true,
+        "speed_feet": 0,
+        "speed_can_increase": false,
+        "attack_rolls_against_creature": "Advantage",
+        "automatic_failed_saving_throws": [
+          "Strength",
+          "Dexterity"
+        ],
+        "hit_is_critical_if_attacker_within_feet": 5,
+        "aware_of_surroundings": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4277,8 +4425,14 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Unoccupied Space",
+        "requirements": [
+          "no creatures in space",
+          "space not completely filled by objects"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4293,8 +4447,13 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Utilize [Action]",
+        "used_when": "object requires an action for use",
+        "ordinary_object_interaction_can_accompany_other_action": true,
+        "ordinary_example": "draw sword as part of Attack action"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4309,8 +4468,14 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Vulnerability",
+        "applies_to": "specified damage type",
+        "damage_multiplier": 2,
+        "applications_per_damage_instance": 1,
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4325,8 +4490,16 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Weapon",
+        "object": true,
+        "categories": [
+          "Simple",
+          "Martial"
+        ],
+        "related_term": "Equipment: Weapons"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4341,8 +4514,12 @@
       "pages": [
         191
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "topic": "Weapon Attack",
+        "definition": "attack roll made with a weapon",
+        "related_term": "Weapon"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     }
