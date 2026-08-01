@@ -383,8 +383,25 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Armor Training",
+        "trained_use": "armor category without untrained drawbacks",
+        "untrained_armor_categories": [
+          "Light",
+          "Medium",
+          "Heavy"
+        ],
+        "untrained_armor_drawbacks": {
+          "d20_tests_with_strength_or_dexterity": "Disadvantage",
+          "can_cast_spells": false
+        },
+        "untrained_shield_ac_bonus": false,
+        "related_terms": [
+          "Disadvantage",
+          "Equipment: Armor"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -399,8 +416,34 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Attack [Action]",
+        "base_attack_rolls": 1,
+        "attack_options": [
+          "weapon",
+          "Unarmed Strike"
+        ],
+        "equip_or_unequip_per_attack": 1,
+        "equip_or_unequip_timing": [
+          "before attack",
+          "after attack"
+        ],
+        "equipped_weapon_must_be_used_for_attack": false,
+        "equip_examples": [
+          "draw from sheath",
+          "pick up"
+        ],
+        "unequip_examples": [
+          "sheathe",
+          "stow",
+          "drop"
+        ],
+        "movement_between_attacks": {
+          "requires_multiple_attacks_from_feature": true,
+          "movement_can_be_split_between_attacks": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -415,8 +458,17 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Attack Roll",
+        "test_type": "D20 Test",
+        "attack_sources": [
+          "weapon",
+          "Unarmed Strike",
+          "spell"
+        ],
+        "related_term": "Playing the Game: D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -431,8 +483,22 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Attitude",
+        "applies_to": "monster toward player character",
+        "starting_values": [
+          "Friendly",
+          "Hostile",
+          "Indifferent"
+        ],
+        "related_terms": [
+          "Friendly",
+          "Hostile",
+          "Indifferent",
+          "Influence"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -447,8 +513,13 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Attunement",
+        "purpose": "bond required to use some magic-item properties",
+        "maximum_items_per_creature": 3,
+        "related_term": "Equipment: Magic Items"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -463,8 +534,14 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Blinded [Condition]",
+        "can_see": false,
+        "sight_required_ability_checks": "automatic failure",
+        "attack_rolls_against_creature": "Advantage",
+        "creature_attack_rolls": "Disadvantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -479,8 +556,16 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Blindsight",
+        "range": "specified by feature",
+        "requires_physical_sight": false,
+        "blocked_by": "Total Cover",
+        "works_while_blinded": true,
+        "works_in_darkness": true,
+        "sees_invisible_within_range": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -495,8 +580,11 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Bloodied",
+        "threshold": "half Hit Points or fewer remaining"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -511,8 +599,14 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Bonus Action",
+        "can_share_turn_with_action": true,
+        "maximum_per_turn": 1,
+        "availability": "only when explicitly granted by a rule",
+        "related_term": "Playing the Game: Actions"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -528,8 +622,44 @@
         177,
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Breaking Objects",
+        "damage_sources": [
+          "attacks",
+          "some spells"
+        ],
+        "exceedingly_fragile_object": {
+          "gm_can_allow_automatic_break": true,
+          "actions": [
+            "Attack",
+            "Utilize"
+          ]
+        },
+        "armor_class_table_id": "178-object-armor-class",
+        "destroyed_at_hit_points": 0,
+        "hit_points_table_id": "178-carrying-capacity-object-hit-points",
+        "huge_or_gargantuan_objects": {
+          "divide_into": "Large or smaller sections",
+          "track_each_section_separately": true,
+          "whole_object_collapse_determined_by": "GM"
+        },
+        "damage_immunities": [
+          "Poison",
+          "Psychic"
+        ],
+        "damage_type_effectiveness_determined_by": "GM",
+        "damage_type_examples": {
+          "Bludgeoning": "effective for smashing, ineffective for cutting",
+          "paper_or_cloth": "possible Fire Vulnerability"
+        },
+        "large_object_extra_resilience": "damage threshold",
+        "ability_scores": {
+          "present_only_if_assigned_by_rule": true,
+          "without_scores_can_make_ability_checks": false,
+          "without_scores_saving_throws": "automatic failure"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -544,8 +674,12 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Bright Light",
+        "illumination": "normal",
+        "related_term": "Playing the Game: Exploration"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -560,8 +694,26 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Burning [Hazard]",
+        "targets": [
+          "creature",
+          "object"
+        ],
+        "start_turn_damage": "1d4",
+        "damage_type": "Fire",
+        "self_extinguish": {
+          "action": "Action",
+          "condition_gained": "Prone",
+          "activity": "roll on ground"
+        },
+        "other_extinguishing_methods": [
+          "doused",
+          "submerged",
+          "suffocated"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -576,8 +728,18 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Burrow Speed",
+        "materials": [
+          "sand",
+          "earth",
+          "mud",
+          "ice"
+        ],
+        "solid_rock_requires_allowing_trait": true,
+        "related_term": "Speed"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -592,8 +754,12 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Campaign",
+        "composition": "series of adventures",
+        "related_term": "Adventure"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -608,8 +774,13 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Cantrip",
+        "spell_level": 0,
+        "requires_spell_slot": false,
+        "related_term": "Spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -624,8 +795,37 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Carrying Capacity",
+        "determined_by": [
+          "creature size",
+          "Strength score"
+        ],
+        "capacity_by_size": {
+          "Tiny": {
+            "carry_pounds": "Strength × 7.5",
+            "drag_lift_push_pounds": "Strength × 15"
+          },
+          "Small or Medium": {
+            "carry_pounds": "Strength × 15",
+            "drag_lift_push_pounds": "Strength × 30"
+          },
+          "Large": {
+            "carry_pounds": "Strength × 30",
+            "drag_lift_push_pounds": "Strength × 60"
+          },
+          "Huge": {
+            "carry_pounds": "Strength × 60",
+            "drag_lift_push_pounds": "Strength × 120"
+          },
+          "Gargantuan": {
+            "carry_pounds": "Strength × 120",
+            "drag_lift_push_pounds": "Strength × 240"
+          }
+        },
+        "excess_drag_lift_push_speed_maximum_feet": 5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -640,8 +840,23 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Challenge Rating",
+        "abbreviation": "CR",
+        "baseline_party_size": 4,
+        "compared_to": "player-character level",
+        "higher_than_level": "likely danger",
+        "lower_than_level": "likely little threat",
+        "other_threat_factors": [
+          "circumstances",
+          "player-character count"
+        ],
+        "related_terms": [
+          "Gameplay Toolbox: Combat Encounters",
+          "Stat Block"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -656,8 +871,16 @@
       "pages": [
         178
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Character Sheet",
+        "medium": [
+          "paper",
+          "digital"
+        ],
+        "purpose": "track character information",
+        "related_term": "Character Creation"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2721,22 +2944,110 @@
       "name": "Object Armor Class",
       "section_id": "1144-11-2-19-breaking-objects",
       "page": 178,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "ac-substance",
-          "name": "AC Substance",
+          "id": "left-armor-class",
+          "name": "AC",
+          "type": "integer"
+        },
+        {
+          "id": "left-substance",
+          "name": "Substance",
           "type": "string"
         },
         {
-          "id": "ac-substance-2",
-          "name": "AC Substance",
+          "id": "right-armor-class",
+          "name": "AC",
+          "type": "integer"
+        },
+        {
+          "id": "right-substance",
+          "name": "Substance",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": "Cloth, paper, rope"
+            },
+            {
+              "value": 19
+            },
+            {
+              "value": "Iron, steel"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": "Crystal, glass, ice"
+            },
+            {
+              "value": 21
+            },
+            {
+              "value": "Mithral"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": "Wood"
+            },
+            {
+              "value": 23
+            },
+            {
+              "value": "Adamantine"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": "Stone"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "right-armor-class"
+        },
+        {
+          "code": "not_applicable",
+          "row": 3,
+          "column": "right-substance"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -2744,7 +3055,7 @@
       "name": "Carrying Capacity Object Hit Points",
       "section_id": "1150-11-2-25-carrying-capacity",
       "page": 178,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "size",
@@ -2752,17 +3063,70 @@
           "type": "string"
         },
         {
-          "id": "fragile",
+          "id": "fragile-hit-points",
           "name": "Fragile",
           "type": "string"
         },
         {
-          "id": "resilient",
+          "id": "resilient-hit-points",
           "name": "Resilient",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Tiny (bottle, lock)"
+            },
+            {
+              "value": "2 (1d4)"
+            },
+            {
+              "value": "5 (2d4)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Small (chest, lute)"
+            },
+            {
+              "value": "3 (1d6)"
+            },
+            {
+              "value": "10 (3d6)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium (barrel, chandelier)"
+            },
+            {
+              "value": "4 (1d8)"
+            },
+            {
+              "value": "18 (4d8)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Large (cart, dining table)"
+            },
+            {
+              "value": "5 (1d10)"
+            },
+            {
+              "value": "27 (5d10)"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
