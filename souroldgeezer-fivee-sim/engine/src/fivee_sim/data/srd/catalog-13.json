@@ -1478,8 +1478,19 @@
       "pages": [
         210
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Armor of Resistance",
+        "item_category": "Armor (any Light, Medium, or Heavy)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "benefit_while_worn": "Resistance to one damage type",
+        "damage_type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "damage_type_table": "1d10 Damage Type / 1d10 Damage Type"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1494,8 +1505,35 @@
       "pages": [
         211
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Armor of Vulnerability",
+        "item_category": "Armor (any Light, Medium, or Heavy)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "resistance_while_worn": {
+          "count": 1,
+          "options": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ],
+          "determined_by": [
+            "GM choice",
+            "random determination"
+          ]
+        },
+        "curse": {
+          "revealed_by": [
+            "Identify spell cast on armor",
+            "attunement"
+          ],
+          "begins_on_attunement": true,
+          "ends_when": "targeted by Remove Curse or similar magic",
+          "removing_armor_ends_curse": false,
+          "vulnerability": "other two physical damage types not resisted by armor"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1510,8 +1548,22 @@
       "pages": [
         211
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Arrow-Catching Shield",
+        "item_category": "Armor (Shield)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_wielded": {
+          "ac_bonus_against_ranged_attack_rolls": 2,
+          "bonus_adds_to_normal_shield_ac": true
+        },
+        "redirect": {
+          "trigger": "ranged attack targets creature within 5 feet",
+          "cost": "Reaction",
+          "effect": "wielder becomes attack target"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1526,8 +1578,44 @@
       "pages": [
         211
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bag of Beans",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "beans_when_found": "3d4",
+        "weight_pounds": 0.5,
+        "weight_depends_on_remaining_beans": false,
+        "becomes_nonmagical_when_empty": true,
+        "dumped_beans": {
+          "explosion_radius_feet": 10,
+          "dumped_beans_destroyed": true,
+          "targets": "each creature in Sphere including user",
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 15
+          },
+          "failed_save_damage": {
+            "dice": "5d4",
+            "type": "Force"
+          },
+          "successful_save_damage": "half"
+        },
+        "planted_bean": {
+          "requirements": [
+            "removed from bag",
+            "planted in dirt or sand",
+            "watered"
+          ],
+          "bean_disappears": true,
+          "effect_delay_minutes": 1,
+          "effect_determined_by": [
+            "GM choice",
+            "random table roll"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1542,8 +1630,40 @@
       "pages": [
         212
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bag of Devouring",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "nature": "feeding orifice for gigantic extradimensional creature",
+        "inside_out_effect": "closes orifice",
+        "attached_creature_senses_contents": true,
+        "wholly_inserted_animal_or_vegetable_matter": "devoured and lost forever",
+        "living_creature_partial_entry_pull_chance_percent": 50,
+        "escape": {
+          "action": true,
+          "check": "Strength (Athletics)",
+          "dc": 15
+        },
+        "rescue": {
+          "action": true,
+          "check": "Strength (Athletics)",
+          "dc": 20,
+          "condition": "rescuer is not pulled inside first"
+        },
+        "creature_starting_turn_inside": "devoured and body destroyed",
+        "inanimate_capacity_cubic_feet": 1,
+        "inanimate_object_disposal": {
+          "frequency": "once per day",
+          "destination": "GM-chosen other plane",
+          "time": "GM-determined"
+        },
+        "pierced_or_torn": {
+          "bag_destroyed": true,
+          "contents_destination": "random Astral Plane location"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1558,8 +1678,43 @@
       "pages": [
         212
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bag of Holding",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "interior_dimensions_feet": {
+          "width": 2,
+          "height": 4
+        },
+        "capacity_pounds": 500,
+        "capacity_cubic_feet": 64,
+        "item_weight_pounds": 5,
+        "retrieve_action": "Utilize",
+        "overloaded_pierced_or_torn": {
+          "bag_destroyed": true,
+          "contents_destination": "Astral Plane"
+        },
+        "turned_inside_out": {
+          "contents_spill_unharmed": true,
+          "must_be_righted_before_reuse": true
+        },
+        "breathable_air_minutes": "10 divided by number of breathing creatures",
+        "nested_extradimensional_space": {
+          "examples": [
+            "Handy Haversack",
+            "Portable Hole"
+          ],
+          "both_items_destroyed": true,
+          "opens_gate_to": "Astral Plane",
+          "gate_radius_feet": 10,
+          "creatures_in_radius_destination": "random Astral Plane location",
+          "gate_closes_afterward": true,
+          "gate_direction": "one-way",
+          "gate_can_reopen": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1574,8 +1729,38 @@
       "pages": [
         212
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bag of Tricks",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "bag_colors": [
+          "gray",
+          "rust",
+          "tan"
+        ],
+        "use": {
+          "action": "Magic",
+          "object": "small fuzzy object",
+          "throw_range_feet": 20,
+          "landing_effect": "transforms into creature from color table"
+        },
+        "creature_duration_until": [
+          "next dawn",
+          "reduced to 0 Hit Points"
+        ],
+        "creature_attitude": "Friendly to user and allies",
+        "initiative": "immediately after user",
+        "command_cost": "Bonus Action",
+        "command_controls": [
+          "movement",
+          "next-turn action"
+        ],
+        "without_orders": "acts according to nature",
+        "uses_before_recharge": 3,
+        "recharge": "next dawn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1591,8 +1776,46 @@
         212,
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bead of Force",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "diameter_inches": 0.75,
+        "weight_ounces": 1,
+        "typical_quantity": "1d4 + 4",
+        "use": {
+          "action": "Magic",
+          "throw_range_feet": 60
+        },
+        "impact": {
+          "bead_destroyed": true,
+          "sphere_radius_feet": 10,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 15
+          },
+          "failed_save_damage": {
+            "dice": "5d4",
+            "type": "Force"
+          }
+        },
+        "force_sphere": {
+          "duration_minutes": 1,
+          "traps": "failed-save creatures completely within area",
+          "pushes_out": [
+            "successful-save creatures",
+            "partially enclosed creatures"
+          ],
+          "wall_permits": "breathable air only",
+          "attacks_or_other_effects_pass_wall": false,
+          "push_action": "Utilize",
+          "push_distance": "up to half pushing creature's Speed",
+          "can_be_picked_up": true,
+          "weight_pounds_regardless_of_contents": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1607,8 +1830,15 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Bead of Nourishment",
+        "item_category": "Wondrous Item",
+        "rarity": "Common",
+        "requires_attunement": false,
+        "consumption": "dissolves on tongue",
+        "nourishment_equivalent": "1 day of Rations"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1623,8 +1853,33 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Belt of Dwarvenkind",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "benefits_while_worn": {
+          "language_known": "Dwarvish",
+          "charisma_persuasion_against": [
+            "dwarves",
+            "duergar"
+          ],
+          "charisma_persuasion": "Advantage",
+          "constitution_bonus": 2,
+          "constitution_maximum": 20
+        },
+        "beard_while_attuned": {
+          "check_time": "daily at dawn",
+          "chance_percent": 50,
+          "effect": "grow full beard if possible or thicken existing beard"
+        },
+        "additional_non_dwarf_non_duergar_benefits": {
+          "darkvision_feet": 60,
+          "damage_resistance": "Poison",
+          "poisoned_condition_saves": "Advantage to avoid or end"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1639,8 +1894,16 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Belt of Giant Strength",
+        "item_category": "Wondrous Item",
+        "rarity": "Varies",
+        "requires_attunement": true,
+        "while_worn": "Strength changes to belt score",
+        "no_effect_if_unmodified_strength_at_least_belt_score": true,
+        "score_and_rarity_table": "Belt / Str."
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1655,8 +1918,42 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Berserker Axe",
+        "item_category": "Weapon (Battleaxe, Greataxe, or Halberd)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 1,
+        "damage_roll_bonus": 1,
+        "hit_point_maximum_bonus_while_attuned": "1 per attained level",
+        "curse": {
+          "extends_on_attunement": true,
+          "unwilling_to_part": true,
+          "kept_within_reach": true,
+          "other_weapon_attack_rolls": "Disadvantage"
+        },
+        "berserk_trigger": {
+          "event": "another creature damages bearer while axe is in bearer's possession",
+          "saving_throw": {
+            "ability": "Wisdom",
+            "dc": 15
+          },
+          "failure": "bearer goes berserk"
+        },
+        "berserk_end": "start of turn with no visible or audible creatures within 60 feet",
+        "berserk_behavior": {
+          "enemy": "nearest visible or audible creature",
+          "ties": "random choice",
+          "required_movement": "as close to enemy as possible",
+          "required_action": "Attack targeting enemy",
+          "unreachable_enemy": "use all available movement, then turn ends",
+          "retarget_if": [
+            "target dies",
+            "target cannot be seen or heard"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1671,8 +1968,16 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Boots of Elvenkind",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "steps_make_sound": false,
+        "surface_restriction": false,
+        "dexterity_stealth_checks": "Advantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1687,8 +1992,17 @@
       "pages": [
         213
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Boots of Levitation",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_cast": {
+          "spell": "Levitate",
+          "target": "self"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -6452,30 +6766,95 @@
       "name": "Gray Bag of Tricks",
       "section_id": "1414-13-26-17-bag-of-tricks",
       "page": 212,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d8",
+          "id": "left-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature",
+          "id": "left-result",
           "name": "Creature",
           "type": "string"
         },
         {
-          "id": "1d8-2",
+          "id": "right-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature-2",
+          "id": "right-result",
           "name": "Creature",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Weasel"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Panther"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Giant Rat"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Giant Badger"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Badger"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Dire Wolf"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Boar"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Giant Elk"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6485,30 +6864,95 @@
       "name": "Rust Bag of Tricks",
       "section_id": "1414-13-26-17-bag-of-tricks",
       "page": 212,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d8",
+          "id": "left-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature",
+          "id": "left-result",
           "name": "Creature",
           "type": "string"
         },
         {
-          "id": "1d8-2",
+          "id": "right-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature-2",
+          "id": "right-result",
           "name": "Creature",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Rat"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Giant Goat"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Owl"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Giant Boar"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Mastiff"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Lion"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Goat"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Brown Bear"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6518,30 +6962,95 @@
       "name": "Tan Bag of Tricks",
       "section_id": "1414-13-26-17-bag-of-tricks",
       "page": 212,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d8",
+          "id": "left-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature",
+          "id": "left-result",
           "name": "Creature",
           "type": "string"
         },
         {
-          "id": "1d8-2",
+          "id": "right-roll",
           "name": "1d8",
           "type": "integer"
         },
         {
-          "id": "creature-2",
+          "id": "right-result",
           "name": "Creature",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Jackal"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Black Bear"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Ape"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Giant Weasel"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Baboon"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Giant Hyena"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Axe Beak"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Tiger"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6817,20 +7326,111 @@
       "name": "1d10 Damage Type / 1d10 Damage Type",
       "section_id": "1408-13-26-11-armor-of-resistance",
       "page": 210,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10-damage-type",
-          "name": "1d10 Damage Type",
+          "id": "left-roll",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "left-damage-type",
+          "name": "Damage Type",
           "type": "string"
         },
         {
-          "id": "1d10-damage-type-2",
-          "name": "1d10 Damage Type",
+          "id": "right-roll",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "right-damage-type",
+          "name": "Damage Type",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Necrotic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Cold"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Poison"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Fire"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Psychic"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Force"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": "Radiant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "Thunder"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6840,12 +7440,12 @@
       "name": "1d100 / Effect",
       "section_id": "1411-13-26-14-bag-of-beans",
       "page": 211,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "roll",
           "name": "1d100",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "effect",
@@ -6853,7 +7453,128 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01"
+            },
+            {
+              "value": "5d4 toadstools sprout. Eating one: odd die requires DC 15 Constitution save or 5d6 Poison damage and Poisoned for 1 hour; even die grants 5d6 Temporary Hit Points for 1 hour."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "02-10"
+            },
+            {
+              "value": "GM-chosen water, beer, mayonnaise, tea, vinegar, wine, or oil geyser rises 30 feet for 1d4 minutes."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-20"
+            },
+            {
+              "value": "Treant sprouts; odd die makes it Chaotic Evil, even die makes it Chaotic Good."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21-30"
+            },
+            {
+              "value": "Immobile animated stone statue resembling planter threatens and vilifies planter, knows planter's location on same plane, and becomes inanimate after 24 hours."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "31-40"
+            },
+            {
+              "value": "Green-flamed campfire burns for 24 hours or until extinguished."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "41-50"
+            },
+            {
+              "value": "Three Shrieker Fungi sprout."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51-60"
+            },
+            {
+              "value": "1d4 + 4 pink toads appear; a touched toad becomes a GM-chosen Large or smaller monster for 1 minute, acting by its alignment and nature."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "61-70"
+            },
+            {
+              "value": "Hungry Bulette emerges and attacks."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "71-80"
+            },
+            {
+              "value": "Fruit tree grows with 1d10 + 20 fruit, 1d8 being random potions; tree lasts 1 hour and picked fruit retains magic for 30 days."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "81-90"
+            },
+            {
+              "value": "1d4 + 3 eggs appear; eater makes DC 20 Constitution save: success permanently raises lowest ability by 1, randomly among ties; failure deals 10d6 Force damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91-95"
+            },
+            {
+              "value": "60-foot-square pyramid appears with burial chamber, GM-chosen Mummy, Mummy Lord, or other Undead, and GM-chosen sarcophagus treasure."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "96-00"
+            },
+            {
+              "value": "Giant beanstalk grows to GM-chosen height and leads to a GM-chosen destination."
+            }
+          ]
+        }
+      ],
       "source_row_count": 12,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -6863,7 +7584,7 @@
       "name": "Belt / Str.",
       "section_id": "1418-13-26-21-belt-of-giant-strength",
       "page": 213,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "belt",
@@ -6871,7 +7592,7 @@
           "type": "string"
         },
         {
-          "id": "str",
+          "id": "strength",
           "name": "Str.",
           "type": "integer"
         },
@@ -6881,8 +7602,74 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 6,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Belt of Giant Strength (hill)"
+            },
+            {
+              "value": 21
+            },
+            {
+              "value": "Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Belt of Giant Strength (frost or stone)"
+            },
+            {
+              "value": 23
+            },
+            {
+              "value": "Very Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Belt of Giant Strength (fire)"
+            },
+            {
+              "value": 25
+            },
+            {
+              "value": "Very Rare"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Belt of Giant Strength (cloud)"
+            },
+            {
+              "value": 27
+            },
+            {
+              "value": "Legendary"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Belt of Giant Strength (storm)"
+            },
+            {
+              "value": 29
+            },
+            {
+              "value": "Legendary"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
