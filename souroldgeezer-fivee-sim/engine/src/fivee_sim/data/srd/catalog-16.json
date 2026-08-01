@@ -1899,8 +1899,78 @@
       "pages": [
         348
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Eagle",
+        "size": "Small",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 4,
+          "hit_dice": "1d6 + 1"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Str": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Dex": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Cha": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 6
+        },
+        "actions": {
+          "talons": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "damage": "1d4 + 2 Slashing",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1915,8 +1985,92 @@
       "pages": [
         348
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Elephant",
+        "size": "Huge",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 76,
+          "hit_dice": "8d12 + 24"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Str": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          },
+          "Dex": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Con": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Int": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "4",
+        "experience_points": 1100,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "gore_attacks": 2
+          },
+          "gore": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "damage": "2d8 + 6 Piercing",
+            "reach_feet": 5,
+            "target_maximum_size": "Huge",
+            "requires_straight_movement_feet": 20,
+            "condition": "Prone"
+          }
+        },
+        "bonus_actions": {
+          "trample": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 16
+            },
+            "target_range_feet": 5,
+            "target_condition": "Prone",
+            "failure_damage": "2d10 + 6 Bludgeoning",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1931,8 +2085,83 @@
       "pages": [
         348
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Elk",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 10,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d10"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Str": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dex": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Con": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 12,
+          "Darkvision_feet": 60
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 2
+        },
+        "actions": {
+          "ram": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": "1d6 + 3 Bludgeoning",
+            "reach_feet": 5,
+            "target_maximum_size": "Large",
+            "requires_straight_movement_feet": 20,
+            "extra_damage": "1d6",
+            "extra_damage_type": "Bludgeoning",
+            "condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1947,8 +2176,85 @@
       "pages": [
         348
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Flying Snake",
+        "size": "Tiny",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 5,
+          "hit_dice": "2d4"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "fly_feet": 60,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          },
+          "Dex": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 11,
+          "Blindsight_feet": 10
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "traits": {
+          "flyby": {
+            "provokes_opportunity_attacks_when_flying_out_of_enemy_reach": false
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "damage": [
+              "1 Piercing",
+              "2d4 Poison"
+            ],
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1964,8 +2270,93 @@
         348,
         349
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Frog",
+        "size": "Tiny",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 1,
+          "hit_dice": "1d4 - 1"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "swim_feet": 20
+        },
+        "abilities": {
+          "Str": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Dex": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Con": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Int": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wis": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 11,
+          "Darkvision_feet": 30
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 1,
+          "Stealth": 3
+        },
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          },
+          "standing_leap": {
+            "long_jump_feet": 10,
+            "high_jump_feet": 5,
+            "running_start_required": false
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "damage": "1 Piercing",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1980,8 +2371,102 @@
       "pages": [
         349
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Ape",
+        "size": "Huge",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 5,
+          "score": 15
+        },
+        "hit_points": {
+          "average": 168,
+          "hit_dice": "16d12 + 64"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "climb_feet": 40
+        },
+        "abilities": {
+          "Str": {
+            "score": 23,
+            "modifier": 6,
+            "save": 6
+          },
+          "Dex": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Int": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "7",
+        "experience_points": 2900,
+        "proficiency_bonus": 3,
+        "skills": {
+          "Athletics": 9,
+          "Perception": 4,
+          "Survival": 4
+        },
+        "actions": {
+          "multiattack": {
+            "fist_attacks": 2
+          },
+          "fist": {
+            "type": "Melee",
+            "attack_bonus": 9,
+            "damage": "3d10 + 6 Bludgeoning",
+            "reach_feet": 10
+          },
+          "boulder_toss": {
+            "recharge": "6",
+            "target_point_range_feet": 90,
+            "save": {
+              "ability": "Dexterity",
+              "dc": 17
+            },
+            "area": "5-foot-radius Sphere",
+            "failure_damage": "7d6 Bludgeoning",
+            "failure_condition": "Prone",
+            "condition_maximum_size": "Large",
+            "success_damage": "half only"
+          }
+        },
+        "bonus_actions": {
+          "leap": {
+            "jump_feet": 30,
+            "movement_cost_feet": 10
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -1996,8 +2481,82 @@
       "pages": [
         349
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Badger",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 15,
+          "hit_dice": "2d8 + 6"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "burrow_feet": 10
+        },
+        "abilities": {
+          "Str": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dex": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Con": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 13,
+          "Darkvision_feet": 60
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 3
+        },
+        "resistances": [
+          "Poison"
+        ],
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "damage": "2d4 + 1 Piercing",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2012,8 +2571,76 @@
       "pages": [
         349
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Bat",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 22,
+          "hit_dice": "4d10"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Str": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dex": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Con": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 11,
+          "Blindsight_feet": 120
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": "1d6 + 3 Piercing",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2028,8 +2655,84 @@
       "pages": [
         349
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Boar",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 42,
+          "hit_dice": "5d10 + 15"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Str": {
+            "score": 17,
+            "modifier": 3,
+            "save": 5
+          },
+          "Dex": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Con": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Cha": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 8
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "bloodied_fury": {
+            "advantage_on_melee_attack_rolls_while_bloodied": true
+          }
+        },
+        "actions": {
+          "gore": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": "2d6 + 3 Piercing",
+            "reach_feet": 5,
+            "target_maximum_size": "Large",
+            "requires_straight_movement_feet": 20,
+            "extra_damage": "2d6",
+            "extra_damage_type": "Piercing",
+            "condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2045,8 +2748,78 @@
         349,
         350
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Centipede",
+        "size": "Small",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 9,
+          "hit_dice": "2d6 + 2"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "climb_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Dex": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wis": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 8,
+          "Blindsight_feet": 30
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "damage": "1d4 + 2 Piercing",
+            "reach_feet": 5,
+            "condition": "Poisoned",
+            "condition_duration": "until start of centipede's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2061,8 +2834,94 @@
       "pages": [
         350
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Constrictor Snake",
+        "size": "Huge",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 60,
+          "hit_dice": "8d12 + 8"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dex": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wis": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 12,
+          "Blindsight_feet": 10
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 2
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "also_uses": "Constrict"
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "damage": "2d6 + 4 Piercing",
+            "reach_feet": 10
+          },
+          "constrict": {
+            "save": {
+              "ability": "Strength",
+              "dc": 14
+            },
+            "target_range_feet": 10,
+            "target_maximum_size": "Large",
+            "failure_damage": "2d8 + 4 Bludgeoning",
+            "failure_condition": "Grappled",
+            "escape_dc": 14
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2077,8 +2936,90 @@
       "pages": [
         350
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Crab",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 13,
+          "hit_dice": "3d8"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dex": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Con": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Int": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wis": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 9,
+          "Blindsight_feet": 30
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Stealth": 3
+        },
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          }
+        },
+        "actions": {
+          "claw": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "damage": "1d6 + 1 Bludgeoning",
+            "reach_feet": 5,
+            "grapple_maximum_size": "Medium",
+            "escape_dc": 11,
+            "maximum_simultaneous_grapples": 2
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2093,8 +3034,100 @@
       "pages": [
         350
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Crocodile",
+        "size": "Huge",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 85,
+          "hit_dice": "9d12 + 27"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "swim_feet": 50
+        },
+        "abilities": {
+          "Str": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dex": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Con": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "skills": {
+          "Stealth": 5
+        },
+        "traits": {
+          "hold_breath": {
+            "duration_hours": 1
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "tail_attacks": 1
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "damage": "3d10 + 5 Piercing",
+            "reach_feet": 5,
+            "grapple_maximum_size": "Large",
+            "escape_dc": 15,
+            "while_grappled": [
+              "Restrained",
+              "can't be targeted by crocodile's Tail"
+            ]
+          },
+          "tail": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "damage": "3d8 + 5 Bludgeoning",
+            "reach_feet": 10,
+            "prone_maximum_size": "Large"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2110,8 +3143,89 @@
         350,
         351
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Eagle",
+        "size": "Large",
+        "creature_type": "Celestial",
+        "alignment": "Neutral Good",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 26,
+          "hit_dice": "4d10 + 4"
+        },
+        "speed": {
+          "walk_feet": 10,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Str": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dex": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Con": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Wis": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Cha": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "senses": {
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "Celestial",
+          "understands Common and Primordial (Auran) but can't speak them"
+        ],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 6
+        },
+        "resistances": [
+          "Necrotic",
+          "Radiant"
+        ],
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": [
+              "1d4 + 3 Slashing",
+              "1d6 Radiant"
+            ],
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2126,8 +3240,92 @@
       "pages": [
         351
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Elk",
+        "size": "Huge",
+        "creature_type": "Celestial",
+        "alignment": "Neutral Good",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 6,
+          "score": 16
+        },
+        "hit_points": {
+          "average": 42,
+          "hit_dice": "5d12 + 10"
+        },
+        "speed": {
+          "walk_feet": 60
+        },
+        "abilities": {
+          "Str": {
+            "score": 19,
+            "modifier": 4,
+            "save": 6
+          },
+          "Dex": {
+            "score": 18,
+            "modifier": 4,
+            "save": 6
+          },
+          "Con": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Int": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wis": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Cha": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "senses": {
+          "Passive_Perception": 14,
+          "Darkvision_feet": 90
+        },
+        "languages": [
+          "Celestial",
+          "understands Common",
+          "Elvish",
+          "and Sylvan but can't speak them"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 4
+        },
+        "resistances": [
+          "Necrotic",
+          "Radiant"
+        ],
+        "actions": {
+          "ram": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "damage": [
+              "2d6 + 4 Bludgeoning",
+              "2d4 Radiant"
+            ],
+            "reach_feet": 10,
+            "target_maximum_size": "Huge",
+            "requires_straight_movement_feet": 20,
+            "extra_damage": "2d4 Bludgeoning",
+            "condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2142,8 +3340,85 @@
       "pages": [
         351
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Fire Beetle",
+        "size": "Small",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 4,
+          "hit_dice": "1d6 + 1"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "climb_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Dex": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Con": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wis": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 8,
+          "Blindsight_feet": 30
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "0",
+        "experience_points": 10,
+        "proficiency_bonus": 2,
+        "resistances": [
+          "Fire"
+        ],
+        "traits": {
+          "illumination": {
+            "bright_light_radius_feet": 10,
+            "additional_dim_light_feet": 10
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 1,
+            "damage": "1 Fire",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2158,8 +3433,111 @@
       "pages": [
         351
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Frog",
+        "size": "Medium",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 18,
+          "hit_dice": "4d8"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Dex": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Con": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "senses": {
+          "Passive_Perception": 12,
+          "Darkvision_feet": 30
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 2,
+          "Stealth": 4
+        },
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          },
+          "standing_leap": {
+            "long_jump_feet": 20,
+            "high_jump_feet": 10,
+            "running_start_required": false
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "damage": "1d6 + 2 Piercing",
+            "reach_feet": 5,
+            "grapple_maximum_size": "Medium",
+            "escape_dc": 11
+          },
+          "swallow": {
+            "target": "Small or smaller creature Grappled by frog",
+            "ends_grapple_on_swallow": true,
+            "swallowed_conditions": [
+              "Blinded",
+              "Restrained",
+              "Total Cover from outside"
+            ],
+            "prevents_action": "Bite",
+            "escape_dead_frog_movement_feet": 5,
+            "escape_dead_frog_condition": "Prone",
+            "damage_timing": "end of frog's next turn",
+            "damage": "2d4 Acid",
+            "if_target_survives": "frog disgorges target",
+            "disgorged_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2174,8 +3552,84 @@
       "pages": [
         351
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Goat",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 19,
+          "hit_dice": "3d10 + 3"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "climb_feet": 30
+        },
+        "abilities": {
+          "Str": {
+            "score": 17,
+            "modifier": 3,
+            "save": 5
+          },
+          "Dex": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Con": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 13,
+          "Darkvision_feet": 60
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/2",
+        "experience_points": 100,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 3
+        },
+        "actions": {
+          "ram": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": "1d6 + 3 Bludgeoning",
+            "reach_feet": 5,
+            "target_maximum_size": "Large",
+            "requires_straight_movement_feet": 20,
+            "extra_damage": "2d4",
+            "extra_damage_type": "Bludgeoning",
+            "condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2190,8 +3644,86 @@
       "pages": [
         352
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Hyena",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 45,
+          "hit_dice": "6d10 + 12"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Str": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dex": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Con": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Cha": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Passive_Perception": 13,
+          "Darkvision_feet": 60
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "skills": {
+          "Perception": 3
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "damage": "2d6 + 3 Piercing",
+            "reach_feet": 5
+          }
+        },
+        "bonus_actions": {
+          "rampage": {
+            "uses_per_day": 1,
+            "trigger": "deals damage to creature already Bloodied",
+            "move": "up to half Speed",
+            "attack": "one Bite"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
@@ -2206,8 +3738,81 @@
       "pages": [
         352
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Giant Lizard",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 19,
+          "hit_dice": "3d10 + 3"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "climb_feet": 40
+        },
+        "abilities": {
+          "Str": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dex": {
+            "score": 12,
+            "modifier": 1,
+            "save": 3
+          },
+          "Con": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Int": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wis": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Cha": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Passive_Perception": 10,
+          "Darkvision_feet": 60
+        },
+        "languages": [
+          "None"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "traits": {
+          "spider_climb": {
+            "climbs_difficult_surfaces_and_ceilings_without_check": true
+          }
+        },
+        "actions": {
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "damage": "1d8 + 2 Piercing",
+            "reach_feet": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1967-16-animals"
     },
