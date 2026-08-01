@@ -2384,8 +2384,35 @@
       "pages": [
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Beacon of Hope",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "targets": "any number of creatures within range",
+          "wisdom_saving_throws": "Advantage",
+          "death_saving_throws": "Advantage",
+          "healing_received": "maximum possible Hit Points"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2400,8 +2427,51 @@
       "pages": [
         112
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Befuddlement",
+        "level": 8,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "key ring with no keys"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Intelligence",
+          "failed_save_damage": "10d12",
+          "damage_type": "Psychic",
+          "failed_save_restrictions": [
+            "cannot cast spells",
+            "cannot take the Magic action"
+          ],
+          "repeat_save_interval_days": 30,
+          "repeat_save_success_ends_effect": true,
+          "ending_spells": [
+            "Greater Restoration",
+            "Heal",
+            "Wish"
+          ],
+          "successful_save_damage_multiplier": 0.5,
+          "successful_save_has_other_effects": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2417,8 +2487,78 @@
         112,
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Bestow Curse",
+        "level": 3,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "creature touched",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_condition": "Cursed",
+          "curse_choice_count": 1,
+          "curse_options": [
+            {
+              "chosen_ability_checks": "Disadvantage",
+              "chosen_ability_saving_throws": "Disadvantage"
+            },
+            {
+              "attack_rolls_against_caster": "Disadvantage"
+            },
+            {
+              "timing": "start of each combat turn",
+              "saving_throw_ability": "Wisdom",
+              "failed_save_forced_action": "Dodge"
+            },
+            {
+              "trigger": "caster damages target with attack roll or spell",
+              "extra_damage": "1d8",
+              "damage_type": "Necrotic"
+            }
+          ],
+          "higher_level_slot": [
+            {
+              "slot_level": 4,
+              "concentration": true,
+              "maximum_minutes": 10
+            },
+            {
+              "slot_levels": "5-6",
+              "concentration": false,
+              "hours": 8
+            },
+            {
+              "slot_levels": "7-8",
+              "concentration": false,
+              "hours": 24
+            },
+            {
+              "slot_level": 9,
+              "concentration": false,
+              "duration": "until dispelled"
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2433,8 +2573,55 @@
       "pages": [
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Black Tentacles",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "tentacle"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Square",
+            "size_feet": 20,
+            "surface": "visible ground"
+          },
+          "area_is_difficult_terrain": true,
+          "saving_throw_ability": "Strength",
+          "save_triggers": [
+            "creature in area when created",
+            "enter area",
+            "end turn in area"
+          ],
+          "maximum_saves_per_turn": 1,
+          "failed_save_damage": "3d6",
+          "damage_type": "Bludgeoning",
+          "failed_save_condition": "Restrained",
+          "condition_duration": "spell duration",
+          "escape": {
+            "action": "Action",
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": "caster spell save DC"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2449,8 +2636,57 @@
       "pages": [
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Blade Barrier",
+        "level": 6,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "wall_options": [
+            {
+              "shape": "Straight",
+              "maximum_length_feet": 100,
+              "height_feet": 20,
+              "thickness_feet": 5
+            },
+            {
+              "shape": "Ring",
+              "maximum_diameter_feet": 60,
+              "height_feet": 20,
+              "thickness_feet": 5
+            }
+          ],
+          "cover": "Three-Quarters Cover",
+          "space_is_difficult_terrain": true,
+          "saving_throw_ability": "Dexterity",
+          "save_triggers": [
+            "creature in wall space when created",
+            "enter wall space",
+            "end turn in wall space"
+          ],
+          "maximum_saves_per_turn": 1,
+          "failed_save_damage": "6d10",
+          "damage_type": "Force",
+          "successful_save_damage_multiplier": 0.5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2465,8 +2701,41 @@
       "pages": [
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Bless",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "Holy Symbol worth 5+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "maximum_targets": 3,
+          "target_type": "creature",
+          "attack_roll_bonus": "1d4",
+          "saving_throw_bonus": "1d4",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2481,8 +2750,48 @@
       "pages": [
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Blight",
+        "level": 4,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "primary_target": "visible creature",
+          "saving_throw_ability": "Constitution",
+          "failed_save_damage": "8d8",
+          "damage_type": "Necrotic",
+          "successful_save_damage_multiplier": 0.5,
+          "plant_creature_automatically_fails": true,
+          "alternative_target": {
+            "type": "nonmagical plant that is not a creature",
+            "saving_throw": false,
+            "effect": "withers and dies"
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2497,8 +2806,44 @@
       "pages": [
         113
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Blindness/Deafness",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Constitution",
+          "failed_save_condition_choice": [
+            "Blinded",
+            "Deafened"
+          ],
+          "repeat_save_timing": "end of each target turn",
+          "repeat_save_success_ends_spell": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2514,8 +2859,53 @@
         113,
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Blink",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "roll_timing": "end of each caster turn",
+          "roll": "1d6",
+          "ethereal_plane_results": [
+            4,
+            5,
+            6
+          ],
+          "ends_if_already_on_ethereal_plane": true,
+          "ethereal_perception": {
+            "source_plane_maximum_feet": 60,
+            "appearance": "shades of gray"
+          },
+          "ethereal_interaction_limited_to_ethereal_creatures": true,
+          "source_plane_creatures_normally_cannot_perceive_caster": true,
+          "return_timing": [
+            "start of next turn",
+            "spell ends"
+          ],
+          "return_space": {
+            "visible_unoccupied_space_within_feet": 10,
+            "fallback": "nearest unoccupied space"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2530,8 +2920,36 @@
       "pages": [
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Blur",
+        "level": 2,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "attack_rolls_against_caster": "Disadvantage",
+          "immune_perception_modes": [
+            "Blindsight",
+            "Truesight"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2546,8 +2964,44 @@
       "pages": [
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Burning Hands",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Cone",
+            "length_feet": 15
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "3d6",
+          "damage_type": "Fire",
+          "successful_save_damage_multiplier": 0.5,
+          "unworn_uncarried_flammable_objects_ignite": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2562,8 +3016,52 @@
       "pages": [
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Call Lightning",
+        "level": 3,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "storm_cloud": {
+            "origin": "visible point within range above caster",
+            "shape": "Cylinder",
+            "height_feet": 10,
+            "radius_feet": 60
+          },
+          "bolt_target": "visible point under cloud",
+          "damage_area_radius_feet": 5,
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "3d10",
+          "damage_type": "Lightning",
+          "successful_save_damage_multiplier": 0.5,
+          "repeat_bolt_action": "Magic",
+          "outdoor_storm": {
+            "controls_existing_storm": true,
+            "damage_increase": "1d10"
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "damage_increase_per_slot_level": "1d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2578,8 +3076,60 @@
       "pages": [
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Calm Emotions",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "point within range"
+          },
+          "targets": "each Humanoid in area",
+          "saving_throw_ability": "Charisma",
+          "failed_save_option_per_creature": [
+            {
+              "condition_immunities": [
+                "Charmed",
+                "Frightened"
+              ],
+              "existing_conditions_suppressed": [
+                "Charmed",
+                "Frightened"
+              ]
+            },
+            {
+              "attitude": "Indifferent",
+              "applies_to_attitude": "Hostile toward chosen creatures",
+              "early_end_triggers": [
+                "target takes damage",
+                "target witnesses allies taking damage"
+              ],
+              "attitude_returns_to_normal_when_spell_ends": true
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2594,8 +3144,48 @@
       "pages": [
         114
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Chain Lightning",
+        "level": 6,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "three silver pins"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "primary_target": "visible target",
+          "secondary_target_maximum": 3,
+          "secondary_target_range_from_primary_feet": 30,
+          "eligible_target_types": [
+            "creature",
+            "object"
+          ],
+          "maximum_bolts_per_target": 1,
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "10d8",
+          "damage_type": "Lightning",
+          "successful_save_damage_multiplier": 0.5,
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "additional_secondary_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2611,8 +3201,45 @@
         114,
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Charm Monster",
+        "level": 4,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Wisdom",
+          "save_advantage_if_fighting_caster_or_allies": true,
+          "failed_save_condition": "Charmed",
+          "failed_save_attitude": "Friendly",
+          "early_end_trigger": "caster or caster allies damage target",
+          "target_knows_it_was_charmed_when_spell_ends": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2627,8 +3254,45 @@
       "pages": [
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Charm Person",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "visible Humanoid",
+          "saving_throw_ability": "Wisdom",
+          "save_advantage_if_fighting_caster_or_allies": true,
+          "failed_save_condition": "Charmed",
+          "failed_save_attitude": "Friendly",
+          "early_end_trigger": "caster or caster allies damage target",
+          "target_knows_it_was_charmed_when_spell_ends": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2643,8 +3307,42 @@
       "pages": [
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Chill Touch",
+        "level": 0,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "attack": "melee spell attack",
+          "hit_damage": "1d10",
+          "damage_type": "Necrotic",
+          "hit_point_recovery_prevented_until": "end of caster's next turn",
+          "cantrip_damage_by_character_level": {
+            "1": "1d10",
+            "5": "2d10",
+            "11": "3d10",
+            "17": "4d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2659,8 +3357,52 @@
       "pages": [
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Chromatic Orb",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond worth 50+ GP"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "attack": "ranged spell attack",
+          "damage_type_choice": [
+            "Acid",
+            "Cold",
+            "Fire",
+            "Lightning",
+            "Poison",
+            "Thunder"
+          ],
+          "hit_damage": "3d8",
+          "leap_trigger": "same result on two or more damage d8s",
+          "leap_target": "different chosen target within 30 feet of previous target",
+          "leap_requires_new_attack_and_damage_roll": true,
+          "multiple_leaps_require_minimum_slot_level": 2,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d8",
+            "maximum_leaps": "slot level",
+            "maximum_times_each_creature_can_be_targeted": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2675,8 +3417,47 @@
       "pages": [
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Circle of Death",
+        "level": 6,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "powder of crushed black pearl worth 500+ GP"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 60,
+            "origin": "point within range"
+          },
+          "targets": "each creature in area",
+          "saving_throw_ability": "Constitution",
+          "failed_save_damage": "8d8",
+          "damage_type": "Necrotic",
+          "successful_save_damage_multiplier": 0.5,
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "damage_increase_per_slot_level": "2d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -2691,8 +3472,56 @@
       "pages": [
         115
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Clairvoyance",
+        "level": 3,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "miles": 1
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "focus worth 100+ GP: jeweled horn for hearing or glass eye for seeing"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "sensor": {
+            "visibility": "Invisible",
+            "tangible": false,
+            "invulnerable": true,
+            "movement": "stationary"
+          },
+          "eligible_locations": [
+            "familiar location",
+            "obvious unfamiliar location"
+          ],
+          "initial_sense_choice": [
+            "seeing",
+            "hearing"
+          ],
+          "sense_origin": "sensor space",
+          "switch_sense_action": "Bonus Action",
+          "sensor_visible_with": [
+            "See Invisibility",
+            "Truesight"
+          ],
+          "visible_sensor_appearance": "luminous fist-sized orb"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
