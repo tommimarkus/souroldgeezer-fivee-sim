@@ -1433,8 +1433,15 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Darkness",
+        "obscurement": "Heavily Obscured",
+        "related_terms": [
+          "Heavily Obscured",
+          "Playing the Game: Exploration"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1449,8 +1456,15 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Darkvision",
+        "range": "specified by feature",
+        "dim_light_appears_as": "Bright Light",
+        "darkness_appears_as": "Dim Light",
+        "colors_in_darkness": "shades of gray",
+        "related_term": "Playing the Game: Exploration"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1465,8 +1479,19 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Dash [Action]",
+        "duration": "current turn",
+        "extra_movement": "chosen Speed after modifiers",
+        "special_speeds_eligible": [
+          "Fly Speed",
+          "Swim Speed",
+          "other special speed"
+        ],
+        "speed_chosen_each_use": true,
+        "related_term": "Speed"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1481,8 +1506,26 @@
       "pages": [
         180
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Dead",
+        "hit_points": 0,
+        "can_regain_hit_points_before_magical_revival": false,
+        "revival": {
+          "spirit_knows_caster": true,
+          "spirit_can_refuse": true,
+          "spirit_location": "Outer Planes",
+          "requires_spirit_return": true,
+          "current_hit_points_determined_by": "revival effect"
+        },
+        "returning_effects_unless_otherwise_stated": {
+          "conditions": "return if duration remains",
+          "magical_contagions": "return if duration remains",
+          "curses": "return if duration remains"
+        },
+        "returning_exhaustion_levels": "one fewer than at death",
+        "magic_item_attunements_retained": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1497,8 +1540,12 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Deafened [Condition]",
+        "can_hear": false,
+        "hearing_required_ability_checks": "automatic failure"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1513,8 +1560,14 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Death Saving Throw",
+        "alias": "Death Save",
+        "applies_to": "player character",
+        "trigger": "starts turn with 0 Hit Points",
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1529,8 +1582,17 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Dehydration [Hazard]",
+        "daily_water_table_id": "181-water-needs-per-day",
+        "less_than_half_daily_requirement": {
+          "timing": "day's end",
+          "exhaustion_levels_gained": 1
+        },
+        "dehydration_exhaustion_removal_requirement": "drink full daily required amount",
+        "related_term": "Exhaustion"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1545,8 +1607,23 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Difficult Terrain",
+        "extra_movement_cost_per_foot": 1,
+        "cumulative": false,
+        "examples": [
+          "non-Tiny non-ally creature",
+          "furniture sized for creature or larger",
+          "heavy snow",
+          "ice",
+          "rubble",
+          "undergrowth",
+          "liquid between shin and waist depth",
+          "opening sized for creature one size smaller",
+          "slope of 20 degrees or more"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1561,8 +1638,17 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Difficulty Class",
+        "abbreviation": "DC",
+        "purpose": "target number",
+        "tests": [
+          "ability check",
+          "saving throw"
+        ],
+        "related_term": "Playing the Game: D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1577,8 +1663,15 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Dim Light",
+        "obscurement": "Lightly Obscured",
+        "related_terms": [
+          "Lightly Obscured",
+          "Playing the Game: Exploration"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1593,8 +1686,16 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Disadvantage",
+        "test_type": "D20 Test",
+        "dice": "2d20",
+        "result_used": "lower roll",
+        "maximum_instances_affecting_one_roll": 1,
+        "cancels_with_advantage": true,
+        "related_term": "Playing the Game: D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1609,8 +1710,12 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Disengage [Action]",
+        "movement_provokes_opportunity_attacks": false,
+        "duration": "rest of current turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1625,8 +1730,20 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Dodge [Action]",
+        "duration": "until start of next turn",
+        "attack_rolls_against_creature": {
+          "Disadvantage": true,
+          "requires_seeing_attacker": true
+        },
+        "dexterity_saving_throws": "Advantage",
+        "benefits_lost_if": [
+          "Incapacitated",
+          "Speed is 0"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1641,8 +1758,23 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Emanation [Area of Effect]",
+        "origin_types": [
+          "creature",
+          "object"
+        ],
+        "geometry": "straight lines in all directions",
+        "distance": "specified by creating effect",
+        "moves_with_origin": true,
+        "movement_exceptions": [
+          "instantaneous effect",
+          "stationary effect"
+        ],
+        "origin_included_by_default": false,
+        "creator_can_include_origin": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1657,8 +1789,22 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Encounter",
+        "context": "scene in an adventure",
+        "minimum_game_pillars": 1,
+        "pillars": [
+          "social interaction",
+          "exploration",
+          "combat"
+        ],
+        "related_terms": [
+          "Playing the Game: Social Interaction",
+          "Playing the Game: Exploration",
+          "Playing the Game: Combat"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1673,8 +1819,16 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Enemy",
+        "qualifiers": [
+          "fights against you in combat",
+          "actively works to harm you",
+          "designated by rules",
+          "designated by GM"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1689,8 +1843,17 @@
       "pages": [
         181
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Exhaustion [Condition]",
+        "cumulative": true,
+        "levels_per_instance": 1,
+        "death_at_level": 6,
+        "d20_test_roll_reduction": "2 × Exhaustion level",
+        "speed_reduction_feet": "5 × Exhaustion level",
+        "long_rest_levels_removed": 1,
+        "condition_ends_at_level": 0
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1705,8 +1868,18 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Experience Points",
+        "abbreviation": "XP",
+        "earned_by": [
+          "overcoming challenges",
+          "completing adventures"
+        ],
+        "awarded_by": "Game Master",
+        "threshold_effect": "character level increases",
+        "related_term": "Level Advancement"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1721,8 +1894,16 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Expertise",
+        "applies_to": "skill proficiency",
+        "ability_check_proficiency_bonus": "doubled",
+        "already_doubled_by_another_feature": "not doubled again",
+        "gain_selection": "one skill with proficiency",
+        "maximum_instances_per_skill_proficiency": 1,
+        "related_term": "Playing the Game: Proficiency"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3523,30 +3704,85 @@
       "name": "Water Needs per Day",
       "section_id": "1178-11-2-53-dehydration-hazard",
       "page": 181,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "size",
+          "id": "left-size",
           "name": "Size",
           "type": "string"
         },
         {
-          "id": "water",
+          "id": "left-water",
           "name": "Water",
           "type": "string"
         },
         {
-          "id": "size-2",
+          "id": "right-size",
           "name": "Size",
           "type": "string"
         },
         {
-          "id": "water-2",
+          "id": "right-water",
           "name": "Water",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Tiny"
+            },
+            {
+              "value": "1/4 gallon",
+              "numeric_value": 0.25
+            },
+            {
+              "value": "Large"
+            },
+            {
+              "value": "4 gallons",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Small"
+            },
+            {
+              "value": "1 gallon",
+              "numeric_value": 1
+            },
+            {
+              "value": "Huge"
+            },
+            {
+              "value": "16 gallons",
+              "numeric_value": 16
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium"
+            },
+            {
+              "value": "1 gallon",
+              "numeric_value": 1
+            },
+            {
+              "value": "Gargantuan"
+            },
+            {
+              "value": "64 gallons",
+              "numeric_value": 64
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
