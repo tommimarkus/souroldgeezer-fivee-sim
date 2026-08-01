@@ -16412,8 +16412,40 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Remove Curse",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one touched creature or object",
+          "all_curses_end": true,
+          "cursed_magic_item": {
+            "curse_remains": true,
+            "owner_attunement_broken": true,
+            "can_be_removed_or_discarded": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16428,8 +16460,54 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Resilient Sphere",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "glass sphere"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "Large or smaller creature or object",
+          "unwilling_creature_save": "Dexterity",
+          "failed_save": "enclosed",
+          "barrier": {
+            "blocks_in_and_out": [
+              "physical objects",
+              "energy",
+              "spell effects"
+            ],
+            "allows_breathing": true,
+            "immune_to_all_damage": true,
+            "inside_protected_from_outside_attacks_and_effects": true,
+            "inside_creature_cannot_damage_outside": true
+          },
+          "sphere": {
+            "weightless": true,
+            "size": "just large enough for enclosed target",
+            "enclosed_creature_roll_action": "Action",
+            "maximum_roll_speed": "half enclosed creature's Speed",
+            "can_be_picked_up_and_moved_by_others": true
+          },
+          "disintegrate": "destroys sphere without harming contents"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16444,8 +16522,48 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Resistance",
+        "level": 0,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "willing creature",
+          "damage_type_choice": [
+            "Acid",
+            "Bludgeoning",
+            "Cold",
+            "Fire",
+            "Lightning",
+            "Necrotic",
+            "Piercing",
+            "Poison",
+            "Radiant",
+            "Slashing",
+            "Thunder"
+          ],
+          "chosen_type_damage_reduction": "1d4",
+          "benefit_limit": "once per turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16461,8 +16579,54 @@
         158,
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Resurrection",
+        "level": 7,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond worth 1,000+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "dead creature",
+          "maximum_time_dead_years": 100,
+          "ineligible_death": [
+            "old age",
+            "creature was Undead when it died"
+          ],
+          "returns_with_all_hit_points": true,
+          "neutralizes_poisons_present_at_death": true,
+          "closes_mortal_wounds": true,
+          "restores_missing_body_parts": true,
+          "target_ordeal": {
+            "d20_test_penalty": -4,
+            "penalty_reduction_per_long_rest": 1,
+            "ends_at_penalty": 0
+          },
+          "caster_tax_for_target_dead_days": {
+            "minimum": 365,
+            "duration": "until caster finishes a Long Rest",
+            "cannot_cast_spells": true,
+            "d20_tests": "Disadvantage"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16477,8 +16641,48 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Reverse Gravity",
+        "level": 7,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 100
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "lodestone and iron filings"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cylinder",
+            "radius_feet": 50,
+            "height_feet": 100
+          },
+          "affected": "creatures and objects not anchored to ground",
+          "movement": "fall upward to Cylinder top",
+          "avoid_upward_fall": {
+            "saving_throw": "Dexterity",
+            "requirement": "fixed object within reach"
+          },
+          "collision": "resolved as downward fall",
+          "reaching_top": "hover for duration",
+          "when_spell_ends": "affected creatures and objects fall downward"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16493,8 +16697,39 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Revivify",
+        "level": 3,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond worth 300+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "creature that died within last minute",
+          "revived_hit_points": 1,
+          "cannot_revive_old_age_death": true,
+          "restores_missing_body_parts": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16509,8 +16744,53 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Rope Trick",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "segment of rope"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "rope",
+          "rope_position": "one end rises until perpendicular to ground or reaches ceiling",
+          "portal": {
+            "condition": "Invisible",
+            "width_feet": 3,
+            "height_feet": 5,
+            "location": "upper rope end",
+            "destination": "extradimensional space"
+          },
+          "access": "climb rope",
+          "rope_can_be_pulled_in_or_dropped_out": true,
+          "capacity": {
+            "maximum_creatures": 8,
+            "maximum_size": "Medium"
+          },
+          "blocked_in_and_out": [
+            "attacks",
+            "spells",
+            "other effects"
+          ],
+          "creatures_inside_can_see_through_portal": true,
+          "when_spell_ends": "contents drop out"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16525,8 +16805,44 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sacred Flame",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw": "Dexterity",
+          "failed_save_damage": "1d8",
+          "damage_type": "Radiant",
+          "save_ignores_cover": [
+            "Half Cover",
+            "Three-Quarters Cover"
+          ],
+          "damage_by_character_level": {
+            "1": "1d8",
+            "5": "2d8",
+            "11": "3d8",
+            "17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16541,8 +16857,47 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sanctuary",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mirror-glass shard"
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "target": "creature",
+          "triggering_hostile_actions": [
+            "attack roll targeting warded creature",
+            "damaging spell targeting warded creature"
+          ],
+          "attacker_saving_throw": "Wisdom",
+          "failed_save_choice": [
+            "choose new target",
+            "lose attack or spell"
+          ],
+          "protects_from_areas_of_effect": false,
+          "ends_if_warded_creature": [
+            "makes attack roll",
+            "casts spell",
+            "deals damage"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16557,8 +16912,39 @@
       "pages": [
         159
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Scorching Ray",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "rays": 3,
+          "targeting": "one target or several targets",
+          "attack_per_ray": "ranged spell attack",
+          "hit_damage_per_ray": "2d6",
+          "damage_type": "Fire",
+          "higher_level_slots": {
+            "additional_rays_per_slot_above_2": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16573,8 +16959,63 @@
       "pages": [
         160
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Scrying",
+        "level": 5,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "focus worth 1,000+ GP, such as crystal ball, mirror, or water-filled font"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "creature_target": {
+            "same_plane_required": true,
+            "saving_throw": "Wisdom",
+            "save_modifier_table_ids": [
+              "160-your-knowledge-of-the-target-is-save-modifier",
+              "160-you-have-the-target-s-save-modifier"
+            ],
+            "target_knows_save_subject": false,
+            "target_feels_uneasy": true,
+            "successful_save": {
+              "unaffected": true,
+              "retarget_lockout_hours": 24
+            },
+            "failed_save_sensor": {
+              "condition": "Invisible",
+              "intangible": true,
+              "maximum_distance_from_target_feet": 10,
+              "caster_can_see_and_hear_through": true,
+              "moves_with_target": true,
+              "visible_appearance": "luminous orb about fist size"
+            }
+          },
+          "location_target": {
+            "must_have_been_seen_by_caster": true,
+            "sensor_appears_at_location": true,
+            "sensor_moves": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16589,8 +17030,40 @@
       "pages": [
         160
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Searing Smite",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Bonus Action",
+          "trigger": "immediately after hitting with a Melee weapon or Unarmed Strike"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "target": "creature hit by triggering attack",
+          "initial_extra_damage": "1d6",
+          "damage_type": "Fire",
+          "start_of_target_turn_damage": "1d6",
+          "start_of_target_turn_save": "Constitution",
+          "failed_save": "spell continues",
+          "successful_save": "spell ends",
+          "higher_level_slots": {
+            "all_damage_increase_per_slot_above_1": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16605,8 +17078,64 @@
       "pages": [
         160
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Secret Chest",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": [
+            "rare-material chest measuring 3 feet by 2 feet by 2 feet worth 5,000+ GP",
+            "Tiny same-material replica worth 50+ GP"
+          ]
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "destination": "Ethereal Plane",
+          "hidden_contents": true,
+          "casting_requires_touching": [
+            "chest",
+            "replica"
+          ],
+          "capacity_cubic_feet": 12,
+          "contents_type": "nonliving material",
+          "recall": {
+            "action": "Magic",
+            "touch": "replica",
+            "destination": "unoccupied ground space within 5 feet"
+          },
+          "return_to_ethereal_plane": {
+            "action": "Magic",
+            "touch": [
+              "chest",
+              "replica"
+            ]
+          },
+          "daily_end_chance": {
+            "begins_after_days": 60,
+            "cumulative_percent_per_day": 5,
+            "check_timing": "end of each day"
+          },
+          "other_end_conditions": [
+            "caster casts Secret Chest again",
+            "Tiny replica destroyed"
+          ],
+          "if_ends_while_chest_is_ethereal": "chest remains on Ethereal Plane"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16621,8 +17150,36 @@
       "pages": [
         160
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "See Invisibility",
+        "level": 2,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pinch of talc"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "Invisible_creatures_and_objects_appear_visible": true,
+          "can_see_into_ethereal_plane": true,
+          "ethereal_creatures_and_objects_appearance": "ghostly"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16638,8 +17195,57 @@
         160,
         161
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Seeming",
+        "level": 5,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "targets": "visible creatures chosen by caster",
+          "unwilling_target_save": "Charisma",
+          "successful_save": "unaffected",
+          "appearances": "same or different for targets",
+          "can_change": [
+            "body appearance",
+            "equipment appearance"
+          ],
+          "apparent_height_change_feet": {
+            "minimum": -1,
+            "maximum": 1
+          },
+          "apparent_weight_change": [
+            "heavier",
+            "lighter"
+          ],
+          "required_limb_arrangement": "same basic arrangement as target",
+          "physical_inspection_reveals_illusion": true,
+          "study": {
+            "action": "Study",
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": "caster's spell save DC",
+            "on_success": "aware target is disguised"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16654,8 +17260,53 @@
       "pages": [
         161
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sending",
+        "level": 3,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Unlimited"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "copper wire"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "message_maximum_words": 25,
+          "target_eligibility": [
+            "creature caster has met",
+            "creature described by someone who has met it"
+          ],
+          "delivery": "heard in target's mind",
+          "sender_recognized_if_known": true,
+          "immediate_reply": true,
+          "target_understands_meaning": true,
+          "distance_limit": false,
+          "other_plane_failure_chance_percent": 5,
+          "caster_knows_delivery_failure": true,
+          "recipient_block": {
+            "available_after_receiving_message": true,
+            "duration_hours": 8,
+            "blocked_attempt": [
+              "caster learns it is blocked",
+              "spell fails"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16670,8 +17321,56 @@
       "pages": [
         161
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Sequester",
+        "level": 7,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "gem dust worth 5,000+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "target": [
+            "object",
+            "willing creature"
+          ],
+          "target_condition": "Invisible",
+          "protections": [
+            "cannot be targeted by Divination spells",
+            "cannot be detected by magic",
+            "cannot be viewed remotely with magic"
+          ],
+          "creature_target": {
+            "state": "suspended animation",
+            "condition": "Unconscious",
+            "ages": false,
+            "needs_food": false,
+            "needs_water": false,
+            "needs_air": false
+          },
+          "early_end_condition": {
+            "chosen_by": "caster",
+            "scope": "anything",
+            "must_occur_or_be_visible_within_miles": 1
+          },
+          "damage_to_target_ends_spell": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -16686,8 +17385,65 @@
       "pages": [
         161
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Shapechange",
+        "level": 9,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "jade circlet worth 1,500+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "change_to_another_form": {
+            "action": "Magic",
+            "allowed_during_duration": true
+          },
+          "form_eligibility": {
+            "maximum_challenge_rating": "caster's level or Challenge Rating",
+            "must_have_been_seen_by_caster": true,
+            "excluded_creature_types": [
+              "Construct",
+              "Undead"
+            ]
+          },
+          "initial_temporary_hit_points": "first form's Hit Points",
+          "remaining_temporary_hit_points_vanish_when_spell_ends": true,
+          "statistics_replaced_by_form_stat_block": true,
+          "retained": [
+            "creature type",
+            "alignment",
+            "personality",
+            "Intelligence score",
+            "Wisdom score",
+            "Charisma score",
+            "Hit Points",
+            "Hit Point Dice",
+            "proficiencies",
+            "ability to communicate"
+          ],
+          "spellcasting_feature_retained_if_present": true,
+          "equipment_choice": [
+            "drops to ground",
+            "changes size and shape to fit new form"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -18877,10 +19633,10 @@
       "name": "Your Knowledge of the Target Is ... / Save Modifier",
       "section_id": "1048-10-16-123-scrying",
       "page": 160,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "your-knowledge-of-the-target-is",
+          "id": "knowledge-of-target",
           "name": "Your Knowledge of the Target Is ...",
           "type": "string"
         },
@@ -18890,7 +19646,38 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Secondhand (heard of the target)"
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Firsthand (met the target)"
+            },
+            {
+              "value": 0
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Extensive (know the target well)"
+            },
+            {
+              "value": -5
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -18900,10 +19687,10 @@
       "name": "You Have the Target's ... / Save Modifier",
       "section_id": "1048-10-16-123-scrying",
       "page": 160,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "you-have-the-target-s",
+          "id": "physical-connection",
           "name": "You Have the Target's ...",
           "type": "string"
         },
@@ -18913,7 +19700,38 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Picture or other likeness"
+            },
+            {
+              "value": -2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Garment or other possession"
+            },
+            {
+              "value": -4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Body part, lock of hair, or bit of nail"
+            },
+            {
+              "value": -10
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
