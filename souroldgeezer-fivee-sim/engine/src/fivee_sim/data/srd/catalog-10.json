@@ -21049,8 +21049,55 @@
         173,
         174
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Water Walk",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Ranger",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "piece of cork"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "maximum_targets": 10,
+          "targets": "willing creatures chosen within range",
+          "liquid_surfaces_treated_as": "harmless solid ground",
+          "example_surfaces": [
+            "water",
+            "acid",
+            "mud",
+            "snow",
+            "quicksand",
+            "lava"
+          ],
+          "molten_lava_heat_damage_still_applies": true,
+          "voluntary_surface_transition": {
+            "action": "Bonus Action",
+            "directions": [
+              "surface to liquid",
+              "liquid to surface"
+            ]
+          },
+          "fall_into_liquid": "target passes through surface into liquid"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21065,8 +21112,69 @@
       "pages": [
         174
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Web",
+        "level": 2,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of spiderweb"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "side_feet": 20,
+            "center": "point within range"
+          },
+          "terrain": "Difficult Terrain",
+          "obscurement": "Lightly Obscured",
+          "support_requirements": [
+            "anchored between two solid masses",
+            "layered across floor, wall, or ceiling"
+          ],
+          "unsupported_web": "collapses and spell ends at start of caster's next turn",
+          "flat_surface_depth_feet": 5,
+          "restraint": {
+            "triggers": [
+              "first entry on a turn",
+              "starts turn in webs"
+            ],
+            "saving_throw_ability": "Dexterity",
+            "failed_save_condition": "Restrained",
+            "condition_duration": "while in webs or until target breaks free",
+            "escape_action": "Action",
+            "escape_check": {
+              "ability": "Strength",
+              "skill": "Athletics",
+              "dc": "caster's spell save DC"
+            }
+          },
+          "flammable": true,
+          "fire": {
+            "web_cube_side_feet": 5,
+            "burn_away_rounds": 1,
+            "damage": "2d4",
+            "damage_type": "Fire",
+            "damage_trigger": "creature starts turn in fire"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21081,8 +21189,54 @@
       "pages": [
         174
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Weird",
+        "level": 9,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 30,
+            "center": "point within range"
+          },
+          "targets": "chosen creatures in area",
+          "saving_throw_ability": "Wisdom",
+          "failed_initial_save": {
+            "damage": "10d10",
+            "damage_type": "Psychic",
+            "condition": "Frightened",
+            "condition_duration": "spell duration"
+          },
+          "successful_initial_save": {
+            "damage": "half of 10d10 Psychic",
+            "condition": "none"
+          },
+          "frightened_target_repeat_save": {
+            "timing": "end of each target turn",
+            "failed_save_damage": "5d10 Psychic",
+            "successful_save": "spell ends on target"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21097,8 +21251,63 @@
       "pages": [
         174
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wind Walk",
+        "level": 6,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "candle"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "targets": "caster and up to ten willing chosen creatures within range",
+          "form": "gaseous cloud",
+          "cloud_form": {
+            "fly_speed_feet": 300,
+            "can_hover": true,
+            "condition_immunity": "Prone",
+            "damage_resistances": [
+              "Bludgeoning",
+              "Piercing",
+              "Slashing"
+            ],
+            "allowed_actions": [
+              "Dash",
+              "Magic action to begin reverting"
+            ]
+          },
+          "revert_to_normal": {
+            "action": "Magic action",
+            "transformation_minutes": 1,
+            "condition_during_transformation": "Stunned"
+          },
+          "return_to_cloud": {
+            "allowed_until_spell_ends": true,
+            "action": "Magic action",
+            "transformation_minutes": 1
+          },
+          "airborne_at_end": {
+            "descent_feet_per_round": 60,
+            "maximum_descent_minutes": 1,
+            "safe_landing": true,
+            "if_not_landed": "falls remaining distance"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21113,8 +21322,64 @@
       "pages": [
         174
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wind Wall",
+        "level": 3,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "fan and feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "wall": {
+            "maximum_length_feet": 50,
+            "maximum_height_feet": 15,
+            "thickness_feet": 1,
+            "shape": "chosen continuous path along ground",
+            "origin": "point within range"
+          },
+          "appearance_damage": {
+            "targets": "each creature in wall area",
+            "saving_throw_ability": "Strength",
+            "failed_save_damage": "4d8",
+            "damage_type": "Bludgeoning",
+            "successful_save_damage_multiplier": 0.5
+          },
+          "keeps_at_bay": [
+            "fog",
+            "smoke",
+            "other gases"
+          ],
+          "cannot_pass": [
+            "Small or smaller flying creatures",
+            "Small or smaller flying objects",
+            "creatures in gaseous form"
+          ],
+          "loose_lightweight_materials": "fly upward",
+          "ordinary_projectiles_at_targets_behind_wall": "deflected upward and miss automatically",
+          "unaffected_projectiles": [
+            "boulders hurled by Giants",
+            "boulders hurled by siege engines",
+            "similar projectiles"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21129,8 +21394,106 @@
       "pages": [
         175
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wish",
+        "level": 9,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "basic_use": {
+            "duplicate_spell_maximum_level": 8,
+            "casting_requirements_ignored": true,
+            "costly_components_ignored": true,
+            "duplicated_spell_takes_effect": true
+          },
+          "alternatives": [
+            {
+              "name": "Object Creation",
+              "objects": 1,
+              "maximum_value_gp": 25000,
+              "magic_item_allowed": false,
+              "maximum_dimension_feet": 300,
+              "placement": "visible unoccupied ground space"
+            },
+            {
+              "name": "Instant Health",
+              "targets": "caster and up to twenty visible creatures",
+              "healing": "all Hit Points",
+              "additional_effect": "ends every effect listed in Greater Restoration"
+            },
+            {
+              "name": "Resistance",
+              "maximum_visible_targets": 10,
+              "effect": "Resistance to one chosen damage type",
+              "duration": "permanent"
+            },
+            {
+              "name": "Spell Immunity",
+              "maximum_visible_targets": 10,
+              "effect": "immunity to one spell or other magical effect",
+              "duration_hours": 8
+            },
+            {
+              "name": "Sudden Learning",
+              "effect": "replace one feat with another eligible feat",
+              "old_feat_benefits_lost": true,
+              "new_feat_benefits_gained": true,
+              "feat_that_is_prerequisite_for_other_feat_or_feature_replaceable": false
+            },
+            {
+              "name": "Roll Redo",
+              "event": "one die roll within last round including caster's last turn",
+              "effect": "force reroll",
+              "reroll_modes": [
+                "normal",
+                "Advantage",
+                "Disadvantage"
+              ],
+              "caster_chooses_original_or_reroll": true
+            },
+            {
+              "name": "Reshape Reality",
+              "request": "effect outside listed alternatives",
+              "adjudicator": "GM",
+              "possible_outcomes": [
+                "fails",
+                "partial success",
+                "unforeseen consequence"
+              ],
+              "greater_request_increases_risk": true,
+              "legendary_or_artifact_request_may_transport_caster_to_current_owner": true,
+              "community_region_or_world_consequences_may_attract_powerful_foes": true,
+              "god_affecting_request_may_prompt_divine_servants_to_intervene": true,
+              "multiverse_undo_request": "fails"
+            }
+          ],
+          "alternative_use_stress": {
+            "applies_to_basic_spell_duplication": false,
+            "subsequent_spell_damage_until_long_rest": "1d10 Necrotic per level of spell cast",
+            "subsequent_spell_damage_reducible_or_preventable": false,
+            "strength_score": 3,
+            "strength_duration_days": "2d4",
+            "rest_or_light_activity_daily_recovery_reduction_days": 2,
+            "permanent_loss_of_wish_chance_percent": 33
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21145,8 +21508,34 @@
       "pages": [
         175
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Word of Recall",
+        "level": 6,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 5
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "targets": "caster and up to five willing creatures within 5 feet",
+          "destination": "previously designated sanctuary",
+          "arrival": "nearest unoccupied spaces to designated spot",
+          "without_prepared_sanctuary": "no effect",
+          "sanctuary_preparation": "cast spell at chosen location"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -21161,8 +21550,48 @@
       "pages": [
         175
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Zone of Truth",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 15,
+            "center": "point within range"
+          },
+          "saving_throw_ability": "Charisma",
+          "saving_throw_triggers": [
+            "first entry into area on a turn",
+            "starts turn in area"
+          ],
+          "failed_save": "cannot speak a deliberate lie while in area",
+          "caster_knows_save_outcome": true,
+          "affected_creature_knows_spell": true,
+          "affected_creature_can_avoid_answering": true,
+          "affected_creature_can_be_evasive": true,
+          "affected_creature_must_be_truthful": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     }

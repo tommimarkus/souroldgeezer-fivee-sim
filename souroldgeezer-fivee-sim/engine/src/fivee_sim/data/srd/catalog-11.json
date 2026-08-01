@@ -15,7 +15,7 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,62 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "bracket_tags": {
+          "values": [
+            "Action",
+            "Area of Effect",
+            "Attitude",
+            "Condition",
+            "Hazard"
+          ],
+          "meaning": "rule belongs to a family of rules",
+          "each_tag_has_glossary_entry": true
+        },
+        "second_person_reference": "creature or object to which the rule applies at that moment",
+        "see_also_targets": [
+          "other glossary entries",
+          "other document sections"
+        ],
+        "contains_only_current_rules_terms": true,
+        "older_edition_terms_lookup": "index",
+        "abbreviations": {
+          "AC": "Armor Class",
+          "C": "Concentration",
+          "CE": "Chaotic Evil",
+          "CG": "Chaotic Good",
+          "Cha.": "Charisma",
+          "CN": "Chaotic Neutral",
+          "Con.": "Constitution",
+          "CP": "Copper Piece(s)",
+          "CR": "Challenge Rating",
+          "DC": "Difficulty Class",
+          "Dex.": "Dexterity",
+          "EP": "Electrum Piece(s)",
+          "GM": "Game Master",
+          "GP": "Gold Piece(s)",
+          "HP": "Hit Point(s)",
+          "Int.": "Intelligence",
+          "LE": "Lawful Evil",
+          "LG": "Lawful Good",
+          "LN": "Lawful Neutral",
+          "M": "Material component",
+          "N": "Neutral",
+          "NE": "Neutral Evil",
+          "NG": "Neutral Good",
+          "NPC": "Nonplayer character",
+          "PB": "Proficiency Bonus",
+          "PP": "Platinum Piece(s)",
+          "R": "Ritual",
+          "S": "Somatic component",
+          "SP": "Silver Piece(s)",
+          "Str.": "Strength",
+          "V": "Verbal component",
+          "Wis.": "Wisdom",
+          "XP": "Experience Point(s)"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1123-11-rules-glossary"
     },
@@ -46,7 +100,7 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1123-11-rules-glossary"
@@ -62,8 +116,17 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Ability Check",
+        "test_type": "D20 Test",
+        "represents": "using an ability or associated skill to overcome a challenge",
+        "ability_count": 6,
+        "related_rules": [
+          "D20 Tests",
+          "Proficiency"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -78,8 +141,24 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Ability Score and Modifier",
+        "abilities": [
+          "Strength",
+          "Dexterity",
+          "Constitution",
+          "Intelligence",
+          "Wisdom",
+          "Charisma"
+        ],
+        "each_ability_has_modifier": true,
+        "modifier_uses": [
+          "D20 Test with corresponding ability",
+          "when a rule requires it"
+        ],
+        "related_rule": "The Six Abilities"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -94,8 +173,30 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Action",
+        "actions_per_turn": 1,
+        "sources": [
+          "standard actions",
+          "special actions provided by features"
+        ],
+        "standard_actions": [
+          "Attack",
+          "Dash",
+          "Disengage",
+          "Dodge",
+          "Help",
+          "Hide",
+          "Influence",
+          "Magic",
+          "Ready",
+          "Search",
+          "Study",
+          "Utilize"
+        ],
+        "related_rule": "Actions"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -110,8 +211,16 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Advantage",
+        "applies_to": "D20 Test",
+        "dice_rolled": "2d20",
+        "result_used": "higher roll",
+        "maximum_advantage_instances_per_roll": 1,
+        "advantage_and_disadvantage_same_roll": "cancel",
+        "related_rule": "D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -126,8 +235,13 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Adventure",
+        "composition": "series of encounters",
+        "result_of_play": "story emerges",
+        "related_rule": "Encounter"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -142,8 +256,30 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Alignment",
+        "describes": [
+          "ethical attitudes",
+          "ideals"
+        ],
+        "morality_axis": [
+          "Good",
+          "Evil",
+          "Neutral"
+        ],
+        "order_axis": [
+          "Lawful",
+          "Chaotic",
+          "Neutral"
+        ],
+        "combination_count": 9,
+        "example_combinations": [
+          "Lawful Good",
+          "Neutral Evil"
+        ],
+        "related_rule": "Create Your Character"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -158,8 +294,17 @@
       "pages": [
         176
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Ally",
+        "qualifying_relationships": [
+          "member of adventuring party",
+          "friend",
+          "on same side in combat",
+          "designated by rules",
+          "designated by GM"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -174,8 +319,31 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Area of Effect",
+        "common_sources": [
+          "spells",
+          "other features"
+        ],
+        "typical_shapes": [
+          "Cone",
+          "Cube",
+          "Cylinder",
+          "Emanation",
+          "Line",
+          "Sphere"
+        ],
+        "shape_count": 6,
+        "has_point_of_origin": true,
+        "point_of_origin_definition": "location from which effect energy erupts",
+        "shape_rules_determine_origin_position": true,
+        "blocked_location_test": "all straight lines from point of origin to location are blocked",
+        "blocked_location_included": false,
+        "line_blocking_cover": "Total Cover",
+        "unseen_point_with_intervening_obstruction": "point of origin forms on near side of obstruction",
+        "related_rule": "Cover"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -190,8 +358,17 @@
       "pages": [
         177
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Armor Class",
+        "abbreviation": "AC",
+        "function": "target number for attack roll",
+        "represents": "difficulty of hitting target",
+        "base_calculation": "10 + Dexterity modifier",
+        "alternate_base_calculation_rule": "choose one base calculation",
+        "multiple_base_calculations_combined": false,
+        "related_rule": "Attack Roll"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
