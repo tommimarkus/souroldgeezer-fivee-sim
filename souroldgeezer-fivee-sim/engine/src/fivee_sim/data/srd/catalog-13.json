@@ -9500,8 +9500,27 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Scarab of Protection",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_on_person": {
+          "armor_class_bonus": 1,
+          "advantage_on_saves_against_spells": true,
+          "preservation": {
+            "charges": 12,
+            "trigger_failed_save_against": [
+              "Necromancy spell",
+              "harmful effect originating from an Undead"
+            ],
+            "reaction_charge_cost": 1,
+            "result": "failed save becomes successful",
+            "destroyed_when_last_charge_expended": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9516,8 +9535,16 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Scimitar of Speed",
+        "item_category": "Weapon (Scimitar)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 2,
+        "damage_roll_bonus": 2,
+        "bonus_action_attacks_per_turn": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9532,8 +9559,24 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sending Stones",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "quantity": 2,
+        "while_touching_one": {
+          "cast_spell": "Sending",
+          "target": "bearer of paired stone"
+        },
+        "unheld_paired_stone": {
+          "user_knows_immediately": true,
+          "spell_cast": false
+        },
+        "shared_recharge_after_cast": "next dawn",
+        "one_destroyed": "paired stone becomes nonmagical"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9548,8 +9591,17 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sentinel Shield",
+        "item_category": "Armor (Shield)",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "while_holding_advantage_on": [
+          "Initiative rolls",
+          "Wisdom (Perception) checks"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9564,8 +9616,29 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Shield, +1, +2, or +3",
+        "item_category": "Armor (Shield)",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "variants": {
+          "+1": {
+            "rarity": "Uncommon",
+            "armor_class_bonus": 1
+          },
+          "+2": {
+            "rarity": "Rare",
+            "armor_class_bonus": 2
+          },
+          "+3": {
+            "rarity": "Very Rare",
+            "armor_class_bonus": 3
+          }
+        },
+        "bonus_applies_while_holding": true,
+        "bonus_is_additional_to_normal_shield_armor_class": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9580,8 +9653,24 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Shield of Missile Attraction",
+        "item_category": "Armor (Shield)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_holding_resistance_to": "damage from attacks made with Ranged weapons",
+        "curse": {
+          "begins_on_attunement": true,
+          "ends_by": [
+            "Remove Curse",
+            "similar magic"
+          ],
+          "removing_shield_ends_curse": false,
+          "redirects_ranged_weapon_attack_target_within_feet": 10,
+          "new_target": "cursed user"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9596,8 +9685,40 @@
       "pages": [
         243
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Shield of the Cavalier",
+        "item_category": "Armor (Shield)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "while_holding_armor_class_bonus": 2,
+        "bonus_is_additional_to_normal_shield_armor_class": true,
+        "forceful_bash": {
+          "use": "one attack roll during Attack action",
+          "target_range_feet": 5,
+          "attack_roll_modifiers": [
+            "Proficiency Bonus",
+            "Strength modifier"
+          ],
+          "hit_force_damage": "2d6 + 2 + Strength modifier",
+          "creature_push_feet": 10,
+          "same_size_or_smaller_condition": "Prone"
+        },
+        "protective_field": {
+          "reaction_trigger": "user or visible ally within 5 feet is targeted by attack or saves against area of effect",
+          "shape": "immobile Emanation",
+          "radius_feet": 5,
+          "origin": "user",
+          "not_fully_contained_objects_and_creatures": "pushed to nearest unoccupied spaces outside",
+          "triggering_attack_or_area_effect_inside": "no effect",
+          "concentration_required": true,
+          "maximum_duration_minutes": 1,
+          "blocks_passage_in_both_directions": true,
+          "inside_protected_from_outside_attacks_and_effects": true,
+          "inside_creatures_cannot_damage_outside": true,
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9612,8 +9733,22 @@
       "pages": [
         244
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Slippers of Spider Climbing",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn": {
+          "move_on": [
+            "vertical surfaces",
+            "ceilings"
+          ],
+          "hands_remain_free": true,
+          "climb_speed": "equal to Speed",
+          "cannot_use_on_slippery_surface": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9628,8 +9763,27 @@
       "pages": [
         244
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sovereign Glue",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "bond": {
+          "objects": 2,
+          "permanent": true
+        },
+        "storage_container_inside_coating": "Oil of Slipperiness",
+        "found_ounces": "1d6 + 1",
+        "coverage_per_ounce": "1-foot square",
+        "application_action": "Utilize",
+        "setting_minutes": 1,
+        "bond_broken_by": [
+          "Universal Solvent",
+          "Oil of Etherealness",
+          "Wish"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9644,8 +9798,20 @@
       "pages": [
         244
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Spellguard Shield",
+        "item_category": "Armor (Shield)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "while_holding": {
+          "advantage_on_saves_against": [
+            "spells",
+            "other magical effects"
+          ],
+          "spell_attack_rolls_against_user": "Disadvantage"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9660,8 +9826,38 @@
       "pages": [
         244
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Spell Scroll",
+        "item_category": "Scroll",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "spells_contained": 1,
+        "cast": {
+          "requires_spell_on_user_spell_list": true,
+          "material_components_required": false,
+          "casting_time": "spell's normal casting time",
+          "scroll_destroyed_after_cast": true,
+          "interrupted_cast_destroys_scroll": false
+        },
+        "spell_not_on_user_spell_list": "unintelligible",
+        "higher_level_than_user_can_cast": {
+          "check": "spellcasting ability",
+          "dc": "10 + spell level",
+          "failed_check": "spell disappears without other effect"
+        },
+        "scroll_statistics_determined_by_spell_level": [
+          "rarity",
+          "save DC",
+          "attack bonus"
+        ],
+        "copy_wizard_spell_to_spellbook": {
+          "check": "Intelligence (Arcana)",
+          "dc": "10 + spell level",
+          "successful_check": "spell copied",
+          "scroll_destroyed_on_success_or_failure": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9677,8 +9873,47 @@
         244,
         245
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sphere of Annihilation",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "diameter_feet": 2,
+        "matter_contact": {
+          "wholly_engulfed": "obliterated",
+          "not_wholly_engulfed_force_damage": "8d10",
+          "artifacts_unaffected_unless_susceptible": true
+        },
+        "control": {
+          "maximum_range_feet": 60,
+          "action": "Magic",
+          "check": "Intelligence (Arcana)",
+          "dc": 25,
+          "success_duration": "until start of user's next turn",
+          "success_removes_prior_controller": true,
+          "failure_moves_toward_user_feet": 10
+        },
+        "controlled_movement": {
+          "action": "Bonus Action",
+          "maximum_feet": "5 times Intelligence modifier",
+          "minimum_feet": 5,
+          "creature_space_entry_save": {
+            "ability": "Dexterity",
+            "dc": 19
+          },
+          "failed_save_force_damage": "8d10",
+          "zero_hit_points": "obliterated with possessions left behind"
+        },
+        "portal_or_extradimensional_contact": {
+          "determination": "1d100",
+          "outcomes": {
+            "01-50": "sphere destroyed",
+            "51-85": "sphere moves through portal or into extradimensional space",
+            "86-00": "sphere and each creature and object within 180 feet sent to random plane"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9693,8 +9928,42 @@
       "pages": [
         245
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Charming",
+        "item_category": "Staff",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Bard, Cleric, Druid, Sorcerer, Warlock, or Wizard",
+        "charges": 10,
+        "while_holding": {
+          "cast_spell": {
+            "charge_cost": 1,
+            "spells": [
+              "Charm Person",
+              "Command",
+              "Comprehend Languages"
+            ],
+            "save_dc": "user's spell save DC"
+          },
+          "reflect_enchantment": {
+            "trigger": "successful save against Enchantment spell targeting only user",
+            "reaction": true,
+            "charge_cost": 1,
+            "result": "spell turned on caster as if cast by user"
+          },
+          "resist_enchantment": {
+            "trigger": "failed save against Enchantment spell targeting only user",
+            "result": "failed save becomes successful",
+            "recharge": "next dawn"
+          }
+        },
+        "charges_regained_at_dawn": "1d8 + 2",
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9709,8 +9978,27 @@
       "pages": [
         245
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Fire",
+        "item_category": "Staff",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Druid, Sorcerer, Warlock, or Wizard",
+        "while_holding_resistance": "Fire",
+        "charges": 10,
+        "spell_save_dc": "user's spell save DC",
+        "spells": {
+          "Burning Hands": 1,
+          "Fireball": 3,
+          "Wall of Fire": 4
+        },
+        "charges_regained_at_dawn": "1d6 + 4",
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9725,8 +10013,28 @@
       "pages": [
         245
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Frost",
+        "item_category": "Staff",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Druid, Sorcerer, Warlock, or Wizard",
+        "while_holding_resistance": "Cold",
+        "charges": 10,
+        "spell_save_dc": "user's spell save DC",
+        "spells": {
+          "Cone of Cold": 5,
+          "Fog Cloud": 1,
+          "Ice Storm": 4,
+          "Wall of Ice": 4
+        },
+        "charges_regained_at_dawn": "1d6 + 4",
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -9741,8 +10049,34 @@
       "pages": [
         245
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Healing",
+        "item_category": "Staff",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attunement_requirement": "Bard, Cleric, or Druid",
+        "charges": 10,
+        "spellcasting_ability_modifier": "user's",
+        "spells": {
+          "Cure Wounds": {
+            "charge_cost_per_spell_level": 1,
+            "maximum_charge_cost": 4,
+            "maximum_spell_level": 4
+          },
+          "Lesser Restoration": {
+            "charge_cost": 2
+          },
+          "Mass Cure Wounds": {
+            "charge_cost": 5
+          }
+        },
+        "charges_regained_at_dawn": "1d6 + 4",
+        "last_charge": {
+          "roll": "1d20",
+          "lost_forever_on": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -14867,7 +15201,7 @@
       "name": "Spell Level / Rarity",
       "section_id": "1608-13-28-83-spell-scroll",
       "page": 244,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell-level",
@@ -14890,7 +15224,104 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Rare"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Rare"
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 9
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Very Rare"
+            },
+            {
+              "value": 17
+            },
+            {
+              "value": 9
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Very Rare"
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Very Rare"
+            },
+            {
+              "value": 18
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Legendary"
+            },
+            {
+              "value": 19
+            },
+            {
+              "value": 11
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -14900,11 +15331,16 @@
       "name": "Spell Level Rarity / Save DC",
       "section_id": "1608-13-28-83-spell-scroll",
       "page": 244,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "spell-level-rarity",
-          "name": "Spell Level Rarity",
+          "id": "spell-level",
+          "name": "Spell Level",
+          "type": "string"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
           "type": "string"
         },
         {
@@ -14918,7 +15354,72 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cantrip"
+            },
+            {
+              "value": "Common"
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "1"
+            },
+            {
+              "value": "Common"
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "2"
+            },
+            {
+              "value": "Uncommon"
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "3"
+            },
+            {
+              "value": "Uncommon"
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 7
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -14928,15 +15429,20 @@
       "name": "Charge Cost / Spell",
       "section_id": "1612-13-28-87-staff-of-frost",
       "page": 245,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "charge-cost",
+          "id": "spell-1",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost-1",
           "name": "Charge Cost",
           "type": "integer"
         },
         {
-          "id": "spell",
+          "id": "spell-2",
           "name": "Spell",
           "type": "string"
         },
@@ -14946,8 +15452,41 @@
           "type": "integer"
         }
       ],
-      "rows": [],
-      "source_row_count": 4,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cone of Cold"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ice Storm"
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fog Cloud"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": "Wall of Ice"
+            },
+            {
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -14956,16 +15495,16 @@
       "name": "Spell / Cost",
       "section_id": "1612-13-28-87-staff-of-frost",
       "page": 245,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "spell",
+          "id": "spell-1",
           "name": "Spell",
           "type": "string"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "charge-cost-1",
+          "name": "Charge Cost",
           "type": "integer"
         },
         {
@@ -14974,13 +15513,46 @@
           "type": "string"
         },
         {
-          "id": "cost-2",
-          "name": "Cost",
+          "id": "charge-cost-2",
+          "name": "Charge Cost",
           "type": "integer"
         }
       ],
-      "rows": [],
-      "source_row_count": 32,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cone of Cold"
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ice Storm"
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fog Cloud"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": "Wall of Ice"
+            },
+            {
+              "value": 4
+            }
+          ]
+        }
+      ],
+      "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
