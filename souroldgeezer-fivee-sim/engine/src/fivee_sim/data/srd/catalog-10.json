@@ -9508,8 +9508,62 @@
       "pages": [
         135
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Gate",
+        "level": 9,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond worth 5,000+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "portal": {
+            "origin": "visible unoccupied space",
+            "destination": "precise location on a different plane of existence",
+            "diameter_feet": {
+              "minimum": 5,
+              "maximum": 20
+            },
+            "orientation_chosen_by": "caster",
+            "destination_visible_through_portal": true,
+            "front_and_back_on_each_plane": true,
+            "traversable_side": "front only",
+            "transport_timing": "instantaneous",
+            "arrival": "nearest unoccupied space to portal on destination plane"
+          },
+          "planar_blocking": "deities and other planar rulers can prevent the portal from opening in their presence or domain",
+          "named_creature_option": {
+            "identifier": "name",
+            "invalid_identifiers": [
+              "pseudonym",
+              "title",
+              "nickname"
+            ],
+            "required_location": "plane other than caster's plane",
+            "portal_opens_next_to_creature": true,
+            "creature_arrival": "nearest unoccupied space on caster's side",
+            "caster_control_over_creature": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9524,8 +9578,58 @@
       "pages": [
         135
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Geas",
+        "level": 5,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "days": 30
+        },
+        "effect": {
+          "target": "visible creature",
+          "command": "verbal command to perform a service or refrain from an action or course of activity",
+          "saving_throw": "Wisdom",
+          "cannot_understand_command": "automatic success",
+          "failed_save_condition": "Charmed",
+          "counter_command_damage": {
+            "trigger": "acts directly counter to command while Charmed",
+            "damage": "5d10",
+            "damage_type": "Psychic",
+            "maximum_frequency": "once per day"
+          },
+          "certain_death_command": "spell ends",
+          "ending_spells": [
+            "Remove Curse",
+            "Greater Restoration",
+            "Wish"
+          ],
+          "higher_level_slots": {
+            "7-8": {
+              "duration_days": 365
+            },
+            "9": {
+              "duration": "until ended by Remove Curse, Greater Restoration, or Wish"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9540,8 +9644,41 @@
       "pages": [
         135
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Gentle Repose",
+        "level": 2,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin",
+          "Wizard"
+        ],
+        "casting_time": {
+          "options": [
+            "Action",
+            "Ritual"
+          ]
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "2 Copper Pieces",
+          "material_consumed": true
+        },
+        "duration": {
+          "days": 10
+        },
+        "effect": {
+          "target": "corpse or other remains",
+          "prevents_decay": true,
+          "prevents_becoming_undead": true,
+          "duration_days_excluded_from_resurrection_time_limits": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9557,8 +9694,53 @@
         135,
         136
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Giant Insect",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "summoned_form_choice": [
+            "giant centipede",
+            "giant spider",
+            "giant wasp"
+          ],
+          "destination": "visible unoccupied space",
+          "stat_block_id": "925-10-16-giant-insect",
+          "form_controls_stat_block_details": true,
+          "disappears_at_hit_points": 0,
+          "disappears_when_spell_ends": true,
+          "allegiance": "ally to caster and caster's allies",
+          "initiative": "shares caster's Initiative count",
+          "turn_order": "immediately after caster",
+          "commands": {
+            "type": "verbal",
+            "caster_action_required": false
+          },
+          "without_command": [
+            "takes Dodge action",
+            "uses movement to avoid danger"
+          ],
+          "stat_block_spell_level": "spell slot level"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9573,8 +9755,100 @@
       "pages": [
         136
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block": "Giant Insect",
+        "size": "Large",
+        "creature_type": "Beast",
+        "alignment": "Unaligned",
+        "armor_class_formula": "11 + spell level",
+        "hit_points_formula": "30 + 10 × (spell level - 4)",
+        "speeds_feet": {
+          "walk": 40,
+          "climb": 40,
+          "fly": 40
+        },
+        "fly_speed_form": "Wasp",
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          }
+        },
+        "darkvision_feet": 60,
+        "passive_perception": 12,
+        "languages": "understands the languages the caster knows",
+        "challenge_rating": "None",
+        "experience_points": 0,
+        "proficiency_bonus": "caster's Proficiency Bonus",
+        "traits": {
+          "Spider Climb": {
+            "surfaces": [
+              "difficult surfaces",
+              "ceilings"
+            ],
+            "ability_check_required": false
+          }
+        },
+        "actions": {
+          "Multiattack": {
+            "attack_count": "half spell level, rounded down"
+          },
+          "Poison Jab": {
+            "type": "Melee Attack Roll",
+            "attack_bonus": "caster's spell attack modifier",
+            "reach_feet": 10,
+            "piercing_damage_formula": "1d6 + 3 + spell level",
+            "poison_damage": "1d4"
+          },
+          "Web Bolt": {
+            "form": "Spider",
+            "type": "Ranged Attack Roll",
+            "attack_bonus": "caster's spell attack modifier",
+            "range_feet": 60,
+            "bludgeoning_damage_formula": "1d10 + 3 + spell level",
+            "speed_reduced_to_feet": 0,
+            "speed_reduction_ends": "start of insect's next turn"
+          }
+        },
+        "bonus_actions": {
+          "Venomous Spew": {
+            "form": "Centipede",
+            "target": "one visible creature",
+            "range_feet": 10,
+            "saving_throw_ability": "Constitution",
+            "dc": "caster's spell save DC",
+            "failed_save_condition": "Poisoned",
+            "condition_ends": "start of insect's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "924-10-15-24-giant-insect"
     },
@@ -9589,8 +9863,32 @@
       "pages": [
         136
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Glibness",
+        "level": 8,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "charisma_check_roll_replacement": 15,
+          "truth_detection_magic_result": "truthful"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9605,8 +9903,48 @@
       "pages": [
         136
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Globe of Invulnerability",
+        "level": 6,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "glass bead"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "barrier": {
+            "mobility": "immobile",
+            "shape": "Emanation",
+            "radius_feet": 10
+          },
+          "blocked_spells": {
+            "maximum_level": 5,
+            "casting_origin": "outside barrier",
+            "cannot_affect": "creatures or objects within barrier",
+            "targets_within_barrier_have_no_effect": true,
+            "interior_excluded_from_areas_of_effect": true
+          },
+          "higher_level_slots": {
+            "blocked_maximum_spell_level_increase_per_slot_above_6": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9622,8 +9960,93 @@
         136,
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Glyph of Warding",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Wizard"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "powdered diamond worth 200+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "until": [
+            "dispelled",
+            "triggered"
+          ]
+        },
+        "effect": {
+          "placement": [
+            "surface",
+            "inside closable object"
+          ],
+          "maximum_diameter_feet": 10,
+          "movement_limit_feet": 10,
+          "movement_beyond_limit": "glyph breaks and spell ends without triggering",
+          "notice_check": {
+            "ability": "Wisdom",
+            "skill": "Perception",
+            "dc": "caster's spell save DC"
+          },
+          "trigger": {
+            "defined_by": "caster",
+            "ends_spell": true,
+            "can_filter_creature_types": true,
+            "can_exempt_creatures_by_conditions": true,
+            "password_exception": true
+          },
+          "glyph_choice": {
+            "Explosive Rune": {
+              "area": {
+                "shape": "Sphere",
+                "radius_feet": 20,
+                "origin": "glyph"
+              },
+              "saving_throw": "Dexterity",
+              "damage": "5d8",
+              "damage_type_choice": [
+                "Acid",
+                "Cold",
+                "Fire",
+                "Lightning",
+                "Thunder"
+              ],
+              "successful_save_damage": "half"
+            },
+            "Spell Glyph": {
+              "stored_spell_preparation": "prepared",
+              "maximum_stored_spell_level": 3,
+              "eligible_targets": [
+                "single creature",
+                "area"
+              ],
+              "stored_spell_cast_during_glyph_creation": true,
+              "immediate_effect_during_creation": false,
+              "target_on_trigger": "triggering creature",
+              "area_origin_on_trigger": "triggering creature",
+              "hostile_summons_or_harmful_objects": "appear as close as possible to intruder and attack it",
+              "concentration_spell_duration": "full duration without concentration"
+            }
+          },
+          "higher_level_slots": {
+            "explosive_rune_damage_increase_per_slot_above_3": "1d8",
+            "spell_glyph_maximum_stored_level": "slot level used for Glyph of Warding"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9638,8 +10061,37 @@
       "pages": [
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Goodberry",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "sprig of mistletoe"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "berries_created": 10,
+          "eat_action": "Bonus Action",
+          "healing_per_berry": 1,
+          "nourishment_days_per_berry": 1,
+          "uneaten_berries_disappear_when_spell_ends": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9654,8 +10106,46 @@
       "pages": [
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Grease",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pork rind or butter"
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "flammable": false,
+          "area": {
+            "shape": "Square",
+            "side_feet": 10,
+            "surface": "ground"
+          },
+          "difficult_terrain": true,
+          "saving_throw": "Dexterity",
+          "failed_save_condition": "Prone",
+          "save_timings": [
+            "when grease appears while standing in area",
+            "when entering area",
+            "when ending turn in area"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9670,8 +10160,35 @@
       "pages": [
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Greater Invisibility",
+        "level": 4,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "touched creature",
+          "condition": "Invisible"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9686,8 +10203,45 @@
       "pages": [
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Greater Restoration",
+        "level": 5,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond dust worth 100+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "touched creature",
+          "remove_one": [
+            "1 Exhaustion level",
+            "Charmed condition",
+            "Petrified condition",
+            "curse, including target's Attunement to a cursed magic item",
+            "reduction to one ability score",
+            "reduction to Hit Point maximum"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9702,8 +10256,42 @@
       "pages": [
         137
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Guardian of Faith",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "guardian": {
+            "size": "Large",
+            "nature": "spectral",
+            "destination": "visible unoccupied space",
+            "occupies_space": true,
+            "invulnerable": true
+          },
+          "trigger": "enemy moves to a space within 10 feet for first time on a turn or starts its turn there",
+          "saving_throw": "Dexterity",
+          "damage": 20,
+          "damage_type": "Radiant",
+          "successful_save_damage": "half",
+          "vanishes_after_total_damage_dealt": 60
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9719,8 +10307,82 @@
         137,
         138
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Guards and Wards",
+        "level": 6,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "silver rod worth 10+ GP"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "warded_area": {
+            "maximum_floor_area_square_feet": 2500,
+            "maximum_height_feet": 20,
+            "shape_options": [
+              "one 50-foot square",
+              "one hundred contiguous 5-foot squares",
+              "twenty-five contiguous 10-foot squares"
+            ]
+          },
+          "unaffected_individuals_can_be_specified": true,
+          "password": {
+            "can_be_specified": true,
+            "spoken_within_feet": 5,
+            "speaker_immune": true
+          },
+          "dispel_magic": {
+            "spell_itself_affected": false,
+            "individual_effects_dispellable": true,
+            "spell_ends_after_effect_groups_dispelled": 4
+          },
+          "permanence": {
+            "cast_daily_on_same_area_days": 365,
+            "duration": "until all effects are dispelled"
+          },
+          "effect_groups": {
+            "Corridors": {
+              "fog": "all warded corridors are Heavily Obscured",
+              "intersection_or_branch_wrong_direction_chance_percent": 50,
+              "excluded_creature": "caster"
+            },
+            "Doors": {
+              "all_doors": "magically locked as Arcane Lock",
+              "illusion_maximum_doors": 10,
+              "illusion_appearance": "plain wall"
+            },
+            "Stairs": {
+              "effect": "Web from top to bottom",
+              "regrowth_minutes": 10,
+              "regrowth_condition": "destroyed while spell lasts"
+            },
+            "Other Spell Effect": {
+              "choose_one": {
+                "Dancing Lights": "four corridors with repeating simple program",
+                "Magic Mouth": "two locations",
+                "Stinking Cloud": "two locations; vapors return within 10 minutes if dispersed",
+                "Gust of Wind": "one corridor or room; wind blows continuously",
+                "Suggestion": "one 5-foot square; creature entering receives suggestion mentally"
+              }
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9735,8 +10397,35 @@
       "pages": [
         138
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Guidance",
+        "level": 0,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "willing creature",
+          "skill_chosen_by": "caster",
+          "bonus_to_ability_checks_using_chosen_skill": "1d4"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9751,8 +10440,41 @@
       "pages": [
         138
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Guiding Bolt",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "rounds": 1
+        },
+        "effect": {
+          "target": "creature",
+          "attack": "ranged spell attack",
+          "hit_damage": "4d6",
+          "damage_type": "Radiant",
+          "next_attack_against_target": {
+            "advantage": true,
+            "deadline": "end of caster's next turn"
+          },
+          "higher_level_slots": {
+            "damage_increase_per_slot_above_1": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions",
       "content_ref": {
@@ -9771,8 +10493,53 @@
       "pages": [
         138
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Gust of Wind",
+        "level": 2,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "legume seed"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Line",
+            "length_feet": 60,
+            "width_feet": 10,
+            "direction_chosen_by": "caster"
+          },
+          "saving_throw": "Strength",
+          "failed_save_push_feet": 15,
+          "push_direction": "away from caster following Line",
+          "save_timings": [
+            "when in Line",
+            "end of turn in Line"
+          ],
+          "movement_toward_caster_cost_per_foot": 2,
+          "disperses_gas_and_vapor": true,
+          "unprotected_flames": "extinguished",
+          "protected_flame_extinguish_chance_percent": 50,
+          "later_turn_direction_change_action": "Bonus Action"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9788,8 +10555,62 @@
         138,
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hallow",
+        "level": 5,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "hours": 24
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "incense worth 1,000+ GP",
+          "material_consumed": true
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "area": {
+            "shape": "radius",
+            "maximum_radius_feet": 60,
+            "origin": "touched point"
+          },
+          "overlap_with_existing_hallow": "spell fails",
+          "hallowed_ward": {
+            "creature_type_choices": [
+              "Aberration",
+              "Celestial",
+              "Elemental",
+              "Fey",
+              "Fiend",
+              "Undead"
+            ],
+            "chosen_types_cannot_willingly_enter": true,
+            "chosen_types_possession_charm_and_fright_suspended_in_area": true
+          },
+          "extra_effect_choose_one": {
+            "Courage": "chosen creature types cannot gain Frightened condition",
+            "Darkness": "darkness fills area; normal light and lower-level magical light cannot illuminate it",
+            "Daylight": "bright light fills area; lower-level magical darkness cannot extinguish it",
+            "Peaceful Rest": "dead bodies interred in area cannot become Undead",
+            "Extradimensional Interference": "chosen creature types cannot enter or exit using teleportation or interplanar travel",
+            "Fear": "chosen creature types have Frightened condition",
+            "Resistance": "chosen creature types have Resistance to one chosen damage type",
+            "Silence": "sound cannot emanate from area or reach into it",
+            "Tongues": "chosen creature types can communicate with any creature in area without a shared language",
+            "Vulnerability": "chosen creature types have Vulnerability to one chosen damage type"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9804,8 +10625,59 @@
       "pages": [
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hallucinatory Terrain",
+        "level": 4,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "feet": 300
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mushroom"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "side_feet": 150
+          },
+          "target": "natural terrain",
+          "altered_senses": [
+            "appearance",
+            "sound",
+            "smell"
+          ],
+          "replacement": "another type of natural terrain",
+          "unchanged": [
+            "manufactured structures",
+            "equipment",
+            "creatures",
+            "tactile characteristics"
+          ],
+          "disbelief": {
+            "action": "Study",
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": "caster's spell save DC",
+            "availability": "when difference is not obvious by touch",
+            "on_success": "vague illusion appears superimposed on real terrain"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -9820,8 +10692,38 @@
       "pages": [
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Harm",
+        "level": 6,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw": "Constitution",
+          "failed_save_damage": "14d6",
+          "damage_type": "Necrotic",
+          "failed_save_hit_point_maximum_reduction": "equal to Necrotic damage taken",
+          "successful_save_damage": "half",
+          "successful_save_hit_point_maximum_reduction": false,
+          "minimum_hit_point_maximum": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
