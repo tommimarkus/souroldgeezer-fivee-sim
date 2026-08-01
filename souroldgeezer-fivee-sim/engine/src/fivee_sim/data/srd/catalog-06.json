@@ -6147,8 +6147,23 @@
       "pages": [
         61
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 1,
+        "skill_proficiency_choice_count": 2,
+        "grants_expertise": true,
+        "recommended_skill_proficiencies": [
+          "Sleight of Hand",
+          "Stealth"
+        ],
+        "recommendations_require_proficiency": true,
+        "additional_grant": {
+          "rogue_level": 6,
+          "skill_proficiency_choice_count": 2,
+          "grants_expertise": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6164,8 +6179,26 @@
         61,
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 1,
+        "maximum_uses_per_turn": 1,
+        "target": "one creature hit by an attack",
+        "required_weapon_property_options": [
+          "Finesse",
+          "Ranged"
+        ],
+        "extra_damage_initial_formula": "1d6",
+        "extra_damage_type": "weapon damage type",
+        "extra_damage_table_id": "062-rogue-features",
+        "standard_requirement": "Advantage on the attack roll",
+        "alternative_requirements": {
+          "ally_within_target_distance_feet": 5,
+          "ally_forbidden_condition": "Incapacitated",
+          "attack_roll_has_disadvantage": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6180,8 +6213,14 @@
       "pages": [
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 1,
+        "known_language": "Thieves’ Cant",
+        "additional_language_choice_count": 1,
+        "additional_language_choice_source": "language tables in Character Creation"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6196,8 +6235,24 @@
       "pages": [
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 1,
+        "initial_weapon_kind_count": 2,
+        "requires_weapon_proficiency": true,
+        "mastery_properties_enabled_for_chosen_weapons": true,
+        "example_initial_choices": [
+          "Dagger",
+          "Shortbow"
+        ],
+        "weapon_choices_change_timing": "finish a Long Rest",
+        "weapon_choices_replaceable": "all",
+        "example_replacement_choices": [
+          "Scimitar",
+          "Shortsword"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6212,8 +6267,19 @@
       "pages": [
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 2,
+        "activation_action": "Bonus Action",
+        "applies_during": "your turn",
+        "action_options": [
+          "Dash",
+          "Disengage",
+          "Hide"
+        ],
+        "selection_count": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6228,8 +6294,15 @@
       "pages": [
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 3,
+        "selection": "Rogue subclass",
+        "selection_count": 1,
+        "detailed_option": "Thief",
+        "subclass_features_gained_at_or_below_rogue_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6244,8 +6317,18 @@
       "pages": [
         62
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 3,
+        "activation_action": "Bonus Action",
+        "attack_rolls_affected": "next attack roll",
+        "grants_advantage": true,
+        "applies_during": "current turn",
+        "requires_no_movement_during_current_turn": true,
+        "speed_after_use": 0,
+        "speed_effect_expires": "end of current turn"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6260,8 +6343,23 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          10,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6276,8 +6374,40 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 5,
+        "trigger": "deal Sneak Attack damage",
+        "maximum_effects_per_sneak_attack": 1,
+        "cost_source": "Sneak Attack damage dice",
+        "cost_timing": "before damage roll",
+        "effect_timing": "immediately after attack damage",
+        "saving_throw_dc_formula": "8 + Dexterity modifier + Proficiency Bonus",
+        "effects": {
+          "Poison": {
+            "cost_formula": "1d6",
+            "saving_throw_ability": "Constitution",
+            "failed_save_condition": "Poisoned",
+            "duration_minutes": 1,
+            "repeat_save_timing": "end of each target turn",
+            "successful_repeat_save_ends_condition": true,
+            "requires_item": "Poisoner’s Kit",
+            "item_must_be_on_person": true
+          },
+          "Trip": {
+            "cost_formula": "1d6",
+            "maximum_target_size": "Large",
+            "saving_throw_ability": "Dexterity",
+            "failed_save_condition": "Prone"
+          },
+          "Withdraw": {
+            "cost_formula": "1d6",
+            "movement_limit": "half Speed",
+            "provokes_opportunity_attacks": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6292,8 +6422,15 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 5,
+        "trigger": "visible attacker hits you with an attack roll",
+        "activation_action": "Reaction",
+        "damage_multiplier": 0.5,
+        "rounding": "down"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6308,8 +6445,18 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 7,
+        "trigger": {
+          "saving_throw_ability": "Dexterity",
+          "normal_successful_save_damage": "half"
+        },
+        "successful_save_damage": 0,
+        "failed_save_damage": "half",
+        "disabled_condition": "Incapacitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6324,8 +6471,14 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 7,
+        "applies_to": "ability checks using a skill or tool proficiency",
+        "maximum_d20_roll_replaced": 9,
+        "replacement_d20_roll": 10
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6340,8 +6493,14 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 11,
+        "modified_feature": "Cunning Strike",
+        "maximum_effects_per_sneak_attack": 2,
+        "cost_paid_per_effect": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6356,8 +6515,40 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 14,
+        "modified_feature": "Cunning Strike",
+        "effects": {
+          "Daze": {
+            "cost_formula": "2d6",
+            "saving_throw_ability": "Constitution",
+            "failed_save_applies_during": "target’s next turn",
+            "failed_save_selection_count": 1,
+            "failed_save_options": [
+              "move",
+              "Action",
+              "Bonus Action"
+            ]
+          },
+          "Knock Out": {
+            "cost_formula": "6d6",
+            "saving_throw_ability": "Constitution",
+            "failed_save_condition": "Unconscious",
+            "duration_minutes": 1,
+            "ends_on_damage": true,
+            "repeat_save_timing": "end of each target turn",
+            "successful_repeat_save_ends_condition": true
+          },
+          "Obscure": {
+            "cost_formula": "3d6",
+            "saving_throw_ability": "Dexterity",
+            "failed_save_condition": "Blinded",
+            "expires": "end of target’s next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6372,8 +6563,15 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 15,
+        "saving_throw_proficiencies_gained": [
+          "Wisdom",
+          "Charisma"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6388,8 +6586,13 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 18,
+        "attack_rolls_can_have_advantage_against_you": false,
+        "exception_condition": "Incapacitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6404,8 +6607,17 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of the Night Spirit"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6420,8 +6632,18 @@
       "pages": [
         63
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Rogue",
+        "level": 20,
+        "trigger": "fail a D20 Test",
+        "replacement_roll": 20,
+        "uses_per_recovery": 1,
+        "recovery_options": [
+          "Short Rest",
+          "Long Rest"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "386-6-40-rogue-class-features"
     },
@@ -6436,7 +6658,7 @@
       "pages": [
         64
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -26630,7 +26852,7 @@
       "name": "Rogue Features",
       "section_id": "388-6-40-2-level-1-sneak-attack",
       "page": 62,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level",
@@ -26653,7 +26875,328 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Expertise, Sneak Attack, Thieves' Cant, Weapon Mastery"
+            },
+            {
+              "value": "1d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Cunning Action"
+            },
+            {
+              "value": "1d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Rogue Subclass, Steady Aim"
+            },
+            {
+              "value": "2d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "2d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Cunning Strike, Uncanny Dodge"
+            },
+            {
+              "value": "3d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Expertise"
+            },
+            {
+              "value": "3d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Evasion, Reliable Talent"
+            },
+            {
+              "value": "4d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "4d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "5d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "5d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Improved Cunning Strike"
+            },
+            {
+              "value": "6d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "6d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "7d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Devious Strikes"
+            },
+            {
+              "value": "7d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Slippery Mind"
+            },
+            {
+              "value": "8d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 5
+            },
+            {
+              "value": "Ability Score Improvement"
+            },
+            {
+              "value": "8d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Subclass feature"
+            },
+            {
+              "value": "9d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Elusive"
+            },
+            {
+              "value": "9d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Epic Boon"
+            },
+            {
+              "value": "10d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Stroke of Luck"
+            },
+            {
+              "value": "10d6"
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
       "omissions": [],
       "provenance": "SRD 5.2.1"
