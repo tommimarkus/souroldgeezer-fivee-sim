@@ -38,7 +38,7 @@ def test_committed_manifest_pins_the_official_source_and_complete_inventory() ->
     payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
     assert payload["source"] == {
         "name": "System Reference Document 5.2.1",
-        "url": "https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf",
+        "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf",
         "sha256": "8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87",
     }
     assert payload["counts"] == {

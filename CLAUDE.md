@@ -158,7 +158,7 @@ structured omission codes. Descriptive, flavor, and rules prose does not ship in
 catalog records. Contributor review packets may temporarily contain source prose
 under `/tmp`, but the machine-local extraction path and its text are never committed.
 The official source pin is
-`https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf`, SHA-256
+`https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf`, SHA-256
 `8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87`.
 
 Before publishing, run the `souroldgeezer-audit:ip-hygiene` skill over the
