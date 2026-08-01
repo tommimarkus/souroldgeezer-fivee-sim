@@ -28,7 +28,7 @@ movement costs are asked of a *pair* of squares — see :func:`step_cost_feet` a
 the area templates are flat, and a ridge no creature could see past on a real
 battlefield does not block a line here.
 
-Distance, cover grades, and areas of effect follow SRD 5.2 (see NOTICE). The
+Distance, cover grades, and areas of effect follow SRD 5.2.1 (see NOTICE). The
 ``5-10-5`` diagonal is the published variant rule; the corner tests, the terrain
 kinds, and the height at which a slope becomes a climb are engine policy.
 """
@@ -160,7 +160,7 @@ def terrain_effect_of(kind: str, table: TerrainTable = TERRAIN) -> TerrainEffect
 
 # --- ground height ---------------------------------------------------------
 #: The rise across one 5-foot square at which the grade reaches the 20 degrees
-#: SRD 5.2 calls Difficult Terrain. Below it the slope is gentle and free.
+#: SRD 5.2.1 calls Difficult Terrain. Below it the slope is gentle and free.
 SLOPE_DIFFICULT_FEET = 2
 
 #: Engine policy: above this rise across one square the face is climbed rather
@@ -175,18 +175,18 @@ def step_cost_feet(
     """Feet to enter a square, given its terrain and the change in ground height.
 
     ``None`` is impassable ground. ``rise_feet`` is the destination's height
-    minus the origin's; its sign is discarded, because SRD 5.2 makes climbing
+    minus the origin's; its sign is discarded, because SRD 5.2.1 makes climbing
     down a climb like any other.
 
     Three bands, and only the boundary between the last two is ours:
 
     - Under :data:`SLOPE_DIFFICULT_FEET` the grade is gentle and costs the
       square's ordinary terrain price.
-    - Up to :data:`CLIMB_FEET` it is a slope, which SRD 5.2 makes Difficult
+    - Up to :data:`CLIMB_FEET` it is a slope, which SRD 5.2.1 makes Difficult
       Terrain. Difficult Terrain "isn't cumulative", so a slope through
       undergrowth is doubled once rather than twice — hence ``max``, not a
       product.
-    - Above it the face is climbed, and SRD 5.2 charges "1 extra foot" per foot
+    - Above it the face is climbed, and SRD 5.2.1 charges "1 extra foot" per foot
       climbed, "2 extra feet in Difficult Terrain", on top of the horizontal
       step into the square.
 

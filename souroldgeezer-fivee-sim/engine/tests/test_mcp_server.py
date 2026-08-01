@@ -101,15 +101,14 @@ class TestPrimitives:
 
 
 class TestLookup:
-    def test_no_topic_lists_everything_loaded(self) -> None:
+    def test_no_topic_reports_compact_counts_and_catalog_guidance(self) -> None:
         listing = api.lookup_rule()
-        assert "prone" in listing["conditions"]
-        assert "Fireball" in listing["spells"]
-        assert "Goblin Warrior" in listing["creatures"]
-        # The listing has to say what it is a listing *of*: with packs loaded or the
-        # bundled slice excluded, "what is available" is not a fixed answer.
+        assert listing["counts"]["conditions"] > 0
+        assert listing["counts"]["spells"] == 4
+        assert listing["counts"]["creatures"] == 6
         assert listing["builtin"] == "include"
-        assert "SRD 5.2" in listing["provenance"]
+        assert "SRD 5.2.1" in listing["provenance"]
+        assert listing["guidance"]["search_tool"] == "catalog_search"
 
     def test_a_condition_reports_only_its_active_effects(self) -> None:
         result = api.lookup_rule("restrained")
@@ -131,9 +130,11 @@ class TestLookup:
         assert result["kind"] == "creature"
         assert result["ac"] == 8
         # Undead Fortitude is modelled now, so it rides the record as a flag; the
-        # unmodelled list keeps what the engine still skips.
+        # Structured omission codes keep what the engine still skips.
         assert result["undead_fortitude"] is True
-        assert any("Exhaustion" in note for note in result["unmodelled"])
+        assert {
+            (item["code"], item["feature"]) for item in result["unmodelled_facts"]
+        } >= {("unsupported_condition_immunity", "Exhaustion")}
 
     def test_every_entry_names_the_pack_it_came_from(self) -> None:
         # Provenance has to survive the merge: once SRD and original material can sit
@@ -141,12 +142,12 @@ class TestLookup:
         for topic in ("prone", "Fireball", "zombie"):
             entry = api.lookup_rule(topic)
             assert entry["source"].startswith("bundled:"), entry["source"]
-            assert entry["provenance"] == "SRD 5.2"
-            assert "unmodelled" in entry, "the skill tells the assistant to check this field"
+            assert entry["provenance"] == "SRD 5.2.1"
+            assert "unmodelled_facts" in entry
 
     def test_a_terrain_kind_resolves_and_is_listed(self) -> None:
         listing = api.lookup_rule()
-        assert "difficult" in listing["terrain"]
+        assert listing["counts"]["terrain"] > 0
         entry = api.lookup_rule("difficult")
         assert entry["kind"] == "terrain"
         assert entry["effects"]["move_cost_multiplier"] == 2

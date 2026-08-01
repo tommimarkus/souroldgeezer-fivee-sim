@@ -252,7 +252,7 @@ one.
 
 **A creature standing where the ground turns impassable stays there, and may
 walk out.** Entry cost governs entering a square, not remaining in one. Refusing
-the operation or shoving the occupant aside would each invent a rule SRD 5.2
+the operation or shoving the occupant aside would each invent a rule SRD 5.2.1
 does not have — the engine models no forced movement at all — so nothing happens
 to it. That is a deliberate non-behaviour, not an oversight.
 
@@ -326,7 +326,7 @@ flat maps this generator used to produce. Dungeons and caves are flat.
 
 Height is charged to **movement only**. A rise of under 2 feet across a square
 is a gentle grade and free; from there up to 5 feet the square is a slope,
-which SRD 5.2 makes Difficult Terrain — once, since Difficult Terrain is not
+which SRD 5.2.1 makes Difficult Terrain — once, since Difficult Terrain is not
 cumulative. Above 5 feet the face is climbed, at the SRD's extra foot per foot
 (2 extra in Difficult Terrain) on top of the step into the square; climbing
 down costs what climbing up costs. The 5-foot boundary and the step in cost

@@ -1,581 +1,109 @@
-"""Generates the human-readable coverage report.
+"""Generate the compact catalog and executable-support coverage report.
 
-The report is derived from the data and the enums rather than maintained by hand,
-because a hand-written coverage list is a promise that quietly stops being true.
-A test compares the committed ``docs/COVERAGE.md`` against this renderer, so
-adding a monster without regenerating the report fails the suite.
-
-Regenerate with::
-
-    uv run python -m fivee_sim.coverage
-
-The "not supported" section is prose, not derivation: absence cannot be read off
-the data, and it is the part a reader most needs.
+Detailed identities belong in the catalog tools.  This document is deliberately
+totals-only so adding thousands of source entries does not create a second,
+hand-browsed catalog that can drift from the data.
 """
 
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from .content import item_effects, monster_records, spell_records, spellbook
-from .kernel.conditions import Condition, effect_of
-from .kernel.grid import (
-    CLIMB_FEET,
-    SLOPE_DIFFICULT_FEET,
-    TERRAIN,
-    CoverGrade,
-    DiagonalRule,
-    TerrainEffect,
-)
-from .kernel.rules import DamageType
-from .kernel.spells import Spell, SpellShape
-from .model.encounter import ActionKind
-
-#: Defined by SRD 5.2 and deliberately not implemented.
-UNIMPLEMENTED_CONDITIONS = ("Exhaustion",)
-
-NOT_SUPPORTED = (
-    (
-        "Character building",
-        "Classes, subclasses, species and lineages, backgrounds, feats, ability-score "
-        "generation, levelling, and multiclassing. Combatants are described directly "
-        "by their statistics — armour class, hit points, attacks, save bonuses — the "
-        "way a stat block presents them. There is no notion of a character sheet that "
-        "derives those numbers.",
-    ),
-    (
-        "Equipment beyond simple usable items",
-        "Simple usable items *are* modelled: potions, flasks, and doses of poison — one "
-        "use that heals, deals damage, or applies a condition, held in a quantity that "
-        "is also its charge count, and whose pack declares an Action or Bonus Action "
-        "cost. None ship in the bundled slice, so potions reach a "
-        "session through a content pack. Nothing beyond that use is modelled. Weapons "
-        "and armour as objects that derive attack bonuses and armour class, scrolls, "
-        "attunement, encumbrance, ammunition, and charges tracked separately from "
-        "quantity are all absent. An attack carries its own bonus and damage "
-        "expression; nothing models the object producing it.",
-    ),
-    (
-        "Spell resources beyond slots",
-        "Spell lists per class, preparation rules, ritual casting, cantrip scaling by "
-        "level, components, and material costs. A combatant simply holds a set of "
-        "spell names and a count of slots per level.",
-    ),
-    (
-        "Anything outside a fight",
-        "The scenario_timing primitive measures a fixed route against an authored "
-        "round delay, but it carries no campaign state. Exploration choices, downtime, "
-        "resting and recovery, skills and proficiencies as a system, social interaction, "
-        "and the adventuring day remain caller-owned. Resources do not regenerate; an "
-        "encounter begins and ends.",
-    ),
-    (
-        "The third dimension, past what it costs to walk",
-        "Ground height reaches movement alone — see the Battlefield section. Walk, "
-        "Climb, Swim, and Fly speeds are tracked, flight may cross storeys, and authored "
-        "openings may carry sight between named levels. Height itself is still ignored "
-        "by sight lines, cover, and area templates, so a ridge screens nobody and high "
-        "ground changes no attack roll. Also absent: falling and fall damage, jumping, "
-        "creature size and squeezing (every combatant occupies one square whatever its "
-        "printed size), facing, flanking, and forced movement — "
-        "nothing pushes, drags, or knocks a creature through space, so no one is "
-        "ever shoved off a ledge.",
-    ),
-    (
-        "Timed durations beyond attack riders",
-        "Concentration is tracked, and ending it lifts the condition the spell "
-        "imposed. An attack's on-hit condition rider can carry its own clock — "
-        "expiring at the start of the attacker's next turn or the end of the "
-        "target's next turn, and the expiry fires even if the attacker has died. "
-        "Beyond those two anchors, elapsed time is not modelled: the 'up to 1 "
-        "minute' cap on a concentration spell never expires it, a spell's repeat "
-        "saving throw at the end of the target's turn is not rolled, and a "
-        "condition applied by an item or set directly on a stat block lasts until "
-        "something removes it.",
-    ),
-    (
-        "Reactions beyond opportunity attacks and Redirect Attack",
-        "Readied actions, Shield and similar reaction spells, Parry, and legendary or "
-        "lair actions. Each combatant has one reaction per round; opportunity attacks "
-        "and a stat-block-authored Redirect Attack can spend it.",
-    ),
-    (
-        "A fight that carries on over the dying",
-        "An encounter ends as soon as one side has nobody conscious left, so a side "
-        "reduced to dying creatures counts as beaten. Their death saves stop with the "
-        "fight: a downed creature can never roll the natural 20 that would put it back "
-        "on its feet, and a mutual knockout is reported as a draw rather than decided "
-        "by whichever side recovers first. Damage to a creature at 0 hit points is "
-        "fully modelled — an attack, an area spell, and an item all reach one — but "
-        "this is about when the fight stops being simulated. Measured on the bundled "
-        "stat blocks, counting the dying as still in the fight would lengthen a "
-        "reported fight by 58% to 131%, and 30% to 46% of every round reported would "
-        "be one in which nobody acts at all — more still once a caster is involved. "
-        "Nothing in the auto-play policy that drives a batch finishes a downed "
-        "creature off or takes the Help action to stabilise one, so those rounds are "
-        "an empty room rather than a fight.",
-    ),
-    (
-        "Skill proficiency on a check",
-        "The check a map fixture takes is a raw ability check, and there is nowhere "
-        "in the model to make it anything else: a creature carries ability "
-        "modifiers and no skill proficiencies at all, so there is no Athletics to "
-        "add, no proficiency bonus, no Expertise, and no Help action to grant "
-        "Advantage. Set a fixture's DC as if the character were untrained — a DC "
-        "pitched at a trained bonus will play several points harder than intended. "
-        "The standalone `check` primitive is the one place a proficiency can be "
-        "applied at all, and only because its modifier is supplied by the caller "
-        "rather than read off a creature.",
-    ),
-    (
-        "A batch that works the map",
-        "The auto-play policy behind `simulate_rounds` never operates a map "
-        "fixture: no door is opened, no spike pulled, no sluice raised. A batch "
-        "fights the map at the configuration it was handed. Measure what a fixture "
-        "is worth by running two batches — one map authored open, one shut — rather "
-        "than by expecting the policy to find the lever.",
-    ),
-    (
-        "Conditions imposed on a creature that is already down",
-        "A spell or item that imposes a condition applies it only to a conscious "
-        "target. Damage from the same effect still lands on a dying creature, and "
-        "still costs it a death saving throw failure; the condition does not follow.",
-    ),
-)
+from .catalog import simulation_support
+from .content import ContentRegistry, builtin_registry
 
 
-def _md_escape(text: str) -> str:
-    return text.replace("|", "\\|")
+def _has_omissions(record: dict[str, Any]) -> bool:
+    return bool(record.get("unmodelled", []) or record.get("unmodelled_facts", []))
 
 
-def _condition_summary(condition: Condition) -> str:
-    effect = effect_of(condition)
-    active = [name for name in effect.__dataclass_fields__ if getattr(effect, name)]
-    if not active:
-        return "tracked; no combat-roll consequences"
-    return ", ".join(name.replace("_", " ") for name in active)
-
-
-def _rider_summary(attack: dict[str, Any]) -> str:
-    """The attack's riders, rendered after its damage — empty when it has none."""
-    text = ""
-    if attack.get("bonus_damage"):
-        text += f" plus {attack['bonus_damage']} {attack['bonus_damage_type']}"
-    if attack.get("advantage_bonus_damage"):
-        text += (
-            f" plus {attack['advantage_bonus_damage']} if the attack roll "
-            f"had advantage"
-        )
-        if attack.get("advantage_bonus_with_adjacent_ally"):
-            text += " or a capable ally stood within 5 ft of the target"
-    if attack.get("on_hit_condition"):
-        text += f", on hit: {attack['on_hit_condition']}"
-        if attack.get("on_hit_max_size"):
-            # Without this the row reads as an unconditional rider, which is
-            # precisely what the Wolf's Bite is not.
-            text += f" against a {attack['on_hit_max_size'].capitalize()} or smaller target"
-        if attack.get("on_hit_save_ability"):
-            text += (
-                f" (DC {attack['on_hit_save_dc']} "
-                f"{attack['on_hit_save_ability']} save)"
+def _support_counts(registry: ContentRegistry) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for record in registry.catalog.values():
+        executable: dict[str, Any] | None = None
+        if record.content_ref is not None:
+            executable = registry.records_for(record.content_ref.section).get(
+                record.content_ref.name
             )
-        expiry = attack.get("on_hit_expiry", "none")
-        if expiry == "start_of_attacker_next_turn":
-            text += " until the start of the attacker's next turn"
-        elif expiry == "end_of_target_next_turn":
-            text += " until the end of the target's next turn"
-    if attack.get("on_hit_attach"):
-        text += (
-            f", attaches and deals {attack['attached_damage']} "
-            f"{attack['attached_damage_type']} at the start of its turns"
+        support = simulation_support(
+            executable=executable is not None,
+            has_omissions=bool(record.unmodelled_facts)
+            or (executable is not None and _has_omissions(executable)),
         )
-    return text
-
-
-def _attack_summary(attacks: list[dict[str, Any]]) -> str:
-    parts: list[str] = []
-    for attack in attacks:
-        reach = (
-            f"reach {attack.get('reach', 5)} ft"
-            if attack.get("kind", "melee") == "melee"
-            else f"range {attack.get('normal_range')}/{attack.get('long_range')} ft"
-        )
-        parts.append(
-            f"{attack['name']} +{attack['attack_bonus']}, {reach}, "
-            f"{attack['damage']} {attack['damage_type']}{_rider_summary(attack)}"
-        )
-    return "; ".join(parts) or "none"
-
-
-def _trait_summary(record: dict[str, Any]) -> str:
-    """The stat block's modelled trait flags, as a line after the attacks."""
-    traits: list[str] = []
-    if record.get("pack_tactics"):
-        traits.append(
-            "Pack Tactics — Advantage while a capable ally is within 5 ft of the target"
-        )
-    if record.get("undead_fortitude"):
-        traits.append(
-            "Undead Fortitude — on a drop to 0 HP, a Constitution save (DC 5 + damage "
-            "taken) leaves 1 HP instead, unless the damage was Radiant, a Critical "
-            "Hit, or enough to kill outright"
-        )
-    if not traits:
-        return ""
-    return "<br>Traits: " + "; ".join(traits)
-
-
-def _notes(record: dict[str, Any]) -> str:
-    return "<br>".join(_md_escape(note) for note in record.get("unmodelled", [])) or "—"
-
-
-def _area_summary(spell: Spell) -> str:
-    match spell.effective_shape:
-        case SpellShape.SPHERE:
-            return f"{spell.radius} ft sphere"
-        case SpellShape.CONE:
-            return f"{spell.length} ft cone"
-        case SpellShape.LINE:
-            return f"{spell.length} ft line"
-        case SpellShape.CUBE:
-            return f"{spell.size} ft cube"
-        case _:
-            return "single target"
-
-
-def _grade_name(grade: CoverGrade) -> str:
-    return grade.name.replace("_", "-").lower()
-
-
-def _terrain_summary(effect: TerrainEffect) -> str:
-    parts: list[str] = []
-    if effect.move_cost_multiplier != 1:
-        parts.append(f"movement x{effect.move_cost_multiplier}")
-    if not effect.passable:
-        parts.append("impassable")
-    if effect.opaque:
-        parts.append("blocks sight")
-    if effect.underwater:
-        parts.append("underwater")
-    if effect.cover:
-        parts.append(f"grants {_grade_name(CoverGrade(effect.cover))} cover")
-    return ", ".join(parts) or "ordinary ground"
+        counts[support.value] += 1
+    return counts
 
 
 def render_markdown() -> str:
-    monsters = monster_records()
-    spells = spellbook()
-    raw_spells = spell_records()
-    items = item_effects()
-    conditions = list(Condition)
-
+    registry = builtin_registry()
+    kinds = Counter(record.kind for record in registry.catalog.values())
+    record_progress = Counter(record.fact_status.value for record in registry.catalog.values())
+    table_progress = Counter(table.fact_status.value for table in registry.catalog_tables.values())
+    support = _support_counts(registry)
     lines: list[str] = []
-    add = lines.append
+
+    def add(line: str = "") -> None:
+        lines.append(line)
 
     add("# Coverage")
-    add("")
-    add("What this engine actually implements, and what it does not.")
-    add("")
+    add()
     add(
-        "**Generated** from the bundled data and the engine's own enums by "
-        "`uv run python -m fivee_sim.coverage` — do not edit by hand. A test fails if "
-        "this file drifts from the data."
+        "Generated totals for the bundled SRD 5.2.1 structured catalog and the "
+        "smaller executable combat subset. Rules content remains CC-BY-4.0; see "
+        "[NOTICE](../NOTICE)."
     )
-    add("")
+    add()
+    add("## Source inventory")
+    add()
+    add("| Inventory | Count |")
+    add("| --- | ---: |")
+    add(f"| Source sections | {len(registry.catalog)} |")
+    add(f"| Printed tables | {len(registry.catalog_tables)} |")
+    add()
+    add("## Catalog categories")
+    add()
+    add("| Kind | Count |")
+    add("| --- | ---: |")
+    for kind, count in sorted(kinds.items()):
+        add(f"| {kind} | {count} |")
+    add()
+    add("## Structured-fact progress")
+    add()
+    add("| Status | Sections | Tables |")
+    add("| --- | ---: | ---: |")
+    for status in ("pending", "complete", "no_structured_facts"):
+        add(f"| {status} | {record_progress[status]} | {table_progress[status]} |")
+    add()
+    add("## Simulation support")
+    add()
+    add("| State | Catalog records |")
+    add("| --- | ---: |")
+    for state in ("reference_only", "partial", "executable"):
+        add(f"| {state} | {support[state]} |")
+    add()
+    add("## Loaded executable records")
+    add()
+    add("| Section | Count |")
+    add("| --- | ---: |")
+    for section, count in registry.summary()["counts"].items():
+        add(f"| {section} | {count} |")
+    add()
+    add("## Detailed lookup")
+    add()
     add(
-        "Rules content is SRD 5.2 under CC-BY-4.0; see [NOTICE](../NOTICE). SRD 5.2 "
-        "covers only part of the 2024 ruleset, so content absent from the SRD is not "
-        "available to this project at all."
-    )
-    add("")
-    add(
-        "**This describes the bundled slice.** A campaign can add its own creatures, "
-        "spells, conditions, and usable items as content packs, or exclude the bundled "
-        "content entirely and run on its own material — see "
-        "[CONTENT-PACKS.md](CONTENT-PACKS.md). What a given session actually has "
-        "loaded is reported by the `content_status` tool, which is the authority when "
-        "packs are in play; this document is the authority for what ships."
-    )
-    add("")
-    add("## At a glance")
-    add("")
-    add("| Category | Supported |")
-    add("| --- | --- |")
-    add(f"| Creatures (stat blocks) | {len(monsters)} |")
-    add(f"| Spells | {len(spells)} |")
-    add(f"| Conditions | {len(conditions)} |")
-    add(f"| Damage types | {len(list(DamageType))} |")
-    add(f"| Actions | {len(list(ActionKind))} |")
-    add(f"| Usable items | {len(items)} bundled — the category is modelled, packs supply it |")
-    add(f"| Terrain kinds | {len(TERRAIN)} built in — packs may add more |")
-    add("| Classes, species, backgrounds, feats | 0 — not modelled |")
-    add("")
-    add(
-        "The creature and spell lists are a deliberately narrow starting slice, not an "
-        "attempt at the whole SRD."
-    )
-    add("")
-
-    add("## Creatures")
-    add("")
-    add("| Name | AC | HP | Speed | Attacks and traits | Printed features not implemented |")
-    add("| --- | --- | --- | --- | --- | --- |")
-    for name in sorted(monsters):
-        record = monsters[name]
-        add(
-            f"| {name} | {record['ac']} | {record['max_hp']} "
-            f"({record.get('hit_dice', '—')}) | {record.get('speed', 30)} ft | "
-            f"{_md_escape(_attack_summary(record.get('attacks', [])))}"
-            f"{_trait_summary(record)} | "
-            f"{_notes(record)} |"
-        )
-    add("")
-
-    add("## Spells")
-    add("")
-    add("| Name | Level | Resolution | Damage | Upcast | Area | Concentration | Not implemented |")
-    add("| --- | --- | --- | --- | --- | --- | --- | --- |")
-    for name in sorted(spells):
-        spell = spells[name]
-        if spell.requires_attack_roll:
-            resolution = f"{spell.attack_kind.value} spell attack roll"
-        elif spell.save_ability is not None:
-            resolution = f"{spell.save_ability.value} save"
-            # Only meaningful for a spell that deals damage; a save-or-suffer spell
-            # with no damage would otherwise read as "half on save" of nothing.
-            if spell.damage is not None:
-                resolution += ", half on save" if spell.half_on_save else ", nothing on save"
-        else:
-            resolution = "automatic"
-        area = _area_summary(spell)
-        add(
-            f"| {name} | {spell.level} | {resolution} | "
-            f"{spell.damage if spell.damage else '—'} | "
-            f"{f'+{spell.upcast_damage}/level' if spell.upcast_damage else '—'} | "
-            f"{area} | {'yes' if spell.concentration else 'no'} | "
-            f"{_notes(raw_spells.get(name, {}))} |"
-        )
-    add("")
-
-    add("## Conditions")
-    add("")
-    add("| Condition | Mechanical effect |")
-    add("| --- | --- |")
-    for condition in conditions:
-        add(f"| {condition.value} | {_condition_summary(condition)} |")
-    add("")
-    add(
-        "**Not implemented:** "
-        + ", ".join(UNIMPLEMENTED_CONDITIONS)
-        + ". SRD 5.2 defines it; this engine does not track it."
-    )
-    add("")
-
-    add("## Actions")
-    add("")
-    add(
-        "Each combatant may take one action per turn, plus movement: "
-        + ", ".join(f"`{kind.value}`" for kind in ActionKind)
-        + ". Extra Attack is supported as a count of attacks per action. Opportunity "
-        "attacks are taken automatically when a creature leaves reach without "
-        "disengaging."
-    )
-    add("")
-    add("`interact` works a map fixture the actor stands on or next to, on its own "
-        "storey. By default it is the free object interaction: once per turn, "
-        "without spending the action. A fixture may cost the action instead, may "
-        "wait on other fixtures standing open before it will open, and may take an "
-        "ability check — a failed check spends the budget and moves nothing. It "
-        "reads condition-based Advantage and Disadvantage just like initiative. It "
-        "toggles unless the action names `set_open`, which drives the fixture to "
-        "the state asked for rather than flipping whatever it finds.")
-    add("")
-    add("`stand` gets a Prone creature back on its feet: no action, but movement "
-        "equal to half the creature's Speed, rounded down. It is refused when the "
-        "creature is not Prone, when its Speed is 0 — from the stat block or from a "
-        "condition such as Grappled — or when the movement left this turn is less "
-        "than the cost. The auto-play policy behind the batch tools stands a Prone "
-        "creature at its first legal opportunity each turn.")
-    add("")
-    add("Also resolved: death saving throws, stabilising, instant death when damage "
-        "past 0 hit points equals maximum hit points, damage resistance, vulnerability "
-        "and immunity, and concentration checks when a concentrating creature is "
-        "damaged. A condition a concentration spell imposed is lifted when that "
-        "concentration ends — by a failed check, by the caster being incapacitated or "
-        "killed, or by the caster beginning another concentration spell — unless "
-        "another effect is still imposing it.")
-    add("")
-    add("An attack may carry riders, straight from its stat block: bonus damage of "
-        "a second type on every hit, defended against its own type; extra dice added "
-        "when the attack roll actually resolved with Advantage or, when the stat block "
-        "says so, a capable ally stood within 5 feet of the target; an attachment that "
-        "deals damage at the start of the attacker's turns; and an on-hit "
-        "condition, automatic or applied on a failed save. Rider dice double on a "
-        "critical hit like any damage dice. An on-hit condition may expire on its "
-        "own — at the start of the attacker's next turn or the end of the target's "
-        "next turn — and the expiry fires when that turn slot passes, even if the "
-        "attacker has died; it never strips a condition something else is still "
-        "imposing.")
-    add("")
-    add("A ranged weapon or ranged spell attack has Disadvantage when a capable "
-        "enemy within 5 feet can see the attacker. Allies, Incapacitated enemies, "
-        "an unseen attacker, and an enemy without a sight line do not impose it. "
-        "This is one ordinary Disadvantage source, so any Advantage cancels it.")
-    add("")
-    add("Two printed creature traits are modelled as stat-block flags. Pack Tactics "
-        "grants a creature's attack rolls — weapon and spell alike, opportunity "
-        "attacks included — Advantage while another member of its team is within 5 "
-        "feet of the target, conscious, and free of incapacitating conditions; it "
-        "counts as one Advantage source and cancels against Disadvantage like any "
-        "other. Undead Fortitude turns damage that would drop the creature to 0 hit "
-        "points into a Constitution saving throw at DC 5 plus the damage taken, and "
-        "a success leaves it standing at 1 hit point — bypassed when any of the "
-        "damage was Radiant, the hit was a critical, or the overflow was enough to "
-        "kill outright.")
-    add("")
-    add("Authored Bonus Actions currently cover Dash and Disengage. A creature may "
-        "also surrender under its stat block's declared last-combatant rule. An "
-        "authored Redirect Attack spends the intended target's reaction and swaps "
-        "that target with an eligible nearby ally before the attack resolves.")
-    add("")
-    add("A combatant instance may set `arrival_round` for reinforcement timing. It "
-        "is absent, untargetable, and unable to act before that round, while its "
-        "scheduled side still keeps the encounter open. The batch policy preserves "
-        "the same timing on every iteration.")
-    add("")
-    add("A creature at 0 hit points is a legal target, not an untouchable one: an "
-        "attack, an area effect it stands inside, and a usable item all reach it. Each "
-        "costs it one death saving throw failure, two if the damage came from a "
-        "critical hit — and an attack from within 5 feet of an Unconscious creature is "
-        "always a critical hit. Only a dead creature is refused as a target.")
-    add("")
-
-    add("## Damage types")
-    add("")
-    add(", ".join(damage.value for damage in DamageType) + ".")
-    add("")
-
-    add("## Battlefield")
-    add("")
-    add(
-        "Positions are `[x, y]` points in feet on a plane of 5-foot squares. A fight "
-        "may run mapless — an open, featureless plane — or on a battle map, supplied "
-        "inline to `encounter_create` and `simulate_rounds`, which adds terrain "
-        "movement costs, walls, line of sight, cover, pathfinding, ambient and local "
-        "light, named storeys, and doors. Walk, Climb, Swim, and Fly use separately "
-        "authored speeds; underwater terrain doubles movement unless the mover has a "
-        "Swim speed, and Fly may move between storeys. Auto-play chooses among "
-        "those authored modes when closing on a target. Darkvision and Blindsight "
-        "extend what a creature can perceive, while authored openings can carry both "
-        "movement and sight between named levels. Doors "
-        "are named map features flipped by the `interact` action; closed they are "
-        "impassable and block sight."
-    )
-    add("")
-    add(
-        "A door is the common case of a **fixture** — any map feature carrying a "
-        "state is one, so a lever, a spike, or a sluice gate is the same record "
-        "with more on it. A fixture may govern squares beyond its own, naming what "
-        "each becomes in either state in terrain and in ground height alike, may "
-        "wait on other fixtures standing open, may cost the action rather than the "
-        "free interaction, and may take an ability check. Working one changes that "
-        "ground immediately, under whoever is standing on it: entry cost governs "
-        "entering a square rather than remaining in one, so a creature whose "
-        "footing turns impassable stays where it is and may walk out. Every square "
-        "a fixture governs is claimed by exactly one fixture per level, which "
-        "leaves no precedence to resolve and is what lets a stateless map query "
-        "agree with the live fight about what a square is."
-    )
-    add("")
-    add(
-        "**Area shapes:** "
-        + ", ".join(
-            shape.value for shape in SpellShape if shape is not SpellShape.SINGLE
-        )
-        + ". **Cover grades:** "
-        + ", ".join(_grade_name(grade) for grade in CoverGrade)
-        + " — graded by corner-counted sight lines; half and three-quarters raise "
-        "the target's AC against attacks and its Dexterity saving throws against "
-        "areas, while total cover refuses the attack and excludes the target "
-        "from an area outright. **Diagonal rules:** "
-        + ", ".join(f"`{rule.value}`" for rule in DiagonalRule)
-        + " — a per-encounter knob governing movement and areas alike; the default "
-        "prices every diagonal at 5 ft."
-    )
-    add("")
-    add("Built-in terrain kinds — content packs may define more:")
-    add("")
-    add("| Kind | Effects |")
-    add("| --- | --- |")
-    for name, effect in sorted(TERRAIN.items()):
-        add(f"| {name} | {_terrain_summary(effect)} |")
-    add("")
-    add(
-        f"**Ground height** is feet per square, negative for ground below the map's "
-        f"datum, and it is charged to movement only. A rise of under "
-        f"{SLOPE_DIFFICULT_FEET} ft across a square is a gentle grade and costs "
-        f"nothing extra; from there up to {CLIMB_FEET} ft the square is a slope, "
-        f"which counts as difficult terrain and — since difficult terrain is not "
-        f"cumulative — is doubled once however rough the going. Above "
-        f"{CLIMB_FEET} ft the face is climbed, costing 1 extra foot per foot "
-        f"climbed (2 extra in difficult terrain) on top of the step into the "
-        f"square, and climbing down costs what climbing up costs. Sight, cover, "
-        f"and areas ignore height entirely."
-    )
-    add("")
-
-    add("## Not supported")
-    add("")
-    add(
-        "Stated explicitly because absence is invisible in the data above, and because "
-        "a caller who assumes one of these exists will get a wrong answer rather than "
-        "an error."
-    )
-    add("")
-    for heading, detail in NOT_SUPPORTED:
-        add(f"**{heading}.** {detail}")
-        add("")
-
-    add("## Checking at runtime")
-    add("")
-    add(
-        "`lookup_rule` with no topic lists every loaded condition, spell, creature, and "
-        "item. With a topic it returns that entry, including the pack it came from and "
-        "its `unmodelled` field. A miss means the subject is not loaded — it is refused "
-        "rather than invented."
-    )
-    add("")
-    add(
-        "`content_status` reports which packs are loaded, whether the bundled slice is "
-        "included, and any encounter still running on content from before the last "
-        "change. `content_validate` checks a pack without loading it."
-    )
-    add("")
-    add(
-        "`encounter_log` pages the full event and action history of a fight in "
-        "progress, stamped with rounds and turns — the record to recap or replay "
-        "from, where `encounter_state` is only the view of now. `replay_export` "
-        "turns that record into a portable replay bundle — the fight's seed, its "
-        "map as captured at creation, the starting roster, and every event — or, "
-        "with `embed`, a single self-contained page that plays the fight back in "
-        "a browser. `uvtt_export` writes a loaded map as a Universal VTT file — "
-        "wall polylines derived from the tiles, door portals, and a rendered "
-        "image — for import into other virtual tabletops."
-    )
-    add("")
-    add(
-        "The `map_*` tools — `map_generate`, `map_load`, `map_save`, `map_render`, "
-        "`map_edit`, `map_query` — manage battle maps as seeded, editable documents "
-        "in the running session; what maps exist there, and at which generation, is "
-        "their answer rather than this document's."
+        "Use `catalog_search` for bounded discovery, `catalog_get` for one structured "
+        "record, and `catalog_table` for a paged printed table. `lookup_rule` remains "
+        "the exact-name view of loaded executable content; `content_status` reports "
+        "the active packs and current catalog progress."
     )
     return "\n".join(lines) + "\n"
 
 
 def default_output_path() -> Path:
-    """``<plugin root>/docs/COVERAGE.md``, resolved from this file's location."""
+    """Return ``<plugin root>/docs/COVERAGE.md`` from the installed source path."""
     return Path(__file__).resolve().parents[3] / "docs" / "COVERAGE.md"
 
 

@@ -156,7 +156,7 @@ class TestAttackRollSpells:
 class TestSpellAttackAdvantage:
     """A spell attack roll carries Advantage the way a weapon attack roll does.
 
-    SRD 5.2 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
+    SRD 5.2.1 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
     represents making an attack with a weapon, an Unarmed Strike, or a spell."
     Advantage is a property of the d20 test, not of the thing swung, so nothing
     about a spell exempts it.
@@ -285,4 +285,4 @@ class TestConditionSpells:
 
 class TestBundledData:
     def test_every_bundled_spell_declares_srd_provenance(self) -> None:
-        assert all(spell.provenance == "SRD 5.2" for spell in spellbook().values())
+        assert all(spell.provenance == "SRD 5.2.1" for spell in spellbook().values())

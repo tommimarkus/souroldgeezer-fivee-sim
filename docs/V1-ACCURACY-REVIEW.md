@@ -28,7 +28,7 @@ finding below is something the suite does not pin.
 
 ## How to read the confidence column
 
-There is **no copy of the SRD 5.2 rules text in this repo**. Findings are
+There is **no copy of the SRD 5.2.1 rules text in this repo**. Findings are
 therefore split by what backs them:
 
 - **code** — provable from the engine's own behaviour (internal inconsistency, a
@@ -358,7 +358,7 @@ result in this review.
 **Claim:** saving throws have no natural-20/natural-1 auto-resolution, unlike
 attack rolls — an inconsistency in `D20Test.success`.
 
-**Refuted.** In SRD 5.2 / the 2024 rules, the natural-20 and natural-1 rules are
+**Refuted.** In SRD 5.2.1 / the 2024 rules, the natural-20 and natural-1 rules are
 scoped *to attack rolls only*. Rolling 20 or 1 on an ability check or a saving
 throw has no special mechanical effect; death saving throws are a separately
 named special case. The engine's three-way split — `AttackRoll` yes,

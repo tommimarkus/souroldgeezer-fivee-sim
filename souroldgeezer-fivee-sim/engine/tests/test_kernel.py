@@ -276,7 +276,7 @@ class TestConditionInteractions:
         )
 
     def test_prone_advantage_is_scoped_by_distance_not_by_weapon(self) -> None:
-        # SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "You have Disadvantage
+        # SRD 5.2.1 Rules Glossary, Prone, "Attacks Affected": "You have Disadvantage
         # on attack rolls. An attack roll against you has Advantage if the attacker
         # is within 5 feet of you. Otherwise, that attack roll has Disadvantage."
         # The same shape as the Paralyzed/Unconscious automatic critical: it names a
@@ -343,7 +343,7 @@ class TestConditionInteractions:
         )
 
     def test_the_automatic_critical_is_scoped_by_distance_not_by_weapon(self) -> None:
-        # SRD 5.2 Rules Glossary, Paralyzed and Unconscious, both verbatim: "Any
+        # SRD 5.2.1 Rules Glossary, Paralyzed and Unconscious, both verbatim: "Any
         # attack roll that hits you is a Critical Hit if the attacker is within 5
         # feet of you." The clause names a distance and no weapon kind, which is
         # why the function takes no AttackKind: an attack that is not melee still
@@ -364,7 +364,7 @@ class TestConditionInteractions:
         assert not speed_is_zero((Condition.PRONE,))
 
     def test_stunned_does_not_zero_speed(self) -> None:
-        # SRD 5.2 Stunned is Incapacitated, auto-failed Strength and Dexterity
+        # SRD 5.2.1 Stunned is Incapacitated, auto-failed Strength and Dexterity
         # saves, and Advantage on attacks against you. There is no Speed 0 clause —
         # that was the 2014 wording ("can't move"), and Incapacitated does not carry
         # one either. Paralyzed, Petrified, and Unconscious each state Speed 0
@@ -375,7 +375,7 @@ class TestConditionInteractions:
 class TestSavingThrowConditions:
     """Which conditions touch a saving throw, and how.
 
-    SRD 5.2 divides them two ways, and the difference is not cosmetic. Paralyzed,
+    SRD 5.2.1 divides them two ways, and the difference is not cosmetic. Paralyzed,
     Petrified, Stunned, and Unconscious make Strength and Dexterity saving throws
     fail outright. Restrained only imposes Disadvantage on Dexterity saving throws
     — the creature still rolls, and can still succeed.

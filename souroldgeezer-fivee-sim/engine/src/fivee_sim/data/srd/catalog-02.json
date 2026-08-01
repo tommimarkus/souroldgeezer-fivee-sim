@@ -1,0 +1,24 @@
+{
+  "pack": "srd-5.2.1-catalog-02",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "002-2-contents",
+      "kind": "section",
+      "name": "Contents",
+      "source_ids": [
+        "002-2-contents"
+      ],
+      "chapter_id": "002-2-contents",
+      "pages": [
+        2
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    }
+  ],
+  "catalog_tables": []
+}

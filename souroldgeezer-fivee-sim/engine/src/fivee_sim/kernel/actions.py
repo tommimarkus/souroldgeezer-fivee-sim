@@ -5,7 +5,7 @@ values an attack actually depends on — bonuses, AC, condition sets, distance �
 this module stays a pure function of its arguments and can be exercised without
 building a combatant.
 
-All provenance: SRD 5.2 (see NOTICE).
+All provenance: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations
@@ -120,7 +120,7 @@ def melee_hit_is_critical(
     """Whether a landed hit is upgraded to a critical by the target's condition.
 
     **The rule is scoped by distance, not by weapon.** Paralyzed and Unconscious
-    both word it identically in SRD 5.2: "Any attack roll that hits you is a
+    both word it identically in SRD 5.2.1: "Any attack roll that hits you is a
     Critical Hit if the attacker is within 5 feet of you." That names a distance
     and no melee/ranged qualifier, so a ranged attack — or a spell attack — made
     from inside 5 feet qualifies exactly as a sword swing does. This function

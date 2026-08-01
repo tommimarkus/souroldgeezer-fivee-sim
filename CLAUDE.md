@@ -106,7 +106,7 @@ stage it.
 
 ## Licence boundary — the hard constraint
 
-Game rules content comes from the **System Reference Document 5.2**, released by
+Game rules content comes from the **System Reference Document 5.2.1**, released by
 Wizards of the Coast LLC under **CC-BY-4.0**. Three rules follow, and they are
 not negotiable:
 
@@ -116,8 +116,9 @@ reword or re-wrap that sentence.
 
 NOTICE also carries two statements about **our** work, which are required and must
 not be dropped. CC-BY-4.0 §3(a)(1)(B) obliges us to indicate that we modified the
-licensed material — we transcribe a subset into JSON and omit some printed
-features — and the licence split has to be explicit so the MIT grant is not read
+licensed material — we transcribe a facts-only catalog and a smaller executable
+subset into JSON while omitting source prose and unsupported mechanics — and the
+licence split has to be explicit so the MIT grant is not read
 as covering the SRD material. Neither is additional attribution to Wizards, so
 neither conflicts with rule 2.
 
@@ -139,10 +140,10 @@ local checkout's directory name is local to this machine and is never published.
 Descriptive nominative reference in repo-internal prose (this file, the README)
 is fine and is why those files are not scanned for marks.
 
-**3. Non-SRD content never enters engine data.** SRD 5.2 omits parts of the 2024
+**3. Non-SRD content never enters engine data.** SRD 5.2.1 omits parts of the 2024
 ruleset — the Artificer class, the Aasimar species, and the Beholder are known
 examples. Content outside the SRD is not licensed to us. Every data record
-carries a provenance field naming SRD 5.2; if a name cannot be traced to the
+carries a provenance field naming SRD 5.2.1; if a name cannot be traced to the
 SRD, it does not ship.
 
 This constrains what **we redistribute**, not what a user may load. A campaign's
@@ -150,6 +151,15 @@ own content packs are outside the repo by design and are not subject to our
 denylist — their content is theirs. That is why the local hook scopes its non-SRD
 name check to `souroldgeezer-fivee-sim/engine/src/fivee_sim/data/`: extending it to
 user packs would be both useless and wrong.
+
+The built-in catalog carries structured facts only: source names and IDs,
+classifications, numbers, formulas, relationships, atomic table cells, and
+structured omission codes. Descriptive, flavor, and rules prose does not ship in
+catalog records. Contributor review packets may temporarily contain source prose
+under `/tmp`, but the machine-local extraction path and its text are never committed.
+The official source pin is
+`https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf`, SHA-256
+`8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87`.
 
 Before publishing, run the `souroldgeezer-audit:ip-hygiene` skill over the
 plugin surface as the release gate. The local hook is a tripwire, not a
@@ -222,8 +232,9 @@ the handful of values a roll depends on. `model/` owns creatures and is the only
 place combat state changes. Spell and item definitions live in `kernel/` rather than
 a separate layer because they are resolution primitives like the rest.
 
-**`service/` holds the tool bodies, and both adapters go through it.** Some 1,600
-lines over `common.py`, `errors.py`, `maps.py`, `replay.py`, and `uvtt.py`.
+**`service/` holds the tool bodies, and both adapters go through it.** This
+includes catalog search and lookup in `catalog.py` alongside `common.py`,
+`errors.py`, `maps.py`, `replay.py`, and `uvtt.py`.
 Nothing in it may import MCP, HTTP, or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
 `ValueError`-family errors. That is the whole reason two adapters can both be
@@ -231,12 +242,13 @@ thin. `mcp_server/server.py` maps those errors onto `ToolError`,
 `editor/http_server.py` onto problem+json, and neither does anything more than
 that and serialisation. A tool body written into an adapter belongs here instead.
 
-**Four modules sit beside the packages, and that tier is deliberate.**
-`content.py`, `map_document.py`, `validation.py`, and `coverage.py` live directly
-in `src/fivee_sim/` — 2,757 lines, about a fifth of the engine. What belongs there
+**Five modules sit beside the packages, and that tier is deliberate.**
+`catalog.py`, `content.py`, `map_document.py`, `validation.py`, and `coverage.py`
+live directly in `src/fivee_sim/`. What belongs there
 is a cross-cutting concern that is neither a rules primitive nor creature state:
-how content enters the engine and how any file it reads is validated, the on-disk
-map document format, and the generated coverage report. Nothing in `kernel/`,
+the immutable catalog model, how content enters the engine and how any file it
+reads is validated, the on-disk map document format, and the generated coverage
+report. Nothing in `kernel/`,
 `model/`, or `analytics/` imports any of them, and that is the property to keep —
 a module only the rules layers need is not a root module, it is a `kernel/` or
 `model/` one.
@@ -318,6 +330,9 @@ uv run pytest
 
 uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
 
+# From the repo root, against a contributor's verified local extraction.
+python3 scripts/srd-catalog-batch.py --source-root /path/to/extracted validate
+
 # From the repo root: real JSON-RPC against the real launcher.
 python3 scripts/check-mcp-handshake.py
 bash scripts/test-launcher-freshness.sh
@@ -344,11 +359,11 @@ self-check: copy the static directory somewhere scratch, delete a guard, and
 confirm the case that names the guard fails. Every other run reads the shipped
 path, because verifying a copy would verify nothing.
 
-**`docs/COVERAGE.md` is generated, never hand-edited.** Adding a creature, spell,
-condition, or action means regenerating it; `tests/test_coverage.py` fails
-otherwise. The "not supported" section is the exception — it is prose in
-`coverage.py`, because absence cannot be derived from the data and it is the part a
-reader most needs.
+**`docs/COVERAGE.md` is generated, never hand-edited.** Adding or advancing a
+catalog record, table, or executable record means regenerating it;
+`tests/test_coverage.py` fails otherwise. Keep it compact: source inventory,
+category, progress, simulation-support, and executable totals only. Detailed
+identity and table lookup belongs to the bounded catalog tools.
 
 It describes the **bundled** slice only. What a session actually has loaded is the
 `content_status` tool's answer, and the skill says so — a generated document cannot

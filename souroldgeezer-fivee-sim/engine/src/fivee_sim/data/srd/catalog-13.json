@@ -1,0 +1,6072 @@
+{
+  "pack": "srd-5.2.1-catalog-13",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1362-13-magic-items",
+      "kind": "section",
+      "name": "Magic Items",
+      "source_ids": [
+        "1362-13-magic-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1363-13-1-magic-item-categories",
+      "kind": "section",
+      "name": "Magic Item Categories",
+      "source_ids": [
+        "1363-13-1-magic-item-categories"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1364-13-2-armor",
+      "kind": "section",
+      "name": "Armor",
+      "source_ids": [
+        "1364-13-2-armor"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1365-13-3-potions",
+      "kind": "section",
+      "name": "Potions",
+      "source_ids": [
+        "1365-13-3-potions"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1366-13-4-rings",
+      "kind": "section",
+      "name": "Rings",
+      "source_ids": [
+        "1366-13-4-rings"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1367-13-5-rods",
+      "kind": "section",
+      "name": "Rods",
+      "source_ids": [
+        "1367-13-5-rods"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        204
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1368-13-6-scrolls",
+      "kind": "section",
+      "name": "Scrolls",
+      "source_ids": [
+        "1368-13-6-scrolls"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1369-13-7-staffs",
+      "kind": "section",
+      "name": "Staffs",
+      "source_ids": [
+        "1369-13-7-staffs"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1370-13-8-wands",
+      "kind": "section",
+      "name": "Wands",
+      "source_ids": [
+        "1370-13-8-wands"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1371-13-9-weapons",
+      "kind": "section",
+      "name": "Weapons",
+      "source_ids": [
+        "1371-13-9-weapons"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1372-13-10-wondrous-items",
+      "kind": "section",
+      "name": "Wondrous Items",
+      "source_ids": [
+        "1372-13-10-wondrous-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1373-13-10-1-magic-item-rules",
+      "kind": "magic_item",
+      "name": "Magic Item Rules",
+      "source_ids": [
+        "1373-13-10-1-magic-item-rules"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1372-13-10-wondrous-items"
+    },
+    {
+      "id": "1374-13-11-magic-item-rarity",
+      "kind": "section",
+      "name": "Magic Item Rarity",
+      "source_ids": [
+        "1374-13-11-magic-item-rarity"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1375-13-12-magic-item-values-by-rarity",
+      "kind": "section",
+      "name": "Magic Item Values by Rarity",
+      "source_ids": [
+        "1375-13-12-magic-item-values-by-rarity"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        205,
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1376-13-13-activating-a-magic-item",
+      "kind": "section",
+      "name": "Activating a Magic Item",
+      "source_ids": [
+        "1376-13-13-activating-a-magic-item"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1377-13-14-command-word",
+      "kind": "section",
+      "name": "Command Word",
+      "source_ids": [
+        "1377-13-14-command-word"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1378-13-15-consumable-items",
+      "kind": "section",
+      "name": "Consumable Items",
+      "source_ids": [
+        "1378-13-15-consumable-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1379-13-15-1-spells-cast-from-items",
+      "kind": "magic_item",
+      "name": "Spells Cast from Items",
+      "source_ids": [
+        "1379-13-15-1-spells-cast-from-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1378-13-15-consumable-items"
+    },
+    {
+      "id": "1380-13-15-2-charges",
+      "kind": "magic_item",
+      "name": "Charges",
+      "source_ids": [
+        "1380-13-15-2-charges"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1378-13-15-consumable-items"
+    },
+    {
+      "id": "1381-13-16-the-next-dawn",
+      "kind": "section",
+      "name": "“The Next Dawn”",
+      "source_ids": [
+        "1381-13-16-the-next-dawn"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1382-13-17-cursed-items",
+      "kind": "section",
+      "name": "Cursed Items",
+      "source_ids": [
+        "1382-13-17-cursed-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1383-13-18-magic-item-resilience",
+      "kind": "section",
+      "name": "Magic Item Resilience",
+      "source_ids": [
+        "1383-13-18-magic-item-resilience"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1384-13-19-crafting-magic-items",
+      "kind": "section",
+      "name": "Crafting Magic Items",
+      "source_ids": [
+        "1384-13-19-crafting-magic-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1385-13-20-arcana-proficiency",
+      "kind": "section",
+      "name": "Arcana Proficiency",
+      "source_ids": [
+        "1385-13-20-arcana-proficiency"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1386-13-21-tools",
+      "kind": "section",
+      "name": "Tools",
+      "source_ids": [
+        "1386-13-21-tools"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        206,
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1387-13-22-spells",
+      "kind": "section",
+      "name": "Spells",
+      "source_ids": [
+        "1387-13-22-spells"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1388-13-23-time-and-cost",
+      "kind": "section",
+      "name": "Time and Cost",
+      "source_ids": [
+        "1388-13-23-time-and-cost"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1389-13-24-sentient-magic-items",
+      "kind": "section",
+      "name": "Sentient Magic Items",
+      "source_ids": [
+        "1389-13-24-sentient-magic-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1390-13-25-sentient-magic-item-traits",
+      "kind": "section",
+      "name": "Sentient Magic Item Traits",
+      "source_ids": [
+        "1390-13-25-sentient-magic-item-traits"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1391-13-25-1-abilities",
+      "kind": "magic_item",
+      "name": "Abilities",
+      "source_ids": [
+        "1391-13-25-1-abilities"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1392-13-25-2-alignment",
+      "kind": "magic_item",
+      "name": "Alignment",
+      "source_ids": [
+        "1392-13-25-2-alignment"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1393-13-25-3-communication",
+      "kind": "magic_item",
+      "name": "Communication",
+      "source_ids": [
+        "1393-13-25-3-communication"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1394-13-25-4-senses",
+      "kind": "magic_item",
+      "name": "Senses",
+      "source_ids": [
+        "1394-13-25-4-senses"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        207
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1395-13-25-5-special-purpose",
+      "kind": "magic_item",
+      "name": "Special Purpose",
+      "source_ids": [
+        "1395-13-25-5-special-purpose"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        208
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1396-13-25-6-conflict",
+      "kind": "magic_item",
+      "name": "Conflict",
+      "source_ids": [
+        "1396-13-25-6-conflict"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        208
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1390-13-25-sentient-magic-item-traits"
+    },
+    {
+      "id": "1397-13-26-magic-items-a-z",
+      "kind": "section",
+      "name": "Magic Items A–Z",
+      "source_ids": [
+        "1397-13-26-magic-items-a-z"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1398-13-26-1-adamantine-armor",
+      "kind": "magic_item",
+      "name": "Adamantine Armor",
+      "source_ids": [
+        "1398-13-26-1-adamantine-armor"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1399-13-26-2-ammunition-1-2-or-3",
+      "kind": "magic_item",
+      "name": "Ammunition, +1, +2, or +3",
+      "source_ids": [
+        "1399-13-26-2-ammunition-1-2-or-3"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1400-13-26-3-ammunition-of-slaying",
+      "kind": "magic_item",
+      "name": "Ammunition of Slaying",
+      "source_ids": [
+        "1400-13-26-3-ammunition-of-slaying"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1401-13-26-4-amulet-of-health",
+      "kind": "magic_item",
+      "name": "Amulet of Health",
+      "source_ids": [
+        "1401-13-26-4-amulet-of-health"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1402-13-26-5-amulet-of-proof-against-detection-and-location",
+      "kind": "magic_item",
+      "name": "Amulet of Proof against Detection and Location",
+      "source_ids": [
+        "1402-13-26-5-amulet-of-proof-against-detection-and-location"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1403-13-26-6-amulet-of-the-planes",
+      "kind": "magic_item",
+      "name": "Amulet of the Planes",
+      "source_ids": [
+        "1403-13-26-6-amulet-of-the-planes"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1404-13-26-7-animated-shield",
+      "kind": "magic_item",
+      "name": "Animated Shield",
+      "source_ids": [
+        "1404-13-26-7-animated-shield"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        209
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1405-13-26-8-apparatus-of-the-crab",
+      "kind": "magic_item",
+      "name": "Apparatus of the Crab",
+      "source_ids": [
+        "1405-13-26-8-apparatus-of-the-crab"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        210
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1406-13-26-9-armor-1-2-or-3",
+      "kind": "magic_item",
+      "name": "Armor, +1, +2, or +3",
+      "source_ids": [
+        "1406-13-26-9-armor-1-2-or-3"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        210
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1407-13-26-10-armor-of-invulnerability",
+      "kind": "magic_item",
+      "name": "Armor of Invulnerability",
+      "source_ids": [
+        "1407-13-26-10-armor-of-invulnerability"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        210
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1408-13-26-11-armor-of-resistance",
+      "kind": "magic_item",
+      "name": "Armor of Resistance",
+      "source_ids": [
+        "1408-13-26-11-armor-of-resistance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        210
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1409-13-26-12-armor-of-vulnerability",
+      "kind": "magic_item",
+      "name": "Armor of Vulnerability",
+      "source_ids": [
+        "1409-13-26-12-armor-of-vulnerability"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        211
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1410-13-26-13-arrow-catching-shield",
+      "kind": "magic_item",
+      "name": "Arrow-Catching Shield",
+      "source_ids": [
+        "1410-13-26-13-arrow-catching-shield"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        211
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1411-13-26-14-bag-of-beans",
+      "kind": "magic_item",
+      "name": "Bag of Beans",
+      "source_ids": [
+        "1411-13-26-14-bag-of-beans"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        211
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1412-13-26-15-bag-of-devouring",
+      "kind": "magic_item",
+      "name": "Bag of Devouring",
+      "source_ids": [
+        "1412-13-26-15-bag-of-devouring"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        212
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1413-13-26-16-bag-of-holding",
+      "kind": "magic_item",
+      "name": "Bag of Holding",
+      "source_ids": [
+        "1413-13-26-16-bag-of-holding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        212
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1414-13-26-17-bag-of-tricks",
+      "kind": "magic_item",
+      "name": "Bag of Tricks",
+      "source_ids": [
+        "1414-13-26-17-bag-of-tricks"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        212
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1415-13-26-18-bead-of-force",
+      "kind": "magic_item",
+      "name": "Bead of Force",
+      "source_ids": [
+        "1415-13-26-18-bead-of-force"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        212,
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1416-13-26-19-bead-of-nourishment",
+      "kind": "magic_item",
+      "name": "Bead of Nourishment",
+      "source_ids": [
+        "1416-13-26-19-bead-of-nourishment"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1417-13-26-20-belt-of-dwarvenkind",
+      "kind": "magic_item",
+      "name": "Belt of Dwarvenkind",
+      "source_ids": [
+        "1417-13-26-20-belt-of-dwarvenkind"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1418-13-26-21-belt-of-giant-strength",
+      "kind": "magic_item",
+      "name": "Belt of Giant Strength",
+      "source_ids": [
+        "1418-13-26-21-belt-of-giant-strength"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1419-13-26-22-berserker-axe",
+      "kind": "magic_item",
+      "name": "Berserker Axe",
+      "source_ids": [
+        "1419-13-26-22-berserker-axe"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1420-13-26-23-boots-of-elvenkind",
+      "kind": "magic_item",
+      "name": "Boots of Elvenkind",
+      "source_ids": [
+        "1420-13-26-23-boots-of-elvenkind"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1421-13-26-24-boots-of-levitation",
+      "kind": "magic_item",
+      "name": "Boots of Levitation",
+      "source_ids": [
+        "1421-13-26-24-boots-of-levitation"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        213
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1422-13-26-25-boots-of-speed",
+      "kind": "magic_item",
+      "name": "Boots of Speed",
+      "source_ids": [
+        "1422-13-26-25-boots-of-speed"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1423-13-26-26-boots-of-striding-and-springing",
+      "kind": "magic_item",
+      "name": "Boots of Striding and Springing",
+      "source_ids": [
+        "1423-13-26-26-boots-of-striding-and-springing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1424-13-26-27-boots-of-the-winterlands",
+      "kind": "magic_item",
+      "name": "Boots of the Winterlands",
+      "source_ids": [
+        "1424-13-26-27-boots-of-the-winterlands"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1425-13-26-28-bowl-of-commanding-water-elementals",
+      "kind": "magic_item",
+      "name": "Bowl of Commanding Water Elementals",
+      "source_ids": [
+        "1425-13-26-28-bowl-of-commanding-water-elementals"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1426-13-26-29-bracers-of-archery",
+      "kind": "magic_item",
+      "name": "Bracers of Archery",
+      "source_ids": [
+        "1426-13-26-29-bracers-of-archery"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1427-13-26-30-bracers-of-defense",
+      "kind": "magic_item",
+      "name": "Bracers of Defense",
+      "source_ids": [
+        "1427-13-26-30-bracers-of-defense"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1428-13-26-31-brazier-of-commanding-fire-elementals",
+      "kind": "magic_item",
+      "name": "Brazier of Commanding Fire Elementals",
+      "source_ids": [
+        "1428-13-26-31-brazier-of-commanding-fire-elementals"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1429-13-26-32-brooch-of-shielding",
+      "kind": "magic_item",
+      "name": "Brooch of Shielding",
+      "source_ids": [
+        "1429-13-26-32-brooch-of-shielding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1430-13-26-33-broom-of-flying",
+      "kind": "magic_item",
+      "name": "Broom of Flying",
+      "source_ids": [
+        "1430-13-26-33-broom-of-flying"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1431-13-26-34-candle-of-invocation",
+      "kind": "magic_item",
+      "name": "Candle of Invocation",
+      "source_ids": [
+        "1431-13-26-34-candle-of-invocation"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        214,
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1432-13-26-35-cape-of-the-mountebank",
+      "kind": "magic_item",
+      "name": "Cape of the Mountebank",
+      "source_ids": [
+        "1432-13-26-35-cape-of-the-mountebank"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1433-13-26-36-carpet-of-flying",
+      "kind": "magic_item",
+      "name": "Carpet of Flying",
+      "source_ids": [
+        "1433-13-26-36-carpet-of-flying"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1434-13-26-37-censer-of-controlling-air-elementals",
+      "kind": "magic_item",
+      "name": "Censer of Controlling Air Elementals",
+      "source_ids": [
+        "1434-13-26-37-censer-of-controlling-air-elementals"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1435-13-26-38-chime-of-opening",
+      "kind": "magic_item",
+      "name": "Chime of Opening",
+      "source_ids": [
+        "1435-13-26-38-chime-of-opening"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1436-13-26-39-circlet-of-blasting",
+      "kind": "magic_item",
+      "name": "Circlet of Blasting",
+      "source_ids": [
+        "1436-13-26-39-circlet-of-blasting"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1437-13-26-40-cloak-of-arachnida",
+      "kind": "magic_item",
+      "name": "Cloak of Arachnida",
+      "source_ids": [
+        "1437-13-26-40-cloak-of-arachnida"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1438-13-26-41-cloak-of-displacement",
+      "kind": "magic_item",
+      "name": "Cloak of Displacement",
+      "source_ids": [
+        "1438-13-26-41-cloak-of-displacement"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1439-13-26-42-cloak-of-elvenkind",
+      "kind": "magic_item",
+      "name": "Cloak of Elvenkind",
+      "source_ids": [
+        "1439-13-26-42-cloak-of-elvenkind"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1440-13-26-43-cloak-of-invisibility",
+      "kind": "magic_item",
+      "name": "Cloak of Invisibility",
+      "source_ids": [
+        "1440-13-26-43-cloak-of-invisibility"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        215,
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1441-13-26-44-cloak-of-protection",
+      "kind": "magic_item",
+      "name": "Cloak of Protection",
+      "source_ids": [
+        "1441-13-26-44-cloak-of-protection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1442-13-26-45-cloak-of-the-bat",
+      "kind": "magic_item",
+      "name": "Cloak of the Bat",
+      "source_ids": [
+        "1442-13-26-45-cloak-of-the-bat"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1443-13-26-46-cloak-of-the-manta-ray",
+      "kind": "magic_item",
+      "name": "Cloak of the Manta Ray",
+      "source_ids": [
+        "1443-13-26-46-cloak-of-the-manta-ray"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1444-13-26-47-crystal-ball",
+      "kind": "magic_item",
+      "name": "Crystal Ball",
+      "source_ids": [
+        "1444-13-26-47-crystal-ball"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1445-13-26-48-crystal-ball-of-mind-reading",
+      "kind": "magic_item",
+      "name": "Crystal Ball of Mind Reading",
+      "source_ids": [
+        "1445-13-26-48-crystal-ball-of-mind-reading"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1446-13-26-49-crystal-ball-of-telepathy",
+      "kind": "magic_item",
+      "name": "Crystal Ball of Telepathy",
+      "source_ids": [
+        "1446-13-26-49-crystal-ball-of-telepathy"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1447-13-26-50-crystal-ball-of-true-seeing",
+      "kind": "magic_item",
+      "name": "Crystal Ball of True Seeing",
+      "source_ids": [
+        "1447-13-26-50-crystal-ball-of-true-seeing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1448-13-26-51-cube-of-force",
+      "kind": "magic_item",
+      "name": "Cube of Force",
+      "source_ids": [
+        "1448-13-26-51-cube-of-force"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1449-13-26-52-cubic-gate",
+      "kind": "magic_item",
+      "name": "Cubic Gate",
+      "source_ids": [
+        "1449-13-26-52-cubic-gate"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1450-13-26-53-dagger-of-venom",
+      "kind": "magic_item",
+      "name": "Dagger of Venom",
+      "source_ids": [
+        "1450-13-26-53-dagger-of-venom"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        216
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1451-13-26-54-dancing-sword",
+      "kind": "magic_item",
+      "name": "Dancing Sword",
+      "source_ids": [
+        "1451-13-26-54-dancing-sword"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        217
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1452-13-26-55-decanter-of-endless-water",
+      "kind": "magic_item",
+      "name": "Decanter of Endless Water",
+      "source_ids": [
+        "1452-13-26-55-decanter-of-endless-water"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        217
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1453-13-26-56-deck-of-illusions",
+      "kind": "magic_item",
+      "name": "Deck of Illusions",
+      "source_ids": [
+        "1453-13-26-56-deck-of-illusions"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        217,
+        218
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1454-13-26-57-defender",
+      "kind": "magic_item",
+      "name": "Defender",
+      "source_ids": [
+        "1454-13-26-57-defender"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        218
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1455-13-26-58-demon-armor",
+      "kind": "magic_item",
+      "name": "Demon Armor",
+      "source_ids": [
+        "1455-13-26-58-demon-armor"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        218
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1456-13-26-59-dimensional-shackles",
+      "kind": "magic_item",
+      "name": "Dimensional Shackles",
+      "source_ids": [
+        "1456-13-26-59-dimensional-shackles"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        218
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1457-13-26-60-dragon-orb",
+      "kind": "magic_item",
+      "name": "Dragon Orb",
+      "source_ids": [
+        "1457-13-26-60-dragon-orb"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        218
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1458-13-26-61-dragon-scale-mail",
+      "kind": "magic_item",
+      "name": "Dragon Scale Mail",
+      "source_ids": [
+        "1458-13-26-61-dragon-scale-mail"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        218,
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1459-13-26-62-dragon-slayer",
+      "kind": "magic_item",
+      "name": "Dragon Slayer",
+      "source_ids": [
+        "1459-13-26-62-dragon-slayer"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1460-13-26-63-dust-of-disappearance",
+      "kind": "magic_item",
+      "name": "Dust of Disappearance",
+      "source_ids": [
+        "1460-13-26-63-dust-of-disappearance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1461-13-26-64-dust-of-dryness",
+      "kind": "magic_item",
+      "name": "Dust of Dryness",
+      "source_ids": [
+        "1461-13-26-64-dust-of-dryness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1462-13-26-65-dust-of-sneezing-and-choking",
+      "kind": "magic_item",
+      "name": "Dust of Sneezing and Choking",
+      "source_ids": [
+        "1462-13-26-65-dust-of-sneezing-and-choking"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1463-13-26-66-dwarven-plate",
+      "kind": "magic_item",
+      "name": "Dwarven Plate",
+      "source_ids": [
+        "1463-13-26-66-dwarven-plate"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1464-13-26-67-dwarven-thrower",
+      "kind": "magic_item",
+      "name": "Dwarven Thrower",
+      "source_ids": [
+        "1464-13-26-67-dwarven-thrower"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1465-13-26-68-efficient-quiver",
+      "kind": "magic_item",
+      "name": "Efficient Quiver",
+      "source_ids": [
+        "1465-13-26-68-efficient-quiver"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        219
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1466-13-26-69-efreeti-bottle",
+      "kind": "magic_item",
+      "name": "Efreeti Bottle",
+      "source_ids": [
+        "1466-13-26-69-efreeti-bottle"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1467-13-26-70-elemental-gem",
+      "kind": "magic_item",
+      "name": "Elemental Gem",
+      "source_ids": [
+        "1467-13-26-70-elemental-gem"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1468-13-26-71-elixir-of-health",
+      "kind": "magic_item",
+      "name": "Elixir of Health",
+      "source_ids": [
+        "1468-13-26-71-elixir-of-health"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1469-13-26-72-elven-chain",
+      "kind": "magic_item",
+      "name": "Elven Chain",
+      "source_ids": [
+        "1469-13-26-72-elven-chain"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1470-13-26-73-energy-bow",
+      "kind": "magic_item",
+      "name": "Energy Bow",
+      "source_ids": [
+        "1470-13-26-73-energy-bow"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1471-13-26-74-eversmoking-bottle",
+      "kind": "magic_item",
+      "name": "Eversmoking Bottle",
+      "source_ids": [
+        "1471-13-26-74-eversmoking-bottle"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        220,
+        221
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1472-13-26-75-eyes-of-charming",
+      "kind": "magic_item",
+      "name": "Eyes of Charming",
+      "source_ids": [
+        "1472-13-26-75-eyes-of-charming"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        221
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1473-13-26-76-eyes-of-minute-seeing",
+      "kind": "magic_item",
+      "name": "Eyes of Minute Seeing",
+      "source_ids": [
+        "1473-13-26-76-eyes-of-minute-seeing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        221
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1474-13-26-77-eyes-of-the-eagle",
+      "kind": "magic_item",
+      "name": "Eyes of the Eagle",
+      "source_ids": [
+        "1474-13-26-77-eyes-of-the-eagle"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        221
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1475-13-26-78-feather-token",
+      "kind": "magic_item",
+      "name": "Feather Token",
+      "source_ids": [
+        "1475-13-26-78-feather-token"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        221
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1476-13-26-79-figurine-of-wondrous-power",
+      "kind": "magic_item",
+      "name": "Figurine of Wondrous Power",
+      "source_ids": [
+        "1476-13-26-79-figurine-of-wondrous-power"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        221,
+        222
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1397-13-26-magic-items-a-z"
+    },
+    {
+      "id": "1477-13-27-giant-fly",
+      "kind": "creature",
+      "name": "Giant Fly",
+      "source_ids": [
+        "1477-13-27-giant-fly"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        222
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1478-13-27-1-flame-tongue",
+      "kind": "magic_item",
+      "name": "Flame Tongue",
+      "source_ids": [
+        "1478-13-27-1-flame-tongue"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1479-13-27-2-folding-boat",
+      "kind": "magic_item",
+      "name": "Folding Boat",
+      "source_ids": [
+        "1479-13-27-2-folding-boat"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1480-13-27-3-frost-brand",
+      "kind": "magic_item",
+      "name": "Frost Brand",
+      "source_ids": [
+        "1480-13-27-3-frost-brand"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1481-13-27-4-gauntlets-of-ogre-power",
+      "kind": "magic_item",
+      "name": "Gauntlets of Ogre Power",
+      "source_ids": [
+        "1481-13-27-4-gauntlets-of-ogre-power"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1482-13-27-5-gem-of-brightness",
+      "kind": "magic_item",
+      "name": "Gem of Brightness",
+      "source_ids": [
+        "1482-13-27-5-gem-of-brightness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1483-13-27-6-gem-of-seeing",
+      "kind": "magic_item",
+      "name": "Gem of Seeing",
+      "source_ids": [
+        "1483-13-27-6-gem-of-seeing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1484-13-27-7-giant-slayer",
+      "kind": "magic_item",
+      "name": "Giant Slayer",
+      "source_ids": [
+        "1484-13-27-7-giant-slayer"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1485-13-27-8-glamoured-studded-leather",
+      "kind": "magic_item",
+      "name": "Glamoured Studded Leather",
+      "source_ids": [
+        "1485-13-27-8-glamoured-studded-leather"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        223,
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1486-13-27-9-gloves-of-missile-snaring",
+      "kind": "magic_item",
+      "name": "Gloves of Missile Snaring",
+      "source_ids": [
+        "1486-13-27-9-gloves-of-missile-snaring"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1487-13-27-10-gloves-of-swimming-and-climbing",
+      "kind": "magic_item",
+      "name": "Gloves of Swimming and Climbing",
+      "source_ids": [
+        "1487-13-27-10-gloves-of-swimming-and-climbing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1488-13-27-11-gloves-of-thievery",
+      "kind": "magic_item",
+      "name": "Gloves of Thievery",
+      "source_ids": [
+        "1488-13-27-11-gloves-of-thievery"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1489-13-27-12-goggles-of-night",
+      "kind": "magic_item",
+      "name": "Goggles of Night",
+      "source_ids": [
+        "1489-13-27-12-goggles-of-night"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1490-13-27-13-hammer-of-thunderbolts",
+      "kind": "magic_item",
+      "name": "Hammer of Thunderbolts",
+      "source_ids": [
+        "1490-13-27-13-hammer-of-thunderbolts"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1491-13-27-14-handy-haversack",
+      "kind": "magic_item",
+      "name": "Handy Haversack",
+      "source_ids": [
+        "1491-13-27-14-handy-haversack"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1492-13-27-15-hat-of-disguise",
+      "kind": "magic_item",
+      "name": "Hat of Disguise",
+      "source_ids": [
+        "1492-13-27-15-hat-of-disguise"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1493-13-27-16-hat-of-many-spells",
+      "kind": "magic_item",
+      "name": "Hat of Many Spells",
+      "source_ids": [
+        "1493-13-27-16-hat-of-many-spells"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        224,
+        225
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1494-13-27-17-headband-of-intellect",
+      "kind": "magic_item",
+      "name": "Headband of Intellect",
+      "source_ids": [
+        "1494-13-27-17-headband-of-intellect"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        225
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1495-13-27-18-helm-of-brilliance",
+      "kind": "magic_item",
+      "name": "Helm of Brilliance",
+      "source_ids": [
+        "1495-13-27-18-helm-of-brilliance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        225,
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1496-13-27-19-helm-of-comprehending-languages",
+      "kind": "magic_item",
+      "name": "Helm of Comprehending Languages",
+      "source_ids": [
+        "1496-13-27-19-helm-of-comprehending-languages"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1497-13-27-20-helm-of-telepathy",
+      "kind": "magic_item",
+      "name": "Helm of Telepathy",
+      "source_ids": [
+        "1497-13-27-20-helm-of-telepathy"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1498-13-27-21-helm-of-teleportation",
+      "kind": "magic_item",
+      "name": "Helm of Teleportation",
+      "source_ids": [
+        "1498-13-27-21-helm-of-teleportation"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1499-13-27-22-holy-avenger",
+      "kind": "magic_item",
+      "name": "Holy Avenger",
+      "source_ids": [
+        "1499-13-27-22-holy-avenger"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1500-13-27-23-horn-of-blasting",
+      "kind": "magic_item",
+      "name": "Horn of Blasting",
+      "source_ids": [
+        "1500-13-27-23-horn-of-blasting"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1501-13-27-24-horn-of-valhalla",
+      "kind": "magic_item",
+      "name": "Horn of Valhalla",
+      "source_ids": [
+        "1501-13-27-24-horn-of-valhalla"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1502-13-27-25-horseshoes-of-a-zephyr",
+      "kind": "magic_item",
+      "name": "Horseshoes of a Zephyr",
+      "source_ids": [
+        "1502-13-27-25-horseshoes-of-a-zephyr"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        226
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1503-13-27-26-horseshoes-of-speed",
+      "kind": "magic_item",
+      "name": "Horseshoes of Speed",
+      "source_ids": [
+        "1503-13-27-26-horseshoes-of-speed"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        227
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1504-13-27-27-immovable-rod",
+      "kind": "magic_item",
+      "name": "Immovable Rod",
+      "source_ids": [
+        "1504-13-27-27-immovable-rod"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        227
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1505-13-27-28-instant-fortress",
+      "kind": "magic_item",
+      "name": "Instant Fortress",
+      "source_ids": [
+        "1505-13-27-28-instant-fortress"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        227
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1506-13-27-29-ioun-stone",
+      "kind": "magic_item",
+      "name": "Ioun Stone",
+      "source_ids": [
+        "1506-13-27-29-ioun-stone"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        227,
+        228
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1507-13-27-30-iron-bands",
+      "kind": "magic_item",
+      "name": "Iron Bands",
+      "source_ids": [
+        "1507-13-27-30-iron-bands"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        228
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1508-13-27-31-iron-flask",
+      "kind": "magic_item",
+      "name": "Iron Flask",
+      "source_ids": [
+        "1508-13-27-31-iron-flask"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        228
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1509-13-27-32-javelin-of-lightning",
+      "kind": "magic_item",
+      "name": "Javelin of Lightning",
+      "source_ids": [
+        "1509-13-27-32-javelin-of-lightning"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        228
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1510-13-27-33-lantern-of-revealing",
+      "kind": "magic_item",
+      "name": "Lantern of Revealing",
+      "source_ids": [
+        "1510-13-27-33-lantern-of-revealing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        228,
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1511-13-27-34-luck-blade",
+      "kind": "magic_item",
+      "name": "Luck Blade",
+      "source_ids": [
+        "1511-13-27-34-luck-blade"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1512-13-27-35-mace-of-disruption",
+      "kind": "magic_item",
+      "name": "Mace of Disruption",
+      "source_ids": [
+        "1512-13-27-35-mace-of-disruption"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1513-13-27-36-mace-of-smiting",
+      "kind": "magic_item",
+      "name": "Mace of Smiting",
+      "source_ids": [
+        "1513-13-27-36-mace-of-smiting"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1514-13-27-37-mace-of-terror",
+      "kind": "magic_item",
+      "name": "Mace of Terror",
+      "source_ids": [
+        "1514-13-27-37-mace-of-terror"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1515-13-27-38-mantle-of-spell-resistance",
+      "kind": "magic_item",
+      "name": "Mantle of Spell Resistance",
+      "source_ids": [
+        "1515-13-27-38-mantle-of-spell-resistance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1516-13-27-39-manual-of-bodily-health",
+      "kind": "magic_item",
+      "name": "Manual of Bodily Health",
+      "source_ids": [
+        "1516-13-27-39-manual-of-bodily-health"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1517-13-27-40-manual-of-gainful-exercise",
+      "kind": "magic_item",
+      "name": "Manual of Gainful Exercise",
+      "source_ids": [
+        "1517-13-27-40-manual-of-gainful-exercise"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1518-13-27-41-manual-of-golems",
+      "kind": "magic_item",
+      "name": "Manual of Golems",
+      "source_ids": [
+        "1518-13-27-41-manual-of-golems"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        229,
+        230
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1519-13-27-42-manual-of-quickness-of-action",
+      "kind": "magic_item",
+      "name": "Manual of Quickness of Action",
+      "source_ids": [
+        "1519-13-27-42-manual-of-quickness-of-action"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        230
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1520-13-27-43-marvelous-pigments",
+      "kind": "magic_item",
+      "name": "Marvelous Pigments",
+      "source_ids": [
+        "1520-13-27-43-marvelous-pigments"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        230
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1521-13-27-44-medallion-of-thoughts",
+      "kind": "magic_item",
+      "name": "Medallion of Thoughts",
+      "source_ids": [
+        "1521-13-27-44-medallion-of-thoughts"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        230
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1522-13-27-45-mirror-of-life-trapping",
+      "kind": "magic_item",
+      "name": "Mirror of Life Trapping",
+      "source_ids": [
+        "1522-13-27-45-mirror-of-life-trapping"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        230
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1523-13-27-46-mithral-armor",
+      "kind": "magic_item",
+      "name": "Mithral Armor",
+      "source_ids": [
+        "1523-13-27-46-mithral-armor"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        231
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1524-13-27-47-mysterious-deck",
+      "kind": "magic_item",
+      "name": "Mysterious Deck",
+      "source_ids": [
+        "1524-13-27-47-mysterious-deck"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        231,
+        232
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1477-13-27-giant-fly"
+    },
+    {
+      "id": "1525-13-28-avatar-of-death",
+      "kind": "creature",
+      "name": "Avatar of Death",
+      "source_ids": [
+        "1525-13-28-avatar-of-death"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        232
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1362-13-magic-items"
+    },
+    {
+      "id": "1526-13-28-1-necklace-of-adaptation",
+      "kind": "magic_item",
+      "name": "Necklace of Adaptation",
+      "source_ids": [
+        "1526-13-28-1-necklace-of-adaptation"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        232
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1527-13-28-2-necklace-of-fireballs",
+      "kind": "magic_item",
+      "name": "Necklace of Fireballs",
+      "source_ids": [
+        "1527-13-28-2-necklace-of-fireballs"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1528-13-28-3-necklace-of-prayer-beads",
+      "kind": "magic_item",
+      "name": "Necklace of Prayer Beads",
+      "source_ids": [
+        "1528-13-28-3-necklace-of-prayer-beads"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1529-13-28-4-nine-lives-stealer",
+      "kind": "magic_item",
+      "name": "Nine Lives Stealer",
+      "source_ids": [
+        "1529-13-28-4-nine-lives-stealer"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1530-13-28-5-oathbow",
+      "kind": "magic_item",
+      "name": "Oathbow",
+      "source_ids": [
+        "1530-13-28-5-oathbow"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1531-13-28-6-oil-of-etherealness",
+      "kind": "magic_item",
+      "name": "Oil of Etherealness",
+      "source_ids": [
+        "1531-13-28-6-oil-of-etherealness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1532-13-28-7-oil-of-sharpness",
+      "kind": "magic_item",
+      "name": "Oil of Sharpness",
+      "source_ids": [
+        "1532-13-28-7-oil-of-sharpness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1533-13-28-8-oil-of-slipperiness",
+      "kind": "magic_item",
+      "name": "Oil of Slipperiness",
+      "source_ids": [
+        "1533-13-28-8-oil-of-slipperiness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        233,
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1534-13-28-9-pearl-of-power",
+      "kind": "magic_item",
+      "name": "Pearl of Power",
+      "source_ids": [
+        "1534-13-28-9-pearl-of-power"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1535-13-28-10-periapt-of-health",
+      "kind": "magic_item",
+      "name": "Periapt of Health",
+      "source_ids": [
+        "1535-13-28-10-periapt-of-health"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1536-13-28-11-periapt-of-proof-against-poison",
+      "kind": "magic_item",
+      "name": "Periapt of Proof against Poison",
+      "source_ids": [
+        "1536-13-28-11-periapt-of-proof-against-poison"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1537-13-28-12-periapt-of-wound-closure",
+      "kind": "magic_item",
+      "name": "Periapt of Wound Closure",
+      "source_ids": [
+        "1537-13-28-12-periapt-of-wound-closure"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1538-13-28-13-philter-of-love",
+      "kind": "magic_item",
+      "name": "Philter of Love",
+      "source_ids": [
+        "1538-13-28-13-philter-of-love"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1539-13-28-14-pipes-of-haunting",
+      "kind": "magic_item",
+      "name": "Pipes of Haunting",
+      "source_ids": [
+        "1539-13-28-14-pipes-of-haunting"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1540-13-28-15-pipes-of-the-sewers",
+      "kind": "magic_item",
+      "name": "Pipes of the Sewers",
+      "source_ids": [
+        "1540-13-28-15-pipes-of-the-sewers"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1541-13-28-16-plate-armor-of-etherealness",
+      "kind": "magic_item",
+      "name": "Plate Armor of Etherealness",
+      "source_ids": [
+        "1541-13-28-16-plate-armor-of-etherealness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1542-13-28-17-portable-hole",
+      "kind": "magic_item",
+      "name": "Portable Hole",
+      "source_ids": [
+        "1542-13-28-17-portable-hole"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        234,
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1543-13-28-18-potion-of-animal-friendship",
+      "kind": "magic_item",
+      "name": "Potion of Animal Friendship",
+      "source_ids": [
+        "1543-13-28-18-potion-of-animal-friendship"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1544-13-28-19-potion-of-clairvoyance",
+      "kind": "magic_item",
+      "name": "Potion of Clairvoyance",
+      "source_ids": [
+        "1544-13-28-19-potion-of-clairvoyance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1545-13-28-20-potion-of-climbing",
+      "kind": "magic_item",
+      "name": "Potion of Climbing",
+      "source_ids": [
+        "1545-13-28-20-potion-of-climbing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1546-13-28-21-potion-of-diminution",
+      "kind": "magic_item",
+      "name": "Potion of Diminution",
+      "source_ids": [
+        "1546-13-28-21-potion-of-diminution"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1547-13-28-22-potion-of-flying",
+      "kind": "magic_item",
+      "name": "Potion of Flying",
+      "source_ids": [
+        "1547-13-28-22-potion-of-flying"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1548-13-28-23-potion-of-gaseous-form",
+      "kind": "magic_item",
+      "name": "Potion of Gaseous Form",
+      "source_ids": [
+        "1548-13-28-23-potion-of-gaseous-form"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1549-13-28-24-potion-of-giant-strength",
+      "kind": "magic_item",
+      "name": "Potion of Giant Strength",
+      "source_ids": [
+        "1549-13-28-24-potion-of-giant-strength"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1550-13-28-25-potion-of-growth",
+      "kind": "magic_item",
+      "name": "Potion of Growth",
+      "source_ids": [
+        "1550-13-28-25-potion-of-growth"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        235
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1551-13-28-26-potions-of-healing",
+      "kind": "magic_item",
+      "name": "Potions of Healing",
+      "source_ids": [
+        "1551-13-28-26-potions-of-healing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1552-13-28-27-potion-of-heroism",
+      "kind": "magic_item",
+      "name": "Potion of Heroism",
+      "source_ids": [
+        "1552-13-28-27-potion-of-heroism"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1553-13-28-28-potion-of-invisibility",
+      "kind": "magic_item",
+      "name": "Potion of Invisibility",
+      "source_ids": [
+        "1553-13-28-28-potion-of-invisibility"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1554-13-28-29-potion-of-invulnerability",
+      "kind": "magic_item",
+      "name": "Potion of Invulnerability",
+      "source_ids": [
+        "1554-13-28-29-potion-of-invulnerability"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1555-13-28-30-potion-of-longevity",
+      "kind": "magic_item",
+      "name": "Potion of Longevity",
+      "source_ids": [
+        "1555-13-28-30-potion-of-longevity"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1556-13-28-31-potion-of-mind-reading",
+      "kind": "magic_item",
+      "name": "Potion of Mind Reading",
+      "source_ids": [
+        "1556-13-28-31-potion-of-mind-reading"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1557-13-28-32-potion-of-poison",
+      "kind": "magic_item",
+      "name": "Potion of Poison",
+      "source_ids": [
+        "1557-13-28-32-potion-of-poison"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1558-13-28-33-potion-of-resistance",
+      "kind": "magic_item",
+      "name": "Potion of Resistance",
+      "source_ids": [
+        "1558-13-28-33-potion-of-resistance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1559-13-28-34-potion-of-speed",
+      "kind": "magic_item",
+      "name": "Potion of Speed",
+      "source_ids": [
+        "1559-13-28-34-potion-of-speed"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1560-13-28-35-potion-of-vitality",
+      "kind": "magic_item",
+      "name": "Potion of Vitality",
+      "source_ids": [
+        "1560-13-28-35-potion-of-vitality"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1561-13-28-36-potion-of-water-breathing",
+      "kind": "magic_item",
+      "name": "Potion of Water Breathing",
+      "source_ids": [
+        "1561-13-28-36-potion-of-water-breathing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        236,
+        237
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1562-13-28-37-quarterstaff-of-the-acrobat",
+      "kind": "magic_item",
+      "name": "Quarterstaff of the Acrobat",
+      "source_ids": [
+        "1562-13-28-37-quarterstaff-of-the-acrobat"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        237
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1563-13-28-38-ring-of-animal-influence",
+      "kind": "magic_item",
+      "name": "Ring of Animal Influence",
+      "source_ids": [
+        "1563-13-28-38-ring-of-animal-influence"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        237
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1564-13-28-39-ring-of-djinni-summoning",
+      "kind": "magic_item",
+      "name": "Ring of Djinni Summoning",
+      "source_ids": [
+        "1564-13-28-39-ring-of-djinni-summoning"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        237
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1565-13-28-40-ring-of-elemental-command",
+      "kind": "magic_item",
+      "name": "Ring of Elemental Command",
+      "source_ids": [
+        "1565-13-28-40-ring-of-elemental-command"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        237,
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1566-13-28-41-ring-of-evasion",
+      "kind": "magic_item",
+      "name": "Ring of Evasion",
+      "source_ids": [
+        "1566-13-28-41-ring-of-evasion"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1567-13-28-42-ring-of-feather-falling",
+      "kind": "magic_item",
+      "name": "Ring of Feather Falling",
+      "source_ids": [
+        "1567-13-28-42-ring-of-feather-falling"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1568-13-28-43-ring-of-free-action",
+      "kind": "magic_item",
+      "name": "Ring of Free Action",
+      "source_ids": [
+        "1568-13-28-43-ring-of-free-action"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1569-13-28-44-ring-of-invisibility",
+      "kind": "magic_item",
+      "name": "Ring of Invisibility",
+      "source_ids": [
+        "1569-13-28-44-ring-of-invisibility"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1570-13-28-45-ring-of-jumping",
+      "kind": "magic_item",
+      "name": "Ring of Jumping",
+      "source_ids": [
+        "1570-13-28-45-ring-of-jumping"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1571-13-28-46-ring-of-mind-shielding",
+      "kind": "magic_item",
+      "name": "Ring of Mind Shielding",
+      "source_ids": [
+        "1571-13-28-46-ring-of-mind-shielding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1572-13-28-47-ring-of-protection",
+      "kind": "magic_item",
+      "name": "Ring of Protection",
+      "source_ids": [
+        "1572-13-28-47-ring-of-protection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1573-13-28-48-ring-of-regeneration",
+      "kind": "magic_item",
+      "name": "Ring of Regeneration",
+      "source_ids": [
+        "1573-13-28-48-ring-of-regeneration"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1574-13-28-49-ring-of-resistance",
+      "kind": "magic_item",
+      "name": "Ring of Resistance",
+      "source_ids": [
+        "1574-13-28-49-ring-of-resistance"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1575-13-28-50-ring-of-shooting-stars",
+      "kind": "magic_item",
+      "name": "Ring of Shooting Stars",
+      "source_ids": [
+        "1575-13-28-50-ring-of-shooting-stars"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        238,
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1576-13-28-51-ring-of-spell-storing",
+      "kind": "magic_item",
+      "name": "Ring of Spell Storing",
+      "source_ids": [
+        "1576-13-28-51-ring-of-spell-storing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1577-13-28-52-ring-of-spell-turning",
+      "kind": "magic_item",
+      "name": "Ring of Spell Turning",
+      "source_ids": [
+        "1577-13-28-52-ring-of-spell-turning"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1578-13-28-53-ring-of-swimming",
+      "kind": "magic_item",
+      "name": "Ring of Swimming",
+      "source_ids": [
+        "1578-13-28-53-ring-of-swimming"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1579-13-28-54-ring-of-telekinesis",
+      "kind": "magic_item",
+      "name": "Ring of Telekinesis",
+      "source_ids": [
+        "1579-13-28-54-ring-of-telekinesis"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1580-13-28-55-ring-of-the-ram",
+      "kind": "magic_item",
+      "name": "Ring of the Ram",
+      "source_ids": [
+        "1580-13-28-55-ring-of-the-ram"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1581-13-28-56-ring-of-three-wishes",
+      "kind": "magic_item",
+      "name": "Ring of Three Wishes",
+      "source_ids": [
+        "1581-13-28-56-ring-of-three-wishes"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1582-13-28-57-ring-of-warmth",
+      "kind": "magic_item",
+      "name": "Ring of Warmth",
+      "source_ids": [
+        "1582-13-28-57-ring-of-warmth"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1583-13-28-58-ring-of-water-walking",
+      "kind": "magic_item",
+      "name": "Ring of Water Walking",
+      "source_ids": [
+        "1583-13-28-58-ring-of-water-walking"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1584-13-28-59-ring-of-x-ray-vision",
+      "kind": "magic_item",
+      "name": "Ring of X-ray Vision",
+      "source_ids": [
+        "1584-13-28-59-ring-of-x-ray-vision"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        239,
+        240
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1585-13-28-60-robe-of-eyes",
+      "kind": "magic_item",
+      "name": "Robe of Eyes",
+      "source_ids": [
+        "1585-13-28-60-robe-of-eyes"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        240
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1586-13-28-61-robe-of-scintillating-colors",
+      "kind": "magic_item",
+      "name": "Robe of Scintillating Colors",
+      "source_ids": [
+        "1586-13-28-61-robe-of-scintillating-colors"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        240
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1587-13-28-62-robe-of-stars",
+      "kind": "magic_item",
+      "name": "Robe of Stars",
+      "source_ids": [
+        "1587-13-28-62-robe-of-stars"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        240
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1588-13-28-63-robe-of-the-archmagi",
+      "kind": "magic_item",
+      "name": "Robe of the Archmagi",
+      "source_ids": [
+        "1588-13-28-63-robe-of-the-archmagi"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        240
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1589-13-28-64-robe-of-useful-items",
+      "kind": "magic_item",
+      "name": "Robe of Useful Items",
+      "source_ids": [
+        "1589-13-28-64-robe-of-useful-items"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        240,
+        241
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1590-13-28-65-rod-of-absorption",
+      "kind": "magic_item",
+      "name": "Rod of Absorption",
+      "source_ids": [
+        "1590-13-28-65-rod-of-absorption"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        241
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1591-13-28-66-rod-of-alertness",
+      "kind": "magic_item",
+      "name": "Rod of Alertness",
+      "source_ids": [
+        "1591-13-28-66-rod-of-alertness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        241
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1592-13-28-67-rod-of-lordly-might",
+      "kind": "magic_item",
+      "name": "Rod of Lordly Might",
+      "source_ids": [
+        "1592-13-28-67-rod-of-lordly-might"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        241,
+        242
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1593-13-28-68-rod-of-resurrection",
+      "kind": "magic_item",
+      "name": "Rod of Resurrection",
+      "source_ids": [
+        "1593-13-28-68-rod-of-resurrection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        242
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1594-13-28-69-rod-of-rulership",
+      "kind": "magic_item",
+      "name": "Rod of Rulership",
+      "source_ids": [
+        "1594-13-28-69-rod-of-rulership"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        242
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1595-13-28-70-rod-of-security",
+      "kind": "magic_item",
+      "name": "Rod of Security",
+      "source_ids": [
+        "1595-13-28-70-rod-of-security"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        242
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1596-13-28-71-rope-of-climbing",
+      "kind": "magic_item",
+      "name": "Rope of Climbing",
+      "source_ids": [
+        "1596-13-28-71-rope-of-climbing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        242
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1597-13-28-72-rope-of-entanglement",
+      "kind": "magic_item",
+      "name": "Rope of Entanglement",
+      "source_ids": [
+        "1597-13-28-72-rope-of-entanglement"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        242,
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1598-13-28-73-scarab-of-protection",
+      "kind": "magic_item",
+      "name": "Scarab of Protection",
+      "source_ids": [
+        "1598-13-28-73-scarab-of-protection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1599-13-28-74-scimitar-of-speed",
+      "kind": "magic_item",
+      "name": "Scimitar of Speed",
+      "source_ids": [
+        "1599-13-28-74-scimitar-of-speed"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1600-13-28-75-sending-stones",
+      "kind": "magic_item",
+      "name": "Sending Stones",
+      "source_ids": [
+        "1600-13-28-75-sending-stones"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1601-13-28-76-sentinel-shield",
+      "kind": "magic_item",
+      "name": "Sentinel Shield",
+      "source_ids": [
+        "1601-13-28-76-sentinel-shield"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1602-13-28-77-shield-1-2-or-3",
+      "kind": "magic_item",
+      "name": "Shield, +1, +2, or +3",
+      "source_ids": [
+        "1602-13-28-77-shield-1-2-or-3"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1603-13-28-78-shield-of-missile-attraction",
+      "kind": "magic_item",
+      "name": "Shield of Missile Attraction",
+      "source_ids": [
+        "1603-13-28-78-shield-of-missile-attraction"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1604-13-28-79-shield-of-the-cavalier",
+      "kind": "magic_item",
+      "name": "Shield of the Cavalier",
+      "source_ids": [
+        "1604-13-28-79-shield-of-the-cavalier"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        243
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1605-13-28-80-slippers-of-spider-climbing",
+      "kind": "magic_item",
+      "name": "Slippers of Spider Climbing",
+      "source_ids": [
+        "1605-13-28-80-slippers-of-spider-climbing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        244
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1606-13-28-81-sovereign-glue",
+      "kind": "magic_item",
+      "name": "Sovereign Glue",
+      "source_ids": [
+        "1606-13-28-81-sovereign-glue"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        244
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1607-13-28-82-spellguard-shield",
+      "kind": "magic_item",
+      "name": "Spellguard Shield",
+      "source_ids": [
+        "1607-13-28-82-spellguard-shield"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        244
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1608-13-28-83-spell-scroll",
+      "kind": "magic_item",
+      "name": "Spell Scroll",
+      "source_ids": [
+        "1608-13-28-83-spell-scroll"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        244
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1609-13-28-84-sphere-of-annihilation",
+      "kind": "magic_item",
+      "name": "Sphere of Annihilation",
+      "source_ids": [
+        "1609-13-28-84-sphere-of-annihilation"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        244,
+        245
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1610-13-28-85-staff-of-charming",
+      "kind": "magic_item",
+      "name": "Staff of Charming",
+      "source_ids": [
+        "1610-13-28-85-staff-of-charming"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        245
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1611-13-28-86-staff-of-fire",
+      "kind": "magic_item",
+      "name": "Staff of Fire",
+      "source_ids": [
+        "1611-13-28-86-staff-of-fire"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        245
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1612-13-28-87-staff-of-frost",
+      "kind": "magic_item",
+      "name": "Staff of Frost",
+      "source_ids": [
+        "1612-13-28-87-staff-of-frost"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        245
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1613-13-28-88-staff-of-healing",
+      "kind": "magic_item",
+      "name": "Staff of Healing",
+      "source_ids": [
+        "1613-13-28-88-staff-of-healing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        245
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1614-13-28-89-staff-of-power",
+      "kind": "magic_item",
+      "name": "Staff of Power",
+      "source_ids": [
+        "1614-13-28-89-staff-of-power"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        245,
+        246
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1615-13-28-90-staff-of-striking",
+      "kind": "magic_item",
+      "name": "Staff of Striking",
+      "source_ids": [
+        "1615-13-28-90-staff-of-striking"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        246
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1616-13-28-91-staff-of-swarming-insects",
+      "kind": "magic_item",
+      "name": "Staff of Swarming Insects",
+      "source_ids": [
+        "1616-13-28-91-staff-of-swarming-insects"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        246
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1617-13-28-92-staff-of-the-magi",
+      "kind": "magic_item",
+      "name": "Staff of the Magi",
+      "source_ids": [
+        "1617-13-28-92-staff-of-the-magi"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        246,
+        247
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1618-13-28-93-staff-of-the-python",
+      "kind": "magic_item",
+      "name": "Staff of the Python",
+      "source_ids": [
+        "1618-13-28-93-staff-of-the-python"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        247
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1619-13-28-94-staff-of-the-woodlands",
+      "kind": "magic_item",
+      "name": "Staff of the Woodlands",
+      "source_ids": [
+        "1619-13-28-94-staff-of-the-woodlands"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        247
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1620-13-28-95-staff-of-thunder-and-lightning",
+      "kind": "magic_item",
+      "name": "Staff of Thunder and Lightning",
+      "source_ids": [
+        "1620-13-28-95-staff-of-thunder-and-lightning"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        247,
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1621-13-28-96-staff-of-withering",
+      "kind": "magic_item",
+      "name": "Staff of Withering",
+      "source_ids": [
+        "1621-13-28-96-staff-of-withering"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1622-13-28-97-stone-of-controlling-earth-elementals",
+      "kind": "magic_item",
+      "name": "Stone of Controlling Earth Elementals",
+      "source_ids": [
+        "1622-13-28-97-stone-of-controlling-earth-elementals"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1623-13-28-98-stone-of-good-luck-luckstone",
+      "kind": "magic_item",
+      "name": "Stone of Good Luck (Luckstone)",
+      "source_ids": [
+        "1623-13-28-98-stone-of-good-luck-luckstone"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1624-13-28-99-sun-blade",
+      "kind": "magic_item",
+      "name": "Sun Blade",
+      "source_ids": [
+        "1624-13-28-99-sun-blade"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1625-13-28-100-sword-of-life-stealing",
+      "kind": "magic_item",
+      "name": "Sword of Life Stealing",
+      "source_ids": [
+        "1625-13-28-100-sword-of-life-stealing"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1626-13-28-101-sword-of-sharpness",
+      "kind": "magic_item",
+      "name": "Sword of Sharpness",
+      "source_ids": [
+        "1626-13-28-101-sword-of-sharpness"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1627-13-28-102-sword-of-wounding",
+      "kind": "magic_item",
+      "name": "Sword of Wounding",
+      "source_ids": [
+        "1627-13-28-102-sword-of-wounding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1628-13-28-103-talisman-of-pure-good",
+      "kind": "magic_item",
+      "name": "Talisman of Pure Good",
+      "source_ids": [
+        "1628-13-28-103-talisman-of-pure-good"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        248,
+        249
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1629-13-28-104-talisman-of-the-sphere",
+      "kind": "magic_item",
+      "name": "Talisman of the Sphere",
+      "source_ids": [
+        "1629-13-28-104-talisman-of-the-sphere"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        249
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1630-13-28-105-talisman-of-ultimate-evil",
+      "kind": "magic_item",
+      "name": "Talisman of Ultimate Evil",
+      "source_ids": [
+        "1630-13-28-105-talisman-of-ultimate-evil"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        249
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1631-13-28-106-thunderous-greatclub",
+      "kind": "magic_item",
+      "name": "Thunderous Greatclub",
+      "source_ids": [
+        "1631-13-28-106-thunderous-greatclub"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        249
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1632-13-28-107-tome-of-clear-thought",
+      "kind": "magic_item",
+      "name": "Tome of Clear Thought",
+      "source_ids": [
+        "1632-13-28-107-tome-of-clear-thought"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        249
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1633-13-28-108-tome-of-leadership-and-influence",
+      "kind": "magic_item",
+      "name": "Tome of Leadership and Influence",
+      "source_ids": [
+        "1633-13-28-108-tome-of-leadership-and-influence"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        249,
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1634-13-28-109-tome-of-understanding",
+      "kind": "magic_item",
+      "name": "Tome of Understanding",
+      "source_ids": [
+        "1634-13-28-109-tome-of-understanding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1635-13-28-110-trident-of-fish-command",
+      "kind": "magic_item",
+      "name": "Trident of Fish Command",
+      "source_ids": [
+        "1635-13-28-110-trident-of-fish-command"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1636-13-28-111-universal-solvent",
+      "kind": "magic_item",
+      "name": "Universal Solvent",
+      "source_ids": [
+        "1636-13-28-111-universal-solvent"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1637-13-28-112-vicious-weapon",
+      "kind": "magic_item",
+      "name": "Vicious Weapon",
+      "source_ids": [
+        "1637-13-28-112-vicious-weapon"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1638-13-28-113-vorpal-sword",
+      "kind": "magic_item",
+      "name": "Vorpal Sword",
+      "source_ids": [
+        "1638-13-28-113-vorpal-sword"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1639-13-28-114-wand-of-binding",
+      "kind": "magic_item",
+      "name": "Wand of Binding",
+      "source_ids": [
+        "1639-13-28-114-wand-of-binding"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1640-13-28-115-wand-of-enemy-detection",
+      "kind": "magic_item",
+      "name": "Wand of Enemy Detection",
+      "source_ids": [
+        "1640-13-28-115-wand-of-enemy-detection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1641-13-28-116-wand-of-fear",
+      "kind": "magic_item",
+      "name": "Wand of Fear",
+      "source_ids": [
+        "1641-13-28-116-wand-of-fear"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1642-13-28-117-wand-of-fireballs",
+      "kind": "magic_item",
+      "name": "Wand of Fireballs",
+      "source_ids": [
+        "1642-13-28-117-wand-of-fireballs"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        250,
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1643-13-28-118-wand-of-lightning-bolts",
+      "kind": "magic_item",
+      "name": "Wand of Lightning Bolts",
+      "source_ids": [
+        "1643-13-28-118-wand-of-lightning-bolts"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1644-13-28-119-wand-of-magic-detection",
+      "kind": "magic_item",
+      "name": "Wand of Magic Detection",
+      "source_ids": [
+        "1644-13-28-119-wand-of-magic-detection"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1645-13-28-120-wand-of-magic-missiles",
+      "kind": "magic_item",
+      "name": "Wand of Magic Missiles",
+      "source_ids": [
+        "1645-13-28-120-wand-of-magic-missiles"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1646-13-28-121-wand-of-paralysis",
+      "kind": "magic_item",
+      "name": "Wand of Paralysis",
+      "source_ids": [
+        "1646-13-28-121-wand-of-paralysis"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1647-13-28-122-wand-of-polymorph",
+      "kind": "magic_item",
+      "name": "Wand of Polymorph",
+      "source_ids": [
+        "1647-13-28-122-wand-of-polymorph"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1648-13-28-123-wand-of-secrets",
+      "kind": "magic_item",
+      "name": "Wand of Secrets",
+      "source_ids": [
+        "1648-13-28-123-wand-of-secrets"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1649-13-28-124-wand-of-the-war-mage-1-2-or-3",
+      "kind": "magic_item",
+      "name": "Wand of the War Mage, +1, +2, or +3",
+      "source_ids": [
+        "1649-13-28-124-wand-of-the-war-mage-1-2-or-3"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1650-13-28-125-wand-of-web",
+      "kind": "magic_item",
+      "name": "Wand of Web",
+      "source_ids": [
+        "1650-13-28-125-wand-of-web"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1651-13-28-126-wand-of-wonder",
+      "kind": "magic_item",
+      "name": "Wand of Wonder",
+      "source_ids": [
+        "1651-13-28-126-wand-of-wonder"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        251,
+        252
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1652-13-28-127-weapon-1-2-or-3",
+      "kind": "magic_item",
+      "name": "Weapon, +1, +2, or +3",
+      "source_ids": [
+        "1652-13-28-127-weapon-1-2-or-3"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1653-13-28-128-weapon-of-warning",
+      "kind": "magic_item",
+      "name": "Weapon of Warning",
+      "source_ids": [
+        "1653-13-28-128-weapon-of-warning"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1654-13-28-129-well-of-many-worlds",
+      "kind": "magic_item",
+      "name": "Well of Many Worlds",
+      "source_ids": [
+        "1654-13-28-129-well-of-many-worlds"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1655-13-28-130-wind-fan",
+      "kind": "magic_item",
+      "name": "Wind Fan",
+      "source_ids": [
+        "1655-13-28-130-wind-fan"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1656-13-28-131-winged-boots",
+      "kind": "magic_item",
+      "name": "Winged Boots",
+      "source_ids": [
+        "1656-13-28-131-winged-boots"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    },
+    {
+      "id": "1657-13-28-132-wings-of-flying",
+      "kind": "magic_item",
+      "name": "Wings of Flying",
+      "source_ids": [
+        "1657-13-28-132-wings-of-flying"
+      ],
+      "chapter_id": "1362-13-magic-items",
+      "pages": [
+        253
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1525-13-28-avatar-of-death"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "204-potion-miscibility",
+      "name": "Potion Miscibility",
+      "section_id": "1365-13-3-potions",
+      "page": 204,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "integer"
+        },
+        {
+          "id": "result",
+          "name": "Result",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "204-magic-item-categories",
+      "name": "Magic Item Categories",
+      "section_id": "1363-13-1-magic-item-categories",
+      "page": 204,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "category",
+          "name": "Category",
+          "type": "string"
+        },
+        {
+          "id": "examples",
+          "name": "Examples",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 9,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "206-magic-item-rarities-and-values",
+      "name": "Magic Item Rarities and Values",
+      "section_id": "1375-13-12-magic-item-values-by-rarity",
+      "page": 206,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        },
+        {
+          "id": "value",
+          "name": "Value*",
+          "type": "integer"
+        },
+        {
+          "id": "rarity-2",
+          "name": "Rarity",
+          "type": "string"
+        },
+        {
+          "id": "value-2",
+          "name": "Value*",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "207-magic-item-crafting-time-and-cost-magic-item-tools",
+      "name": "Magic Item Crafting Time and Cost Magic Item Tools",
+      "section_id": "1388-13-23-time-and-cost",
+      "page": 207,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "item-category",
+          "name": "Item Category",
+          "type": "string"
+        },
+        {
+          "id": "required-tool",
+          "name": "Required Tool",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 9,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "208-sentient-item-s-alignment",
+      "name": "Sentient Item’s Alignment",
+      "section_id": "1395-13-25-5-special-purpose",
+      "page": 208,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "column",
+          "name": "Column 1",
+          "type": "string"
+        },
+        {
+          "id": "column-2",
+          "name": "Column 2",
+          "type": "string"
+        },
+        {
+          "id": "column-3",
+          "name": "Column 3",
+          "type": "integer"
+        },
+        {
+          "id": "column-4",
+          "name": "Column 4",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "208-sentient-item-s-communication",
+      "name": "Sentient Item’s Communication",
+      "section_id": "1395-13-25-5-special-purpose",
+      "page": 208,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "communication",
+          "name": "Communication",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "208-sentient-item-s-senses",
+      "name": "Sentient Item’s Senses",
+      "section_id": "1395-13-25-5-special-purpose",
+      "page": 208,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d4",
+          "name": "1d4",
+          "type": "integer"
+        },
+        {
+          "id": "senses",
+          "name": "Senses",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "208-sentient-item-s-special-purpose",
+      "name": "Sentient Item’s Special Purpose",
+      "section_id": "1395-13-25-5-special-purpose",
+      "page": 208,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "special-purpose",
+          "name": "Special Purpose",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "210-apparatus-of-the-crab-levers",
+      "name": "Apparatus of the Crab Levers",
+      "section_id": "1405-13-26-8-apparatus-of-the-crab",
+      "page": 210,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "lever",
+          "name": "Lever",
+          "type": "integer"
+        },
+        {
+          "id": "up",
+          "name": "Up",
+          "type": "string"
+        },
+        {
+          "id": "down",
+          "name": "Down",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "212-gray-bag-of-tricks",
+      "name": "Gray Bag of Tricks",
+      "section_id": "1414-13-26-17-bag-of-tricks",
+      "page": 212,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d8",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature",
+          "name": "Creature",
+          "type": "string"
+        },
+        {
+          "id": "1d8-2",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature-2",
+          "name": "Creature",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "212-rust-bag-of-tricks",
+      "name": "Rust Bag of Tricks",
+      "section_id": "1414-13-26-17-bag-of-tricks",
+      "page": 212,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d8",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature",
+          "name": "Creature",
+          "type": "string"
+        },
+        {
+          "id": "1d8-2",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature-2",
+          "name": "Creature",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "212-tan-bag-of-tricks",
+      "name": "Tan Bag of Tricks",
+      "section_id": "1414-13-26-17-bag-of-tricks",
+      "page": 212,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d8",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature",
+          "name": "Creature",
+          "type": "string"
+        },
+        {
+          "id": "1d8-2",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "creature-2",
+          "name": "Creature",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "216-cube-of-force-faces",
+      "name": "Cube of Force Faces",
+      "section_id": "1448-13-26-51-cube-of-force",
+      "page": 216,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost",
+          "name": "Charge Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "217-deck-of-illusions",
+      "name": "Deck of Illusions",
+      "section_id": "1453-13-26-56-deck-of-illusions",
+      "page": 217,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "illusion",
+          "name": "Illusion*",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 28,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "221-feather-tokens",
+      "name": "Feather Tokens",
+      "section_id": "1475-13-26-78-feather-token",
+      "page": 221,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "token",
+          "name": "Token",
+          "type": "string"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "231-mysterious-deck",
+      "name": "Mysterious Deck",
+      "section_id": "1524-13-27-47-mysterious-deck",
+      "page": 231,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100-13-card-deck",
+          "name": "1d100 (13-Card Deck)",
+          "type": "string"
+        },
+        {
+          "id": "1d100-22-card-deck",
+          "name": "1d100 (22-Card Deck)",
+          "type": "string"
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 16,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "252-wand-of-wonder-effects",
+      "name": "Wand of Wonder Effects",
+      "section_id": "1651-13-28-126-wand-of-wonder",
+      "page": 252,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100-effect",
+          "name": "1d100 Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 45,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "209-1d100-creature-type-1d100-creature-type",
+      "name": "1d100 Creature Type / 1d100 Creature Type",
+      "section_id": "1400-13-26-3-ammunition-of-slaying",
+      "page": 209,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100-creature-type",
+          "name": "1d100 Creature Type",
+          "type": "string"
+        },
+        {
+          "id": "1d100-creature-type-2",
+          "name": "1d100 Creature Type",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "210-1d10-damage-type-1d10-damage-type",
+      "name": "1d10 Damage Type / 1d10 Damage Type",
+      "section_id": "1408-13-26-11-armor-of-resistance",
+      "page": 210,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10-damage-type",
+          "name": "1d10 Damage Type",
+          "type": "string"
+        },
+        {
+          "id": "1d10-damage-type-2",
+          "name": "1d10 Damage Type",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "211-1d100-effect",
+      "name": "1d100 / Effect",
+      "section_id": "1411-13-26-14-bag-of-beans",
+      "page": 211,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "integer"
+        },
+        {
+          "id": "effect",
+          "name": "Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 12,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "213-belt-str",
+      "name": "Belt / Str.",
+      "section_id": "1418-13-26-21-belt-of-giant-strength",
+      "page": 213,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "belt",
+          "name": "Belt",
+          "type": "string"
+        },
+        {
+          "id": "str",
+          "name": "Str.",
+          "type": "integer"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "215-1d100-outer-plane-1d100-outer-plane",
+      "name": "1d100 Outer Plane / 1d100 Outer Plane",
+      "section_id": "1431-13-26-34-candle-of-invocation",
+      "page": 215,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100-outer-plane",
+          "name": "1d100 Outer Plane",
+          "type": "string"
+        },
+        {
+          "id": "1d100-outer-plane-2",
+          "name": "1d100 Outer Plane",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "215-1d100-size",
+      "name": "1d100 / Size",
+      "section_id": "1433-13-26-36-carpet-of-flying",
+      "page": 215,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "size",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "capacity",
+          "name": "Capacity",
+          "type": "integer"
+        },
+        {
+          "id": "fly-speed",
+          "name": "Fly Speed",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "218-spell-charge-cost",
+      "name": "Spell / Charge Cost",
+      "section_id": "1457-13-26-60-dragon-orb",
+      "page": 218,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost",
+          "name": "Charge Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "219-dragon-resistance",
+      "name": "Dragon / Resistance",
+      "section_id": "1458-13-26-61-dragon-scale-mail",
+      "page": 219,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "dragon",
+          "name": "Dragon",
+          "type": "string"
+        },
+        {
+          "id": "resistance",
+          "name": "Resistance",
+          "type": "string"
+        },
+        {
+          "id": "dragon-2",
+          "name": "Dragon",
+          "type": "string"
+        },
+        {
+          "id": "resistance-2",
+          "name": "Resistance",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "220-1d10-effect",
+      "name": "1d10 / Effect",
+      "section_id": "1466-13-26-69-efreeti-bottle",
+      "page": 220,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "effect",
+          "name": "Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "220-gem-summoned-elemental",
+      "name": "Gem / Summoned Elemental",
+      "section_id": "1467-13-26-70-elemental-gem",
+      "page": 220,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "gem",
+          "name": "Gem",
+          "type": "string"
+        },
+        {
+          "id": "summoned-elemental",
+          "name": "Summoned Elemental",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "225-1d100-effect",
+      "name": "1d100 / Effect",
+      "section_id": "1493-13-27-16-hat-of-many-spells",
+      "page": 225,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "effect",
+          "name": "Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "226-1d100-horn-type",
+      "name": "1d100 / Horn Type",
+      "section_id": "1501-13-27-24-horn-of-valhalla",
+      "page": 226,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "horn-type",
+          "name": "Horn Type",
+          "type": "string"
+        },
+        {
+          "id": "spirits",
+          "name": "Spirits",
+          "type": "integer"
+        },
+        {
+          "id": "requirement",
+          "name": "Requirement",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "230-1d20-golem",
+      "name": "1d20 / Golem",
+      "section_id": "1518-13-27-41-manual-of-golems",
+      "page": 230,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d20",
+          "name": "1d20",
+          "type": "integer"
+        },
+        {
+          "id": "golem",
+          "name": "Golem",
+          "type": "string"
+        },
+        {
+          "id": "time",
+          "name": "Time",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "231-1d100-deck-1d100-22-card-deck",
+      "name": "1d100 Deck) / 1d100 (22-Card Deck)",
+      "section_id": "1524-13-27-47-mysterious-deck",
+      "page": 231,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100-deck",
+          "name": "1d100 Deck)",
+          "type": "string"
+        },
+        {
+          "id": "1d100-22-card-deck",
+          "name": "1d100 (22-Card Deck)",
+          "type": "string"
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "231-13-card-deck-22-card-deck",
+      "name": "(13-Card Deck) / (22-Card Deck)",
+      "section_id": "1524-13-27-47-mysterious-deck",
+      "page": 231,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "13-card-deck",
+          "name": "(13-Card Deck)",
+          "type": "string"
+        },
+        {
+          "id": "22-card-deck",
+          "name": "(22-Card Deck)",
+          "type": "string"
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "231-deck-deck",
+      "name": "Deck) / Deck)",
+      "section_id": "1524-13-27-47-mysterious-deck",
+      "page": 231,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "deck",
+          "name": "Deck)",
+          "type": "string"
+        },
+        {
+          "id": "deck-2",
+          "name": "Deck)",
+          "type": "string"
+        },
+        {
+          "id": "column",
+          "name": "Column 3",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "233-1d20-bead",
+      "name": "1d20 / Bead",
+      "section_id": "1528-13-28-3-necklace-of-prayer-beads",
+      "page": 233,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d20",
+          "name": "1d20",
+          "type": "integer"
+        },
+        {
+          "id": "bead",
+          "name": "Bead",
+          "type": "string"
+        },
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "235-potion-str",
+      "name": "Potion / Str.",
+      "section_id": "1549-13-28-24-potion-of-giant-strength",
+      "page": 235,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "potion",
+          "name": "Potion",
+          "type": "string"
+        },
+        {
+          "id": "str",
+          "name": "Str.",
+          "type": "integer"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "236-potion-hp-regained",
+      "name": "Potion / HP Regained",
+      "section_id": "1551-13-28-26-potions-of-healing",
+      "page": 236,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "potion",
+          "name": "Potion",
+          "type": "string"
+        },
+        {
+          "id": "hp-regained",
+          "name": "HP Regained",
+          "type": "string"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "236-1d10-damage-type-1d10-damage-type",
+      "name": "1d10 Damage Type / 1d10 Damage Type",
+      "section_id": "1558-13-28-33-potion-of-resistance",
+      "page": 236,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10-damage-type",
+          "name": "1d10 Damage Type",
+          "type": "string"
+        },
+        {
+          "id": "1d10-damage-type-2",
+          "name": "1d10 Damage Type",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "238-plane-spells-charges",
+      "name": "Plane / Spells (Charges)",
+      "section_id": "1565-13-28-40-ring-of-elemental-command",
+      "page": 238,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "plane",
+          "name": "Plane",
+          "type": "string"
+        },
+        {
+          "id": "spells-charges",
+          "name": "Spells (Charges)",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "238-1d10-damage-type",
+      "name": "1d10 / Damage Type",
+      "section_id": "1574-13-28-49-ring-of-resistance",
+      "page": 238,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "damage-type",
+          "name": "Damage Type",
+          "type": "string"
+        },
+        {
+          "id": "gemstone",
+          "name": "Gemstone",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "239-number-of-spheres-lightning-damage",
+      "name": "Number of Spheres / Lightning Damage",
+      "section_id": "1575-13-28-50-ring-of-shooting-stars",
+      "page": 239,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "number-of-spheres",
+          "name": "Number of Spheres",
+          "type": "integer"
+        },
+        {
+          "id": "lightning-damage",
+          "name": "Lightning Damage",
+          "type": "string"
+        },
+        {
+          "id": "number-of-spheres-2",
+          "name": "Number of Spheres",
+          "type": "integer"
+        },
+        {
+          "id": "lightning-damage-2",
+          "name": "Lightning Damage",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "239-spheres-damage",
+      "name": "Spheres / Damage",
+      "section_id": "1575-13-28-50-ring-of-shooting-stars",
+      "page": 239,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spheres",
+          "name": "Spheres",
+          "type": "integer"
+        },
+        {
+          "id": "damage",
+          "name": "Damage",
+          "type": "string"
+        },
+        {
+          "id": "spheres-2",
+          "name": "Spheres",
+          "type": "integer"
+        },
+        {
+          "id": "damage-2",
+          "name": "Damage",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "244-spell-level-rarity",
+      "name": "Spell Level / Rarity",
+      "section_id": "1608-13-28-83-spell-scroll",
+      "page": 244,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell-level",
+          "name": "Spell Level",
+          "type": "integer"
+        },
+        {
+          "id": "rarity",
+          "name": "Rarity",
+          "type": "string"
+        },
+        {
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        },
+        {
+          "id": "attack-bonus",
+          "name": "Attack Bonus",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "244-spell-level-rarity-save-dc",
+      "name": "Spell Level Rarity / Save DC",
+      "section_id": "1608-13-28-83-spell-scroll",
+      "page": 244,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell-level-rarity",
+          "name": "Spell Level Rarity",
+          "type": "string"
+        },
+        {
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        },
+        {
+          "id": "attack-bonus",
+          "name": "Attack Bonus",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "245-charge-cost-spell",
+      "name": "Charge Cost / Spell",
+      "section_id": "1612-13-28-87-staff-of-frost",
+      "page": 245,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "charge-cost",
+          "name": "Charge Cost",
+          "type": "integer"
+        },
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost-2",
+          "name": "Charge Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "245-spell-cost",
+      "name": "Spell / Cost",
+      "section_id": "1612-13-28-87-staff-of-frost",
+      "page": 245,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        },
+        {
+          "id": "spell-2",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "cost-2",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 32,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "245-spell-charge-cost",
+      "name": "Spell / Charge Cost",
+      "section_id": "1613-13-28-88-staff-of-healing",
+      "page": 245,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost",
+          "name": "Charge Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 13,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "250-spell-charge-cost",
+      "name": "Spell / Charge Cost",
+      "section_id": "1639-13-28-114-wand-of-binding",
+      "page": 250,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "charge-cost",
+          "name": "Charge Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "250-spell-cost",
+      "name": "Spell / Cost",
+      "section_id": "1641-13-28-116-wand-of-fear",
+      "page": 250,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell",
+          "name": "Spell",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

@@ -1,0 +1,1139 @@
+{
+  "pack": "srd-5.2.1-catalog-05",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "117-5-character-creation",
+      "kind": "section",
+      "name": "Character Creation",
+      "source_ids": [
+        "117-5-character-creation"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "118-5-1-choose-a-character-sheet",
+      "kind": "section",
+      "name": "Choose a Character Sheet",
+      "source_ids": [
+        "118-5-1-choose-a-character-sheet"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "119-5-2-create-your-character",
+      "kind": "section",
+      "name": "Create Your Character",
+      "source_ids": [
+        "119-5-2-create-your-character"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "120-5-3-step-1-choose-class",
+      "kind": "section",
+      "name": "Step 1: Choose Class",
+      "source_ids": [
+        "120-5-3-step-1-choose-class"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "121-5-3-1-write-your-level",
+      "kind": "section",
+      "name": "Write Your Level",
+      "source_ids": [
+        "121-5-3-1-write-your-level"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "120-5-3-step-1-choose-class"
+    },
+    {
+      "id": "122-5-3-2-note-armor-training",
+      "kind": "section",
+      "name": "Note Armor Training",
+      "source_ids": [
+        "122-5-3-2-note-armor-training"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "120-5-3-step-1-choose-class"
+    },
+    {
+      "id": "123-5-4-step-2-character-origin",
+      "kind": "section",
+      "name": "Step 2: Character Origin",
+      "source_ids": [
+        "123-5-4-step-2-character-origin"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "124-5-4-1-choose-a-background",
+      "kind": "section",
+      "name": "Choose a Background",
+      "source_ids": [
+        "124-5-4-1-choose-a-background"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        19,
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "123-5-4-step-2-character-origin"
+    },
+    {
+      "id": "125-5-4-2-choose-starting-equipment",
+      "kind": "section",
+      "name": "Choose Starting Equipment",
+      "source_ids": [
+        "125-5-4-2-choose-starting-equipment"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "123-5-4-step-2-character-origin"
+    },
+    {
+      "id": "126-5-4-3-choose-a-species",
+      "kind": "section",
+      "name": "Choose a Species",
+      "source_ids": [
+        "126-5-4-3-choose-a-species"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "123-5-4-step-2-character-origin"
+    },
+    {
+      "id": "127-5-4-4-imagine-your-past-and-present",
+      "kind": "section",
+      "name": "Imagine Your Past and Present",
+      "source_ids": [
+        "127-5-4-4-imagine-your-past-and-present"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "123-5-4-step-2-character-origin"
+    },
+    {
+      "id": "128-5-4-5-choose-languages",
+      "kind": "section",
+      "name": "Choose Languages",
+      "source_ids": [
+        "128-5-4-5-choose-languages"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "123-5-4-step-2-character-origin"
+    },
+    {
+      "id": "129-5-5-step-3-ability-scores",
+      "kind": "section",
+      "name": "Step 3: Ability Scores",
+      "source_ids": [
+        "129-5-5-step-3-ability-scores"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        20
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "130-5-5-1-generate-your-scores",
+      "kind": "section",
+      "name": "Generate Your Scores",
+      "source_ids": [
+        "130-5-5-1-generate-your-scores"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "129-5-5-step-3-ability-scores"
+    },
+    {
+      "id": "131-5-5-2-assign-ability-scores",
+      "kind": "section",
+      "name": "Assign Ability Scores",
+      "source_ids": [
+        "131-5-5-2-assign-ability-scores"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "129-5-5-step-3-ability-scores"
+    },
+    {
+      "id": "132-5-5-3-adjust-ability-scores",
+      "kind": "section",
+      "name": "Adjust Ability Scores",
+      "source_ids": [
+        "132-5-5-3-adjust-ability-scores"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "129-5-5-step-3-ability-scores"
+    },
+    {
+      "id": "133-5-5-4-determine-ability-modifiers",
+      "kind": "section",
+      "name": "Determine Ability Modifiers",
+      "source_ids": [
+        "133-5-5-4-determine-ability-modifiers"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "129-5-5-step-3-ability-scores"
+    },
+    {
+      "id": "134-5-6-step-4-alignment",
+      "kind": "section",
+      "name": "Step 4: Alignment",
+      "source_ids": [
+        "134-5-6-step-4-alignment"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "135-5-6-1-the-nine-alignments",
+      "kind": "section",
+      "name": "The Nine Alignments",
+      "source_ids": [
+        "135-5-6-1-the-nine-alignments"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        21
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "134-5-6-step-4-alignment"
+    },
+    {
+      "id": "136-5-6-2-unaligned-creatures",
+      "kind": "section",
+      "name": "Unaligned Creatures",
+      "source_ids": [
+        "136-5-6-2-unaligned-creatures"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        22
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "134-5-6-step-4-alignment"
+    },
+    {
+      "id": "137-5-7-step-5-character-creation-details",
+      "kind": "section",
+      "name": "Step 5: Character Creation Details",
+      "source_ids": [
+        "137-5-7-step-5-character-creation-details"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        22
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "138-5-7-1-record-class-features",
+      "kind": "section",
+      "name": "Record Class Features",
+      "source_ids": [
+        "138-5-7-1-record-class-features"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        22
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "137-5-7-step-5-character-creation-details"
+    },
+    {
+      "id": "139-5-7-2-fill-in-numbers",
+      "kind": "section",
+      "name": "Fill In Numbers",
+      "source_ids": [
+        "139-5-7-2-fill-in-numbers"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        22,
+        23
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "137-5-7-step-5-character-creation-details"
+    },
+    {
+      "id": "140-5-8-level-advancement",
+      "kind": "section",
+      "name": "Level Advancement",
+      "source_ids": [
+        "140-5-8-level-advancement"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        23
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "141-5-9-gaining-a-level",
+      "kind": "section",
+      "name": "Gaining a Level",
+      "source_ids": [
+        "141-5-9-gaining-a-level"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        23
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "142-5-10-tiers-of-play",
+      "kind": "section",
+      "name": "Tiers of Play",
+      "source_ids": [
+        "142-5-10-tiers-of-play"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        23,
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "143-5-10-1-tier-1-levels-1-4",
+      "kind": "section",
+      "name": "Tier 1 (Levels 1–4)",
+      "source_ids": [
+        "143-5-10-1-tier-1-levels-1-4"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "142-5-10-tiers-of-play"
+    },
+    {
+      "id": "144-5-10-2-tier-2-levels-5-10",
+      "kind": "section",
+      "name": "Tier 2 (Levels 5–10)",
+      "source_ids": [
+        "144-5-10-2-tier-2-levels-5-10"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "142-5-10-tiers-of-play"
+    },
+    {
+      "id": "145-5-10-3-tier-3-levels-11-16",
+      "kind": "section",
+      "name": "Tier 3 (Levels 11–16)",
+      "source_ids": [
+        "145-5-10-3-tier-3-levels-11-16"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "142-5-10-tiers-of-play"
+    },
+    {
+      "id": "146-5-10-4-tier-4-levels-17-20",
+      "kind": "section",
+      "name": "Tier 4 (Levels 17–20)",
+      "source_ids": [
+        "146-5-10-4-tier-4-levels-17-20"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "142-5-10-tiers-of-play"
+    },
+    {
+      "id": "147-5-11-starting-at-higher-levels",
+      "kind": "section",
+      "name": "Starting at Higher Levels",
+      "source_ids": [
+        "147-5-11-starting-at-higher-levels"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "148-5-12-creating-your-character",
+      "kind": "section",
+      "name": "Creating Your Character",
+      "source_ids": [
+        "148-5-12-creating-your-character"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "149-5-12-1-bonus-feats-at-level-20",
+      "kind": "section",
+      "name": "Bonus Feats at Level 20",
+      "source_ids": [
+        "149-5-12-1-bonus-feats-at-level-20"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "148-5-12-creating-your-character"
+    },
+    {
+      "id": "150-5-13-starting-equipment",
+      "kind": "section",
+      "name": "Starting Equipment",
+      "source_ids": [
+        "150-5-13-starting-equipment"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "151-5-14-multiclassing",
+      "kind": "section",
+      "name": "Multiclassing",
+      "source_ids": [
+        "151-5-14-multiclassing"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "152-5-15-prerequisites",
+      "kind": "section",
+      "name": "Prerequisites",
+      "source_ids": [
+        "152-5-15-prerequisites"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        24,
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "153-5-16-experience-points",
+      "kind": "section",
+      "name": "Experience Points",
+      "source_ids": [
+        "153-5-16-experience-points"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "154-5-17-hit-points-and-hit-point-dice",
+      "kind": "section",
+      "name": "Hit Points and Hit Point Dice",
+      "source_ids": [
+        "154-5-17-hit-points-and-hit-point-dice"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "155-5-18-proficiency-bonus",
+      "kind": "section",
+      "name": "Proficiency Bonus",
+      "source_ids": [
+        "155-5-18-proficiency-bonus"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "156-5-19-proficiencies",
+      "kind": "section",
+      "name": "Proficiencies",
+      "source_ids": [
+        "156-5-19-proficiencies"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "157-5-20-class-features",
+      "kind": "section",
+      "name": "Class Features",
+      "source_ids": [
+        "157-5-20-class-features"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    },
+    {
+      "id": "158-5-20-1-armor-class",
+      "kind": "section",
+      "name": "Armor Class",
+      "source_ids": [
+        "158-5-20-1-armor-class"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "157-5-20-class-features"
+    },
+    {
+      "id": "159-5-20-2-extra-attack",
+      "kind": "section",
+      "name": "Extra Attack",
+      "source_ids": [
+        "159-5-20-2-extra-attack"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "157-5-20-class-features"
+    },
+    {
+      "id": "160-5-20-3-spellcasting",
+      "kind": "section",
+      "name": "Spellcasting",
+      "source_ids": [
+        "160-5-20-3-spellcasting"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        25,
+        26
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "157-5-20-class-features"
+    },
+    {
+      "id": "161-5-21-trinkets",
+      "kind": "section",
+      "name": "Trinkets",
+      "source_ids": [
+        "161-5-21-trinkets"
+      ],
+      "chapter_id": "117-5-character-creation",
+      "pages": [
+        26,
+        27
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "117-5-character-creation"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "019-class-overview",
+      "name": "Class Overview",
+      "section_id": "120-5-3-step-1-choose-class",
+      "page": 19,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "class",
+          "name": "Class",
+          "type": "string"
+        },
+        {
+          "id": "likes",
+          "name": "Likes ...",
+          "type": "string"
+        },
+        {
+          "id": "primary-ability",
+          "name": "Primary Ability",
+          "type": "string"
+        },
+        {
+          "id": "complexity",
+          "name": "Complexity",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 12,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "019-ability-scores-and-backgrounds",
+      "name": "Ability Scores and Backgrounds",
+      "section_id": "124-5-4-1-choose-a-background",
+      "page": 19,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "background",
+          "name": "Background",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "020-standard-languages",
+      "name": "Standard Languages",
+      "section_id": "128-5-4-5-choose-languages",
+      "page": 20,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d12",
+          "name": "1d12",
+          "type": "integer"
+        },
+        {
+          "id": "language",
+          "name": "Language",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "020-rare-languages",
+      "name": "Rare Languages",
+      "section_id": "128-5-4-5-choose-languages",
+      "page": 20,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "language",
+          "name": "Language",
+          "type": "string"
+        },
+        {
+          "id": "language-2",
+          "name": "Language",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "021-ability-scores-and-modifiers",
+      "name": "Ability Scores and Modifiers",
+      "section_id": "133-5-5-4-determine-ability-modifiers",
+      "page": 21,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "score",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "modifier",
+          "name": "Modifier",
+          "type": "integer"
+        },
+        {
+          "id": "score-2",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "modifier-2",
+          "name": "Modifier",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "021-ability-score-point-costs",
+      "name": "Ability Score Point Costs",
+      "section_id": "130-5-5-1-generate-your-scores",
+      "page": 21,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "score",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        },
+        {
+          "id": "score-2",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "cost-2",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "021-standard-array-by-class",
+      "name": "Standard Array by Class",
+      "section_id": "131-5-5-2-assign-ability-scores",
+      "page": 21,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "class",
+          "name": "Class",
+          "type": "string"
+        },
+        {
+          "id": "str",
+          "name": "Str.",
+          "type": "integer"
+        },
+        {
+          "id": "dex",
+          "name": "Dex.",
+          "type": "integer"
+        },
+        {
+          "id": "con",
+          "name": "Con.",
+          "type": "integer"
+        },
+        {
+          "id": "int",
+          "name": "Int.",
+          "type": "integer"
+        },
+        {
+          "id": "wis",
+          "name": "Wis.",
+          "type": "integer"
+        },
+        {
+          "id": "cha",
+          "name": "Cha.",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 12,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "022-level-1-hit-points-by-class",
+      "name": "Level 1 Hit Points by Class",
+      "section_id": "139-5-7-2-fill-in-numbers",
+      "page": 22,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "class",
+          "name": "Class",
+          "type": "string"
+        },
+        {
+          "id": "hit-point-maximum",
+          "name": "Hit Point Maximum",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "023-fixed-hit-points-by-class",
+      "name": "Fixed Hit Points by Class",
+      "section_id": "141-5-9-gaining-a-level",
+      "page": 23,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "class",
+          "name": "Class",
+          "type": "string"
+        },
+        {
+          "id": "hit-points-per-level",
+          "name": "Hit Points per Level",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "023-character-advancement",
+      "name": "Character Advancement",
+      "section_id": "140-5-8-level-advancement",
+      "page": 23,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "level",
+          "name": "Level",
+          "type": "integer"
+        },
+        {
+          "id": "experience-points",
+          "name": "Experience Points",
+          "type": "integer"
+        },
+        {
+          "id": "proficiency-bonus",
+          "name": "Proficiency Bonus",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 20,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "024-starting-equipment-at-higher-levels",
+      "name": "Starting Equipment at Higher Levels",
+      "section_id": "148-5-12-creating-your-character",
+      "page": 24,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "starting-level",
+          "name": "Starting Level",
+          "type": "string"
+        },
+        {
+          "id": "equipment-and-money",
+          "name": "Equipment and Money",
+          "type": "string"
+        },
+        {
+          "id": "magic-items",
+          "name": "Magic Items",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "026-trinkets",
+      "name": "Trinkets",
+      "section_id": "161-5-21-trinkets",
+      "page": 26,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d100",
+          "name": "1d100",
+          "type": "integer"
+        },
+        {
+          "id": "trinket",
+          "name": "Trinket",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 100,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "026-multiclass-spellcaster-spell-slots-per-spell-level",
+      "name": "Multiclass Spellcaster: Spell Slots per Spell Level",
+      "section_id": "160-5-20-3-spellcasting",
+      "page": 26,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "level",
+          "name": "Level",
+          "type": "integer"
+        },
+        {
+          "id": "1",
+          "name": "1",
+          "type": "integer"
+        },
+        {
+          "id": "2",
+          "name": "2",
+          "type": "integer"
+        },
+        {
+          "id": "3",
+          "name": "3",
+          "type": "integer"
+        },
+        {
+          "id": "4",
+          "name": "4",
+          "type": "integer"
+        },
+        {
+          "id": "5",
+          "name": "5",
+          "type": "integer"
+        },
+        {
+          "id": "6",
+          "name": "6",
+          "type": "integer"
+        },
+        {
+          "id": "7",
+          "name": "7",
+          "type": "integer"
+        },
+        {
+          "id": "8",
+          "name": "8",
+          "type": "integer"
+        },
+        {
+          "id": "9",
+          "name": "9",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 20,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

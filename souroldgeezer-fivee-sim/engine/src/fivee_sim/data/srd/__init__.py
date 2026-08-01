@@ -1,1 +1,1 @@
-"""Bundled SRD 5.2 data files. Provenance and attribution: see NOTICE."""
+"""Bundled SRD 5.2.1 data files. Provenance and attribution: see NOTICE."""

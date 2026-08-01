@@ -1,0 +1,3389 @@
+{
+  "pack": "srd-5.2.1-catalog-09",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "570-9-equipment",
+      "kind": "section",
+      "name": "Equipment",
+      "source_ids": [
+        "570-9-equipment"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "571-9-1-coins",
+      "kind": "section",
+      "name": "Coins",
+      "source_ids": [
+        "571-9-1-coins"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "572-9-2-weapons",
+      "kind": "section",
+      "name": "Weapons",
+      "source_ids": [
+        "572-9-2-weapons"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "573-9-2-1-selling-equipment",
+      "kind": "section",
+      "name": "Selling Equipment",
+      "source_ids": [
+        "573-9-2-1-selling-equipment"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "572-9-2-weapons"
+    },
+    {
+      "id": "574-9-3-weapon-proficiency",
+      "kind": "section",
+      "name": "Weapon Proficiency",
+      "source_ids": [
+        "574-9-3-weapon-proficiency"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "575-9-4-properties",
+      "kind": "section",
+      "name": "Properties",
+      "source_ids": [
+        "575-9-4-properties"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "576-9-4-1-ammunition",
+      "kind": "section",
+      "name": "Ammunition",
+      "source_ids": [
+        "576-9-4-1-ammunition"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "577-9-4-2-finesse",
+      "kind": "section",
+      "name": "Finesse",
+      "source_ids": [
+        "577-9-4-2-finesse"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "578-9-4-3-heavy",
+      "kind": "section",
+      "name": "Heavy",
+      "source_ids": [
+        "578-9-4-3-heavy"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "579-9-4-4-light",
+      "kind": "section",
+      "name": "Light",
+      "source_ids": [
+        "579-9-4-4-light"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        89
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "580-9-4-5-loading",
+      "kind": "section",
+      "name": "Loading",
+      "source_ids": [
+        "580-9-4-5-loading"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "581-9-4-6-range",
+      "kind": "section",
+      "name": "Range",
+      "source_ids": [
+        "581-9-4-6-range"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "582-9-4-7-reach",
+      "kind": "section",
+      "name": "Reach",
+      "source_ids": [
+        "582-9-4-7-reach"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "583-9-4-8-thrown",
+      "kind": "section",
+      "name": "Thrown",
+      "source_ids": [
+        "583-9-4-8-thrown"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "584-9-4-9-two-handed",
+      "kind": "section",
+      "name": "Two-Handed",
+      "source_ids": [
+        "584-9-4-9-two-handed"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "585-9-4-10-versatile",
+      "kind": "section",
+      "name": "Versatile",
+      "source_ids": [
+        "585-9-4-10-versatile"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "575-9-4-properties"
+    },
+    {
+      "id": "586-9-5-mastery-properties",
+      "kind": "section",
+      "name": "Mastery Properties",
+      "source_ids": [
+        "586-9-5-mastery-properties"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "587-9-5-1-improvised-weapons",
+      "kind": "section",
+      "name": "Improvised Weapons",
+      "source_ids": [
+        "587-9-5-1-improvised-weapons"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "588-9-5-2-cleave",
+      "kind": "section",
+      "name": "Cleave",
+      "source_ids": [
+        "588-9-5-2-cleave"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "589-9-5-3-graze",
+      "kind": "section",
+      "name": "Graze",
+      "source_ids": [
+        "589-9-5-3-graze"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "590-9-5-4-nick",
+      "kind": "section",
+      "name": "Nick",
+      "source_ids": [
+        "590-9-5-4-nick"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "591-9-5-5-push",
+      "kind": "section",
+      "name": "Push",
+      "source_ids": [
+        "591-9-5-5-push"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "592-9-5-6-sap",
+      "kind": "section",
+      "name": "Sap",
+      "source_ids": [
+        "592-9-5-6-sap"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "593-9-5-7-slow",
+      "kind": "section",
+      "name": "Slow",
+      "source_ids": [
+        "593-9-5-7-slow"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "594-9-5-8-topple",
+      "kind": "section",
+      "name": "Topple",
+      "source_ids": [
+        "594-9-5-8-topple"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "595-9-5-9-vex",
+      "kind": "section",
+      "name": "Vex",
+      "source_ids": [
+        "595-9-5-9-vex"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        90,
+        91
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "586-9-5-mastery-properties"
+    },
+    {
+      "id": "596-9-6-armor",
+      "kind": "section",
+      "name": "Armor",
+      "source_ids": [
+        "596-9-6-armor"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        92
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "597-9-7-armor-training",
+      "kind": "section",
+      "name": "Armor Training",
+      "source_ids": [
+        "597-9-7-armor-training"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        92
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "598-9-7-1-light-medium-or-heavy-armor",
+      "kind": "section",
+      "name": "Light, Medium, or Heavy Armor",
+      "source_ids": [
+        "598-9-7-1-light-medium-or-heavy-armor"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        92
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "597-9-7-armor-training"
+    },
+    {
+      "id": "599-9-7-2-shield",
+      "kind": "section",
+      "name": "Shield",
+      "source_ids": [
+        "599-9-7-2-shield"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        92
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "597-9-7-armor-training"
+    },
+    {
+      "id": "600-9-8-one-at-a-time",
+      "kind": "section",
+      "name": "One at a Time",
+      "source_ids": [
+        "600-9-8-one-at-a-time"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        92
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "601-9-9-tools",
+      "kind": "section",
+      "name": "Tools",
+      "source_ids": [
+        "601-9-9-tools"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "602-9-10-tool-proficiency",
+      "kind": "section",
+      "name": "Tool Proficiency",
+      "source_ids": [
+        "602-9-10-tool-proficiency"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "603-9-11-artisan-s-tools",
+      "kind": "section",
+      "name": "Artisan’s Tools",
+      "source_ids": [
+        "603-9-11-artisan-s-tools"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "604-9-11-1-alchemist-s-supplies-50-gp",
+      "kind": "section",
+      "name": "Alchemist’s Supplies (50 GP)",
+      "source_ids": [
+        "604-9-11-1-alchemist-s-supplies-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "605-9-11-2-brewer-s-supplies-20-gp",
+      "kind": "section",
+      "name": "Brewer’s Supplies (20 GP)",
+      "source_ids": [
+        "605-9-11-2-brewer-s-supplies-20-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "606-9-11-3-calligrapher-s-supplies-10-gp",
+      "kind": "section",
+      "name": "Calligrapher’s Supplies (10 GP)",
+      "source_ids": [
+        "606-9-11-3-calligrapher-s-supplies-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "607-9-11-4-carpenter-s-tools-8-gp",
+      "kind": "section",
+      "name": "Carpenter’s Tools (8 GP)",
+      "source_ids": [
+        "607-9-11-4-carpenter-s-tools-8-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "608-9-11-5-cartographer-s-tools-15-gp",
+      "kind": "section",
+      "name": "Cartographer’s Tools (15 GP)",
+      "source_ids": [
+        "608-9-11-5-cartographer-s-tools-15-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "609-9-11-6-cobbler-s-tools-5-gp",
+      "kind": "section",
+      "name": "Cobbler’s Tools (5 GP)",
+      "source_ids": [
+        "609-9-11-6-cobbler-s-tools-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "610-9-11-7-cook-s-utensils-1-gp",
+      "kind": "section",
+      "name": "Cook’s Utensils (1 GP)",
+      "source_ids": [
+        "610-9-11-7-cook-s-utensils-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "611-9-11-8-glassblower-s-tools-30-gp",
+      "kind": "section",
+      "name": "Glassblower’s Tools (30 GP)",
+      "source_ids": [
+        "611-9-11-8-glassblower-s-tools-30-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "612-9-11-9-jeweler-s-tools-25-gp",
+      "kind": "section",
+      "name": "Jeweler’s Tools (25 GP)",
+      "source_ids": [
+        "612-9-11-9-jeweler-s-tools-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "613-9-11-10-leatherworker-s-tools-5-gp",
+      "kind": "section",
+      "name": "Leatherworker’s Tools (5 GP)",
+      "source_ids": [
+        "613-9-11-10-leatherworker-s-tools-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "614-9-11-11-mason-s-tools-10-gp",
+      "kind": "section",
+      "name": "Mason’s Tools (10 GP)",
+      "source_ids": [
+        "614-9-11-11-mason-s-tools-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "615-9-11-12-painter-s-supplies-10-gp",
+      "kind": "section",
+      "name": "Painter’s Supplies (10 GP)",
+      "source_ids": [
+        "615-9-11-12-painter-s-supplies-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "616-9-11-13-potter-s-tools-10-gp",
+      "kind": "section",
+      "name": "Potter’s Tools (10 GP)",
+      "source_ids": [
+        "616-9-11-13-potter-s-tools-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "617-9-11-14-smith-s-tools-20-gp",
+      "kind": "section",
+      "name": "Smith’s Tools (20 GP)",
+      "source_ids": [
+        "617-9-11-14-smith-s-tools-20-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        93,
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "618-9-11-15-tinker-s-tools-50-gp",
+      "kind": "section",
+      "name": "Tinker’s Tools (50 GP)",
+      "source_ids": [
+        "618-9-11-15-tinker-s-tools-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "619-9-11-16-weaver-s-tools-1-gp",
+      "kind": "section",
+      "name": "Weaver’s Tools (1 GP)",
+      "source_ids": [
+        "619-9-11-16-weaver-s-tools-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "620-9-11-17-woodcarver-s-tools-1-gp",
+      "kind": "section",
+      "name": "Woodcarver’s Tools (1 GP)",
+      "source_ids": [
+        "620-9-11-17-woodcarver-s-tools-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "603-9-11-artisan-s-tools"
+    },
+    {
+      "id": "621-9-12-other-tools",
+      "kind": "section",
+      "name": "Other Tools",
+      "source_ids": [
+        "621-9-12-other-tools"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "622-9-12-1-disguise-kit-25-gp",
+      "kind": "section",
+      "name": "Disguise Kit (25 GP)",
+      "source_ids": [
+        "622-9-12-1-disguise-kit-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "623-9-12-2-forgery-kit-15-gp",
+      "kind": "section",
+      "name": "Forgery Kit (15 GP)",
+      "source_ids": [
+        "623-9-12-2-forgery-kit-15-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "624-9-12-3-gaming-set-varies",
+      "kind": "section",
+      "name": "Gaming Set (Varies)",
+      "source_ids": [
+        "624-9-12-3-gaming-set-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "625-9-12-4-herbalism-kit-5-gp",
+      "kind": "section",
+      "name": "Herbalism Kit (5 GP)",
+      "source_ids": [
+        "625-9-12-4-herbalism-kit-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "626-9-12-5-musical-instrument-varies",
+      "kind": "section",
+      "name": "Musical Instrument (Varies)",
+      "source_ids": [
+        "626-9-12-5-musical-instrument-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "627-9-12-6-navigator-s-tools-25-gp",
+      "kind": "section",
+      "name": "Navigator’s Tools (25 GP)",
+      "source_ids": [
+        "627-9-12-6-navigator-s-tools-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "628-9-12-7-poisoner-s-kit-50-gp",
+      "kind": "section",
+      "name": "Poisoner’s Kit (50 GP)",
+      "source_ids": [
+        "628-9-12-7-poisoner-s-kit-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "629-9-12-8-thieves-tools-25-gp",
+      "kind": "section",
+      "name": "Thieves’ Tools (25 GP)",
+      "source_ids": [
+        "629-9-12-8-thieves-tools-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "621-9-12-other-tools"
+    },
+    {
+      "id": "630-9-13-adventuring-gear",
+      "kind": "section",
+      "name": "Adventuring Gear",
+      "source_ids": [
+        "630-9-13-adventuring-gear"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "631-9-13-1-acid-25-gp",
+      "kind": "section",
+      "name": "Acid (25 GP)",
+      "source_ids": [
+        "631-9-13-1-acid-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "632-9-13-2-alchemist-s-fire-50-gp",
+      "kind": "section",
+      "name": "Alchemist’s Fire (50 GP)",
+      "source_ids": [
+        "632-9-13-2-alchemist-s-fire-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "633-9-13-3-ammunition-varies",
+      "kind": "section",
+      "name": "Ammunition (Varies)",
+      "source_ids": [
+        "633-9-13-3-ammunition-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        94,
+        95,
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "634-9-13-4-antitoxin-50-gp",
+      "kind": "section",
+      "name": "Antitoxin (50 GP)",
+      "source_ids": [
+        "634-9-13-4-antitoxin-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "635-9-13-5-arcane-focus-varies",
+      "kind": "section",
+      "name": "Arcane Focus (Varies)",
+      "source_ids": [
+        "635-9-13-5-arcane-focus-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "636-9-13-6-backpack-2-gp",
+      "kind": "section",
+      "name": "Backpack (2 GP)",
+      "source_ids": [
+        "636-9-13-6-backpack-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "637-9-13-7-ball-bearings-1-gp",
+      "kind": "section",
+      "name": "Ball Bearings (1 GP)",
+      "source_ids": [
+        "637-9-13-7-ball-bearings-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "638-9-13-8-barrel-2-gp",
+      "kind": "section",
+      "name": "Barrel (2 GP)",
+      "source_ids": [
+        "638-9-13-8-barrel-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "639-9-13-9-basket-4-sp",
+      "kind": "section",
+      "name": "Basket (4 SP)",
+      "source_ids": [
+        "639-9-13-9-basket-4-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "640-9-13-10-bedroll-1-gp",
+      "kind": "section",
+      "name": "Bedroll (1 GP)",
+      "source_ids": [
+        "640-9-13-10-bedroll-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "641-9-13-11-bell-1-gp",
+      "kind": "section",
+      "name": "Bell (1 GP)",
+      "source_ids": [
+        "641-9-13-11-bell-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "642-9-13-12-blanket-5-sp",
+      "kind": "section",
+      "name": "Blanket (5 SP)",
+      "source_ids": [
+        "642-9-13-12-blanket-5-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "643-9-13-13-block-and-tackle-1-gp",
+      "kind": "section",
+      "name": "Block and Tackle (1 GP)",
+      "source_ids": [
+        "643-9-13-13-block-and-tackle-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "644-9-13-14-book-25-gp",
+      "kind": "section",
+      "name": "Book (25 GP)",
+      "source_ids": [
+        "644-9-13-14-book-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "645-9-13-15-bottle-glass-2-gp",
+      "kind": "section",
+      "name": "Bottle, Glass (2 GP)",
+      "source_ids": [
+        "645-9-13-15-bottle-glass-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "646-9-13-16-bucket-5-cp",
+      "kind": "section",
+      "name": "Bucket (5 CP)",
+      "source_ids": [
+        "646-9-13-16-bucket-5-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "647-9-13-17-burglar-s-pack-16-gp",
+      "kind": "section",
+      "name": "Burglar’s Pack (16 GP)",
+      "source_ids": [
+        "647-9-13-17-burglar-s-pack-16-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "648-9-13-18-caltrops-1-gp",
+      "kind": "section",
+      "name": "Caltrops (1 GP)",
+      "source_ids": [
+        "648-9-13-18-caltrops-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "649-9-13-19-candle-1-cp",
+      "kind": "section",
+      "name": "Candle (1 CP)",
+      "source_ids": [
+        "649-9-13-19-candle-1-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "650-9-13-20-case-crossbow-bolt-1-gp",
+      "kind": "section",
+      "name": "Case, Crossbow Bolt (1 GP)",
+      "source_ids": [
+        "650-9-13-20-case-crossbow-bolt-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "651-9-13-21-case-map-or-scroll-1-gp",
+      "kind": "section",
+      "name": "Case, Map or Scroll (1 GP)",
+      "source_ids": [
+        "651-9-13-21-case-map-or-scroll-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "652-9-13-22-chain-5-gp",
+      "kind": "section",
+      "name": "Chain (5 GP)",
+      "source_ids": [
+        "652-9-13-22-chain-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        96
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "653-9-13-23-chest-5-gp",
+      "kind": "section",
+      "name": "Chest (5 GP)",
+      "source_ids": [
+        "653-9-13-23-chest-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "654-9-13-24-climber-s-kit-25-gp",
+      "kind": "section",
+      "name": "Climber’s Kit (25 GP)",
+      "source_ids": [
+        "654-9-13-24-climber-s-kit-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "655-9-13-25-clothes-fine-15-gp",
+      "kind": "section",
+      "name": "Clothes, Fine (15 GP)",
+      "source_ids": [
+        "655-9-13-25-clothes-fine-15-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "656-9-13-26-clothes-traveler-s-2-gp",
+      "kind": "section",
+      "name": "Clothes, Traveler’s (2 GP)",
+      "source_ids": [
+        "656-9-13-26-clothes-traveler-s-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "657-9-13-27-component-pouch-25-gp",
+      "kind": "section",
+      "name": "Component Pouch (25 GP)",
+      "source_ids": [
+        "657-9-13-27-component-pouch-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "658-9-13-28-costume-5-gp",
+      "kind": "section",
+      "name": "Costume (5 GP)",
+      "source_ids": [
+        "658-9-13-28-costume-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "659-9-13-29-crowbar-2-gp",
+      "kind": "section",
+      "name": "Crowbar (2 GP)",
+      "source_ids": [
+        "659-9-13-29-crowbar-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "660-9-13-30-diplomat-s-pack-39-gp",
+      "kind": "section",
+      "name": "Diplomat’s Pack (39 GP)",
+      "source_ids": [
+        "660-9-13-30-diplomat-s-pack-39-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "661-9-13-31-druidic-focus-varies",
+      "kind": "section",
+      "name": "Druidic Focus (Varies)",
+      "source_ids": [
+        "661-9-13-31-druidic-focus-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "662-9-13-32-dungeoneer-s-pack-12-gp",
+      "kind": "section",
+      "name": "Dungeoneer’s Pack (12 GP)",
+      "source_ids": [
+        "662-9-13-32-dungeoneer-s-pack-12-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "663-9-13-33-entertainer-s-pack-40-gp",
+      "kind": "section",
+      "name": "Entertainer’s Pack (40 GP)",
+      "source_ids": [
+        "663-9-13-33-entertainer-s-pack-40-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "664-9-13-34-explorer-s-pack-10-gp",
+      "kind": "section",
+      "name": "Explorer’s Pack (10 GP)",
+      "source_ids": [
+        "664-9-13-34-explorer-s-pack-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "665-9-13-35-flask-2-cp",
+      "kind": "section",
+      "name": "Flask (2 CP)",
+      "source_ids": [
+        "665-9-13-35-flask-2-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "666-9-13-36-grappling-hook-2-gp",
+      "kind": "section",
+      "name": "Grappling Hook (2 GP)",
+      "source_ids": [
+        "666-9-13-36-grappling-hook-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "667-9-13-37-healer-s-kit-5-gp",
+      "kind": "section",
+      "name": "Healer’s Kit (5 GP)",
+      "source_ids": [
+        "667-9-13-37-healer-s-kit-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "668-9-13-38-holy-symbol-varies",
+      "kind": "section",
+      "name": "Holy Symbol (Varies)",
+      "source_ids": [
+        "668-9-13-38-holy-symbol-varies"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "669-9-13-39-holy-water-25-gp",
+      "kind": "section",
+      "name": "Holy Water (25 GP)",
+      "source_ids": [
+        "669-9-13-39-holy-water-25-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "670-9-13-40-hunting-trap-5-gp",
+      "kind": "section",
+      "name": "Hunting Trap (5 GP)",
+      "source_ids": [
+        "670-9-13-40-hunting-trap-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        97,
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "671-9-13-41-ink-10-gp",
+      "kind": "section",
+      "name": "Ink (10 GP)",
+      "source_ids": [
+        "671-9-13-41-ink-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "672-9-13-42-ink-pen-2-cp",
+      "kind": "section",
+      "name": "Ink Pen (2 CP)",
+      "source_ids": [
+        "672-9-13-42-ink-pen-2-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "673-9-13-43-jug-2-cp",
+      "kind": "section",
+      "name": "Jug (2 CP)",
+      "source_ids": [
+        "673-9-13-43-jug-2-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "674-9-13-44-ladder-1-sp",
+      "kind": "section",
+      "name": "Ladder (1 SP)",
+      "source_ids": [
+        "674-9-13-44-ladder-1-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "675-9-13-45-lamp-5-sp",
+      "kind": "section",
+      "name": "Lamp (5 SP)",
+      "source_ids": [
+        "675-9-13-45-lamp-5-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "676-9-13-46-lantern-bullseye-10-gp",
+      "kind": "section",
+      "name": "Lantern, Bullseye (10 GP)",
+      "source_ids": [
+        "676-9-13-46-lantern-bullseye-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "677-9-13-47-lantern-hooded-5-gp",
+      "kind": "section",
+      "name": "Lantern, Hooded (5 GP)",
+      "source_ids": [
+        "677-9-13-47-lantern-hooded-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "678-9-13-48-lock-10-gp",
+      "kind": "section",
+      "name": "Lock (10 GP)",
+      "source_ids": [
+        "678-9-13-48-lock-10-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "679-9-13-49-magnifying-glass-100-gp",
+      "kind": "section",
+      "name": "Magnifying Glass (100 GP)",
+      "source_ids": [
+        "679-9-13-49-magnifying-glass-100-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "680-9-13-50-manacles-2-gp",
+      "kind": "section",
+      "name": "Manacles (2 GP)",
+      "source_ids": [
+        "680-9-13-50-manacles-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "681-9-13-51-map-1-gp",
+      "kind": "section",
+      "name": "Map (1 GP)",
+      "source_ids": [
+        "681-9-13-51-map-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "682-9-13-52-mirror-5-gp",
+      "kind": "section",
+      "name": "Mirror (5 GP)",
+      "source_ids": [
+        "682-9-13-52-mirror-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "683-9-13-53-net-1-gp",
+      "kind": "section",
+      "name": "Net (1 GP)",
+      "source_ids": [
+        "683-9-13-53-net-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "684-9-13-54-oil-1-sp",
+      "kind": "section",
+      "name": "Oil (1 SP)",
+      "source_ids": [
+        "684-9-13-54-oil-1-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        98,
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "685-9-13-55-paper-2-sp",
+      "kind": "section",
+      "name": "Paper (2 SP)",
+      "source_ids": [
+        "685-9-13-55-paper-2-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "686-9-13-56-parchment-1-sp",
+      "kind": "section",
+      "name": "Parchment (1 SP)",
+      "source_ids": [
+        "686-9-13-56-parchment-1-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "687-9-13-57-perfume-5-gp",
+      "kind": "section",
+      "name": "Perfume (5 GP)",
+      "source_ids": [
+        "687-9-13-57-perfume-5-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "688-9-13-58-poison-basic-100-gp",
+      "kind": "section",
+      "name": "Poison, Basic (100 GP)",
+      "source_ids": [
+        "688-9-13-58-poison-basic-100-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "689-9-13-59-pole-5-cp",
+      "kind": "section",
+      "name": "Pole (5 CP)",
+      "source_ids": [
+        "689-9-13-59-pole-5-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "690-9-13-60-pot-iron-2-gp",
+      "kind": "section",
+      "name": "Pot, Iron (2 GP)",
+      "source_ids": [
+        "690-9-13-60-pot-iron-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "691-9-13-61-potion-of-healing-50-gp",
+      "kind": "section",
+      "name": "Potion of Healing (50 GP)",
+      "source_ids": [
+        "691-9-13-61-potion-of-healing-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "692-9-13-62-pouch-5-sp",
+      "kind": "section",
+      "name": "Pouch (5 SP)",
+      "source_ids": [
+        "692-9-13-62-pouch-5-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "693-9-13-63-priest-s-pack-33-gp",
+      "kind": "section",
+      "name": "Priest’s Pack (33 GP)",
+      "source_ids": [
+        "693-9-13-63-priest-s-pack-33-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "694-9-13-64-quiver-1-gp",
+      "kind": "section",
+      "name": "Quiver (1 GP)",
+      "source_ids": [
+        "694-9-13-64-quiver-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "695-9-13-65-ram-portable-4-gp",
+      "kind": "section",
+      "name": "Ram, Portable (4 GP)",
+      "source_ids": [
+        "695-9-13-65-ram-portable-4-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "696-9-13-66-rations-5-sp",
+      "kind": "section",
+      "name": "Rations (5 SP)",
+      "source_ids": [
+        "696-9-13-66-rations-5-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "697-9-13-67-robe-1-gp",
+      "kind": "section",
+      "name": "Robe (1 GP)",
+      "source_ids": [
+        "697-9-13-67-robe-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "698-9-13-68-rope-1-gp",
+      "kind": "section",
+      "name": "Rope (1 GP)",
+      "source_ids": [
+        "698-9-13-68-rope-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "699-9-13-69-sack-1-cp",
+      "kind": "section",
+      "name": "Sack (1 CP)",
+      "source_ids": [
+        "699-9-13-69-sack-1-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "700-9-13-70-scholar-s-pack-40-gp",
+      "kind": "section",
+      "name": "Scholar’s Pack (40 GP)",
+      "source_ids": [
+        "700-9-13-70-scholar-s-pack-40-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "701-9-13-71-shovel-2-gp",
+      "kind": "section",
+      "name": "Shovel (2 GP)",
+      "source_ids": [
+        "701-9-13-71-shovel-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "702-9-13-72-signal-whistle-5-cp",
+      "kind": "section",
+      "name": "Signal Whistle (5 CP)",
+      "source_ids": [
+        "702-9-13-72-signal-whistle-5-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "703-9-13-73-spell-scroll-cantrip-30-gp-level-1-50-gp",
+      "kind": "section",
+      "name": "Spell Scroll (Cantrip, 30 GP; Level 1, 50 GP)",
+      "source_ids": [
+        "703-9-13-73-spell-scroll-cantrip-30-gp-level-1-50-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        99
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "704-9-13-74-spikes-iron-1-gp",
+      "kind": "section",
+      "name": "Spikes, Iron (1 GP)",
+      "source_ids": [
+        "704-9-13-74-spikes-iron-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "705-9-13-75-spyglass-1-000-gp",
+      "kind": "section",
+      "name": "Spyglass (1,000 GP)",
+      "source_ids": [
+        "705-9-13-75-spyglass-1-000-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "706-9-13-76-string-1-sp",
+      "kind": "section",
+      "name": "String (1 SP)",
+      "source_ids": [
+        "706-9-13-76-string-1-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "707-9-13-77-tent-2-gp",
+      "kind": "section",
+      "name": "Tent (2 GP)",
+      "source_ids": [
+        "707-9-13-77-tent-2-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "708-9-13-78-tinderbox-5-sp",
+      "kind": "section",
+      "name": "Tinderbox (5 SP)",
+      "source_ids": [
+        "708-9-13-78-tinderbox-5-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "709-9-13-79-torch-1-cp",
+      "kind": "section",
+      "name": "Torch (1 CP)",
+      "source_ids": [
+        "709-9-13-79-torch-1-cp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "710-9-13-80-vial-1-gp",
+      "kind": "section",
+      "name": "Vial (1 GP)",
+      "source_ids": [
+        "710-9-13-80-vial-1-gp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "711-9-13-81-waterskin-2-sp",
+      "kind": "section",
+      "name": "Waterskin (2 SP)",
+      "source_ids": [
+        "711-9-13-81-waterskin-2-sp"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "630-9-13-adventuring-gear"
+    },
+    {
+      "id": "712-9-14-mounts-and-vehicles",
+      "kind": "section",
+      "name": "Mounts and Vehicles",
+      "source_ids": [
+        "712-9-14-mounts-and-vehicles"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "713-9-15-mounts-and-cargo",
+      "kind": "section",
+      "name": "Mounts and Cargo",
+      "source_ids": [
+        "713-9-15-mounts-and-cargo"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "714-9-16-barding",
+      "kind": "section",
+      "name": "Barding",
+      "source_ids": [
+        "714-9-16-barding"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "715-9-17-saddles",
+      "kind": "section",
+      "name": "Saddles",
+      "source_ids": [
+        "715-9-17-saddles"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "716-9-18-large-vehicles",
+      "kind": "section",
+      "name": "Large Vehicles",
+      "source_ids": [
+        "716-9-18-large-vehicles"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "717-9-18-1-speed",
+      "kind": "section",
+      "name": "Speed",
+      "source_ids": [
+        "717-9-18-1-speed"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        100,
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "716-9-18-large-vehicles"
+    },
+    {
+      "id": "718-9-18-2-crew",
+      "kind": "section",
+      "name": "Crew",
+      "source_ids": [
+        "718-9-18-2-crew"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "716-9-18-large-vehicles"
+    },
+    {
+      "id": "719-9-18-3-passengers",
+      "kind": "section",
+      "name": "Passengers",
+      "source_ids": [
+        "719-9-18-3-passengers"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "716-9-18-large-vehicles"
+    },
+    {
+      "id": "720-9-18-4-damage-threshold",
+      "kind": "section",
+      "name": "Damage Threshold",
+      "source_ids": [
+        "720-9-18-4-damage-threshold"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "716-9-18-large-vehicles"
+    },
+    {
+      "id": "721-9-18-5-ship-repair",
+      "kind": "section",
+      "name": "Ship Repair",
+      "source_ids": [
+        "721-9-18-5-ship-repair"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "716-9-18-large-vehicles"
+    },
+    {
+      "id": "722-9-19-lifestyle-expenses",
+      "kind": "section",
+      "name": "Lifestyle Expenses",
+      "source_ids": [
+        "722-9-19-lifestyle-expenses"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "723-9-20-wretched-free",
+      "kind": "section",
+      "name": "Wretched (Free)",
+      "source_ids": [
+        "723-9-20-wretched-free"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "724-9-21-squalid-1-sp-per-day",
+      "kind": "section",
+      "name": "Squalid (1 SP per Day)",
+      "source_ids": [
+        "724-9-21-squalid-1-sp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "725-9-22-poor-2-sp-per-day",
+      "kind": "section",
+      "name": "Poor (2 SP per Day)",
+      "source_ids": [
+        "725-9-22-poor-2-sp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "726-9-23-modest-1-gp-per-day",
+      "kind": "section",
+      "name": "Modest (1 GP per Day)",
+      "source_ids": [
+        "726-9-23-modest-1-gp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "727-9-24-comfortable-2-gp-per-day",
+      "kind": "section",
+      "name": "Comfortable (2 GP per Day)",
+      "source_ids": [
+        "727-9-24-comfortable-2-gp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "728-9-25-wealthy-4-gp-per-day",
+      "kind": "section",
+      "name": "Wealthy (4 GP per Day)",
+      "source_ids": [
+        "728-9-25-wealthy-4-gp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "729-9-26-aristocratic-10-gp-per-day",
+      "kind": "section",
+      "name": "Aristocratic (10 GP per Day)",
+      "source_ids": [
+        "729-9-26-aristocratic-10-gp-per-day"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "730-9-27-food-drink-and-lodging",
+      "kind": "section",
+      "name": "Food, Drink, and Lodging",
+      "source_ids": [
+        "730-9-27-food-drink-and-lodging"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        101,
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "731-9-28-hirelings",
+      "kind": "section",
+      "name": "Hirelings",
+      "source_ids": [
+        "731-9-28-hirelings"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "732-9-29-spellcasting",
+      "kind": "section",
+      "name": "Spellcasting",
+      "source_ids": [
+        "732-9-29-spellcasting"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "733-9-30-magic-items",
+      "kind": "section",
+      "name": "Magic Items",
+      "source_ids": [
+        "733-9-30-magic-items"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "734-9-31-identifying-a-magic-item",
+      "kind": "section",
+      "name": "Identifying a Magic Item",
+      "source_ids": [
+        "734-9-31-identifying-a-magic-item"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "735-9-32-attunement",
+      "kind": "section",
+      "name": "Attunement",
+      "source_ids": [
+        "735-9-32-attunement"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "736-9-32-1-attune-during-a-short-rest",
+      "kind": "section",
+      "name": "Attune during a Short Rest",
+      "source_ids": [
+        "736-9-32-1-attune-during-a-short-rest"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "735-9-32-attunement"
+    },
+    {
+      "id": "737-9-32-2-no-more-than-three-items",
+      "kind": "section",
+      "name": "No More Than Three Items",
+      "source_ids": [
+        "737-9-32-2-no-more-than-three-items"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "735-9-32-attunement"
+    },
+    {
+      "id": "738-9-32-3-ending-attunement",
+      "kind": "section",
+      "name": "Ending Attunement",
+      "source_ids": [
+        "738-9-32-3-ending-attunement"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        102,
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "735-9-32-attunement"
+    },
+    {
+      "id": "739-9-33-wearing-and-wielding-items",
+      "kind": "section",
+      "name": "Wearing and Wielding Items",
+      "source_ids": [
+        "739-9-33-wearing-and-wielding-items"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "740-9-33-1-multiple-items-of-the-same-kind",
+      "kind": "section",
+      "name": "Multiple Items of the Same Kind",
+      "source_ids": [
+        "740-9-33-1-multiple-items-of-the-same-kind"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "739-9-33-wearing-and-wielding-items"
+    },
+    {
+      "id": "741-9-33-2-paired-items",
+      "kind": "section",
+      "name": "Paired Items",
+      "source_ids": [
+        "741-9-33-2-paired-items"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "739-9-33-wearing-and-wielding-items"
+    },
+    {
+      "id": "742-9-34-crafting-nonmagical-items",
+      "kind": "section",
+      "name": "Crafting Nonmagical Items",
+      "source_ids": [
+        "742-9-34-crafting-nonmagical-items"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "743-9-35-tools",
+      "kind": "section",
+      "name": "Tools",
+      "source_ids": [
+        "743-9-35-tools"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "744-9-36-raw-materials",
+      "kind": "section",
+      "name": "Raw Materials",
+      "source_ids": [
+        "744-9-36-raw-materials"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "745-9-37-time",
+      "kind": "section",
+      "name": "Time",
+      "source_ids": [
+        "745-9-37-time"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "746-9-38-brewing-potions-of-healing",
+      "kind": "section",
+      "name": "Brewing Potions of Healing",
+      "source_ids": [
+        "746-9-38-brewing-potions-of-healing"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "747-9-39-scribing-spell-scrolls",
+      "kind": "section",
+      "name": "Scribing Spell Scrolls",
+      "source_ids": [
+        "747-9-39-scribing-spell-scrolls"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "748-9-40-time-and-cost",
+      "kind": "section",
+      "name": "Time and Cost",
+      "source_ids": [
+        "748-9-40-time-and-cost"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "749-9-41-prerequisites-for-the-scribe",
+      "kind": "section",
+      "name": "Prerequisites for the Scribe",
+      "source_ids": [
+        "749-9-41-prerequisites-for-the-scribe"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    },
+    {
+      "id": "750-9-42-cantrips",
+      "kind": "section",
+      "name": "Cantrips",
+      "source_ids": [
+        "750-9-42-cantrips"
+      ],
+      "chapter_id": "570-9-equipment",
+      "pages": [
+        103
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "570-9-equipment"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "089-coin-values",
+      "name": "Coin Values",
+      "section_id": "571-9-1-coins",
+      "page": 89,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "coin",
+          "name": "Coin",
+          "type": "string"
+        },
+        {
+          "id": "value-in-gp",
+          "name": "Value in GP",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "091-weapons",
+      "name": "Weapons",
+      "section_id": "595-9-5-9-vex",
+      "page": 91,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "name",
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "id": "damage",
+          "name": "Damage",
+          "type": "string"
+        },
+        {
+          "id": "properties",
+          "name": "Properties",
+          "type": "string"
+        },
+        {
+          "id": "mastery",
+          "name": "Mastery",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 38,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "092-armor",
+      "name": "Armor",
+      "section_id": "596-9-6-armor",
+      "page": 92,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "armor",
+          "name": "Armor",
+          "type": "string"
+        },
+        {
+          "id": "armor-class-ac",
+          "name": "Armor Class (AC)",
+          "type": "integer"
+        },
+        {
+          "id": "strength",
+          "name": "Strength",
+          "type": "string"
+        },
+        {
+          "id": "stealth",
+          "name": "Stealth",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 13,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "095-adventuring-gear",
+      "name": "Adventuring Gear",
+      "section_id": "633-9-13-3-ammunition-varies",
+      "page": 95,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "item",
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 41,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "096-ammunition",
+      "name": "Ammunition",
+      "section_id": "633-9-13-3-ammunition-varies",
+      "page": 96,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "type",
+          "name": "Type",
+          "type": "string"
+        },
+        {
+          "id": "amount-storage",
+          "name": "Amount Storage",
+          "type": "string"
+        },
+        {
+          "id": "weight-cost",
+          "name": "Weight Cost",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "096-arcane-focuses",
+      "name": "Arcane Focuses",
+      "section_id": "635-9-13-5-arcane-focus-varies",
+      "page": 96,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "focus",
+          "name": "Focus",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "097-holy-symbols",
+      "name": "Holy Symbols",
+      "section_id": "668-9-13-38-holy-symbol-varies",
+      "page": 97,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "symbol",
+          "name": "Symbol",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "097-druidic-focuses",
+      "name": "Druidic Focuses",
+      "section_id": "661-9-13-31-druidic-focus-varies",
+      "page": 97,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "focus",
+          "name": "Focus",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "100-mounts-and-other-animals",
+      "name": "Mounts and Other Animals",
+      "section_id": "715-9-17-saddles",
+      "page": 100,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "item",
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "id": "carrying-capacity",
+          "name": "Carrying Capacity",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "100-tack-harness-and-drawn-vehicles",
+      "name": "Tack, Harness, and Drawn Vehicles",
+      "section_id": "715-9-17-saddles",
+      "page": 100,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "item",
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "id": "weight",
+          "name": "Weight",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 11,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "101-airborne-and-waterborne-vehicles",
+      "name": "Airborne and Waterborne Vehicles",
+      "section_id": "717-9-18-1-speed",
+      "page": 101,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ship",
+          "name": "Ship",
+          "type": "string"
+        },
+        {
+          "id": "speed",
+          "name": "Speed",
+          "type": "string"
+        },
+        {
+          "id": "crew",
+          "name": "Crew",
+          "type": "integer"
+        },
+        {
+          "id": "passengers",
+          "name": "Passengers",
+          "type": "integer"
+        },
+        {
+          "id": "cargo-tons",
+          "name": "Cargo (Tons)",
+          "type": "integer"
+        },
+        {
+          "id": "ac",
+          "name": "AC",
+          "type": "integer"
+        },
+        {
+          "id": "hp",
+          "name": "HP",
+          "type": "integer"
+        },
+        {
+          "id": "damage-threshold",
+          "name": "Damage Threshold",
+          "type": "integer"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "101-food-drink-and-lodging",
+      "name": "Food, Drink, and Lodging",
+      "section_id": "730-9-27-food-drink-and-lodging",
+      "page": 101,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "item",
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        },
+        {
+          "id": "item-2",
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "id": "cost-2",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "102-hirelings",
+      "name": "Hirelings",
+      "section_id": "731-9-28-hirelings",
+      "page": 102,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "service",
+          "name": "Service",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "102-spellcasting-services",
+      "name": "Spellcasting Services",
+      "section_id": "732-9-29-spellcasting",
+      "page": 102,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell-level",
+          "name": "Spell Level",
+          "type": "integer"
+        },
+        {
+          "id": "availability",
+          "name": "Availability",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "103-spell-scroll-costs",
+      "name": "Spell Scroll Costs",
+      "section_id": "750-9-42-cantrips",
+      "page": 103,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "spell-level",
+          "name": "Spell Level",
+          "type": "integer"
+        },
+        {
+          "id": "time",
+          "name": "Time",
+          "type": "string"
+        },
+        {
+          "id": "cost",
+          "name": "Cost",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 10,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

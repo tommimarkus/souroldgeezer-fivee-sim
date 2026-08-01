@@ -198,7 +198,7 @@ class TestSimulateDprSpendsTheAttackersOwnTurnBudget:
     where the dummy won the roll, which cost swings, forfeited the round for a
     build starting out of reach, and left a spent action looking unspent.
 
-    SRD 5.2 is explicit on both halves: "On your turn, you can move a distance up
+    SRD 5.2.1 is explicit on both halves: "On your turn, you can move a distance up
     to your Speed and take one action" (Combat, "Your Turn"), and Extra Attack is
     "You can attack twice instead of once whenever you take the Attack action on
     your turn" — more swings inside one action, never a second action.

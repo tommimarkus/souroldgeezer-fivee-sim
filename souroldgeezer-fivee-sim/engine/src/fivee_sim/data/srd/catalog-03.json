@@ -1,0 +1,26 @@
+{
+  "pack": "srd-5.2.1-catalog-03",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "003-3-index-of-stat-blocks",
+      "kind": "section",
+      "name": "Index of Stat Blocks",
+      "source_ids": [
+        "003-3-index-of-stat-blocks"
+      ],
+      "chapter_id": "003-3-index-of-stat-blocks",
+      "pages": [
+        2,
+        3,
+        4
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    }
+  ],
+  "catalog_tables": []
+}

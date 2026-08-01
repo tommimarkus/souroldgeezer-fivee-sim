@@ -1,0 +1,1557 @@
+{
+  "pack": "srd-5.2.1-catalog-12",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1281-12-gameplay-toolbox",
+      "kind": "section",
+      "name": "Gameplay Toolbox",
+      "source_ids": [
+        "1281-12-gameplay-toolbox"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1282-12-1-travel-pace",
+      "kind": "section",
+      "name": "Travel Pace",
+      "source_ids": [
+        "1282-12-1-travel-pace"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1283-12-2-good-roads",
+      "kind": "section",
+      "name": "Good Roads",
+      "source_ids": [
+        "1283-12-2-good-roads"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1284-12-3-slower-travelers",
+      "kind": "section",
+      "name": "Slower Travelers",
+      "source_ids": [
+        "1284-12-3-slower-travelers"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1285-12-4-extended-travel",
+      "kind": "section",
+      "name": "Extended Travel",
+      "source_ids": [
+        "1285-12-4-extended-travel"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1286-12-5-special-movement",
+      "kind": "section",
+      "name": "Special Movement",
+      "source_ids": [
+        "1286-12-5-special-movement"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1287-12-6-vehicles",
+      "kind": "section",
+      "name": "Vehicles",
+      "source_ids": [
+        "1287-12-6-vehicles"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1288-12-7-creating-a-background",
+      "kind": "section",
+      "name": "Creating a Background",
+      "source_ids": [
+        "1288-12-7-creating-a-background"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1289-12-8-1-choose-abilities",
+      "kind": "section",
+      "name": "1: Choose Abilities",
+      "source_ids": [
+        "1289-12-8-1-choose-abilities"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        192,
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1290-12-9-2-choose-a-feat",
+      "kind": "section",
+      "name": "2: Choose a Feat",
+      "source_ids": [
+        "1290-12-9-2-choose-a-feat"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1291-12-10-3-choose-skill-proficiencies",
+      "kind": "section",
+      "name": "3: Choose Skill Proficiencies",
+      "source_ids": [
+        "1291-12-10-3-choose-skill-proficiencies"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1292-12-11-4-choose-a-tool-proficiency",
+      "kind": "section",
+      "name": "4: Choose a Tool Proficiency",
+      "source_ids": [
+        "1292-12-11-4-choose-a-tool-proficiency"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1293-12-12-5-choose-equipment",
+      "kind": "section",
+      "name": "5: Choose Equipment",
+      "source_ids": [
+        "1293-12-12-5-choose-equipment"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1294-12-13-curses-and-magical-contagions",
+      "kind": "section",
+      "name": "Curses and Magical Contagions",
+      "source_ids": [
+        "1294-12-13-curses-and-magical-contagions"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1295-12-14-curses",
+      "kind": "section",
+      "name": "Curses",
+      "source_ids": [
+        "1295-12-14-curses"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1296-12-14-1-bestow-curse",
+      "kind": "section",
+      "name": "Bestow Curse",
+      "source_ids": [
+        "1296-12-14-1-bestow-curse"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1295-12-14-curses"
+    },
+    {
+      "id": "1297-12-14-2-cursed-creatures",
+      "kind": "section",
+      "name": "Cursed Creatures",
+      "source_ids": [
+        "1297-12-14-2-cursed-creatures"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1295-12-14-curses"
+    },
+    {
+      "id": "1298-12-14-3-cursed-magic-items",
+      "kind": "section",
+      "name": "Cursed Magic Items",
+      "source_ids": [
+        "1298-12-14-3-cursed-magic-items"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1295-12-14-curses"
+    },
+    {
+      "id": "1299-12-14-4-narrative-curses",
+      "kind": "section",
+      "name": "Narrative Curses",
+      "source_ids": [
+        "1299-12-14-4-narrative-curses"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1295-12-14-curses"
+    },
+    {
+      "id": "1300-12-14-5-environmental-curses",
+      "kind": "section",
+      "name": "Environmental Curses",
+      "source_ids": [
+        "1300-12-14-5-environmental-curses"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        193
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1295-12-14-curses"
+    },
+    {
+      "id": "1301-12-15-magical-contagions",
+      "kind": "section",
+      "name": "Magical Contagions",
+      "source_ids": [
+        "1301-12-15-magical-contagions"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1302-12-15-1-rest-and-recuperation",
+      "kind": "section",
+      "name": "Rest and Recuperation",
+      "source_ids": [
+        "1302-12-15-1-rest-and-recuperation"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1301-12-15-magical-contagions"
+    },
+    {
+      "id": "1303-12-15-2-example-contagions",
+      "kind": "section",
+      "name": "Example Contagions",
+      "source_ids": [
+        "1303-12-15-2-example-contagions"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1301-12-15-magical-contagions"
+    },
+    {
+      "id": "1304-12-15-3-cackle-fever",
+      "kind": "section",
+      "name": "Cackle Fever",
+      "source_ids": [
+        "1304-12-15-3-cackle-fever"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1301-12-15-magical-contagions"
+    },
+    {
+      "id": "1305-12-15-4-sewer-plague",
+      "kind": "section",
+      "name": "Sewer Plague",
+      "source_ids": [
+        "1305-12-15-4-sewer-plague"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1301-12-15-magical-contagions"
+    },
+    {
+      "id": "1306-12-15-5-sight-rot",
+      "kind": "section",
+      "name": "Sight Rot",
+      "source_ids": [
+        "1306-12-15-5-sight-rot"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        194
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1301-12-15-magical-contagions"
+    },
+    {
+      "id": "1307-12-16-environmental-effects",
+      "kind": "section",
+      "name": "Environmental Effects",
+      "source_ids": [
+        "1307-12-16-environmental-effects"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1308-12-17-deep-water",
+      "kind": "section",
+      "name": "Deep Water",
+      "source_ids": [
+        "1308-12-17-deep-water"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1309-12-18-extreme-cold",
+      "kind": "section",
+      "name": "Extreme Cold",
+      "source_ids": [
+        "1309-12-18-extreme-cold"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1310-12-19-extreme-heat",
+      "kind": "section",
+      "name": "Extreme Heat",
+      "source_ids": [
+        "1310-12-19-extreme-heat"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1311-12-20-frigid-water",
+      "kind": "section",
+      "name": "Frigid Water",
+      "source_ids": [
+        "1311-12-20-frigid-water"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1312-12-21-heavy-precipitation",
+      "kind": "section",
+      "name": "Heavy Precipitation",
+      "source_ids": [
+        "1312-12-21-heavy-precipitation"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1313-12-22-high-altitude",
+      "kind": "section",
+      "name": "High Altitude",
+      "source_ids": [
+        "1313-12-22-high-altitude"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1314-12-23-slippery-ice",
+      "kind": "section",
+      "name": "Slippery Ice",
+      "source_ids": [
+        "1314-12-23-slippery-ice"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1315-12-24-strong-wind",
+      "kind": "section",
+      "name": "Strong Wind",
+      "source_ids": [
+        "1315-12-24-strong-wind"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1316-12-25-thin-ice",
+      "kind": "section",
+      "name": "Thin Ice",
+      "source_ids": [
+        "1316-12-25-thin-ice"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        195
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1317-12-26-fear-and-mental-stress",
+      "kind": "section",
+      "name": "Fear and Mental Stress",
+      "source_ids": [
+        "1317-12-26-fear-and-mental-stress"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        196
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1318-12-27-fear-effects",
+      "kind": "section",
+      "name": "Fear Effects",
+      "source_ids": [
+        "1318-12-27-fear-effects"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        196
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1319-12-28-mental-stress-effects",
+      "kind": "section",
+      "name": "Mental Stress Effects",
+      "source_ids": [
+        "1319-12-28-mental-stress-effects"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        196
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1320-12-28-1-prolonged-effects",
+      "kind": "section",
+      "name": "Prolonged Effects",
+      "source_ids": [
+        "1320-12-28-1-prolonged-effects"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        196
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1319-12-28-mental-stress-effects"
+    },
+    {
+      "id": "1321-12-29-poison",
+      "kind": "section",
+      "name": "Poison",
+      "source_ids": [
+        "1321-12-29-poison"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1322-12-30-purchasing-poison",
+      "kind": "section",
+      "name": "Purchasing Poison",
+      "source_ids": [
+        "1322-12-30-purchasing-poison"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1323-12-31-harvesting-poison",
+      "kind": "section",
+      "name": "Harvesting Poison",
+      "source_ids": [
+        "1323-12-31-harvesting-poison"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1324-12-32-sample-poisons",
+      "kind": "section",
+      "name": "Sample Poisons",
+      "source_ids": [
+        "1324-12-32-sample-poisons"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1325-12-32-1-assassin-s-blood-150-gp",
+      "kind": "section",
+      "name": "Assassin’s Blood (150 GP)",
+      "source_ids": [
+        "1325-12-32-1-assassin-s-blood-150-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1326-12-32-2-burnt-othur-fumes-500-gp",
+      "kind": "section",
+      "name": "Burnt Othur Fumes (500 GP)",
+      "source_ids": [
+        "1326-12-32-2-burnt-othur-fumes-500-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1327-12-32-3-crawler-mucus-200-gp",
+      "kind": "section",
+      "name": "Crawler Mucus (200 GP)",
+      "source_ids": [
+        "1327-12-32-3-crawler-mucus-200-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1328-12-32-4-essence-of-ether-300-gp",
+      "kind": "section",
+      "name": "Essence of Ether (300 GP)",
+      "source_ids": [
+        "1328-12-32-4-essence-of-ether-300-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1329-12-32-5-malice-250-gp",
+      "kind": "section",
+      "name": "Malice (250 GP)",
+      "source_ids": [
+        "1329-12-32-5-malice-250-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1330-12-32-6-midnight-tears-1-500-gp",
+      "kind": "section",
+      "name": "Midnight Tears (1,500 GP)",
+      "source_ids": [
+        "1330-12-32-6-midnight-tears-1-500-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        197,
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1331-12-32-7-oil-of-taggit-400-gp",
+      "kind": "section",
+      "name": "Oil of Taggit (400 GP)",
+      "source_ids": [
+        "1331-12-32-7-oil-of-taggit-400-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1332-12-32-8-pale-tincture-250-gp",
+      "kind": "section",
+      "name": "Pale Tincture (250 GP)",
+      "source_ids": [
+        "1332-12-32-8-pale-tincture-250-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1333-12-32-9-purple-worm-poison-2-000-gp",
+      "kind": "section",
+      "name": "Purple Worm Poison (2,000 GP)",
+      "source_ids": [
+        "1333-12-32-9-purple-worm-poison-2-000-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1334-12-32-10-serpent-venom-200-gp",
+      "kind": "section",
+      "name": "Serpent Venom (200 GP)",
+      "source_ids": [
+        "1334-12-32-10-serpent-venom-200-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1335-12-32-11-spider-s-sting-200-gp",
+      "kind": "section",
+      "name": "Spider’s Sting (200 GP)",
+      "source_ids": [
+        "1335-12-32-11-spider-s-sting-200-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1336-12-32-12-torpor-600-gp",
+      "kind": "section",
+      "name": "Torpor (600 GP)",
+      "source_ids": [
+        "1336-12-32-12-torpor-600-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1337-12-32-13-truth-serum-150-gp",
+      "kind": "section",
+      "name": "Truth Serum (150 GP)",
+      "source_ids": [
+        "1337-12-32-13-truth-serum-150-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1338-12-32-14-wyvern-poison-1-200-gp",
+      "kind": "section",
+      "name": "Wyvern Poison (1,200 GP)",
+      "source_ids": [
+        "1338-12-32-14-wyvern-poison-1-200-gp"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        198
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1324-12-32-sample-poisons"
+    },
+    {
+      "id": "1339-12-33-traps",
+      "kind": "section",
+      "name": "Traps",
+      "source_ids": [
+        "1339-12-33-traps"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1340-12-34-parts-of-a-trap",
+      "kind": "section",
+      "name": "Parts of a Trap",
+      "source_ids": [
+        "1340-12-34-parts-of-a-trap"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1341-12-35-example-traps",
+      "kind": "section",
+      "name": "Example Traps",
+      "source_ids": [
+        "1341-12-35-example-traps"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1342-12-35-1-collapsing-roof",
+      "kind": "section",
+      "name": "Collapsing Roof",
+      "source_ids": [
+        "1342-12-35-1-collapsing-roof"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1343-12-35-2-falling-net",
+      "kind": "section",
+      "name": "Falling Net",
+      "source_ids": [
+        "1343-12-35-2-falling-net"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1344-12-35-3-fire-casting-statue",
+      "kind": "section",
+      "name": "Fire-Casting Statue",
+      "source_ids": [
+        "1344-12-35-3-fire-casting-statue"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        199,
+        200
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1345-12-35-4-hidden-pit",
+      "kind": "section",
+      "name": "Hidden Pit",
+      "source_ids": [
+        "1345-12-35-4-hidden-pit"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        200
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1346-12-35-5-poisoned-darts",
+      "kind": "section",
+      "name": "Poisoned Darts",
+      "source_ids": [
+        "1346-12-35-5-poisoned-darts"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        200
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1347-12-35-6-poisoned-needle",
+      "kind": "section",
+      "name": "Poisoned Needle",
+      "source_ids": [
+        "1347-12-35-6-poisoned-needle"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        200,
+        201
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1348-12-35-7-rolling-stone",
+      "kind": "section",
+      "name": "Rolling Stone",
+      "source_ids": [
+        "1348-12-35-7-rolling-stone"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        201
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1349-12-35-8-spiked-pit",
+      "kind": "section",
+      "name": "Spiked Pit",
+      "source_ids": [
+        "1349-12-35-8-spiked-pit"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        201
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1341-12-35-example-traps"
+    },
+    {
+      "id": "1350-12-36-combat-encounters",
+      "kind": "section",
+      "name": "Combat Encounters",
+      "source_ids": [
+        "1350-12-36-combat-encounters"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        202
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1351-12-37-combat-encounter-difficulty",
+      "kind": "section",
+      "name": "Combat Encounter Difficulty",
+      "source_ids": [
+        "1351-12-37-combat-encounter-difficulty"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        202
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1352-12-37-1-step-1-choose-a-difficulty",
+      "kind": "section",
+      "name": "Step 1: Choose a Difficulty",
+      "source_ids": [
+        "1352-12-37-1-step-1-choose-a-difficulty"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        202
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1351-12-37-combat-encounter-difficulty"
+    },
+    {
+      "id": "1353-12-37-2-step-2-determine-your-xp-budget",
+      "kind": "section",
+      "name": "Step 2: Determine Your XP Budget",
+      "source_ids": [
+        "1353-12-37-2-step-2-determine-your-xp-budget"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        202
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1351-12-37-combat-encounter-difficulty"
+    },
+    {
+      "id": "1354-12-37-3-step-3-spend-your-budget",
+      "kind": "section",
+      "name": "Step 3: Spend Your Budget",
+      "source_ids": [
+        "1354-12-37-3-step-3-spend-your-budget"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        202,
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1351-12-37-combat-encounter-difficulty"
+    },
+    {
+      "id": "1355-12-38-troubleshooting",
+      "kind": "section",
+      "name": "Troubleshooting",
+      "source_ids": [
+        "1355-12-38-troubleshooting"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1281-12-gameplay-toolbox"
+    },
+    {
+      "id": "1356-12-38-1-many-creatures",
+      "kind": "section",
+      "name": "Many Creatures",
+      "source_ids": [
+        "1356-12-38-1-many-creatures"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    },
+    {
+      "id": "1357-12-38-2-adjustments",
+      "kind": "section",
+      "name": "Adjustments",
+      "source_ids": [
+        "1357-12-38-2-adjustments"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    },
+    {
+      "id": "1358-12-38-3-cr-0-creatures",
+      "kind": "section",
+      "name": "CR 0 Creatures",
+      "source_ids": [
+        "1358-12-38-3-cr-0-creatures"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    },
+    {
+      "id": "1359-12-38-4-number-of-stat-blocks",
+      "kind": "section",
+      "name": "Number of Stat Blocks",
+      "source_ids": [
+        "1359-12-38-4-number-of-stat-blocks"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    },
+    {
+      "id": "1360-12-38-5-powerful-creatures",
+      "kind": "section",
+      "name": "Powerful Creatures",
+      "source_ids": [
+        "1360-12-38-5-powerful-creatures"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    },
+    {
+      "id": "1361-12-38-6-unusual-features",
+      "kind": "section",
+      "name": "Unusual Features",
+      "source_ids": [
+        "1361-12-38-6-unusual-features"
+      ],
+      "chapter_id": "1281-12-gameplay-toolbox",
+      "pages": [
+        203
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1355-12-38-troubleshooting"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "192-travel-terrain",
+      "name": "Travel Terrain",
+      "section_id": "1286-12-5-special-movement",
+      "page": 192,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "terrain",
+          "name": "Terrain",
+          "type": "string"
+        },
+        {
+          "id": "maximum-pace",
+          "name": "Maximum Pace",
+          "type": "string"
+        },
+        {
+          "id": "column",
+          "name": "Column 3",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 11,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "196-sample-mental-stress-effects",
+      "name": "Sample Mental Stress Effects",
+      "section_id": "1319-12-28-mental-stress-effects",
+      "page": 196,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "example",
+          "name": "Example",
+          "type": "string"
+        },
+        {
+          "id": "save-psychic-dc-damage",
+          "name": "Save Psychic DC Damage",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 9,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "196-sample-fear-dcs",
+      "name": "Sample Fear DCs",
+      "section_id": "1318-12-27-fear-effects",
+      "page": 196,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "example",
+          "name": "Example",
+          "type": "string"
+        },
+        {
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "202-xp-budget-per-character",
+      "name": "XP Budget per Character",
+      "section_id": "1353-12-37-2-step-2-determine-your-xp-budget",
+      "page": 202,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "party-s-level",
+          "name": "Party's Level",
+          "type": "integer"
+        },
+        {
+          "id": "low",
+          "name": "——— Low",
+          "type": "integer"
+        },
+        {
+          "id": "encounter-difficulty-moderate",
+          "name": "Encounter Difficulty Moderate",
+          "type": "integer"
+        },
+        {
+          "id": "high",
+          "name": "——— High",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 20,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "199-levels-bludgeoning-damage",
+      "name": "Levels / Bludgeoning Damage",
+      "section_id": "1342-12-35-1-collapsing-roof",
+      "page": 199,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "levels",
+          "name": "Levels",
+          "type": "string"
+        },
+        {
+          "id": "bludgeoning-damage",
+          "name": "Bludgeoning Damage",
+          "type": "string"
+        },
+        {
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "200-levels-pit-depth",
+      "name": "Levels / Pit Depth",
+      "section_id": "1345-12-35-4-hidden-pit",
+      "page": 200,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "levels",
+          "name": "Levels",
+          "type": "string"
+        },
+        {
+          "id": "pit-depth",
+          "name": "Pit Depth",
+          "type": "string"
+        },
+        {
+          "id": "bludgeoning-damage",
+          "name": "Bludgeoning Damage",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "200-levels-fire-damage",
+      "name": "Levels / Fire Damage",
+      "section_id": "1344-12-35-3-fire-casting-statue",
+      "page": 200,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "levels",
+          "name": "Levels",
+          "type": "string"
+        },
+        {
+          "id": "fire-damage",
+          "name": "Fire Damage",
+          "type": "string"
+        },
+        {
+          "id": "area-of-effect",
+          "name": "Area of Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "201-levels-poison-damage",
+      "name": "Levels / Poison Damage",
+      "section_id": "1347-12-35-6-poisoned-needle",
+      "page": 201,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "levels",
+          "name": "Levels",
+          "type": "string"
+        },
+        {
+          "id": "poison-damage",
+          "name": "Poison Damage",
+          "type": "string"
+        },
+        {
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "201-levels-pit-depth",
+      "name": "Levels / Pit Depth",
+      "section_id": "1349-12-35-8-spiked-pit",
+      "page": 201,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "levels",
+          "name": "Levels",
+          "type": "string"
+        },
+        {
+          "id": "pit-depth",
+          "name": "Pit Depth",
+          "type": "string"
+        },
+        {
+          "id": "damage",
+          "name": "Damage",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

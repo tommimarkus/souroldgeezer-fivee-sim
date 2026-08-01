@@ -1,0 +1,1563 @@
+{
+  "pack": "srd-5.2.1-catalog-16",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1967-16-animals",
+      "kind": "section",
+      "name": "Animals",
+      "source_ids": [
+        "1967-16-animals"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1968-16-1-allosaurus",
+      "kind": "creature",
+      "name": "Allosaurus",
+      "source_ids": [
+        "1968-16-1-allosaurus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1969-16-2-ankylosaurus",
+      "kind": "creature",
+      "name": "Ankylosaurus",
+      "source_ids": [
+        "1969-16-2-ankylosaurus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1970-16-3-ape",
+      "kind": "creature",
+      "name": "Ape",
+      "source_ids": [
+        "1970-16-3-ape"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1971-16-4-archelon",
+      "kind": "creature",
+      "name": "Archelon",
+      "source_ids": [
+        "1971-16-4-archelon"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        344,
+        345
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1972-16-5-baboon",
+      "kind": "creature",
+      "name": "Baboon",
+      "source_ids": [
+        "1972-16-5-baboon"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        345
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1973-16-6-badger",
+      "kind": "creature",
+      "name": "Badger",
+      "source_ids": [
+        "1973-16-6-badger"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        345
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1974-16-7-bat",
+      "kind": "creature",
+      "name": "Bat",
+      "source_ids": [
+        "1974-16-7-bat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        345
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1975-16-8-black-bear",
+      "kind": "creature",
+      "name": "Black Bear",
+      "source_ids": [
+        "1975-16-8-black-bear"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        345
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1976-16-9-blood-hawk",
+      "kind": "creature",
+      "name": "Blood Hawk",
+      "source_ids": [
+        "1976-16-9-blood-hawk"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        345,
+        346
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1977-16-10-boar",
+      "kind": "creature",
+      "name": "Boar",
+      "source_ids": [
+        "1977-16-10-boar"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        346
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1978-16-11-brown-bear",
+      "kind": "creature",
+      "name": "Brown Bear",
+      "source_ids": [
+        "1978-16-11-brown-bear"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        346
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1979-16-12-camel",
+      "kind": "creature",
+      "name": "Camel",
+      "source_ids": [
+        "1979-16-12-camel"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        346
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1980-16-13-cat",
+      "kind": "creature",
+      "name": "Cat",
+      "source_ids": [
+        "1980-16-13-cat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        346
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1981-16-14-constrictor-snake",
+      "kind": "creature",
+      "name": "Constrictor Snake",
+      "source_ids": [
+        "1981-16-14-constrictor-snake"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        346,
+        347
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1982-16-15-crab",
+      "kind": "creature",
+      "name": "Crab",
+      "source_ids": [
+        "1982-16-15-crab"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        347
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1983-16-16-crocodile",
+      "kind": "creature",
+      "name": "Crocodile",
+      "source_ids": [
+        "1983-16-16-crocodile"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        347
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1984-16-17-deer",
+      "kind": "creature",
+      "name": "Deer",
+      "source_ids": [
+        "1984-16-17-deer"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        347
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1985-16-18-dire-wolf",
+      "kind": "creature",
+      "name": "Dire Wolf",
+      "source_ids": [
+        "1985-16-18-dire-wolf"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        347
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1986-16-19-draft-horse",
+      "kind": "creature",
+      "name": "Draft Horse",
+      "source_ids": [
+        "1986-16-19-draft-horse"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        347,
+        348
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1987-16-20-eagle",
+      "kind": "creature",
+      "name": "Eagle",
+      "source_ids": [
+        "1987-16-20-eagle"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        348
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1988-16-21-elephant",
+      "kind": "creature",
+      "name": "Elephant",
+      "source_ids": [
+        "1988-16-21-elephant"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        348
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1989-16-22-elk",
+      "kind": "creature",
+      "name": "Elk",
+      "source_ids": [
+        "1989-16-22-elk"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        348
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1990-16-23-flying-snake",
+      "kind": "creature",
+      "name": "Flying Snake",
+      "source_ids": [
+        "1990-16-23-flying-snake"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        348
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1991-16-24-frog",
+      "kind": "creature",
+      "name": "Frog",
+      "source_ids": [
+        "1991-16-24-frog"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        348,
+        349
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1992-16-25-giant-ape",
+      "kind": "creature",
+      "name": "Giant Ape",
+      "source_ids": [
+        "1992-16-25-giant-ape"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        349
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1993-16-26-giant-badger",
+      "kind": "creature",
+      "name": "Giant Badger",
+      "source_ids": [
+        "1993-16-26-giant-badger"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        349
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1994-16-27-giant-bat",
+      "kind": "creature",
+      "name": "Giant Bat",
+      "source_ids": [
+        "1994-16-27-giant-bat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        349
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1995-16-28-giant-boar",
+      "kind": "creature",
+      "name": "Giant Boar",
+      "source_ids": [
+        "1995-16-28-giant-boar"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        349
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1996-16-29-giant-centipede",
+      "kind": "creature",
+      "name": "Giant Centipede",
+      "source_ids": [
+        "1996-16-29-giant-centipede"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        349,
+        350
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1997-16-30-giant-constrictor-snake",
+      "kind": "creature",
+      "name": "Giant Constrictor Snake",
+      "source_ids": [
+        "1997-16-30-giant-constrictor-snake"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        350
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1998-16-31-giant-crab",
+      "kind": "creature",
+      "name": "Giant Crab",
+      "source_ids": [
+        "1998-16-31-giant-crab"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        350
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "1999-16-32-giant-crocodile",
+      "kind": "creature",
+      "name": "Giant Crocodile",
+      "source_ids": [
+        "1999-16-32-giant-crocodile"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        350
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2000-16-33-giant-eagle",
+      "kind": "creature",
+      "name": "Giant Eagle",
+      "source_ids": [
+        "2000-16-33-giant-eagle"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        350,
+        351
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2001-16-34-giant-elk",
+      "kind": "creature",
+      "name": "Giant Elk",
+      "source_ids": [
+        "2001-16-34-giant-elk"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        351
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2002-16-35-giant-fire-beetle",
+      "kind": "creature",
+      "name": "Giant Fire Beetle",
+      "source_ids": [
+        "2002-16-35-giant-fire-beetle"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        351
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2003-16-36-giant-frog",
+      "kind": "creature",
+      "name": "Giant Frog",
+      "source_ids": [
+        "2003-16-36-giant-frog"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        351
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2004-16-37-giant-goat",
+      "kind": "creature",
+      "name": "Giant Goat",
+      "source_ids": [
+        "2004-16-37-giant-goat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        351
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2005-16-38-giant-hyena",
+      "kind": "creature",
+      "name": "Giant Hyena",
+      "source_ids": [
+        "2005-16-38-giant-hyena"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        352
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2006-16-39-giant-lizard",
+      "kind": "creature",
+      "name": "Giant Lizard",
+      "source_ids": [
+        "2006-16-39-giant-lizard"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        352
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2007-16-40-giant-octopus",
+      "kind": "creature",
+      "name": "Giant Octopus",
+      "source_ids": [
+        "2007-16-40-giant-octopus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        352
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2008-16-41-giant-owl",
+      "kind": "creature",
+      "name": "Giant Owl",
+      "source_ids": [
+        "2008-16-41-giant-owl"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        352
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2009-16-42-giant-rat",
+      "kind": "creature",
+      "name": "Giant Rat",
+      "source_ids": [
+        "2009-16-42-giant-rat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        353
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2010-16-43-giant-scorpion",
+      "kind": "creature",
+      "name": "Giant Scorpion",
+      "source_ids": [
+        "2010-16-43-giant-scorpion"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        353
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2011-16-44-giant-seahorse",
+      "kind": "creature",
+      "name": "Giant Seahorse",
+      "source_ids": [
+        "2011-16-44-giant-seahorse"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        353
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2012-16-45-giant-shark",
+      "kind": "creature",
+      "name": "Giant Shark",
+      "source_ids": [
+        "2012-16-45-giant-shark"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        353
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2013-16-46-giant-spider",
+      "kind": "creature",
+      "name": "Giant Spider",
+      "source_ids": [
+        "2013-16-46-giant-spider"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        353,
+        354
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2014-16-47-giant-toad",
+      "kind": "creature",
+      "name": "Giant Toad",
+      "source_ids": [
+        "2014-16-47-giant-toad"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        354
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2015-16-48-giant-venomous-snake",
+      "kind": "creature",
+      "name": "Giant Venomous Snake",
+      "source_ids": [
+        "2015-16-48-giant-venomous-snake"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        354
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2016-16-49-giant-vulture",
+      "kind": "creature",
+      "name": "Giant Vulture",
+      "source_ids": [
+        "2016-16-49-giant-vulture"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        354
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2017-16-50-giant-wasp",
+      "kind": "creature",
+      "name": "Giant Wasp",
+      "source_ids": [
+        "2017-16-50-giant-wasp"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        354,
+        355
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2018-16-51-giant-weasel",
+      "kind": "creature",
+      "name": "Giant Weasel",
+      "source_ids": [
+        "2018-16-51-giant-weasel"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        355
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2019-16-52-giant-wolf-spider",
+      "kind": "creature",
+      "name": "Giant Wolf Spider",
+      "source_ids": [
+        "2019-16-52-giant-wolf-spider"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        355
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2020-16-53-goat",
+      "kind": "creature",
+      "name": "Goat",
+      "source_ids": [
+        "2020-16-53-goat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        355
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2021-16-54-hawk",
+      "kind": "creature",
+      "name": "Hawk",
+      "source_ids": [
+        "2021-16-54-hawk"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        355
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2022-16-55-hippopotamus",
+      "kind": "creature",
+      "name": "Hippopotamus",
+      "source_ids": [
+        "2022-16-55-hippopotamus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        355,
+        356
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2023-16-56-hunter-shark",
+      "kind": "creature",
+      "name": "Hunter Shark",
+      "source_ids": [
+        "2023-16-56-hunter-shark"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        356
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2024-16-57-hyena",
+      "kind": "creature",
+      "name": "Hyena",
+      "source_ids": [
+        "2024-16-57-hyena"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        356
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2025-16-58-jackal",
+      "kind": "creature",
+      "name": "Jackal",
+      "source_ids": [
+        "2025-16-58-jackal"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        356
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2026-16-59-killer-whale",
+      "kind": "creature",
+      "name": "Killer Whale",
+      "source_ids": [
+        "2026-16-59-killer-whale"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        356
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2027-16-60-lion",
+      "kind": "creature",
+      "name": "Lion",
+      "source_ids": [
+        "2027-16-60-lion"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        356,
+        357
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2028-16-61-lizard",
+      "kind": "creature",
+      "name": "Lizard",
+      "source_ids": [
+        "2028-16-61-lizard"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        357
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2029-16-62-mammoth",
+      "kind": "creature",
+      "name": "Mammoth",
+      "source_ids": [
+        "2029-16-62-mammoth"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        357
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2030-16-63-mastiff",
+      "kind": "creature",
+      "name": "Mastiff",
+      "source_ids": [
+        "2030-16-63-mastiff"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        357
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2031-16-64-mule",
+      "kind": "creature",
+      "name": "Mule",
+      "source_ids": [
+        "2031-16-64-mule"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        357
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2032-16-65-octopus",
+      "kind": "creature",
+      "name": "Octopus",
+      "source_ids": [
+        "2032-16-65-octopus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        357,
+        358
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2033-16-66-owl",
+      "kind": "creature",
+      "name": "Owl",
+      "source_ids": [
+        "2033-16-66-owl"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        358
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2034-16-67-panther",
+      "kind": "creature",
+      "name": "Panther",
+      "source_ids": [
+        "2034-16-67-panther"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        358
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2035-16-68-piranha",
+      "kind": "creature",
+      "name": "Piranha",
+      "source_ids": [
+        "2035-16-68-piranha"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        358
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2036-16-69-plesiosaurus",
+      "kind": "creature",
+      "name": "Plesiosaurus",
+      "source_ids": [
+        "2036-16-69-plesiosaurus"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        358,
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2037-16-70-polar-bear",
+      "kind": "creature",
+      "name": "Polar Bear",
+      "source_ids": [
+        "2037-16-70-polar-bear"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2038-16-71-pony",
+      "kind": "creature",
+      "name": "Pony",
+      "source_ids": [
+        "2038-16-71-pony"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2039-16-72-pteranodon",
+      "kind": "creature",
+      "name": "Pteranodon",
+      "source_ids": [
+        "2039-16-72-pteranodon"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2040-16-73-rat",
+      "kind": "creature",
+      "name": "Rat",
+      "source_ids": [
+        "2040-16-73-rat"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2041-16-74-raven",
+      "kind": "creature",
+      "name": "Raven",
+      "source_ids": [
+        "2041-16-74-raven"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        359
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2042-16-75-reef-shark",
+      "kind": "creature",
+      "name": "Reef Shark",
+      "source_ids": [
+        "2042-16-75-reef-shark"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        360
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2043-16-76-rhinoceros",
+      "kind": "creature",
+      "name": "Rhinoceros",
+      "source_ids": [
+        "2043-16-76-rhinoceros"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        360
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2044-16-77-riding-horse",
+      "kind": "creature",
+      "name": "Riding Horse",
+      "source_ids": [
+        "2044-16-77-riding-horse"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        360
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2045-16-78-saber-toothed-tiger",
+      "kind": "creature",
+      "name": "Saber-Toothed Tiger",
+      "source_ids": [
+        "2045-16-78-saber-toothed-tiger"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        360
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2046-16-79-scorpion",
+      "kind": "creature",
+      "name": "Scorpion",
+      "source_ids": [
+        "2046-16-79-scorpion"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        360
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2047-16-80-seahorse",
+      "kind": "creature",
+      "name": "Seahorse",
+      "source_ids": [
+        "2047-16-80-seahorse"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        361
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2048-16-81-spider",
+      "kind": "creature",
+      "name": "Spider",
+      "source_ids": [
+        "2048-16-81-spider"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        361
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2049-16-82-swarm-of-bats",
+      "kind": "creature",
+      "name": "Swarm of Bats",
+      "source_ids": [
+        "2049-16-82-swarm-of-bats"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        361
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2050-16-83-swarm-of-insects",
+      "kind": "creature",
+      "name": "Swarm of Insects",
+      "source_ids": [
+        "2050-16-83-swarm-of-insects"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        361
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2051-16-84-swarm-of-piranhas",
+      "kind": "creature",
+      "name": "Swarm of Piranhas",
+      "source_ids": [
+        "2051-16-84-swarm-of-piranhas"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        362
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2052-16-85-swarm-of-rats",
+      "kind": "creature",
+      "name": "Swarm of Rats",
+      "source_ids": [
+        "2052-16-85-swarm-of-rats"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        362
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2053-16-86-swarm-of-ravens",
+      "kind": "creature",
+      "name": "Swarm of Ravens",
+      "source_ids": [
+        "2053-16-86-swarm-of-ravens"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        362
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2054-16-87-swarm-of-venomous-snakes",
+      "kind": "creature",
+      "name": "Swarm of Venomous Snakes",
+      "source_ids": [
+        "2054-16-87-swarm-of-venomous-snakes"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        362,
+        363
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2055-16-88-tiger",
+      "kind": "creature",
+      "name": "Tiger",
+      "source_ids": [
+        "2055-16-88-tiger"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        363
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2056-16-89-triceratops",
+      "kind": "creature",
+      "name": "Triceratops",
+      "source_ids": [
+        "2056-16-89-triceratops"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        363
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2057-16-90-tyrannosaurus-rex",
+      "kind": "creature",
+      "name": "Tyrannosaurus Rex",
+      "source_ids": [
+        "2057-16-90-tyrannosaurus-rex"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        363
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2058-16-91-venomous-snake",
+      "kind": "creature",
+      "name": "Venomous Snake",
+      "source_ids": [
+        "2058-16-91-venomous-snake"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        363
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2059-16-92-vulture",
+      "kind": "creature",
+      "name": "Vulture",
+      "source_ids": [
+        "2059-16-92-vulture"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        363,
+        364
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2060-16-93-warhorse",
+      "kind": "creature",
+      "name": "Warhorse",
+      "source_ids": [
+        "2060-16-93-warhorse"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        364
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2061-16-94-weasel",
+      "kind": "creature",
+      "name": "Weasel",
+      "source_ids": [
+        "2061-16-94-weasel"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        364
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals"
+    },
+    {
+      "id": "2062-16-95-wolf",
+      "kind": "creature",
+      "name": "Wolf",
+      "source_ids": [
+        "2062-16-95-wolf"
+      ],
+      "chapter_id": "1967-16-animals",
+      "pages": [
+        364
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1967-16-animals",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Wolf"
+      }
+    }
+  ],
+  "catalog_tables": []
+}

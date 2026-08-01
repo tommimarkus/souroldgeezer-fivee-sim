@@ -330,7 +330,7 @@ class TestStepCost:
         assert step_cost_feet(terrain_effect_of("difficult"), gentle) == 10
 
     def test_a_slope_is_difficult_terrain_but_never_twice(self) -> None:
-        # SRD 5.2: a slope of 20 degrees or more is Difficult Terrain, and
+        # SRD 5.2.1: a slope of 20 degrees or more is Difficult Terrain, and
         # Difficult Terrain "isn't cumulative" — so a slope through undergrowth
         # is doubled once, not quadrupled.
         assert step_cost_feet(terrain_effect_of("normal"), SLOPE_DIFFICULT_FEET) == 10
@@ -338,7 +338,7 @@ class TestStepCost:
         assert step_cost_feet(terrain_effect_of("difficult"), CLIMB_FEET) == 10
 
     def test_a_climb_costs_an_extra_foot_per_foot(self) -> None:
-        # SRD 5.2, "Climbing": each foot of movement costs 1 extra foot, 2 extra
+        # SRD 5.2.1, "Climbing": each foot of movement costs 1 extra foot, 2 extra
         # in Difficult Terrain — charged on top of the step into the square.
         assert step_cost_feet(terrain_effect_of("normal"), 10) == 5 + 20
         assert step_cost_feet(terrain_effect_of("difficult"), 10) == 10 + 30

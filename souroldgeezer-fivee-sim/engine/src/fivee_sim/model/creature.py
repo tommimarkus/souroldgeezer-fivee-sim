@@ -30,7 +30,7 @@ validated by ``content``, so construction does not re-check them; a malformed pa
 fails at load, with a diagnostic naming the field, rather than half-way into a
 fight.
 
-All provenance: SRD 5.2 (see NOTICE).
+All provenance: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ class AttackOption:
     attached_damage: Dice | None = None
     attached_damage_type: DamageType | None = None
     detach_after_damage: int = 0
-    provenance: str = "SRD 5.2"
+    provenance: str = "SRD 5.2.1"
 
     def __post_init__(self) -> None:
         # Refused at construction rather than discovered mid-swing: without a
@@ -188,7 +188,7 @@ class AttackOption:
                 if record.get("attached_damage_type") is not None else None
             ),
             detach_after_damage=int(record.get("detach_after_damage", 0)),
-            provenance=str(record.get("provenance", "SRD 5.2")),
+            provenance=str(record.get("provenance", "SRD 5.2.1")),
         )
 
     def max_distance(self) -> int:
@@ -281,7 +281,7 @@ class Creature:
     stable: bool = False
     dead: bool = False
     death_rule: DeathRule = DeathRule.DEATH_SAVES
-    provenance: str = "SRD 5.2"
+    provenance: str = "SRD 5.2.1"
 
     def __post_init__(self) -> None:
         if self.arrival_round < 1:

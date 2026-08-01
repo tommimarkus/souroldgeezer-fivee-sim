@@ -1,9 +1,9 @@
 # Content packs
 
-Your campaign's creatures, spells, conditions, and items, in the format the engine
-already uses.
+Your campaign's creatures, spells, conditions, items, and structured reference
+catalog entries, in the format the engine already uses.
 
-A pack is one JSON file. The bundled SRD 5.2 slice is not a special case — it is
+A pack is one JSON file. The bundled SRD 5.2.1 slice is not a special case — it is
 loaded by the same parser, through the same validation, and merged by the same
 rules as anything you write. There is one format, and we eat it too.
 
@@ -30,7 +30,9 @@ Put a file in `.fivee-sim/content/` at the root of your campaign repository:
           "damage_type": "slashing", "kind": "melee", "reach": 5 }
       ],
       "provenance": "Original content",
-      "unmodelled": ["Blood Scent — advantage on tracking a wounded creature"]
+      "unmodelled_facts": [
+        { "feature": "Blood Scent", "code": "unsupported_tracking_advantage" }
+      ]
     }
   ]
 }
@@ -47,12 +49,14 @@ Then, in a session:
 - **`content_validate`** — check a pack without loading it. Use this while writing.
 - **`content_configure`** — load packs, or switch whether the bundled slice is
   included.
+- **`catalog_search`**, **`catalog_get`**, **`catalog_table`** — bounded discovery,
+  one structured record, and one paged printed table.
 
 ## Where content comes from
 
 In precedence order, lowest first:
 
-1. **the bundled SRD 5.2 slice**, unless the mode is `exclude`;
+1. **the bundled SRD 5.2.1 slice**, unless the mode is `exclude`;
 2. **`FIVEE_SIM_CONTENT`** — an `os.pathsep`-separated list of files or
    directories. A directory is scanned for `*.json`, in sorted order;
 3. **`$FIVEE_SIM_PROJECT_DIR/.fivee-sim/content/`**, with
@@ -87,7 +91,8 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `blindsight`, `death_rule`, `hit_dice`, `abilities`, `save_bonuses`, `attacks`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
-`spell_attack_bonus`, `items`, `conditions`, `unmodelled`, `immunities`,
+`spell_attack_bonus`, `items`, `conditions`, `unmodelled_facts`, legacy
+`unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
 
 There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
@@ -139,9 +144,11 @@ to 0 hit points triggers a Constitution saving throw, DC 5 plus the damage taken
 and on a success it stands at 1 hit point instead — unless any of that damage was
 Radiant, the hit was a critical, or the overflow was enough to kill it outright.
 
-`unmodelled` is where you name printed features the engine does not implement. It
-is not decoration: the assistant is instructed to check it before promising a trait will
-fire, so a trait you list is a trait nobody will be surprised by.
+`unmodelled_facts` is where you identify mechanics the engine does not implement.
+Each entry is an object with a stable `code` and any other bounded structured facts
+needed to identify the omission; it must not contain copied rules or descriptive
+prose. The assistant checks these entries before promising a feature will fire.
+Older campaign packs may keep using the legacy `unmodelled` string list.
 
 ### `spells`
 
@@ -149,7 +156,8 @@ Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
 `heal`, `half_on_save`, `upcast_damage`, `upcast_heal`, `shape`, `radius`,
 `range_feet`, `max_targets`,
-`condition`, `concentration`, `unmodelled`, `overrides`.
+`condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
+`overrides`.
 
 A spell cannot both require an attack roll and offer a saving throw. Set `radius`
 together with `"shape": "sphere"` for an area spell; an area rolls its damage once
@@ -174,8 +182,8 @@ creature.
 
 ### `conditions`
 
-Required: `name`, `provenance`. Optional: `effects`, `description`, `unmodelled`,
-`overrides`.
+Required: `name`, `provenance`. Optional: `effects`, `description`,
+`unmodelled_facts`, legacy `unmodelled`, `overrides`.
 
 ```json
 { "name": "vale-cursed",
@@ -213,7 +221,7 @@ automatic failure in charge.
 
 `melee_hits_are_critical` is scoped by **distance, not by weapon**, and the name is
 historical. It upgrades any attack roll that lands from within 5 ft — a swing, a
-shot, or a spell attack — which is how SRD 5.2 words the clause on Paralyzed and
+shot, or a spell attack — which is how SRD 5.2.1 words the clause on Paralyzed and
 Unconscious. Beyond 5 ft it does nothing.
 
 `attacked_with_advantage_in_melee` and `attacked_with_disadvantage_at_range` are the
@@ -221,7 +229,7 @@ directional pair, and they are scoped the same way — **distance, not weapon**.
 names are historical too, and kept so packs that set them keep working.
 `attacked_with_advantage_in_melee` applies to any attack made from within 5 ft;
 `attacked_with_disadvantage_at_range` applies to any attack made from beyond it. Set
-both together for the Prone shape SRD 5.2 states: "An attack roll against you has
+both together for the Prone shape SRD 5.2.1 states: "An attack roll against you has
 Advantage if the attacker is within 5 feet of you. Otherwise, that attack roll has
 Disadvantage." A ranged attack drawn point-blank on a capable, seeing enemy also
 has close-combat Disadvantage, so that source cancels Prone's Advantage. A reach
@@ -236,8 +244,9 @@ useful for something narration cares about and dice do not.
 
 ### `terrain`
 
-Required: `name`, `provenance`. Optional: `effects`, `description`, `unmodelled`,
-`overrides`. Effects are `move_cost_multiplier`, `passable`, `opaque`, `cover`,
+Required: `name`, `provenance`. Optional: `effects`, `description`,
+`unmodelled_facts`, legacy `unmodelled`, `overrides`. Effects are
+`move_cost_multiplier`, `passable`, `opaque`, `cover`,
 and `underwater`. Underwater terrain activates weapon restrictions and fire
 resistance; a creature using its Swim speed ignores the ordinary doubled cost.
 A creature's `terrain_cost_overrides` names kinds whose extra multiplier it
@@ -245,8 +254,8 @@ ignores, for burrowing or otherwise specialised movement through that material.
 
 ### `items`
 
-Required: `name`, `use`, `provenance`. Optional: `description`, `unmodelled`,
-`overrides`.
+Required: `name`, `use`, `provenance`. Optional: `description`,
+`unmodelled_facts`, legacy `unmodelled`, `overrides`.
 
 An item is a **use with a known effect**, and nothing more. Inside `use`: `heal`,
 `damage` with `damage_type`, `save_ability` with `save_dc` and `half_on_save`, and
@@ -274,6 +283,28 @@ Use one with `encounter_act(kind="use_item", item="Potion of Healing")`. It spen
 its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
 Targeting another creature requires being within 5 ft.
 
+### `catalog`
+
+A catalog record is a facts-only reference identity. Required fields are `id`,
+`kind`, `name`, `source_ids`, `pages`, `fact_status`, `facts`, and `provenance`.
+Optional fields are `chapter_id`, `parent_id`, `aliases`, `content_ref`,
+`unmodelled_facts`, and `overrides`.
+
+`fact_status` is `pending`, `complete`, or `no_structured_facts`. `facts` may hold
+JSON scalars, lists, and objects, but not copied body, description, flavor, or
+rules prose. A `content_ref` has `section` and `name` and links the identity to one
+loaded executable record. The tools derive simulation support from that link and
+its omissions: `reference_only`, `partial`, or `executable`.
+
+### `catalog_tables`
+
+A catalog table requires `id`, `name`, `section_id`, `page`, `fact_status`, typed
+`columns`, `rows`, `source_row_count`, `omissions`, and `provenance`; `overrides`
+is optional. Column types are `string`, `integer`, `number`, and `boolean`. Each
+row contains ordered `cells`; a cell has `value`, optional `numeric_value`, and an
+optional structured `omission_code` when a prose-only cell is deliberately not
+copied. A complete table must account for every printed source row.
+
 ## Rules the loader enforces
 
 ### `provenance` is required
@@ -288,10 +319,10 @@ A pack that writes `attack_bonuses` for `attack_bonus` would otherwise load a
 creature that fights wrongly and looks entirely fine. So an unrecognised section or
 record key fails the load and names the valid ones.
 
-### A name collision is reported, not resolved
+### An identity collision is reported, not resolved
 
-Two packs defining `Vale Stalker` fail, and the error names both files. To replace
-something deliberately, say so on the record:
+Two packs defining the same executable name or catalog/table `id` fail, and the
+error names both files. To replace something deliberately, say so on the record:
 
 ```json
 { "name": "Goblin Warrior", "ac": 16, "max_hp": 12,
@@ -357,7 +388,7 @@ feature.
 
 ## Licence note
 
-The bundled slice is SRD 5.2 material under CC-BY-4.0; see the plugin's
+The bundled slice is SRD 5.2.1 material under CC-BY-4.0; see the plugin's
 [NOTICE](../NOTICE). **Your packs are yours.** Nothing in this project licenses
 your content or asks you to attribute it to anyone, and the `provenance` field
 exists so your material is never mistaken for ours — or ours for yours.

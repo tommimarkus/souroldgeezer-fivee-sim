@@ -1,0 +1,6397 @@
+{
+  "pack": "srd-5.2.1-catalog-10",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "751-10-spells",
+      "kind": "section",
+      "name": "Spells",
+      "source_ids": [
+        "751-10-spells"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "752-10-1-gaining-spells",
+      "kind": "section",
+      "name": "Gaining Spells",
+      "source_ids": [
+        "752-10-1-gaining-spells"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "753-10-2-preparing-spells",
+      "kind": "section",
+      "name": "Preparing Spells",
+      "source_ids": [
+        "753-10-2-preparing-spells"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "754-10-3-always-prepared-spells",
+      "kind": "section",
+      "name": "Always-Prepared Spells",
+      "source_ids": [
+        "754-10-3-always-prepared-spells"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "755-10-4-casting-spells",
+      "kind": "section",
+      "name": "Casting Spells",
+      "source_ids": [
+        "755-10-4-casting-spells"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "756-10-4-1-casting-in-armor",
+      "kind": "section",
+      "name": "Casting in Armor",
+      "source_ids": [
+        "756-10-4-1-casting-in-armor"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "755-10-4-casting-spells"
+    },
+    {
+      "id": "757-10-5-spell-level",
+      "kind": "section",
+      "name": "Spell Level",
+      "source_ids": [
+        "757-10-5-spell-level"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "758-10-5-1-spell-slots",
+      "kind": "section",
+      "name": "Spell Slots",
+      "source_ids": [
+        "758-10-5-1-spell-slots"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "757-10-5-spell-level"
+    },
+    {
+      "id": "759-10-5-2-casting-without-slots",
+      "kind": "section",
+      "name": "Casting without Slots",
+      "source_ids": [
+        "759-10-5-2-casting-without-slots"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "757-10-5-spell-level"
+    },
+    {
+      "id": "760-10-5-3-using-a-higher-level-spell-slot",
+      "kind": "section",
+      "name": "Using a Higher-Level Spell Slot",
+      "source_ids": [
+        "760-10-5-3-using-a-higher-level-spell-slot"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        104,
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "757-10-5-spell-level"
+    },
+    {
+      "id": "761-10-6-school-of-magic",
+      "kind": "section",
+      "name": "School of Magic",
+      "source_ids": [
+        "761-10-6-school-of-magic"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "762-10-7-class-spell-lists",
+      "kind": "section",
+      "name": "Class Spell Lists",
+      "source_ids": [
+        "762-10-7-class-spell-lists"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "763-10-8-casting-time",
+      "kind": "section",
+      "name": "Casting Time",
+      "source_ids": [
+        "763-10-8-casting-time"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "764-10-8-1-one-spell-with-a-spell-slot-per-turn",
+      "kind": "section",
+      "name": "One Spell with a Spell Slot per Turn",
+      "source_ids": [
+        "764-10-8-1-one-spell-with-a-spell-slot-per-turn"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "763-10-8-casting-time"
+    },
+    {
+      "id": "765-10-8-2-reaction-and-bonus-action-triggers",
+      "kind": "section",
+      "name": "Reaction and Bonus Action Triggers",
+      "source_ids": [
+        "765-10-8-2-reaction-and-bonus-action-triggers"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "763-10-8-casting-time"
+    },
+    {
+      "id": "766-10-8-3-longer-casting-times",
+      "kind": "section",
+      "name": "Longer Casting Times",
+      "source_ids": [
+        "766-10-8-3-longer-casting-times"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "763-10-8-casting-time"
+    },
+    {
+      "id": "767-10-9-range",
+      "kind": "section",
+      "name": "Range",
+      "source_ids": [
+        "767-10-9-range"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "768-10-10-components",
+      "kind": "section",
+      "name": "Components",
+      "source_ids": [
+        "768-10-10-components"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "769-10-10-1-verbal-v",
+      "kind": "section",
+      "name": "Verbal (V)",
+      "source_ids": [
+        "769-10-10-1-verbal-v"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "768-10-10-components"
+    },
+    {
+      "id": "770-10-10-2-somatic-s",
+      "kind": "section",
+      "name": "Somatic (S)",
+      "source_ids": [
+        "770-10-10-2-somatic-s"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "768-10-10-components"
+    },
+    {
+      "id": "771-10-10-3-material-m",
+      "kind": "section",
+      "name": "Material (M)",
+      "source_ids": [
+        "771-10-10-3-material-m"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        105,
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "768-10-10-components"
+    },
+    {
+      "id": "772-10-11-duration",
+      "kind": "section",
+      "name": "Duration",
+      "source_ids": [
+        "772-10-11-duration"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "773-10-12-effects",
+      "kind": "section",
+      "name": "Effects",
+      "source_ids": [
+        "773-10-12-effects"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "774-10-12-1-targets",
+      "kind": "section",
+      "name": "Targets",
+      "source_ids": [
+        "774-10-12-1-targets"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "773-10-12-effects"
+    },
+    {
+      "id": "775-10-12-2-saving-throws",
+      "kind": "section",
+      "name": "Saving Throws",
+      "source_ids": [
+        "775-10-12-2-saving-throws"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "773-10-12-effects"
+    },
+    {
+      "id": "776-10-12-3-attack-rolls",
+      "kind": "section",
+      "name": "Attack Rolls",
+      "source_ids": [
+        "776-10-12-3-attack-rolls"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "773-10-12-effects"
+    },
+    {
+      "id": "777-10-12-4-combining-spell-effects",
+      "kind": "section",
+      "name": "Combining Spell Effects",
+      "source_ids": [
+        "777-10-12-4-combining-spell-effects"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "773-10-12-effects"
+    },
+    {
+      "id": "778-10-12-5-identifying-an-ongoing-spell",
+      "kind": "section",
+      "name": "Identifying an Ongoing Spell",
+      "source_ids": [
+        "778-10-12-5-identifying-an-ongoing-spell"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        106
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "773-10-12-effects"
+    },
+    {
+      "id": "779-10-13-spell-descriptions",
+      "kind": "section",
+      "name": "Spell Descriptions",
+      "source_ids": [
+        "779-10-13-spell-descriptions"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "751-10-spells"
+    },
+    {
+      "id": "780-10-13-1-acid-arrow",
+      "kind": "spell",
+      "name": "Acid Arrow",
+      "source_ids": [
+        "780-10-13-1-acid-arrow"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "781-10-13-2-acid-splash",
+      "kind": "spell",
+      "name": "Acid Splash",
+      "source_ids": [
+        "781-10-13-2-acid-splash"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "782-10-13-3-aid",
+      "kind": "spell",
+      "name": "Aid",
+      "source_ids": [
+        "782-10-13-3-aid"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "783-10-13-4-alarm",
+      "kind": "spell",
+      "name": "Alarm",
+      "source_ids": [
+        "783-10-13-4-alarm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "784-10-13-5-alter-self",
+      "kind": "spell",
+      "name": "Alter Self",
+      "source_ids": [
+        "784-10-13-5-alter-self"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "785-10-13-6-animal-friendship",
+      "kind": "spell",
+      "name": "Animal Friendship",
+      "source_ids": [
+        "785-10-13-6-animal-friendship"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        107,
+        108
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "786-10-13-7-animal-messenger",
+      "kind": "spell",
+      "name": "Animal Messenger",
+      "source_ids": [
+        "786-10-13-7-animal-messenger"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        108
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "787-10-13-8-animal-shapes",
+      "kind": "spell",
+      "name": "Animal Shapes",
+      "source_ids": [
+        "787-10-13-8-animal-shapes"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        108
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "788-10-13-9-animate-dead",
+      "kind": "spell",
+      "name": "Animate Dead",
+      "source_ids": [
+        "788-10-13-9-animate-dead"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        108
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "789-10-13-10-animate-objects",
+      "kind": "spell",
+      "name": "Animate Objects",
+      "source_ids": [
+        "789-10-13-10-animate-objects"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        108,
+        109
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "790-10-14-animated-object",
+      "kind": "creature",
+      "name": "Animated Object",
+      "source_ids": [
+        "790-10-14-animated-object"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        109
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "789-10-13-10-animate-objects"
+    },
+    {
+      "id": "791-10-14-1-antilife-shell",
+      "kind": "spell",
+      "name": "Antilife Shell",
+      "source_ids": [
+        "791-10-14-1-antilife-shell"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        109
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "792-10-14-2-antimagic-field",
+      "kind": "spell",
+      "name": "Antimagic Field",
+      "source_ids": [
+        "792-10-14-2-antimagic-field"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        109
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "793-10-14-3-antipathy-sympathy",
+      "kind": "spell",
+      "name": "Antipathy/Sympathy",
+      "source_ids": [
+        "793-10-14-3-antipathy-sympathy"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        109,
+        110
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "794-10-14-4-arcane-eye",
+      "kind": "spell",
+      "name": "Arcane Eye",
+      "source_ids": [
+        "794-10-14-4-arcane-eye"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        110
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "795-10-14-5-arcane-hand",
+      "kind": "spell",
+      "name": "Arcane Hand",
+      "source_ids": [
+        "795-10-14-5-arcane-hand"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        110
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "796-10-14-6-arcane-lock",
+      "kind": "spell",
+      "name": "Arcane Lock",
+      "source_ids": [
+        "796-10-14-6-arcane-lock"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        110
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "797-10-14-7-arcane-sword",
+      "kind": "spell",
+      "name": "Arcane Sword",
+      "source_ids": [
+        "797-10-14-7-arcane-sword"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        110
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "798-10-14-8-arcanist-s-magic-aura",
+      "kind": "spell",
+      "name": "Arcanist’s Magic Aura",
+      "source_ids": [
+        "798-10-14-8-arcanist-s-magic-aura"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        110,
+        111
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "799-10-14-9-astral-projection",
+      "kind": "spell",
+      "name": "Astral Projection",
+      "source_ids": [
+        "799-10-14-9-astral-projection"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        111
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "800-10-14-10-augury",
+      "kind": "spell",
+      "name": "Augury",
+      "source_ids": [
+        "800-10-14-10-augury"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        111
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "801-10-14-11-aura-of-life",
+      "kind": "spell",
+      "name": "Aura of Life",
+      "source_ids": [
+        "801-10-14-11-aura-of-life"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        111
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "802-10-14-12-awaken",
+      "kind": "spell",
+      "name": "Awaken",
+      "source_ids": [
+        "802-10-14-12-awaken"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        111,
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "803-10-14-13-bane",
+      "kind": "spell",
+      "name": "Bane",
+      "source_ids": [
+        "803-10-14-13-bane"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "804-10-14-14-banishment",
+      "kind": "spell",
+      "name": "Banishment",
+      "source_ids": [
+        "804-10-14-14-banishment"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "805-10-14-15-barkskin",
+      "kind": "spell",
+      "name": "Barkskin",
+      "source_ids": [
+        "805-10-14-15-barkskin"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "806-10-14-16-beacon-of-hope",
+      "kind": "spell",
+      "name": "Beacon of Hope",
+      "source_ids": [
+        "806-10-14-16-beacon-of-hope"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "807-10-14-17-befuddlement",
+      "kind": "spell",
+      "name": "Befuddlement",
+      "source_ids": [
+        "807-10-14-17-befuddlement"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "808-10-14-18-bestow-curse",
+      "kind": "spell",
+      "name": "Bestow Curse",
+      "source_ids": [
+        "808-10-14-18-bestow-curse"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        112,
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "809-10-14-19-black-tentacles",
+      "kind": "spell",
+      "name": "Black Tentacles",
+      "source_ids": [
+        "809-10-14-19-black-tentacles"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "810-10-14-20-blade-barrier",
+      "kind": "spell",
+      "name": "Blade Barrier",
+      "source_ids": [
+        "810-10-14-20-blade-barrier"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "811-10-14-21-bless",
+      "kind": "spell",
+      "name": "Bless",
+      "source_ids": [
+        "811-10-14-21-bless"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "812-10-14-22-blight",
+      "kind": "spell",
+      "name": "Blight",
+      "source_ids": [
+        "812-10-14-22-blight"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "813-10-14-23-blindness-deafness",
+      "kind": "spell",
+      "name": "Blindness/Deafness",
+      "source_ids": [
+        "813-10-14-23-blindness-deafness"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "814-10-14-24-blink",
+      "kind": "spell",
+      "name": "Blink",
+      "source_ids": [
+        "814-10-14-24-blink"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        113,
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "815-10-14-25-blur",
+      "kind": "spell",
+      "name": "Blur",
+      "source_ids": [
+        "815-10-14-25-blur"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "816-10-14-26-burning-hands",
+      "kind": "spell",
+      "name": "Burning Hands",
+      "source_ids": [
+        "816-10-14-26-burning-hands"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "817-10-14-27-call-lightning",
+      "kind": "spell",
+      "name": "Call Lightning",
+      "source_ids": [
+        "817-10-14-27-call-lightning"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "818-10-14-28-calm-emotions",
+      "kind": "spell",
+      "name": "Calm Emotions",
+      "source_ids": [
+        "818-10-14-28-calm-emotions"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "819-10-14-29-chain-lightning",
+      "kind": "spell",
+      "name": "Chain Lightning",
+      "source_ids": [
+        "819-10-14-29-chain-lightning"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "820-10-14-30-charm-monster",
+      "kind": "spell",
+      "name": "Charm Monster",
+      "source_ids": [
+        "820-10-14-30-charm-monster"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        114,
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "821-10-14-31-charm-person",
+      "kind": "spell",
+      "name": "Charm Person",
+      "source_ids": [
+        "821-10-14-31-charm-person"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "822-10-14-32-chill-touch",
+      "kind": "spell",
+      "name": "Chill Touch",
+      "source_ids": [
+        "822-10-14-32-chill-touch"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "823-10-14-33-chromatic-orb",
+      "kind": "spell",
+      "name": "Chromatic Orb",
+      "source_ids": [
+        "823-10-14-33-chromatic-orb"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "824-10-14-34-circle-of-death",
+      "kind": "spell",
+      "name": "Circle of Death",
+      "source_ids": [
+        "824-10-14-34-circle-of-death"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "825-10-14-35-clairvoyance",
+      "kind": "spell",
+      "name": "Clairvoyance",
+      "source_ids": [
+        "825-10-14-35-clairvoyance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "826-10-14-36-clone",
+      "kind": "spell",
+      "name": "Clone",
+      "source_ids": [
+        "826-10-14-36-clone"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        115,
+        116
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "827-10-14-37-cloudkill",
+      "kind": "spell",
+      "name": "Cloudkill",
+      "source_ids": [
+        "827-10-14-37-cloudkill"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        116
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "828-10-14-38-color-spray",
+      "kind": "spell",
+      "name": "Color Spray",
+      "source_ids": [
+        "828-10-14-38-color-spray"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        116
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "829-10-14-39-command",
+      "kind": "spell",
+      "name": "Command",
+      "source_ids": [
+        "829-10-14-39-command"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        116
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "830-10-14-40-commune",
+      "kind": "spell",
+      "name": "Commune",
+      "source_ids": [
+        "830-10-14-40-commune"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        116
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "831-10-14-41-commune-with-nature",
+      "kind": "spell",
+      "name": "Commune with Nature",
+      "source_ids": [
+        "831-10-14-41-commune-with-nature"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        116,
+        117
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "832-10-14-42-comprehend-languages",
+      "kind": "spell",
+      "name": "Comprehend Languages",
+      "source_ids": [
+        "832-10-14-42-comprehend-languages"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        117
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "833-10-14-43-compulsion",
+      "kind": "spell",
+      "name": "Compulsion",
+      "source_ids": [
+        "833-10-14-43-compulsion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        117
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "834-10-14-44-cone-of-cold",
+      "kind": "spell",
+      "name": "Cone of Cold",
+      "source_ids": [
+        "834-10-14-44-cone-of-cold"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        117
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "835-10-14-45-confusion",
+      "kind": "spell",
+      "name": "Confusion",
+      "source_ids": [
+        "835-10-14-45-confusion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        117
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "836-10-14-46-conjure-animals",
+      "kind": "spell",
+      "name": "Conjure Animals",
+      "source_ids": [
+        "836-10-14-46-conjure-animals"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        117,
+        118
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "837-10-14-47-conjure-celestial",
+      "kind": "spell",
+      "name": "Conjure Celestial",
+      "source_ids": [
+        "837-10-14-47-conjure-celestial"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        118
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "838-10-14-48-conjure-elemental",
+      "kind": "spell",
+      "name": "Conjure Elemental",
+      "source_ids": [
+        "838-10-14-48-conjure-elemental"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        118
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "839-10-14-49-conjure-fey",
+      "kind": "spell",
+      "name": "Conjure Fey",
+      "source_ids": [
+        "839-10-14-49-conjure-fey"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        118
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "840-10-14-50-conjure-minor-elementals",
+      "kind": "spell",
+      "name": "Conjure Minor Elementals",
+      "source_ids": [
+        "840-10-14-50-conjure-minor-elementals"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        118
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "841-10-14-51-conjure-woodland-beings",
+      "kind": "spell",
+      "name": "Conjure Woodland Beings",
+      "source_ids": [
+        "841-10-14-51-conjure-woodland-beings"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        118,
+        119
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "842-10-14-52-contact-other-plane",
+      "kind": "spell",
+      "name": "Contact Other Plane",
+      "source_ids": [
+        "842-10-14-52-contact-other-plane"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        119
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "843-10-14-53-contagion",
+      "kind": "spell",
+      "name": "Contagion",
+      "source_ids": [
+        "843-10-14-53-contagion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        119
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "844-10-14-54-contingency",
+      "kind": "spell",
+      "name": "Contingency",
+      "source_ids": [
+        "844-10-14-54-contingency"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        119
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "845-10-14-55-continual-flame",
+      "kind": "spell",
+      "name": "Continual Flame",
+      "source_ids": [
+        "845-10-14-55-continual-flame"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        119
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "846-10-14-56-control-water",
+      "kind": "spell",
+      "name": "Control Water",
+      "source_ids": [
+        "846-10-14-56-control-water"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        119,
+        120
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "847-10-14-57-control-weather",
+      "kind": "spell",
+      "name": "Control Weather",
+      "source_ids": [
+        "847-10-14-57-control-weather"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        120
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "848-10-14-58-counterspell",
+      "kind": "spell",
+      "name": "Counterspell",
+      "source_ids": [
+        "848-10-14-58-counterspell"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        120
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "849-10-14-59-create-food-and-water",
+      "kind": "spell",
+      "name": "Create Food and Water",
+      "source_ids": [
+        "849-10-14-59-create-food-and-water"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        120
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "850-10-14-60-create-or-destroy-water",
+      "kind": "spell",
+      "name": "Create or Destroy Water",
+      "source_ids": [
+        "850-10-14-60-create-or-destroy-water"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        121
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "851-10-14-61-create-undead",
+      "kind": "spell",
+      "name": "Create Undead",
+      "source_ids": [
+        "851-10-14-61-create-undead"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        121
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "852-10-14-62-creation",
+      "kind": "spell",
+      "name": "Creation",
+      "source_ids": [
+        "852-10-14-62-creation"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        121
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "853-10-14-63-cure-wounds",
+      "kind": "spell",
+      "name": "Cure Wounds",
+      "source_ids": [
+        "853-10-14-63-cure-wounds"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        121
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "854-10-14-64-dancing-lights",
+      "kind": "spell",
+      "name": "Dancing Lights",
+      "source_ids": [
+        "854-10-14-64-dancing-lights"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        121,
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "855-10-14-65-darkness",
+      "kind": "spell",
+      "name": "Darkness",
+      "source_ids": [
+        "855-10-14-65-darkness"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "856-10-14-66-darkvision",
+      "kind": "spell",
+      "name": "Darkvision",
+      "source_ids": [
+        "856-10-14-66-darkvision"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "857-10-14-67-daylight",
+      "kind": "spell",
+      "name": "Daylight",
+      "source_ids": [
+        "857-10-14-67-daylight"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "858-10-14-68-death-ward",
+      "kind": "spell",
+      "name": "Death Ward",
+      "source_ids": [
+        "858-10-14-68-death-ward"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "859-10-14-69-delayed-blast-fireball",
+      "kind": "spell",
+      "name": "Delayed Blast Fireball",
+      "source_ids": [
+        "859-10-14-69-delayed-blast-fireball"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "860-10-14-70-demiplane",
+      "kind": "spell",
+      "name": "Demiplane",
+      "source_ids": [
+        "860-10-14-70-demiplane"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        122,
+        123
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "861-10-14-71-detect-evil-and-good",
+      "kind": "spell",
+      "name": "Detect Evil and Good",
+      "source_ids": [
+        "861-10-14-71-detect-evil-and-good"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        123
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "862-10-14-72-detect-magic",
+      "kind": "spell",
+      "name": "Detect Magic",
+      "source_ids": [
+        "862-10-14-72-detect-magic"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        123
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "863-10-14-73-detect-poison-and-disease",
+      "kind": "spell",
+      "name": "Detect Poison and Disease",
+      "source_ids": [
+        "863-10-14-73-detect-poison-and-disease"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        123
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "864-10-14-74-detect-thoughts",
+      "kind": "spell",
+      "name": "Detect Thoughts",
+      "source_ids": [
+        "864-10-14-74-detect-thoughts"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        123
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "865-10-14-75-dimension-door",
+      "kind": "spell",
+      "name": "Dimension Door",
+      "source_ids": [
+        "865-10-14-75-dimension-door"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        123,
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "866-10-14-76-disguise-self",
+      "kind": "spell",
+      "name": "Disguise Self",
+      "source_ids": [
+        "866-10-14-76-disguise-self"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "867-10-14-77-disintegrate",
+      "kind": "spell",
+      "name": "Disintegrate",
+      "source_ids": [
+        "867-10-14-77-disintegrate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "868-10-14-78-dispel-evil-and-good",
+      "kind": "spell",
+      "name": "Dispel Evil and Good",
+      "source_ids": [
+        "868-10-14-78-dispel-evil-and-good"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "869-10-14-79-dispel-magic",
+      "kind": "spell",
+      "name": "Dispel Magic",
+      "source_ids": [
+        "869-10-14-79-dispel-magic"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "870-10-14-80-dissonant-whispers",
+      "kind": "spell",
+      "name": "Dissonant Whispers",
+      "source_ids": [
+        "870-10-14-80-dissonant-whispers"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        124
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "871-10-14-81-divination",
+      "kind": "spell",
+      "name": "Divination",
+      "source_ids": [
+        "871-10-14-81-divination"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "872-10-14-82-divine-favor",
+      "kind": "spell",
+      "name": "Divine Favor",
+      "source_ids": [
+        "872-10-14-82-divine-favor"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "873-10-14-83-divine-smite",
+      "kind": "spell",
+      "name": "Divine Smite",
+      "source_ids": [
+        "873-10-14-83-divine-smite"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "874-10-14-84-divine-word",
+      "kind": "spell",
+      "name": "Divine Word",
+      "source_ids": [
+        "874-10-14-84-divine-word"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "875-10-14-85-dominate-beast",
+      "kind": "spell",
+      "name": "Dominate Beast",
+      "source_ids": [
+        "875-10-14-85-dominate-beast"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "876-10-14-86-dominate-monster",
+      "kind": "spell",
+      "name": "Dominate Monster",
+      "source_ids": [
+        "876-10-14-86-dominate-monster"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        125,
+        126
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "877-10-14-87-dominate-person",
+      "kind": "spell",
+      "name": "Dominate Person",
+      "source_ids": [
+        "877-10-14-87-dominate-person"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        126
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "878-10-14-88-dragon-s-breath",
+      "kind": "spell",
+      "name": "Dragon’s Breath",
+      "source_ids": [
+        "878-10-14-88-dragon-s-breath"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        126
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "879-10-14-89-dream",
+      "kind": "spell",
+      "name": "Dream",
+      "source_ids": [
+        "879-10-14-89-dream"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        126
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "880-10-14-90-druidcraft",
+      "kind": "spell",
+      "name": "Druidcraft",
+      "source_ids": [
+        "880-10-14-90-druidcraft"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        126
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "881-10-14-91-earthquake",
+      "kind": "spell",
+      "name": "Earthquake",
+      "source_ids": [
+        "881-10-14-91-earthquake"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        127
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "882-10-14-92-eldritch-blast",
+      "kind": "spell",
+      "name": "Eldritch Blast",
+      "source_ids": [
+        "882-10-14-92-eldritch-blast"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        127
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "883-10-14-93-elementalism",
+      "kind": "spell",
+      "name": "Elementalism",
+      "source_ids": [
+        "883-10-14-93-elementalism"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        127
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "884-10-14-94-enhance-ability",
+      "kind": "spell",
+      "name": "Enhance Ability",
+      "source_ids": [
+        "884-10-14-94-enhance-ability"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        127
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "885-10-14-95-enlarge-reduce",
+      "kind": "spell",
+      "name": "Enlarge/Reduce",
+      "source_ids": [
+        "885-10-14-95-enlarge-reduce"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        127,
+        128
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "886-10-14-96-ensnaring-strike",
+      "kind": "spell",
+      "name": "Ensnaring Strike",
+      "source_ids": [
+        "886-10-14-96-ensnaring-strike"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        128
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "887-10-14-97-entangle",
+      "kind": "spell",
+      "name": "Entangle",
+      "source_ids": [
+        "887-10-14-97-entangle"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        128
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "888-10-14-98-enthrall",
+      "kind": "spell",
+      "name": "Enthrall",
+      "source_ids": [
+        "888-10-14-98-enthrall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        128
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "889-10-14-99-etherealness",
+      "kind": "spell",
+      "name": "Etherealness",
+      "source_ids": [
+        "889-10-14-99-etherealness"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        128
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "890-10-14-100-expeditious-retreat",
+      "kind": "spell",
+      "name": "Expeditious Retreat",
+      "source_ids": [
+        "890-10-14-100-expeditious-retreat"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "891-10-14-101-eyebite",
+      "kind": "spell",
+      "name": "Eyebite",
+      "source_ids": [
+        "891-10-14-101-eyebite"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "892-10-14-102-fabricate",
+      "kind": "spell",
+      "name": "Fabricate",
+      "source_ids": [
+        "892-10-14-102-fabricate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "893-10-14-103-faerie-fire",
+      "kind": "spell",
+      "name": "Faerie Fire",
+      "source_ids": [
+        "893-10-14-103-faerie-fire"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "894-10-14-104-faithful-hound",
+      "kind": "spell",
+      "name": "Faithful Hound",
+      "source_ids": [
+        "894-10-14-104-faithful-hound"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "895-10-14-105-false-life",
+      "kind": "spell",
+      "name": "False Life",
+      "source_ids": [
+        "895-10-14-105-false-life"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        129
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "896-10-14-106-fear",
+      "kind": "spell",
+      "name": "Fear",
+      "source_ids": [
+        "896-10-14-106-fear"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        130
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "897-10-14-107-feather-fall",
+      "kind": "spell",
+      "name": "Feather Fall",
+      "source_ids": [
+        "897-10-14-107-feather-fall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        130
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "898-10-14-108-find-familiar",
+      "kind": "spell",
+      "name": "Find Familiar",
+      "source_ids": [
+        "898-10-14-108-find-familiar"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        130
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "899-10-14-109-find-steed",
+      "kind": "spell",
+      "name": "Find Steed",
+      "source_ids": [
+        "899-10-14-109-find-steed"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        130
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "900-10-15-otherworldly-steed",
+      "kind": "creature",
+      "name": "Otherworldly Steed",
+      "source_ids": [
+        "900-10-15-otherworldly-steed"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        131
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "899-10-14-109-find-steed"
+    },
+    {
+      "id": "901-10-15-1-find-the-path",
+      "kind": "spell",
+      "name": "Find the Path",
+      "source_ids": [
+        "901-10-15-1-find-the-path"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        131
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "902-10-15-2-find-traps",
+      "kind": "spell",
+      "name": "Find Traps",
+      "source_ids": [
+        "902-10-15-2-find-traps"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        131
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "903-10-15-3-finger-of-death",
+      "kind": "spell",
+      "name": "Finger of Death",
+      "source_ids": [
+        "903-10-15-3-finger-of-death"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        131
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "904-10-15-4-fireball",
+      "kind": "spell",
+      "name": "Fireball",
+      "source_ids": [
+        "904-10-15-4-fireball"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        131
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Fireball"
+      }
+    },
+    {
+      "id": "905-10-15-5-fire-bolt",
+      "kind": "spell",
+      "name": "Fire Bolt",
+      "source_ids": [
+        "905-10-15-5-fire-bolt"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "906-10-15-6-fire-shield",
+      "kind": "spell",
+      "name": "Fire Shield",
+      "source_ids": [
+        "906-10-15-6-fire-shield"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "907-10-15-7-fire-storm",
+      "kind": "spell",
+      "name": "Fire Storm",
+      "source_ids": [
+        "907-10-15-7-fire-storm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "908-10-15-8-flame-blade",
+      "kind": "spell",
+      "name": "Flame Blade",
+      "source_ids": [
+        "908-10-15-8-flame-blade"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "909-10-15-9-flame-strike",
+      "kind": "spell",
+      "name": "Flame Strike",
+      "source_ids": [
+        "909-10-15-9-flame-strike"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "910-10-15-10-flaming-sphere",
+      "kind": "spell",
+      "name": "Flaming Sphere",
+      "source_ids": [
+        "910-10-15-10-flaming-sphere"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        132
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "911-10-15-11-flesh-to-stone",
+      "kind": "spell",
+      "name": "Flesh to Stone",
+      "source_ids": [
+        "911-10-15-11-flesh-to-stone"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        133
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "912-10-15-12-floating-disk",
+      "kind": "spell",
+      "name": "Floating Disk",
+      "source_ids": [
+        "912-10-15-12-floating-disk"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        133
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "913-10-15-13-fly",
+      "kind": "spell",
+      "name": "Fly",
+      "source_ids": [
+        "913-10-15-13-fly"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        133
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "914-10-15-14-fog-cloud",
+      "kind": "spell",
+      "name": "Fog Cloud",
+      "source_ids": [
+        "914-10-15-14-fog-cloud"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        133
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "915-10-15-15-forbiddance",
+      "kind": "spell",
+      "name": "Forbiddance",
+      "source_ids": [
+        "915-10-15-15-forbiddance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        133
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "916-10-15-16-forcecage",
+      "kind": "spell",
+      "name": "Forcecage",
+      "source_ids": [
+        "916-10-15-16-forcecage"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        134
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "917-10-15-17-foresight",
+      "kind": "spell",
+      "name": "Foresight",
+      "source_ids": [
+        "917-10-15-17-foresight"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        134
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "918-10-15-18-freedom-of-movement",
+      "kind": "spell",
+      "name": "Freedom of Movement",
+      "source_ids": [
+        "918-10-15-18-freedom-of-movement"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        134
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "919-10-15-19-freezing-sphere",
+      "kind": "spell",
+      "name": "Freezing Sphere",
+      "source_ids": [
+        "919-10-15-19-freezing-sphere"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        134
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "920-10-15-20-gaseous-form",
+      "kind": "spell",
+      "name": "Gaseous Form",
+      "source_ids": [
+        "920-10-15-20-gaseous-form"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        134,
+        135
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "921-10-15-21-gate",
+      "kind": "spell",
+      "name": "Gate",
+      "source_ids": [
+        "921-10-15-21-gate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        135
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "922-10-15-22-geas",
+      "kind": "spell",
+      "name": "Geas",
+      "source_ids": [
+        "922-10-15-22-geas"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        135
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "923-10-15-23-gentle-repose",
+      "kind": "spell",
+      "name": "Gentle Repose",
+      "source_ids": [
+        "923-10-15-23-gentle-repose"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        135
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "924-10-15-24-giant-insect",
+      "kind": "spell",
+      "name": "Giant Insect",
+      "source_ids": [
+        "924-10-15-24-giant-insect"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        135,
+        136
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "925-10-16-giant-insect",
+      "kind": "creature",
+      "name": "Giant Insect",
+      "source_ids": [
+        "925-10-16-giant-insect"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        136
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "924-10-15-24-giant-insect"
+    },
+    {
+      "id": "926-10-16-1-glibness",
+      "kind": "spell",
+      "name": "Glibness",
+      "source_ids": [
+        "926-10-16-1-glibness"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        136
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "927-10-16-2-globe-of-invulnerability",
+      "kind": "spell",
+      "name": "Globe of Invulnerability",
+      "source_ids": [
+        "927-10-16-2-globe-of-invulnerability"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        136
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "928-10-16-3-glyph-of-warding",
+      "kind": "spell",
+      "name": "Glyph of Warding",
+      "source_ids": [
+        "928-10-16-3-glyph-of-warding"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        136,
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "929-10-16-4-goodberry",
+      "kind": "spell",
+      "name": "Goodberry",
+      "source_ids": [
+        "929-10-16-4-goodberry"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "930-10-16-5-grease",
+      "kind": "spell",
+      "name": "Grease",
+      "source_ids": [
+        "930-10-16-5-grease"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "931-10-16-6-greater-invisibility",
+      "kind": "spell",
+      "name": "Greater Invisibility",
+      "source_ids": [
+        "931-10-16-6-greater-invisibility"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "932-10-16-7-greater-restoration",
+      "kind": "spell",
+      "name": "Greater Restoration",
+      "source_ids": [
+        "932-10-16-7-greater-restoration"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "933-10-16-8-guardian-of-faith",
+      "kind": "spell",
+      "name": "Guardian of Faith",
+      "source_ids": [
+        "933-10-16-8-guardian-of-faith"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "934-10-16-9-guards-and-wards",
+      "kind": "spell",
+      "name": "Guards and Wards",
+      "source_ids": [
+        "934-10-16-9-guards-and-wards"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        137,
+        138
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "935-10-16-10-guidance",
+      "kind": "spell",
+      "name": "Guidance",
+      "source_ids": [
+        "935-10-16-10-guidance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        138
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "936-10-16-11-guiding-bolt",
+      "kind": "spell",
+      "name": "Guiding Bolt",
+      "source_ids": [
+        "936-10-16-11-guiding-bolt"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        138
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Guiding Bolt"
+      }
+    },
+    {
+      "id": "937-10-16-12-gust-of-wind",
+      "kind": "spell",
+      "name": "Gust of Wind",
+      "source_ids": [
+        "937-10-16-12-gust-of-wind"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        138
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "938-10-16-13-hallow",
+      "kind": "spell",
+      "name": "Hallow",
+      "source_ids": [
+        "938-10-16-13-hallow"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        138,
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "939-10-16-14-hallucinatory-terrain",
+      "kind": "spell",
+      "name": "Hallucinatory Terrain",
+      "source_ids": [
+        "939-10-16-14-hallucinatory-terrain"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "940-10-16-15-harm",
+      "kind": "spell",
+      "name": "Harm",
+      "source_ids": [
+        "940-10-16-15-harm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "941-10-16-16-haste",
+      "kind": "spell",
+      "name": "Haste",
+      "source_ids": [
+        "941-10-16-16-haste"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "942-10-16-17-heal",
+      "kind": "spell",
+      "name": "Heal",
+      "source_ids": [
+        "942-10-16-17-heal"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "943-10-16-18-healing-word",
+      "kind": "spell",
+      "name": "Healing Word",
+      "source_ids": [
+        "943-10-16-18-healing-word"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "944-10-16-19-heat-metal",
+      "kind": "spell",
+      "name": "Heat Metal",
+      "source_ids": [
+        "944-10-16-19-heat-metal"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        139,
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "945-10-16-20-hellish-rebuke",
+      "kind": "spell",
+      "name": "Hellish Rebuke",
+      "source_ids": [
+        "945-10-16-20-hellish-rebuke"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "946-10-16-21-heroes-feast",
+      "kind": "spell",
+      "name": "Heroes’ Feast",
+      "source_ids": [
+        "946-10-16-21-heroes-feast"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "947-10-16-22-heroism",
+      "kind": "spell",
+      "name": "Heroism",
+      "source_ids": [
+        "947-10-16-22-heroism"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "948-10-16-23-hex",
+      "kind": "spell",
+      "name": "Hex",
+      "source_ids": [
+        "948-10-16-23-hex"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "949-10-16-24-hideous-laughter",
+      "kind": "spell",
+      "name": "Hideous Laughter",
+      "source_ids": [
+        "949-10-16-24-hideous-laughter"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "950-10-16-25-hold-monster",
+      "kind": "spell",
+      "name": "Hold Monster",
+      "source_ids": [
+        "950-10-16-25-hold-monster"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        140,
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "951-10-16-26-hold-person",
+      "kind": "spell",
+      "name": "Hold Person",
+      "source_ids": [
+        "951-10-16-26-hold-person"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Hold Person"
+      }
+    },
+    {
+      "id": "952-10-16-27-holy-aura",
+      "kind": "spell",
+      "name": "Holy Aura",
+      "source_ids": [
+        "952-10-16-27-holy-aura"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "953-10-16-28-hunter-s-mark",
+      "kind": "spell",
+      "name": "Hunter’s Mark",
+      "source_ids": [
+        "953-10-16-28-hunter-s-mark"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "954-10-16-29-hypnotic-pattern",
+      "kind": "spell",
+      "name": "Hypnotic Pattern",
+      "source_ids": [
+        "954-10-16-29-hypnotic-pattern"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "955-10-16-30-ice-knife",
+      "kind": "spell",
+      "name": "Ice Knife",
+      "source_ids": [
+        "955-10-16-30-ice-knife"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "956-10-16-31-ice-storm",
+      "kind": "spell",
+      "name": "Ice Storm",
+      "source_ids": [
+        "956-10-16-31-ice-storm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        141,
+        142
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "957-10-16-32-identify",
+      "kind": "spell",
+      "name": "Identify",
+      "source_ids": [
+        "957-10-16-32-identify"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        142
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "958-10-16-33-illusory-script",
+      "kind": "spell",
+      "name": "Illusory Script",
+      "source_ids": [
+        "958-10-16-33-illusory-script"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        142
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "959-10-16-34-imprisonment",
+      "kind": "spell",
+      "name": "Imprisonment",
+      "source_ids": [
+        "959-10-16-34-imprisonment"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        142
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "960-10-16-35-incendiary-cloud",
+      "kind": "spell",
+      "name": "Incendiary Cloud",
+      "source_ids": [
+        "960-10-16-35-incendiary-cloud"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        142,
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "961-10-16-36-inflict-wounds",
+      "kind": "spell",
+      "name": "Inflict Wounds",
+      "source_ids": [
+        "961-10-16-36-inflict-wounds"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "962-10-16-37-insect-plague",
+      "kind": "spell",
+      "name": "Insect Plague",
+      "source_ids": [
+        "962-10-16-37-insect-plague"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "963-10-16-38-instant-summons",
+      "kind": "spell",
+      "name": "Instant Summons",
+      "source_ids": [
+        "963-10-16-38-instant-summons"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "964-10-16-39-irresistible-dance",
+      "kind": "spell",
+      "name": "Irresistible Dance",
+      "source_ids": [
+        "964-10-16-39-irresistible-dance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "965-10-16-40-invisibility",
+      "kind": "spell",
+      "name": "Invisibility",
+      "source_ids": [
+        "965-10-16-40-invisibility"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "966-10-16-41-jump",
+      "kind": "spell",
+      "name": "Jump",
+      "source_ids": [
+        "966-10-16-41-jump"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "967-10-16-42-knock",
+      "kind": "spell",
+      "name": "Knock",
+      "source_ids": [
+        "967-10-16-42-knock"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        143,
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "968-10-16-43-legend-lore",
+      "kind": "spell",
+      "name": "Legend Lore",
+      "source_ids": [
+        "968-10-16-43-legend-lore"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "969-10-16-44-lesser-restoration",
+      "kind": "spell",
+      "name": "Lesser Restoration",
+      "source_ids": [
+        "969-10-16-44-lesser-restoration"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "970-10-16-45-levitate",
+      "kind": "spell",
+      "name": "Levitate",
+      "source_ids": [
+        "970-10-16-45-levitate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "971-10-16-46-light",
+      "kind": "spell",
+      "name": "Light",
+      "source_ids": [
+        "971-10-16-46-light"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "972-10-16-47-lightning-bolt",
+      "kind": "spell",
+      "name": "Lightning Bolt",
+      "source_ids": [
+        "972-10-16-47-lightning-bolt"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "973-10-16-48-locate-animals-or-plants",
+      "kind": "spell",
+      "name": "Locate Animals or Plants",
+      "source_ids": [
+        "973-10-16-48-locate-animals-or-plants"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        144
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "974-10-16-49-locate-creature",
+      "kind": "spell",
+      "name": "Locate Creature",
+      "source_ids": [
+        "974-10-16-49-locate-creature"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "975-10-16-50-locate-object",
+      "kind": "spell",
+      "name": "Locate Object",
+      "source_ids": [
+        "975-10-16-50-locate-object"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "976-10-16-51-longstrider",
+      "kind": "spell",
+      "name": "Longstrider",
+      "source_ids": [
+        "976-10-16-51-longstrider"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "977-10-16-52-mage-armor",
+      "kind": "spell",
+      "name": "Mage Armor",
+      "source_ids": [
+        "977-10-16-52-mage-armor"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "978-10-16-53-mage-hand",
+      "kind": "spell",
+      "name": "Mage Hand",
+      "source_ids": [
+        "978-10-16-53-mage-hand"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "979-10-16-54-magic-circle",
+      "kind": "spell",
+      "name": "Magic Circle",
+      "source_ids": [
+        "979-10-16-54-magic-circle"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        145,
+        146
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "980-10-16-55-magic-jar",
+      "kind": "spell",
+      "name": "Magic Jar",
+      "source_ids": [
+        "980-10-16-55-magic-jar"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        146
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "981-10-16-56-magic-missile",
+      "kind": "spell",
+      "name": "Magic Missile",
+      "source_ids": [
+        "981-10-16-56-magic-missile"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        146
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "982-10-16-57-magic-mouth",
+      "kind": "spell",
+      "name": "Magic Mouth",
+      "source_ids": [
+        "982-10-16-57-magic-mouth"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        146
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "983-10-16-58-magic-weapon",
+      "kind": "spell",
+      "name": "Magic Weapon",
+      "source_ids": [
+        "983-10-16-58-magic-weapon"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        146,
+        147
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "984-10-16-59-magnificent-mansion",
+      "kind": "spell",
+      "name": "Magnificent Mansion",
+      "source_ids": [
+        "984-10-16-59-magnificent-mansion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        147
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "985-10-16-60-major-image",
+      "kind": "spell",
+      "name": "Major Image",
+      "source_ids": [
+        "985-10-16-60-major-image"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        147
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "986-10-16-61-mass-cure-wounds",
+      "kind": "spell",
+      "name": "Mass Cure Wounds",
+      "source_ids": [
+        "986-10-16-61-mass-cure-wounds"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        147
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "987-10-16-62-mass-heal",
+      "kind": "spell",
+      "name": "Mass Heal",
+      "source_ids": [
+        "987-10-16-62-mass-heal"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        147
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "988-10-16-63-mass-healing-word",
+      "kind": "spell",
+      "name": "Mass Healing Word",
+      "source_ids": [
+        "988-10-16-63-mass-healing-word"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "989-10-16-64-mass-suggestion",
+      "kind": "spell",
+      "name": "Mass Suggestion",
+      "source_ids": [
+        "989-10-16-64-mass-suggestion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "990-10-16-65-maze",
+      "kind": "spell",
+      "name": "Maze",
+      "source_ids": [
+        "990-10-16-65-maze"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "991-10-16-66-meld-into-stone",
+      "kind": "spell",
+      "name": "Meld into Stone",
+      "source_ids": [
+        "991-10-16-66-meld-into-stone"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "992-10-16-67-mending",
+      "kind": "spell",
+      "name": "Mending",
+      "source_ids": [
+        "992-10-16-67-mending"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "993-10-16-68-message",
+      "kind": "spell",
+      "name": "Message",
+      "source_ids": [
+        "993-10-16-68-message"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        148,
+        149
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "994-10-16-69-meteor-swarm",
+      "kind": "spell",
+      "name": "Meteor Swarm",
+      "source_ids": [
+        "994-10-16-69-meteor-swarm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        149
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "995-10-16-70-mind-blank",
+      "kind": "spell",
+      "name": "Mind Blank",
+      "source_ids": [
+        "995-10-16-70-mind-blank"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        149
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "996-10-16-71-mind-spike",
+      "kind": "spell",
+      "name": "Mind Spike",
+      "source_ids": [
+        "996-10-16-71-mind-spike"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        149
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "997-10-16-72-minor-illusion",
+      "kind": "spell",
+      "name": "Minor Illusion",
+      "source_ids": [
+        "997-10-16-72-minor-illusion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        149
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "998-10-16-73-mirage-arcane",
+      "kind": "spell",
+      "name": "Mirage Arcane",
+      "source_ids": [
+        "998-10-16-73-mirage-arcane"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        149,
+        150
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "999-10-16-74-mirror-image",
+      "kind": "spell",
+      "name": "Mirror Image",
+      "source_ids": [
+        "999-10-16-74-mirror-image"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        150
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1000-10-16-75-mislead",
+      "kind": "spell",
+      "name": "Mislead",
+      "source_ids": [
+        "1000-10-16-75-mislead"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        150
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1001-10-16-76-misty-step",
+      "kind": "spell",
+      "name": "Misty Step",
+      "source_ids": [
+        "1001-10-16-76-misty-step"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        150
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1002-10-16-77-modify-memory",
+      "kind": "spell",
+      "name": "Modify Memory",
+      "source_ids": [
+        "1002-10-16-77-modify-memory"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        150
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1003-10-16-78-moonbeam",
+      "kind": "spell",
+      "name": "Moonbeam",
+      "source_ids": [
+        "1003-10-16-78-moonbeam"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        150,
+        151
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1004-10-16-79-move-earth",
+      "kind": "spell",
+      "name": "Move Earth",
+      "source_ids": [
+        "1004-10-16-79-move-earth"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        151
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1005-10-16-80-nondetection",
+      "kind": "spell",
+      "name": "Nondetection",
+      "source_ids": [
+        "1005-10-16-80-nondetection"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        151
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1006-10-16-81-passwall",
+      "kind": "spell",
+      "name": "Passwall",
+      "source_ids": [
+        "1006-10-16-81-passwall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        151
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1007-10-16-82-pass-without-trace",
+      "kind": "spell",
+      "name": "Pass without Trace",
+      "source_ids": [
+        "1007-10-16-82-pass-without-trace"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        151
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1008-10-16-83-phantasmal-force",
+      "kind": "spell",
+      "name": "Phantasmal Force",
+      "source_ids": [
+        "1008-10-16-83-phantasmal-force"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        151,
+        152
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1009-10-16-84-phantasmal-killer",
+      "kind": "spell",
+      "name": "Phantasmal Killer",
+      "source_ids": [
+        "1009-10-16-84-phantasmal-killer"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        152
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1010-10-16-85-phantom-steed",
+      "kind": "spell",
+      "name": "Phantom Steed",
+      "source_ids": [
+        "1010-10-16-85-phantom-steed"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        152
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1011-10-16-86-planar-ally",
+      "kind": "spell",
+      "name": "Planar Ally",
+      "source_ids": [
+        "1011-10-16-86-planar-ally"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        152
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1012-10-16-87-planar-binding",
+      "kind": "spell",
+      "name": "Planar Binding",
+      "source_ids": [
+        "1012-10-16-87-planar-binding"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        152,
+        153
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1013-10-16-88-plane-shift",
+      "kind": "spell",
+      "name": "Plane Shift",
+      "source_ids": [
+        "1013-10-16-88-plane-shift"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        153
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1014-10-16-89-plant-growth",
+      "kind": "spell",
+      "name": "Plant Growth",
+      "source_ids": [
+        "1014-10-16-89-plant-growth"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        153
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1015-10-16-90-poison-spray",
+      "kind": "spell",
+      "name": "Poison Spray",
+      "source_ids": [
+        "1015-10-16-90-poison-spray"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        153
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1016-10-16-91-polymorph",
+      "kind": "spell",
+      "name": "Polymorph",
+      "source_ids": [
+        "1016-10-16-91-polymorph"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        153,
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1017-10-16-92-power-word-heal",
+      "kind": "spell",
+      "name": "Power Word Heal",
+      "source_ids": [
+        "1017-10-16-92-power-word-heal"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1018-10-16-93-power-word-kill",
+      "kind": "spell",
+      "name": "Power Word Kill",
+      "source_ids": [
+        "1018-10-16-93-power-word-kill"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1019-10-16-94-power-word-stun",
+      "kind": "spell",
+      "name": "Power Word Stun",
+      "source_ids": [
+        "1019-10-16-94-power-word-stun"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1020-10-16-95-prayer-of-healing",
+      "kind": "spell",
+      "name": "Prayer of Healing",
+      "source_ids": [
+        "1020-10-16-95-prayer-of-healing"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1021-10-16-96-prestidigitation",
+      "kind": "spell",
+      "name": "Prestidigitation",
+      "source_ids": [
+        "1021-10-16-96-prestidigitation"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1022-10-16-97-prismatic-spray",
+      "kind": "spell",
+      "name": "Prismatic Spray",
+      "source_ids": [
+        "1022-10-16-97-prismatic-spray"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        154,
+        155
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1023-10-16-98-prismatic-wall",
+      "kind": "spell",
+      "name": "Prismatic Wall",
+      "source_ids": [
+        "1023-10-16-98-prismatic-wall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        155
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1024-10-16-99-private-sanctum",
+      "kind": "spell",
+      "name": "Private Sanctum",
+      "source_ids": [
+        "1024-10-16-99-private-sanctum"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        156
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1025-10-16-100-produce-flame",
+      "kind": "spell",
+      "name": "Produce Flame",
+      "source_ids": [
+        "1025-10-16-100-produce-flame"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        156
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1026-10-16-101-programmed-illusion",
+      "kind": "spell",
+      "name": "Programmed Illusion",
+      "source_ids": [
+        "1026-10-16-101-programmed-illusion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        156
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1027-10-16-102-project-image",
+      "kind": "spell",
+      "name": "Project Image",
+      "source_ids": [
+        "1027-10-16-102-project-image"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        156,
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1028-10-16-103-protection-from-energy",
+      "kind": "spell",
+      "name": "Protection from Energy",
+      "source_ids": [
+        "1028-10-16-103-protection-from-energy"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1029-10-16-104-protection-from-evil-and-good",
+      "kind": "spell",
+      "name": "Protection from Evil and Good",
+      "source_ids": [
+        "1029-10-16-104-protection-from-evil-and-good"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1030-10-16-105-protection-from-poison",
+      "kind": "spell",
+      "name": "Protection from Poison",
+      "source_ids": [
+        "1030-10-16-105-protection-from-poison"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1031-10-16-106-purify-food-and-drink",
+      "kind": "spell",
+      "name": "Purify Food and Drink",
+      "source_ids": [
+        "1031-10-16-106-purify-food-and-drink"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1032-10-16-107-raise-dead",
+      "kind": "spell",
+      "name": "Raise Dead",
+      "source_ids": [
+        "1032-10-16-107-raise-dead"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1033-10-16-108-ray-of-enfeeblement",
+      "kind": "spell",
+      "name": "Ray of Enfeeblement",
+      "source_ids": [
+        "1033-10-16-108-ray-of-enfeeblement"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1034-10-16-109-ray-of-frost",
+      "kind": "spell",
+      "name": "Ray of Frost",
+      "source_ids": [
+        "1034-10-16-109-ray-of-frost"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        157
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1035-10-16-110-regenerate",
+      "kind": "spell",
+      "name": "Regenerate",
+      "source_ids": [
+        "1035-10-16-110-regenerate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1036-10-16-111-ray-of-sickness",
+      "kind": "spell",
+      "name": "Ray of Sickness",
+      "source_ids": [
+        "1036-10-16-111-ray-of-sickness"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1037-10-16-112-reincarnate",
+      "kind": "spell",
+      "name": "Reincarnate",
+      "source_ids": [
+        "1037-10-16-112-reincarnate"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1038-10-16-113-remove-curse",
+      "kind": "spell",
+      "name": "Remove Curse",
+      "source_ids": [
+        "1038-10-16-113-remove-curse"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1039-10-16-114-resilient-sphere",
+      "kind": "spell",
+      "name": "Resilient Sphere",
+      "source_ids": [
+        "1039-10-16-114-resilient-sphere"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1040-10-16-115-resistance",
+      "kind": "spell",
+      "name": "Resistance",
+      "source_ids": [
+        "1040-10-16-115-resistance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1041-10-16-116-resurrection",
+      "kind": "spell",
+      "name": "Resurrection",
+      "source_ids": [
+        "1041-10-16-116-resurrection"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        158,
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1042-10-16-117-reverse-gravity",
+      "kind": "spell",
+      "name": "Reverse Gravity",
+      "source_ids": [
+        "1042-10-16-117-reverse-gravity"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1043-10-16-118-revivify",
+      "kind": "spell",
+      "name": "Revivify",
+      "source_ids": [
+        "1043-10-16-118-revivify"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1044-10-16-119-rope-trick",
+      "kind": "spell",
+      "name": "Rope Trick",
+      "source_ids": [
+        "1044-10-16-119-rope-trick"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1045-10-16-120-sacred-flame",
+      "kind": "spell",
+      "name": "Sacred Flame",
+      "source_ids": [
+        "1045-10-16-120-sacred-flame"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1046-10-16-121-sanctuary",
+      "kind": "spell",
+      "name": "Sanctuary",
+      "source_ids": [
+        "1046-10-16-121-sanctuary"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1047-10-16-122-scorching-ray",
+      "kind": "spell",
+      "name": "Scorching Ray",
+      "source_ids": [
+        "1047-10-16-122-scorching-ray"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        159
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1048-10-16-123-scrying",
+      "kind": "spell",
+      "name": "Scrying",
+      "source_ids": [
+        "1048-10-16-123-scrying"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        160
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1049-10-16-124-searing-smite",
+      "kind": "spell",
+      "name": "Searing Smite",
+      "source_ids": [
+        "1049-10-16-124-searing-smite"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        160
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1050-10-16-125-secret-chest",
+      "kind": "spell",
+      "name": "Secret Chest",
+      "source_ids": [
+        "1050-10-16-125-secret-chest"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        160
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1051-10-16-126-see-invisibility",
+      "kind": "spell",
+      "name": "See Invisibility",
+      "source_ids": [
+        "1051-10-16-126-see-invisibility"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        160
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1052-10-16-127-seeming",
+      "kind": "spell",
+      "name": "Seeming",
+      "source_ids": [
+        "1052-10-16-127-seeming"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        160,
+        161
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1053-10-16-128-sending",
+      "kind": "spell",
+      "name": "Sending",
+      "source_ids": [
+        "1053-10-16-128-sending"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        161
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1054-10-16-129-sequester",
+      "kind": "spell",
+      "name": "Sequester",
+      "source_ids": [
+        "1054-10-16-129-sequester"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        161
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1055-10-16-130-shapechange",
+      "kind": "spell",
+      "name": "Shapechange",
+      "source_ids": [
+        "1055-10-16-130-shapechange"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        161
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1056-10-16-131-shatter",
+      "kind": "spell",
+      "name": "Shatter",
+      "source_ids": [
+        "1056-10-16-131-shatter"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        161
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Shatter"
+      }
+    },
+    {
+      "id": "1057-10-16-132-shield",
+      "kind": "spell",
+      "name": "Shield",
+      "source_ids": [
+        "1057-10-16-132-shield"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        161,
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1058-10-16-133-shield-of-faith",
+      "kind": "spell",
+      "name": "Shield of Faith",
+      "source_ids": [
+        "1058-10-16-133-shield-of-faith"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1059-10-16-134-shillelagh",
+      "kind": "spell",
+      "name": "Shillelagh",
+      "source_ids": [
+        "1059-10-16-134-shillelagh"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1060-10-16-135-shining-smite",
+      "kind": "spell",
+      "name": "Shining Smite",
+      "source_ids": [
+        "1060-10-16-135-shining-smite"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1061-10-16-136-shocking-grasp",
+      "kind": "spell",
+      "name": "Shocking Grasp",
+      "source_ids": [
+        "1061-10-16-136-shocking-grasp"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1062-10-16-137-silence",
+      "kind": "spell",
+      "name": "Silence",
+      "source_ids": [
+        "1062-10-16-137-silence"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1063-10-16-138-silent-image",
+      "kind": "spell",
+      "name": "Silent Image",
+      "source_ids": [
+        "1063-10-16-138-silent-image"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1064-10-16-139-simulacrum",
+      "kind": "spell",
+      "name": "Simulacrum",
+      "source_ids": [
+        "1064-10-16-139-simulacrum"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        162,
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1065-10-16-140-sleep",
+      "kind": "spell",
+      "name": "Sleep",
+      "source_ids": [
+        "1065-10-16-140-sleep"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1066-10-16-141-sleet-storm",
+      "kind": "spell",
+      "name": "Sleet Storm",
+      "source_ids": [
+        "1066-10-16-141-sleet-storm"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1067-10-16-142-slow",
+      "kind": "spell",
+      "name": "Slow",
+      "source_ids": [
+        "1067-10-16-142-slow"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1068-10-16-143-sorcerous-burst",
+      "kind": "spell",
+      "name": "Sorcerous Burst",
+      "source_ids": [
+        "1068-10-16-143-sorcerous-burst"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1069-10-16-144-spare-the-dying",
+      "kind": "spell",
+      "name": "Spare the Dying",
+      "source_ids": [
+        "1069-10-16-144-spare-the-dying"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        163
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1070-10-16-145-speak-with-animals",
+      "kind": "spell",
+      "name": "Speak with Animals",
+      "source_ids": [
+        "1070-10-16-145-speak-with-animals"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1071-10-16-146-speak-with-dead",
+      "kind": "spell",
+      "name": "Speak with Dead",
+      "source_ids": [
+        "1071-10-16-146-speak-with-dead"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1072-10-16-147-speak-with-plants",
+      "kind": "spell",
+      "name": "Speak with Plants",
+      "source_ids": [
+        "1072-10-16-147-speak-with-plants"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1073-10-16-148-spider-climb",
+      "kind": "spell",
+      "name": "Spider Climb",
+      "source_ids": [
+        "1073-10-16-148-spider-climb"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1074-10-16-149-spike-growth",
+      "kind": "spell",
+      "name": "Spike Growth",
+      "source_ids": [
+        "1074-10-16-149-spike-growth"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1075-10-16-150-spirit-guardians",
+      "kind": "spell",
+      "name": "Spirit Guardians",
+      "source_ids": [
+        "1075-10-16-150-spirit-guardians"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        164,
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1076-10-16-151-spiritual-weapon",
+      "kind": "spell",
+      "name": "Spiritual Weapon",
+      "source_ids": [
+        "1076-10-16-151-spiritual-weapon"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1077-10-16-152-starry-wisp",
+      "kind": "spell",
+      "name": "Starry Wisp",
+      "source_ids": [
+        "1077-10-16-152-starry-wisp"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1078-10-16-153-stinking-cloud",
+      "kind": "spell",
+      "name": "Stinking Cloud",
+      "source_ids": [
+        "1078-10-16-153-stinking-cloud"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1079-10-16-154-stone-shape",
+      "kind": "spell",
+      "name": "Stone Shape",
+      "source_ids": [
+        "1079-10-16-154-stone-shape"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1080-10-16-155-stoneskin",
+      "kind": "spell",
+      "name": "Stoneskin",
+      "source_ids": [
+        "1080-10-16-155-stoneskin"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1081-10-16-156-storm-of-vengeance",
+      "kind": "spell",
+      "name": "Storm of Vengeance",
+      "source_ids": [
+        "1081-10-16-156-storm-of-vengeance"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        165,
+        166
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1082-10-16-157-suggestion",
+      "kind": "spell",
+      "name": "Suggestion",
+      "source_ids": [
+        "1082-10-16-157-suggestion"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        166
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1083-10-16-158-summon-dragon",
+      "kind": "spell",
+      "name": "Summon Dragon",
+      "source_ids": [
+        "1083-10-16-158-summon-dragon"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        166
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1084-10-17-draconic-spirit",
+      "kind": "creature",
+      "name": "Draconic Spirit",
+      "source_ids": [
+        "1084-10-17-draconic-spirit"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        166
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1083-10-16-158-summon-dragon"
+    },
+    {
+      "id": "1085-10-17-1-sunbeam",
+      "kind": "spell",
+      "name": "Sunbeam",
+      "source_ids": [
+        "1085-10-17-1-sunbeam"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        166
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1086-10-17-2-sunburst",
+      "kind": "spell",
+      "name": "Sunburst",
+      "source_ids": [
+        "1086-10-17-2-sunburst"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        167
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1087-10-17-3-symbol",
+      "kind": "spell",
+      "name": "Symbol",
+      "source_ids": [
+        "1087-10-17-3-symbol"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        167
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1088-10-17-4-telekinesis",
+      "kind": "spell",
+      "name": "Telekinesis",
+      "source_ids": [
+        "1088-10-17-4-telekinesis"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        167,
+        168
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1089-10-17-5-telepathic-bond",
+      "kind": "spell",
+      "name": "Telepathic Bond",
+      "source_ids": [
+        "1089-10-17-5-telepathic-bond"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        168
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1090-10-17-6-teleport",
+      "kind": "spell",
+      "name": "Teleport",
+      "source_ids": [
+        "1090-10-17-6-teleport"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        168
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1091-10-17-7-teleportation-circle",
+      "kind": "spell",
+      "name": "Teleportation Circle",
+      "source_ids": [
+        "1091-10-17-7-teleportation-circle"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        168,
+        169
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1092-10-17-8-thaumaturgy",
+      "kind": "spell",
+      "name": "Thaumaturgy",
+      "source_ids": [
+        "1092-10-17-8-thaumaturgy"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        169
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1093-10-17-9-thunderwave",
+      "kind": "spell",
+      "name": "Thunderwave",
+      "source_ids": [
+        "1093-10-17-9-thunderwave"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        169
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1094-10-17-10-time-stop",
+      "kind": "spell",
+      "name": "Time Stop",
+      "source_ids": [
+        "1094-10-17-10-time-stop"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        169
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1095-10-17-11-tiny-hut",
+      "kind": "spell",
+      "name": "Tiny Hut",
+      "source_ids": [
+        "1095-10-17-11-tiny-hut"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        169
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1096-10-17-12-tongues",
+      "kind": "spell",
+      "name": "Tongues",
+      "source_ids": [
+        "1096-10-17-12-tongues"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        169,
+        170
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1097-10-17-13-transport-via-plants",
+      "kind": "spell",
+      "name": "Transport via Plants",
+      "source_ids": [
+        "1097-10-17-13-transport-via-plants"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        170
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1098-10-17-14-tree-stride",
+      "kind": "spell",
+      "name": "Tree Stride",
+      "source_ids": [
+        "1098-10-17-14-tree-stride"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        170
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1099-10-17-15-true-polymorph",
+      "kind": "spell",
+      "name": "True Polymorph",
+      "source_ids": [
+        "1099-10-17-15-true-polymorph"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        170
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1100-10-17-16-true-resurrection",
+      "kind": "spell",
+      "name": "True Resurrection",
+      "source_ids": [
+        "1100-10-17-16-true-resurrection"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        170,
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1101-10-17-17-true-seeing",
+      "kind": "spell",
+      "name": "True Seeing",
+      "source_ids": [
+        "1101-10-17-17-true-seeing"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1102-10-17-18-true-strike",
+      "kind": "spell",
+      "name": "True Strike",
+      "source_ids": [
+        "1102-10-17-18-true-strike"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1103-10-17-19-tsunami",
+      "kind": "spell",
+      "name": "Tsunami",
+      "source_ids": [
+        "1103-10-17-19-tsunami"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1104-10-17-20-unseen-servant",
+      "kind": "spell",
+      "name": "Unseen Servant",
+      "source_ids": [
+        "1104-10-17-20-unseen-servant"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1105-10-17-21-vampiric-touch",
+      "kind": "spell",
+      "name": "Vampiric Touch",
+      "source_ids": [
+        "1105-10-17-21-vampiric-touch"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1106-10-17-22-vicious-mockery",
+      "kind": "spell",
+      "name": "Vicious Mockery",
+      "source_ids": [
+        "1106-10-17-22-vicious-mockery"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        171,
+        172
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1107-10-17-23-vitriolic-sphere",
+      "kind": "spell",
+      "name": "Vitriolic Sphere",
+      "source_ids": [
+        "1107-10-17-23-vitriolic-sphere"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        172
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1108-10-17-24-wall-of-fire",
+      "kind": "spell",
+      "name": "Wall of Fire",
+      "source_ids": [
+        "1108-10-17-24-wall-of-fire"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        172
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1109-10-17-25-wall-of-force",
+      "kind": "spell",
+      "name": "Wall of Force",
+      "source_ids": [
+        "1109-10-17-25-wall-of-force"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        172
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1110-10-17-26-wall-of-ice",
+      "kind": "spell",
+      "name": "Wall of Ice",
+      "source_ids": [
+        "1110-10-17-26-wall-of-ice"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        172,
+        173
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1111-10-17-27-wall-of-stone",
+      "kind": "spell",
+      "name": "Wall of Stone",
+      "source_ids": [
+        "1111-10-17-27-wall-of-stone"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        173
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1112-10-17-28-wall-of-thorns",
+      "kind": "spell",
+      "name": "Wall of Thorns",
+      "source_ids": [
+        "1112-10-17-28-wall-of-thorns"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        173
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1113-10-17-29-warding-bond",
+      "kind": "spell",
+      "name": "Warding Bond",
+      "source_ids": [
+        "1113-10-17-29-warding-bond"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        173
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1114-10-17-30-water-breathing",
+      "kind": "spell",
+      "name": "Water Breathing",
+      "source_ids": [
+        "1114-10-17-30-water-breathing"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        173
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1115-10-17-31-water-walk",
+      "kind": "spell",
+      "name": "Water Walk",
+      "source_ids": [
+        "1115-10-17-31-water-walk"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        173,
+        174
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1116-10-17-32-web",
+      "kind": "spell",
+      "name": "Web",
+      "source_ids": [
+        "1116-10-17-32-web"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        174
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1117-10-17-33-weird",
+      "kind": "spell",
+      "name": "Weird",
+      "source_ids": [
+        "1117-10-17-33-weird"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        174
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1118-10-17-34-wind-walk",
+      "kind": "spell",
+      "name": "Wind Walk",
+      "source_ids": [
+        "1118-10-17-34-wind-walk"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        174
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1119-10-17-35-wind-wall",
+      "kind": "spell",
+      "name": "Wind Wall",
+      "source_ids": [
+        "1119-10-17-35-wind-wall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        174
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1120-10-17-36-wish",
+      "kind": "spell",
+      "name": "Wish",
+      "source_ids": [
+        "1120-10-17-36-wish"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        175
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1121-10-17-37-word-of-recall",
+      "kind": "spell",
+      "name": "Word of Recall",
+      "source_ids": [
+        "1121-10-17-37-word-of-recall"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        175
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    },
+    {
+      "id": "1122-10-17-38-zone-of-truth",
+      "kind": "spell",
+      "name": "Zone of Truth",
+      "source_ids": [
+        "1122-10-17-38-zone-of-truth"
+      ],
+      "chapter_id": "751-10-spells",
+      "pages": [
+        175
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "779-10-13-spell-descriptions"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "104-spell-preparation-by-class",
+      "name": "Spell Preparation by Class",
+      "section_id": "753-10-2-preparing-spells",
+      "page": 104,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "class",
+          "name": "Class",
+          "type": "string"
+        },
+        {
+          "id": "change-when-you",
+          "name": "Change When You ...",
+          "type": "string"
+        },
+        {
+          "id": "number-of-spells",
+          "name": "Number of Spells",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "105-schools-of-magic",
+      "name": "Schools of Magic",
+      "section_id": "761-10-6-school-of-magic",
+      "page": 105,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "school",
+          "name": "School",
+          "type": "string"
+        },
+        {
+          "id": "typical-effects",
+          "name": "Typical Effects",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "111-omens",
+      "name": "Omens",
+      "section_id": "800-10-14-10-augury",
+      "page": 111,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "omen",
+          "name": "Omen",
+          "type": "string"
+        },
+        {
+          "id": "for-results-that-will-be",
+          "name": "For Results That Will Be ...",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "120-precipitation",
+      "name": "Precipitation",
+      "section_id": "847-10-14-57-control-weather",
+      "page": 120,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "stage",
+          "name": "Stage",
+          "type": "integer"
+        },
+        {
+          "id": "condition",
+          "name": "Condition",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "120-temperature-wind",
+      "name": "Temperature Wind",
+      "section_id": "847-10-14-57-control-weather",
+      "page": 120,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "stage",
+          "name": "Stage",
+          "type": "integer"
+        },
+        {
+          "id": "condition",
+          "name": "Condition",
+          "type": "string"
+        },
+        {
+          "id": "stage-2",
+          "name": "Stage",
+          "type": "integer"
+        },
+        {
+          "id": "condition-2",
+          "name": "Condition",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "121-materials",
+      "name": "Materials",
+      "section_id": "852-10-14-62-creation",
+      "page": 121,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "material",
+          "name": "Material",
+          "type": "string"
+        },
+        {
+          "id": "duration",
+          "name": "Duration",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "125-divine-word-effects",
+      "name": "Divine Word Effects",
+      "section_id": "874-10-14-84-divine-word",
+      "page": 125,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "hit-points",
+          "name": "Hit Points",
+          "type": "string"
+        },
+        {
+          "id": "effect",
+          "name": "Effect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "154-prismatic-rays",
+      "name": "Prismatic Rays",
+      "section_id": "1022-10-16-97-prismatic-spray",
+      "page": 154,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d8",
+          "name": "1d8",
+          "type": "integer"
+        },
+        {
+          "id": "ray",
+          "name": "Ray",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "155-prismatic-layers",
+      "name": "Prismatic Layers",
+      "section_id": "1023-10-16-98-prismatic-wall",
+      "page": 155,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "order",
+          "name": "Order",
+          "type": "integer"
+        },
+        {
+          "id": "effects",
+          "name": "Effects",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "168-teleportation-outcome",
+      "name": "Teleportation Outcome",
+      "section_id": "1090-10-17-6-teleport",
+      "page": 168,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "column",
+          "name": "Column 1",
+          "type": "string"
+        },
+        {
+          "id": "column-2",
+          "name": "Column 2",
+          "type": "string"
+        },
+        {
+          "id": "column-3",
+          "name": "Column 3",
+          "type": "string"
+        },
+        {
+          "id": "column-4",
+          "name": "Column 4",
+          "type": "string"
+        },
+        {
+          "id": "column-5",
+          "name": "Column 5",
+          "type": "string"
+        },
+        {
+          "id": "column-6",
+          "name": "Column 6",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "117-1d10-behavior-for-the-turn",
+      "name": "1d10 / Behavior for the Turn",
+      "section_id": "835-10-14-45-confusion",
+      "page": 117,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "behavior-for-the-turn",
+          "name": "Behavior for the Turn",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "158-1d10-species",
+      "name": "1d10 / Species",
+      "section_id": "1037-10-16-112-reincarnate",
+      "page": 158,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "1d10",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "species",
+          "name": "Species",
+          "type": "string"
+        },
+        {
+          "id": "1d10-2",
+          "name": "1d10",
+          "type": "integer"
+        },
+        {
+          "id": "species-2",
+          "name": "Species",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "160-your-knowledge-of-the-target-is-save-modifier",
+      "name": "Your Knowledge of the Target Is ... / Save Modifier",
+      "section_id": "1048-10-16-123-scrying",
+      "page": 160,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "your-knowledge-of-the-target-is",
+          "name": "Your Knowledge of the Target Is ...",
+          "type": "string"
+        },
+        {
+          "id": "save-modifier",
+          "name": "Save Modifier",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "160-you-have-the-target-s-save-modifier",
+      "name": "You Have the Target's ... / Save Modifier",
+      "section_id": "1048-10-16-123-scrying",
+      "page": 160,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "you-have-the-target-s",
+          "name": "You Have the Target's ...",
+          "type": "string"
+        },
+        {
+          "id": "save-modifier",
+          "name": "Save Modifier",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

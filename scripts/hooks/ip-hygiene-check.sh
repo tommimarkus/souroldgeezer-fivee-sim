@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ip-hygiene-check.sh — local-only PostToolUse tripwire for this project's IP
-# boundary (SRD 5.2 / CC-BY-4.0). See CLAUDE.md "Local development hook".
+# boundary (SRD 5.2.1 / CC-BY-4.0). See CLAUDE.md "Local development hook".
 #
 # Contract: reads a PostToolUse payload on stdin, inspects the single file the
 # tool just touched, and either exits 0 in silence or exits 2 with findings on
@@ -135,9 +135,9 @@ if matches_any "$rel" "${IP_DATA_GLOBS[@]}" || is_attribution_file "$rel"; then
   for notice_rel in "${IP_ATTRIBUTION_FILES[@]}"; do
     notice="$root/$notice_rel"
     if [ ! -f "$notice" ]; then
-      findings+=("$notice_rel is missing — CC-BY-4.0 requires the SRD 5.2 attribution to ship with the distributed plugin")
+      findings+=("$notice_rel is missing — CC-BY-4.0 requires the SRD 5.2.1 attribution to ship with the distributed plugin")
     elif ! grep -qF -- "$IP_ATTRIBUTION_STRING" "$notice"; then
-      findings+=("$notice_rel no longer contains the SRD 5.2 attribution byte-for-byte — it must not be reworded or re-wrapped")
+      findings+=("$notice_rel no longer contains the SRD 5.2.1 attribution byte-for-byte — it must not be reworded or re-wrapped")
     fi
   done
 fi
@@ -146,7 +146,7 @@ fi
 if matches_any "$rel" "${IP_DATA_GLOBS[@]}"; then
   for name in "${IP_NON_SRD_NAMES[@]}"; do
     if grep -qiE "(^|[^[:alnum:]])${name}([^[:alnum:]]|\$)" "$abs"; then
-      findings+=("rules data references \"$name\", which is not in SRD 5.2 and is therefore not licensed to us")
+      findings+=("rules data references \"$name\", which is not in SRD 5.2.1 and is therefore not licensed to us")
     fi
   done
 fi
