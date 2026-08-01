@@ -10092,8 +10092,71 @@
         245,
         246
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Power",
+        "item_category": "Staff",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "charges": 20,
+        "magic_quarterstaff": {
+          "attack_roll_bonus": 2,
+          "damage_roll_bonus": 2
+        },
+        "bonuses_while_held": {
+          "armor_class": 2,
+          "saving_throws": 2,
+          "spell_attack_rolls": 2
+        },
+        "spellcasting": {
+          "uses_wielder_spell_save_dc": true,
+          "charge_costs": {
+            "Cone of Cold": 5,
+            "Fireball (level 5 version)": 5,
+            "Globe of Invulnerability": 6,
+            "Hold Monster": 5,
+            "Levitate": 2,
+            "Lightning Bolt (level 5 version)": 5,
+            "Magic Missile": 1,
+            "Ray of Enfeeblement": 1,
+            "Wall of Force": 5
+          }
+        },
+        "recharge": "2d8 + 4 expended charges daily at dawn",
+        "last_charge_roll": {
+          "die": "1d20",
+          "on_1": "retains +2 weapon attack and damage bonuses but loses all other properties",
+          "on_20": "regains 1d8 + 2 charges"
+        },
+        "retributive_strike": {
+          "action": "Magic",
+          "method": "break staff over knee or against solid surface",
+          "staff_destroyed": true,
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30,
+            "origin": "staff"
+          },
+          "user_escape": {
+            "chance_percent": 50,
+            "destination": "random plane of existence",
+            "avoids_explosion": true
+          },
+          "user_damage_if_not_escaped": {
+            "type": "Force",
+            "multiplier_per_remaining_charge": 16
+          },
+          "other_creatures": {
+            "saving_throw": {
+              "ability": "Dexterity",
+              "dc": 17
+            },
+            "failed_save_force_damage_multiplier_per_remaining_charge": 4,
+            "successful_save_damage": "half"
+          }
+        },
+        "attunement_requirement": "Sorcerer, Warlock, or Wizard"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10108,8 +10171,27 @@
       "pages": [
         246
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Striking",
+        "item_category": "Staff",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "magic_quarterstaff": {
+          "attack_roll_bonus": 3,
+          "damage_roll_bonus": 3
+        },
+        "charges": 10,
+        "melee_hit_charge_use": {
+          "maximum_charges": 3,
+          "extra_force_damage_per_charge": "1d6"
+        },
+        "recharge": "1d6 + 4 expended charges daily at dawn",
+        "last_charge_roll": {
+          "die": "1d20",
+          "on_1": "becomes nonmagical Quarterstaff"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10124,8 +10206,40 @@
       "pages": [
         246
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Swarming Insects",
+        "item_category": "Staff",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 10,
+        "insect_cloud": {
+          "action": "Magic",
+          "charge_cost": 1,
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30,
+            "origin": "user"
+          },
+          "duration_minutes": 10,
+          "obscurement_for_creatures_other_than_user": "Heavily Obscured",
+          "strong_wind_ends_effect": true
+        },
+        "spellcasting": {
+          "uses_wielder_spell_save_dc": true,
+          "uses_wielder_spell_attack_modifier": true,
+          "charge_costs": {
+            "Giant Insect": 4,
+            "Insect Plague": 5
+          }
+        },
+        "recharge": "1d6 + 4 expended charges daily at dawn",
+        "last_charge_roll": {
+          "die": "1d20",
+          "on_1": "swarm consumes and destroys staff, then disperses"
+        },
+        "attunement_requirement": "Bard, Cleric, Druid, Sorcerer, Warlock, or Wizard"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10141,8 +10255,82 @@
         246,
         247
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of the Magi",
+        "item_category": "Staff",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "charges": 50,
+        "magic_quarterstaff": {
+          "attack_roll_bonus": 2,
+          "damage_roll_bonus": 2
+        },
+        "spell_attack_roll_bonus_while_held": 2,
+        "spell_absorption": {
+          "saving_throws_against_spells": "Advantage",
+          "reaction_trigger": "another creature casts spell targeting only wielder",
+          "reaction_effect": "cancel spell and gain charges equal to spell level",
+          "above_maximum_charges": "explodes as Retributive Strike"
+        },
+        "spellcasting": {
+          "uses_wielder_spell_save_dc": true,
+          "charge_costs": {
+            "Arcane Lock": 0,
+            "Conjure Elemental": 7,
+            "Detect Magic": 0,
+            "Dispel Magic": 3,
+            "Enlarge/Reduce": 0,
+            "Fireball (level 7 version)": 7,
+            "Flaming Sphere": 2,
+            "Ice Storm": 4,
+            "Invisibility": 2,
+            "Knock": 2,
+            "Light": 0,
+            "Lightning Bolt (level 7 version)": 7,
+            "Mage Hand": 0,
+            "Passwall": 5,
+            "Plane Shift": 7,
+            "Protection from Evil and Good": 0,
+            "Telekinesis": 5,
+            "Wall of Fire": 4,
+            "Web": 2
+          }
+        },
+        "recharge": "4d6 + 2 expended charges daily at dawn",
+        "last_charge_roll": {
+          "die": "1d20",
+          "on_20": "regains 1d12 + 1 charges"
+        },
+        "retributive_strike": {
+          "action": "Magic",
+          "method": "break staff over knee or against solid surface",
+          "staff_destroyed": true,
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30,
+            "origin": "staff"
+          },
+          "user_escape": {
+            "chance_percent": 50,
+            "destination": "random plane of existence",
+            "avoids_explosion": true
+          },
+          "user_damage_if_not_escaped": {
+            "type": "Force",
+            "multiplier_per_remaining_charge": 16
+          },
+          "other_creatures": {
+            "saving_throw": {
+              "ability": "Dexterity",
+              "dc": 17
+            },
+            "failed_save_force_damage_multiplier_per_remaining_charge": 6,
+            "successful_save_damage": "half"
+          }
+        },
+        "attunement_requirement": "Sorcerer, Warlock, or Wizard"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10157,8 +10345,42 @@
       "pages": [
         247
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of the Python",
+        "item_category": "Staff",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "transformation": {
+          "action": "Magic",
+          "method": "throw into unoccupied space",
+          "range_feet": 10,
+          "creature": "Giant Constrictor Snake"
+        },
+        "snake": {
+          "controlled_by_user": true,
+          "initiative": "shares user count and acts immediately after user",
+          "mental_command": {
+            "action_required": false,
+            "range_feet": 60,
+            "user_must_not_be_incapacitated": true,
+            "controls": [
+              "action",
+              "movement",
+              "general command"
+            ]
+          },
+          "without_commands": "defends itself",
+          "revert_command_action": "Bonus Action",
+          "recharge_after_commanded_reversion_hours": 1,
+          "at_zero_hit_points": {
+            "snake_dies": true,
+            "reverts": true,
+            "staff_shatters_and_is_destroyed": true
+          },
+          "reversion_above_zero_hit_points": "regains all Hit Points"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10173,8 +10395,50 @@
       "pages": [
         247
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of the Woodlands",
+        "item_category": "Staff",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 6,
+        "magic_quarterstaff": {
+          "attack_roll_bonus": 2,
+          "damage_roll_bonus": 2
+        },
+        "spell_attack_roll_bonus_while_held": 2,
+        "spellcasting": {
+          "uses_wielder_spell_save_dc": true,
+          "charge_costs": {
+            "Animal Friendship": 1,
+            "Awaken": 5,
+            "Barkskin": 2,
+            "Locate Animals or Plants": 2,
+            "Pass without Trace": 2,
+            "Speak with Animals": 1,
+            "Speak with Plants": 3,
+            "Wall of Thorns": 6
+          }
+        },
+        "tree_form": {
+          "action": "Magic",
+          "charge_cost": 1,
+          "activation": "plant one end in earth in unoccupied space",
+          "height_feet": 60,
+          "trunk_diameter_feet": 5,
+          "top_branch_radius_feet": 20,
+          "appearance": "ordinary healthy tree",
+          "detect_magic_aura": "faint Transmutation",
+          "reversion": "touch tree and take Magic action",
+          "creatures_in_tree_fall_on_reversion": true
+        },
+        "recharge": "1d6 expended charges daily at dawn",
+        "last_charge_roll": {
+          "die": "1d20",
+          "on_1": "loses properties and becomes nonmagical Quarterstaff"
+        },
+        "attunement_requirement": "Druid"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10190,8 +10454,84 @@
         247,
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Thunder and Lightning",
+        "item_category": "Staff",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "magic_quarterstaff": {
+          "attack_roll_bonus": 2,
+          "damage_roll_bonus": 2
+        },
+        "property_recharge": "each property recharges next dawn",
+        "properties": {
+          "Lightning": {
+            "trigger": "melee hit with staff",
+            "action_required": false,
+            "extra_damage": {
+              "dice": "2d6",
+              "type": "Lightning"
+            }
+          },
+          "Thunder": {
+            "trigger": "melee hit with staff",
+            "action_required": false,
+            "sound_audible_feet": 300,
+            "saving_throw": {
+              "ability": "Constitution",
+              "dc": 17
+            },
+            "failure_condition": "Stunned until end of user's next turn"
+          },
+          "Thunder and Lightning": {
+            "trigger": "immediately after melee hit with staff",
+            "action": "Bonus Action",
+            "effect": "use Lightning and Thunder together",
+            "expends_individual_property_uses": false
+          },
+          "Lightning Strike": {
+            "action": "Magic",
+            "area": {
+              "shape": "Line",
+              "width_feet": 5,
+              "length_feet": 120
+            },
+            "saving_throw": {
+              "ability": "Dexterity",
+              "dc": 17
+            },
+            "failed_save_damage": {
+              "dice": "9d6",
+              "type": "Lightning"
+            },
+            "successful_save_damage": "half"
+          },
+          "Thunderclap": {
+            "action": "Magic",
+            "sound_audible_feet": 600,
+            "area": {
+              "shape": "Emanation",
+              "radius_feet": 60,
+              "origin": "user"
+            },
+            "saving_throw": {
+              "ability": "Constitution",
+              "dc": 17
+            },
+            "failed_save_damage": {
+              "dice": "2d6",
+              "type": "Thunder"
+            },
+            "failed_save_condition": {
+              "condition": "Deafened",
+              "duration_minutes": 1
+            },
+            "successful_save_damage": "half",
+            "successful_save_condition": "none"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10206,8 +10546,29 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Staff of Withering",
+        "item_category": "Staff",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 3,
+        "recharge": "1d3 expended charges daily at dawn",
+        "magic_quarterstaff": true,
+        "charged_hit": {
+          "charge_cost": 1,
+          "extra_damage": {
+            "dice": "2d10",
+            "type": "Necrotic"
+          },
+          "saving_throw": {
+            "ability": "Constitution",
+            "dc": 15
+          },
+          "failure_duration_hours": 1,
+          "failure_effect": "Disadvantage on ability checks and saving throws using Strength or Constitution"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10222,8 +10583,28 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Stone of Controlling Earth Elementals",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "weight_pounds": 5,
+        "summoning": {
+          "prerequisite": "touch stone to ground",
+          "action": "Magic",
+          "creature": "Earth Elemental",
+          "arrival": "user-chosen unoccupied space within 30 feet",
+          "obeys_user_commands": true,
+          "initiative": "immediately after user",
+          "duration_hours": 1,
+          "early_end_conditions": [
+            "elemental dies",
+            "user dismisses as Bonus Action"
+          ],
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10238,8 +10619,18 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Stone of Good Luck (Luckstone)",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "form": "polished agate",
+        "benefits_while_on_person": {
+          "ability_checks_bonus": 1,
+          "saving_throws_bonus": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10254,8 +10645,39 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sun Blade",
+        "item_category": "Weapon (Longsword)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "inactive_form": "sword hilt",
+        "radiant_blade": {
+          "toggle_action": "Bonus Action",
+          "requires_grasping_hilt": true,
+          "weapon_form": "Longsword with Finesse property",
+          "proficiency_granted_by": [
+            "Longsword proficiency",
+            "Shortsword proficiency"
+          ],
+          "attack_roll_bonus": 2,
+          "damage_roll_bonus": 2,
+          "damage_type": "Radiant instead of Slashing",
+          "extra_damage_against_undead": {
+            "dice": "1d8",
+            "type": "Radiant"
+          }
+        },
+        "sunlight": {
+          "initial_bright_light_radius_feet": 15,
+          "initial_additional_dim_light_feet": 15,
+          "is_sunlight": true,
+          "adjust_action": "Magic",
+          "adjustment_feet_each": 5,
+          "minimum_each_feet": 10,
+          "maximum_each_feet": 30
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10270,8 +10692,24 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sword of Life Stealing",
+        "item_category": "Weapon (Glaive, Greatsword, Longsword, Rapier, Scimitar, or Shortsword)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "attack_roll_d20_result_20": {
+          "ineligible_target_types": [
+            "Construct",
+            "Undead"
+          ],
+          "extra_damage": {
+            "amount": 15,
+            "type": "Necrotic"
+          },
+          "temporary_hit_points": "Necrotic damage actually taken"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10286,8 +10724,21 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sword of Sharpness",
+        "item_category": "Weapon (Glaive, Greatsword, Longsword, or Scimitar)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "hit_against_object": "maximize weapon damage dice",
+        "attack_roll_d20_result_20_against_creature": {
+          "extra_damage": {
+            "amount": 14,
+            "type": "Slashing"
+          },
+          "exhaustion_levels": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10302,8 +10753,26 @@
       "pages": [
         248
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Sword of Wounding",
+        "item_category": "Weapon (Glaive, Greatsword, Longsword, Rapier, Scimitar, or Shortsword)",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "hit": {
+          "extra_damage": {
+            "dice": "2d6",
+            "type": "Necrotic"
+          },
+          "saving_throw": {
+            "ability": "Constitution",
+            "dc": 15
+          },
+          "failed_save": "cannot regain Hit Points for 1 hour",
+          "repeat_save": "end of each affected creature turn",
+          "repeat_save_success": "ends effect"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10319,8 +10788,49 @@
         248,
         249
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Talisman of Pure Good",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "touch_damage": {
+          "target_types": [
+            "Fiend",
+            "Undead"
+          ],
+          "damage": {
+            "dice": "8d6",
+            "type": "Radiant"
+          },
+          "repeats_when": "target ends turn holding or carrying talisman"
+        },
+        "holy_symbol": true,
+        "spell_attack_roll_bonus_while_worn_or_held": 2,
+        "pure_rebuke": {
+          "charges": 7,
+          "action": "Magic",
+          "charge_cost": 1,
+          "target": "visible creature on ground",
+          "range_feet": 120,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 20
+          },
+          "save_disadvantage_types": [
+            "Fiend",
+            "Undead"
+          ],
+          "failed_save": "falls into fissure and is destroyed with no remains",
+          "successful_save_damage": {
+            "dice": "4d6",
+            "type": "Psychic"
+          },
+          "fissure_closes_without_trace": true,
+          "last_charge": "talisman disperses into golden light and is destroyed"
+        },
+        "attunement_requirement": "Cleric or Paladin"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10335,8 +10845,23 @@
       "pages": [
         249
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Talisman of the Sphere",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_worn_or_held": {
+          "intelligence_arcana_checks_to_control_sphere_of_annihilation": "Advantage"
+        },
+        "sphere_movement": {
+          "prerequisite": "start turn controlling Sphere of Annihilation",
+          "action": "Magic",
+          "base_distance_feet": 10,
+          "additional_distance_feet": "10 times Intelligence modifier",
+          "straight_line_required": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10351,8 +10876,47 @@
       "pages": [
         249
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Talisman of Ultimate Evil",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "touch_damage": {
+          "target_excludes_types": [
+            "Fiend",
+            "Undead"
+          ],
+          "damage": {
+            "dice": "8d6",
+            "type": "Necrotic"
+          },
+          "repeats_when": "target ends turn holding or carrying talisman"
+        },
+        "holy_symbol": true,
+        "spell_attack_roll_bonus_while_worn_or_held": 2,
+        "ultimate_end": {
+          "charges": 6,
+          "action": "Magic",
+          "charge_cost": 1,
+          "target": "visible creature on ground",
+          "range_feet": 120,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 20
+          },
+          "save_disadvantage_types": [
+            "Celestial"
+          ],
+          "failed_save": "falls into fissure and is destroyed with no remains",
+          "successful_save_damage": {
+            "dice": "4d6",
+            "type": "Psychic"
+          },
+          "fissure_closes_without_trace": true,
+          "last_charge": "talisman dissolves into foul-smelling slime and is destroyed"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10367,8 +10931,79 @@
       "pages": [
         249
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Thunderous Greatclub",
+        "item_category": "Weapon (Greatclub)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "strength_while_attuned": 20,
+        "no_strength_effect_if_current_strength_at_least": 20,
+        "extra_hit_damage_against_creature": {
+          "dice": "1d8",
+          "type": "Thunder"
+        },
+        "extra_hit_damage_against_unworn_uncarried_object": {
+          "dice": "3d8",
+          "type": "Thunder"
+        },
+        "clap_of_thunder": {
+          "action": "Magic",
+          "activation": "strike hard surface",
+          "sound_audible_feet": 300,
+          "area": {
+            "shape": "Cone",
+            "length_feet": 30
+          },
+          "creature_saving_throw": {
+            "ability": "Strength",
+            "dc": 15
+          },
+          "creature_failure_condition": "Prone",
+          "unworn_uncarried_nonmagical_object_damage": {
+            "dice": "3d8",
+            "type": "Thunder"
+          }
+        },
+        "earthquake": {
+          "action": "Magic",
+          "activation": "strike ground",
+          "area": {
+            "shape": "circle",
+            "radius_feet": 50,
+            "center": "impact point"
+          },
+          "grounded_structure_damage": {
+            "amount": 50,
+            "type": "Bludgeoning"
+          },
+          "grounded_creature_saving_throw": {
+            "ability": "Dexterity",
+            "dc": 20
+          },
+          "grounded_creature_failure_condition": "Prone",
+          "concentration_save_on_failed_dexterity_save": {
+            "ability": "Constitution",
+            "dc": 20,
+            "failure": "Concentration broken"
+          },
+          "optional_fissure": {
+            "depth_feet": 30,
+            "width_feet": 10,
+            "location": "anywhere in area"
+          },
+          "creature_on_fissure": {
+            "saving_throw": {
+              "ability": "Dexterity",
+              "dc": 20
+            },
+            "failure": "falls into fissure",
+            "success": "moves with fissure edge"
+          },
+          "structure_on_fissure": "collapses into fissure",
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -10383,8 +11018,25 @@
       "pages": [
         249
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Tome of Clear Thought",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": false,
+        "contents": "memory and logic exercises",
+        "study": {
+          "required_hours": 48,
+          "maximum_period_days": 6,
+          "ability": "Intelligence",
+          "increase": 2,
+          "maximum_score": 30
+        },
+        "after_use": {
+          "loses_magic": true,
+          "magic_returns_after_years": 100
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -15561,7 +16213,7 @@
       "name": "Spell / Charge Cost",
       "section_id": "1613-13-28-88-staff-of-healing",
       "page": 245,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -15571,11 +16223,42 @@
         {
           "id": "charge-cost",
           "name": "Charge Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 13,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Cure Wounds"
+            },
+            {
+              "value": "1 charge per spell level (maximum 4 for a level 4 spell)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Lesser Restoration"
+            },
+            {
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mass Cure Wounds"
+            },
+            {
+              "value": "5"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
