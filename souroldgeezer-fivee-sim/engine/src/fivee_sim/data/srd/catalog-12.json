@@ -1962,8 +1962,72 @@
       "pages": [
         199
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Falling Net",
+        "severity": "Nuisance",
+        "level_range": "1-4",
+        "trigger": "creature crosses trip wire",
+        "duration": "Instantaneous",
+        "net": {
+          "weighted": true,
+          "size": "10-foot-square",
+          "position": "suspended from ceiling"
+        },
+        "trip_wire": {
+          "height_inches": 3,
+          "anchor_examples": [
+            "columns",
+            "trees"
+          ]
+        },
+        "effect": {
+          "target": "first creature crossing wire",
+          "saving_throw_ability": "Dexterity",
+          "dc": 10,
+          "failure_condition": "Restrained",
+          "condition_duration": "until escape",
+          "automatic_success_size_minimum": "Huge"
+        },
+        "escape": {
+          "action_required": true,
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 10,
+          "can_free": [
+            "self",
+            "creature within reach"
+          ]
+        },
+        "detection": {
+          "action": "Search",
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "dc": 11,
+          "reveals": [
+            "trip wire",
+            "suspended Net"
+          ]
+        },
+        "detected_wire_can_be_cut_or_avoided_without_check": true,
+        "net_at_zero_hit_points_frees_trapped_creatures": true,
+        "setting": {
+          "requirements": [
+            "Thieves' Tools",
+            "all trap components",
+            "Net"
+          ],
+          "ability": "Dexterity",
+          "skill": "Sleight of Hand",
+          "dc": 13,
+          "minutes_per_attempt": 10
+        },
+        "higher_level_save_and_escape_dc": {
+          "5-10": 12,
+          "11-16": 14,
+          "17-20": 16
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -1979,8 +2043,49 @@
         199,
         200
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Fire-Casting Statue",
+        "severity": "Deadly",
+        "level_range": "1-4",
+        "trigger": "creature moves onto pressure plate",
+        "duration": "Instantaneous",
+        "reset": "start of next turn",
+        "activation": [
+          "moves onto pressure plate first time on a turn",
+          "starts turn on pressure plate"
+        ],
+        "base_effect": {
+          "area": "15-foot Cone",
+          "damage_type": "Fire",
+          "magical": true,
+          "saving_throw_ability": "Dexterity",
+          "dc": 15,
+          "failed_save_damage": "11 (2d10)",
+          "successful_save_damage": "half"
+        },
+        "statue_detection_and_disarm": {
+          "detect_magic_aura": "Evocation",
+          "search_range_feet": 5,
+          "search_ability": "Wisdom",
+          "search_skill": "Perception",
+          "search_dc": 10,
+          "reveals": "tiny glyph",
+          "study_ability": "Intelligence",
+          "study_skill": "Arcana",
+          "study_dc": 15,
+          "glyph_meaning": "fire",
+          "disarm_action": "deface glyph with sharp tool"
+        },
+        "pressure_plate_detection_and_disarm": {
+          "action": "Search",
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "dc": 15,
+          "prevention": "wedge Iron Spike or similar object under plate"
+        },
+        "higher_levels_table_id": "200-levels-fire-damage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -1995,8 +2100,39 @@
       "pages": [
         200
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Hidden Pit",
+        "severity": "Nuisance",
+        "level_range": "1-4",
+        "trigger": "creature moves onto pit lid",
+        "duration": "Instantaneous",
+        "base_depth_feet": 10,
+        "lid": {
+          "hinged": true,
+          "matches_surrounding_floor": true,
+          "remains_open_after_trigger": true
+        },
+        "base_fall_damage": "3 (1d6)",
+        "base_damage_type": "Bludgeoning",
+        "detection": {
+          "action": "Study",
+          "ability": "Intelligence",
+          "skill": "Investigation",
+          "dc": 15
+        },
+        "opening_prevention": [
+          "wedge Iron Spike or similar object between lid and floor",
+          "Arcane Lock or similar magic"
+        ],
+        "escape_methods": [
+          "Climb Speed",
+          "climbing gear",
+          "Spider Climb or similar magic",
+          "added wall cracks as handholds and footholds"
+        ],
+        "higher_levels_table_id": "200-levels-pit-depth"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -2011,8 +2147,48 @@
       "pages": [
         200
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Poisoned Darts",
+        "severity": "Deadly",
+        "level_range": "1-4",
+        "trigger": "creature moves onto pressure plate",
+        "duration": "Instantaneous",
+        "reset": "start of next turn if activated fewer than three times",
+        "maximum_activations": 3,
+        "activation": "moves onto pressure plate first time on a turn",
+        "effect": {
+          "targets": "each creature in darts' path",
+          "saving_throw_ability": "Dexterity",
+          "dc": 13,
+          "failed_save_darts": "1d3",
+          "damage_per_dart": "3 (1d6)",
+          "damage_type": "Poison"
+        },
+        "dart_hole_detection": {
+          "action": "Search",
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "dc": 15
+        },
+        "dart_hole_blocking_materials": [
+          "wax",
+          "cloth",
+          "detritus"
+        ],
+        "pressure_plate_detection": {
+          "action": "Search",
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "dc": 15
+        },
+        "pressure_plate_prevention": "wedge Iron Spike or similar object under plate",
+        "higher_level_damage_per_dart": {
+          "5-10": "7 (2d6)",
+          "11-16": "14 (4d6)",
+          "17-20": "24 (7d6)"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -2028,8 +2204,43 @@
         200,
         201
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Poisoned Needle",
+        "severity": "Nuisance",
+        "level_range": "1-4",
+        "triggers": [
+          "opens lock improperly",
+          "fails to disarm trap"
+        ],
+        "duration": "Instantaneous",
+        "improper_opening": "object other than proper key",
+        "base_effect": {
+          "saving_throw_ability": "Constitution",
+          "dc": 11,
+          "failed_save_damage": "5 (1d10)",
+          "damage_type": "Poison",
+          "failed_save_condition": "Poisoned",
+          "condition_duration_hours": 1,
+          "successful_save_damage": "half",
+          "successful_save_condition": false
+        },
+        "avoided_by": "Knock or similar magic",
+        "detection": {
+          "action": "Search",
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "dc": 15
+        },
+        "disarm": {
+          "action_required": true,
+          "ability": "Dexterity",
+          "skill": "Sleight of Hand",
+          "dc": 15,
+          "failure_triggers_trap": true
+        },
+        "higher_levels_table_id": "201-levels-poison-damage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -2044,8 +2255,64 @@
       "pages": [
         201
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Rolling Stone",
+        "severity_by_level": {
+          "11-16": "Deadly",
+          "17-20": "Nuisance"
+        },
+        "trigger": "creature moves onto pressure plate",
+        "duration": "until stone stops rolling",
+        "stone": {
+          "radius_feet": 5,
+          "material": "solid stone",
+          "initiative_bonus": 8,
+          "movement_feet_per_turn": 60,
+          "movement_direction": "one direction",
+          "can_be_redirected_by_obstacle": true,
+          "can_move_through_creature_spaces": true,
+          "space_is_difficult_terrain": true,
+          "stops_at_wall_or_similar_barrier": true,
+          "can_go_around_corners": false
+        },
+        "collision": {
+          "triggers": [
+            "stone enters creature space first time on a turn",
+            "creature enters rolling stone's space"
+          ],
+          "saving_throw_ability": "Dexterity",
+          "dc": 15,
+          "failed_save_damage": "55 (10d10)",
+          "damage_type": "Bludgeoning",
+          "failed_save_condition": "Prone"
+        },
+        "pressure_plate_detection": {
+          "action": "Study",
+          "ability": "Intelligence",
+          "skill": "Investigation",
+          "dc": 15
+        },
+        "pressure_plate_prevention": "wedge Iron Spike or similar object under plate",
+        "object_statistics": {
+          "size": "Large",
+          "armor_class": 17,
+          "hit_points": 100,
+          "damage_threshold": 10,
+          "damage_immunities": [
+            "Poison",
+            "Psychic"
+          ]
+        },
+        "slowing": {
+          "action_required": true,
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 20,
+          "success_movement_reduction_feet": 15,
+          "movement_zero_stops_stone": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -2060,8 +2327,51 @@
       "pages": [
         201
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Spiked Pit",
+        "severity": "Deadly",
+        "level_range": "1-4",
+        "trigger": "creature moves onto pit lid",
+        "duration": "Instantaneous",
+        "base_depth_feet": 10,
+        "lid": {
+          "hinged": true,
+          "matches_surrounding_floor": true,
+          "remains_open_after_trigger": true
+        },
+        "spike_materials": [
+          "wood",
+          "metal"
+        ],
+        "base_damage": [
+          {
+            "amount": "3 (1d6)",
+            "type": "Bludgeoning"
+          },
+          {
+            "amount": "9 (2d8)",
+            "type": "Piercing"
+          }
+        ],
+        "detection": {
+          "action": "Study",
+          "ability": "Intelligence",
+          "skill": "Investigation",
+          "dc": 15
+        },
+        "opening_prevention": [
+          "wedge Iron Spike or similar object between lid and floor",
+          "Arcane Lock or similar magic"
+        ],
+        "escape_methods": [
+          "Climb Speed",
+          "climbing gear",
+          "Spider Climb or similar magic",
+          "added wall cracks as handholds and footholds"
+        ],
+        "higher_levels_table_id": "201-levels-pit-depth"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1341-12-35-example-traps"
     },
@@ -2076,8 +2386,32 @@
       "pages": [
         202
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Combat Encounters",
+        "encounter_features": {
+          "changes_in_elevation": {
+            "examples": [
+              "stacks of empty crates",
+              "ledges",
+              "balconies"
+            ],
+            "encouraged_movement": [
+              "jump",
+              "climb",
+              "fly",
+              "teleport"
+            ]
+          },
+          "defensive_positions": "force ranged attackers to move",
+          "mixed_monster_groups": "combine different monster abilities",
+          "reasons_to_move_examples": [
+            "chandeliers",
+            "kegs of gunpowder or oil",
+            "rolling stone traps"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -2092,8 +2426,11 @@
       "pages": [
         202
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Combat Encounter Difficulty",
+        "purpose": "create combat encounter at desired difficulty"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -2108,8 +2445,35 @@
       "pages": [
         202
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Step 1: Choose a Difficulty",
+        "categories": {
+          "Low": {
+            "expected_scary_moments": "one or two",
+            "expected_victory": true,
+            "expected_casualties": false,
+            "healing_resources_may_be_needed": true,
+            "single_monster_guideline": {
+              "party_size": 4,
+              "party_level_equals_monster_challenge_rating": true
+            }
+          },
+          "Moderate": {
+            "can_go_badly_without_healing_or_other_resources": true,
+            "weaker_characters_may_be_removed_from_fight": true,
+            "character_death_chance": "slim"
+          },
+          "High": {
+            "can_be_lethal": true,
+            "survival_factors": [
+              "smart tactics",
+              "quick thinking",
+              "luck"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1351-12-37-combat-encounter-difficulty"
     },
@@ -2124,8 +2488,16 @@
       "pages": [
         202
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Step 2: Determine Your XP Budget",
+        "lookup_inputs": [
+          "party level",
+          "desired encounter difficulty"
+        ],
+        "budget_formula": "table value × number of party characters",
+        "table_id": "202-xp-budget-per-character"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1351-12-37-combat-encounter-difficulty"
     },
@@ -2141,8 +2513,50 @@
         202,
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Step 3: Spend Your Budget",
+        "creature_cost_source": "stat block XP value",
+        "deduct_creature_xp_from_budget": true,
+        "spend_as_much_as_possible": true,
+        "can_exceed_budget": false,
+        "unspent_xp_allowed": true,
+        "examples": [
+          {
+            "difficulty": "Low",
+            "party_level": 1,
+            "party_size": 4,
+            "per_character_budget": 50,
+            "total_budget": 200,
+            "encounter_options": [
+              "1 Bugbear Warrior (200 XP)",
+              "2 Giant Wasps (100 XP each; 200 XP total)",
+              "6 Giant Rats (25 XP each; 150 XP total)"
+            ]
+          },
+          {
+            "difficulty": "Moderate",
+            "party_level": 3,
+            "party_size": 5,
+            "per_character_budget": 225,
+            "total_budget": 1125,
+            "encounter_options": [
+              "2 Druids (450 XP each) and 9 Stirges (25 XP each; 1,125 XP total)",
+              "1 Wight (700 XP), 1 Warhorse Skeleton (100 XP), and 6 Skeletons (50 XP each; 1,100 XP total)"
+            ]
+          },
+          {
+            "difficulty": "High",
+            "party_level": 15,
+            "party_size": 6,
+            "per_character_budget": 7800,
+            "total_budget": 46800,
+            "encounter_options": [
+              "2 Adult Red Dragons (18,000 XP each) and 2 Fire Giants (5,000 XP each; 46,000 XP total)"
+            ]
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1351-12-37-combat-encounter-difficulty"
     },
@@ -2157,8 +2571,14 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Troubleshooting",
+        "scope": [
+          "creating combat encounters",
+          "running combat encounters"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -2173,8 +2593,20 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Many Creatures",
+        "more_creatures_increase_lucky_streak_damage_risk": true,
+        "fragile_creatures_guideline": {
+          "trigger": "more than two encounter creatures per character",
+          "include_fragile_creatures": true,
+          "fragile_creatures_defeated_quickly": true
+        },
+        "especially_important_character_levels": [
+          1,
+          2
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     },
@@ -2189,8 +2621,16 @@
       "pages": [
         203
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adjustments",
+        "player_absence_can_warrant_removing_creatures": true,
+        "goal": "maintain intended encounter difficulty",
+        "on_the_fly_adjustments": {
+          "easier": "creatures flee",
+          "harder": "add reinforcements"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1355-12-38-troubleshooting"
     },
@@ -2673,30 +3113,351 @@
       "name": "XP Budget per Character",
       "section_id": "1353-12-37-2-step-2-determine-your-xp-budget",
       "page": 202,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "party-s-level",
+          "id": "party-level",
           "name": "Party's Level",
           "type": "integer"
         },
         {
           "id": "low",
-          "name": "——— Low",
+          "name": "Low",
           "type": "integer"
         },
         {
-          "id": "encounter-difficulty-moderate",
-          "name": "Encounter Difficulty Moderate",
+          "id": "moderate",
+          "name": "Moderate",
           "type": "integer"
         },
         {
           "id": "high",
-          "name": "——— High",
+          "name": "High",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": 50
+            },
+            {
+              "value": 75
+            },
+            {
+              "value": 100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": 100
+            },
+            {
+              "value": 150
+            },
+            {
+              "value": 200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": 150
+            },
+            {
+              "value": 225
+            },
+            {
+              "value": 400
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": 250
+            },
+            {
+              "value": 375
+            },
+            {
+              "value": 500
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": 500
+            },
+            {
+              "value": 750
+            },
+            {
+              "value": 1100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": 600
+            },
+            {
+              "value": 1000
+            },
+            {
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": 750
+            },
+            {
+              "value": 1300
+            },
+            {
+              "value": 1700
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": 1000
+            },
+            {
+              "value": 1700
+            },
+            {
+              "value": 2100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": 1300
+            },
+            {
+              "value": 2000
+            },
+            {
+              "value": 2600
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": 1600
+            },
+            {
+              "value": 2300
+            },
+            {
+              "value": 3100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 11
+            },
+            {
+              "value": 1900
+            },
+            {
+              "value": 2900
+            },
+            {
+              "value": 4100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 12
+            },
+            {
+              "value": 2200
+            },
+            {
+              "value": 3700
+            },
+            {
+              "value": 4700
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 13
+            },
+            {
+              "value": 2600
+            },
+            {
+              "value": 4200
+            },
+            {
+              "value": 5400
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 14
+            },
+            {
+              "value": 2900
+            },
+            {
+              "value": 4900
+            },
+            {
+              "value": 6200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 15
+            },
+            {
+              "value": 3300
+            },
+            {
+              "value": 5400
+            },
+            {
+              "value": 7800
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 16
+            },
+            {
+              "value": 3800
+            },
+            {
+              "value": 6100
+            },
+            {
+              "value": 9800
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 17
+            },
+            {
+              "value": 4500
+            },
+            {
+              "value": 7200
+            },
+            {
+              "value": 11700
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 18
+            },
+            {
+              "value": 5000
+            },
+            {
+              "value": 8700
+            },
+            {
+              "value": 14200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 19
+            },
+            {
+              "value": 5500
+            },
+            {
+              "value": 10700
+            },
+            {
+              "value": 17200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 20
+            },
+            {
+              "value": 6400
+            },
+            {
+              "value": 13200
+            },
+            {
+              "value": 22000
+            }
+          ]
+        }
+      ],
       "source_row_count": 20,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -2774,7 +3535,7 @@
       "name": "Levels / Pit Depth",
       "section_id": "1345-12-35-4-hidden-pit",
       "page": 200,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "levels",
@@ -2792,7 +3553,47 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "5-10"
+            },
+            {
+              "value": "30 feet"
+            },
+            {
+              "value": "10 (3d6)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-16"
+            },
+            {
+              "value": "60 feet"
+            },
+            {
+              "value": "21 (6d6)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-20"
+            },
+            {
+              "value": "120 feet"
+            },
+            {
+              "value": "42 (12d6)"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -2802,7 +3603,7 @@
       "name": "Levels / Fire Damage",
       "section_id": "1344-12-35-3-fire-casting-statue",
       "page": 200,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "levels",
@@ -2820,7 +3621,47 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "5-10"
+            },
+            {
+              "value": "22 (4d10)"
+            },
+            {
+              "value": "30-foot Cone"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-16"
+            },
+            {
+              "value": "55 (10d10)"
+            },
+            {
+              "value": "60-foot Cone"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-20"
+            },
+            {
+              "value": "99 (18d10)"
+            },
+            {
+              "value": "120-foot Cone"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -2830,7 +3671,7 @@
       "name": "Levels / Poison Damage",
       "section_id": "1347-12-35-6-poisoned-needle",
       "page": 201,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "levels",
@@ -2848,7 +3689,47 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "5-10"
+            },
+            {
+              "value": "11 (2d10)"
+            },
+            {
+              "value": 13
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-16"
+            },
+            {
+              "value": "22 (4d10)"
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-20"
+            },
+            {
+              "value": "55 (10d10)"
+            },
+            {
+              "value": 17
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -2858,7 +3739,7 @@
       "name": "Levels / Pit Depth",
       "section_id": "1349-12-35-8-spiked-pit",
       "page": 201,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "levels",
@@ -2876,7 +3757,47 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "5-10"
+            },
+            {
+              "value": "30 feet"
+            },
+            {
+              "value": "10 (3d6) Bludgeoning plus 13 (3d8) Piercing"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-16"
+            },
+            {
+              "value": "60 feet"
+            },
+            {
+              "value": "21 (6d6) Bludgeoning plus 36 (8d8) Piercing"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "17-20"
+            },
+            {
+              "value": "120 feet"
+            },
+            {
+              "value": "42 (12d6) Bludgeoning plus 57 (13d8) Piercing"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
