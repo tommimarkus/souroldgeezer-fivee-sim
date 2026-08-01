@@ -7015,8 +7015,89 @@
       "pages": [
         127
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Earthquake",
+        "level": 8,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 500
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "fractured rock"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Circle",
+            "radius_feet": 100,
+            "origin": "visible ground point"
+          },
+          "ground_is_difficult_terrain": true,
+          "creature_save": {
+            "targets": "each creature on ground in area",
+            "ability": "Dexterity",
+            "timings": [
+              "when cast",
+              "end of each caster turn"
+            ],
+            "failure": [
+              "Prone",
+              "Concentration broken"
+            ]
+          },
+          "fissures": {
+            "count": "1d6",
+            "timing": "end of casting turn",
+            "locations_chosen_by": "caster",
+            "allowed_under_structures": false,
+            "depth_feet": "1d10 × 10",
+            "width_feet": 10,
+            "length": "area edge to opposite edge",
+            "creature_in_space_save": "Dexterity",
+            "failed_save": "falls in",
+            "successful_save": "moves with fissure edge"
+          },
+          "structures": {
+            "target": "structure touching ground in area",
+            "damage": 50,
+            "damage_type": "Bludgeoning",
+            "timings": [
+              "when cast",
+              "end of each caster turn"
+            ],
+            "collapses_at_hit_points": 0,
+            "collapse_creature_range": "half structure height",
+            "collapse_save": "Dexterity",
+            "failed_collapse_save": {
+              "damage": "12d6",
+              "damage_type": "Bludgeoning",
+              "condition": "Prone",
+              "buried": true,
+              "escape": {
+                "action": "Action",
+                "ability": "Strength",
+                "skill": "Athletics",
+                "dc": 20
+              }
+            },
+            "successful_collapse_save_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7031,8 +7112,45 @@
       "pages": [
         127
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Eldritch Blast",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "attack": "ranged spell attack",
+          "target_types": [
+            "creature",
+            "object"
+          ],
+          "hit_damage_per_beam": "1d10",
+          "damage_type": "Force",
+          "beams_by_character_level": {
+            "1": 1,
+            "5": 2,
+            "11": 3,
+            "17": 4
+          },
+          "same_or_different_targets": true,
+          "separate_attack_roll_per_beam": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7047,8 +7165,105 @@
       "pages": [
         127
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Elementalism",
+        "level": 0,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "option_choice_count": 1,
+          "options": {
+            "Beckon Air": {
+              "area": {
+                "shape": "Cube",
+                "size_feet": 5
+              },
+              "effects": [
+                "ripple cloth",
+                "stir dust",
+                "rustle leaves",
+                "close open doors",
+                "close open shutters"
+              ],
+              "held_doors_or_shutters_affected": false
+            },
+            "Beckon Earth": {
+              "choices": [
+                "dust or sand over 5-foot-square surface",
+                "one handwritten word in dirt or sand"
+              ]
+            },
+            "Beckon Fire": {
+              "area": {
+                "shape": "Cube",
+                "size_feet": 5
+              },
+              "creates": [
+                "harmless embers",
+                "colored scented smoke"
+              ],
+              "color_and_scent_chosen_by": "caster",
+              "can_light": [
+                "candles",
+                "torches",
+                "lamps"
+              ],
+              "scent_duration_minutes": 1
+            },
+            "Beckon Water": {
+              "choices": [
+                {
+                  "cool_mist": {
+                    "area": "5-foot Cube",
+                    "effect": "lightly dampens creatures and objects"
+                  }
+                },
+                {
+                  "clean_water": {
+                    "cups": 1,
+                    "locations": [
+                      "open container",
+                      "surface"
+                    ],
+                    "evaporates_minutes": 1
+                  }
+                }
+              ]
+            },
+            "Sculpt Element": {
+              "materials": [
+                "dirt",
+                "sand",
+                "fire",
+                "smoke",
+                "mist",
+                "water"
+              ],
+              "maximum_volume": "1-foot Cube",
+              "shape": "crude",
+              "duration_hours": 1
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7063,8 +7278,51 @@
       "pages": [
         127
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Enhance Ability",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "fur or feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "creature",
+          "ability_choice": [
+            "Strength",
+            "Dexterity",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "effect": "Advantage on checks with chosen ability",
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "additional_targets_per_slot_level": 1,
+            "ability_chosen_per_target": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7080,8 +7338,60 @@
         127,
         128
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Enlarge/Reduce",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pinch of powdered iron"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target_types": [
+            "visible creature",
+            "visible object"
+          ],
+          "object_must_be_unworn_and_uncarried": true,
+          "unwilling_creature_save": "Constitution",
+          "successful_save_effect": "none",
+          "creature_worn_and_carried_items_resize": true,
+          "dropped_item_returns_to_normal_immediately": true,
+          "thrown_weapon_or_ammunition_returns_after_hit_or_miss": true,
+          "options": {
+            "Enlarge": {
+              "size_categories": 1,
+              "strength_checks": "Advantage",
+              "strength_saves": "Advantage",
+              "weapon_or_unarmed_hit_extra_damage": "1d4"
+            },
+            "Reduce": {
+              "size_categories": -1,
+              "strength_checks": "Disadvantage",
+              "strength_saves": "Disadvantage",
+              "weapon_or_unarmed_hit_damage_reduction": "1d4",
+              "minimum_damage": 1
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7096,8 +7406,52 @@
       "pages": [
         128
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ensnaring Strike",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Bonus Action",
+          "trigger": "immediately after weapon hit on creature"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "saving_throw_ability": "Strength",
+          "large_or_larger_save_advantage": true,
+          "failed_save_condition": "Restrained",
+          "successful_save_ends_spell": true,
+          "restrained_start_turn_damage": "1d6",
+          "damage_type": "Piercing",
+          "escape": {
+            "eligible": [
+              "target",
+              "creature within reach"
+            ],
+            "action": "Action",
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": "spell save DC",
+            "success_ends_spell": true
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7112,8 +7466,48 @@
       "pages": [
         128
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Entangle",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Square",
+            "size_feet": 20,
+            "ground": true
+          },
+          "ground_is_difficult_terrain": true,
+          "initial_targets": "each creature other than caster in area",
+          "saving_throw_ability": "Strength",
+          "failed_save_condition": "Restrained",
+          "escape": {
+            "action": "Action",
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": "spell save DC",
+            "success_ends_condition": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7128,8 +7522,39 @@
       "pages": [
         128
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Enthrall",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "targets": "chosen visible creatures in range",
+          "saving_throw_ability": "Wisdom",
+          "creatures_fighting_caster_or_companions_automatically_succeed": true,
+          "failed_save_penalties": {
+            "Wisdom (Perception) checks": -10,
+            "Passive Perception": -10
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7144,8 +7569,55 @@
       "pages": [
         128
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Etherealness",
+        "level": 7,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "maximum_hours": 8
+        },
+        "effect": {
+          "destination": "Border Ethereal overlapping current plane",
+          "movement_directions": "any",
+          "vertical_movement_cost_multiplier": 2,
+          "perception_into_departed_plane_feet": 60,
+          "interaction_scope": "Ethereal Plane creatures, objects, and effects only",
+          "non_ethereal_perception_or_interaction_requires_feature": true,
+          "return_location": "corresponding departed-plane space",
+          "occupied_return_space": {
+            "destination": "nearest unoccupied space",
+            "force_damage_per_foot_moved": 2
+          },
+          "ends_immediately_if_cast_on": [
+            "Ethereal Plane",
+            "non-bordering plane"
+          ],
+          "higher_level_slot": {
+            "minimum_slot_level": 8,
+            "willing_targets_per_slot_level_above_7": 3,
+            "includes_caster": true,
+            "maximum_cast_distance_feet": 10
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7160,8 +7632,35 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Expeditious Retreat",
+        "level": 1,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "immediate_action": "Dash",
+          "dash_as_bonus_action_for_duration": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7176,8 +7675,61 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Eyebite",
+        "level": 6,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": {
+            "count": 1,
+            "visible": true,
+            "within_feet": 60
+          },
+          "saving_throw_ability": "Wisdom",
+          "effect_choice_count": 1,
+          "later_turn_new_target_action": "Magic",
+          "cannot_retarget_creature_that_succeeded_against_casting": true,
+          "effects": {
+            "Asleep": {
+              "condition": "Unconscious",
+              "wake_triggers": [
+                "takes damage",
+                "another creature uses action to shake awake"
+              ]
+            },
+            "Panicked": {
+              "condition": "Frightened",
+              "turn_action": "Dash",
+              "movement": "safest shortest route away",
+              "ends_at_feet_if_cannot_see_caster": 60
+            },
+            "Sickened": {
+              "condition": "Poisoned"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7192,8 +7744,50 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fabricate",
+        "level": 4,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "input": "visible raw materials",
+          "output_material_must_match_input": true,
+          "nonmineral_maximum": {
+            "size": "Large",
+            "volume_options": [
+              "10-foot Cube",
+              "eight connected 5-foot Cubes"
+            ]
+          },
+          "metal_stone_or_mineral_maximum": {
+            "size": "Medium",
+            "volume": "5-foot Cube"
+          },
+          "sufficient_material_required": true,
+          "output_quality_basis": "raw material quality",
+          "cannot_create": [
+            "creatures",
+            "magic items"
+          ],
+          "high_skill_items_require_matching_artisan_tool_proficiency": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7208,8 +7802,46 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Faerie Fire",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "size_feet": 20
+          },
+          "outline_color_choice": [
+            "blue",
+            "green",
+            "violet"
+          ],
+          "objects_automatically_outlined": true,
+          "creature_saving_throw_ability": "Dexterity",
+          "failed_save_outlines_creature": true,
+          "affected_dim_light_radius_feet": 10,
+          "affected_cannot_benefit_from_invisible": true,
+          "visible_attacker_has_advantage_against_affected": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7224,8 +7856,56 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Faithful Hound",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "silver whistle"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "manifestation": {
+            "space": "visible unoccupied",
+            "visible_only_to_caster": true,
+            "intangible": true,
+            "invulnerable": true
+          },
+          "ends_if_distance_from_caster_exceeds_feet": 300,
+          "password_defined_on_cast": true,
+          "barking_trigger": {
+            "minimum_creature_size": "Small",
+            "range_feet": 30,
+            "requires_missing_password": true
+          },
+          "truesight_feet": 30,
+          "bite": {
+            "timing": "start of caster turn",
+            "target": "one enemy within 5 feet",
+            "saving_throw_ability": "Dexterity",
+            "failed_save_damage": "4d8",
+            "damage_type": "Force"
+          },
+          "later_turn_move": {
+            "action": "Magic",
+            "maximum_feet": 30
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7240,8 +7920,37 @@
       "pages": [
         129
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "False Life",
+        "level": 1,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of alcohol"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "temporary_hit_points": "2d4 + 4",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_temporary_hit_points_per_slot_level": 5
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7256,8 +7965,52 @@
       "pages": [
         130
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Fear",
+        "level": 3,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "white feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cone",
+            "length_feet": 30
+          },
+          "targets": "each creature in area",
+          "saving_throw_ability": "Wisdom",
+          "failed_save": {
+            "drops_held_items": true,
+            "condition": "Frightened"
+          },
+          "frightened_turn": {
+            "action": "Dash",
+            "movement": "safest route away",
+            "unless": "nowhere to move"
+          },
+          "repeat_save_requirement": "ends turn without line of sight to caster",
+          "successful_repeat_save_ends_for_target": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7272,8 +8025,38 @@
       "pages": [
         130
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Feather Fall",
+        "level": 1,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Reaction",
+          "trigger": "caster or visible creature within 60 feet falls"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "M": "small feather or piece of down"
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "maximum_targets": 5,
+          "target_requirement": "falling creature",
+          "descent_feet_per_round": 60,
+          "landing_before_end_fall_damage": 0,
+          "landing_ends_for_target": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7288,8 +8071,91 @@
       "pages": [
         130
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Find Familiar",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "time": "1 hour",
+          "ritual": true
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "burning incense",
+            "minimum_value_gp": 10,
+            "consumed": true
+          }
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "forms": [
+            "Bat",
+            "Cat",
+            "Frog",
+            "Hawk",
+            "Lizard",
+            "Octopus",
+            "Owl",
+            "Rat",
+            "Raven",
+            "Spider",
+            "Weasel",
+            "other Beast CR 0"
+          ],
+          "appearance_space": "unoccupied within range",
+          "uses_form_statistics": true,
+          "creature_type_choice": [
+            "Celestial",
+            "Fey",
+            "Fiend"
+          ],
+          "acts_independently": true,
+          "obeys_commands": true,
+          "telepathy_feet": 100,
+          "shared_senses": {
+            "action": "Bonus Action",
+            "maximum_distance_feet": 100,
+            "ends": "start of caster’s next turn",
+            "includes_special_senses": true
+          },
+          "deliver_touch_spell": {
+            "maximum_distance_feet": 100,
+            "familiar_action": "Reaction"
+          },
+          "combat": {
+            "ally": true,
+            "own_initiative": true,
+            "own_turn": true,
+            "can_attack": false,
+            "other_actions_allowed": true
+          },
+          "zero_hit_points": "disappears",
+          "reappears_after_recasting": true,
+          "dismiss": {
+            "action": "Magic",
+            "temporary_destination": "pocket dimension",
+            "permanent_allowed": true
+          },
+          "reappear": {
+            "action": "Magic",
+            "space": "unoccupied within 30 feet"
+          },
+          "leaves_worn_or_carried_items_when_disappearing": true,
+          "maximum_familiars": 1,
+          "recasting_with_familiar_changes_to_new_eligible_form": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7304,8 +8170,58 @@
       "pages": [
         130
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Find Steed",
+        "level": 2,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "stat_block_record_id": "900-10-15-otherworldly-steed",
+          "appearance_space": "chosen unoccupied within range",
+          "existing_steed_replaced": true,
+          "appearance": "chosen Large rideable animal",
+          "creature_type_choice": [
+            "Celestial",
+            "Fey",
+            "Fiend"
+          ],
+          "type_determines_stat_block_traits": true,
+          "combat": {
+            "ally": true,
+            "shares_caster_initiative": true,
+            "controlled_mount_while_ridden": true
+          },
+          "caster_incapacitated": {
+            "turn_timing": "immediately after caster",
+            "acts_independently": true,
+            "focus": "protect caster"
+          },
+          "disappears_at_hit_points": 0,
+          "disappears_if_caster_dies": true,
+          "leaves_worn_or_carried_items": true,
+          "recast_choice": [
+            "same disappeared steed",
+            "different steed"
+          ],
+          "stat_block_spell_level": "slot level used"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -7320,8 +8236,110 @@
       "pages": [
         131
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block": "Otherworldly Steed",
+        "size": "Large",
+        "creature_type_choice": [
+          "Celestial",
+          "Fey",
+          "Fiend"
+        ],
+        "alignment": "Neutral",
+        "armor_class_formula": "10 + spell level",
+        "hit_points_formula": "5 + 10 × spell level",
+        "hit_dice": {
+          "die": "d10",
+          "count_formula": "spell level"
+        },
+        "speeds_feet": {
+          "walk": 60,
+          "fly": 60
+        },
+        "fly_speed_minimum_spell_level": 4,
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "passive_perception": 11,
+        "telepathy_miles": 1,
+        "telepathy_only_with_summoner": true,
+        "challenge_rating": "None",
+        "experience_points": 0,
+        "proficiency_bonus": "summoner’s Proficiency Bonus",
+        "traits": {
+          "Life Bond": {
+            "trigger": "summoner regains Hit Points from level 1+ spell",
+            "maximum_distance_feet": 5,
+            "steed_healing": "same Hit Points"
+          }
+        },
+        "actions": {
+          "Otherworldly Slam": {
+            "type": "Melee Attack Roll",
+            "attack_bonus": "summoner’s spell attack modifier",
+            "reach_feet": 5,
+            "damage_formula": "1d8 + spell level",
+            "damage_type_by_creature_type": {
+              "Celestial": "Radiant",
+              "Fey": "Psychic",
+              "Fiend": "Necrotic"
+            }
+          }
+        },
+        "bonus_actions": {
+          "Fell Glare": {
+            "creature_type": "Fiend",
+            "recovery": "Long Rest",
+            "target": "one visible creature within 60 feet",
+            "saving_throw_ability": "Wisdom",
+            "dc": "summoner’s spell save DC",
+            "failed_save_condition": "Frightened",
+            "condition_ends": "end of summoner’s next turn"
+          },
+          "Fey Step": {
+            "creature_type": "Fey",
+            "recovery": "Long Rest",
+            "teleport_feet": 60,
+            "includes_rider": true,
+            "destination": "chosen unoccupied space"
+          },
+          "Healing Touch": {
+            "creature_type": "Celestial",
+            "recovery": "Long Rest",
+            "target": "one creature within 5 feet",
+            "healing_formula": "2d8 + spell level"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "899-10-14-109-find-steed"
     },
