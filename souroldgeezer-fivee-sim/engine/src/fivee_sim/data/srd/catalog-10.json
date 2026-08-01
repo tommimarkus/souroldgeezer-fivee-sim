@@ -15436,8 +15436,70 @@
       "pages": [
         154
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Prestidigitation",
+        "level": 0,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "maximum_hours": 1
+        },
+        "effect": {
+          "maximum_concurrent_noninstantaneous_effects": 3,
+          "options": [
+            {
+              "name": "Sensory Effect",
+              "duration": "Instantaneous",
+              "effect": "harmless sensory effect"
+            },
+            {
+              "name": "Fire Play",
+              "duration": "Instantaneous",
+              "effect": "light or snuff candle, torch, or small campfire"
+            },
+            {
+              "name": "Clean or Soil",
+              "duration": "Instantaneous",
+              "effect": "clean or soil object",
+              "maximum_object_volume_cubic_feet": 1
+            },
+            {
+              "name": "Minor Sensation",
+              "duration_hours": 1,
+              "effect": "chill, warm, or flavor nonliving material",
+              "maximum_material_volume_cubic_feet": 1
+            },
+            {
+              "name": "Magic Mark",
+              "duration_hours": 1,
+              "effect": "color, small mark, or symbol on object or surface"
+            },
+            {
+              "name": "Minor Creation",
+              "duration": "until end of caster's next turn",
+              "effect": "create nonmagical trinket or illusory image that fits in caster's hand",
+              "trinket_can_deal_damage": false,
+              "trinket_has_monetary_worth": false
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15453,8 +15515,40 @@
         154,
         155
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Prismatic Spray",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Cone",
+            "length_feet": 60
+          },
+          "targets": "each creature in area",
+          "saving_throw_ability": "Dexterity",
+          "ray_roll_per_target": "1d8",
+          "ray_table_id": "154-prismatic-rays"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15469,8 +15563,69 @@
       "pages": [
         155
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Prismatic Wall",
+        "level": 9,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "forms": [
+            {
+              "shape": "vertical opaque wall",
+              "maximum_length_feet": 90,
+              "maximum_height_feet": 30,
+              "thickness_inches": 1
+            },
+            {
+              "shape": "globe",
+              "maximum_diameter_feet": 30
+            }
+          ],
+          "centered_on_point_within_range": true,
+          "occupied_placement": "spell ends instantly without effect",
+          "light": {
+            "bright_radius_feet": 100,
+            "additional_dim_radius_feet": 100
+          },
+          "safe_creatures": "caster and creatures designated when spell is cast",
+          "proximity_effect": {
+            "targets": "other creatures that can see the wall",
+            "triggers": [
+              "moves within 20 feet",
+              "starts turn within 20 feet"
+            ],
+            "saving_throw_ability": "Constitution",
+            "failed_save_condition": "Blinded",
+            "failed_save_duration_minutes": 1
+          },
+          "layers": 7,
+          "layer_interaction": "creature reaching into or passing through resolves each layer in order",
+          "layer_saving_throw_ability": "Dexterity",
+          "armor_class": 10,
+          "destruction_order": "red to violet",
+          "destroyed_layer_remains_absent_for_duration": true,
+          "antimagic_field_effect": "none",
+          "dispel_magic_affects_only": "violet layer",
+          "layer_table_id": "155-prismatic-layers"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15485,8 +15640,52 @@
       "pages": [
         156
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Private Sanctum",
+        "level": 4,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "thin sheet of lead"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "minimum_side_feet": 5,
+            "maximum_side_feet": 100
+          },
+          "choose_any_security_properties": [
+            "sound cannot pass through perimeter barrier",
+            "barrier appears dark and foggy and blocks vision including Darkvision",
+            "Divination sensors cannot appear inside or pass through perimeter barrier",
+            "creatures inside cannot be targeted by Divination spells",
+            "teleportation into or out of area is blocked",
+            "planar travel within area is blocked"
+          ],
+          "permanent_casting": {
+            "same_spot_daily_castings": 365,
+            "duration": "until dispelled"
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "additional_cube_side_feet_per_slot_level": 100
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15501,8 +15700,52 @@
       "pages": [
         156
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Produce Flame",
+        "level": 0,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 10
+        },
+        "effect": {
+          "flame_location": "caster's hand",
+          "emits_heat": false,
+          "ignites_objects": false,
+          "bright_light_radius_feet": 20,
+          "additional_dim_light_radius_feet": 20,
+          "recasting_ends_spell": true,
+          "attack": {
+            "action": "Magic action",
+            "maximum_range_feet": 60,
+            "targets": [
+              "creature",
+              "object"
+            ],
+            "attack_roll": "ranged spell attack",
+            "hit_damage": "1d8",
+            "damage_type": "Fire"
+          },
+          "cantrip_upgrade": {
+            "level_5": "2d8",
+            "level_11": "3d8",
+            "level_17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15517,8 +15760,61 @@
       "pages": [
         156
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Programmed Illusion",
+        "level": 6,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "jade dust worth 25+ GP"
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "illusion_types": [
+            "object",
+            "creature",
+            "other visible phenomenon"
+          ],
+          "imperceptible_until_triggered": true,
+          "maximum_size": {
+            "shape": "Cube",
+            "side_feet": 30
+          },
+          "scripted_behavior_and_sounds": true,
+          "maximum_performance_minutes": 5,
+          "dormancy_after_performance_minutes": 10,
+          "repeat_activation": true,
+          "trigger": {
+            "detail": "general or detailed",
+            "phenomena": [
+              "visual",
+              "audible"
+            ],
+            "maximum_distance_from_area_feet": 30
+          },
+          "physical_interaction_reveals_illusion": true,
+          "study_check": {
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": "caster's spell save DC",
+            "success": "creature sees through image and its sounds seem hollow"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15534,8 +15830,59 @@
         156,
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Project Image",
+        "level": 7,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "miles": 500
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "statuette of caster worth 5+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_days": 1
+        },
+        "effect": {
+          "copy": "illusory copy of caster",
+          "placement": "previously seen location within range regardless of intervening obstacles",
+          "appearance_and_sound": "caster",
+          "intangible": true,
+          "damage_to_illusion": "illusion disappears and spell ends",
+          "remote_senses": [
+            "see through illusion's eyes",
+            "hear through illusion's ears"
+          ],
+          "control": {
+            "action": "Magic action",
+            "maximum_movement_feet": 60,
+            "behaviors": [
+              "gesture",
+              "speak",
+              "otherwise behave as chosen"
+            ],
+            "mimics_caster_mannerisms": true
+          },
+          "physical_interaction_reveals_illusion": true,
+          "study_check": {
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": "caster's spell save DC",
+            "success": "creature sees through image and its sounds seem hollow"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15550,8 +15897,43 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Protection from Energy",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "willing creature touched",
+          "chosen_damage_resistance": [
+            "Acid",
+            "Cold",
+            "Fire",
+            "Lightning",
+            "Thunder"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15566,8 +15948,53 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Protection from Evil and Good",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "flask of Holy Water worth 25+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "target": "one willing creature touched",
+          "protected_from_creature_types": [
+            "Aberration",
+            "Celestial",
+            "Elemental",
+            "Fey",
+            "Fiend",
+            "Undead"
+          ],
+          "protected_type_attack_rolls_against_target": "Disadvantage",
+          "protected_type_cannot_possess_target": true,
+          "conditions_target_cannot_gain_from_protected_type": [
+            "Charmed",
+            "Frightened"
+          ],
+          "existing_effect_new_saving_throws": "Advantage"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15582,8 +16009,37 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Protection from Poison",
+        "level": 2,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "creature touched",
+          "initial_condition_ended": "Poisoned",
+          "saving_throws_to_avoid_or_end_poisoned": "Advantage",
+          "damage_resistance": "Poison"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15598,8 +16054,43 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Purify Food and Drink",
+        "level": 1,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 5,
+            "center": "point within range"
+          },
+          "targets": "nonmagical food and drink",
+          "removes": [
+            "poison",
+            "rot"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15614,8 +16105,47 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Raise Dead",
+        "level": 5,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "diamond worth 500+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "dead creature",
+          "maximum_days_dead": 10,
+          "target_was_undead_at_death_allowed": false,
+          "return_hit_points": 1,
+          "neutralizes_poison_present_at_death": true,
+          "closes_mortal_wounds": true,
+          "restores_missing_body_parts": false,
+          "fails_if_missing_survival_integral_body_parts": true,
+          "revival_penalty": {
+            "d20_tests": -4,
+            "reduction_after_each_long_rest": 1,
+            "minimum": 0
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15630,8 +16160,44 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ray of Enfeeblement",
+        "level": 2,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "creature",
+          "saving_throw_ability": "Constitution",
+          "successful_initial_save": {
+            "next_attack_roll": "Disadvantage",
+            "deadline": "start of caster's next turn"
+          },
+          "failed_initial_save": {
+            "strength_based_d20_tests": "Disadvantage",
+            "all_damage_roll_reduction": "1d8"
+          },
+          "repeat_save_timing": "end of each target turn",
+          "repeat_save_success_ends_spell": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15646,8 +16212,42 @@
       "pages": [
         157
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ray of Frost",
+        "level": 0,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "creature",
+          "attack_roll": "ranged spell attack",
+          "hit_damage": "1d8",
+          "damage_type": "Cold",
+          "speed_reduction_feet": 10,
+          "speed_reduction_duration": "until start of caster's next turn",
+          "cantrip_upgrade": {
+            "level_5": "2d8",
+            "level_11": "3d8",
+            "level_17": "4d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15662,8 +16262,37 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Regenerate",
+        "level": 7,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "prayer wheel"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "creature touched",
+          "initial_healing": "4d8 + 15",
+          "healing_at_start_of_each_target_turn": 1,
+          "severed_body_parts_regrow_after_minutes": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15678,8 +16307,41 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ray of Sickness",
+        "level": 1,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "creature",
+          "attack_roll": "ranged spell attack",
+          "hit_damage": "2d8",
+          "damage_type": "Poison",
+          "hit_condition": "Poisoned",
+          "condition_duration": "until end of caster's next turn",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -15694,8 +16356,48 @@
       "pages": [
         158
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Reincarnate",
+        "level": 5,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "rare oils worth 1,000+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "dead Humanoid or piece of one",
+          "maximum_days_dead": 10,
+          "new_adult_body": true,
+          "soul_enters_new_body": true,
+          "species_selection": {
+            "methods": [
+              "roll on table",
+              "GM chooses playable option"
+            ],
+            "table_id": "158-1d10-species"
+          },
+          "new_species_choices_made": true,
+          "former_life_memories_retained": true,
+          "other_capabilities_retained": true,
+          "former_species_traits_lost": true,
+          "new_species_traits_gained": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -17756,10 +18458,10 @@
       "name": "Prismatic Rays",
       "section_id": "1022-10-16-97-prismatic-spray",
       "page": 154,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d8",
+          "id": "roll",
           "name": "1d8",
           "type": "integer"
         },
@@ -17769,8 +18471,89 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 4,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Red: failed Dexterity save deals 12d6 Fire damage; successful save deals half damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Orange: failed Dexterity save deals 12d6 Acid damage; successful save deals half damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Yellow: failed Dexterity save deals 12d6 Lightning damage; successful save deals half damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Green: failed Dexterity save deals 12d6 Poison damage; successful save deals half damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Blue: failed Dexterity save deals 12d6 Cold damage; successful save deals half damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Indigo: failed Dexterity save gives Restrained. At the end of each turn, make a Constitution save; three successes end Restrained, and three failures give Petrified until freed by an effect such as Greater Restoration. Successes and failures need not be consecutive and are tracked until either reaches three."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Violet: failed Dexterity save gives Blinded, then the target makes a Wisdom save at the start of the caster's next turn. Success ends Blinded; failure ends Blinded and teleports the target to a GM-chosen plane."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Special: target is struck by two rays; roll twice and reroll any 8."
+            }
+          ]
+        }
+      ],
+      "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -17779,7 +18562,7 @@
       "name": "Prismatic Layers",
       "section_id": "1023-10-16-98-prismatic-wall",
       "page": 155,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "order",
@@ -17792,7 +18575,78 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Red: failed Dexterity save deals 12d6 Fire damage; successful save deals half damage. Blocks nonmagical ranged attacks. Destroyed by taking at least 25 Cold damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Orange: failed Dexterity save deals 12d6 Acid damage; successful save deals half damage. Blocks magical ranged attacks. Destroyed by a strong wind such as Gust of Wind."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Yellow: failed Dexterity save deals 12d6 Lightning damage; successful save deals half damage. Destroyed by taking at least 60 Force damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Green: failed Dexterity save deals 12d6 Poison damage; successful save deals half damage. Destroyed by Passwall or another spell of equal or greater level that can open a portal on a solid surface."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Blue: failed Dexterity save deals 12d6 Cold damage; successful save deals half damage. Destroyed by taking at least 25 Fire damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Indigo: failed Dexterity save gives Restrained. At the end of each turn, make a Constitution save; three successes end Restrained, and three failures give Petrified until freed by an effect such as Greater Restoration. Results need not be consecutive and are tracked until either reaches three. Blocks spellcasting through the layer. Destroyed by Bright Light shed by Daylight."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Violet: failed Dexterity save gives Blinded, then the target makes a Wisdom save at the start of the caster's next turn. Success ends Blinded; failure ends Blinded and teleports the target to a GM-chosen plane. Destroyed by Dispel Magic."
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -17909,30 +18763,111 @@
       "name": "1d10 / Species",
       "section_id": "1037-10-16-112-reincarnate",
       "page": 158,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10",
+          "id": "roll_1",
           "name": "1d10",
           "type": "integer"
         },
         {
-          "id": "species",
+          "id": "species_1",
           "name": "Species",
           "type": "string"
         },
         {
-          "id": "1d10-2",
+          "id": "roll_2",
           "name": "1d10",
           "type": "integer"
         },
         {
-          "id": "species-2",
+          "id": "species_2",
           "name": "Species",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Roll again"
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": "Goliath"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Dragonborn"
+            },
+            {
+              "value": 7
+            },
+            {
+              "value": "Halfling"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Dwarf"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": "Human"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Elf"
+            },
+            {
+              "value": 9
+            },
+            {
+              "value": "Orc"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Gnome"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "Tiefling"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
