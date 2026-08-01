@@ -746,8 +746,45 @@
       "pages": [
         194
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Sight Rot",
+        "category": "Magical Contagion",
+        "initial_exposure": {
+          "creature_types": [
+            "Beast",
+            "Humanoid"
+          ],
+          "route": "drink tainted water",
+          "saving_throw_ability": "Constitution",
+          "dc": 15,
+          "failure_condition": "Blinded",
+          "failure_duration": "until contagion ends"
+        },
+        "ending_magic": [
+          "Heal",
+          "Lesser Restoration"
+        ],
+        "ointment": {
+          "creator_requires_herbalism_kit_proficiency": true,
+          "creation_time_hours": 1,
+          "doses_created": 1,
+          "magical": false,
+          "application": "eyes",
+          "suppression_hours_per_dose": 24,
+          "total_suppression_hours_to_end": 72,
+          "required_doses_and_applications": 3
+        },
+        "spread": {
+          "target_type": "Humanoid",
+          "route": "skin contact with infected creature",
+          "saving_throw_ability": "Constitution",
+          "dc": 15,
+          "failure": "infected",
+          "success_protection_hours": 24,
+          "success_protection_scope": "particular infected creature"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1301-12-15-magical-contagions"
     },
@@ -762,7 +799,7 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
@@ -778,8 +815,17 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Deep Water",
+        "depth_threshold_feet": 100,
+        "threshold_comparison": "greater than",
+        "check_interval_hours": 1,
+        "check_applies_without_swim_speed": true,
+        "saving_throw_ability": "Constitution",
+        "dc": 10,
+        "failure_exhaustion_levels": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -794,8 +840,20 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Extreme Cold",
+        "temperature_fahrenheit_maximum": 0,
+        "check_interval_hours": 1,
+        "check_timing": "end of hour",
+        "saving_throw_ability": "Constitution",
+        "dc": 10,
+        "failure_exhaustion_levels": 1,
+        "automatic_success_with": [
+          "Cold Resistance",
+          "Cold Immunity"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -810,8 +868,26 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Extreme Heat",
+        "temperature_fahrenheit_minimum": 100,
+        "check_requires_no_drinkable_water": true,
+        "check_interval_hours": 1,
+        "check_timing": "end of hour",
+        "saving_throw_ability": "Constitution",
+        "dc_first_hour": 5,
+        "dc_increase_per_additional_hour": 1,
+        "failure_exhaustion_levels": 1,
+        "save_disadvantage_with_armor": [
+          "Medium",
+          "Heavy"
+        ],
+        "automatic_success_with": [
+          "Fire Resistance",
+          "Fire Immunity"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -826,8 +902,20 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Frigid Water",
+        "safe_immersion_minutes": "Constitution score",
+        "check_interval_after_safe_duration_minutes": 1,
+        "saving_throw_ability": "Constitution",
+        "dc": 10,
+        "failure_exhaustion_levels": 1,
+        "automatic_success_with": [
+          "Cold Resistance",
+          "Cold Immunity",
+          "natural adaptation to ice-cold water"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -842,8 +930,17 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Heavy Precipitation",
+        "forms": [
+          "heavy rain",
+          "heavy snowfall"
+        ],
+        "area_obscurement": "Lightly Obscured",
+        "wisdom_perception_checks": "Disadvantage",
+        "heavy_rain_extinguishes_open_flames": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -858,8 +955,17 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "High Altitude",
+        "altitude_feet_minimum": 10000,
+        "travel_time_count_multiplier": 2,
+        "acclimation_days_minimum": 30,
+        "acclimation_elevation": "current high altitude",
+        "maximum_non-native_acclimation_feet": 20000,
+        "native_creatures_can_acclimate_above_maximum": true,
+        "related_term": "Travel Pace"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -874,8 +980,18 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Slippery Ice",
+        "terrain": "Difficult Terrain",
+        "saving_throw_triggers": [
+          "moves onto ice first time on a turn",
+          "starts turn on ice"
+        ],
+        "saving_throw_ability": "Dexterity",
+        "dc": 10,
+        "failure_condition": "Prone"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -890,8 +1006,18 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Strong Wind",
+        "ranged_weapon_attack_rolls": "Disadvantage",
+        "extinguishes_open_flames": true,
+        "disperses_fog": true,
+        "flying_creature": {
+          "must_land_by": "end of turn",
+          "failure_to_land": "fall"
+        },
+        "desert_sandstorm_can_impose_wisdom_perception_disadvantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -906,8 +1032,15 @@
       "pages": [
         195
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Thin Ice",
+        "area_square_feet": "10 × 10",
+        "weight_tolerance_pounds": "3d10 × 10",
+        "breaks_when_total_weight_exceeds_tolerance": true,
+        "creatures_on_broken_ice_fall_through": true,
+        "water_below": "Frigid Water"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -922,8 +1055,15 @@
       "pages": [
         196
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Fear and Mental Stress",
+        "adventurer_susceptibility_relative_to_common_folk": "lower",
+        "campaign_use_discussion": {
+          "participants": "players",
+          "timing": "start of campaign"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -938,8 +1078,36 @@
       "pages": [
         196
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Fear Effects",
+        "trigger": "supernaturally frightful encounter",
+        "baseline_condition": "Frightened",
+        "typical_saving_throw_ability": "Wisdom",
+        "dc_basis": "severity of terror",
+        "sample_dc_table_id": "196-sample-fear-dcs",
+        "typical_repeat_save": {
+          "timing": "end of each turn",
+          "success_ends_effect": true
+        },
+        "optional_additional_effects": [
+          {
+            "required_action_each_turn": "Dash",
+            "movement_direction": "farther from source of fear"
+          },
+          {
+            "attack_rolls_against_frightened_creature": "Advantage"
+          },
+          {
+            "maximum_turn_choices": 1,
+            "choices": [
+              "move",
+              "action",
+              "Bonus Action"
+            ]
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -954,8 +1122,21 @@
       "pages": [
         196
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Mental Stress Effects",
+        "recommended_damage_type": "Psychic",
+        "examples_table_id": "196-sample-mental-stress-effects",
+        "usual_saving_throw_ability": "Wisdom",
+        "alternative_saving_throw_abilities": [
+          "Intelligence",
+          "Charisma"
+        ],
+        "successful_save_damage_options": [
+          "no damage",
+          "half damage at GM discretion"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -970,8 +1151,39 @@
       "pages": [
         196
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Prolonged Effects",
+        "durations": {
+          "short_term": {
+            "possible_conditions": [
+              "Frightened",
+              "Incapacitated",
+              "Stunned"
+            ],
+            "duration_minutes": "1d10",
+            "possible_accompaniments": [
+              "alarming behavior",
+              "hallucinations"
+            ],
+            "suppression_spell": "Calm Emotions",
+            "removal_spell": "Lesser Restoration"
+          },
+          "long_term": {
+            "effect": "Disadvantage on some or all ability checks",
+            "duration_hours": "1d10 × 10",
+            "cause": "unwillingness or inability to exert particular abilities",
+            "suppression_spell": "Calm Emotions",
+            "removal_spell": "Lesser Restoration"
+          },
+          "indefinite": {
+            "base": "long-term effect",
+            "duration": "until removed",
+            "suppression_spell": "Calm Emotions",
+            "removal_spell": "Greater Restoration"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1319-12-28-mental-stress-effects"
     },
@@ -986,8 +1198,56 @@
       "pages": [
         197
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Poison",
+        "types": {
+          "Contact": {
+            "application": "smeared on object",
+            "potent_until": [
+              "touched",
+              "washed off"
+            ],
+            "exposure": "touch with exposed skin"
+          },
+          "Ingested": {
+            "full_dose_required_by_default": true,
+            "delivery": [
+              "food",
+              "liquid"
+            ],
+            "partial_dose_reduction_options": [
+              "Advantage on saving throw",
+              "half damage on failed save"
+            ]
+          },
+          "Inhaled": {
+            "forms": [
+              "powder",
+              "gas"
+            ],
+            "release_area": "5-foot Cube",
+            "cloud_dissipates_immediately": true,
+            "holding_breath_effective": false
+          },
+          "Injury": {
+            "application_action": "Bonus Action",
+            "application_targets": [
+              "weapon",
+              "ammunition",
+              "similar object"
+            ],
+            "potent_until": [
+              "delivered through wound",
+              "washed off"
+            ],
+            "exposure_damage_types": [
+              "Piercing",
+              "Slashing"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -1002,8 +1262,20 @@
       "pages": [
         197
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Purchasing Poison",
+        "possession_and_use_can_be_illegal_by_setting": true,
+        "possible_sources": [
+          "illicit dealer",
+          "unscrupulous apothecary",
+          "criminal contacts"
+        ],
+        "possible_acquisition_requirements": [
+          "extensive inquiries",
+          "bribes"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -1018,8 +1290,33 @@
       "pages": [
         197
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Harvesting Poison",
+        "source": {
+          "creature_trait": "venomous",
+          "allowed_states": [
+            "dead",
+            "Incapacitated"
+          ]
+        },
+        "time_minutes": "1d6",
+        "check": {
+          "ability": "Intelligence",
+          "skill": "Nature",
+          "tool": "Poisoner's Kit",
+          "dc": 20
+        },
+        "success": {
+          "doses": 1,
+          "additional_harvest_from_same_creature": false
+        },
+        "failure_doses": 0,
+        "failure_by_at_least": {
+          "margin": 5,
+          "effect": "subjected to creature's poison"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1281-12-gameplay-toolbox"
     },
@@ -1928,7 +2225,7 @@
       "name": "Sample Mental Stress Effects",
       "section_id": "1319-12-28-mental-stress-effects",
       "page": 196,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "example",
@@ -1936,13 +2233,58 @@
           "type": "string"
         },
         {
-          "id": "save-psychic-dc-damage",
-          "name": "Save Psychic DC Damage",
+          "id": "save-dc",
+          "name": "Save DC",
+          "type": "integer"
+        },
+        {
+          "id": "psychic-damage",
+          "name": "Psychic Damage",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 9,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "A character ingests a hallucinogenic substance that distorts the character's perception of reality."
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "1d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "A character touches a fiendish idol that tears at the character's mind, threatening to shatter it."
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": "3d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "A magical trap flings a character into the Far Realm until the end of that character's next turn."
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": "9d6"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -1951,7 +2293,7 @@
       "name": "Sample Fear DCs",
       "section_id": "1318-12-27-fear-effects",
       "page": 196,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "example",
@@ -1964,8 +2306,39 @@
           "type": "integer"
         }
       ],
-      "rows": [],
-      "source_row_count": 8,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "When the characters open a sarcophagus, a harmless yet terrifying apparition appears."
+            },
+            {
+              "value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "A character triggers a magical trap that creates an illusory manifestation of that character's worst fears, visible only to that character."
+            },
+            {
+              "value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "A portal to the Abyss opens, revealing a nightmarish realm of torment and slaughter."
+            },
+            {
+              "value": 20
+            }
+          ]
+        }
+      ],
+      "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
