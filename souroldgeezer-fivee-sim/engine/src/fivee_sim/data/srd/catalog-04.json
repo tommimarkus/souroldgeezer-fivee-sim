@@ -3271,8 +3271,27 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stabilization_resource": "Help action",
+        "target_current_hit_points": 0,
+        "stabilization_check": {
+          "ability": "Wisdom",
+          "skill": "Medicine",
+          "dc": 10
+        },
+        "Stable": {
+          "makes_Death_Saving_Throws": false,
+          "current_hit_points": 0,
+          "condition": "Unconscious",
+          "damage_ends_state": true,
+          "damage_restarts_Death_Saving_Throws": true
+        },
+        "unhealed_recovery": {
+          "hit_points_regained": 1,
+          "time_hours": "1d4"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "106-4-47-dropping-to-0-hit-points"
     },
@@ -3287,8 +3306,15 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "Temporary_Hit_Points_classification": "buffer",
+        "buffered_resource": "Hit Points",
+        "source_types": [
+          "spells",
+          "other effects"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -3303,8 +3329,20 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "damage_application_order": [
+          "Temporary Hit Points",
+          "Hit Points"
+        ],
+        "hit_point_damage_formula": "max(0, damage - Temporary_Hit_Points_before_damage)",
+        "example": {
+          "Temporary_Hit_Points_before_damage": 5,
+          "damage": 7,
+          "Temporary_Hit_Points_after_damage": 0,
+          "Hit_Points_lost": 2
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "112-4-48-temporary-hit-points"
     },
@@ -3319,8 +3357,14 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "Temporary_Hit_Points_end_triggers": [
+          "depleted",
+          "Long Rest finished"
+        ],
+        "reference": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "112-4-48-temporary-hit-points"
     },
@@ -3335,8 +3379,24 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "Temporary_Hit_Points_stack": false,
+        "on_receipt_while_present_options": [
+          "keep existing Temporary Hit Points",
+          "gain new Temporary Hit Points"
+        ],
+        "maximum_simultaneous_grants": 1,
+        "example": {
+          "existing": 10,
+          "new": 12,
+          "allowed_totals": [
+            10,
+            12
+          ],
+          "disallowed_total": 22
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "112-4-48-temporary-hit-points"
     },
@@ -3351,8 +3411,15 @@
       "pages": [
         18
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "Temporary_Hit_Points_add_to_Hit_Points": false,
+        "Temporary_Hit_Points_restored_by_healing": false,
+        "receiving_Temporary_Hit_Points_counts_as_healing": false,
+        "full_Hit_Points_prevent_receipt": false,
+        "receipt_at_zero_Hit_Points_restores_consciousness": false,
+        "consciousness_restoration_requirement": "healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "112-4-48-temporary-hit-points"
     }
