@@ -1918,8 +1918,27 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Falling",
+        "tag": "Hazard",
+        "damage_timing": "end of fall",
+        "damage_per_10_feet": "1d6",
+        "damage_type": "Bludgeoning",
+        "maximum_damage": "20d6",
+        "landing_condition": "Prone",
+        "landing_condition_exception": "creature takes no damage from fall",
+        "liquid_landing": {
+          "action": "Reaction",
+          "check_dc": 15,
+          "check_options": [
+            "Strength (Athletics)",
+            "Dexterity (Acrobatics)"
+          ],
+          "intent": "hit liquid surface head or feet first",
+          "successful_check_damage_multiplier": 0.5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1934,8 +1953,20 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Flying",
+        "fall_triggers": [
+          "Incapacitated condition",
+          "Prone condition",
+          "Fly Speed reduced to 0"
+        ],
+        "hover_prevents_triggered_fall": true,
+        "related_rules": [
+          "Falling",
+          "Fly Speed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1950,8 +1981,20 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Fly Speed",
+        "movement_medium": "air",
+        "stay_aloft_until": [
+          "land",
+          "fall",
+          "die"
+        ],
+        "related_rules": [
+          "Flying",
+          "Speed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1966,8 +2009,14 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Friendly",
+        "tag": "Attitude",
+        "view_of_creature": "favorable",
+        "ability_checks_to_influence": "Advantage",
+        "related_rule": "Influence"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1982,8 +2031,15 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "condition": "Frightened",
+        "source_in_line_of_sight": {
+          "ability_checks": "Disadvantage",
+          "attack_rolls": "Disadvantage"
+        },
+        "willing_movement_closer_to_source": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -1998,8 +2054,19 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "condition": "Grappled",
+        "speed": 0,
+        "speed_can_increase": false,
+        "attack_rolls_against_targets_other_than_grappler": "Disadvantage",
+        "grappler_can_drag_or_carry_target": true,
+        "drag_or_carry_extra_movement_cost_per_foot": 1,
+        "extra_movement_cost_exceptions": [
+          "target is Tiny",
+          "target is at least two sizes smaller than grappler"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2014,8 +2081,44 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Grappling",
+        "typical_character_method": "Unarmed Strike",
+        "monster_method": "special attacks",
+        "successful_grapple_condition": "Grappled",
+        "grappling_part": {
+          "character_requirement": "free hand",
+          "other_examples": [
+            "tentacle",
+            "maw",
+            "other body part"
+          ],
+          "maximum_targets_per_part": 1,
+          "part_can_target_another_creature_during_grapple": false
+        },
+        "target_escape": {
+          "action": "Action",
+          "check_options": [
+            "Strength (Athletics)",
+            "Dexterity (Acrobatics)"
+          ],
+          "dc": "grapple escape DC",
+          "success": "ends Grappled condition on target"
+        },
+        "other_end_triggers": [
+          "grappler has Incapacitated condition",
+          "distance between target and grappler exceeds grapple range"
+        ],
+        "grappler_release": {
+          "timing": "any time",
+          "action_required": false
+        },
+        "related_rules": [
+          "Unarmed Strike",
+          "Grappled"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2030,8 +2133,18 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Hazard",
+        "definition": "environmental danger",
+        "related_rules": [
+          "Burning",
+          "Dehydration",
+          "Falling",
+          "Malnutrition",
+          "Suffocation"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2046,8 +2159,12 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Healing",
+        "function": "regain Hit Points",
+        "related_rule": "Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2062,8 +2179,16 @@
       "pages": [
         182
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Heavily Obscured",
+        "condition_while_trying_to_see_something_in_space": "Blinded",
+        "related_rules": [
+          "Blinded",
+          "Darkness",
+          "Exploration"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2079,8 +2204,27 @@
         182,
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action": "Help",
+        "options": [
+          {
+            "name": "Assist an Ability Check",
+            "helper_requirement": "chosen skill or tool proficiency",
+            "target": "one ally near enough for verbal or physical assistance",
+            "benefit": "Advantage on ally's next ability check with chosen skill or tool",
+            "expiration": "start of helper's next turn",
+            "gm_decides_assistance_possible": true
+          },
+          {
+            "name": "Assist an Attack Roll",
+            "target": "enemy within 5 feet of helper",
+            "method": "momentary distraction",
+            "benefit": "Advantage on next attack roll by an ally against that enemy",
+            "expiration": "start of helper's next turn"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2095,8 +2239,18 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Heroic Inspiration",
+        "eligible_user": "player character",
+        "expenditure_timing": "immediately after rolling any die",
+        "effect": "reroll die",
+        "new_roll_required": true,
+        "gain_while_already_held": {
+          "default": "lost",
+          "alternative": "give to player character who lacks Heroic Inspiration"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2111,8 +2265,34 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "action": "Hide",
+        "check": {
+          "ability": "Dexterity",
+          "skill": "Stealth",
+          "dc": 15
+        },
+        "position_requirement_options": [
+          "Heavily Obscured",
+          "behind Three-Quarters Cover",
+          "behind Total Cover"
+        ],
+        "must_be_out_of_enemy_line_of_sight": true,
+        "visible_creature_allows_discerning_if_it_can_see_hider": true,
+        "successful_check": {
+          "condition": "Invisible",
+          "duration": "while hidden",
+          "check_total_becomes_finder_dc": true,
+          "finder_check": "Wisdom (Perception)"
+        },
+        "immediate_end_triggers": [
+          "sound louder than a whisper",
+          "enemy finds hider",
+          "hider makes attack roll",
+          "hider casts spell with Verbal component"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2127,8 +2307,20 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "High Jump",
+        "running_jump": {
+          "required_prior_movement_feet": 10,
+          "required_prior_movement_type": "on foot immediately before jump",
+          "height_formula_feet": "3 + Strength modifier",
+          "minimum_height_feet": 0
+        },
+        "standing_jump_distance_multiplier": 0.5,
+        "movement_cost_per_foot_jumped": 1,
+        "arm_extension_above_self": "half own height",
+        "maximum_reach_formula": "jump height + 1.5 times own height"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2143,8 +2335,18 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Hit Point Dice",
+        "short_name": "Hit Dice",
+        "player_character_use": "help determine Hit Point maximum",
+        "most_monsters_have_hit_dice": true,
+        "short_rest_use": "spend Hit Dice to regain Hit Points",
+        "related_rules": [
+          "Character Creation",
+          "Short Rest"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2159,8 +2361,20 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Hit Points",
+        "abbreviation": "HP",
+        "measures": "difficulty of killing or destroying creature or object",
+        "damage_effect": "reduces Hit Points",
+        "healing_effect": "restores Hit Points",
+        "maximum": "Hit Point maximum",
+        "minimum": 0,
+        "related_rules": [
+          "Breaking Objects",
+          "Damage and Healing"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2175,8 +2389,14 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Hostile",
+        "tag": "Attitude",
+        "view_of_creature": "unfavorable",
+        "ability_checks_to_influence": "Disadvantage",
+        "related_rule": "Influence"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2191,8 +2411,17 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Hover",
+        "sources": [
+          "creature stat block",
+          "spell",
+          "other effect"
+        ],
+        "effect_while_flying": "prevents falling in certain circumstances",
+        "related_rule": "Flying"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2207,8 +2436,30 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Illusions",
+        "sources": [
+          "spells",
+          "other effects"
+        ],
+        "creating_effect_defines": [
+          "illusion behavior",
+          "senses deceived",
+          "mental faculties deceived"
+        ],
+        "spatial_illusion": {
+          "insubstantial": true,
+          "weightless": true,
+          "appears_environmentally_affected_as_real": true,
+          "creating_effect_can_specify_otherwise": true
+        },
+        "examples": [
+          "visual creature illusion casts shadows and reflections",
+          "wind appears to affect visual creature illusion",
+          "audible illusion echoes in echoey space"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2223,8 +2474,15 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Immunity",
+        "eligible_categories": [
+          "damage type",
+          "condition"
+        ],
+        "effect": "immune category does not affect creature in any way"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
