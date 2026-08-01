@@ -959,8 +959,17 @@
       "pages": [
         207
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Senses",
+        "applies_to": "sentient item",
+        "perception_range": "limited",
+        "selection_methods": [
+          "choose senses",
+          "roll on Sentient Item's Senses table"
+        ],
+        "table_id": "208-sentient-item-s-senses"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -975,8 +984,20 @@
       "pages": [
         208
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Special Purpose",
+        "applies_to": "sentient item",
+        "meaning": "objective pursued by item",
+        "can_exclude_other_objectives": true,
+        "wielder_alignment_with_purpose_keeps_item_cooperative": true,
+        "deviation_can_cause_conflict": true,
+        "selection_methods": [
+          "choose purpose",
+          "roll on Sentient Item's Special Purpose table"
+        ],
+        "table_id": "208-sentient-item-s-special-purpose"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -991,8 +1012,37 @@
       "pages": [
         208
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Conflict",
+        "trigger": "bearer acts against sentient item's alignment or purpose",
+        "initial_save": {
+          "ability": "Charisma",
+          "dc": "12 + item Charisma modifier"
+        },
+        "failed_save_demands": {
+          "Chase My Dreams": "pursue item goals to exclusion of other goals",
+          "Get Rid of It": "dispose of anything item finds repugnant",
+          "It's Time for a Change": "give item to someone else",
+          "Keep Me Close": "carry or wear item at all times"
+        },
+        "refusal_options": [
+          "prevent bearer attunement",
+          "suppress activated properties",
+          "attempt control of bearer"
+        ],
+        "control_attempt": {
+          "saving_throw_ability": "Charisma",
+          "dc": "12 + item Charisma modifier",
+          "failure_condition": "Charmed",
+          "duration_hours": "1d12",
+          "charmed_behavior": "try to follow item commands",
+          "damage_triggers_repeat_save": true,
+          "repeat_save_success_ends_effect": true,
+          "recharge": "next dawn",
+          "recharge_applies_regardless_of_attempt_success": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1390-13-25-sentient-magic-item-traits"
     },
@@ -1007,8 +1057,14 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Magic Items A-Z",
+        "ordering": "alphabetical",
+        "capitalized_bold_creature_name_points_to_stat_block": true,
+        "default_stat_block_location": "Monsters",
+        "stat_block_usage_reference": "Monsters"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1362-13-magic-items"
     },
@@ -1023,8 +1079,17 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adamantine Armor",
+        "category": "Armor",
+        "eligible_armor": [
+          "Medium except Hide Armor",
+          "Heavy"
+        ],
+        "rarity": "Uncommon",
+        "while_worn_critical_hits_become_normal_hits": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1039,8 +1104,27 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ammunition, +1, +2, or +3",
+        "category": "Weapon",
+        "eligible_item": "Any Ammunition",
+        "bonus_and_rarity": {
+          "+1": "Uncommon",
+          "+2": "Rare",
+          "+3": "Very Rare"
+        },
+        "bonus_applies_to": [
+          "attack rolls",
+          "damage rolls"
+        ],
+        "becomes_nonmagical_after_hitting_target": true,
+        "typical_quantity_options": [
+          10,
+          20
+        ],
+        "ten_piece_value_equivalent": "potion of same rarity"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1055,8 +1139,25 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ammunition of Slaying",
+        "category": "Weapon",
+        "eligible_item": "Any Ammunition",
+        "rarity": "Very Rare",
+        "target_creature_type_selected_by": [
+          "GM choice",
+          "random table roll"
+        ],
+        "creature_type_table_id": "209-1d100-creature-type-1d100-creature-type",
+        "effect_trigger": "chosen creature type takes damage from ammunition",
+        "saving_throw_ability": "Constitution",
+        "dc": 17,
+        "failed_save_extra_damage": "6d10",
+        "successful_save_extra_damage": "half",
+        "extra_damage_type": "Force",
+        "becomes_nonmagical_after_dealing_extra_damage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1071,8 +1172,15 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Amulet of Health",
+        "category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_constitution": 19,
+        "no_effect_when_unmodified_constitution_at_least": 19
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1087,8 +1195,18 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Amulet of Proof against Detection and Location",
+        "category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn": {
+          "can_be_targeted_by_divination_spells": false,
+          "can_be_perceived_by_magical_scrying_sensors": false,
+          "wearer_can_allow_either": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1103,8 +1221,78 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Amulet of the Planes",
+        "category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "activation": {
+          "action": "Magic",
+          "requires_wearing": true,
+          "destination": "familiar location on another plane",
+          "ability": "Intelligence",
+          "skill": "Arcana",
+          "dc": 15,
+          "success": "cast Plane Shift",
+          "failure_radius_feet": 15,
+          "failure_travelers": [
+            "wearer",
+            "each creature in radius",
+            "each object in radius"
+          ]
+        },
+        "failed_check_destinations": [
+          {
+            "d100": "01-60",
+            "destination": "random location on named plane"
+          },
+          {
+            "d100": "61-70",
+            "destination_category": "random Inner Plane",
+            "d6": {
+              "1": "Plane of Air",
+              "2": "Plane of Earth",
+              "3": "Plane of Fire",
+              "4": "Plane of Water",
+              "5": "Feywild",
+              "6": "Shadowfell"
+            }
+          },
+          {
+            "d100": "71-80",
+            "destination_category": "random Outer Plane",
+            "d8": {
+              "1": "Arborea",
+              "2": "Arcadia",
+              "3": "Beastlands",
+              "4": "Bytopia",
+              "5": "Elysium",
+              "6": "Mechanus",
+              "7": "Mount Celestia",
+              "8": "Ysgard"
+            }
+          },
+          {
+            "d100": "81-90",
+            "destination_category": "random Outer Plane",
+            "d8": {
+              "1": "Abyss",
+              "2": "Acheron",
+              "3": "Carceri",
+              "4": "Gehenna",
+              "5": "Hades",
+              "6": "Limbo",
+              "7": "Nine Hells",
+              "8": "Pandemonium"
+            }
+          },
+          {
+            "d100": "91-00",
+            "destination": "random location on Astral Plane"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1119,8 +1307,30 @@
       "pages": [
         209
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Animated Shield",
+        "category": "Armor",
+        "armor_type": "Shield",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "activation": {
+          "requires_holding": true,
+          "action": "Bonus Action"
+        },
+        "animated_effect": {
+          "hovers_in_wielder_space": true,
+          "protects_as_if_wielded": true,
+          "leaves_hands_free": true,
+          "maximum_duration_minutes": 1,
+          "manual_end_action": "Bonus Action",
+          "other_end_triggers": [
+            "wielder dies",
+            "wielder has Incapacitated condition"
+          ],
+          "ending_destination": "ground or free hand"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1135,8 +1345,57 @@
       "pages": [
         210
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Apparatus of the Crab",
+        "category": "Wondrous Item",
+        "rarity": "Legendary",
+        "initial_form": {
+          "appearance": "sealed iron barrel",
+          "weight_pounds": 500,
+          "hidden_catch_check": {
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": 20
+          },
+          "interior_capacity": "two Medium or smaller creatures",
+          "lever_count": 10,
+          "lever_positions": [
+            "neutral",
+            "up",
+            "down"
+          ]
+        },
+        "transformed_appearance": "giant lobster",
+        "object_statistics": {
+          "size": "Large",
+          "armor_class": 20,
+          "hit_points": 200,
+          "speed_feet": 30,
+          "swim_speed_feet": 30,
+          "speeds_with_legs_retracted": 0,
+          "damage_immunities": [
+            "Poison",
+            "Psychic"
+          ]
+        },
+        "vehicle": {
+          "pilots_required": 1,
+          "closed_compartment_airtight": true,
+          "closed_compartment_watertight": true,
+          "air_hours_formula": "10 / breathing creatures inside",
+          "floats": true,
+          "maximum_safe_depth_feet": 900,
+          "pressure_damage_below_safe_depth_per_minute": "2d6",
+          "pressure_damage_type": "Bludgeoning"
+        },
+        "lever_use": {
+          "action": "Utilize",
+          "maximum_levers_per_action": 2,
+          "returns_to_neutral_after_use": true,
+          "table_id": "210-apparatus-of-the-crab-levers"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1151,8 +1410,22 @@
       "pages": [
         210
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Armor, +1, +2, or +3",
+        "category": "Armor",
+        "eligible_armor": [
+          "Light",
+          "Medium",
+          "Heavy"
+        ],
+        "bonus_and_rarity": {
+          "+1": "Rare",
+          "+2": "Very Rare",
+          "+3": "Legendary"
+        },
+        "bonus_applies_to_armor_class_while_worn": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -1167,8 +1440,30 @@
       "pages": [
         210
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Armor of Invulnerability",
+        "category": "Armor",
+        "armor_type": "Plate Armor",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_worn_damage_resistances": [
+          "Bludgeoning",
+          "Piercing",
+          "Slashing"
+        ],
+        "metal_shell": {
+          "action": "Magic",
+          "damage_immunities": [
+            "Bludgeoning",
+            "Piercing",
+            "Slashing"
+          ],
+          "maximum_duration_minutes": 10,
+          "ends_when_armor_removed": true,
+          "recharge": "next dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -5629,32 +5924,126 @@
       "name": "Sentient Item’s Alignment",
       "section_id": "1395-13-25-5-special-purpose",
       "page": 208,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "column",
-          "name": "Column 1",
+          "id": "left-d100",
+          "name": "1d100",
           "type": "string"
         },
         {
-          "id": "column-2",
-          "name": "Column 2",
+          "id": "left-alignment",
+          "name": "Alignment",
           "type": "string"
         },
         {
-          "id": "column-3",
-          "name": "Column 3",
-          "type": "integer"
+          "id": "right-d100",
+          "name": "1d100",
+          "type": "string"
         },
         {
-          "id": "column-4",
-          "name": "Column 4",
+          "id": "right-alignment",
+          "name": "Alignment",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 6,
-      "omissions": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-15"
+            },
+            {
+              "value": "Lawful Good"
+            },
+            {
+              "value": "74-85"
+            },
+            {
+              "value": "Chaotic Neutral"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "16-35"
+            },
+            {
+              "value": "Neutral Good"
+            },
+            {
+              "value": "86-89"
+            },
+            {
+              "value": "Lawful Evil"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36-50"
+            },
+            {
+              "value": "Chaotic Good"
+            },
+            {
+              "value": "90-96"
+            },
+            {
+              "value": "Neutral Evil"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51-63"
+            },
+            {
+              "value": "Lawful Neutral"
+            },
+            {
+              "value": "97-00"
+            },
+            {
+              "value": "Chaotic Evil"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "64-73"
+            },
+            {
+              "value": "Neutral"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 5,
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "right-d100"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "right-alignment"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -5662,12 +6051,12 @@
       "name": "Sentient Item’s Communication",
       "section_id": "1395-13-25-5-special-purpose",
       "page": 208,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10",
+          "id": "d10",
           "name": "1d10",
-          "type": "integer"
+          "type": "string"
         },
         {
           "id": "communication",
@@ -5675,7 +6064,38 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "1-6"
+            },
+            {
+              "value": "The item communicates by transmitting emotion to the creature carrying or wielding it."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "7-9"
+            },
+            {
+              "value": "The item speaks one or more languages."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10"
+            },
+            {
+              "value": "The item speaks one or more languages. In addition, the item can communicate telepathically with any creature that carries or wields it."
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5685,10 +6105,10 @@
       "name": "Sentient Item’s Senses",
       "section_id": "1395-13-25-5-special-purpose",
       "page": 208,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d4",
+          "id": "d4",
           "name": "1d4",
           "type": "integer"
         },
@@ -5698,7 +6118,48 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Hearing and standard vision out to 30 feet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Hearing and standard vision out to 60 feet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Hearing and standard vision out to 120 feet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Hearing and Darkvision out to 120 feet"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5708,10 +6169,10 @@
       "name": "Sentient Item’s Special Purpose",
       "section_id": "1395-13-25-5-special-purpose",
       "page": 208,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10",
+          "id": "d10",
           "name": "1d10",
           "type": "integer"
         },
@@ -5721,7 +6182,108 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Aligned. The item seeks to defeat or destroy those of a diametrically opposed alignment. Such an item is never Neutral."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Bane. The item seeks to thwart or destroy creatures of a particular type, such as Constructs, Fiends, or Undead."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Creator Seeker. The item seeks its creator and wants to understand why it was created."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Destiny Seeker. The item believes it and its bearer have key roles to play in future events."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Destroyer. The item craves destruction and goads its user to fight arbitrarily."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Glory Seeker. The item seeks renown as the greatest magic item in the world by winning fame or notoriety for its user."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Lore Seeker. The item craves knowledge or is determined to solve a mystery, learn a secret, or unravel a cryptic prophecy."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Protector. The item seeks to defend a particular kind of creature, such as elves or werewolves."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Soulmate Seeker. The item seeks another sentient magic item, perhaps one that is similar to itself."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": "Templar. The item seeks to defend the servants and interests of a particular deity."
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5731,7 +6293,7 @@
       "name": "Apparatus of the Crab Levers",
       "section_id": "1405-13-26-8-apparatus-of-the-crab",
       "page": 210,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "lever",
@@ -5749,7 +6311,138 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Legs extend, allowing the apparatus to walk and swim."
+            },
+            {
+              "value": "Legs retract, reducing the apparatus's Speed and Swim Speed to 0 and making it unable to benefit from bonuses to speed."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Forward window shutter opens."
+            },
+            {
+              "value": "Forward window shutter closes."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Side window shutters open (two per side)."
+            },
+            {
+              "value": "Side window shutters close (two per side)."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Two claws extend from the front side of the apparatus."
+            },
+            {
+              "value": "The claws retract."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Each extended claw makes the following melee attack: +8 to hit, reach 5 ft. Hit: 7 (2d6) Bludgeoning damage."
+            },
+            {
+              "value": "Each extended claw makes the following melee attack: +8 to hit, reach 5 ft. Hit: The target has the Grappled condition (escape DC 15)."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "The apparatus walks or swims forward provided its legs are extended."
+            },
+            {
+              "value": "The apparatus walks or swims backward provided its legs are extended."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "The apparatus turns 90 degrees counterclockwise provided its legs are extended."
+            },
+            {
+              "value": "The apparatus turns 90 degrees clockwise provided its legs are extended."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Eyelike fixtures emit Bright Light in a 30-foot radius and Dim Light for an additional 30 feet."
+            },
+            {
+              "value": "The light turns off."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "The apparatus sinks up to 20 feet if it's in liquid."
+            },
+            {
+              "value": "The apparatus rises up to 20 feet if it's in liquid."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": "The rear hatch unseals and opens."
+            },
+            {
+              "value": "The rear hatch closes and seals."
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -5978,20 +6671,143 @@
       "name": "1d100 Creature Type / 1d100 Creature Type",
       "section_id": "1400-13-26-3-ammunition-of-slaying",
       "page": 209,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100-creature-type",
-          "name": "1d100 Creature Type",
+          "id": "left-d100",
+          "name": "1d100",
           "type": "string"
         },
         {
-          "id": "1d100-creature-type-2",
-          "name": "1d100 Creature Type",
+          "id": "left-creature-type",
+          "name": "Creature Type",
+          "type": "string"
+        },
+        {
+          "id": "right-d100",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "right-creature-type",
+          "name": "Creature Type",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-10"
+            },
+            {
+              "value": "Aberrations"
+            },
+            {
+              "value": "51-60"
+            },
+            {
+              "value": "Fey"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "11-15"
+            },
+            {
+              "value": "Beasts"
+            },
+            {
+              "value": "61-70"
+            },
+            {
+              "value": "Fiends"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "16-20"
+            },
+            {
+              "value": "Celestials"
+            },
+            {
+              "value": "71-75"
+            },
+            {
+              "value": "Giants"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21-25"
+            },
+            {
+              "value": "Constructs"
+            },
+            {
+              "value": "76-80"
+            },
+            {
+              "value": "Monstrosities"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "26-35"
+            },
+            {
+              "value": "Dragons"
+            },
+            {
+              "value": "81-85"
+            },
+            {
+              "value": "Oozes"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36-45"
+            },
+            {
+              "value": "Elementals"
+            },
+            {
+              "value": "86-90"
+            },
+            {
+              "value": "Plants"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "46-50"
+            },
+            {
+              "value": "Humanoids"
+            },
+            {
+              "value": "91-00"
+            },
+            {
+              "value": "Undead"
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
       "omissions": [],
       "provenance": "SRD 5.2.1"
