@@ -3894,8 +3894,15 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 3,
+        "selection": "Monk subclass",
+        "selection_count": 1,
+        "detailed_option": "Warrior of the Open Hand",
+        "subclass_features_gained_at_or_below_monk_level": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3910,8 +3917,22 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 4,
+        "levels": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "feat_options": [
+          "Ability Score Improvement",
+          "qualifying feat"
+        ],
+        "selection_count_per_level": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3926,8 +3947,14 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 4,
+        "trigger": "fall",
+        "activation_action": "Reaction",
+        "damage_reduction_formula": "5 * Monk level"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3942,8 +3969,12 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 5,
+        "attack_action_attacks": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3958,8 +3989,30 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 5,
+        "maximum_uses_per_turn": 1,
+        "trigger": {
+          "hit_creature_with": [
+            "Monk weapon",
+            "Unarmed Strike"
+          ]
+        },
+        "focus_point_cost": 1,
+        "saving_throw_ability": "Constitution",
+        "failed_save": {
+          "condition": "Stunned",
+          "expires": "start of your next turn"
+        },
+        "successful_save": {
+          "speed_multiplier": 0.5,
+          "speed_effect_expires": "start of your next turn",
+          "next_attack_roll_against_target_has_advantage": true,
+          "attack_advantage_expires": "start of your next turn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3974,8 +4027,16 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 6,
+        "applies_to": "Unarmed Strike damage",
+        "damage_type_options": [
+          "Force",
+          "normal damage type"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -3990,8 +4051,18 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 7,
+        "trigger": {
+          "saving_throw_ability": "Dexterity",
+          "normal_successful_save_damage": "half"
+        },
+        "successful_save_damage": 0,
+        "failed_save_damage": "half",
+        "disabled_condition": "Incapacitated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4006,8 +4077,19 @@
       "pages": [
         51
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 9,
+        "requires_no_armor": true,
+        "requires_no_shield": true,
+        "movement_surfaces": [
+          "vertical surfaces",
+          "liquids"
+        ],
+        "applies_during": "your turn",
+        "fall_during_movement": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4023,8 +4105,30 @@
         51,
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 10,
+        "feature_upgrades": {
+          "Flurry of Blows": {
+            "focus_point_cost": 1,
+            "unarmed_strikes": 3
+          },
+          "Patient Defense": {
+            "focus_point_cost": 1,
+            "temporary_hit_points_formula": "2 Martial Arts die rolls"
+          },
+          "Step of the Wind": {
+            "focus_point_cost": 1,
+            "additional_willing_creatures": 1,
+            "creature_range_feet": 5,
+            "maximum_creature_size": "Large",
+            "moves_creature_with_you": true,
+            "moves_with_you_until": "end of your turn",
+            "creature_movement_provokes_opportunity_attacks": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4039,8 +4143,22 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 10,
+        "condition_removal": {
+          "target": "self",
+          "timing": "end of each turn",
+          "maximum_conditions": 1,
+          "conditions": [
+            "Charmed",
+            "Frightened",
+            "Poisoned"
+          ]
+        },
+        "forgoing_food_and_drink_causes_exhaustion": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4055,8 +4173,13 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 13,
+        "modified_feature": "Deflect Attacks",
+        "eligible_attack_damage_types": "any"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4071,8 +4194,16 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 14,
+        "saving_throw_proficiencies": "all",
+        "failed_saving_throw_reroll": {
+          "focus_point_cost": 1,
+          "must_use_new_roll": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4087,8 +4218,15 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 15,
+        "trigger": "roll Initiative",
+        "requires_not_using": "Uncanny Metabolism",
+        "maximum_focus_points_before_recovery": 3,
+        "focus_points_after_recovery": 4
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4103,8 +4241,21 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 18,
+        "activation_timing": "start of your turn",
+        "focus_point_cost": 3,
+        "duration_minutes": 1,
+        "ends_early_on_condition": "Incapacitated",
+        "damage_resistance": {
+          "applies_to": "all damage",
+          "exceptions": [
+            "Force"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4119,8 +4270,17 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 19,
+        "feat_options": [
+          "Epic Boon feat",
+          "qualifying feat"
+        ],
+        "selection_count": 1,
+        "recommended_feat": "Boon of Irresistible Offense"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4135,8 +4295,16 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "level": 20,
+        "ability_score_increases": {
+          "Dexterity": 4,
+          "Wisdom": 4
+        },
+        "ability_score_maximum": 25
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "295-6-26-monk-class-features"
     },
@@ -4151,7 +4319,7 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "162-6-classes"
@@ -4167,8 +4335,30 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "subclass": "Warrior of the Open Hand",
+        "level": 3,
+        "trigger": "hit a creature with an attack granted by Flurry of Blows",
+        "effect_optional": true,
+        "maximum_effects_per_hit": 1,
+        "effects": {
+          "Addle": {
+            "target_can_make_opportunity_attacks": false,
+            "expires": "start of target's next turn"
+          },
+          "Push": {
+            "saving_throw_ability": "Strength",
+            "maximum_failed_save_push_distance_feet": 15,
+            "push_direction": "away from you"
+          },
+          "Topple": {
+            "saving_throw_ability": "Dexterity",
+            "failed_save_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "318-6-27-monk-subclass-warrior-of-the-open-hand"
     },
@@ -4183,8 +4373,17 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "subclass": "Warrior of the Open Hand",
+        "level": 6,
+        "activation_action": "Bonus Action",
+        "healing_formula": "Martial Arts die roll + Wisdom modifier",
+        "minimum_hit_points_regained": 1,
+        "uses_formula": "max(1, Wisdom modifier)",
+        "long_rest_uses_recovered": "all"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "318-6-27-monk-subclass-warrior-of-the-open-hand"
     },
@@ -4199,8 +4398,16 @@
       "pages": [
         52
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "class": "Monk",
+        "subclass": "Warrior of the Open Hand",
+        "level": 11,
+        "trigger": "take a Bonus Action other than Step of the Wind",
+        "additional_feature_use": "Step of the Wind",
+        "additional_action_required": false,
+        "timing": "immediately after triggering Bonus Action"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "318-6-27-monk-subclass-warrior-of-the-open-hand"
     },
