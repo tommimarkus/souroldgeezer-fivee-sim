@@ -4038,8 +4038,22 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Rations",
+        "price": {
+          "amount": 5,
+          "currency": "SP"
+        },
+        "food_type": "travel-ready",
+        "examples": [
+          "Jerky",
+          "Dried Fruit",
+          "Hardtack",
+          "Nuts"
+        ],
+        "insufficient_food_reference": "Malnutrition"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4054,8 +4068,26 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Robe",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "significance": [
+          "Vocational",
+          "Ceremonial"
+        ],
+        "access_markers": [
+          "Colors",
+          "Symbols"
+        ],
+        "robe_based_admission_contexts": [
+          "Events",
+          "Locations"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4070,8 +4102,40 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Rope",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "tie_knot": {
+          "activation_action": "Utilize",
+          "check_ability": "Dexterity",
+          "check_skill": "Sleight of Hand",
+          "dc": 10
+        },
+        "burst": {
+          "check_ability": "Strength",
+          "check_skill": "Athletics",
+          "dc": 20
+        },
+        "bind_unwilling_creature": {
+          "eligible_target_conditions_any_of": [
+            "Grappled",
+            "Incapacitated",
+            "Restrained"
+          ],
+          "leg_binding_condition": "Restrained",
+          "condition_end": "escape"
+        },
+        "escape": {
+          "activation_action": "Action",
+          "check_ability": "Dexterity",
+          "check_skill": "Acrobatics",
+          "dc": 15
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4086,8 +4150,16 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Sack",
+        "price": {
+          "amount": 1,
+          "currency": "CP"
+        },
+        "capacity_weight_lb": 30,
+        "capacity_volume_cubic_feet": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4102,8 +4174,48 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Scholar's Pack",
+        "price": {
+          "amount": 40,
+          "currency": "GP"
+        },
+        "contents": [
+          {
+            "item": "Backpack",
+            "quantity": 1
+          },
+          {
+            "item": "Book",
+            "quantity": 1
+          },
+          {
+            "item": "Ink",
+            "quantity": 1
+          },
+          {
+            "item": "Ink Pen",
+            "quantity": 1
+          },
+          {
+            "item": "Lamp",
+            "quantity": 1
+          },
+          {
+            "item": "Oil Flask",
+            "quantity": 10
+          },
+          {
+            "item": "Parchment Sheet",
+            "quantity": 10
+          },
+          {
+            "item": "Tinderbox",
+            "quantity": 1
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4118,8 +4230,20 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Shovel",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "digging_time_hours": 1,
+        "hole_side_feet": 5,
+        "materials": [
+          "Soil",
+          "Similar material"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4134,8 +4258,16 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Signal Whistle",
+        "price": {
+          "amount": 5,
+          "currency": "CP"
+        },
+        "activation_action": "Utilize",
+        "audible_distance_feet": 600
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4150,8 +4282,39 @@
       "pages": [
         99
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Spell Scroll",
+        "magic_item": true,
+        "variants": [
+          {
+            "spell_level": 0,
+            "price": {
+              "amount": 30,
+              "currency": "GP"
+            }
+          },
+          {
+            "spell_level": 1,
+            "price": {
+              "amount": 50,
+              "currency": "GP"
+            }
+          }
+        ],
+        "spell_selected_by": "Scroll creator",
+        "casting_eligibility": "Spell appears on reader's class spell list",
+        "requires_reading": true,
+        "casting_time": "Spell's normal casting time",
+        "material_components_required": false,
+        "when_spell_requires_saving_throw": {
+          "spell_save_dc": 13
+        },
+        "when_spell_requires_attack_roll": {
+          "spell_attack_bonus": 5
+        },
+        "consumed_when": "Casting completed"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4166,8 +4329,28 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Iron Spikes",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "bundle_quantity": 10,
+        "activation_action": "Utilize",
+        "tool_type": "Blunt object",
+        "example_tool": "Light Hammer",
+        "materials": [
+          "Wood",
+          "Earth",
+          "Similar material"
+        ],
+        "uses": [
+          "Jam a door shut",
+          "Anchor a Rope",
+          "Anchor a Chain"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4182,8 +4365,15 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Spyglass",
+        "price": {
+          "amount": 1000,
+          "currency": "GP"
+        },
+        "magnification": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4198,8 +4388,16 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "String",
+        "price": {
+          "amount": 1,
+          "currency": "SP"
+        },
+        "length_feet": 10,
+        "tie_knot_action": "Utilize"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4214,8 +4412,19 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Tent",
+        "price": {
+          "amount": 2,
+          "currency": "GP"
+        },
+        "sleeping_capacity": 2,
+        "creature_sizes": [
+          "Small",
+          "Medium"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4230,8 +4439,28 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Tinderbox",
+        "price": {
+          "amount": 5,
+          "currency": "SP"
+        },
+        "contents": [
+          "Flint",
+          "Fire Steel",
+          "Tinder"
+        ],
+        "typical_tinder": "Dry cloth soaked in light oil",
+        "exposed_fuel_ignition_action": "Bonus Action",
+        "exposed_fuel_examples": [
+          "Candle",
+          "Lamp",
+          "Lantern",
+          "Torch"
+        ],
+        "other_fire_ignition_minutes": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4246,8 +4475,23 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Torch",
+        "price": {
+          "amount": 1,
+          "currency": "CP"
+        },
+        "burn_duration_hours": 1,
+        "bright_light_radius_feet": 20,
+        "additional_dim_light_feet": 20,
+        "attack": {
+          "activation_action": "Attack",
+          "weapon_category": "Simple Melee",
+          "hit_damage": 1,
+          "damage_type": "Fire"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4262,8 +4506,15 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Vial",
+        "price": {
+          "amount": 1,
+          "currency": "GP"
+        },
+        "capacity_ounces": 4
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4278,8 +4529,16 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Waterskin",
+        "price": {
+          "amount": 2,
+          "currency": "SP"
+        },
+        "capacity_pints": 4,
+        "insufficient_water_reference": "Dehydration"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "630-9-13-adventuring-gear"
     },
@@ -4294,8 +4553,16 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "mount_benefits": [
+          "Faster wilderness movement",
+          "Carry gear"
+        ],
+        "primary_purpose": "Carry gear",
+        "carrying_capacity_table_id": "100-mounts-and-other-animals",
+        "animal_stat_block_reference": "Monsters"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4310,8 +4577,20 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "drawn_vehicle_types": [
+          "Carriage",
+          "Cart",
+          "Chariot",
+          "Sled",
+          "Wagon"
+        ],
+        "maximum_pulled_weight_multiplier": 5,
+        "multiplier_basis": "Animal's base carrying capacity",
+        "pulled_weight_includes_vehicle": true,
+        "multiple_animals": "Add carrying capacities"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4326,8 +4605,14 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item": "Barding",
+        "purpose": "Mount armor",
+        "eligible_armor": "Any armor type on the Armor table",
+        "normal_cost_multiplier": 4,
+        "normal_weight_multiplier": 2
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4342,8 +4627,22 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "included_equipment": [
+          "Bit",
+          "Bridle",
+          "Reins"
+        ],
+        "includes_other_equipment_needed_to_use_saddle": true,
+        "military_saddle": {
+          "remain_mounted_ability_checks": "Advantage"
+        },
+        "exotic_saddle_required_for_mount_types": [
+          "Aquatic",
+          "Flying"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
