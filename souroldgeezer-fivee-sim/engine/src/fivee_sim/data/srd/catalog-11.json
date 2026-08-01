@@ -3051,8 +3051,14 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Occupied Space",
+        "occupied_if": [
+          "creature is in space",
+          "space completely filled by objects"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3067,8 +3073,29 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Opportunity Attacks",
+        "trigger": {
+          "visible_creature_required": true,
+          "creature_leaves_reach": true,
+          "movement_sources": [
+            "action",
+            "Bonus Action",
+            "Reaction",
+            "speed"
+          ]
+        },
+        "cost": "Reaction",
+        "attack_count": 1,
+        "attack_options": [
+          "melee weapon attack",
+          "Unarmed Strike"
+        ],
+        "target": "provoking creature",
+        "timing": "immediately before creature leaves reach",
+        "related_term": "Playing the Game: Combat"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3083,8 +3110,19 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Paralyzed [Condition]",
+        "also_has_condition": "Incapacitated",
+        "speed_feet": 0,
+        "speed_can_increase": false,
+        "automatic_failed_saving_throws": [
+          "Strength",
+          "Dexterity"
+        ],
+        "attack_rolls_against_creature": "Advantage",
+        "hit_is_critical_if_attacker_within_feet": 5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3099,8 +3137,15 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Passive Perception",
+        "purpose": "general awareness without conscious Wisdom (Perception) check",
+        "used_by": "GM",
+        "formula": "10 + Wisdom (Perception) check bonus",
+        "advantage_modifier": 5,
+        "disadvantage_modifier": -5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3115,8 +3160,11 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Per Day",
+        "depleted_uses_recover_after": "Long Rest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3131,8 +3179,30 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Petrified [Condition]",
+        "transformation": {
+          "substance": "solid inanimate, usually stone",
+          "includes": [
+            "creature",
+            "worn nonmagical objects",
+            "carried nonmagical objects"
+          ],
+          "weight_multiplier": 10,
+          "ages": false
+        },
+        "also_has_condition": "Incapacitated",
+        "speed_feet": 0,
+        "speed_can_increase": false,
+        "attack_rolls_against_creature": "Advantage",
+        "automatic_failed_saving_throws": [
+          "Strength",
+          "Dexterity"
+        ],
+        "resistance": "all damage",
+        "condition_immunity": "Poisoned"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3147,8 +3217,12 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Player Character",
+        "controller": "player",
+        "related_term": "Character Creation"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3163,8 +3237,12 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Poisoned [Condition]",
+        "attack_rolls": "Disadvantage",
+        "ability_checks": "Disadvantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3179,8 +3257,17 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Possession",
+        "possessor_types": [
+          "creature",
+          "entity"
+        ],
+        "operation_defined_by": "possessing effect",
+        "prevented_by_spell": "Protection from Evil and Good",
+        "ended_by_spell": "Dispel Evil and Good"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3195,8 +3282,18 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Proficiency",
+        "benefit": "add Proficiency Bonus to D20 Test using proficient thing",
+        "categories": [
+          "skill",
+          "saving throw",
+          "weapon",
+          "tool"
+        ],
+        "related_term": "Playing the Game: Proficiency"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3211,8 +3308,22 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Prone [Condition]",
+        "movement_options": [
+          "crawl",
+          "right self"
+        ],
+        "right_self_movement_cost": "half Speed, rounded down",
+        "right_self_ends_condition": true,
+        "cannot_right_self_at_speed_zero": true,
+        "creature_attack_rolls": "Disadvantage",
+        "attacks_against_creature": {
+          "attacker_within_5_feet": "Advantage",
+          "attacker_farther_than_5_feet": "Disadvantage"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3227,8 +3338,12 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Reach",
+        "default_feet": 5,
+        "can_be_overridden_by_rule": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3243,8 +3358,23 @@
       "pages": [
         186
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Reaction",
+        "type": "special action",
+        "trigger": "defined by Reaction description",
+        "can_be_taken_on_another_creature_turn": true,
+        "on_own_turn_can_coexist_with": [
+          "action",
+          "Bonus Action"
+        ],
+        "recovery": "start of creature's next turn",
+        "universal_reaction": "Opportunity Attack",
+        "related_terms": [
+          "Opportunity Attacks",
+          "Playing the Game: Actions"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3260,8 +3390,31 @@
         186,
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Ready [Action]",
+        "purpose": "wait for chosen circumstance",
+        "ready_timing": "on creature's turn",
+        "response_deadline": "before start of creature's next turn",
+        "trigger": "perceivable circumstance chosen by creature",
+        "response_choice": [
+          "chosen action",
+          "move up to Speed"
+        ],
+        "when_trigger_occurs": [
+          "take Reaction immediately after trigger finishes",
+          "ignore trigger"
+        ],
+        "readied_spell": {
+          "cast_when_readied": true,
+          "resources_expended_when_readied": true,
+          "energy_held_until_reaction": true,
+          "required_casting_time": "Action",
+          "requires_concentration": true,
+          "maximum_concentration": "start of creature's next turn",
+          "broken_concentration": "spell dissipates without effect"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3276,8 +3429,15 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Resistance",
+        "applies_to": "specified damage type",
+        "damage_multiplier": 0.5,
+        "rounding": "down",
+        "applications_per_damage_instance": 1,
+        "related_term": "Playing the Game: Damage and Healing"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3292,8 +3452,15 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Restrained [Condition]",
+        "speed_feet": 0,
+        "speed_can_increase": false,
+        "attack_rolls_against_creature": "Advantage",
+        "creature_attack_rolls": "Disadvantage",
+        "dexterity_saving_throws": "Disadvantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3308,8 +3475,18 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Ritual",
+        "requirements": [
+          "spell prepared",
+          "spell has Ritual tag"
+        ],
+        "additional_casting_time_minutes": 10,
+        "expends_spell_slot": false,
+        "can_cast_at_higher_level": false,
+        "related_term": "Spells"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3324,8 +3501,17 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Round Down",
+        "applies_after": [
+          "division",
+          "multiplication"
+        ],
+        "fraction_result": "round down",
+        "includes_fraction_one_half_or_greater": true,
+        "explicit_round_up_rule_overrides": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3340,8 +3526,12 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Save",
+        "alias_of": "Saving Throw",
+        "related_term": "Saving Throw"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -3356,8 +3546,17 @@
       "pages": [
         187
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Saving Throw",
+        "alias": "Save",
+        "purpose": "avoid or resist threat",
+        "normally_requires_rule": true,
+        "can_choose_to_fail_without_roll": true,
+        "result_defined_by": "effect allowing save",
+        "missing_required_ability_score": "automatic failure",
+        "related_term": "Playing the Game: D20 Tests"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
