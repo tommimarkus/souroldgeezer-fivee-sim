@@ -19846,8 +19846,60 @@
       "pages": [
         169
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Tiny Hut",
+        "level": 3,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1,
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "crystal bead"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 10,
+            "stationary": true
+          },
+          "fails_if_initial_creatures_not_fully_encapsulated": true,
+          "initial_creatures_and_objects_can_pass": true,
+          "other_creatures_and_objects_can_pass": false,
+          "maximum_spell_level_blocked": 3,
+          "blocked_spell_effects_cannot_extend_inside": true,
+          "interior": {
+            "comfortable": true,
+            "dry": true,
+            "light_choice": [
+              "Dim Light",
+              "Darkness"
+            ]
+          },
+          "exterior": {
+            "opaque": true,
+            "color_chosen_by_caster": true
+          },
+          "interior_view_out": true,
+          "early_end_triggers": [
+            "caster leaves Emanation",
+            "caster recasts spell"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19863,8 +19915,37 @@
         169,
         170
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Tongues",
+        "level": 3,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "M": "miniature ziggurat"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "understands_spoken_languages_heard": true,
+          "understands_signed_languages_seen": true,
+          "speech_or_signing_understood_by_creatures_knowing_language": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19879,8 +19960,41 @@
       "pages": [
         170
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Transport via Plants",
+        "level": 6,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 10
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "origin_plant": {
+            "minimum_size": "Large",
+            "inanimate": true
+          },
+          "destination_plant": {
+            "same_plane": true,
+            "any_distance": true,
+            "previously_seen_or_touched": true
+          },
+          "eligible_travelers": "any creature",
+          "movement_cost_feet": 5
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19895,8 +20009,45 @@
       "pages": [
         170
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Tree Stride",
+        "level": 5,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "trees_must_be": [
+            "living",
+            "same kind",
+            "at least caster size"
+          ],
+          "maximum_tree_distance_feet": 500,
+          "entry_movement_feet": 5,
+          "exit_movement_feet": 5,
+          "destination_known_instantly": true,
+          "exit_distance_feet": 5,
+          "no_remaining_movement_result": "exit by origin tree",
+          "uses_per_turn": 1,
+          "must_end_turn_outside_tree": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19911,8 +20062,73 @@
       "pages": [
         170
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "True Polymorph",
+        "level": 9,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of mercury, dollop of gum arabic, and wisp of smoke"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1,
+          "full_duration_result": "Until dispelled"
+        },
+        "effect": {
+          "target": "visible creature or nonmagical object",
+          "unwilling_creature_save": "Wisdom",
+          "pre_permanence_end_triggers": [
+            "target dies",
+            "target is destroyed"
+          ],
+          "creature_into_creature": {
+            "maximum_form_challenge_rating": "target Challenge Rating or level",
+            "statistics_replaced_by_form": true,
+            "retained_statistics": [
+              "Hit Points",
+              "Hit Point Dice",
+              "alignment",
+              "personality"
+            ],
+            "temporary_hit_points": "new form Hit Points",
+            "actions_limited_by_form_anatomy": true,
+            "can_speak": false,
+            "can_cast_spells": false,
+            "equipment_melds": true,
+            "melded_equipment_usable": false
+          },
+          "object_into_creature": {
+            "object_not_worn_or_carried": true,
+            "maximum_form_size": "object size",
+            "maximum_challenge_rating": 9,
+            "attitude": "Friendly to caster and allies",
+            "turn": "immediately after caster",
+            "obeys_commands": true,
+            "control_ends_after_hours": 1,
+            "friendliness_after_control_depends_on_treatment": true
+          },
+          "creature_into_object": {
+            "maximum_object_size": "creature size",
+            "worn_and_carried_equipment_transforms": true,
+            "statistics_replaced_by_object": true,
+            "memory_of_object_form_after_spell": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19928,8 +20144,52 @@
         170,
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "True Resurrection",
+        "level": 9,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "hours": 1
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "diamonds",
+            "minimum_value_gp": 25000,
+            "consumed": true
+          }
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "maximum_time_dead_years": 200,
+          "old_age_death_eligible": false,
+          "restored_hit_points": "all",
+          "restores": [
+            "wounds",
+            "poison",
+            "magical contagions",
+            "curses",
+            "damaged or missing organs",
+            "damaged or missing limbs"
+          ],
+          "undead_restored_to_non_undead_form": true,
+          "new_body_if_original_absent": {
+            "requires_speaking_name": true,
+            "placement": "chosen unoccupied space within 10 feet"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19944,8 +20204,41 @@
       "pages": [
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "True Seeing",
+        "level": 6,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "mushroom powder",
+            "minimum_value_gp": 25,
+            "consumed": true
+          }
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "one willing creature",
+          "truesight_range_feet": 120
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19960,8 +20253,48 @@
       "pages": [
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "True Strike",
+        "level": 0,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "S": true,
+          "M": {
+            "item": "proficient weapon",
+            "minimum_value_cp": 1
+          }
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "attack_count": 1,
+          "attack_weapon": "material weapon",
+          "attack_and_damage_ability": "spellcasting ability instead of Strength or Dexterity",
+          "damage_type_choice": [
+            "Radiant",
+            "weapon's normal damage type"
+          ],
+          "cantrip_upgrade_extra_radiant": {
+            "5": "1d6",
+            "11": "2d6",
+            "17": "3d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19976,8 +20309,50 @@
       "pages": [
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Tsunami",
+        "level": 8,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "miles": 1
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_rounds": 6
+        },
+        "effect": {
+          "wall": {
+            "maximum_length_feet": 300,
+            "maximum_height_feet": 300,
+            "maximum_thickness_feet": 50
+          },
+          "appearance_save": "Strength",
+          "appearance_failed_damage": "6d10",
+          "successful_damage": "half",
+          "damage_type": "Bludgeoning",
+          "turn_start_movement_feet": 50,
+          "moving_wall_targets": "Huge or smaller creatures inside or entered by wall",
+          "moving_wall_failed_damage": "5d10",
+          "moving_wall_damage_frequency": "once per round",
+          "turn_end_height_reduction_feet": 50,
+          "later_round_damage_reduction": "1d10",
+          "zero_height_ends_spell": true,
+          "swimming_check": "Strength (Athletics) against spell save DC",
+          "failed_check_prevents_movement": true,
+          "leaving_wall_causes_fall": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -19992,8 +20367,56 @@
       "pages": [
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Unseen Servant",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "bit of string and wood"
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "servant": {
+            "Invisible": true,
+            "mindless": true,
+            "shapeless": true,
+            "size": "Medium",
+            "type": "force",
+            "armor_class": 10,
+            "hit_points": 1,
+            "strength": 2,
+            "can_attack": false
+          },
+          "placement": "unoccupied ground space",
+          "zero_hit_points_ends_spell": true,
+          "command": {
+            "action": "Bonus Action",
+            "uses_per_turn": 1,
+            "movement_feet": 15,
+            "can_interact_with_object": true,
+            "task_type": "simple human task"
+          },
+          "task_continues_until_complete": true,
+          "maximum_distance_from_caster_feet": 60
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20008,8 +20431,47 @@
       "pages": [
         171
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Vampiric Touch",
+        "level": 3,
+        "school": "Necromancy",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "attack_roll": "melee spell attack",
+          "target": "one creature within reach",
+          "hit_damage": "3d6",
+          "damage_type": "Necrotic",
+          "healing": "half Necrotic damage dealt",
+          "repeat_attack": {
+            "action": "Magic",
+            "frequency": "each caster turn",
+            "may_change_target": true
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 4,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20025,8 +20487,39 @@
         171,
         172
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Vicious Mockery",
+        "level": 0,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "one visible or audible creature",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_damage": "1d6",
+          "damage_type": "Psychic",
+          "failed_save_disadvantage": "next attack roll before end of target's next turn",
+          "cantrip_upgrade": {
+            "5": "2d6",
+            "11": "3d6",
+            "17": "4d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20041,8 +20534,47 @@
       "pages": [
         172
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Vitriolic Sphere",
+        "level": 4,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "drop of bile"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "projectile_diameter_feet": 1,
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "chosen location"
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_initial_damage": "10d4",
+          "failed_delayed_damage": "5d4 at end of target's next turn",
+          "successful_damage": "half initial only",
+          "damage_type": "Acid",
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "initial_damage_increase_per_slot_level": "2d4"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20057,8 +20589,63 @@
       "pages": [
         172
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wall of Fire",
+        "level": 4,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "piece of charcoal"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "surface": "solid",
+          "wall_options": {
+            "linear": {
+              "maximum_length_feet": 60,
+              "height_feet": 20,
+              "thickness_feet": 1
+            },
+            "ring": {
+              "maximum_diameter_feet": 20,
+              "height_feet": 20,
+              "thickness_feet": 1
+            }
+          },
+          "opaque": true,
+          "appearance_save": "Dexterity",
+          "failed_damage": "5d8 Fire",
+          "successful_damage": "half",
+          "damaging_side_chosen_by_caster": true,
+          "damaging_side_range_feet": 10,
+          "damage_triggers": [
+            "ends turn near damaging side",
+            "ends turn inside wall",
+            "first entry into wall on turn"
+          ],
+          "other_side_damage": 0,
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20073,8 +20660,58 @@
       "pages": [
         172
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wall of Force",
+        "level": 5,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "shard of glass"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "Invisible": true,
+          "orientation": "any",
+          "support": [
+            "free floating",
+            "solid surface"
+          ],
+          "forms": {
+            "dome_or_globe": {
+              "maximum_radius_feet": 10
+            },
+            "flat": {
+              "panel_count": 10,
+              "panel_size_feet": 10,
+              "contiguous": true
+            }
+          },
+          "thickness_inches": 0.25,
+          "creature_space_result": "pushed to caster-chosen side",
+          "physical_passage_blocked": true,
+          "damage_immunities": [
+            "all"
+          ],
+          "dispel_magic_can_end": false,
+          "disintegrate_destroys": true,
+          "extends_into_ethereal_plane": true,
+          "blocks_ethereal_travel": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20090,8 +20727,69 @@
         172,
         173
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wall of Ice",
+        "level": 6,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "piece of quartz"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "surface": "solid",
+          "forms": {
+            "dome_or_globe": {
+              "maximum_radius_feet": 10
+            },
+            "flat": {
+              "panel_count": 10,
+              "panel_size_feet": 10,
+              "contiguous": true
+            }
+          },
+          "thickness_feet": 1,
+          "creature_space_result": "pushed to caster-chosen side",
+          "appearance_save": "Dexterity",
+          "failed_appearance_damage": "10d6 Cold",
+          "successful_damage": "half",
+          "section": {
+            "size_feet": 10,
+            "armor_class": 12,
+            "hit_points": 30,
+            "damage_immunities": [
+              "Cold",
+              "Poison",
+              "Psychic"
+            ],
+            "damage_vulnerability": "Fire"
+          },
+          "destroyed_section_leaves_frigid_air": true,
+          "air_save": "Constitution",
+          "air_failed_damage": "5d6 Cold",
+          "air_successful_damage": "half",
+          "air_save_frequency": "first passage on turn",
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "appearance_damage_increase": "2d6",
+            "air_damage_increase": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20106,8 +20804,64 @@
       "pages": [
         173
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wall of Stone",
+        "level": 5,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "cube of granite"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10,
+          "full_duration_result": "permanent and cannot be dispelled"
+        },
+        "effect": {
+          "nonmagical": true,
+          "panel_options": [
+            {
+              "count": 10,
+              "width_feet": 10,
+              "height_feet": 10,
+              "thickness_inches": 6
+            },
+            {
+              "count": 10,
+              "width_feet": 10,
+              "height_feet": 20,
+              "thickness_inches": 3
+            }
+          ],
+          "panels_contiguous": true,
+          "creature_space_result": "pushed to caster-chosen side",
+          "enclosed_creature_save": "Dexterity",
+          "successful_enclosed_save": "Reaction move up to Speed to escape enclosure",
+          "shape": "caster chosen",
+          "must_merge_with_supported_existing_stone": true,
+          "span_over_20_feet_halves_panels_for_support": true,
+          "panel_armor_class": 15,
+          "hit_points_per_inch": 30,
+          "damage_immunities": [
+            "Poison",
+            "Psychic"
+          ],
+          "zero_hit_points_destroys_panel": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20122,8 +20876,61 @@
       "pages": [
         173
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Wall of Thorns",
+        "level": 6,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "handful of thorns"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "surface": "solid",
+          "wall_options": {
+            "linear": {
+              "maximum_length_feet": 60,
+              "height_feet": 10,
+              "thickness_feet": 5
+            },
+            "circle": {
+              "diameter_feet": 20,
+              "maximum_height_feet": 20,
+              "thickness_feet": 5
+            }
+          },
+          "blocks_line_of_sight": true,
+          "appearance_save": "Dexterity",
+          "failed_appearance_damage": "7d8 Piercing",
+          "successful_damage": "half",
+          "movement_cost_multiplier": 4,
+          "inside_save": "Dexterity",
+          "inside_save_triggers": [
+            "first entry on turn",
+            "ending turn inside"
+          ],
+          "maximum_inside_saves_per_turn": 1,
+          "failed_inside_damage": "7d8 Slashing",
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "both_damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20138,8 +20945,48 @@
       "pages": [
         173
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Warding Bond",
+        "level": 2,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": {
+            "item": "platinum rings",
+            "count": 2,
+            "minimum_value_gp_each": 50,
+            "worn_by_caster_and_target": true
+          }
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "target": "one willing other creature",
+          "maximum_effect_distance_feet": 60,
+          "armor_class_bonus": 1,
+          "saving_throw_bonus": 1,
+          "damage_resistance": "all",
+          "caster_takes_same_damage_as_target": true,
+          "end_triggers": [
+            "caster reaches 0 Hit Points",
+            "separation exceeds 60 feet",
+            "spell recast on either connected creature"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -20154,8 +21001,39 @@
       "pages": [
         173
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Water Breathing",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "short reed"
+        },
+        "duration": {
+          "hours": 24
+        },
+        "effect": {
+          "maximum_targets": 10,
+          "targets_willing": true,
+          "can_breathe_underwater": true,
+          "normal_respiration_retained": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
