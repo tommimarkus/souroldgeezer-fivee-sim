@@ -10738,8 +10738,53 @@
       "pages": [
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Haste",
+        "level": 3,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "shaving of licorice root"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "willing visible creature",
+          "speed_multiplier": 2,
+          "armor_class_bonus": 2,
+          "dexterity_saving_throws": "Advantage",
+          "additional_actions_per_turn": 1,
+          "additional_action_options": [
+            "Attack",
+            "Dash",
+            "Disengage",
+            "Hide",
+            "Utilize"
+          ],
+          "additional_attack_action_maximum_attacks": 1,
+          "end_effect": {
+            "conditions": [
+              "Incapacitated",
+              "Speed 0"
+            ],
+            "duration": "until end of target's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10754,8 +10799,42 @@
       "pages": [
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Heal",
+        "level": 6,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "visible creature",
+          "hit_points_restored": 70,
+          "conditions_ended": [
+            "Blinded",
+            "Deafened",
+            "Poisoned"
+          ],
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "additional_healing_per_slot_level": 10
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10770,8 +10849,37 @@
       "pages": [
         139
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Healing Word",
+        "level": 1,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "chosen visible creature",
+          "healing": "2d4 + spellcasting ability modifier",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "healing_increase_per_slot_level": "2d4"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10787,8 +10895,55 @@
         139,
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Heat Metal",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Bard",
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "piece of iron and flame"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "visible manufactured metal object",
+          "contact_damage": "2d8",
+          "damage_type": "Fire",
+          "initial_damage_timing": "when spell is cast",
+          "repeat_damage": {
+            "action": "Bonus Action",
+            "timing": "each later caster turn",
+            "requires_object_within_range": true
+          },
+          "holder_or_wearer": {
+            "saving_throw_ability": "Constitution",
+            "failed_save": "drops object if able",
+            "if_object_not_dropped": {
+              "attack_rolls": "Disadvantage",
+              "ability_checks": "Disadvantage",
+              "duration": "until start of caster's next turn"
+            }
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10803,8 +10958,40 @@
       "pages": [
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hellish Rebuke",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Reaction",
+          "trigger": "taking damage from visible creature within 60 feet"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "triggering creature",
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "2d10",
+          "damage_type": "Fire",
+          "successful_save_damage_multiplier": 0.5,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10819,8 +11006,53 @@
       "pages": [
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Heroes' Feast",
+        "level": 6,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid"
+        ],
+        "casting_time": {
+          "minutes": 10
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "gem-encrusted bowl worth 1,000+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "feast_area": {
+            "shape": "Cube",
+            "size_feet": 10,
+            "space": "unoccupied next to caster"
+          },
+          "consumption_hours": 1,
+          "feast_disappears_after_consumption_period": true,
+          "benefits_begin_after_consumption_period": true,
+          "maximum_participants": 12,
+          "benefit_duration_hours": 24,
+          "damage_resistances": [
+            "Poison"
+          ],
+          "condition_immunities": [
+            "Frightened",
+            "Poisoned"
+          ],
+          "hit_point_maximum_increase": "2d10",
+          "current_hit_point_increase": "same roll as maximum increase"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10835,8 +11067,42 @@
       "pages": [
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Heroism",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "willing creature touched",
+          "condition_immunities": [
+            "Frightened"
+          ],
+          "temporary_hit_points": "spellcasting ability modifier",
+          "temporary_hit_point_timing": "start of each target turn",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10851,8 +11117,57 @@
       "pages": [
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hex",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Warlock"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "petrified eye of a newt"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "extra_damage_trigger": "caster hits target with attack roll",
+          "extra_damage": "1d6",
+          "damage_type": "Necrotic",
+          "chosen_ability_checks": "Disadvantage",
+          "retarget": {
+            "trigger": "target drops to 0 Hit Points",
+            "action": "Bonus Action",
+            "timing": "later turn",
+            "new_target": "creature"
+          },
+          "higher_level_slot": [
+            {
+              "slot_level": 2,
+              "maximum_hours": 4
+            },
+            {
+              "slot_levels": "3-4",
+              "maximum_hours": 8
+            },
+            {
+              "minimum_slot_level": 5,
+              "maximum_hours": 24
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10867,8 +11182,52 @@
       "pages": [
         140
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hideous Laughter",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "tart and feather"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "chosen visible creature",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_conditions": [
+            "Prone",
+            "Incapacitated"
+          ],
+          "failed_save_laughs_if_capable": true,
+          "target_cannot_end_prone_condition": true,
+          "repeat_save_triggers": [
+            "end of each target turn",
+            "target takes damage"
+          ],
+          "damage_triggered_save": "Advantage",
+          "repeat_save_success_ends_spell": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10884,8 +11243,44 @@
         140,
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hold Monster",
+        "level": 5,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "straight piece of iron"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_condition": "Paralyzed",
+          "repeat_save_timing": "end of each target turn",
+          "repeat_save_success_ends_spell": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 6,
+            "additional_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10900,8 +11295,46 @@
       "pages": [
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hold Person",
+        "level": 2,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "straight piece of iron"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "visible Humanoid",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_condition": "Paralyzed",
+          "repeat_save_timing": "end of each target turn",
+          "repeat_save_success_ends_spell": true,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "additional_humanoid_targets_per_slot_level": 1
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions",
       "content_ref": {
@@ -10920,8 +11353,44 @@
       "pages": [
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Holy Aura",
+        "level": 8,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "reliquary worth 1,000+ GP"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Emanation",
+            "radius_feet": 30
+          },
+          "targets": "chosen creatures in aura",
+          "target_saving_throws": "Advantage",
+          "attack_rolls_against_targets": "Disadvantage",
+          "fiend_or_undead_melee_hit": {
+            "attacker_saving_throw_ability": "Constitution",
+            "failed_save_condition": "Blinded",
+            "condition_duration": "until end of attacker's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10936,8 +11405,57 @@
       "pages": [
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hunter's Mark",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 90
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "extra_damage_trigger": "caster hits target with attack roll",
+          "extra_damage": "1d6",
+          "damage_type": "Force",
+          "checks_to_find_target": {
+            "effect": "Advantage",
+            "ability": "Wisdom",
+            "skills": [
+              "Perception",
+              "Survival"
+            ]
+          },
+          "move_mark": {
+            "trigger": "target drops to 0 Hit Points",
+            "action": "Bonus Action",
+            "new_target": "visible creature within range"
+          },
+          "higher_level_slot": [
+            {
+              "slot_levels": "3-4",
+              "maximum_hours": 8
+            },
+            {
+              "minimum_slot_level": 5,
+              "maximum_hours": 24
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10952,8 +11470,49 @@
       "pages": [
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Hypnotic Pattern",
+        "level": 3,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "S": true,
+          "M": "pinch of confetti"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Cube",
+            "size_feet": 30
+          },
+          "eligible_targets": "each creature in area that can see pattern",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_condition": "Charmed",
+          "while_charmed": {
+            "condition": "Incapacitated",
+            "speed": 0
+          },
+          "early_end_triggers": [
+            "target takes damage",
+            "another creature uses action to shake target"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10968,8 +11527,46 @@
       "pages": [
         141
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ice Knife",
+        "level": 1,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "S": true,
+          "M": "drop of water or piece of ice"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "creature",
+          "attack": "ranged spell attack",
+          "hit_damage": "1d10",
+          "hit_damage_type": "Piercing",
+          "explodes_on_hit_or_miss": true,
+          "explosion_targets": "initial target and each creature within 5 feet",
+          "explosion_saving_throw_ability": "Dexterity",
+          "failed_save_explosion_damage": "2d6",
+          "explosion_damage_type": "Cold",
+          "successful_save_explosion_damage": 0,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "cold_damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10985,8 +11582,57 @@
         141,
         142
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Ice Storm",
+        "level": 4,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 300
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "mitten"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "area": {
+            "shape": "Cylinder",
+            "radius_feet": 20,
+            "height_feet": 40,
+            "origin": "point within range"
+          },
+          "targets": "each creature in area",
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": [
+            {
+              "damage": "2d10",
+              "type": "Bludgeoning"
+            },
+            {
+              "damage": "4d6",
+              "type": "Cold"
+            }
+          ],
+          "successful_save_damage_multiplier": 0.5,
+          "ground_is_difficult_terrain_until": "end of caster's next turn",
+          "higher_level_slot": {
+            "minimum_slot_level": 5,
+            "bludgeoning_damage_increase_per_slot_level": "1d10"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -11001,8 +11647,43 @@
       "pages": [
         142
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Identify",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1,
+          "ritual": true
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "pearl worth 100+ GP"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "requires_continuous_touch_during_casting": true,
+          "object_target_reveals": [
+            "magical properties",
+            "usage",
+            "Attunement requirement",
+            "charges",
+            "ongoing spells",
+            "creating spell name"
+          ],
+          "creature_target_reveals": "ongoing spells affecting creature"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -11017,8 +11698,52 @@
       "pages": [
         142
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Illusory Script",
+        "level": 1,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1,
+          "ritual": true
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "S": true,
+          "M": "ink worth 10+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "days": 10
+        },
+        "effect": {
+          "writing_surfaces": [
+            "parchment",
+            "paper",
+            "suitable material"
+          ],
+          "designated_readers": {
+            "designation_timing": "when cast",
+            "appearance": "normal writing in caster's hand",
+            "meaning": "caster's intended meaning"
+          },
+          "other_readers": "unknown or magical unintelligible script",
+          "alternative_alterations": [
+            "meaning",
+            "handwriting",
+            "language known by caster"
+          ],
+          "dispelled_effect": "original script and illusion disappear",
+          "truesight_reads_hidden_message": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -11033,8 +11758,88 @@
       "pages": [
         142
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Imprisonment",
+        "level": 9,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "statuette of target worth 5,000+ GP"
+        },
+        "duration": {
+          "type": "Until dispelled"
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Wisdom",
+          "successful_save": {
+            "affected": false,
+            "immunity_hours": 24
+          },
+          "failed_save": {
+            "requires_breathing": false,
+            "requires_eating": false,
+            "requires_drinking": false,
+            "ages": false,
+            "locatable_or_perceivable_by_divination": false,
+            "can_teleport": false,
+            "restraint_option_choice_count": 1,
+            "restraint_options": {
+              "Burial": {
+                "container": "hollow globe of magical force beneath earth",
+                "size": "just large enough for target",
+                "passage_into_or_out": false
+              },
+              "Chaining": {
+                "condition": "Restrained",
+                "can_be_moved": false
+              },
+              "Hedged Prison": {
+                "location": "chosen demiplane",
+                "wards": [
+                  "teleportation",
+                  "planar travel"
+                ]
+              },
+              "Minimus Containment": {
+                "target_height_inches": 1,
+                "container": "indestructible gemstone or similar object",
+                "light_passes": true,
+                "other_passage": false
+              },
+              "Slumber": {
+                "condition": "Unconscious",
+                "can_be_awoken": false
+              }
+            }
+          },
+          "ending_trigger": {
+            "specified_when_cast": true,
+            "requires_gm_approval": true,
+            "high_likelihood_within_years": 10,
+            "must_be_observable_action": true
+          },
+          "dispel_magic": {
+            "required_slot_level": 9,
+            "eligible_targets": [
+              "prison",
+              "creation component"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -11050,8 +11855,56 @@
         142,
         143
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Incendiary Cloud",
+        "level": 8,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Druid",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 150
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "area": {
+            "shape": "Sphere",
+            "radius_feet": 20,
+            "origin": "point within range"
+          },
+          "area_is_heavily_obscured": true,
+          "strong_wind_disperses": true,
+          "saving_throw_ability": "Dexterity",
+          "save_triggers": [
+            "cloud appears",
+            "sphere moves into creature space",
+            "creature enters sphere",
+            "creature ends turn in sphere"
+          ],
+          "maximum_saves_per_turn": 1,
+          "failed_save_damage": "10d8",
+          "damage_type": "Fire",
+          "successful_save_damage_multiplier": 0.5,
+          "movement": {
+            "timing": "start of each caster turn",
+            "distance_feet": 10,
+            "direction": "chosen away from caster"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
