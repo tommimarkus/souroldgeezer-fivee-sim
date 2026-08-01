@@ -49,6 +49,17 @@ codex plugin add souroldgeezer-fivee-sim@souroldgeezer-tabletop
 Start a new Codex session after installation so the bundled skills and MCP
 server are loaded.
 
+Codex keeps this plugin's generated runtime under
+`${CODEX_HOME:-$HOME/.codex}/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop`,
+outside the versioned plugin cache. The launcher deliberately builds a fresh
+environment there instead of moving any cache-local `engine/.venv`, which may be
+partial after an interrupted refresh. To force a clean rebuild, close sessions
+using the plugin, remove the runtime location's `venv` directory, and start a new
+session; the launcher recreates it on demand. Explicit `UV_PROJECT_ENVIRONMENT`,
+`UV_CACHE_DIR`, `PLUGIN_DATA`, and `CLAUDE_PLUGIN_DATA` settings still take
+precedence. A direct checkout without a plugin host continues to use
+`engine/.venv`.
+
 Once published, use the repository source instead of the local path:
 
 ```text

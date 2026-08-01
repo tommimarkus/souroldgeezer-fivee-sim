@@ -46,6 +46,12 @@ if [ "${FAKE_UV_FAIL:-0}" = "1" ]; then
   printf 'fake uv: refusing to sync\n' >&2
   exit 1
 fi
+if [ -n "${FAKE_UV_READY:-}" ]; then
+  : > "$FAKE_UV_READY"
+fi
+if [ -n "${FAKE_UV_GATE:-}" ]; then
+  IFS= read -r _ < "$FAKE_UV_GATE"
+fi
 project=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -55,7 +61,11 @@ while [ $# -gt 0 ]; do
 done
 project="$(cd "$project" && pwd)"
 mkdir -p "${UV_PROJECT_ENVIRONMENT:?}/bin"
-printf '#!/bin/sh\necho engine=%s\n' "$project" > "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
+{
+  printf '#!/bin/sh\n'
+  printf 'printf "launch=%%s\\n" "$$" >> "${SERVER_LOG:-/dev/null}"\n'
+  printf 'echo engine=%s\n' "$project"
+} > "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
 chmod +x "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
 FAKE_UV
 chmod +x "$tmp/bin/uv"
@@ -64,7 +74,7 @@ chmod +x "$tmp/bin/uv"
 # pin what happens when the environment cannot be built. Trimming the real PATH
 # would not do it: uv lives in /usr/bin here.
 mkdir -p "$tmp/minbin"
-for util in bash env dirname head sed cut rm timeout cksum; do
+for util in bash cat env dirname head sed cut mkdir rm sleep timeout cksum; do
   resolved="$(command -v "$util" 2>/dev/null)"
   if [ -z "$resolved" ]; then
     printf 'FATAL: %s is not on PATH; the no-uv cases need it.\n' "$util" >&2
@@ -96,7 +106,7 @@ launch() { # launch <label> <venv-name> [VAR=value ...]
       PATH="${LAUNCH_PATH:-$tmp/bin:$PATH}" \
       UV_LOG="$uvlog" \
       UV_PROJECT_ENVIRONMENT="$venv" \
-      bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
+      timeout 10 bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
   rc=$?
   err="$(cat "$tmp/stderr")"
   uvcalls="$(grep -c . "$uvlog")"
@@ -111,7 +121,7 @@ launch_with_host_data() { # launch_with_host_data <label> [VAR=value ...]
       "$@" \
       PATH="${LAUNCH_PATH:-$tmp/bin:$PATH}" \
       UV_LOG="$uvlog" \
-      bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
+      timeout 10 bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
   rc=$?
   err="$(cat "$tmp/stderr")"
   uvcalls="$(grep -c . "$uvlog")"
@@ -157,6 +167,24 @@ want_uv_args() { # want_uv_args <label> <substring>
     report 1 "$1" "uv invocation did not contain: $2
 invocation: $(cat "$uvlog")"
   fi
+}
+
+wait_for_path() { # wait_for_path <path>
+  local path="$1"
+  for _ in {1..50}; do
+    [ -e "$path" ] && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
+wait_for_text() { # wait_for_text <path> <literal>
+  local path="$1" literal="$2"
+  for _ in {1..50}; do
+    grep -Fq -- "$literal" "$path" 2>/dev/null && return 0
+    sleep 0.1
+  done
+  return 1
 }
 
 mkdir -p "$tmp/venvs"
@@ -214,6 +242,54 @@ launch v1 explicit-cache \
 want_rc "an explicit UV cache wins over host plugin data" 0
 want_uv_args "explicit UV cache precedes host storage" "cache=$explicit_cache"
 
+# Codex does not currently inject PLUGIN_DATA into bundled MCP children. The
+# manifest marks the host explicitly, so the launcher must derive durable state
+# outside the replaceable plugin cache without weakening any existing override.
+codex_home="$tmp/codex-home"
+codex_runtime="$codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
+CODEX_V1="$(plant codex-cache-v1)"
+launch_with_host_data codex-cache-v1 \
+  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$codex_home"
+want_rc    "Codex fallback storage builds successfully" 0
+want_syncs "Codex fallback storage syncs once" 1
+want_uv_args "Codex fallback owns the uv cache" "cache=$codex_runtime/uv-cache"
+if [ -x "$codex_runtime/venv/bin/fivee-sim-mcp" ] && \
+    [ ! -e "$CODEX_V1/engine/.venv" ]; then
+  report 0 "Codex runtime storage is outside the plugin cache" ""
+else
+  report 1 "Codex runtime storage is outside the plugin cache" \
+    "durable venv missing or cache-local venv unexpectedly created"
+fi
+
+# Removing the whole plugin root must leave runtime state intact. A replacement
+# version then refreshes that same durable environment from its new engine.
+rm -rf "$CODEX_V1"
+if [ -x "$codex_runtime/venv/bin/fivee-sim-mcp" ]; then
+  report 0 "Codex runtime survives plugin-root replacement" ""
+else
+  report 1 "Codex runtime survives plugin-root replacement" \
+    "durable venv disappeared with the plugin root"
+fi
+CODEX_V2="$(plant codex-cache-v2)"
+launch_with_host_data codex-cache-v2 \
+  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$codex_home"
+want_rc     "replacement plugin root starts successfully" 0
+want_syncs  "replacement plugin root refreshes once" 1
+want_stdout "replacement plugin root runs the new engine" "engine=$CODEX_V2/engine"
+
+codex_claude_data="$tmp/codex-claude-data"
+launch_with_host_data v1 \
+  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$tmp/ignored-codex-home" \
+  CLAUDE_PLUGIN_DATA="$codex_claude_data"
+want_rc "Claude plugin data still precedes the Codex fallback" 0
+if [ -x "$codex_claude_data/venv/bin/fivee-sim-mcp" ] && \
+    [ ! -e "$tmp/ignored-codex-home/plugin-data" ]; then
+  report 0 "host plugin data precedes the Codex fallback" ""
+else
+  report 1 "host plugin data precedes the Codex fallback" \
+    "Claude venv missing or Codex fallback unexpectedly created"
+fi
+
 # Cases that share a venv name run in sequence and each one's end state is the
 # next one's precondition — that is the subject matter, not an accident: the
 # whole bug is about a venv persisting across launches. The cost is that an early
@@ -232,6 +308,22 @@ launch v1 upgrade
 want_rc     "warm start exits 0" 0
 want_syncs  "warm start does not invoke uv" 0
 want_stdout "warm start still runs the v1 engine" "engine=$V1/engine"
+
+# A live lock would make a cold path wait. A warm start must neither inspect nor
+# disturb it; the harness's ten-second wrapper turns accidental waiting into a
+# quick, named failure instead of stalling this regression script for 300 seconds.
+warm_lock="$tmp/venvs/upgrade.fivee-sim-build-lock"
+mkdir "$warm_lock"
+printf '%s:test-owner\n' "$$" > "$warm_lock/owner"
+launch v1 upgrade
+want_rc     "warm start bypasses a live build lock" 0
+want_syncs  "warm start with a live lock still avoids uv" 0
+if [ -f "$warm_lock/owner" ]; then
+  report 0 "warm start does not mutate the lock path" ""
+else
+  report 1 "warm start does not mutate the lock path" "lock owner was removed"
+fi
+rm -rf "$warm_lock"
 
 # --- upgrade: the reported bug --------------------------------------------
 # Same durable venv, engine now at a different path. The old console script is
@@ -293,6 +385,123 @@ want_stdout "and then runs the engine" "engine=$V5/engine"
 launch v5 premigration
 want_syncs  "and is warm on the start after that" 0
 
+# --- concurrent cold starts ----------------------------------------------
+# Both clients should launch, but only the lock owner may mutate the shared
+# environment. A FIFO holds the first sync open until the second launcher has
+# had a chance to contend for the lock, without depending on wall-clock speed.
+CONCURRENT_ROOT="$(plant concurrent)"
+concurrent_venv="$tmp/venvs/concurrent"
+server_log="$tmp/server-launches"
+concurrent_gate="$tmp/concurrent-uv-gate"
+concurrent_ready="$tmp/concurrent-uv-ready"
+mkfifo "$concurrent_gate"
+: > "$uvlog"
+: > "$server_log"
+env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" SERVER_LOG="$server_log" \
+  UV_PROJECT_ENVIRONMENT="$concurrent_venv" \
+  FAKE_UV_GATE="$concurrent_gate" FAKE_UV_READY="$concurrent_ready" \
+  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee-sim-mcp.sh" \
+  >"$tmp/concurrent-1.out" 2>"$tmp/concurrent-1.err" &
+concurrent_pid_1=$!
+wait_for_path "$concurrent_ready"
+env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" SERVER_LOG="$server_log" \
+  UV_PROJECT_ENVIRONMENT="$concurrent_venv" \
+  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee-sim-mcp.sh" \
+  >"$tmp/concurrent-2.out" 2>"$tmp/concurrent-2.err" &
+concurrent_pid_2=$!
+concurrent_contended=0
+if wait_for_text "$tmp/concurrent-2.err" \
+    "another launcher is building the environment"; then
+  concurrent_contended=1
+fi
+printf '\n' > "$concurrent_gate"
+wait "$concurrent_pid_1"; concurrent_rc_1=$?
+wait "$concurrent_pid_2"; concurrent_rc_2=$?
+concurrent_syncs="$(grep -c . "$uvlog")"
+concurrent_launches="$(grep -c . "$server_log")"
+if [ "$concurrent_contended" -eq 1 ]; then
+  report 0 "the concurrent case reaches lock contention" ""
+else
+  report 1 "the concurrent case reaches lock contention" \
+    "second launcher did not report waiting for the build lock"
+fi
+if [ "$concurrent_rc_1" -eq 0 ] && [ "$concurrent_rc_2" -eq 0 ]; then
+  report 0 "two concurrent cold starts both succeed" ""
+else
+  report 1 "two concurrent cold starts both succeed" \
+    "rcs: $concurrent_rc_1, $concurrent_rc_2
+stderr 1: $(cat "$tmp/concurrent-1.err")
+stderr 2: $(cat "$tmp/concurrent-2.err")"
+fi
+if [ "$concurrent_syncs" -eq 1 ]; then
+  report 0 "two concurrent cold starts perform one sync" ""
+else
+  report 1 "two concurrent cold starts perform one sync" \
+    "uv invoked $concurrent_syncs time(s), want 1"
+fi
+if [ "$concurrent_launches" -eq 2 ]; then
+  report 0 "two concurrent cold starts launch two servers" ""
+else
+  report 1 "two concurrent cold starts launch two servers" \
+    "server launched $concurrent_launches time(s), want 2"
+fi
+
+# --- orphaned build lock -------------------------------------------------
+ORPHAN_ROOT="$(plant orphan)"
+orphan_venv="$tmp/venvs/orphan"
+orphan_lock="$orphan_venv.fivee-sim-build-lock"
+mkdir -p "$orphan_lock"
+printf '99999999:orphan\n' > "$orphan_lock/owner"
+launch orphan orphan
+want_rc     "an orphaned build lock is reclaimed" 0
+want_syncs  "recovery from an orphaned lock syncs once" 1
+want_stdout "recovery from an orphaned lock launches the server" "engine=$ORPHAN_ROOT/engine"
+if [ ! -e "$orphan_lock" ]; then
+  report 0 "the reclaimed build lock is released" ""
+else
+  report 1 "the reclaimed build lock is released" "lock remains at $orphan_lock"
+fi
+
+# --- handled signal ------------------------------------------------------
+# A launcher interrupted during sync must not strand the next session behind
+# its lock. Bash defers the trap until the foreground child returns, so the FIFO
+# lets the test signal the launcher while sync is active and then release the child.
+SIGNAL_ROOT="$(plant signal)"
+signal_venv="$tmp/venvs/signal"
+signal_lock="$signal_venv.fivee-sim-build-lock"
+signal_gate="$tmp/signal-uv-gate"
+signal_ready_path="$tmp/signal-uv-ready"
+mkfifo "$signal_gate"
+: > "$uvlog"
+env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" \
+  UV_PROJECT_ENVIRONMENT="$signal_venv" \
+  FAKE_UV_GATE="$signal_gate" FAKE_UV_READY="$signal_ready_path" \
+  bash "$SIGNAL_ROOT/scripts/fivee-sim-mcp.sh" \
+  >"$tmp/signal.out" 2>"$tmp/signal.err" &
+signal_pid=$!
+if wait_for_path "$signal_ready_path" && [ -f "$signal_lock/owner" ]; then
+  kill -TERM "$signal_pid"
+  printf '\n' > "$signal_gate"
+  wait "$signal_pid"; signal_rc=$?
+  if [ "$signal_rc" -eq 143 ]; then
+    report 0 "a handled signal stops the launcher" ""
+  else
+    report 1 "a handled signal stops the launcher" "rc=$signal_rc, want 143"
+  fi
+  if [ ! -e "$signal_lock" ]; then
+    report 0 "a handled signal releases the build lock" ""
+  else
+    report 1 "a handled signal releases the build lock" "lock remains at $signal_lock"
+  fi
+else
+  kill -TERM "$signal_pid" 2>/dev/null || true
+  wait "$signal_pid" 2>/dev/null || true
+  report 1 "a handled signal stops the launcher" \
+    "launcher did not enter the critical section"
+  report 1 "a handled signal releases the build lock" \
+    "signal cleanup could not be exercised"
+fi
+
 # --- stale, and the environment cannot be rebuilt -------------------------
 # Running the wrong engine is the failure this whole file is about, so a
 # launcher that cannot refresh must not fall back to serving it. Refusing to
@@ -315,6 +524,12 @@ launch v2 norebuild FAKE_UV_FAIL=1
 want_rc "stale with a failing sync does not start" 1
 if [ -z "$out" ]; then report 0 "a failing sync writes nothing to stdout" ""; else
   report 1 "a failing sync writes nothing to stdout" "stdout: $out"
+fi
+if [ ! -e "$tmp/venvs/norebuild.fivee-sim-build-lock" ]; then
+  report 0 "a failing sync releases the build lock" ""
+else
+  report 1 "a failing sync releases the build lock" \
+    "lock remains after the failed sync"
 fi
 
 # --- warm with no uv anywhere ---------------------------------------------
