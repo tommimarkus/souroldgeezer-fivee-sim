@@ -1466,8 +1466,21 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "search_check": {
+          "ability": "Wisdom",
+          "skill": "Perception",
+          "usual": true
+        },
+        "search_location_requirement": "hidden_object_vicinity",
+        "success_results": [
+          "hidden_object",
+          "other_important_details"
+        ],
+        "success_can_return_both": true,
+        "outside_vicinity_can_reveal_object": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -1482,8 +1495,17 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "routine_gear_weight_tracking": "usually_omitted",
+        "carrying_capacity_rule_triggers": [
+          "unusually_heavy_object",
+          "massive_number_of_lighter_objects"
+        ],
+        "carrying_capacity_rule_decider": "game_master",
+        "carrying_capacity_reference": "Rules Glossary",
+        "carrying_capacity_rule_name": "Carrying Capacity"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -1498,8 +1520,23 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "automatic_destruction": {
+          "object_properties": [
+            "fragile",
+            "nonmagical"
+          ],
+          "action_cost": "Action",
+          "example_objects": [
+            "glass_container",
+            "paper"
+          ]
+        },
+        "resilient_object_rule_decider": "game_master",
+        "resilient_object_reference": "Rules Glossary",
+        "resilient_object_rule_name": "Breaking Objects"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -1514,8 +1551,25 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "establishment_timing": "travel",
+        "travel_environments": [
+          "indoor",
+          "outdoor"
+        ],
+        "supports_determination_of": [
+          "trap_exposure",
+          "hidden_enemy_detection",
+          "enemy_proximity"
+        ],
+        "change_timing": "outside_combat",
+        "recording_method": "player_choice",
+        "recording_method_examples": [
+          "written_order",
+          "miniatures"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "051-4-26-interacting-with-objects"
     },
@@ -1530,8 +1584,17 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "hazards": [
+          "Burning",
+          "Falling",
+          "Suffocation",
+          "Dehydration",
+          "Malnutrition"
+        ],
+        "definition_source": "Rules Glossary"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -1546,8 +1609,19 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "scope": "long_distance_travel",
+        "duration_units": [
+          "hour",
+          "day"
+        ],
+        "resolution_modes": [
+          "game_master_summary",
+          "travel_pace"
+        ],
+        "time_critical_movement_reference": "Combat"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -1562,8 +1636,59 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "scope": "outside_combat",
+        "pace_options": [
+          "Fast",
+          "Normal",
+          "Slow"
+        ],
+        "distance_table_id": "012-travel-pace",
+        "mounted_increased_pace": {
+          "distance_multiplier": 2,
+          "duration_hours": 1,
+          "reset_rest_options": [
+            "Short Rest",
+            "Long Rest"
+          ]
+        },
+        "pace_check_modifiers": {
+          "Fast": [
+            {
+              "mode": "Disadvantage",
+              "ability": "Wisdom",
+              "skills": [
+                "Perception",
+                "Survival"
+              ]
+            },
+            {
+              "mode": "Disadvantage",
+              "ability": "Dexterity",
+              "skill": "Stealth"
+            }
+          ],
+          "Normal": [
+            {
+              "mode": "Disadvantage",
+              "ability": "Dexterity",
+              "skill": "Stealth"
+            }
+          ],
+          "Slow": [
+            {
+              "mode": "Advantage",
+              "ability": "Wisdom",
+              "skills": [
+                "Perception",
+                "Survival"
+              ]
+            }
+          ]
+        },
+        "terrain_pace_reference": "Gameplay Toolbox"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "059-4-28-travel"
     },
@@ -1578,8 +1703,22 @@
       "pages": [
         12
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "land_vehicle_uses_standard_travel_pace": true,
+        "land_vehicle_examples": [
+          "wagon",
+          "carriage"
+        ],
+        "waterborne_vessel_uses_travel_pace": false,
+        "waterborne_vessel_speed_limit": "vessel_speed",
+        "ship_maximum_travel_hours_per_day": 24,
+        "ship_travel_duration_inputs": [
+          "vessel",
+          "crew_size"
+        ],
+        "vehicle_reference": "Equipment"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "059-4-28-travel"
     },
@@ -1594,7 +1733,7 @@
       "pages": [
         13
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
@@ -1610,8 +1749,15 @@
       "pages": [
         13
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "typical_side_count": 2,
+        "round_duration_seconds_approximate": 6,
+        "turns_per_participant_per_round": 1,
+        "turn_order_basis": "Initiative",
+        "turn_order_determined_at": "combat_start",
+        "next_round_condition": "neither_side_defeated"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -1626,8 +1772,40 @@
       "pages": [
         13
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "step_count": 3,
+        "steps": [
+          {
+            "order": 1,
+            "name": "Establish Positions",
+            "actor": "Game Master",
+            "inputs": [
+              "marching_order",
+              "stated_positions"
+            ],
+            "outputs": [
+              "combatant_locations",
+              "adversary_distance",
+              "adversary_direction"
+            ]
+          },
+          {
+            "order": 2,
+            "name": "Roll Initiative",
+            "actors": "all_combatants",
+            "output": "turn_order"
+          },
+          {
+            "order": 3,
+            "name": "Take Turns",
+            "actors": "each_participant",
+            "sequence": "Initiative_order",
+            "round_end_condition": "all_participants_completed_turn",
+            "repeat_until": "fighting_stops"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "063-4-30-the-order-of-combat"
     },
@@ -1642,8 +1820,23 @@
       "pages": [
         13
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "check_ability": "Dexterity",
+        "participant_roll_scope": "every_participant",
+        "monster_roller": "game_master",
+        "rolls_per_identical_creature_group": 1,
+        "identical_group_members_share_initiative": true,
+        "surprised_roll_modifier": "Disadvantage",
+        "initiative_count_source": "check_total",
+        "initiative_order_sort": "highest_to_lowest",
+        "initiative_order_persists_across_rounds": true,
+        "tie_deciders": {
+          "monster_monster": "game_master",
+          "character_character": "players",
+          "monster_character": "game_master"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "063-4-30-the-order-of-combat"
     },
@@ -1658,8 +1851,53 @@
       "pages": [
         13
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "movement_distance_limit": "Speed",
+        "actions_per_turn": 1,
+        "move_action_order": "either",
+        "main_actions_reference": "Actions",
+        "additional_action_sources": [
+          "character_features",
+          "monster_stat_block"
+        ],
+        "movement_reference": "Movement and Position",
+        "brief_communication": {
+          "modes": [
+            "utterance",
+            "gesture"
+          ],
+          "uses_action": false,
+          "uses_move": false
+        },
+        "extended_communication_action_cost": "Action",
+        "primary_monster_influence_action": "Influence",
+        "free_object_or_environment_interactions": 1,
+        "free_interaction_timing": [
+          "movement",
+          "action"
+        ],
+        "additional_interaction_action": "Utilize",
+        "special_object_action_requirement_source": "object_description",
+        "game_master_action_requirement_triggers": [
+          "special_care",
+          "unusual_obstacle"
+        ],
+        "game_master_required_action_examples": [
+          "open_stuck_door",
+          "turn_crank_lower_drawbridge"
+        ],
+        "doing_nothing_allowed": true,
+        "forgo_options": [
+          "movement",
+          "action",
+          "all_turn_activity"
+        ],
+        "indecision_action_options": [
+          "Dodge",
+          "Ready"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "063-4-30-the-order-of-combat"
     },
@@ -1675,8 +1913,25 @@
         13,
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "grid_type": "square",
+        "square_size_feet": 5,
+        "speed_segment_feet": 5,
+        "speed_squares_formula": "speed_feet / 5",
+        "adjacent_square_types": [
+          "orthogonal",
+          "diagonal"
+        ],
+        "unoccupied_adjacent_square_entry_cost_squares": 1,
+        "difficult_terrain_entry_cost_squares": 2,
+        "entry_requires_sufficient_movement": true,
+        "entry_cost_can_increase": true,
+        "diagonal_corner_crossing_blocked_by_space_filling_terrain": true,
+        "range_count_start": "adjacent_square_to_origin",
+        "range_count_end": "target_space",
+        "range_route": "shortest"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "063-4-30-the-order-of-combat"
     },
@@ -1691,8 +1946,19 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "end_modes": [
+          "side_defeated",
+          "mutual_agreement"
+        ],
+        "defeat_outcomes": [
+          "killed",
+          "knocked_out",
+          "surrendered",
+          "fled"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "063-4-30-the-order-of-combat"
     },
@@ -1707,8 +1973,32 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "movement_distance_operator": "<=",
+        "movement_distance_limit": "Speed",
+        "movement_optional": true,
+        "movement_modes": [
+          "regular",
+          "climbing",
+          "crawling",
+          "jumping",
+          "swimming"
+        ],
+        "movement_modes_combinable": true,
+        "movement_budget_deduction": "distance_traveled",
+        "movement_end_conditions": [
+          "speed_exhausted",
+          "movement_voluntarily_ended"
+        ],
+        "character_speed_source": "character_creation",
+        "monster_speed_source": "stat_block",
+        "special_speed_types": [
+          "Climb Speed",
+          "Fly Speed",
+          "Swim Speed"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -1723,8 +2013,19 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "examples": [
+          "low_furniture",
+          "rubble",
+          "undergrowth",
+          "steep_stairs",
+          "snow",
+          "shallow_bog"
+        ],
+        "extra_movement_cost_feet_per_foot": 1,
+        "overlapping_sources_stack": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "069-4-31-movement-and-position"
     },
@@ -1739,8 +2040,25 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "move_can_be_split": true,
+        "split_timing": [
+          "before",
+          "after"
+        ],
+        "intervening_activity_types": [
+          "Action",
+          "Bonus Action",
+          "Reaction"
+        ],
+        "same_turn_required": true,
+        "example_split": {
+          "speed_feet": 30,
+          "before_action_feet": 10,
+          "after_action_feet": 20
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "069-4-31-movement-and-position"
     },
@@ -1755,8 +2073,15 @@
       "pages": [
         14
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target": "self",
+        "condition": "Prone",
+        "timing": "own_turn",
+        "uses_action": false,
+        "speed_cost": 0,
+        "unavailable_when_speed": 0
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "069-4-31-movement-and-position"
     },
@@ -3924,7 +4249,7 @@
       "name": "Travel Pace",
       "section_id": "060-4-28-1-travel-pace",
       "page": 12,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "pace",
@@ -3932,22 +4257,80 @@
           "type": "string"
         },
         {
-          "id": "distance-minute",
-          "name": "Distance Minute",
+          "id": "distance-traveled-per-minute",
+          "name": "Distance Traveled Per Minute",
           "type": "string"
         },
         {
-          "id": "traveled-per-hour",
-          "name": "Traveled Per Hour",
+          "id": "distance-traveled-per-hour",
+          "name": "Distance Traveled Per Hour",
           "type": "string"
         },
         {
-          "id": "day",
-          "name": "... Day",
+          "id": "distance-traveled-per-day",
+          "name": "Distance Traveled Per Day",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Fast"
+            },
+            {
+              "value": "400 feet",
+              "numeric_value": 400
+            },
+            {
+              "value": "4 miles",
+              "numeric_value": 4
+            },
+            {
+              "value": "30 miles",
+              "numeric_value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Normal"
+            },
+            {
+              "value": "300 feet",
+              "numeric_value": 300
+            },
+            {
+              "value": "3 miles",
+              "numeric_value": 3
+            },
+            {
+              "value": "24 miles",
+              "numeric_value": 24
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Slow"
+            },
+            {
+              "value": "200 feet",
+              "numeric_value": 200
+            },
+            {
+              "value": "2 miles",
+              "numeric_value": 2
+            },
+            {
+              "value": "18 miles",
+              "numeric_value": 18
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
