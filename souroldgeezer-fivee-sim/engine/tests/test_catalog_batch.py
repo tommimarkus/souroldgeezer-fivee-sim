@@ -191,3 +191,149 @@ def test_reviewed_pack_payloads_pass_the_runtime_schema_before_commit(
 
     with pytest.raises(batch_module.BatchError, match="runtime pack validation"):
         batch_module._validate_pack_payloads({4: invalid})
+
+
+def _reviewed_table_merge(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    patch: dict[str, object],
+) -> tuple[dict[str, object], Path]:
+    table = {
+        "id": "t4",
+        "name": "Results",
+        "section_id": "s4",
+        "page": 1,
+        "fact_status": "pending",
+        "columns": [{"id": "result", "name": "Result", "type": "string"}],
+        "rows": [],
+        "source_row_count": 2,
+        "omissions": [],
+        "provenance": "SRD 5.2.1",
+    }
+    packs = {
+        4: {
+            "pack": "reviewed",
+            "version": "1.0",
+            "provenance": "SRD 5.2.1",
+            "catalog": [],
+            "catalog_tables": [table],
+        }
+    }
+    reviewed = tmp_path / "reviewed.json"
+    reviewed.write_text(
+        json.dumps({"catalog_tables": [{"id": "t4", **patch}]}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(batch_module, "verify_source", lambda _root: {})
+    monkeypatch.setattr(batch_module, "validate_committed", lambda _root: {})
+    monkeypatch.setattr(batch_module, "_catalog_packs", lambda: packs)
+    monkeypatch.setattr(batch_module, "DATA_ROOT", tmp_path / "catalog")
+    batch_module.DATA_ROOT.mkdir()
+    return table, reviewed
+
+
+def test_reviewed_table_can_correct_an_extracted_source_row_count(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    rows = [
+        {"cells": [{"value": "A"}]},
+        {"cells": [{"value": "B"}]},
+        {"cells": [{"value": "C"}]},
+    ]
+    table, reviewed = _reviewed_table_merge(
+        batch_module,
+        monkeypatch,
+        tmp_path,
+        {
+            "fact_status": "complete",
+            "source_row_count": 3,
+            "rows": rows,
+        },
+    )
+
+    result = batch_module.merge_reviewed(tmp_path, reviewed)
+
+    assert result == {"changed": 1}
+    assert table["source_row_count"] == 3
+    assert table["rows"] == rows
+    committed = json.loads((batch_module.DATA_ROOT / "catalog-04.json").read_text())
+    assert committed["catalog_tables"][0]["source_row_count"] == 3
+
+
+def test_reviewed_table_rejects_a_corrected_count_that_does_not_match_rows(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _, reviewed = _reviewed_table_merge(
+        batch_module,
+        monkeypatch,
+        tmp_path,
+        {
+            "fact_status": "complete",
+            "source_row_count": 3,
+            "rows": [
+                {"cells": [{"value": "A"}]},
+                {"cells": [{"value": "B"}]},
+            ],
+        },
+    )
+
+    with pytest.raises(batch_module.BatchError, match="account for every source row"):
+        batch_module.merge_reviewed(tmp_path, reviewed)
+
+    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()
+
+
+@pytest.mark.parametrize("invalid_count", [[], True], ids=["list", "boolean"])
+def test_reviewed_table_rejects_an_invalid_source_row_count_without_a_traceback(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    invalid_count: object,
+) -> None:
+    _, reviewed = _reviewed_table_merge(
+        batch_module,
+        monkeypatch,
+        tmp_path,
+        {
+            "fact_status": "complete",
+            "source_row_count": invalid_count,
+            "rows": [],
+        },
+    )
+
+    with pytest.raises(batch_module.BatchError, match="source_row_count must be an integer"):
+        batch_module.merge_reviewed(tmp_path, reviewed)
+
+    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()
+
+
+def test_reviewed_table_validates_corrected_data_before_persistence(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _, reviewed = _reviewed_table_merge(
+        batch_module,
+        monkeypatch,
+        tmp_path,
+        {
+            "fact_status": "complete",
+            "source_row_count": 3,
+            "columns": [{"id": "result", "name": "Result", "type": "invalid"}],
+            "rows": [
+                {"cells": [{"value": "A"}]},
+                {"cells": [{"value": "B"}]},
+                {"cells": [{"value": "C"}]},
+            ],
+        },
+    )
+
+    with pytest.raises(batch_module.BatchError, match="runtime pack validation"):
+        batch_module.merge_reviewed(tmp_path, reviewed)
+
+    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()

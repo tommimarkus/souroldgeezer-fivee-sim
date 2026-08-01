@@ -374,8 +374,15 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifier": "proficiency_bonus",
+        "applies_to": [
+          "saving_throw"
+        ],
+        "requires_proficiency": true,
+        "proficiency_kind": "saving_throw"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "016-4-7-saving-throws"
     },
@@ -390,8 +397,21 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_for": [
+          "saving_throw"
+        ],
+        "determined_by": [
+          "causing_effect",
+          "game_master"
+        ],
+        "spell_save_dc_components": [
+          "spellcasting_ability",
+          "proficiency_bonus"
+        ],
+        "monster_save_dc_specified_by": "monster_ability"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "016-4-7-saving-throws"
     },
@@ -406,8 +426,11 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "target_number": "Armor Class",
+        "success_operator": ">="
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -422,8 +445,14 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "attack_ability_table_id": "007-attack-roll-abilities",
+        "modifier_overrides_allowed": true,
+        "modifier_override_sources": [
+          "feature"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "020-4-8-attack-rolls"
     },
@@ -438,8 +467,15 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifier": "proficiency_bonus",
+        "applies_to": [
+          "weapon_attack",
+          "spell_attack"
+        ],
+        "weapon_requires_proficiency": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "020-4-8-attack-rolls"
     },
@@ -454,8 +490,19 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "base_ac_formula": "10 + dexterity_modifier",
+        "character_ac_source": "character_creation",
+        "monster_ac_source": "stat_block",
+        "modifier_source_categories": [
+          "armor",
+          "magic_item",
+          "spell"
+        ],
+        "base_calculation_limit": 1,
+        "multiple_base_calculations_require_choice": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "020-4-8-attack-rolls"
     },
@@ -470,8 +517,20 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "natural_roll_outcomes": {
+          "20": {
+            "result": "hit",
+            "ignores_modifiers_and_armor_class": true,
+            "critical_hit": true
+          },
+          "1": {
+            "result": "miss",
+            "ignores_modifiers_and_armor_class": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "020-4-8-attack-rolls"
     },
@@ -486,8 +545,17 @@
       "pages": [
         7
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "modifies": "d20_test",
+        "acquisition_sources": [
+          "special_ability",
+          "action",
+          "game_master_circumstance"
+        ],
+        "game_master_can_grant_advantage": true,
+        "game_master_can_impose_disadvantage": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -502,8 +570,23 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "maximum_instances": 1,
+        "expenditure": "reroll_die",
+        "eligible_die_scope": "any_die",
+        "expenditure_timing": "immediately_after_roll",
+        "new_roll_required": true,
+        "gain_sources": [
+          "game_master",
+          "rule"
+        ],
+        "overflow_transfer": {
+          "allowed": true,
+          "recipient": "player_character_without_heroic_inspiration"
+        },
+        "human_start_of_day": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "025-4-9-advantage-disadvantage"
     },
@@ -518,8 +601,17 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "advantage": {
+          "dice": "2d20",
+          "selection": "highest"
+        },
+        "disadvantage": {
+          "dice": "2d20",
+          "selection": "lowest"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "025-4-9-advantage-disadvantage"
     },
@@ -534,8 +626,15 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "same_mode_instances_stack": false,
+        "same_mode_dice": "2d20",
+        "opposed_modes_cancel": true,
+        "opposed_modes_result": "neither",
+        "opposed_modes_dice": "1d20",
+        "cancellation_ignores_instance_counts": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "025-4-9-advantage-disadvantage"
     },
@@ -550,8 +649,16 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "applies_when": [
+          "advantage",
+          "disadvantage"
+        ],
+        "reroll_or_replace_die_limit": 1,
+        "eligible_dice": "either",
+        "chooser": "roller"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "025-4-9-advantage-disadvantage"
     },
@@ -566,8 +673,20 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "all_creatures_have_proficiency_bonus": true,
+        "character_bonus_basis": "level",
+        "monster_bonus_basis": "challenge_rating",
+        "bonus_table_id": "008-proficiency-bonus",
+        "proficient_d20_test_categories": [
+          "skill",
+          "saving_throw",
+          "item"
+        ],
+        "applies_to_spell_attacks": true,
+        "spell_save_dc_component": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -582,8 +701,12 @@
       "pages": [
         8
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "addition_limit_per_roll_or_number": 1,
+        "multiplication_limit": 1,
+        "division_limit": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -599,8 +722,14 @@
         8,
         9
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "skill_is_ability_check_category": true,
+        "relevance_setter": "game_master",
+        "proficiency_bonus_applies_if_proficient": true,
+        "unproficient_check_allowed": true,
+        "skills_table_id": "009-skills"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "004-4-playing-the-game"
     },
@@ -615,8 +744,14 @@
       "pages": [
         9
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "skills_table_id": "009-skills",
+        "table_relationships": [
+          "skill_to_ability",
+          "skill_to_example_uses"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "032-4-12-skill-proficiencies"
     },
@@ -631,8 +766,11 @@
       "pages": [
         9
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "character_starting_skill_proficiency_source": "character_creation",
+        "monster_skill_proficiency_source": "stat_block"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "032-4-12-skill-proficiencies"
     },
@@ -2579,7 +2717,7 @@
       "name": "Attack Roll Abilities",
       "section_id": "021-4-8-1-ability-modifier",
       "page": 7,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability",
@@ -2592,8 +2730,39 @@
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 2,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Strength"
+            },
+            {
+              "value": "Melee attack with a weapon or an Unarmed Strike"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": "Ranged attack with a weapon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Varies"
+            },
+            {
+              "value": "Spell attack"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
@@ -2686,7 +2855,7 @@
       "name": "Proficiency Bonus",
       "section_id": "030-4-10-proficiency",
       "page": 8,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "level-or-cr",
@@ -2709,7 +2878,80 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Up to 4"
+            },
+            {
+              "value": 2,
+              "numeric_value": 2
+            },
+            {
+              "value": "17-20"
+            },
+            {
+              "value": 6,
+              "numeric_value": 6
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "5-8"
+            },
+            {
+              "value": 3,
+              "numeric_value": 3
+            },
+            {
+              "value": "21-24"
+            },
+            {
+              "value": 7,
+              "numeric_value": 7
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "9-12"
+            },
+            {
+              "value": 4,
+              "numeric_value": 4
+            },
+            {
+              "value": "25-28"
+            },
+            {
+              "value": 8,
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13-16"
+            },
+            {
+              "value": 5,
+              "numeric_value": 5
+            },
+            {
+              "value": "29-30"
+            },
+            {
+              "value": 9,
+              "numeric_value": 9
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -2719,7 +2961,7 @@
       "name": "Skills",
       "section_id": "032-4-12-skill-proficiencies",
       "page": 9,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "skill",
@@ -2727,14 +2969,363 @@
           "type": "string"
         },
         {
-          "id": "ability-example-uses",
-          "name": "Ability Example Uses",
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "example-uses",
+          "name": "Example Uses",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Acrobatics"
+            },
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Animal Handling"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Arcana"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Athletics"
+            },
+            {
+              "value": "Strength"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Deception"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "History"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Insight"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Intimidation"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Investigation"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medicine"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Nature"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Perception"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Performance"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Persuasion"
+            },
+            {
+              "value": "Charisma"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Religion"
+            },
+            {
+              "value": "Intelligence"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sleight of Hand"
+            },
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stealth"
+            },
+            {
+              "value": "Dexterity"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Survival"
+            },
+            {
+              "value": "Wisdom"
+            },
+            {
+              "value": null,
+              "omission_code": "prose_only_cell"
+            }
+          ]
+        }
+      ],
       "source_row_count": 18,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "prose_only_cell",
+          "row": 0,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 1,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 2,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 3,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 4,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 5,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 6,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 7,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 8,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 9,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 10,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 11,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 12,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 13,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 14,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 15,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 16,
+          "column": "example-uses"
+        },
+        {
+          "code": "prose_only_cell",
+          "row": 17,
+          "column": "example-uses"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
