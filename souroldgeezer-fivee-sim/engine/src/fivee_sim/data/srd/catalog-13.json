@@ -11725,8 +11725,28 @@
         251,
         252
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Wand of Wonder",
+        "item_category": "Wand",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 7,
+        "activation": {
+          "action": "Magic",
+          "charge_cost": 1,
+          "chosen_point_range_feet": 120,
+          "effect_determined_by": "Wand of Wonder Effects table"
+        },
+        "spell_save_dc": 15,
+        "minimum_spell_maximum_range_feet": 120,
+        "multiple_possible_subjects_determined_randomly_by": "GM",
+        "charges_regained_at_dawn": "1d6 + 1",
+        "last_charge": {
+          "roll": "1d20",
+          "destroyed_on": 1
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11741,8 +11761,30 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Weapon, +1, +2, or +3",
+        "item_category": "Weapon (Any Simple or Martial)",
+        "rarity": "Varies",
+        "requires_attunement": false,
+        "variants": {
+          "+1": {
+            "rarity": "Uncommon",
+            "attack_roll_bonus": 1,
+            "damage_roll_bonus": 1
+          },
+          "+2": {
+            "rarity": "Rare",
+            "attack_roll_bonus": 2,
+            "damage_roll_bonus": 2
+          },
+          "+3": {
+            "rarity": "Very Rare",
+            "attack_roll_bonus": 3,
+            "damage_roll_bonus": 3
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11757,8 +11799,24 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Weapon of Warning",
+        "item_category": "Weapon (Any Simple or Martial)",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "requirements": {
+          "weapon_within_reach": true,
+          "user_attuned": true
+        },
+        "beneficiaries": "user and allies within 30 feet",
+        "alarm": {
+          "trigger": "combat begins",
+          "awakens_naturally_sleeping_beneficiaries": true,
+          "awakens_magically_sleeping_beneficiaries": false
+        },
+        "supernatural_readiness": "Advantage on Initiative rolls"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11773,8 +11831,27 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Well of Many Worlds",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "unfolded_diameter_feet": 6,
+        "open": {
+          "action": "Magic",
+          "placement": "solid surface",
+          "portal": "two-way",
+          "portal_diameter_feet": 6,
+          "destination": "GM-chosen world or plane"
+        },
+        "close": {
+          "actor_range_feet": 5,
+          "action": "Magic",
+          "method": "fold cloth by its edges"
+        },
+        "reopen_delay_hours": "1d8"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11789,8 +11866,17 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Wind Fan",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "while_holding_cast_spell": "Gust of Wind",
+        "save_dc": 13,
+        "each_subsequent_use_before_dawn_failure_chance_increment_percent": 20,
+        "failure": "becomes useless and nonmagical"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11805,8 +11891,22 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Winged Boots",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "charges": 4,
+        "charges_regained_at_dawn": "1d4",
+        "while_worn_activation": {
+          "action": "Magic",
+          "charge_cost": 1,
+          "fly_speed_feet": 30,
+          "duration_hours": 1
+        },
+        "aloft_on_expiration_descent_feet_per_round": 30
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -11821,8 +11921,19 @@
       "pages": [
         253
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Wings of Flying",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_activation": "Magic action",
+        "fly_speed_feet": 60,
+        "duration_hours": 1,
+        "early_end_action": "Magic",
+        "aloft_when_ends": "fall",
+        "reuse_delay_hours": "1d12"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     }
@@ -13989,16 +14100,202 @@
       "name": "Wand of Wonder Effects",
       "section_id": "1651-13-28-126-wand-of-wonder",
       "page": 252,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100-effect",
-          "name": "1d100 Effect",
+          "id": "roll",
+          "name": "1d100",
+          "type": "string"
+        },
+        {
+          "id": "effect",
+          "name": "Effect",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 45,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-20"
+            },
+            {
+              "value": "Cast a random spell from the chosen point (1d10): Darkness 1-2, Faerie Fire 3-4, Fireball 5-6, Slow 7-8, or Stinking Cloud 9-10."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "21-25"
+            },
+            {
+              "value": "Chosen point has no effect; user is Stunned until start of next turn."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "26-30"
+            },
+            {
+              "value": "Cast Gust of Wind with its Line extending from user to chosen point."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "31-35"
+            },
+            {
+              "value": "Chosen point has no effect; user takes 1d6 Psychic damage."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "36-40"
+            },
+            {
+              "value": "Heavy rain creates a 120-foot-high, 60-foot-radius Cylinder at chosen point for 1 minute; area is Lightly Obscured."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "41-45"
+            },
+            {
+              "value": "Six hundred butterflies create a 60-foot-high, 30-foot-radius Cylinder at chosen point for 10 minutes; area is Heavily Obscured."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "46-50"
+            },
+            {
+              "value": "Cast Lightning Bolt with its Line extending from user to chosen point."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "51-55"
+            },
+            {
+              "value": "Closest creature to chosen point is enlarged as by Enlarge/Reduce; if an eligible non-user target cannot be affected, user becomes target."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "56-60"
+            },
+            {
+              "value": "Uncontrolled creature appears near chosen point until 1 hour or 0 Hit Points (1d4): Rhinoceros 1, Elephant 2, Rat 3-4."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "61-64"
+            },
+            {
+              "value": "Grass covers a 60-foot-radius ground circle near chosen point; existing grass grows tenfold for 1 minute."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "65-68"
+            },
+            {
+              "value": "GM-chosen unworn and uncarried object within 120 feet of chosen point and no more than 10 feet in any dimension enters Ethereal Plane; otherwise nothing happens."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "69-72"
+            },
+            {
+              "value": "Chosen point has no effect; user is reduced as by Enlarge/Reduce for 1 minute."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "73-77"
+            },
+            {
+              "value": "Leaves grow from nearest creature to chosen point; unpicked leaves brown and fall after 24 hours."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "78-82"
+            },
+            {
+              "value": "Chosen point has no effect; creatures in user's 30-foot Emanation make DC 15 Constitution save or are Blinded for 1 minute, repeating at end of turns."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "83-87"
+            },
+            {
+              "value": "Chosen point has no effect; user casts Invisibility on self."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "88-92"
+            },
+            {
+              "value": "Chosen point has no effect; 1d4 x 10 gems worth 1 GP each form a 30-by-5-foot Line toward point; each deals 1 Bludgeoning damage divided equally among creatures in Line."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "93-97"
+            },
+            {
+              "value": "Cast Polymorph on nearest creature to chosen point; new form (1d4): Black Bear 1, Giant Wasp 2, Frog 3-4."
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "98-00"
+            },
+            {
+              "value": "Nearest creature to chosen point makes DC 15 Constitution save; failure Restrains, then repeat at end of next turn; second failure Petrifies until Greater Restoration or similar magic."
+            }
+          ]
+        }
+      ],
+      "source_row_count": 18,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },

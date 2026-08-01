@@ -15,7 +15,7 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1"
     },
@@ -30,8 +30,48 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block_sections": {
+          "name_and_general_details": [
+            "name",
+            "size",
+            "creature type",
+            "descriptive tags",
+            "alignment"
+          ],
+          "combat_highlights": [
+            "Armor Class",
+            "Hit Points",
+            "Speed",
+            "Initiative"
+          ],
+          "ability_scores": [
+            "ability scores",
+            "ability modifiers",
+            "saving throws"
+          ],
+          "other_details_required": [
+            "Senses",
+            "Languages",
+            "Challenge Rating"
+          ],
+          "other_details_optional": [
+            "skill proficiencies",
+            "Resistances",
+            "Immunities",
+            "Gear"
+          ],
+          "traits": "always-active or situational characteristics",
+          "actions": "additional monster actions",
+          "optional_action_sections": [
+            "Bonus Actions",
+            "Reactions",
+            "Legendary Actions"
+          ]
+        },
+        "absent_optional_details_are_omitted": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -46,7 +86,7 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
@@ -62,8 +102,18 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "monster_sizes": [
+          "Tiny",
+          "Small",
+          "Medium",
+          "Large",
+          "Huge",
+          "Gargantuan"
+        ],
+        "multiple_presented_options": "choose one"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -78,8 +128,27 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "purpose": "categorizes creatures for interactions with game effects",
+        "types": [
+          "Aberration",
+          "Beast",
+          "Celestial",
+          "Construct",
+          "Dragon",
+          "Elemental",
+          "Fey",
+          "Fiend",
+          "Giant",
+          "Humanoid",
+          "Monstrosity",
+          "Ooze",
+          "Plant",
+          "Undead"
+        ],
+        "types_have_inherent_rules": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -94,8 +163,14 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "location": "parentheses after creature type",
+        "quantity": "one or more",
+        "purpose": "additional categorization",
+        "inherent_rules": false,
+        "may_be_referenced_by_game_effects": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1662-14-4-creature-type"
     },
@@ -110,8 +185,16 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "stat_block_alignment": "default roleplaying suggestion",
+        "may_change_for_story": true,
+        "neutral_alignment_invites_individual_variation": true,
+        "alignment_framework": {
+          "alignments": 9,
+          "includes_unaligned_creatures": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -126,8 +209,15 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "armor_class_includes": [
+          "natural armor",
+          "Dexterity",
+          "gear",
+          "other defenses"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -142,8 +232,17 @@
       "pages": [
         254
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_order": [
+          "Initiative modifier",
+          "Initiative score in parentheses"
+        ],
+        "rolled_initiative_uses": "modifier",
+        "modifier_typically_equals": "Dexterity modifier",
+        "possible_additional_modifier": "Proficiency Bonus",
+        "initiative_score_may_replace_roll": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -158,8 +257,27 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_order": [
+          "fixed Hit Points",
+          "Hit Point Dice expression in parentheses"
+        ],
+        "determination_choice": [
+          "use fixed number",
+          "roll die expression"
+        ],
+        "use_both_methods": false,
+        "hit_die_typically_determined_by": "monster size",
+        "constitution_contribution": "Constitution modifier multiplied by number of Hit Dice",
+        "example": {
+          "constitution": 12,
+          "constitution_modifier": 1,
+          "hit_dice": "2d8",
+          "hit_points_expression": "2d8 + 2",
+          "average_hit_points": 11
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -174,8 +292,16 @@
       "pages": [
         255
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "entry_includes": "Speed",
+        "possible_additional_speeds": [
+          "Burrow",
+          "Climb",
+          "Fly",
+          "Swim"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1658-14-monsters"
     },
@@ -587,7 +713,7 @@
       "name": "Hit Dice by Size",
       "section_id": "1667-14-8-hit-points",
       "page": 255,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "monster-size",
@@ -605,7 +731,86 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Tiny"
+            },
+            {
+              "value": "d4"
+            },
+            {
+              "value": "2½"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Small"
+            },
+            {
+              "value": "d6"
+            },
+            {
+              "value": "3½"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium"
+            },
+            {
+              "value": "d8"
+            },
+            {
+              "value": "4½"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Large"
+            },
+            {
+              "value": "d10"
+            },
+            {
+              "value": "5½"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Huge"
+            },
+            {
+              "value": "d12"
+            },
+            {
+              "value": "6½"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Gargantuan"
+            },
+            {
+              "value": "d20"
+            },
+            {
+              "value": "10½"
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
