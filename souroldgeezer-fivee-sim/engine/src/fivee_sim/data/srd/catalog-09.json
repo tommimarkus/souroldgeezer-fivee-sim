@@ -4657,8 +4657,14 @@
       "pages": [
         100
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "vehicle_categories": [
+          "airborne",
+          "waterborne"
+        ],
+        "statistics_table_id": "101-airborne-and-waterborne-vehicles"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4674,8 +4680,24 @@
         100,
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "strong_wind_speed_multiplier": 0.5,
+        "waterborne_sailing_dead_calm_speed": 0,
+        "waterborne_dead_calm_requires_rowing": true,
+        "lake_and_river_vehicle_types": [
+          "Keelboat",
+          "Rowboat"
+        ],
+        "downstream_speed_formula": "vehicle speed + current speed",
+        "typical_current_speed_mph": 3,
+        "rowing_against_significant_current_allowed": false,
+        "upstream_draft_animal_towing_allowed": true,
+        "upstream_towing_location": "shores",
+        "rowboat_portable": true,
+        "rowboat_weight_lb": 100,
+        "statistics_table_id": "101-airborne-and-waterborne-vehicles"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "716-9-18-large-vehicles"
     },
@@ -4690,8 +4712,14 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "skilled_hireling_crew_required_above_ship_types": [
+          "Keelboat",
+          "Rowboat"
+        ],
+        "minimum_crew_source": "101-airborne-and-waterborne-vehicles"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "716-9-18-large-vehicles"
     },
@@ -4706,8 +4734,18 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "table_passenger_sizes": [
+          "Small",
+          "Medium"
+        ],
+        "table_accommodation": "hammocks",
+        "private_accommodation_capacity_multiplier": 0.2,
+        "typical_hammock_cost_sp_per_day": 5,
+        "typical_private_cabin_cost_gp_per_day": 2,
+        "prices_can_vary_by_ship": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "716-9-18-large-vehicles"
     },
@@ -4722,8 +4760,10 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "damage_threshold_if_present_source": "101-airborne-and-waterborne-vehicles"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "716-9-18-large-vehicles"
     },
@@ -4738,8 +4778,19 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "requires_ship_berthed": true,
+        "hit_points_repaired_per_unit": 1,
+        "days_per_unit": 1,
+        "cost_gp_per_unit": 20,
+        "cost_includes": [
+          "materials",
+          "labor"
+        ],
+        "abundant_supplies_and_skilled_labor_time_multiplier": 0.5,
+        "abundant_supplies_and_skilled_labor_cost_multiplier": 0.5
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "716-9-18-large-vehicles"
     },
@@ -4754,8 +4805,35 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "covered_expenses": [
+          "lodging",
+          "food",
+          "equipment maintenance",
+          "necessities"
+        ],
+        "selection_interval_options": [
+          "week",
+          "month"
+        ],
+        "selection_interval_chosen_by": "GM",
+        "lifestyle_options": [
+          "Wretched",
+          "Squalid",
+          "Poor",
+          "Modest",
+          "Comfortable",
+          "Wealthy",
+          "Aristocratic"
+        ],
+        "payment_required_at_selection": true,
+        "inherent_consequences": false,
+        "gm_may_consider_for": [
+          "risks",
+          "others’ perceptions"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4770,8 +4848,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Wretched",
+        "cost_per_day": 0,
+        "cost_currency": "GP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4786,8 +4868,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Squalid",
+        "cost_per_day": 1,
+        "cost_currency": "SP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4802,8 +4888,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Poor",
+        "cost_per_day": 2,
+        "cost_currency": "SP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4818,8 +4908,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Modest",
+        "cost_per_day": 1,
+        "cost_currency": "GP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4834,8 +4928,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Comfortable",
+        "cost_per_day": 2,
+        "cost_currency": "GP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4850,8 +4948,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Wealthy",
+        "cost_per_day": 4,
+        "cost_currency": "GP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4866,8 +4968,12 @@
       "pages": [
         101
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "lifestyle": "Aristocratic",
+        "cost_per_day": 10,
+        "cost_currency": "GP"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4883,8 +4989,15 @@
         101,
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "prices_table_id": "101-food-drink-and-lodging",
+        "table_price_scopes": [
+          "food",
+          "single night lodging"
+        ],
+        "daily_lodging_and_meals_included_in_lifestyle_expenses": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -4899,8 +5012,29 @@
       "pages": [
         102
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "rates_table_id": "102-hirelings",
+        "table_owned_by_batch": 45,
+        "skilled_service_requires_proficiency": true,
+        "skilled_proficiency_types": [
+          "weapon",
+          "tool",
+          "skill"
+        ],
+        "skilled_examples": [
+          "mercenary",
+          "artisan",
+          "scribe"
+        ],
+        "listed_skilled_pay_is_minimum": true,
+        "expert_pay_may_be_higher": true,
+        "untrained_service_requires_proficiency": false,
+        "untrained_examples": [
+          "laborer",
+          "porter"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "570-9-equipment"
     },
@@ -8717,7 +8851,7 @@
       "name": "Mounts and Other Animals",
       "section_id": "715-9-17-saddles",
       "page": 100,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "item",
@@ -8725,17 +8859,122 @@
           "type": "string"
         },
         {
-          "id": "carrying-capacity",
-          "name": "Carrying Capacity",
+          "id": "carrying_capacity_lb",
+          "name": "Carrying Capacity (lb.)",
           "type": "integer"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost_gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Camel"
+            },
+            {
+              "value": 450
+            },
+            {
+              "value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Elephant"
+            },
+            {
+              "value": 1320
+            },
+            {
+              "value": 200
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Horse, Draft"
+            },
+            {
+              "value": 540
+            },
+            {
+              "value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Horse, Riding"
+            },
+            {
+              "value": 480
+            },
+            {
+              "value": 75
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mastiff"
+            },
+            {
+              "value": 195
+            },
+            {
+              "value": 25
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Mule"
+            },
+            {
+              "value": 420
+            },
+            {
+              "value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Pony"
+            },
+            {
+              "value": 225
+            },
+            {
+              "value": 30
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warhorse"
+            },
+            {
+              "value": 540
+            },
+            {
+              "value": 400
+            }
+          ]
+        }
+      ],
       "source_row_count": 8,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -8745,7 +8984,7 @@
       "name": "Tack, Harness, and Drawn Vehicles",
       "section_id": "715-9-17-saddles",
       "page": 100,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "item",
@@ -8753,19 +8992,192 @@
           "type": "string"
         },
         {
-          "id": "weight",
-          "name": "Weight",
+          "id": "weight_lb",
+          "name": "Weight (lb.)",
           "type": "integer"
         },
         {
           "id": "cost",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Carriage"
+            },
+            {
+              "value": 600
+            },
+            {
+              "value": "100 GP",
+              "numeric_value": 100
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cart"
+            },
+            {
+              "value": 200
+            },
+            {
+              "value": "15 GP",
+              "numeric_value": 15
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Chariot"
+            },
+            {
+              "value": 100
+            },
+            {
+              "value": "250 GP",
+              "numeric_value": 250
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Feed per day"
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": "5 CP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Saddle"
+            },
+            {
+              "value": null,
+              "omission_code": "group_header"
+            },
+            {
+              "value": null,
+              "omission_code": "group_header"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Exotic"
+            },
+            {
+              "value": 40
+            },
+            {
+              "value": "60 GP",
+              "numeric_value": 60
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Military"
+            },
+            {
+              "value": 30
+            },
+            {
+              "value": "20 GP",
+              "numeric_value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Riding"
+            },
+            {
+              "value": 25
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sled"
+            },
+            {
+              "value": 300
+            },
+            {
+              "value": "20 GP",
+              "numeric_value": 20
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Stabling per day"
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wagon"
+            },
+            {
+              "value": 400
+            },
+            {
+              "value": "35 GP",
+              "numeric_value": 35
+            }
+          ]
+        }
+      ],
       "source_row_count": 11,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "group_header",
+          "row": 4,
+          "column": "weight_lb"
+        },
+        {
+          "code": "group_header",
+          "row": 4,
+          "column": "cost"
+        },
+        {
+          "code": "not_applicable",
+          "row": 9,
+          "column": "weight_lb"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -8773,7 +9185,7 @@
       "name": "Airborne and Waterborne Vehicles",
       "section_id": "717-9-18-1-speed",
       "page": 101,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ship",
@@ -8781,9 +9193,9 @@
           "type": "string"
         },
         {
-          "id": "speed",
-          "name": "Speed",
-          "type": "string"
+          "id": "speed_mph",
+          "name": "Speed (mph)",
+          "type": "number"
         },
         {
           "id": "crew",
@@ -8796,34 +9208,277 @@
           "type": "integer"
         },
         {
-          "id": "cargo-tons",
-          "name": "Cargo (Tons)",
-          "type": "integer"
+          "id": "cargo_tons",
+          "name": "Cargo (tons)",
+          "type": "number"
         },
         {
-          "id": "ac",
+          "id": "armor_class",
           "name": "AC",
           "type": "integer"
         },
         {
-          "id": "hp",
+          "id": "hit_points",
           "name": "HP",
           "type": "integer"
         },
         {
-          "id": "damage-threshold",
+          "id": "damage_threshold",
           "name": "Damage Threshold",
           "type": "integer"
         },
         {
-          "id": "cost",
-          "name": "Cost",
+          "id": "cost_gp",
+          "name": "Cost (GP)",
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Airship"
+            },
+            {
+              "value": 8
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 13
+            },
+            {
+              "value": 300
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 40000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Galley"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 80
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 150
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 500
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 30000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Keelboat"
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 6
+            },
+            {
+              "value": 0.5
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 100
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 3000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Longship"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 40
+            },
+            {
+              "value": 150
+            },
+            {
+              "value": 10
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 300
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 10000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Rowboat"
+            },
+            {
+              "value": 1.5
+            },
+            {
+              "value": 1
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 11
+            },
+            {
+              "value": 50
+            },
+            {
+              "value": null,
+              "omission_code": "not_applicable"
+            },
+            {
+              "value": 50
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Sailing Ship"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 100
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 300
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 10000
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Warship"
+            },
+            {
+              "value": 2.5
+            },
+            {
+              "value": 60
+            },
+            {
+              "value": 60
+            },
+            {
+              "value": 200
+            },
+            {
+              "value": 15
+            },
+            {
+              "value": 500
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": 25000
+            }
+          ]
+        }
+      ],
       "source_row_count": 7,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "not_applicable",
+          "row": 0,
+          "column": "damage_threshold"
+        },
+        {
+          "code": "not_applicable",
+          "row": 1,
+          "column": "passengers"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "cargo_tons"
+        },
+        {
+          "code": "not_applicable",
+          "row": 4,
+          "column": "damage_threshold"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
@@ -8831,32 +9486,229 @@
       "name": "Food, Drink, and Lodging",
       "section_id": "730-9-27-food-drink-and-lodging",
       "page": 101,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "item",
+          "id": "item_1",
           "name": "Item",
           "type": "string"
         },
         {
-          "id": "cost",
+          "id": "cost_1",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         },
         {
-          "id": "item-2",
+          "id": "item_2",
           "name": "Item",
           "type": "string"
         },
         {
-          "id": "cost-2",
+          "id": "cost_2",
           "name": "Cost",
-          "type": "integer"
+          "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Ale (mug)"
+            },
+            {
+              "value": "4 CP",
+              "numeric_value": 4
+            },
+            {
+              "value": "Comfortable"
+            },
+            {
+              "value": "8 SP",
+              "numeric_value": 8
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Bread (loaf)"
+            },
+            {
+              "value": "2 CP",
+              "numeric_value": 2
+            },
+            {
+              "value": "Wealthy"
+            },
+            {
+              "value": "2 GP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Cheese (wedge)"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            },
+            {
+              "value": "Aristocratic"
+            },
+            {
+              "value": "4 GP",
+              "numeric_value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Inn Stay per Day"
+            },
+            {
+              "value": null,
+              "omission_code": "group_header"
+            },
+            {
+              "value": "Meal"
+            },
+            {
+              "value": null,
+              "omission_code": "group_header"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Squalid"
+            },
+            {
+              "value": "7 CP",
+              "numeric_value": 7
+            },
+            {
+              "value": "Squalid"
+            },
+            {
+              "value": "1 CP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Poor"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            },
+            {
+              "value": "Poor"
+            },
+            {
+              "value": "2 CP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Modest"
+            },
+            {
+              "value": "5 SP",
+              "numeric_value": 5
+            },
+            {
+              "value": "Modest"
+            },
+            {
+              "value": "1 SP",
+              "numeric_value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Comfortable"
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            },
+            {
+              "value": "Wine (bottle)"
+            },
+            {
+              "value": null,
+              "omission_code": "group_header"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wealthy"
+            },
+            {
+              "value": "3 SP",
+              "numeric_value": 3
+            },
+            {
+              "value": "Common"
+            },
+            {
+              "value": "2 SP",
+              "numeric_value": 2
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Aristocratic"
+            },
+            {
+              "value": "6 SP",
+              "numeric_value": 6
+            },
+            {
+              "value": "Fine"
+            },
+            {
+              "value": "10 GP",
+              "numeric_value": 10
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
-      "omissions": [],
+      "omissions": [
+        {
+          "code": "group_header",
+          "row": 3,
+          "column": "cost_1"
+        },
+        {
+          "code": "group_header",
+          "row": 3,
+          "column": "cost_2"
+        },
+        {
+          "code": "group_header",
+          "row": 7,
+          "column": "cost_2"
+        }
+      ],
       "provenance": "SRD 5.2.1"
     },
     {
