@@ -2497,8 +2497,37 @@
       "pages": [
         183
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Improvised Weapons",
+        "definition": "object wielded as a makeshift weapon",
+        "object_examples": [
+          "broken glass",
+          "table leg",
+          "frying pan"
+        ],
+        "designed_weapon_becomes_improvised_when_used_contrary_to_design": true,
+        "contrary_use_examples": [
+          "Ranged weapon used for melee attack",
+          "Melee weapon without Thrown property thrown"
+        ],
+        "add_proficiency_bonus_to_attack_roll": false,
+        "hit_damage": "1d4",
+        "damage_type_chosen_by": "GM as appropriate for object",
+        "thrown_range_feet": {
+          "normal": 20,
+          "long": 60
+        },
+        "weapon_equivalent": {
+          "requires_resemblance_to_simple_or_martial_weapon": true,
+          "determined_by": "GM",
+          "uses_equivalent_weapon_rules": true,
+          "example": {
+            "improvised_weapon": "table leg",
+            "equivalent_weapon": "Club"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2513,8 +2542,16 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Incapacitated [Condition]",
+        "can_take_action": false,
+        "can_take_bonus_action": false,
+        "can_take_reaction": false,
+        "concentration_broken": true,
+        "can_speak": false,
+        "initiative_roll_if_incapacitated": "Disadvantage"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2529,8 +2566,14 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Indifferent [Attitude]",
+        "desire_to_help": false,
+        "desire_to_hinder": false,
+        "default_monster_attitude": true,
+        "related_term": "Influence"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2545,8 +2588,49 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Influence [Action]",
+        "target": "monster",
+        "interaction_examples": [
+          "deceive",
+          "intimidate",
+          "amuse",
+          "gently persuade"
+        ],
+        "willingness_determined_by": "GM",
+        "outcomes": {
+          "willing": {
+            "criterion": "urging aligns with monster desires",
+            "ability_check_required": false,
+            "complies": true,
+            "fulfillment_method": "monster preference"
+          },
+          "unwilling": {
+            "criteria": [
+              "urging is repugnant to monster",
+              "urging is counter to monster alignment"
+            ],
+            "ability_check_required": false,
+            "complies": false
+          },
+          "hesitant": {
+            "ability_check_required": true,
+            "attitudes_affecting_check": [
+              "Indifferent",
+              "Friendly",
+              "Hostile"
+            ],
+            "check_chosen_by": "GM",
+            "check_examples_table_id": "184-influence-checks",
+            "default_dc": "higher of 15 or monster Intelligence score",
+            "success": "monster does as urged",
+            "failure_wait_hours": 24,
+            "failure_wait_override": "duration set by GM",
+            "failure_scope": "urging in same way"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2561,8 +2645,18 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Initiative",
+        "determines": "order of turns during combat",
+        "gm_can_use_score_instead_of_roll": true,
+        "score_formula": "10 + Dexterity modifier",
+        "score_adjustments": {
+          "Advantage": 5,
+          "Disadvantage": -5
+        },
+        "related_term": "Playing the Game: Combat"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2577,8 +2671,17 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Invisible [Condition]",
+        "initiative_roll": "Advantage",
+        "effects_requiring_target_seen_apply": false,
+        "seen_by_effect_creator_exception": true,
+        "worn_or_carried_equipment_concealed": true,
+        "attack_rolls_against_creature": "Disadvantage",
+        "creature_attack_rolls": "Advantage",
+        "attack_benefit_against_creature_that_can_see_you": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2593,8 +2696,18 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Jumping",
+        "types": {
+          "Long Jump": "horizontal",
+          "High Jump": "vertical"
+        },
+        "related_terms": [
+          "Long Jump",
+          "High Jump"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2609,8 +2722,27 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Knocking Out a Creature",
+        "trigger": {
+          "attack_type": "melee",
+          "would_reduce_hit_points_to": 0
+        },
+        "alternative_hit_points": 1,
+        "condition_applied": "Unconscious",
+        "starts_rest": "Short Rest",
+        "unconscious_ends_when": [
+          "regains any Hit Points",
+          "successful first aid"
+        ],
+        "first_aid": {
+          "action_required": true,
+          "ability": "Wisdom",
+          "skill": "Medicine",
+          "dc": 10
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2625,8 +2757,15 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Lightly Obscured",
+        "wisdom_perception_checks_to_see": "Disadvantage",
+        "related_terms": [
+          "Dim Light",
+          "Playing the Game: Exploration"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2641,8 +2780,18 @@
       "pages": [
         184
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Line [Area of Effect]",
+        "extends_from_origin_in_straight_path": true,
+        "area_defined_by": [
+          "length",
+          "width"
+        ],
+        "dimensions_specified_by_effect": true,
+        "origin_included_by_default": false,
+        "creator_can_include_origin": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2658,8 +2807,32 @@
         184,
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Long Jump",
+        "direction": "horizontal",
+        "running_jump": {
+          "required_immediate_movement_feet": 10,
+          "maximum_distance_feet": "Strength score"
+        },
+        "standing_jump_distance": "half running distance",
+        "movement_cost_per_foot_jumped": 1,
+        "difficult_terrain_landing": {
+          "ability": "Dexterity",
+          "skill": "Acrobatics",
+          "dc": 10,
+          "failure_condition": "Prone"
+        },
+        "low_obstacle": {
+          "check_optional_by_gm": true,
+          "maximum_height": "one quarter of jump distance",
+          "ability": "Strength",
+          "skill": "Athletics",
+          "dc": 10,
+          "failure": "hit obstacle"
+        },
+        "default_height_significance": false
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2674,8 +2847,39 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Long Rest",
+        "minimum_duration_hours": 8,
+        "minimum_sleep_hours": 6,
+        "maximum_light_activity_hours": 2,
+        "light_activity_examples": [
+          "reading",
+          "talking",
+          "eating",
+          "standing watch"
+        ],
+        "condition_during_sleep": "Unconscious",
+        "minimum_wait_before_next_rest_hours": 16,
+        "minimum_hit_points_to_start": 1,
+        "completion_benefits": {
+          "lost_hit_points_regained": "all",
+          "spent_hit_point_dice_regained": "all",
+          "reduced_hit_point_maximum_restored": true,
+          "reduced_ability_scores_restored": true,
+          "exhaustion_levels_reduced": 1,
+          "eligible_features_recharged_as_specified": true
+        },
+        "interruptions": [
+          "rolling Initiative",
+          "casting a spell other than a cantrip",
+          "taking any damage",
+          "1 hour of walking or other physical exertion"
+        ],
+        "short_rest_benefit_after_interrupted_rest_hours": 1,
+        "can_resume_immediately": true,
+        "additional_completion_hours_per_interruption": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2690,8 +2894,22 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Magic [Action]",
+        "uses": [
+          "cast spell with casting time of an action",
+          "activate feature requiring Magic action",
+          "activate magic item requiring Magic action"
+        ],
+        "spell_casting_time_one_minute_or_longer": {
+          "magic_action_each_turn": true,
+          "concentration_required": true,
+          "broken_concentration_causes_spell_failure": true,
+          "spell_slot_expended_on_failure": false
+        },
+        "related_term": "Concentration"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2706,8 +2924,15 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Magical Effect",
+        "magical_when_created_by": [
+          "spell",
+          "magic item",
+          "phenomenon labeled magical by a rule"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2722,8 +2947,25 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Malnutrition [Hazard]",
+        "daily_food_requirement_by_size_table_id": "185-food-needs-per-day",
+        "less_than_half_daily_food": {
+          "requires_some_food_eaten": true,
+          "saving_throw_ability": "Constitution",
+          "dc": 10,
+          "failure_exhaustion_levels": 1,
+          "timing": "end of day"
+        },
+        "no_food": {
+          "automatic_exhaustion_after_days": 5,
+          "exhaustion_levels_at_end_of_fifth_day": 1,
+          "additional_levels_each_subsequent_day": 1
+        },
+        "malnutrition_exhaustion_removal_requires_full_daily_food": true,
+        "related_term": "Exhaustion"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2738,8 +2980,17 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Monster",
+        "is_creature": true,
+        "controlled_by": "GM",
+        "benevolent_creature_can_be_monster": true,
+        "related_terms": [
+          "Creature",
+          "NPC"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2754,8 +3005,15 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Nonplayer Character",
+        "abbreviation": "NPC",
+        "is_monster": true,
+        "has_personal_name": true,
+        "has_distinct_personality": true,
+        "related_term": "Monster"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -2770,8 +3028,15 @@
       "pages": [
         185
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "term": "Object",
+        "is_nonliving": true,
+        "is_distinct_thing": true,
+        "composite_things_comprise_multiple_objects": true,
+        "composite_example": "building",
+        "related_term": "Breaking Objects"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1125-11-2-rules-definitions"
     },
@@ -4050,7 +4315,7 @@
       "name": "Influence Checks",
       "section_id": "1214-11-2-89-influence-action",
       "page": 184,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "ability-check",
@@ -4063,7 +4328,58 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Charisma (Deception)"
+            },
+            {
+              "value": "Deceiving a monster that understands you"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma (Intimidation)"
+            },
+            {
+              "value": "Intimidating a monster"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma (Performance)"
+            },
+            {
+              "value": "Amusing a monster"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Charisma (Persuasion)"
+            },
+            {
+              "value": "Persuading a monster that understands you"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wisdom (Animal Handling)"
+            },
+            {
+              "value": "Gently coaxing a Beast or Monstrosity"
+            }
+          ]
+        }
+      ],
       "source_row_count": 5,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -4073,30 +4389,79 @@
       "name": "Food Needs per Day",
       "section_id": "1225-11-2-100-malnutrition-hazard",
       "page": 185,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "size",
+          "id": "left-size",
           "name": "Size",
           "type": "string"
         },
         {
-          "id": "food",
+          "id": "left-food",
           "name": "Food",
           "type": "string"
         },
         {
-          "id": "size-2",
+          "id": "right-size",
           "name": "Size",
           "type": "string"
         },
         {
-          "id": "food-2",
+          "id": "right-food",
           "name": "Food",
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Tiny"
+            },
+            {
+              "value": "1/4 pound"
+            },
+            {
+              "value": "Large"
+            },
+            {
+              "value": "4 pounds"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Small"
+            },
+            {
+              "value": "1 pound"
+            },
+            {
+              "value": "Huge"
+            },
+            {
+              "value": "16 pounds"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Medium"
+            },
+            {
+              "value": "1 pound"
+            },
+            {
+              "value": "Gargantuan"
+            },
+            {
+              "value": "64 pounds"
+            }
+          ]
+        }
+      ],
       "source_row_count": 3,
       "omissions": [],
       "provenance": "SRD 5.2.1"
