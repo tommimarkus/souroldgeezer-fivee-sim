@@ -2628,8 +2628,31 @@
         215,
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cloak of Invisibility",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "activation": {
+          "action": "Magic",
+          "requires_wearing": true,
+          "charge_cost": 1
+        },
+        "effect": {
+          "condition": "Invisible",
+          "duration": "1 hour"
+        },
+        "early_end": [
+          "hood lowered without an action",
+          "cloak no longer worn"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2644,8 +2667,16 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cloak of Protection",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "armor_class_bonus": 1,
+        "saving_throw_bonus": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2660,8 +2691,45 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cloak of the Bat",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "stealth_check_advantage": {
+          "ability": "Dexterity",
+          "skill": "Stealth"
+        },
+        "flight": {
+          "required_light": [
+            "Dim Light",
+            "Darkness"
+          ],
+          "requires_gripping_edges": true,
+          "fly_speed_feet": 40,
+          "ends_if": [
+            "edges are released",
+            "light is no longer Dim Light or Darkness"
+          ]
+        },
+        "transformation": {
+          "spell": "Polymorph",
+          "target": "self",
+          "form": "Bat",
+          "required_light": [
+            "Dim Light",
+            "Darkness"
+          ],
+          "retained_ability_scores": [
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ],
+          "recharge": "dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2676,8 +2744,16 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cloak of the Manta Ray",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "underwater_breathing": true,
+        "swim_speed_feet": 60
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2692,8 +2768,20 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Crystal Ball",
+        "item_category": "Wondrous Item",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "requires_touching": true,
+        "spellcasting": [
+          {
+            "spell": "Scrying",
+            "save_dc": 17
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2708,8 +2796,28 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Crystal Ball of Mind Reading",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "requires_touching": true,
+        "spellcasting": [
+          {
+            "spell": "Scrying",
+            "save_dc": 17
+          },
+          {
+            "spell": "Detect Thoughts",
+            "save_dc": 17,
+            "target_requirement": "creature visible through the Scrying sensor",
+            "range_from_sensor_feet": 30,
+            "concentration_required": false,
+            "ends_when": "Scrying ends"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2724,8 +2832,33 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Crystal Ball of Telepathy",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "requires_touching": true,
+        "spellcasting": [
+          {
+            "spell": "Scrying",
+            "save_dc": 17
+          },
+          {
+            "spell": "Suggestion",
+            "save_dc": 17,
+            "target_count": 1,
+            "target_requirement": "creature visible through the Scrying sensor within 30 feet of it",
+            "concentration_required": false,
+            "ends_when": "Scrying ends",
+            "recharge": "dawn"
+          }
+        ],
+        "telepathy": {
+          "target_requirement": "creature visible through the Scrying sensor",
+          "range_from_sensor_feet": 30
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2740,8 +2873,21 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Crystal Ball of True Seeing",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "requires_touching": true,
+        "spellcasting": [
+          {
+            "spell": "Scrying",
+            "save_dc": 17
+          }
+        ],
+        "sensor_truesight_range_feet": 120
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2756,8 +2902,24 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cube of Force",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "size_inches": 1,
+        "charges": {
+          "maximum": 10,
+          "recovery": "1d6",
+          "recovery_time": "dawn"
+        },
+        "activation": {
+          "method": "press a marked face",
+          "save_dc": 17
+        },
+        "table_id": "216-cube-of-force-faces"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2772,8 +2934,40 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Cubic Gate",
+        "item_category": "Wondrous Item",
+        "rarity": "Legendary",
+        "requires_attunement": false,
+        "size_inches": 3,
+        "keyed_planes": {
+          "face_count": 6,
+          "includes": "Material Plane",
+          "other_faces_determined_by": "GM"
+        },
+        "charges": {
+          "maximum": 3,
+          "recovery": "1d3",
+          "recovery_time": "dawn"
+        },
+        "spellcasting": [
+          {
+            "spell": "Gate",
+            "action": "Magic",
+            "charge_cost": 1,
+            "face_presses": 1,
+            "destination": "plane keyed to the pressed face"
+          },
+          {
+            "spell": "Plane Shift",
+            "action": "Magic",
+            "charge_cost": 1,
+            "face_presses": 2,
+            "destination": "plane keyed to the pressed face"
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2788,8 +2982,28 @@
       "pages": [
         216
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Dagger of Venom",
+        "item_category": "Weapon",
+        "weapon_type": "Dagger",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "attack_bonus": 1,
+        "damage_bonus": 1,
+        "poison": {
+          "activation": "Bonus Action",
+          "duration": "1 minute or until the weapon hits",
+          "save": {
+            "ability": "Constitution",
+            "dc": 15
+          },
+          "failure_damage": "2d10 Poison",
+          "failure_condition": "Poisoned",
+          "condition_duration": "1 minute",
+          "recharge": "dawn"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2804,8 +3018,43 @@
       "pages": [
         217
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Dancing Sword",
+        "item_category": "Weapon",
+        "eligible_weapon_types": [
+          "Greatsword",
+          "Longsword",
+          "Rapier",
+          "Scimitar",
+          "Shortsword"
+        ],
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "launch": {
+          "action": "Bonus Action",
+          "flight_feet": 30,
+          "attack_target_range_feet": 5,
+          "attack_roll": "wielder's attack roll",
+          "damage_modifier": "wielder's ability modifier"
+        },
+        "hover_control": {
+          "action": "Bonus Action",
+          "flight_feet": 30,
+          "destination_within_wielder_feet": 30,
+          "optional_attack_in_same_action": true,
+          "attack_target_range_feet": 5
+        },
+        "return_after_attack_count": 4,
+        "return_failure": {
+          "no_free_hand": "falls in wielder's space",
+          "obstructed_path": "moves as close as possible, then falls"
+        },
+        "hover_ends_if": [
+          "grasped",
+          "more than 30 feet from wielder"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2820,8 +3069,53 @@
       "pages": [
         217
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Decanter of Endless Water",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "weight_pounds": 2,
+        "activation": {
+          "action": "Magic",
+          "water_types": [
+            "fresh",
+            "salt"
+          ],
+          "ends": "start of user's next turn"
+        },
+        "commands": [
+          {
+            "name": "Splash",
+            "water_gallons": 1
+          },
+          {
+            "name": "Fountain",
+            "water_gallons": 5
+          },
+          {
+            "name": "Geyser",
+            "water_gallons": 30,
+            "area": {
+              "shape": "Line",
+              "length_feet": 30,
+              "width_feet": 1
+            },
+            "aiming_action_required": false,
+            "creature_save": {
+              "ability": "Strength",
+              "dc": 13
+            },
+            "failure_damage": "1d4 Bludgeoning",
+            "failure_condition": "Prone",
+            "object_target": {
+              "must_be_unworn_and_uncarried": true,
+              "maximum_weight_pounds": 200,
+              "effect": "knocked over"
+            }
+          }
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2837,8 +3131,47 @@
         217,
         218
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Deck of Illusions",
+        "item_category": "Wondrous Item",
+        "rarity": "Uncommon",
+        "requires_attunement": false,
+        "full_deck_cards": 34,
+        "creature_cards": 32,
+        "mirrored_cards": 2,
+        "treasure_deck_missing_cards": "1d20 - 1",
+        "random_draw_required": true,
+        "activation": {
+          "action": "Magic",
+          "throw_distance_feet": 30
+        },
+        "illusion": {
+          "location": "over the thrown card",
+          "can_harm": false,
+          "controller_range_feet": 120,
+          "move_action": "Magic",
+          "move_within_card_feet": 30,
+          "physical_interaction_reveals": true,
+          "study_check": {
+            "action": "Study",
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": 15
+          },
+          "ends_if": [
+            "card moved",
+            "illusion dispelled"
+          ]
+        },
+        "card_after_illusion_ends": {
+          "image_disappears": true,
+          "reusable": false
+        },
+        "table_id": "217-deck-of-illusions",
+        "statblock_location": "Monsters",
+        "statblock_exception": "The card drawer"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2853,8 +3186,25 @@
       "pages": [
         218
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Defender",
+        "item_category": "Weapon",
+        "eligible_weapon_types": [
+          "Any Melee Weapon"
+        ],
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "attack_bonus": 3,
+        "damage_bonus": 3,
+        "armor_class_transfer": {
+          "timing": "first attack with the weapon on each turn",
+          "maximum_transfer": 3,
+          "reduces_attack_and_damage_bonus": true,
+          "duration": "until start of user's next turn",
+          "requires_holding_weapon": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2869,8 +3219,35 @@
       "pages": [
         218
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Demon Armor",
+        "item_category": "Armor",
+        "eligible_armor_types": [
+          "Any Light",
+          "Any Medium",
+          "Any Heavy"
+        ],
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "requires_wearing": true,
+        "armor_class_bonus": 1,
+        "language_known": "Abyssal",
+        "unarmed_strikes": {
+          "damage": "1d8 Slashing",
+          "attack_bonus": 1,
+          "damage_bonus": 1
+        },
+        "curse": {
+          "cannot_doff_after_donning": true,
+          "removal": "Remove Curse or similar magic",
+          "attack_disadvantage_against": "demons",
+          "saving_throw_disadvantage_against": [
+            "demon spells",
+            "demon special abilities"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2885,8 +3262,46 @@
       "pages": [
         218
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Dimensional Shackles",
+        "item_category": "Wondrous Item",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "placement": {
+          "action": "Utilize",
+          "required_condition": "Incapacitated",
+          "allowed_sizes": [
+            "Small",
+            "Medium",
+            "Large"
+          ]
+        },
+        "blocked_movement": [
+          "teleportation",
+          "travel to another plane"
+        ],
+        "interdimensional_portal_passage_blocked": false,
+        "authorized_removal": {
+          "action": "Utilize",
+          "creatures": [
+            "user",
+            "creature designated when shackles are applied"
+          ]
+        },
+        "escape_attempt": {
+          "frequency": "once every 30 days",
+          "check": {
+            "ability": "Strength",
+            "skill": "Athletics",
+            "dc": 30
+          },
+          "success": [
+            "bound creature escapes",
+            "shackles destroyed"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -2901,8 +3316,61 @@
       "pages": [
         218
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Dragon Orb",
+        "item_category": "Wondrous Item",
+        "rarity": "Artifact",
+        "requires_attunement": true,
+        "diameter_inches": {
+          "inactive": 10,
+          "in_use": 20
+        },
+        "control_attempt": {
+          "action": "Magic",
+          "save": {
+            "ability": "Charisma",
+            "dc": 15
+          },
+          "success": "control while attuned",
+          "failure_condition": "Charmed while attuned"
+        },
+        "charmed_effects": {
+          "voluntary_attunement_end_allowed": false,
+          "orb_spell": "Suggestion",
+          "orb_spell_frequency": "at will",
+          "orb_spell_save_dc": 18,
+          "purpose_determined_by": "GM"
+        },
+        "spells": {
+          "requires_control": true,
+          "charges": {
+            "maximum": 7,
+            "recovery": "1d4 + 3",
+            "recovery_time": "dawn"
+          },
+          "table_id": "218-spell-charge-cost"
+        },
+        "call_dragons": {
+          "requires_control": true,
+          "action": "Magic",
+          "range_miles": 40,
+          "directions": "all",
+          "affected": "chromatic dragons",
+          "effect": "compelled to travel by the most direct route to the orb",
+          "dragon_deities_affected": false,
+          "possible_attitude": "Hostile",
+          "recharge": "1 hour"
+        },
+        "destruction": {
+          "armor_class": 20,
+          "destroyed_by": [
+            "damage from a +3 Weapon",
+            "Disintegrate"
+          ],
+          "other_damage_effective": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1397-13-26-magic-items-a-z"
     },
@@ -7381,7 +7849,7 @@
       "name": "Cube of Force Faces",
       "section_id": "1448-13-26-51-cube-of-force",
       "page": 216,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "spell",
@@ -7394,7 +7862,68 @@
           "type": "integer"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Mage Armor"
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Shield"
+            },
+            {
+              "value": 1
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Tiny Hut"
+            },
+            {
+              "value": 3
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Private Sanctum"
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Resilient Sphere"
+            },
+            {
+              "value": 4
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Wall of Force"
+            },
+            {
+              "value": 5
+            }
+          ]
+        }
+      ],
       "source_row_count": 6,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -7404,21 +7933,352 @@
       "name": "Deck of Illusions",
       "section_id": "1453-13-26-56-deck-of-illusions",
       "page": 217,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d100",
+          "id": "d100",
           "name": "1d100",
           "type": "string"
         },
         {
           "id": "illusion",
-          "name": "Illusion*",
+          "name": "Illusion",
           "type": "string"
         }
       ],
-      "rows": [],
-      "source_row_count": 28,
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "01-03"
+            },
+            {
+              "value": "Adult Red Dragon"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "04-06"
+            },
+            {
+              "value": "Archmage"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "07-09"
+            },
+            {
+              "value": "Assassin"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "10-12"
+            },
+            {
+              "value": "Bandit Captain"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "13-15"
+            },
+            {
+              "value": "Basilisk"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "16-18"
+            },
+            {
+              "value": "Berserker"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "19-21"
+            },
+            {
+              "value": "Bugbear Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "22-24"
+            },
+            {
+              "value": "Cloud Giant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "25-27"
+            },
+            {
+              "value": "Druid"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "28-30"
+            },
+            {
+              "value": "Erinyes"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "31-33"
+            },
+            {
+              "value": "Ettin"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "34-36"
+            },
+            {
+              "value": "Fire Giant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "37-39"
+            },
+            {
+              "value": "Frost Giant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "40-42"
+            },
+            {
+              "value": "Gnoll Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "43-45"
+            },
+            {
+              "value": "Goblin Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "46-48"
+            },
+            {
+              "value": "Guardian Naga"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "49-51"
+            },
+            {
+              "value": "Hill Giant"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "52-54"
+            },
+            {
+              "value": "Hobgoblin Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "55-57"
+            },
+            {
+              "value": "Incubus"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "58-60"
+            },
+            {
+              "value": "Iron Golem"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "61-63"
+            },
+            {
+              "value": "Knight"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "64-66"
+            },
+            {
+              "value": "Kobold Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "67-69"
+            },
+            {
+              "value": "Lich"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "70-72"
+            },
+            {
+              "value": "Medusa"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "73-75"
+            },
+            {
+              "value": "Night Hag"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "76-78"
+            },
+            {
+              "value": "Ogre"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "79-81"
+            },
+            {
+              "value": "Oni"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "82-84"
+            },
+            {
+              "value": "Priest"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "85-87"
+            },
+            {
+              "value": "Succubus"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "88-90"
+            },
+            {
+              "value": "Troll"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "91-93"
+            },
+            {
+              "value": "Veteran Warrior"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "94-96"
+            },
+            {
+              "value": "Wyvern"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "97-00"
+            },
+            {
+              "value": "The card drawer"
+            }
+          ]
+        }
+      ],
+      "source_row_count": 33,
       "omissions": [],
       "provenance": "SRD 5.2.1"
     },
