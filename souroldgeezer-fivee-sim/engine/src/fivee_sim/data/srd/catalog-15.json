@@ -3566,8 +3566,106 @@
       "pages": [
         266
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Young Blue Dragon",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Evil",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 4,
+          "score": 14
+        },
+        "hit_points": {
+          "average": 152,
+          "hit_dice": "16d10 + 64"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 20,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 4
+          },
+          "Constitution": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 5
+          },
+          "Charisma": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 9,
+          "Stealth": 4
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 30,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 19
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "9",
+        "experience_points": 5000,
+        "proficiency_bonus": 4,
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 9,
+            "reach_feet": 10,
+            "damage": [
+              "2d6 + 5 Slashing",
+              "1d10 Lightning"
+            ]
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 16
+            },
+            "area": "60-foot-long, 5-foot-wide Line",
+            "failure_damage": "10d10 Lightning",
+            "success_damage": "half"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3583,8 +3681,148 @@
         266,
         267
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adult Blue Dragon",
+        "size": "Huge",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Evil",
+        "armor_class": 19,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 212,
+          "hit_dice": "17d12 + 102"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 30,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 25,
+            "modifier": 7,
+            "save": 7
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 23,
+            "modifier": 6,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Wisdom": {
+            "score": 15,
+            "modifier": 2,
+            "save": 7
+          },
+          "Charisma": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 12,
+          "Stealth": 5
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 22
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "16",
+        "experience_points": {
+          "normal": 15000,
+          "in_lair": 18000
+        },
+        "proficiency_bonus": 5,
+        "traits": {
+          "legendary_resistance": {
+            "uses_per_day": 3,
+            "uses_per_day_in_lair": 4,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": "Spellcasting: Shatter"
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 12,
+            "reach_feet": 10,
+            "damage": [
+              "2d8 + 7 Slashing",
+              "1d10 Lightning"
+            ]
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 19
+            },
+            "area": "90-foot-long, 5-foot-wide Line",
+            "failure_damage": "11d10 Lightning",
+            "success_damage": "half"
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 18,
+            "at_will": [
+              "Detect Magic",
+              "Invisibility",
+              "Mage Hand",
+              "Shatter"
+            ],
+            "once_per_day_each": [
+              "Scrying",
+              "Sending"
+            ]
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "cloaked_flight": {
+            "casts": "Invisibility on self",
+            "fly": "up to half Fly Speed",
+            "recharge": "start of next turn"
+          },
+          "sonic_boom": {
+            "casts": "Shatter",
+            "recharge": "start of next turn"
+          },
+          "tail_swipe": {
+            "attack": "one Rend"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3599,8 +3837,148 @@
       "pages": [
         267
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ancient Blue Dragon",
+        "size": "Gargantuan",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Evil",
+        "armor_class": 22,
+        "initiative": {
+          "modifier": 14,
+          "score": 24
+        },
+        "hit_points": {
+          "average": 481,
+          "hit_dice": "26d20 + 208"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 40,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 29,
+            "modifier": 9,
+            "save": 9
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 7
+          },
+          "Constitution": {
+            "score": 27,
+            "modifier": 8,
+            "save": 8
+          },
+          "Intelligence": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Wisdom": {
+            "score": 17,
+            "modifier": 3,
+            "save": 10
+          },
+          "Charisma": {
+            "score": 25,
+            "modifier": 7,
+            "save": 7
+          }
+        },
+        "descriptive_tags": [
+          "Chromatic"
+        ],
+        "skills": {
+          "Perception": 17,
+          "Stealth": 7
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 27
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "23",
+        "experience_points": {
+          "normal": 50000,
+          "in_lair": 62000
+        },
+        "proficiency_bonus": 7,
+        "traits": {
+          "legendary_resistance": {
+            "uses_per_day": 4,
+            "uses_per_day_in_lair": 5,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": "Spellcasting: Shatter level 3"
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 16,
+            "reach_feet": 15,
+            "damage": [
+              "2d8 + 9 Slashing",
+              "2d10 Lightning"
+            ]
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 23
+            },
+            "area": "120-foot-long, 10-foot-wide Line",
+            "failure_damage": "16d10 Lightning",
+            "success_damage": "half"
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 22,
+            "at_will": [
+              "Detect Magic",
+              "Invisibility",
+              "Mage Hand",
+              "Shatter (level 3)"
+            ],
+            "once_per_day_each": [
+              "Scrying",
+              "Sending"
+            ]
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "cloaked_flight": {
+            "casts": "Invisibility on self",
+            "fly": "up to half Fly Speed",
+            "recharge": "start of next turn"
+          },
+          "sonic_boom": {
+            "casts": "Shatter (level 3)",
+            "recharge": "start of next turn"
+          },
+          "tail_swipe": {
+            "attack": "one Rend"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3616,8 +3994,117 @@
         267,
         268
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Bone Devil",
+        "size": "Large",
+        "creature_type": "Fiend",
+        "alignment": "Lawful Evil",
+        "armor_class": 16,
+        "initiative": {
+          "modifier": 7,
+          "score": 17
+        },
+        "hit_points": {
+          "average": 161,
+          "hit_dice": "17d10 + 68"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "fly_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 8
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 13,
+            "modifier": 1,
+            "save": 5
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 6
+          },
+          "Charisma": {
+            "score": 16,
+            "modifier": 3,
+            "save": 7
+          }
+        },
+        "descriptive_tags": [
+          "Devil"
+        ],
+        "skills": {
+          "Deception": 7,
+          "Insight": 6
+        },
+        "resistances": [
+          "Cold"
+        ],
+        "immunities": [
+          "Fire",
+          "Poison",
+          "Poisoned"
+        ],
+        "senses": {
+          "Darkvision_feet": 120,
+          "magical_darkness_impedes_darkvision": false,
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Infernal",
+          "telepathy 120 feet"
+        ],
+        "challenge_rating": "9",
+        "experience_points": 5000,
+        "proficiency_bonus": 4,
+        "traits": {
+          "diabolical_restoration": {
+            "trigger": "dies outside Nine Hells",
+            "body_disappears": true,
+            "new_body": "instantly in Nine Hells",
+            "revives_with_all_hit_points": true
+          },
+          "magic_resistance": "Advantage on saves against spells and other magical effects"
+        },
+        "actions": {
+          "multiattack": {
+            "claw_attacks": 2,
+            "infernal_sting_attacks": 1
+          },
+          "claw": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "reach_feet": 10,
+            "damage": "2d8 + 4 Slashing"
+          },
+          "infernal_sting": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "reach_feet": 10,
+            "damage": [
+              "2d10 + 4 Piercing",
+              "4d8 Poison"
+            ],
+            "condition": "Poisoned until start of devil's next turn",
+            "poisoned_target_cannot_regain_hit_points": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3632,7 +4119,7 @@
       "pages": [
         268
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -3648,8 +4135,115 @@
       "pages": [
         268
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Brass Dragon Wyrmling",
+        "size": "Medium",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Good",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 22,
+          "hit_dice": "4d8 + 4"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "burrow_feet": 15,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Perception": 4,
+          "Stealth": 2
+        },
+        "immunities": [
+          "Fire"
+        ],
+        "senses": {
+          "Blindsight_feet": 10,
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Draconic"
+        ],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "actions": {
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d10 + 2 Slashing"
+          },
+          "fire_breath": {
+            "name": "Fire Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 11
+            },
+            "area": "20-foot-long, 5-foot-wide Line",
+            "failure_damage": "4d6 Fire",
+            "success_damage": "half"
+          },
+          "sleep_breath": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 11
+            },
+            "area": "15-foot Cone",
+            "first_failure": "Incapacitated until end of target's next turn, then repeat save",
+            "second_failure": {
+              "condition": "Unconscious",
+              "duration_minutes": 1
+            },
+            "ends_on": [
+              "target takes damage",
+              "creature within 5 feet uses action to wake target"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3664,8 +4258,121 @@
       "pages": [
         268
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Young Brass Dragon",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Good",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 110,
+          "hit_dice": "13d10 + 39"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 20,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Perception": 6,
+          "Persuasion": 5,
+          "Stealth": 3
+        },
+        "immunities": [
+          "Fire"
+        ],
+        "senses": {
+          "Blindsight_feet": 30,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "6",
+        "experience_points": 2300,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_two_with": "Sleep Breath"
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 10,
+            "damage": "2d10 + 4 Slashing"
+          },
+          "fire_breath": {
+            "name": "Fire Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 14
+            },
+            "area": "40-foot-long, 5-foot-wide Line",
+            "failure_damage": "11d6 Fire",
+            "success_damage": "half"
+          },
+          "sleep_breath": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 14
+            },
+            "area": "30-foot Cone",
+            "first_failure": "Incapacitated until end of target's next turn, then repeat save",
+            "second_failure": {
+              "condition": "Unconscious",
+              "duration_minutes": 1
+            },
+            "ends_on": [
+              "target takes damage",
+              "creature within 5 feet uses action to wake target"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3681,8 +4388,185 @@
         268,
         269
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adult Brass Dragon",
+        "size": "Huge",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Good",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 172,
+          "hit_dice": "15d12 + 75"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 30,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 23,
+            "modifier": 6,
+            "save": 6
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Intelligence": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 6
+          },
+          "Charisma": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "History": 7,
+          "Perception": 11,
+          "Persuasion": 8,
+          "Stealth": 5
+        },
+        "immunities": [
+          "Fire"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 21
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "13",
+        "experience_points": {
+          "normal": 10000,
+          "in_lair": 11500
+        },
+        "proficiency_bonus": 5,
+        "traits": {
+          "legendary_resistance": {
+            "uses_per_day": 3,
+            "uses_per_day_in_lair": 4,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": [
+              "Sleep Breath",
+              "Spellcasting: Scorching Ray"
+            ]
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 11,
+            "reach_feet": 10,
+            "damage": [
+              "2d10 + 6 Slashing",
+              "1d8 Fire"
+            ]
+          },
+          "fire_breath": {
+            "name": "Fire Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 18
+            },
+            "area": "60-foot-long, 5-foot-wide Line",
+            "failure_damage": "10d8 Fire",
+            "success_damage": "half"
+          },
+          "sleep_breath": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 18
+            },
+            "area": "60-foot Cone",
+            "first_failure": "Incapacitated until end of target's next turn, then repeat save",
+            "second_failure": {
+              "condition": "Unconscious",
+              "duration_minutes": 10
+            },
+            "ends_on": [
+              "target takes damage",
+              "creature within 5 feet uses action to wake target"
+            ]
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 16,
+            "at_will": [
+              "Detect Magic",
+              "Minor Illusion",
+              "Scorching Ray",
+              "Shapechange (restricted)",
+              "Speak with Animals"
+            ],
+            "once_per_day_each": [
+              "Detect Thoughts",
+              "Control Weather"
+            ]
+          },
+          "shapechange_restrictions": {
+            "forms": [
+              "Beast",
+              "Humanoid"
+            ],
+            "gains_temporary_hit_points": false,
+            "maintenance_requires_concentration": false,
+            "maintenance_requires_temporary_hit_points": false
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "blazing_light": {
+            "casts": "Scorching Ray"
+          },
+          "pounce": {
+            "move": "up to half Speed",
+            "attack": "one Rend"
+          },
+          "scorching_sands": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 16
+            },
+            "target": "visible creature within 120 feet",
+            "failure_damage": "6d8 Fire",
+            "failure_speed_multiplier": 0.5,
+            "duration": "until end of target's next turn",
+            "recharge": "start of dragon's next turn regardless of save"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3697,8 +4581,185 @@
       "pages": [
         269
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ancient Brass Dragon",
+        "size": "Gargantuan",
+        "creature_type": "Dragon",
+        "alignment": "Chaotic Good",
+        "armor_class": 20,
+        "initiative": {
+          "modifier": 12,
+          "score": 22
+        },
+        "hit_points": {
+          "average": 332,
+          "hit_dice": "19d20 + 133"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 40,
+          "fly_feet": 80
+        },
+        "abilities": {
+          "Strength": {
+            "score": 27,
+            "modifier": 8,
+            "save": 8
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 6
+          },
+          "Constitution": {
+            "score": 25,
+            "modifier": 7,
+            "save": 7
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Wisdom": {
+            "score": 15,
+            "modifier": 2,
+            "save": 8
+          },
+          "Charisma": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "History": 9,
+          "Perception": 14,
+          "Persuasion": 12,
+          "Stealth": 6
+        },
+        "immunities": [
+          "Fire"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 24
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "20",
+        "experience_points": {
+          "normal": 25000,
+          "in_lair": 33000
+        },
+        "proficiency_bonus": 6,
+        "traits": {
+          "legendary_resistance": {
+            "uses_per_day": 4,
+            "uses_per_day_in_lair": 5,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": [
+              "Sleep Breath",
+              "Spellcasting: Scorching Ray level 3"
+            ]
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 15,
+            "damage": [
+              "2d10 + 8 Slashing",
+              "2d6 Fire"
+            ]
+          },
+          "fire_breath": {
+            "name": "Fire Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 21
+            },
+            "area": "90-foot-long, 5-foot-wide Line",
+            "failure_damage": "13d8 Fire",
+            "success_damage": "half"
+          },
+          "sleep_breath": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 21
+            },
+            "area": "90-foot Cone",
+            "first_failure": "Incapacitated until end of target's next turn, then repeat save",
+            "second_failure": {
+              "condition": "Unconscious",
+              "duration_minutes": 10
+            },
+            "ends_on": [
+              "target takes damage",
+              "creature within 5 feet uses action to wake target"
+            ]
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 20,
+            "at_will": [
+              "Detect Magic",
+              "Minor Illusion",
+              "Scorching Ray (level 3)",
+              "Shapechange (restricted)",
+              "Speak with Animals"
+            ],
+            "once_per_day_each": [
+              "Control Weather",
+              "Detect Thoughts"
+            ]
+          },
+          "shapechange_restrictions": {
+            "forms": [
+              "Beast",
+              "Humanoid"
+            ],
+            "gains_temporary_hit_points": false,
+            "maintenance_requires_concentration": false,
+            "maintenance_requires_temporary_hit_points": false
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "blazing_light": {
+            "casts": "Scorching Ray (level 3)"
+          },
+          "pounce": {
+            "move": "up to half Speed",
+            "attack": "one Rend"
+          },
+          "scorching_sands": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 20
+            },
+            "target": "visible creature within 120 feet",
+            "failure_damage": "8d8 Fire",
+            "failure_speed_multiplier": 0.5,
+            "duration": "until end of target's next turn",
+            "recharge": "start of dragon's next turn regardless of save"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3713,7 +4774,7 @@
       "pages": [
         269
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -3730,8 +4791,119 @@
         269,
         270
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Bronze Dragon Wyrmling",
+        "size": "Medium",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Good",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 39,
+          "hit_dice": "6d8 + 12"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "fly_feet": 60,
+          "swim_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Perception": 4,
+          "Stealth": 2
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 10,
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Draconic"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": "1d10 + 3 Slashing"
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 12
+            },
+            "area": "40-foot-long, 5-foot-wide Line",
+            "failure_damage": "3d10 Lightning",
+            "success_damage": "half"
+          },
+          "repulsion_breath": {
+            "save": {
+              "ability": "Strength",
+              "dc": 12
+            },
+            "area": "30-foot Cone",
+            "failure_push_feet": 30,
+            "failure_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3746,8 +4918,122 @@
       "pages": [
         270
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Young Bronze Dragon",
+        "size": "Large",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Good",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 142,
+          "hit_dice": "15d10 + 60"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 4
+          },
+          "Charisma": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Insight": 4,
+          "Perception": 7,
+          "Stealth": 3
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 30,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 17
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "8",
+        "experience_points": 3900,
+        "proficiency_bonus": 3,
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": "Repulsion Breath"
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 8,
+            "reach_feet": 10,
+            "damage": "2d10 + 5 Slashing"
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 15
+            },
+            "area": "60-foot-long, 5-foot-wide Line",
+            "failure_damage": "9d10 Lightning",
+            "success_damage": "half"
+          },
+          "repulsion_breath": {
+            "save": {
+              "ability": "Strength",
+              "dc": 15
+            },
+            "area": "30-foot Cone",
+            "failure_push_feet": 40,
+            "failure_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3763,8 +5049,182 @@
         270,
         271
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Adult Bronze Dragon",
+        "size": "Huge",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Good",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 212,
+          "hit_dice": "17d12 + 102"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 25,
+            "modifier": 7,
+            "save": 7
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 23,
+            "modifier": 6,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Wisdom": {
+            "score": 15,
+            "modifier": 2,
+            "save": 7
+          },
+          "Charisma": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Insight": 7,
+          "Perception": 12,
+          "Stealth": 5
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 22
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "15",
+        "experience_points": {
+          "normal": 13000,
+          "in_lair": 15000
+        },
+        "proficiency_bonus": 5,
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          },
+          "legendary_resistance": {
+            "uses_per_day": 3,
+            "uses_per_day_in_lair": 4,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": [
+              "Repulsion Breath",
+              "Spellcasting: Guiding Bolt level 2"
+            ]
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 12,
+            "reach_feet": 10,
+            "damage": [
+              "2d8 + 7 Slashing",
+              "1d10 Lightning"
+            ]
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 19
+            },
+            "area": "90-foot-long, 5-foot-wide Line",
+            "failure_damage": "10d10 Lightning",
+            "success_damage": "half"
+          },
+          "repulsion_breath": {
+            "save": {
+              "ability": "Strength",
+              "dc": 19
+            },
+            "area": "30-foot Cone",
+            "failure_push_feet": 60,
+            "failure_condition": "Prone"
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 17,
+            "at_will": [
+              "Detect Magic",
+              "Guiding Bolt (level 2)",
+              "Shapechange (restricted)",
+              "Speak with Animals",
+              "Thaumaturgy"
+            ],
+            "once_per_day_each": [
+              "Detect Thoughts",
+              "Water Breathing"
+            ],
+            "spell_attack_bonus": 10
+          },
+          "shapechange_restrictions": {
+            "forms": [
+              "Beast",
+              "Humanoid"
+            ],
+            "gains_temporary_hit_points": false,
+            "maintenance_requires_concentration": false,
+            "maintenance_requires_temporary_hit_points": false
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "guiding_light": {
+            "casts": "Guiding Bolt (level 2)"
+          },
+          "pounce": {
+            "move": "up to half Speed",
+            "attack": "one Rend"
+          },
+          "thunderclap": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 17
+            },
+            "area": "20-foot-radius Sphere at visible point within 90 feet",
+            "failure_damage": "3d6 Thunder",
+            "failure_condition": "Deafened until end of target's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3779,8 +5239,184 @@
       "pages": [
         271
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ancient Bronze Dragon",
+        "size": "Gargantuan",
+        "creature_type": "Dragon",
+        "alignment": "Lawful Good",
+        "armor_class": 22,
+        "initiative": {
+          "modifier": 14,
+          "score": 24
+        },
+        "hit_points": {
+          "average": 444,
+          "hit_dice": "24d20 + 192"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "fly_feet": 80,
+          "swim_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 29,
+            "modifier": 9,
+            "save": 9
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 7
+          },
+          "Constitution": {
+            "score": 27,
+            "modifier": 8,
+            "save": 8
+          },
+          "Intelligence": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Wisdom": {
+            "score": 17,
+            "modifier": 3,
+            "save": 10
+          },
+          "Charisma": {
+            "score": 25,
+            "modifier": 7,
+            "save": 7
+          }
+        },
+        "descriptive_tags": [
+          "Metallic"
+        ],
+        "skills": {
+          "Insight": 10,
+          "Perception": 17,
+          "Stealth": 7
+        },
+        "immunities": [
+          "Lightning"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Darkvision_feet": 120,
+          "Passive_Perception": 27
+        },
+        "languages": [
+          "Common",
+          "Draconic"
+        ],
+        "challenge_rating": "22",
+        "experience_points": {
+          "normal": 41000,
+          "in_lair": 50000
+        },
+        "proficiency_bonus": 7,
+        "traits": {
+          "amphibious": {
+            "breathes": [
+              "air",
+              "water"
+            ]
+          },
+          "legendary_resistance": {
+            "uses_per_day": 4,
+            "uses_per_day_in_lair": 5,
+            "failed_save_becomes_success": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 3,
+            "may_replace_one_with": [
+              "Repulsion Breath",
+              "Spellcasting: Guiding Bolt level 2"
+            ]
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 16,
+            "reach_feet": 15,
+            "damage": [
+              "2d8 + 9 Slashing",
+              "2d8 Lightning"
+            ]
+          },
+          "lightning_breath": {
+            "name": "Lightning Breath",
+            "recharge": "5-6",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 23
+            },
+            "area": "120-foot-long, 10-foot-wide Line",
+            "failure_damage": "15d10 Lightning",
+            "success_damage": "half"
+          },
+          "repulsion_breath": {
+            "save": {
+              "ability": "Strength",
+              "dc": 23
+            },
+            "area": "30-foot Cone",
+            "failure_push_feet": 60,
+            "failure_condition": "Prone"
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 22,
+            "at_will": [
+              "Detect Magic",
+              "Guiding Bolt (level 2)",
+              "Shapechange (restricted)",
+              "Speak with Animals",
+              "Thaumaturgy"
+            ],
+            "once_per_day_each": [
+              "Detect Thoughts",
+              "Control Water",
+              "Scrying",
+              "Water Breathing"
+            ],
+            "spell_attack_bonus": 14
+          },
+          "shapechange_restrictions": {
+            "forms": [
+              "Beast",
+              "Humanoid"
+            ],
+            "gains_temporary_hit_points": false,
+            "maintenance_requires_concentration": false,
+            "maintenance_requires_temporary_hit_points": false
+          }
+        },
+        "legendary_actions": {
+          "uses": 3,
+          "uses_in_lair": 4,
+          "guiding_light": {
+            "casts": "Guiding Bolt (level 2)"
+          },
+          "pounce": {
+            "move": "up to half Speed",
+            "attack": "one Rend"
+          },
+          "thunderclap": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 22
+            },
+            "area": "20-foot-radius Sphere at visible point within 120 feet",
+            "failure_damage": "3d8 Thunder",
+            "failure_condition": "Deafened until end of target's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3795,7 +5431,7 @@
       "pages": [
         271
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -3811,8 +5447,125 @@
       "pages": [
         271
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Bugbear Stalker",
+        "size": "Medium",
+        "creature_type": "Fey",
+        "alignment": "Chaotic Evil",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 65,
+          "hit_dice": "10d8 + 20"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 4
+          },
+          "Intelligence": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "descriptive_tags": [
+          "Goblinoid"
+        ],
+        "skills": {
+          "Stealth": 6,
+          "Survival": 3
+        },
+        "gear": [
+          "Chain Shirt",
+          "6 Javelins",
+          "Morningstar"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 11
+        },
+        "languages": [
+          "Common",
+          "Goblin"
+        ],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "abduct": {
+            "extra_movement_to_move_grappled_creature": false
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Javelin",
+              "Morningstar"
+            ]
+          },
+          "javelin": {
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 5,
+            "reach_feet": 10,
+            "range_feet": [
+              30,
+              120
+            ],
+            "damage": "3d6 + 3 Piercing"
+          },
+          "morningstar": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "advantage_if_target_grappled_by_bugbear": true,
+            "reach_feet": 10,
+            "damage": "2d8 + 3 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "quick_grapple": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 13
+            },
+            "target": "visible Medium or smaller creature within 10 feet",
+            "failure_condition": "Grappled",
+            "escape_dc": 13
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3827,8 +5580,109 @@
       "pages": [
         272
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Bugbear Warrior",
+        "size": "Medium",
+        "creature_type": "Fey",
+        "alignment": "Chaotic Evil",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 33,
+          "hit_dice": "6d8 + 6"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Wisdom": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          }
+        },
+        "descriptive_tags": [
+          "Goblinoid"
+        ],
+        "skills": {
+          "Stealth": 6,
+          "Survival": 2
+        },
+        "gear": [
+          "Hide Armor",
+          "3 Light Hammers"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 10
+        },
+        "languages": [
+          "Common",
+          "Goblin"
+        ],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "traits": {
+          "abduct": {
+            "extra_movement_to_move_grappled_creature": false
+          }
+        },
+        "actions": {
+          "grab": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 10,
+            "damage": "2d6 + 2 Bludgeoning",
+            "maximum_grappled_target_size": "Medium",
+            "hit_condition": "Grappled",
+            "escape_dc": 12
+          },
+          "light_hammer": {
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 4,
+            "advantage_if_target_grappled_by_bugbear": true,
+            "reach_feet": 10,
+            "range_feet": [
+              20,
+              60
+            ],
+            "damage": "3d4 + 2 Bludgeoning"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3843,8 +5697,100 @@
       "pages": [
         272
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Bulette",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 94,
+          "hit_dice": "9d10 + 45"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "burrow_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 21,
+            "modifier": 5,
+            "save": 5
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "skills": {
+          "Perception": 6
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Tremorsense_feet": 120,
+          "Passive_Perception": 16
+        },
+        "languages": [],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 2
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d12 + 4 Piercing"
+          },
+          "deadly_leap": {
+            "movement_cost_feet": 5,
+            "destination_within_feet": 15,
+            "destination_contains": "one or more Large or smaller creatures",
+            "save": {
+              "ability": "Dexterity",
+              "dc": 15
+            },
+            "failure_damage": "3d12 Bludgeoning",
+            "failure_condition": "Prone",
+            "success_damage": "half",
+            "success_push_feet": 5
+          }
+        },
+        "bonus_actions": {
+          "leap": {
+            "jump_feet": 30,
+            "movement_cost_feet": 10
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -3859,7 +5805,7 @@
       "pages": [
         272
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -3875,8 +5821,116 @@
       "pages": [
         272
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Centaur Trooper",
+        "size": "Large",
+        "creature_type": "Fey",
+        "alignment": "Neutral Good",
+        "armor_class": 16,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 45,
+          "hit_dice": "6d10 + 12"
+        },
+        "speed": {
+          "walk_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 9,
+            "modifier": -1,
+            "save": -1
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "skills": {
+          "Athletics": 6,
+          "Perception": 3
+        },
+        "gear": [
+          "Breastplate",
+          "Longbow",
+          "Pike"
+        ],
+        "senses": {
+          "Passive_Perception": 13
+        },
+        "languages": [
+          "Elvish",
+          "Sylvan"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Pike",
+              "Longbow"
+            ],
+            "any_combination": true
+          },
+          "pike": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 10,
+            "damage": "1d10 + 4 Piercing"
+          },
+          "longbow": {
+            "type": "Ranged",
+            "attack_bonus": 4,
+            "range_feet": [
+              150,
+              600
+            ],
+            "damage": "1d8 + 2 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "trampling_charge": {
+            "recharge": "5-6",
+            "move": "up to Speed",
+            "provokes_opportunity_attacks": false,
+            "can_move_through_maximum_size": "Medium",
+            "targets_each_creature_space_once": true,
+            "save": {
+              "ability": "Strength",
+              "dc": 14
+            },
+            "failure_damage": "1d6 + 4 Bludgeoning",
+            "failure_condition": "Prone"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
