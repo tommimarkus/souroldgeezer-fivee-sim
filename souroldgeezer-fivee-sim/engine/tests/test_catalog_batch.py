@@ -12,6 +12,11 @@ from types import ModuleType
 import pytest
 
 SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "srd-catalog-batch.py"
+CURRENT_SOURCE_URL = (
+    "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf"
+)
+LEGACY_SOURCE_URL = "https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf"
+PINNED_SOURCE_SHA256 = "8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87"
 
 
 @pytest.fixture
@@ -21,6 +26,106 @@ def batch_module() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _minimal_verified_source(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    source_url: str,
+    *,
+    manifest_sha256: str = PINNED_SOURCE_SHA256,
+    pdf_sha256: str = PINNED_SOURCE_SHA256,
+) -> Path:
+    agent = tmp_path / "agent"
+    agent.mkdir()
+    source_pdf = tmp_path / "SRD_CC_v5.2.1.pdf"
+    source_pdf.write_bytes(b"test PDF")
+    (agent / "agent-manifest.json").write_text(
+        json.dumps(
+            {
+                "source_pdf": {
+                    "source_url": source_url,
+                    "sha256": manifest_sha256,
+                    "path": str(source_pdf),
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    for name in (
+        "sections-index.json",
+        "tables-index.json",
+        "statblocks.json",
+        "term-index.json",
+    ):
+        (agent / name).write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(
+        batch_module,
+        "EXPECTED_COUNTS",
+        {key: 0 for key in batch_module.EXPECTED_COUNTS},
+    )
+    monkeypatch.setattr(batch_module, "_sha256", lambda _path: pdf_sha256)
+    return tmp_path
+
+
+@pytest.mark.parametrize("source_url", [CURRENT_SOURCE_URL, LEGACY_SOURCE_URL])
+def test_source_verifier_accepts_current_and_legacy_official_urls_for_the_pinned_pdf(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    source_url: str,
+) -> None:
+    source_root = _minimal_verified_source(
+        batch_module, monkeypatch, tmp_path, source_url
+    )
+
+    verified = batch_module.verify_source(source_root)
+
+    assert batch_module.SOURCE_URL == CURRENT_SOURCE_URL
+    assert batch_module.SOURCE_SHA256 == PINNED_SOURCE_SHA256
+    assert verified["pdf"] == tmp_path / "SRD_CC_v5.2.1.pdf"
+
+
+def test_source_verifier_rejects_an_unknown_url_even_when_the_hash_matches(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    source_root = _minimal_verified_source(
+        batch_module, monkeypatch, tmp_path, "https://example.com/copied-srd.pdf"
+    )
+
+    with pytest.raises(batch_module.BatchError, match="verified SRD 5.2.1 extraction"):
+        batch_module.verify_source(source_root)
+
+
+@pytest.mark.parametrize(
+    ("manifest_sha256", "pdf_sha256"),
+    [
+        ("0" * 64, PINNED_SOURCE_SHA256),
+        (PINNED_SOURCE_SHA256, "0" * 64),
+    ],
+    ids=["wrong-manifest-hash", "wrong-pdf-hash"],
+)
+def test_legacy_source_url_still_requires_the_exact_declared_and_pdf_hashes(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    manifest_sha256: str,
+    pdf_sha256: str,
+) -> None:
+    source_root = _minimal_verified_source(
+        batch_module,
+        monkeypatch,
+        tmp_path,
+        LEGACY_SOURCE_URL,
+        manifest_sha256=manifest_sha256,
+        pdf_sha256=pdf_sha256,
+    )
+
+    with pytest.raises(batch_module.BatchError, match="verified SRD 5.2.1 extraction"):
+        batch_module.verify_source(source_root)
 
 
 def test_batch_utility_documents_its_bounded_packet_and_merge_modes() -> None:
@@ -113,6 +218,11 @@ def test_packet_interleaves_pending_sections_and_tables(
     assert [record["id"] for record in packet["records"]] == ["s4"]
     assert [table["id"] for table in packet["catalog_tables"]] == ["t4"]
     assert packet["catalog_tables"][0]["source_table"] == source_table
+    assert packet["source"] == {
+        "name": "System Reference Document 5.2.1",
+        "url": CURRENT_SOURCE_URL,
+        "sha256": PINNED_SOURCE_SHA256,
+    }
 
 
 def test_packet_refuses_to_write_a_review_copy_below_the_repository(

@@ -19,7 +19,16 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-SOURCE_URL = "https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf"
+SOURCE_URL = (
+    "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf"
+)
+SOURCE_EVIDENCE_URLS = frozenset(
+    {
+        SOURCE_URL,
+        # Existing verified extractions may predate the official URL move.
+        "https://media.wizards.com/2025/downloads/dnd/SRD_CC_v5.2.1.pdf",
+    }
+)
 SOURCE_SHA256 = "8974902d109d6e63672d7c490bde9ccf052410503d9cfa768237154fbc5e3d87"
 SOURCE_NAME = "System Reference Document 5.2.1"
 EXPECTED_COUNTS = {
@@ -133,7 +142,10 @@ def verify_source(source_root: Path) -> dict[str, Any]:
 
     manifest = _json(manifest_path)
     source = manifest.get("source_pdf", {})
-    if source.get("source_url") != SOURCE_URL or source.get("sha256") != SOURCE_SHA256:
+    if (
+        source.get("source_url") not in SOURCE_EVIDENCE_URLS
+        or source.get("sha256") != SOURCE_SHA256
+    ):
         raise BatchError("source root is not a verified SRD 5.2.1 extraction")
     pdf_candidates = [Path(str(source.get("path", ""))), source_root.parent / "SRD_CC_v5.2.1.pdf"]
     pdf = next((candidate for candidate in pdf_candidates if candidate.is_file()), None)
