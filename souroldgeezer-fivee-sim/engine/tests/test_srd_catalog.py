@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from fivee_sim.catalog import FactStatus
 from fivee_sim.content import builtin_registry
 
 ENGINE = Path(__file__).resolve().parents[1]
@@ -75,8 +76,21 @@ def test_bundled_registry_reconciles_exactly_with_the_committed_manifest() -> No
     assert {
         identifier for identifier, row in registry.catalog.items() if row.kind == "glossary"
     } == set(manifest["glossary_section_ids"])
-    assert {row.fact_status.value for row in registry.catalog.values()} == {"pending"}
-    assert {row.fact_status.value for row in registry.catalog_tables.values()} == {"pending"}
+
+def test_bundled_catalog_progress_obeys_the_fact_lifecycle() -> None:
+    registry = builtin_registry()
+    for row in registry.catalog.values():
+        if row.fact_status in {FactStatus.PENDING, FactStatus.NO_STRUCTURED_FACTS}:
+            assert not row.facts
+        else:
+            assert row.facts
+    for table in registry.catalog_tables.values():
+        if table.fact_status is FactStatus.PENDING:
+            assert not table.rows
+        elif table.fact_status is FactStatus.COMPLETE:
+            assert len(table.rows) == table.source_row_count
+        else:
+            assert not table.rows
 
 
 def test_bundled_catalog_is_facts_only_and_record_bounded() -> None:
