@@ -7773,8 +7773,55 @@
       "pages": [
         237
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Quarterstaff of the Acrobat",
+        "item_category": "Weapon (Quarterstaff)",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "attack_roll_bonus": 2,
+        "damage_roll_bonus": 2,
+        "light_while_held": {
+          "color": "green",
+          "light": "Dim Light",
+          "radius_feet": 10,
+          "activation": [
+            "Bonus Action",
+            "after rolling Initiative"
+          ],
+          "extinguish_action": "Bonus Action"
+        },
+        "forms": {
+          "change_action": "Bonus Action",
+          "options": [
+            "6-inch rod",
+            "10-foot pole",
+            "Quarterstaff"
+          ],
+          "elongation_limited_by_surrounding_space": true
+        },
+        "acrobatic_assist": {
+          "forms": [
+            "Quarterstaff",
+            "10-foot pole"
+          ],
+          "advantage_on": "Dexterity (Acrobatics) checks"
+        },
+        "attack_deflection": {
+          "form": "Quarterstaff",
+          "trigger": "hit by an attack while holding weapon",
+          "reaction_armor_class_bonus": 5,
+          "applies_to": "triggering attack",
+          "recharge": "Short or Long Rest"
+        },
+        "ranged_weapon": {
+          "form": "Quarterstaff",
+          "property": "Thrown",
+          "normal_range_feet": 30,
+          "long_range_feet": 120,
+          "returns_to_hand_after_ranged_attack": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7789,8 +7836,24 @@
       "pages": [
         237
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Animal Influence",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "charges": 3,
+        "charges_regained_at_dawn": "1d3",
+        "while_worn_spellcasting": {
+          "charge_cost": 1,
+          "save_dc": 13,
+          "spells": [
+            "Animal Friendship",
+            "Fear (Beasts only)",
+            "Speak with Animals"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7805,8 +7868,29 @@
       "pages": [
         237
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Djinni Summoning",
+        "item_category": "Ring",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "summoning": {
+          "action": "Magic",
+          "creature": "particular Djinni",
+          "origin_plane": "Elemental Plane of Air",
+          "appears_in_unoccupied_space_within_feet": 120,
+          "concentration_required": true,
+          "maximum_duration_hours": 1,
+          "ends_at_zero_hit_points": true
+        },
+        "summoned_djinni": {
+          "disposition": "Friendly to user and allies",
+          "obeys_commands": true,
+          "without_command": "defends itself but takes no other actions"
+        },
+        "resummon_delay_after_departure_hours": 24,
+        "ring_becomes_nonmagical_if_djinni_dies": true
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7822,8 +7906,74 @@
         237,
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Elemental Command",
+        "item_category": "Ring",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "linked_plane": {
+          "options": [
+            "Elemental Plane of Air",
+            "Elemental Plane of Earth",
+            "Elemental Plane of Fire",
+            "Elemental Plane of Water"
+          ],
+          "determined_by": [
+            "GM choice",
+            "random determination"
+          ]
+        },
+        "elemental_bane": {
+          "wearer_attack_rolls_against_elementals": "Advantage",
+          "elemental_attack_rolls_against_wearer": "Disadvantage"
+        },
+        "elemental_compulsion": {
+          "action": "Magic",
+          "target": "visible Elemental within 60 feet",
+          "saving_throw": {
+            "ability": "Wisdom",
+            "dc": 18
+          },
+          "failed_save_condition": "Charmed",
+          "duration": "until start of user's next turn",
+          "user_determines_next_turn": [
+            "move",
+            "action"
+          ]
+        },
+        "elemental_focus": {
+          "Air": {
+            "language": "Auran",
+            "resistance": "Lightning",
+            "fly_speed": "equal to Speed",
+            "can_hover": true
+          },
+          "Earth": {
+            "language": "Terran",
+            "resistance": "Acid",
+            "rubble_rocks_or_dirt_is_difficult_terrain": false,
+            "move_through_solid_earth_or_rock_as_difficult_terrain": true,
+            "disturbs_matter": false,
+            "ending_turn_inside": "shunted to nearest unoccupied space last occupied"
+          },
+          "Fire": {
+            "language": "Ignan",
+            "immunity": "Fire"
+          },
+          "Water": {
+            "language": "Aquan",
+            "swim_speed_feet": 60,
+            "breathe_underwater": true
+          }
+        },
+        "spellcasting": {
+          "charges": 5,
+          "charges_regained_at_dawn": "1d4 + 1",
+          "save_dc": 18,
+          "spells_determined_by_linked_plane": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7838,8 +7988,20 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Evasion",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "charges": 3,
+        "charges_regained_at_dawn": "1d3",
+        "on_failed_dexterity_save": {
+          "reaction": true,
+          "charge_cost": 1,
+          "result": "succeed instead"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7854,8 +8016,17 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Feather Falling",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_falling": {
+          "descent_feet_per_round": 60,
+          "fall_damage": 0
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7870,8 +8041,21 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Free Action",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn": {
+          "difficult_terrain_extra_movement": false,
+          "magic_cannot_reduce_speeds": true,
+          "magic_cannot_cause_conditions": [
+            "Paralyzed",
+            "Restrained"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7886,8 +8070,21 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Invisibility",
+        "item_category": "Ring",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_worn": {
+          "activation": "Magic action",
+          "condition": "Invisible",
+          "ends_on": [
+            "ring removed",
+            "Bonus Action to become visible"
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7902,8 +8099,15 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Jumping",
+        "item_category": "Ring",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn_cast_spell": "Jump",
+        "only_target": "self"
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7918,8 +8122,37 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Mind Shielding",
+        "item_category": "Ring",
+        "rarity": "Uncommon",
+        "requires_attunement": true,
+        "while_worn_immunity_to_magic_revealing": [
+          "thoughts",
+          "whether user is lying",
+          "alignment",
+          "creature type"
+        ],
+        "telepathic_communication_requires_user_permission": true,
+        "imperceptible": {
+          "activation": "Magic action",
+          "ends_on": [
+            "Magic action to make perceptible",
+            "ring removed",
+            "user dies"
+          ]
+        },
+        "soul_on_death": {
+          "enters_ring_unless_already_occupied": true,
+          "choices": [
+            "remain in ring",
+            "depart for afterlife"
+          ],
+          "can_telepathically_communicate_with_wearer": true,
+          "wearer_can_prevent_communication": false
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7934,8 +8167,15 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Protection",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "while_worn_armor_class_bonus": 1,
+        "while_worn_saving_throw_bonus": 1
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7950,8 +8190,23 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Regeneration",
+        "item_category": "Ring",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "while_worn_healing": {
+          "hit_points": "1d6",
+          "interval_minutes": 10,
+          "minimum_current_hit_points": 1
+        },
+        "body_part_regrowth": {
+          "days": "1d6 + 1",
+          "requires_at_least_1_hit_point_entire_time": true,
+          "restores_full_functionality": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7966,8 +8221,19 @@
       "pages": [
         238
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Resistance",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": false,
+        "while_worn_resistances": 1,
+        "damage_type_indicated_by": "gemstone",
+        "type_determined_by": [
+          "GM choice",
+          "random table roll"
+        ]
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7983,8 +8249,62 @@
         238,
         239
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Shooting Stars",
+        "item_category": "Ring",
+        "rarity": "Very Rare",
+        "requires_attunement": true,
+        "at_will_spells": [
+          "Dancing Lights",
+          "Light"
+        ],
+        "charges": 6,
+        "charges_regained_at_dawn": "1d6",
+        "faerie_fire": {
+          "charge_cost": 1,
+          "spell": "Faerie Fire"
+        },
+        "lightning_spheres": {
+          "charge_cost": 2,
+          "action": "Magic",
+          "maximum_spheres": 4,
+          "sphere_diameter_feet": 3,
+          "appearance": "visible unoccupied space within 120 feet",
+          "concentration_required": true,
+          "maximum_duration_minutes": 1,
+          "dim_light_radius_feet": 30,
+          "movement": {
+            "action": "Bonus Action",
+            "feet": 30,
+            "maximum_distance_from_user_feet": 120
+          },
+          "discharge_trigger": "first time within 5 feet of another creature not behind Total Cover",
+          "disappears_after_discharge": true,
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 15
+          },
+          "failed_save_damage": "based on number of spheres created",
+          "successful_save_damage": "half"
+        },
+        "shooting_stars": {
+          "action": "Magic",
+          "charges_range": [
+            1,
+            3
+          ],
+          "motes_per_charge": 1,
+          "target_point_range_feet": 60,
+          "area": "15-foot Cube originating from target point",
+          "saving_throw": {
+            "ability": "Dexterity",
+            "dc": 15
+          },
+          "failed_save_radiant_damage": "5d4",
+          "successful_save_damage": "half"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -7999,8 +8319,38 @@
       "pages": [
         239
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Spell Storing",
+        "item_category": "Ring",
+        "rarity": "Rare",
+        "requires_attunement": true,
+        "spell_level_capacity": 5,
+        "found_stored_spell_levels": "1d6 - 1",
+        "found_spells_chosen_by": "GM",
+        "store_spell": {
+          "caster": "any creature",
+          "spell_level_range": [
+            1,
+            5
+          ],
+          "must_touch_ring_while_casting": true,
+          "spell_has_no_immediate_effect": true,
+          "insufficient_capacity": "spell expended without effect",
+          "capacity_used": "level of spell slot used"
+        },
+        "cast_stored_spell": {
+          "must_wear_ring": true,
+          "uses_original_caster": [
+            "slot level",
+            "spell save DC",
+            "spell attack bonus",
+            "spellcasting ability"
+          ],
+          "otherwise_treated_as_cast_by_wearer": true,
+          "removes_spell_and_frees_capacity": true
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -8015,8 +8365,23 @@
       "pages": [
         239
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "item_name": "Ring of Spell Turning",
+        "item_category": "Ring",
+        "rarity": "Legendary",
+        "requires_attunement": true,
+        "while_worn_advantage_on_saves_against_spells": true,
+        "successful_save_spell_level_at_most": 7,
+        "successful_save_effect_on_wearer": "none",
+        "deflection": {
+          "reaction": true,
+          "requires_spell_targeted_only_wearer": true,
+          "requires_no_area_of_effect": true,
+          "target": "spell caster",
+          "caster_save_uses": "caster's own spell save DC"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1525-13-28-avatar-of-death"
     },
@@ -13367,7 +13732,7 @@
       "name": "Plane / Spells (Charges)",
       "section_id": "1565-13-28-40-ring-of-elemental-command",
       "page": 238,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
           "id": "plane",
@@ -13380,7 +13745,48 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": "Air"
+            },
+            {
+              "value": "Chain Lightning (3 charges), Feather Fall (0 charges), Gust of Wind (2 charges), Wind Wall (1 charge)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Earth"
+            },
+            {
+              "value": "Earthquake (5 charges), Stone Shape (2 charges), Stoneskin (3 charges), Wall of Stone (3 charges)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Fire"
+            },
+            {
+              "value": "Burning Hands (1 charge), Fireball (2 charges), Fire Storm (4 charges), Wall of Fire (3 charges)"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": "Water"
+            },
+            {
+              "value": "Create or Destroy Water (1 charge), Ice Storm (2 charges), Tsunami (5 charges), Wall of Ice (3 charges), Water Walk (2 charges)"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -13390,10 +13796,10 @@
       "name": "1d10 / Damage Type",
       "section_id": "1574-13-28-49-ring-of-resistance",
       "page": 238,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "1d10",
+          "id": "roll",
           "name": "1d10",
           "type": "integer"
         },
@@ -13408,7 +13814,138 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "Acid"
+            },
+            {
+              "value": "Pearl"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "Cold"
+            },
+            {
+              "value": "Tourmaline"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 3
+            },
+            {
+              "value": "Fire"
+            },
+            {
+              "value": "Garnet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 4
+            },
+            {
+              "value": "Force"
+            },
+            {
+              "value": "Sapphire"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 5
+            },
+            {
+              "value": "Lightning"
+            },
+            {
+              "value": "Citrine"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 6
+            },
+            {
+              "value": "Necrotic"
+            },
+            {
+              "value": "Jet"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 7
+            },
+            {
+              "value": "Poison"
+            },
+            {
+              "value": "Amethyst"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 8
+            },
+            {
+              "value": "Psychic"
+            },
+            {
+              "value": "Jade"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 9
+            },
+            {
+              "value": "Radiant"
+            },
+            {
+              "value": "Topaz"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 10
+            },
+            {
+              "value": "Thunder"
+            },
+            {
+              "value": "Spinel"
+            }
+          ]
+        }
+      ],
       "source_row_count": 10,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -13418,15 +13955,15 @@
       "name": "Number of Spheres / Lightning Damage",
       "section_id": "1575-13-28-50-ring-of-shooting-stars",
       "page": 239,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "number-of-spheres",
+          "id": "number-of-spheres-1",
           "name": "Number of Spheres",
           "type": "integer"
         },
         {
-          "id": "lightning-damage",
+          "id": "lightning-damage-1",
           "name": "Lightning Damage",
           "type": "string"
         },
@@ -13441,7 +13978,40 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "4d12"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "2d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "5d4"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "2d4"
+            }
+          ]
+        }
+      ],
       "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
@@ -13451,15 +14021,15 @@
       "name": "Spheres / Damage",
       "section_id": "1575-13-28-50-ring-of-shooting-stars",
       "page": 239,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "spheres",
+          "id": "spheres-1",
           "name": "Spheres",
           "type": "integer"
         },
         {
-          "id": "damage",
+          "id": "damage-1",
           "name": "Damage",
           "type": "string"
         },
@@ -13474,7 +14044,40 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 1
+            },
+            {
+              "value": "4d12"
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": "2d6"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 2
+            },
+            {
+              "value": "5d4"
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": "2d4"
+            }
+          ]
+        }
+      ],
       "source_row_count": 2,
       "omissions": [],
       "provenance": "SRD 5.2.1"
