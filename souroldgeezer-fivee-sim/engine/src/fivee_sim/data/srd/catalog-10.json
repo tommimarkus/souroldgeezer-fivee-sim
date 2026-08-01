@@ -5806,8 +5806,66 @@
       "pages": [
         123
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Detect Magic",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "sense_range_feet": 30,
+          "senses": "presence of magical effects",
+          "aura_action": "Magic",
+          "aura_targets": "visible creatures and objects bearing magic in area",
+          "learn_spell_school_if_created_by_spell": true,
+          "blocking_materials": [
+            {
+              "material": "stone",
+              "thickness_feet": 1
+            },
+            {
+              "material": "dirt",
+              "thickness_feet": 1
+            },
+            {
+              "material": "wood",
+              "thickness_feet": 1
+            },
+            {
+              "material": "metal",
+              "thickness_inches": 1
+            },
+            {
+              "material": "lead",
+              "thickness": "thin sheet"
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5822,8 +5880,66 @@
       "pages": [
         123
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Detect Poison and Disease",
+        "level": 1,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "yew leaf"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 10
+        },
+        "effect": {
+          "sense_range_feet": 30,
+          "senses_locations_of": [
+            "poisons",
+            "poisonous creatures",
+            "venomous creatures",
+            "magical contagions"
+          ],
+          "learns_kind_of_each_sensed_target": true,
+          "blocking_materials": [
+            {
+              "material": "stone",
+              "thickness_feet": 1
+            },
+            {
+              "material": "dirt",
+              "thickness_feet": 1
+            },
+            {
+              "material": "wood",
+              "thickness_feet": 1
+            },
+            {
+              "material": "metal",
+              "thickness_inches": 1
+            },
+            {
+              "material": "lead",
+              "thickness": "thin sheet"
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5838,8 +5954,93 @@
       "pages": [
         123
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Detect Thoughts",
+        "level": 2,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "1 Copper Piece"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "initial_option_choice_count": 1,
+          "later_option_action": "Magic",
+          "options": {
+            "Sense Thoughts": {
+              "range_feet": 30,
+              "eligible_creatures": "know languages or are telepathic",
+              "reads_thoughts": false,
+              "reveals_thinking_creature_presence": true,
+              "blocking_materials": [
+                {
+                  "material": "stone",
+                  "thickness_feet": 1
+                },
+                {
+                  "material": "dirt",
+                  "thickness_feet": 1
+                },
+                {
+                  "material": "wood",
+                  "thickness_feet": 1
+                },
+                {
+                  "material": "metal",
+                  "thickness_inches": 1
+                },
+                {
+                  "material": "lead",
+                  "thickness": "thin sheet"
+                }
+              ]
+            },
+            "Read Thoughts": {
+              "target_options": [
+                "visible creature within 30 feet",
+                "creature sensed within 30 feet"
+              ],
+              "reveals": "current surface thought",
+              "requires_language_or_telepathy": true,
+              "deeper_probe": {
+                "earliest_timing": "next turn",
+                "action": "Magic",
+                "saving_throw_ability": "Wisdom",
+                "failed_save_reveals": [
+                  "reasoning",
+                  "emotions",
+                  "salient thought"
+                ],
+                "successful_save_ends_spell": true,
+                "target_knows_probe_attempt": true,
+                "target_end_attempt": {
+                  "action": "Action",
+                  "ability": "Intelligence",
+                  "skill": "Arcana",
+                  "dc": "caster spell save DC",
+                  "availability": "while caster attention remains on target"
+                }
+              }
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5855,8 +6056,53 @@
         123,
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dimension Door",
+        "level": 4,
+        "school": "Conjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 500
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "teleports_caster": true,
+          "destination_specification": [
+            "visible location",
+            "visualized location",
+            "distance and direction"
+          ],
+          "additional_target": {
+            "maximum": 1,
+            "must_be_willing": true,
+            "starting_range_feet": 5,
+            "arrival_range_from_caster_feet": 5
+          },
+          "blocked_arrival": {
+            "triggers": [
+              "arrival space occupied by creature",
+              "arrival space completely filled by objects"
+            ],
+            "damage_to_each_traveler": "4d6",
+            "damage_type": "Force",
+            "teleportation_fails": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5871,8 +6117,49 @@
       "pages": [
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Disguise Self",
+        "level": 1,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "hours": 1
+        },
+        "effect": {
+          "appearance_includes": [
+            "caster",
+            "clothing",
+            "armor",
+            "weapons",
+            "carried belongings"
+          ],
+          "maximum_apparent_height_change_feet": 1,
+          "apparent_weight_change_allowed": true,
+          "requires_same_basic_limb_arrangement": true,
+          "passes_physical_inspection": false,
+          "discern_disguise": {
+            "action": "Study",
+            "ability": "Intelligence",
+            "skill": "Investigation",
+            "dc": "caster spell save DC"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5887,8 +6174,54 @@
       "pages": [
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Disintegrate",
+        "level": 6,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "lodestone and dust"
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "visible creature, nonmagical object, or creation of magical force",
+          "creature": {
+            "saving_throw_ability": "Dexterity",
+            "failed_save_damage": "10d6 + 40",
+            "damage_type": "Force",
+            "zero_hit_point_effect": "target and nonmagical worn and carried items become gray dust",
+            "revival_spells": [
+              "True Resurrection",
+              "Wish"
+            ]
+          },
+          "object_or_magical_force": {
+            "large_or_smaller_automatically_disintegrated": true,
+            "huge_or_larger_disintegrated_portion": {
+              "shape": "Cube",
+              "size_feet": 10
+            }
+          },
+          "higher_level_slot": {
+            "minimum_slot_level": 7,
+            "damage_increase_per_slot_level": "3d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5903,8 +6236,61 @@
       "pages": [
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dispel Evil and Good",
+        "level": 5,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Cleric",
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "powdered silver and iron"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "affected_creature_types": [
+            "Celestial",
+            "Elemental",
+            "Fey",
+            "Fiend",
+            "Undead"
+          ],
+          "affected_creature_attack_rolls_against_caster": "Disadvantage",
+          "early_end_functions": {
+            "Break Enchantment": {
+              "action": "Magic",
+              "range": "Touch",
+              "target_states_from_affected_creature_types": [
+                "possessed",
+                "Charmed",
+                "Frightened"
+              ],
+              "ends_target_states": true
+            },
+            "Dismissal": {
+              "action": "Magic",
+              "target": "visible affected creature type within 5 feet",
+              "saving_throw_ability": "Charisma",
+              "failed_save": "sent to home plane if not already there",
+              "undead_destination_when_away_from_home": "Shadowfell",
+              "fey_destination_when_away_from_home": "Feywild"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5919,8 +6305,52 @@
       "pages": [
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dispel Magic",
+        "level": 3,
+        "school": "Abjuration",
+        "class_spell_lists": [
+          "Bard",
+          "Cleric",
+          "Druid",
+          "Paladin",
+          "Ranger",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 120
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target_options": [
+            "creature",
+            "object",
+            "magical effect"
+          ],
+          "automatically_ends_spell_levels": "3 or lower",
+          "higher_spell_check": {
+            "minimum_spell_level": 4,
+            "ability": "spellcasting ability",
+            "dc_formula": "10 + spell level",
+            "success_ends_spell": true
+          },
+          "higher_level_slot": {
+            "automatically_ends_spell_levels": "slot level or lower"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5935,8 +6365,44 @@
       "pages": [
         124
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dissonant Whispers",
+        "level": 1,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "target": "chosen visible creature",
+          "saving_throw_ability": "Wisdom",
+          "failed_save_damage": "3d6",
+          "damage_type": "Psychic",
+          "failed_save_movement": {
+            "uses_reaction_if_available": true,
+            "direction": "as far from caster as possible",
+            "route": "safest"
+          },
+          "successful_save_damage_multiplier": 0.5,
+          "successful_save_has_other_effects": false,
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5951,8 +6417,49 @@
       "pages": [
         125
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Divination",
+        "level": 4,
+        "school": "Divination",
+        "class_spell_lists": [
+          "Cleric",
+          "Druid",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action",
+          "ritual": true
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "incense worth 25+ GP",
+          "M_consumed": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "contact": "god or god's servants",
+          "question_count": 1,
+          "question_subject": "specific goal, event, or activity",
+          "maximum_future_days": 7,
+          "gm_reply_truthful": true,
+          "reply_formats": [
+            "short phrase",
+            "cryptic rhyme"
+          ],
+          "accounts_for_future_circumstance_changes": false,
+          "repeat_casting_before_long_rest": {
+            "first_casting_failure_chance_percent": 0,
+            "cumulative_no_answer_chance_per_additional_casting_percent": 25
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5967,8 +6474,33 @@
       "pages": [
         125
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Divine Favor",
+        "level": 1,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "minutes": 1
+        },
+        "effect": {
+          "trigger": "weapon attack hits",
+          "extra_damage": "1d4",
+          "damage_type": "Radiant"
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5983,8 +6515,41 @@
       "pages": [
         125
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Divine Smite",
+        "level": 1,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Paladin"
+        ],
+        "casting_time": {
+          "action": "Bonus Action",
+          "trigger": "immediately after hitting with Melee weapon or Unarmed Strike"
+        },
+        "range": {
+          "type": "Self"
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "extra_damage": "2d8",
+          "damage_type": "Radiant",
+          "additional_damage_against": [
+            "Fiend",
+            "Undead"
+          ],
+          "additional_damage": "1d8",
+          "higher_level_slot": {
+            "minimum_slot_level": 2,
+            "damage_increase_per_slot_level": "1d8"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -5999,8 +6564,46 @@
       "pages": [
         125
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Divine Word",
+        "level": 7,
+        "school": "Evocation",
+        "class_spell_lists": [
+          "Cleric"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "targets": "each chosen creature within range",
+          "saving_throw_ability": "Charisma",
+          "failed_save_hit_point_effect_maximum": 50,
+          "hit_point_effects_table_id": "125-divine-word-effects",
+          "planar_banishment": {
+            "creature_types": [
+              "Celestial",
+              "Elemental",
+              "Fey",
+              "Fiend"
+            ],
+            "hit_points_irrelevant": true,
+            "requires_target_away_from_origin_plane": true,
+            "destination": "plane of origin",
+            "return_prevention_hours": 24,
+            "return_exception": "Wish"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6015,8 +6618,58 @@
       "pages": [
         125
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dominate Beast",
+        "level": 4,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Druid",
+          "Ranger",
+          "Sorcerer"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "visible Beast",
+          "saving_throw_ability": "Wisdom",
+          "save_advantage_if_fighting_caster_or_allies": true,
+          "failed_save_condition": "Charmed",
+          "damage_triggers_repeat_save": true,
+          "repeat_save_success_ends_spell": true,
+          "telepathic_link_requires_same_plane": true,
+          "command_on_caster_turn_requires_action": false,
+          "target_obeys_to_best_of_ability": true,
+          "target_self_directs_after_completed_order": true,
+          "command_target_reaction_costs_caster_reaction": true,
+          "higher_level_slot": [
+            {
+              "slot_level": 5,
+              "maximum_minutes": 10
+            },
+            {
+              "slot_level": 6,
+              "maximum_hours": 1
+            },
+            {
+              "minimum_slot_level": 7,
+              "maximum_hours": 8
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6032,8 +6685,49 @@
         125,
         126
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dominate Monster",
+        "level": 8,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_hours": 1
+        },
+        "effect": {
+          "target": "visible creature",
+          "saving_throw_ability": "Wisdom",
+          "save_advantage_if_fighting_caster_or_allies": true,
+          "failed_save_condition": "Charmed",
+          "damage_triggers_repeat_save": true,
+          "repeat_save_success_ends_spell": true,
+          "telepathic_link_requires_same_plane": true,
+          "command_on_caster_turn_requires_action": false,
+          "target_obeys_to_best_of_ability": true,
+          "target_self_directs_after_completed_order": true,
+          "command_target_reaction_costs_caster_reaction": true,
+          "higher_level_slot": {
+            "slot_level": 9,
+            "maximum_hours": 8
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6048,8 +6742,58 @@
       "pages": [
         126
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dominate Person",
+        "level": 5,
+        "school": "Enchantment",
+        "class_spell_lists": [
+          "Bard",
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 60
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "visible Humanoid",
+          "saving_throw_ability": "Wisdom",
+          "save_advantage_if_fighting_caster_or_allies": true,
+          "failed_save_condition": "Charmed",
+          "damage_triggers_repeat_save": true,
+          "repeat_save_success_ends_spell": true,
+          "telepathic_link_requires_same_plane": true,
+          "command_on_caster_turn_requires_action": false,
+          "target_obeys_to_best_of_ability": true,
+          "target_self_directs_after_completed_order": true,
+          "command_target_reaction_costs_caster_reaction": true,
+          "higher_level_slot": [
+            {
+              "slot_level": 6,
+              "maximum_minutes": 10
+            },
+            {
+              "slot_level": 7,
+              "maximum_hours": 1
+            },
+            {
+              "minimum_slot_level": 8,
+              "maximum_hours": 8
+            }
+          ]
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6064,8 +6808,53 @@
       "pages": [
         126
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dragon's Breath",
+        "level": 2,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Sorcerer",
+          "Wizard"
+        ],
+        "casting_time": {
+          "action": "Bonus Action"
+        },
+        "range": {
+          "type": "Touch"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "hot pepper"
+        },
+        "duration": {
+          "concentration": true,
+          "maximum_minutes": 1
+        },
+        "effect": {
+          "target": "willing creature touched",
+          "damage_type_choice": [
+            "Acid",
+            "Cold",
+            "Fire",
+            "Lightning",
+            "Poison"
+          ],
+          "target_action": "Magic",
+          "area": {
+            "shape": "Cone",
+            "length_feet": 15
+          },
+          "saving_throw_ability": "Dexterity",
+          "failed_save_damage": "3d6",
+          "successful_save_damage_multiplier": 0.5,
+          "higher_level_slot": {
+            "minimum_slot_level": 3,
+            "damage_increase_per_slot_level": "1d6"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6080,8 +6869,60 @@
       "pages": [
         126
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Dream",
+        "level": 5,
+        "school": "Illusion",
+        "class_spell_lists": [
+          "Bard",
+          "Warlock",
+          "Wizard"
+        ],
+        "casting_time": {
+          "minutes": 1
+        },
+        "range": {
+          "type": "Special"
+        },
+        "components": {
+          "V": true,
+          "S": true,
+          "M": "handful of sand"
+        },
+        "duration": {
+          "hours": 8
+        },
+        "effect": {
+          "target": "known creature on same plane",
+          "messenger": "caster or willing creature touched",
+          "messenger_trance_conditions": [
+            "Incapacitated",
+            "Speed 0"
+          ],
+          "sleeping_target": {
+            "messenger_appears_in_dream": true,
+            "conversation_allowed": true,
+            "dream_environment_shaping_allowed": true,
+            "messenger_may_end_trance_and_spell": true,
+            "target_perfectly_recalls_dream_on_waking": true
+          },
+          "awake_target": {
+            "messenger_knows_target_is_awake": true,
+            "messenger_options": [
+              "end trance and spell",
+              "wait for target to sleep"
+            ]
+          },
+          "terrifying_messenger": {
+            "maximum_message_words": 10,
+            "saving_throw_ability": "Wisdom",
+            "failed_save_rest_benefit": false,
+            "failed_save_damage_on_waking": "3d6",
+            "damage_type": "Psychic"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -6096,8 +6937,70 @@
       "pages": [
         126
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "spell": "Druidcraft",
+        "level": 0,
+        "school": "Transmutation",
+        "class_spell_lists": [
+          "Druid"
+        ],
+        "casting_time": {
+          "action": "Action"
+        },
+        "range": {
+          "feet": 30
+        },
+        "components": {
+          "V": true,
+          "S": true
+        },
+        "duration": {
+          "type": "Instantaneous"
+        },
+        "effect": {
+          "option_choice_count": 1,
+          "options": {
+            "Weather Sensor": {
+              "effect_size": "Tiny",
+              "harmful": false,
+              "prediction_location": "caster location",
+              "prediction_hours": 24,
+              "effect_duration_rounds": 1
+            },
+            "Bloom": {
+              "targets": [
+                "flower",
+                "seed pod",
+                "leaf bud"
+              ],
+              "effects": [
+                "blossom",
+                "open",
+                "bloom"
+              ]
+            },
+            "Sensory Effect": {
+              "harmful": false,
+              "maximum_area": {
+                "shape": "Cube",
+                "size_feet": 5
+              }
+            },
+            "Fire Play": {
+              "actions": [
+                "light",
+                "snuff out"
+              ],
+              "targets": [
+                "candle",
+                "torch",
+                "campfire"
+              ]
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "779-10-13-spell-descriptions"
     },
@@ -10622,12 +11525,17 @@
       "name": "Divine Word Effects",
       "section_id": "874-10-14-84-divine-word",
       "page": 125,
-      "fact_status": "pending",
+      "fact_status": "complete",
       "columns": [
         {
-          "id": "hit-points",
-          "name": "Hit Points",
-          "type": "string"
+          "id": "minimum_hit_points",
+          "name": "Minimum Hit Points",
+          "type": "integer"
+        },
+        {
+          "id": "maximum_hit_points",
+          "name": "Maximum Hit Points",
+          "type": "integer"
         },
         {
           "id": "effect",
@@ -10635,7 +11543,60 @@
           "type": "string"
         }
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            {
+              "value": 0
+            },
+            {
+              "value": 20
+            },
+            {
+              "value": "Dies"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 21
+            },
+            {
+              "value": 30
+            },
+            {
+              "value": "Blinded, Deafened, and Stunned for 1 hour"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 31
+            },
+            {
+              "value": 40
+            },
+            {
+              "value": "Blinded and Deafened for 10 minutes"
+            }
+          ]
+        },
+        {
+          "cells": [
+            {
+              "value": 41
+            },
+            {
+              "value": 50
+            },
+            {
+              "value": "Deafened for 1 minute"
+            }
+          ]
+        }
+      ],
       "source_row_count": 4,
       "omissions": [],
       "provenance": "SRD 5.2.1"
