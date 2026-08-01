@@ -1,9 +1,8 @@
 {
-  "pack": "srd-5.2-spells",
+  "pack": "srd-5.2.1-spells",
   "version": "1.0",
-  "provenance": "SRD 5.2",
-  "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 spell descriptions.",
-  "note": "A curated combat set, not the full spell list. Each 'unmodelled' entry is part of the printed spell this engine does not implement.",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
   "spells": [
     {
       "name": "Fireball",
@@ -17,8 +16,10 @@
       "shape": "sphere",
       "radius": 20,
       "range_feet": 150,
-      "provenance": "SRD 5.2",
-      "unmodelled": ["Flammable objects in the area start burning"]
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_object_effect", "feature": "Ignites flammable objects"}
+      ]
     },
     {
       "name": "Shatter",
@@ -32,10 +33,10 @@
       "shape": "sphere",
       "radius": 10,
       "range_feet": 60,
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "A Construct has Disadvantage on the save",
-        "Unattended nonmagical objects in the area also take the damage"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_creature_type_modifier", "feature": "Construct save Disadvantage"},
+        {"code": "unsupported_object_effect", "feature": "Damages unattended nonmagical objects"}
       ]
     },
     {
@@ -46,11 +47,11 @@
       "condition": "paralyzed",
       "concentration": true,
       "range_feet": 60,
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Targets Humanoids only; the engine does not track creature type",
-        "The target repeats the save at the end of each of its turns, ending the effect on a success",
-        "Upcasting targets one additional creature per slot level above 2"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_creature_type_gate", "feature": "Humanoid targets"},
+        {"code": "unsupported_repeat_save", "feature": "End-of-turn save"},
+        {"code": "unsupported_upcast_targets", "feature": "One additional target per slot level"}
       ]
     },
     {
@@ -63,9 +64,9 @@
       "damage_type": "radiant",
       "upcast_damage": "1d6",
       "range_feet": 120,
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "The next attack roll against a hit target before the end of your next turn has Advantage"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_followup_advantage", "feature": "Next attack gains Advantage"}
       ]
     }
   ]

@@ -76,6 +76,7 @@ from ..map_document import serialize as _serialize_map
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
+from ..service import catalog as _catalog_service
 from ..service import encounter_journal as _journal_service
 from ..service import maps as _map_service
 from ..service import replay as _replay_service
@@ -87,12 +88,12 @@ A 5E-compatible combat engine. The engine owns the fight: hit points, initiative
 order, conditions, and dice are computed here, so read encounter_state as
 authoritative and narrate from it rather than tracking state yourself.
 
-Content is configurable. The bundled SRD 5.2 slice loads by default, and a campaign
+Content is configurable. The bundled SRD 5.2.1 slice loads by default, and a campaign
 may add its own creatures, spells, conditions, terrain, and items as content packs —
 or run on its own material alone. Call content_status to see what is actually loaded before
 telling anyone what is available.
 
-Bundled rules content comes from SRD 5.2 under CC-BY-4.0; see the plugin's NOTICE.
+Bundled rules content comes from SRD 5.2.1 under CC-BY-4.0; see the plugin's NOTICE.
 """
 
 server: MCPServer = MCPServer(
@@ -1143,8 +1144,9 @@ def _condition_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
         } or {"note": "no combat-roll consequences"},
         "description": str(record.get("description", "")),
         "source": registry.source_of("conditions", name),
-        "provenance": str(record.get("provenance", "SRD 5.2")),
+        "provenance": str(record.get("provenance", "SRD 5.2.1")),
         "unmodelled": list(record.get("unmodelled", [])),
+        "unmodelled_facts": list(record.get("unmodelled_facts", [])),
     }
 
 
@@ -1172,6 +1174,7 @@ def _spell_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
         "source": registry.source_of("spells", name),
         "provenance": spell.provenance,
         "unmodelled": list(record.get("unmodelled", [])),
+        "unmodelled_facts": list(record.get("unmodelled_facts", [])),
     }
 
 
@@ -1194,6 +1197,7 @@ def _item_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
         "source": registry.source_of("items", name),
         "provenance": effect.provenance,
         "unmodelled": list(record.get("unmodelled", [])),
+        "unmodelled_facts": list(record.get("unmodelled_facts", [])),
     }
 
 
@@ -1213,6 +1217,7 @@ def _terrain_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
         "source": registry.source_of("terrain", name),
         "provenance": str(record.get("provenance", "engine policy")),
         "unmodelled": list(record.get("unmodelled", [])),
+        "unmodelled_facts": list(record.get("unmodelled_facts", [])),
     }
 
 
@@ -1224,6 +1229,7 @@ def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
     # before promising a trait will fire, and that instruction has to stay true for a
     # campaign's own creature rather than hitting a missing key.
     entry.setdefault("unmodelled", [])
+    entry.setdefault("unmodelled_facts", [])
     entry.setdefault("provenance", entry["source"])
     return entry
 
@@ -1231,7 +1237,7 @@ def _creature_entry(registry: ContentRegistry, name: str) -> dict[str, Any]:
 @server.tool()
 def lookup_rule(topic: str = "") -> dict[str, Any]:
     """Look up a loaded condition, spell, creature, item, or terrain kind.
-    Omit ``topic`` to list all.
+    Omit ``topic`` for compact loaded-content counts and catalog search guidance.
 
     Searches whatever content is loaded, bundled or not, and every entry names the
     pack it came from in ``source``. A miss means the subject is not loaded — check
@@ -1239,11 +1245,18 @@ def lookup_rule(topic: str = "") -> dict[str, Any]:
     """
     registry = _registry()
     if not topic:
-        listing: dict[str, Any] = dict(registry.names())
-        listing["builtin"] = registry.builtin.value
-        listing["packs"] = [pack.label for pack in registry.packs]
-        listing["provenance"] = sorted({pack.provenance for pack in registry.packs})
-        return listing
+        summary = registry.summary()
+        return {
+            "builtin": registry.builtin.value,
+            "counts": summary["counts"],
+            "catalog": summary["catalog"],
+            "packs": [pack.label for pack in registry.packs],
+            "provenance": sorted({pack.provenance for pack in registry.packs}),
+            "guidance": {
+                "search_tool": "catalog_search",
+                "exact_lookup": "Call lookup_rule with an exact loaded content name.",
+            },
+        }
     key = topic.strip().casefold()
 
     finders = (
@@ -1259,9 +1272,53 @@ def lookup_rule(topic: str = "") -> dict[str, Any]:
                 return build(registry, name)
 
     raise ToolError(
-        f"nothing loaded for {topic!r}. Call lookup_rule with no topic to list what "
-        f"is available, or content_status to see which packs are loaded."
+        f"nothing loaded for {topic!r}. Call catalog_search to find catalog or custom "
+        f"content, or content_status to see which packs are loaded."
     )
+
+
+@server.tool()
+def catalog_search(
+    query: str,
+    kind: str | None = None,
+    simulation: str | None = None,
+    since: int = 0,
+    limit: int = 10,
+) -> dict[str, Any]:
+    """Search structured catalog identities and loaded custom content.
+
+    Results use stable exact/prefix/substring ranking. ``kind`` and ``simulation``
+    (``reference_only``, ``partial``, or ``executable``) are optional filters;
+    ``since`` and ``limit`` page through at most 25 compact results at a time.
+    """
+    try:
+        return _catalog_service.search(
+            _registry(), query, kind, simulation, since=since, limit=limit
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+
+
+@server.tool()
+def catalog_get(id: str) -> dict[str, Any]:
+    """Return one structured catalog record by stable ID.
+
+    Catalog and executable provenance are reported separately, so a campaign
+    override of SRD execution data never disguises the catalog source.
+    """
+    try:
+        return _catalog_service.get_record(_registry(), id)
+    except ValueError as error:
+        raise ToolError(str(error)) from error
+
+
+@server.tool()
+def catalog_table(id: str, since: int = 0, limit: int = 20) -> dict[str, Any]:
+    """Return a structured printed table in a window of at most 25 rows."""
+    try:
+        return _catalog_service.get_table(_registry(), id, since=since, limit=limit)
+    except ValueError as error:
+        raise ToolError(str(error)) from error
 
 
 # --- stateful encounters ---------------------------------------------------

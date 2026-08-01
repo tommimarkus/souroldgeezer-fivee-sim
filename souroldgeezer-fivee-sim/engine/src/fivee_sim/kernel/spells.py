@@ -7,7 +7,7 @@ that single total, rather than rolling per target. And a save-based spell rolls
 damage before the saves, while an attack-roll spell rolls the attack first —
 because a critical hit has to be known before its damage dice are doubled.
 
-All provenance: SRD 5.2 (see NOTICE).
+All provenance: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ class Spell:
     damage: Dice | None = None
     damage_type: DamageType | None = None
     heal: Dice | None = None
-    #: Default False because SRD 5.2 grants half damage per spell, in the spell's
+    #: Default False because SRD 5.2.1 grants half damage per spell, in the spell's
     #: own text — Fireball says "half as much damage on a successful save", Sacred
     #: Flame says only "take 1d8 Radiant damage". So a record that omits this is a
     #: transcription of a spell with no such clause, and defaulting to True made
@@ -77,7 +77,7 @@ class Spell:
     max_targets: int = 1
     condition: str | None = None
     concentration: bool = False
-    provenance: str = "SRD 5.2"
+    provenance: str = "SRD 5.2.1"
 
     @property
     def is_area(self) -> bool:
@@ -136,7 +136,7 @@ class SpellTarget:
     #: The attack-roll counterparts, per target for the same reason and for one
     #: stronger one: ``forced_critical`` is scoped by the distance from the caster
     #: to *this* creature, so it could not be a property of the cast even in
-    #: principle. A spell attack is an attack roll — SRD 5.2 defines one as "a D20
+    #: principle. A spell attack is an attack roll — SRD 5.2.1 defines one as "a D20
     #: Test that represents making an attack with a weapon, an Unarmed Strike, or
     #: a spell" — so it carries whatever the d20 test carries.
     attack_advantage: Advantage = Advantage.NONE

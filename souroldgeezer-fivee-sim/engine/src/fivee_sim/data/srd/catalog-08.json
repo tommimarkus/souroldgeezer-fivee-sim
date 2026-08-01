@@ -1,0 +1,392 @@
+{
+  "pack": "srd-5.2.1-catalog-08",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "546-8-feats",
+      "kind": "section",
+      "name": "Feats",
+      "source_ids": [
+        "546-8-feats"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "547-8-1-feat-descriptions",
+      "kind": "section",
+      "name": "Feat Descriptions",
+      "source_ids": [
+        "547-8-1-feat-descriptions"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "548-8-2-parts-of-a-feat",
+      "kind": "section",
+      "name": "Parts of a Feat",
+      "source_ids": [
+        "548-8-2-parts-of-a-feat"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "549-8-3-origin-feats",
+      "kind": "section",
+      "name": "Origin Feats",
+      "source_ids": [
+        "549-8-3-origin-feats"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "550-8-3-1-alert",
+      "kind": "section",
+      "name": "Alert",
+      "source_ids": [
+        "550-8-3-1-alert"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "549-8-3-origin-feats"
+    },
+    {
+      "id": "551-8-3-2-magic-initiate",
+      "kind": "section",
+      "name": "Magic Initiate",
+      "source_ids": [
+        "551-8-3-2-magic-initiate"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "549-8-3-origin-feats"
+    },
+    {
+      "id": "552-8-3-3-savage-attacker",
+      "kind": "section",
+      "name": "Savage Attacker",
+      "source_ids": [
+        "552-8-3-3-savage-attacker"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "549-8-3-origin-feats"
+    },
+    {
+      "id": "553-8-3-4-skilled",
+      "kind": "section",
+      "name": "Skilled",
+      "source_ids": [
+        "553-8-3-4-skilled"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "549-8-3-origin-feats"
+    },
+    {
+      "id": "554-8-4-general-feats",
+      "kind": "section",
+      "name": "General Feats",
+      "source_ids": [
+        "554-8-4-general-feats"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "555-8-4-1-ability-score-improvement",
+      "kind": "section",
+      "name": "Ability Score Improvement",
+      "source_ids": [
+        "555-8-4-1-ability-score-improvement"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "554-8-4-general-feats"
+    },
+    {
+      "id": "556-8-4-2-grappler",
+      "kind": "section",
+      "name": "Grappler",
+      "source_ids": [
+        "556-8-4-2-grappler"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "554-8-4-general-feats"
+    },
+    {
+      "id": "557-8-5-fighting-style-feats",
+      "kind": "section",
+      "name": "Fighting Style Feats",
+      "source_ids": [
+        "557-8-5-fighting-style-feats"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "558-8-5-1-archery",
+      "kind": "section",
+      "name": "Archery",
+      "source_ids": [
+        "558-8-5-1-archery"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        87
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "557-8-5-fighting-style-feats"
+    },
+    {
+      "id": "559-8-5-2-defense",
+      "kind": "section",
+      "name": "Defense",
+      "source_ids": [
+        "559-8-5-2-defense"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "557-8-5-fighting-style-feats"
+    },
+    {
+      "id": "560-8-5-3-great-weapon-fighting",
+      "kind": "section",
+      "name": "Great Weapon Fighting",
+      "source_ids": [
+        "560-8-5-3-great-weapon-fighting"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "557-8-5-fighting-style-feats"
+    },
+    {
+      "id": "561-8-5-4-two-weapon-fighting",
+      "kind": "section",
+      "name": "Two-Weapon Fighting",
+      "source_ids": [
+        "561-8-5-4-two-weapon-fighting"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "557-8-5-fighting-style-feats"
+    },
+    {
+      "id": "562-8-6-epic-boon-feats",
+      "kind": "section",
+      "name": "Epic Boon Feats",
+      "source_ids": [
+        "562-8-6-epic-boon-feats"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "546-8-feats"
+    },
+    {
+      "id": "563-8-6-1-boon-of-combat-prowess",
+      "kind": "section",
+      "name": "Boon of Combat Prowess",
+      "source_ids": [
+        "563-8-6-1-boon-of-combat-prowess"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "564-8-6-2-boon-of-dimensional-travel",
+      "kind": "section",
+      "name": "Boon of Dimensional Travel",
+      "source_ids": [
+        "564-8-6-2-boon-of-dimensional-travel"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "565-8-6-3-boon-of-fate",
+      "kind": "section",
+      "name": "Boon of Fate",
+      "source_ids": [
+        "565-8-6-3-boon-of-fate"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "566-8-6-4-boon-of-irresistible-offense",
+      "kind": "section",
+      "name": "Boon of Irresistible Offense",
+      "source_ids": [
+        "566-8-6-4-boon-of-irresistible-offense"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "567-8-6-5-boon-of-spell-recall",
+      "kind": "section",
+      "name": "Boon of Spell Recall",
+      "source_ids": [
+        "567-8-6-5-boon-of-spell-recall"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "568-8-6-6-boon-of-the-night-spirit",
+      "kind": "section",
+      "name": "Boon of the Night Spirit",
+      "source_ids": [
+        "568-8-6-6-boon-of-the-night-spirit"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    },
+    {
+      "id": "569-8-6-7-boon-of-truesight",
+      "kind": "section",
+      "name": "Boon of Truesight",
+      "source_ids": [
+        "569-8-6-7-boon-of-truesight"
+      ],
+      "chapter_id": "546-8-feats",
+      "pages": [
+        88
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "562-8-6-epic-boon-feats"
+    }
+  ],
+  "catalog_tables": []
+}

@@ -97,18 +97,18 @@ check "the conf file, which lists every pattern" 0 "$R" "$R/.ip-hygiene-local.co
 
 # --- non-SRD names in engine data -----------------------------------------
 D="$P/engine/src/fivee_sim/data"
-printf '{"monsters":[{"name":"Beholder","provenance":"SRD 5.2"}]}\n' > "$D/bad.json"
-check "engine data naming Beholder (absent from SRD 5.2)" 2 "$R" "$D/bad.json"
+printf '{"monsters":[{"name":"Beholder","provenance":"SRD 5.2.1"}]}\n' > "$D/bad.json"
+check "engine data naming Beholder (absent from SRD 5.2.1)" 2 "$R" "$D/bad.json"
 
-printf '{"monsters":[{"name":"Roper","provenance":"SRD 5.2"}]}\n' > "$D/ok.json"
-check "engine data naming Roper (present in SRD 5.2)" 0 "$R" "$D/ok.json"
+printf '{"monsters":[{"name":"Roper","provenance":"SRD 5.2.1"}]}\n' > "$D/ok.json"
+check "engine data naming Roper (present in SRD 5.2.1)" 0 "$R" "$D/ok.json"
 
-printf '{"lineages":[{"name":"Drow","provenance":"SRD 5.2"}]}\n' > "$D/lineage.json"
+printf '{"lineages":[{"name":"Drow","provenance":"SRD 5.2.1"}]}\n' > "$D/lineage.json"
 check "engine data naming Drow (a 2024 Elf lineage)" 0 "$R" "$D/lineage.json"
 
 # --- attribution integrity ------------------------------------------------
 T="$(make_root tampered)"
-echo 'Includes material from the SRD 5.2 by Wizards of the Coast.' > "$T/NOTICE"
+echo 'Includes material from the SRD 5.2.1 by Wizards of the Coast.' > "$T/NOTICE"
 printf '{"monsters":[{"name":"Goblin"}]}\n' > "$T/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 check "reworded NOTICE, detected on a data edit" 2 "$T" "$T/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 check "reworded NOTICE, detected on editing NOTICE itself" 2 "$T" "$T/NOTICE"
@@ -126,7 +126,7 @@ printf '{"monsters":[{"name":"Goblin"}]}\n' > "$S2/souroldgeezer-fivee-sim/engin
 check "missing plugin NOTICE, root copy intact" 2 "$S2" "$S2/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
 S3="$(make_root shipped_tampered)"
-echo 'Material from SRD 5.2, Wizards of the Coast.' > "$S3/souroldgeezer-fivee-sim/NOTICE"
+echo 'Material from SRD 5.2.1, Wizards of the Coast.' > "$S3/souroldgeezer-fivee-sim/NOTICE"
 check "reworded plugin NOTICE, detected on editing it" 2 "$S3" "$S3/souroldgeezer-fivee-sim/NOTICE"
 
 # --- worktree / nested-root resolution ------------------------------------
@@ -145,7 +145,7 @@ nest() { # nest <outer_root> -> prints inner root
 
 O="$(make_root outer)"
 I="$(nest "$O")"
-echo 'Material from SRD 5.2, Wizards of the Coast.' > "$I/souroldgeezer-fivee-sim/NOTICE"
+echo 'Material from SRD 5.2.1, Wizards of the Coast.' > "$I/souroldgeezer-fivee-sim/NOTICE"
 check "nested root: the inner tampered NOTICE is what gets checked" 2 "$O" \
   "$I/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 

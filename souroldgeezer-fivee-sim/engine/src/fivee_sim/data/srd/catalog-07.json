@@ -1,0 +1,565 @@
+{
+  "pack": "srd-5.2.1-catalog-07",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "517-7-character-origins",
+      "kind": "section",
+      "name": "Character Origins",
+      "source_ids": [
+        "517-7-character-origins"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "518-7-1-character-backgrounds",
+      "kind": "section",
+      "name": "Character Backgrounds",
+      "source_ids": [
+        "518-7-1-character-backgrounds"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "519-7-2-parts-of-a-background",
+      "kind": "section",
+      "name": "Parts of a Background",
+      "source_ids": [
+        "519-7-2-parts-of-a-background"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "520-7-2-1-ability-scores",
+      "kind": "section",
+      "name": "Ability Scores",
+      "source_ids": [
+        "520-7-2-1-ability-scores"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "519-7-2-parts-of-a-background"
+    },
+    {
+      "id": "521-7-2-2-feat",
+      "kind": "section",
+      "name": "Feat",
+      "source_ids": [
+        "521-7-2-2-feat"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "519-7-2-parts-of-a-background"
+    },
+    {
+      "id": "522-7-2-3-skill-proficiencies",
+      "kind": "section",
+      "name": "Skill Proficiencies",
+      "source_ids": [
+        "522-7-2-3-skill-proficiencies"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "519-7-2-parts-of-a-background"
+    },
+    {
+      "id": "523-7-2-4-tool-proficiency",
+      "kind": "section",
+      "name": "Tool Proficiency",
+      "source_ids": [
+        "523-7-2-4-tool-proficiency"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "519-7-2-parts-of-a-background"
+    },
+    {
+      "id": "524-7-2-5-equipment",
+      "kind": "section",
+      "name": "Equipment",
+      "source_ids": [
+        "524-7-2-5-equipment"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "519-7-2-parts-of-a-background"
+    },
+    {
+      "id": "525-7-3-background-descriptions",
+      "kind": "section",
+      "name": "Background Descriptions",
+      "source_ids": [
+        "525-7-3-background-descriptions"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "526-7-3-1-acolyte",
+      "kind": "section",
+      "name": "Acolyte",
+      "source_ids": [
+        "526-7-3-1-acolyte"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "525-7-3-background-descriptions"
+    },
+    {
+      "id": "527-7-3-2-criminal",
+      "kind": "section",
+      "name": "Criminal",
+      "source_ids": [
+        "527-7-3-2-criminal"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "525-7-3-background-descriptions"
+    },
+    {
+      "id": "528-7-3-3-sage",
+      "kind": "section",
+      "name": "Sage",
+      "source_ids": [
+        "528-7-3-3-sage"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "525-7-3-background-descriptions"
+    },
+    {
+      "id": "529-7-3-4-soldier",
+      "kind": "section",
+      "name": "Soldier",
+      "source_ids": [
+        "529-7-3-4-soldier"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "525-7-3-background-descriptions"
+    },
+    {
+      "id": "530-7-4-character-species",
+      "kind": "section",
+      "name": "Character Species",
+      "source_ids": [
+        "530-7-4-character-species"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "531-7-5-parts-of-a-species",
+      "kind": "section",
+      "name": "Parts of a Species",
+      "source_ids": [
+        "531-7-5-parts-of-a-species"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "532-7-5-1-creature-type",
+      "kind": "section",
+      "name": "Creature Type",
+      "source_ids": [
+        "532-7-5-1-creature-type"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "531-7-5-parts-of-a-species"
+    },
+    {
+      "id": "533-7-5-2-size",
+      "kind": "section",
+      "name": "Size",
+      "source_ids": [
+        "533-7-5-2-size"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        83,
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "531-7-5-parts-of-a-species"
+    },
+    {
+      "id": "534-7-5-3-speed",
+      "kind": "section",
+      "name": "Speed",
+      "source_ids": [
+        "534-7-5-3-speed"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "531-7-5-parts-of-a-species"
+    },
+    {
+      "id": "535-7-5-4-special-traits",
+      "kind": "section",
+      "name": "Special Traits",
+      "source_ids": [
+        "535-7-5-4-special-traits"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "531-7-5-parts-of-a-species"
+    },
+    {
+      "id": "536-7-6-species-descriptions",
+      "kind": "section",
+      "name": "Species Descriptions",
+      "source_ids": [
+        "536-7-6-species-descriptions"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "517-7-character-origins"
+    },
+    {
+      "id": "537-7-6-1-dragonborn",
+      "kind": "section",
+      "name": "Dragonborn",
+      "source_ids": [
+        "537-7-6-1-dragonborn"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "538-7-6-2-dwarf",
+      "kind": "section",
+      "name": "Dwarf",
+      "source_ids": [
+        "538-7-6-2-dwarf"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "539-7-6-3-elf",
+      "kind": "section",
+      "name": "Elf",
+      "source_ids": [
+        "539-7-6-3-elf"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        84,
+        85
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "540-7-6-4-gnome",
+      "kind": "section",
+      "name": "Gnome",
+      "source_ids": [
+        "540-7-6-4-gnome"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        85
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "541-7-6-5-goliath",
+      "kind": "section",
+      "name": "Goliath",
+      "source_ids": [
+        "541-7-6-5-goliath"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        85,
+        86
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "542-7-6-6-halfling",
+      "kind": "section",
+      "name": "Halfling",
+      "source_ids": [
+        "542-7-6-6-halfling"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        86
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "543-7-6-7-human",
+      "kind": "section",
+      "name": "Human",
+      "source_ids": [
+        "543-7-6-7-human"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        86
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "544-7-6-8-orc",
+      "kind": "section",
+      "name": "Orc",
+      "source_ids": [
+        "544-7-6-8-orc"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        86
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    },
+    {
+      "id": "545-7-6-9-tiefling",
+      "kind": "section",
+      "name": "Tiefling",
+      "source_ids": [
+        "545-7-6-9-tiefling"
+      ],
+      "chapter_id": "517-7-character-origins",
+      "pages": [
+        86
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "536-7-6-species-descriptions"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "084-draconic-ancestors",
+      "name": "Draconic Ancestors",
+      "section_id": "537-7-6-1-dragonborn",
+      "page": 84,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "dragon-damage-type",
+          "name": "Dragon Damage Type",
+          "type": "string"
+        },
+        {
+          "id": "dragon-damage-type-2",
+          "name": "Dragon Damage Type",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "085-elven-lineages",
+      "name": "Elven Lineages",
+      "section_id": "539-7-6-3-elf",
+      "page": 85,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "lineage",
+          "name": "Lineage",
+          "type": "string"
+        },
+        {
+          "id": "level-1",
+          "name": "Level 1",
+          "type": "string"
+        },
+        {
+          "id": "level-3",
+          "name": "Level 3",
+          "type": "string"
+        },
+        {
+          "id": "level-5",
+          "name": "Level 5",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "086-fiendish-legacies",
+      "name": "Fiendish Legacies",
+      "section_id": "543-7-6-7-human",
+      "page": 86,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "legacy",
+          "name": "Legacy",
+          "type": "string"
+        },
+        {
+          "id": "level-1",
+          "name": "Level 1",
+          "type": "string"
+        },
+        {
+          "id": "level-3",
+          "name": "Level 3",
+          "type": "string"
+        },
+        {
+          "id": "level-5",
+          "name": "Level 5",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

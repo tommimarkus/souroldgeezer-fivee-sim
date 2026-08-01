@@ -1,0 +1,4457 @@
+{
+  "pack": "srd-5.2.1-catalog-15",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1694-15-monsters-a-z",
+      "kind": "section",
+      "name": "Monsters A–Z",
+      "source_ids": [
+        "1694-15-monsters-a-z"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        258
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1695-15-1-aboleth",
+      "kind": "creature",
+      "name": "Aboleth",
+      "source_ids": [
+        "1695-15-1-aboleth"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        258
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1696-15-3-air-elemental",
+      "kind": "creature",
+      "name": "Air Elemental",
+      "source_ids": [
+        "1696-15-3-air-elemental"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        258,
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1697-15-5-animated-objects",
+      "kind": "section",
+      "name": "Animated Objects",
+      "source_ids": [
+        "1697-15-5-animated-objects"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1698-15-6-animated-armor",
+      "kind": "creature",
+      "name": "Animated Armor",
+      "source_ids": [
+        "1698-15-6-animated-armor"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1699-15-7-animated-flying-sword",
+      "kind": "creature",
+      "name": "Animated Flying Sword",
+      "source_ids": [
+        "1699-15-7-animated-flying-sword"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1700-15-8-animated-rug-of-smothering",
+      "kind": "creature",
+      "name": "Animated Rug of Smothering",
+      "source_ids": [
+        "1700-15-8-animated-rug-of-smothering"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1701-15-9-ankheg",
+      "kind": "creature",
+      "name": "Ankheg",
+      "source_ids": [
+        "1701-15-9-ankheg"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        259
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1702-15-11-assassin",
+      "kind": "creature",
+      "name": "Assassin",
+      "source_ids": [
+        "1702-15-11-assassin"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        260
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1703-15-13-awakened-plants",
+      "kind": "section",
+      "name": "Awakened Plants",
+      "source_ids": [
+        "1703-15-13-awakened-plants"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        260
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1704-15-14-awakened-shrub",
+      "kind": "creature",
+      "name": "Awakened Shrub",
+      "source_ids": [
+        "1704-15-14-awakened-shrub"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        260
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1705-15-15-awakened-tree",
+      "kind": "creature",
+      "name": "Awakened Tree",
+      "source_ids": [
+        "1705-15-15-awakened-tree"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        260
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1706-15-16-axe-beak",
+      "kind": "creature",
+      "name": "Axe Beak",
+      "source_ids": [
+        "1706-15-16-axe-beak"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        260
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1707-15-18-azer",
+      "kind": "section",
+      "name": "Azer",
+      "source_ids": [
+        "1707-15-18-azer"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1708-15-19-azer-sentinel",
+      "kind": "creature",
+      "name": "Azer Sentinel",
+      "source_ids": [
+        "1708-15-19-azer-sentinel"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1709-15-20-balor",
+      "kind": "creature",
+      "name": "Balor",
+      "source_ids": [
+        "1709-15-20-balor"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1710-15-22-bandits",
+      "kind": "section",
+      "name": "Bandits",
+      "source_ids": [
+        "1710-15-22-bandits"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1711-15-23-bandit",
+      "kind": "creature",
+      "name": "Bandit",
+      "source_ids": [
+        "1711-15-23-bandit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1712-15-24-bandit-captain",
+      "kind": "creature",
+      "name": "Bandit Captain",
+      "source_ids": [
+        "1712-15-24-bandit-captain"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        261,
+        262
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1713-15-25-barbed-devil",
+      "kind": "creature",
+      "name": "Barbed Devil",
+      "source_ids": [
+        "1713-15-25-barbed-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        262
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1714-15-27-basilisk",
+      "kind": "creature",
+      "name": "Basilisk",
+      "source_ids": [
+        "1714-15-27-basilisk"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        262
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1715-15-29-bearded-devil",
+      "kind": "creature",
+      "name": "Bearded Devil",
+      "source_ids": [
+        "1715-15-29-bearded-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        262,
+        263
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1716-15-31-behir",
+      "kind": "creature",
+      "name": "Behir",
+      "source_ids": [
+        "1716-15-31-behir"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        263
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1717-15-33-berserker",
+      "kind": "creature",
+      "name": "Berserker",
+      "source_ids": [
+        "1717-15-33-berserker"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        263
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1718-15-35-black-dragons",
+      "kind": "section",
+      "name": "Black Dragons",
+      "source_ids": [
+        "1718-15-35-black-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        263
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1719-15-36-black-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Black Dragon Wyrmling",
+      "source_ids": [
+        "1719-15-36-black-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        263,
+        264
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1720-15-37-young-black-dragon",
+      "kind": "creature",
+      "name": "Young Black Dragon",
+      "source_ids": [
+        "1720-15-37-young-black-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        264
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1721-15-38-adult-black-dragon",
+      "kind": "creature",
+      "name": "Adult Black Dragon",
+      "source_ids": [
+        "1721-15-38-adult-black-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        264
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1722-15-39-ancient-black-dragon",
+      "kind": "creature",
+      "name": "Ancient Black Dragon",
+      "source_ids": [
+        "1722-15-39-ancient-black-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        265
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1723-15-40-black-pudding",
+      "kind": "creature",
+      "name": "Black Pudding",
+      "source_ids": [
+        "1723-15-40-black-pudding"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        265,
+        266
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1724-15-42-blink-dog",
+      "kind": "creature",
+      "name": "Blink Dog",
+      "source_ids": [
+        "1724-15-42-blink-dog"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        266
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1725-15-44-blue-dragons",
+      "kind": "section",
+      "name": "Blue Dragons",
+      "source_ids": [
+        "1725-15-44-blue-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        266
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1726-15-45-blue-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Blue Dragon Wyrmling",
+      "source_ids": [
+        "1726-15-45-blue-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        266
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1727-15-46-young-blue-dragon",
+      "kind": "creature",
+      "name": "Young Blue Dragon",
+      "source_ids": [
+        "1727-15-46-young-blue-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        266
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1728-15-47-adult-blue-dragon",
+      "kind": "creature",
+      "name": "Adult Blue Dragon",
+      "source_ids": [
+        "1728-15-47-adult-blue-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        266,
+        267
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1729-15-48-ancient-blue-dragon",
+      "kind": "creature",
+      "name": "Ancient Blue Dragon",
+      "source_ids": [
+        "1729-15-48-ancient-blue-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        267
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1730-15-49-bone-devil",
+      "kind": "creature",
+      "name": "Bone Devil",
+      "source_ids": [
+        "1730-15-49-bone-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        267,
+        268
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1731-15-51-brass-dragons",
+      "kind": "section",
+      "name": "Brass Dragons",
+      "source_ids": [
+        "1731-15-51-brass-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        268
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1732-15-52-brass-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Brass Dragon Wyrmling",
+      "source_ids": [
+        "1732-15-52-brass-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        268
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1733-15-53-young-brass-dragon",
+      "kind": "creature",
+      "name": "Young Brass Dragon",
+      "source_ids": [
+        "1733-15-53-young-brass-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        268
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1734-15-54-adult-brass-dragon",
+      "kind": "creature",
+      "name": "Adult Brass Dragon",
+      "source_ids": [
+        "1734-15-54-adult-brass-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        268,
+        269
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1735-15-55-ancient-brass-dragon",
+      "kind": "creature",
+      "name": "Ancient Brass Dragon",
+      "source_ids": [
+        "1735-15-55-ancient-brass-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        269
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1736-15-56-bronze-dragons",
+      "kind": "section",
+      "name": "Bronze Dragons",
+      "source_ids": [
+        "1736-15-56-bronze-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        269
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1737-15-57-bronze-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Bronze Dragon Wyrmling",
+      "source_ids": [
+        "1737-15-57-bronze-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        269,
+        270
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1738-15-58-young-bronze-dragon",
+      "kind": "creature",
+      "name": "Young Bronze Dragon",
+      "source_ids": [
+        "1738-15-58-young-bronze-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        270
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1739-15-59-adult-bronze-dragon",
+      "kind": "creature",
+      "name": "Adult Bronze Dragon",
+      "source_ids": [
+        "1739-15-59-adult-bronze-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        270,
+        271
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1740-15-60-ancient-bronze-dragon",
+      "kind": "creature",
+      "name": "Ancient Bronze Dragon",
+      "source_ids": [
+        "1740-15-60-ancient-bronze-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        271
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1741-15-61-bugbears",
+      "kind": "section",
+      "name": "Bugbears",
+      "source_ids": [
+        "1741-15-61-bugbears"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        271
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1742-15-62-bugbear-stalker",
+      "kind": "creature",
+      "name": "Bugbear Stalker",
+      "source_ids": [
+        "1742-15-62-bugbear-stalker"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        271
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1743-15-63-bugbear-warrior",
+      "kind": "creature",
+      "name": "Bugbear Warrior",
+      "source_ids": [
+        "1743-15-63-bugbear-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        272
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1744-15-64-bulette",
+      "kind": "creature",
+      "name": "Bulette",
+      "source_ids": [
+        "1744-15-64-bulette"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        272
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1745-15-66-centaur",
+      "kind": "section",
+      "name": "Centaur",
+      "source_ids": [
+        "1745-15-66-centaur"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        272
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1746-15-67-centaur-trooper",
+      "kind": "creature",
+      "name": "Centaur Trooper",
+      "source_ids": [
+        "1746-15-67-centaur-trooper"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        272
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1747-15-68-chain-devil",
+      "kind": "creature",
+      "name": "Chain Devil",
+      "source_ids": [
+        "1747-15-68-chain-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        272,
+        273
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1748-15-70-chimera",
+      "kind": "creature",
+      "name": "Chimera",
+      "source_ids": [
+        "1748-15-70-chimera"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        273
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1749-15-72-chuul",
+      "kind": "creature",
+      "name": "Chuul",
+      "source_ids": [
+        "1749-15-72-chuul"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        273,
+        274
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1750-15-74-clay-golem",
+      "kind": "creature",
+      "name": "Clay Golem",
+      "source_ids": [
+        "1750-15-74-clay-golem"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        274
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1751-15-76-cloaker",
+      "kind": "creature",
+      "name": "Cloaker",
+      "source_ids": [
+        "1751-15-76-cloaker"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        274
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1752-15-78-cloud-giant",
+      "kind": "creature",
+      "name": "Cloud Giant",
+      "source_ids": [
+        "1752-15-78-cloud-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        275
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1753-15-80-cockatrice",
+      "kind": "creature",
+      "name": "Cockatrice",
+      "source_ids": [
+        "1753-15-80-cockatrice"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        275
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1754-15-82-commoner",
+      "kind": "creature",
+      "name": "Commoner",
+      "source_ids": [
+        "1754-15-82-commoner"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        275
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1755-15-84-copper-dragons",
+      "kind": "section",
+      "name": "Copper Dragons",
+      "source_ids": [
+        "1755-15-84-copper-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        275
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1756-15-85-copper-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Copper Dragon Wyrmling",
+      "source_ids": [
+        "1756-15-85-copper-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        275,
+        276
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1757-15-86-young-copper-dragon",
+      "kind": "creature",
+      "name": "Young Copper Dragon",
+      "source_ids": [
+        "1757-15-86-young-copper-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        276
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1758-15-87-adult-copper-dragon",
+      "kind": "creature",
+      "name": "Adult Copper Dragon",
+      "source_ids": [
+        "1758-15-87-adult-copper-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        276,
+        277
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1759-15-88-ancient-copper-dragon",
+      "kind": "creature",
+      "name": "Ancient Copper Dragon",
+      "source_ids": [
+        "1759-15-88-ancient-copper-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        277
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1760-15-89-couatl",
+      "kind": "creature",
+      "name": "Couatl",
+      "source_ids": [
+        "1760-15-89-couatl"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        277,
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1761-15-91-crawling-claw",
+      "kind": "section",
+      "name": "Crawling Claw",
+      "source_ids": [
+        "1761-15-91-crawling-claw"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1762-15-92-swarm-of-crawling-claws",
+      "kind": "creature",
+      "name": "Swarm of Crawling Claws",
+      "source_ids": [
+        "1762-15-92-swarm-of-crawling-claws"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1763-15-93-cultists",
+      "kind": "section",
+      "name": "Cultists",
+      "source_ids": [
+        "1763-15-93-cultists"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1764-15-94-cultist",
+      "kind": "creature",
+      "name": "Cultist",
+      "source_ids": [
+        "1764-15-94-cultist"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1765-15-95-cultist-fanatic",
+      "kind": "creature",
+      "name": "Cultist Fanatic",
+      "source_ids": [
+        "1765-15-95-cultist-fanatic"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1766-15-96-darkmantle",
+      "kind": "creature",
+      "name": "Darkmantle",
+      "source_ids": [
+        "1766-15-96-darkmantle"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        278,
+        279
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1767-15-98-death-dog",
+      "kind": "creature",
+      "name": "Death Dog",
+      "source_ids": [
+        "1767-15-98-death-dog"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        279
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1768-15-100-deva",
+      "kind": "creature",
+      "name": "Deva",
+      "source_ids": [
+        "1768-15-100-deva"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        279
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1769-15-102-djinni",
+      "kind": "creature",
+      "name": "Djinni",
+      "source_ids": [
+        "1769-15-102-djinni"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        280
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1770-15-104-doppelganger",
+      "kind": "creature",
+      "name": "Doppelganger",
+      "source_ids": [
+        "1770-15-104-doppelganger"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        280
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1771-15-106-dragon-turtle",
+      "kind": "creature",
+      "name": "Dragon Turtle",
+      "source_ids": [
+        "1771-15-106-dragon-turtle"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        281
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1772-15-108-dretch",
+      "kind": "creature",
+      "name": "Dretch",
+      "source_ids": [
+        "1772-15-108-dretch"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        281
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1773-15-110-drider",
+      "kind": "creature",
+      "name": "Drider",
+      "source_ids": [
+        "1773-15-110-drider"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        281
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1774-15-112-druid",
+      "kind": "creature",
+      "name": "Druid",
+      "source_ids": [
+        "1774-15-112-druid"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        282
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1775-15-114-dryad",
+      "kind": "creature",
+      "name": "Dryad",
+      "source_ids": [
+        "1775-15-114-dryad"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        282
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1776-15-116-earth-elemental",
+      "kind": "creature",
+      "name": "Earth Elemental",
+      "source_ids": [
+        "1776-15-116-earth-elemental"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        282,
+        283
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1777-15-118-efreeti",
+      "kind": "creature",
+      "name": "Efreeti",
+      "source_ids": [
+        "1777-15-118-efreeti"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        283
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1778-15-120-erinyes",
+      "kind": "creature",
+      "name": "Erinyes",
+      "source_ids": [
+        "1778-15-120-erinyes"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        283
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1779-15-122-ettercap",
+      "kind": "creature",
+      "name": "Ettercap",
+      "source_ids": [
+        "1779-15-122-ettercap"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        284
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1780-15-124-ettin",
+      "kind": "creature",
+      "name": "Ettin",
+      "source_ids": [
+        "1780-15-124-ettin"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        284
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1781-15-126-fire-elemental",
+      "kind": "creature",
+      "name": "Fire Elemental",
+      "source_ids": [
+        "1781-15-126-fire-elemental"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        284,
+        285
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1782-15-128-fire-giant",
+      "kind": "creature",
+      "name": "Fire Giant",
+      "source_ids": [
+        "1782-15-128-fire-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        285
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1783-15-130-flesh-golem",
+      "kind": "creature",
+      "name": "Flesh Golem",
+      "source_ids": [
+        "1783-15-130-flesh-golem"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        285
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1784-15-132-frost-giant",
+      "kind": "creature",
+      "name": "Frost Giant",
+      "source_ids": [
+        "1784-15-132-frost-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        285,
+        286
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1785-15-134-fungi",
+      "kind": "section",
+      "name": "Fungi",
+      "source_ids": [
+        "1785-15-134-fungi"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        286
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1786-15-135-shrieker-fungus",
+      "kind": "creature",
+      "name": "Shrieker Fungus",
+      "source_ids": [
+        "1786-15-135-shrieker-fungus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        286
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1787-15-136-violet-fungus",
+      "kind": "creature",
+      "name": "Violet Fungus",
+      "source_ids": [
+        "1787-15-136-violet-fungus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        286
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1788-15-137-gargoyle",
+      "kind": "creature",
+      "name": "Gargoyle",
+      "source_ids": [
+        "1788-15-137-gargoyle"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        286
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1789-15-139-gelatinous-cube",
+      "kind": "creature",
+      "name": "Gelatinous Cube",
+      "source_ids": [
+        "1789-15-139-gelatinous-cube"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        286,
+        287
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1790-15-141-ghast",
+      "kind": "creature",
+      "name": "Ghast",
+      "source_ids": [
+        "1790-15-141-ghast"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        287
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1791-15-143-ghost",
+      "kind": "creature",
+      "name": "Ghost",
+      "source_ids": [
+        "1791-15-143-ghost"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        287,
+        288
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1792-15-145-ghoul",
+      "kind": "creature",
+      "name": "Ghoul",
+      "source_ids": [
+        "1792-15-145-ghoul"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        288
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1793-15-147-gibbering-mouther",
+      "kind": "creature",
+      "name": "Gibbering Mouther",
+      "source_ids": [
+        "1793-15-147-gibbering-mouther"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        288
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1794-15-149-glabrezu",
+      "kind": "creature",
+      "name": "Glabrezu",
+      "source_ids": [
+        "1794-15-149-glabrezu"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        289
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1795-15-151-gladiator",
+      "kind": "creature",
+      "name": "Gladiator",
+      "source_ids": [
+        "1795-15-151-gladiator"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        289
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1796-15-153-gnoll",
+      "kind": "section",
+      "name": "Gnoll",
+      "source_ids": [
+        "1796-15-153-gnoll"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        289
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1797-15-154-gnoll-warrior",
+      "kind": "creature",
+      "name": "Gnoll Warrior",
+      "source_ids": [
+        "1797-15-154-gnoll-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        289
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1798-15-155-goblins",
+      "kind": "section",
+      "name": "Goblins",
+      "source_ids": [
+        "1798-15-155-goblins"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1799-15-156-goblin-minion",
+      "kind": "creature",
+      "name": "Goblin Minion",
+      "source_ids": [
+        "1799-15-156-goblin-minion"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1800-15-157-goblin-warrior",
+      "kind": "creature",
+      "name": "Goblin Warrior",
+      "source_ids": [
+        "1800-15-157-goblin-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Goblin Warrior"
+      }
+    },
+    {
+      "id": "1801-15-158-goblin-boss",
+      "kind": "creature",
+      "name": "Goblin Boss",
+      "source_ids": [
+        "1801-15-158-goblin-boss"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Goblin Boss"
+      }
+    },
+    {
+      "id": "1802-15-159-gold-dragons",
+      "kind": "section",
+      "name": "Gold Dragons",
+      "source_ids": [
+        "1802-15-159-gold-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1803-15-160-gold-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Gold Dragon Wyrmling",
+      "source_ids": [
+        "1803-15-160-gold-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        290,
+        291
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1804-15-161-young-gold-dragon",
+      "kind": "creature",
+      "name": "Young Gold Dragon",
+      "source_ids": [
+        "1804-15-161-young-gold-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        291
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1805-15-162-adult-gold-dragon",
+      "kind": "creature",
+      "name": "Adult Gold Dragon",
+      "source_ids": [
+        "1805-15-162-adult-gold-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        291,
+        292
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1806-15-163-ancient-gold-dragon",
+      "kind": "creature",
+      "name": "Ancient Gold Dragon",
+      "source_ids": [
+        "1806-15-163-ancient-gold-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        292
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1807-15-164-gorgon",
+      "kind": "creature",
+      "name": "Gorgon",
+      "source_ids": [
+        "1807-15-164-gorgon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        292,
+        293
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1808-15-166-gray-ooze",
+      "kind": "creature",
+      "name": "Gray Ooze",
+      "source_ids": [
+        "1808-15-166-gray-ooze"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        293
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1809-15-168-green-dragons",
+      "kind": "section",
+      "name": "Green Dragons",
+      "source_ids": [
+        "1809-15-168-green-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        293
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1810-15-169-green-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Green Dragon Wyrmling",
+      "source_ids": [
+        "1810-15-169-green-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        293
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1811-15-170-young-green-dragon",
+      "kind": "creature",
+      "name": "Young Green Dragon",
+      "source_ids": [
+        "1811-15-170-young-green-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        293,
+        294
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1812-15-171-adult-green-dragon",
+      "kind": "creature",
+      "name": "Adult Green Dragon",
+      "source_ids": [
+        "1812-15-171-adult-green-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        294
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1813-15-172-ancient-green-dragon",
+      "kind": "creature",
+      "name": "Ancient Green Dragon",
+      "source_ids": [
+        "1813-15-172-ancient-green-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        294,
+        295
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1814-15-173-green-hag",
+      "kind": "creature",
+      "name": "Green Hag",
+      "source_ids": [
+        "1814-15-173-green-hag"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        295
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1815-15-175-grick",
+      "kind": "creature",
+      "name": "Grick",
+      "source_ids": [
+        "1815-15-175-grick"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        295
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1816-15-177-griffon",
+      "kind": "creature",
+      "name": "Griffon",
+      "source_ids": [
+        "1816-15-177-griffon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        295
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1817-15-179-grimlock",
+      "kind": "creature",
+      "name": "Grimlock",
+      "source_ids": [
+        "1817-15-179-grimlock"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        296
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1818-15-181-guardian-naga",
+      "kind": "creature",
+      "name": "Guardian Naga",
+      "source_ids": [
+        "1818-15-181-guardian-naga"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        296
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1819-15-183-guards",
+      "kind": "section",
+      "name": "Guards",
+      "source_ids": [
+        "1819-15-183-guards"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        296
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1820-15-184-guard",
+      "kind": "creature",
+      "name": "Guard",
+      "source_ids": [
+        "1820-15-184-guard"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        296
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1821-15-185-guard-captain",
+      "kind": "creature",
+      "name": "Guard Captain",
+      "source_ids": [
+        "1821-15-185-guard-captain"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        296
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1822-15-186-half-dragon",
+      "kind": "creature",
+      "name": "Half-Dragon",
+      "source_ids": [
+        "1822-15-186-half-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        297
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1823-15-188-harpy",
+      "kind": "creature",
+      "name": "Harpy",
+      "source_ids": [
+        "1823-15-188-harpy"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        297
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1824-15-190-hell-hound",
+      "kind": "creature",
+      "name": "Hell Hound",
+      "source_ids": [
+        "1824-15-190-hell-hound"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        297
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1825-15-192-hezrou",
+      "kind": "creature",
+      "name": "Hezrou",
+      "source_ids": [
+        "1825-15-192-hezrou"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        298
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1826-15-194-hill-giant",
+      "kind": "creature",
+      "name": "Hill Giant",
+      "source_ids": [
+        "1826-15-194-hill-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        298
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1827-15-196-hippogriff",
+      "kind": "creature",
+      "name": "Hippogriff",
+      "source_ids": [
+        "1827-15-196-hippogriff"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        298
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1828-15-198-hobgoblins",
+      "kind": "section",
+      "name": "Hobgoblins",
+      "source_ids": [
+        "1828-15-198-hobgoblins"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        298
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1829-15-199-hobgoblin-warrior",
+      "kind": "creature",
+      "name": "Hobgoblin Warrior",
+      "source_ids": [
+        "1829-15-199-hobgoblin-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        298,
+        299
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1830-15-200-hobgoblin-captain",
+      "kind": "creature",
+      "name": "Hobgoblin Captain",
+      "source_ids": [
+        "1830-15-200-hobgoblin-captain"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        299
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1831-15-201-homunculus",
+      "kind": "creature",
+      "name": "Homunculus",
+      "source_ids": [
+        "1831-15-201-homunculus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        299
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1832-15-203-horned-devil",
+      "kind": "creature",
+      "name": "Horned Devil",
+      "source_ids": [
+        "1832-15-203-horned-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        299,
+        300
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1833-15-205-hydra",
+      "kind": "creature",
+      "name": "Hydra",
+      "source_ids": [
+        "1833-15-205-hydra"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        300
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1834-15-207-ice-devil",
+      "kind": "creature",
+      "name": "Ice Devil",
+      "source_ids": [
+        "1834-15-207-ice-devil"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        300
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1835-15-209-imp",
+      "kind": "creature",
+      "name": "Imp",
+      "source_ids": [
+        "1835-15-209-imp"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        300,
+        301
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1836-15-211-incubus",
+      "kind": "creature",
+      "name": "Incubus",
+      "source_ids": [
+        "1836-15-211-incubus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        301
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1837-15-213-invisible-stalker",
+      "kind": "creature",
+      "name": "Invisible Stalker",
+      "source_ids": [
+        "1837-15-213-invisible-stalker"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        301,
+        302
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1838-15-215-iron-golem",
+      "kind": "creature",
+      "name": "Iron Golem",
+      "source_ids": [
+        "1838-15-215-iron-golem"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        302
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1839-15-217-knight",
+      "kind": "creature",
+      "name": "Knight",
+      "source_ids": [
+        "1839-15-217-knight"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        302
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1840-15-219-kobold",
+      "kind": "section",
+      "name": "Kobold",
+      "source_ids": [
+        "1840-15-219-kobold"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        302
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1841-15-220-kobold-warrior",
+      "kind": "creature",
+      "name": "Kobold Warrior",
+      "source_ids": [
+        "1841-15-220-kobold-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        302
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1842-15-221-kraken",
+      "kind": "creature",
+      "name": "Kraken",
+      "source_ids": [
+        "1842-15-221-kraken"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        303
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1843-15-223-lamia",
+      "kind": "creature",
+      "name": "Lamia",
+      "source_ids": [
+        "1843-15-223-lamia"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        303,
+        304
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1844-15-225-lemure",
+      "kind": "creature",
+      "name": "Lemure",
+      "source_ids": [
+        "1844-15-225-lemure"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        304
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1845-15-227-lich",
+      "kind": "creature",
+      "name": "Lich",
+      "source_ids": [
+        "1845-15-227-lich"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        304
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1846-15-229-mages",
+      "kind": "section",
+      "name": "Mages",
+      "source_ids": [
+        "1846-15-229-mages"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        305
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1847-15-230-mage",
+      "kind": "creature",
+      "name": "Mage",
+      "source_ids": [
+        "1847-15-230-mage"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        305
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1848-15-231-archmage",
+      "kind": "creature",
+      "name": "Archmage",
+      "source_ids": [
+        "1848-15-231-archmage"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        305
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1849-15-232-magmin",
+      "kind": "creature",
+      "name": "Magmin",
+      "source_ids": [
+        "1849-15-232-magmin"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        305,
+        306
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1850-15-234-manticore",
+      "kind": "creature",
+      "name": "Manticore",
+      "source_ids": [
+        "1850-15-234-manticore"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        306
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1851-15-236-marilith",
+      "kind": "creature",
+      "name": "Marilith",
+      "source_ids": [
+        "1851-15-236-marilith"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        306
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1852-15-238-medusa",
+      "kind": "creature",
+      "name": "Medusa",
+      "source_ids": [
+        "1852-15-238-medusa"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        306,
+        307
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1853-15-240-mephits",
+      "kind": "section",
+      "name": "Mephits",
+      "source_ids": [
+        "1853-15-240-mephits"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        307
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1854-15-241-dust-mephit",
+      "kind": "creature",
+      "name": "Dust Mephit",
+      "source_ids": [
+        "1854-15-241-dust-mephit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        307
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1855-15-242-ice-mephit",
+      "kind": "creature",
+      "name": "Ice Mephit",
+      "source_ids": [
+        "1855-15-242-ice-mephit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        307
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1856-15-243-magma-mephit",
+      "kind": "creature",
+      "name": "Magma Mephit",
+      "source_ids": [
+        "1856-15-243-magma-mephit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        307
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1857-15-244-steam-mephit",
+      "kind": "creature",
+      "name": "Steam Mephit",
+      "source_ids": [
+        "1857-15-244-steam-mephit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        308
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1858-15-245-merfolk",
+      "kind": "section",
+      "name": "Merfolk",
+      "source_ids": [
+        "1858-15-245-merfolk"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        308
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1859-15-246-merfolk-skirmisher",
+      "kind": "creature",
+      "name": "Merfolk Skirmisher",
+      "source_ids": [
+        "1859-15-246-merfolk-skirmisher"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        308
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1860-15-247-merrow",
+      "kind": "creature",
+      "name": "Merrow",
+      "source_ids": [
+        "1860-15-247-merrow"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        308
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1861-15-249-mimic",
+      "kind": "creature",
+      "name": "Mimic",
+      "source_ids": [
+        "1861-15-249-mimic"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        308,
+        309
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1862-15-251-minotaur-of-baphomet",
+      "kind": "creature",
+      "name": "Minotaur of Baphomet",
+      "source_ids": [
+        "1862-15-251-minotaur-of-baphomet"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        309
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1863-15-253-mummies",
+      "kind": "section",
+      "name": "Mummies",
+      "source_ids": [
+        "1863-15-253-mummies"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        309
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1864-15-254-mummy",
+      "kind": "creature",
+      "name": "Mummy",
+      "source_ids": [
+        "1864-15-254-mummy"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        309
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1865-15-255-mummy-lord",
+      "kind": "creature",
+      "name": "Mummy Lord",
+      "source_ids": [
+        "1865-15-255-mummy-lord"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        309,
+        310
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1866-15-256-nalfeshnee",
+      "kind": "creature",
+      "name": "Nalfeshnee",
+      "source_ids": [
+        "1866-15-256-nalfeshnee"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        310,
+        311
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1867-15-258-night-hag",
+      "kind": "creature",
+      "name": "Night Hag",
+      "source_ids": [
+        "1867-15-258-night-hag"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        311
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1868-15-260-nightmare",
+      "kind": "creature",
+      "name": "Nightmare",
+      "source_ids": [
+        "1868-15-260-nightmare"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        311
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1869-15-262-noble",
+      "kind": "creature",
+      "name": "Noble",
+      "source_ids": [
+        "1869-15-262-noble"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        312
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1870-15-264-ochre-jelly",
+      "kind": "creature",
+      "name": "Ochre Jelly",
+      "source_ids": [
+        "1870-15-264-ochre-jelly"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        312
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1871-15-266-ogre",
+      "kind": "creature",
+      "name": "Ogre",
+      "source_ids": [
+        "1871-15-266-ogre"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        312
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Ogre"
+      }
+    },
+    {
+      "id": "1872-15-268-oni",
+      "kind": "creature",
+      "name": "Oni",
+      "source_ids": [
+        "1872-15-268-oni"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        312,
+        313
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1873-15-270-otyugh",
+      "kind": "creature",
+      "name": "Otyugh",
+      "source_ids": [
+        "1873-15-270-otyugh"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        313
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1874-15-272-owlbear",
+      "kind": "creature",
+      "name": "Owlbear",
+      "source_ids": [
+        "1874-15-272-owlbear"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        313
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1875-15-274-pegasus",
+      "kind": "creature",
+      "name": "Pegasus",
+      "source_ids": [
+        "1875-15-274-pegasus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        313
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1876-15-276-phase-spider",
+      "kind": "creature",
+      "name": "Phase Spider",
+      "source_ids": [
+        "1876-15-276-phase-spider"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        313,
+        314
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1877-15-278-pirates",
+      "kind": "section",
+      "name": "Pirates",
+      "source_ids": [
+        "1877-15-278-pirates"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        314
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1878-15-279-pirate",
+      "kind": "creature",
+      "name": "Pirate",
+      "source_ids": [
+        "1878-15-279-pirate"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        314
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1879-15-280-pirate-captain",
+      "kind": "creature",
+      "name": "Pirate Captain",
+      "source_ids": [
+        "1879-15-280-pirate-captain"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        314
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1880-15-281-pit-fiend",
+      "kind": "creature",
+      "name": "Pit Fiend",
+      "source_ids": [
+        "1880-15-281-pit-fiend"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        314,
+        315
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1881-15-283-planetar",
+      "kind": "creature",
+      "name": "Planetar",
+      "source_ids": [
+        "1881-15-283-planetar"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        315
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1882-15-285-priests",
+      "kind": "section",
+      "name": "Priests",
+      "source_ids": [
+        "1882-15-285-priests"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        316
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1883-15-286-priest-acolyte",
+      "kind": "creature",
+      "name": "Priest Acolyte",
+      "source_ids": [
+        "1883-15-286-priest-acolyte"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        316
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1884-15-287-priest",
+      "kind": "creature",
+      "name": "Priest",
+      "source_ids": [
+        "1884-15-287-priest"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        316
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1885-15-288-pseudodragon",
+      "kind": "creature",
+      "name": "Pseudodragon",
+      "source_ids": [
+        "1885-15-288-pseudodragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        316
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1886-15-290-purple-worm",
+      "kind": "creature",
+      "name": "Purple Worm",
+      "source_ids": [
+        "1886-15-290-purple-worm"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        316,
+        317
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1887-15-292-quasit",
+      "kind": "creature",
+      "name": "Quasit",
+      "source_ids": [
+        "1887-15-292-quasit"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        317
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1888-15-294-rakshasa",
+      "kind": "creature",
+      "name": "Rakshasa",
+      "source_ids": [
+        "1888-15-294-rakshasa"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        317,
+        318
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1889-15-296-red-dragons",
+      "kind": "section",
+      "name": "Red Dragons",
+      "source_ids": [
+        "1889-15-296-red-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        318
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1890-15-297-red-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Red Dragon Wyrmling",
+      "source_ids": [
+        "1890-15-297-red-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        318
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1891-15-298-young-red-dragon",
+      "kind": "creature",
+      "name": "Young Red Dragon",
+      "source_ids": [
+        "1891-15-298-young-red-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        318
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1892-15-299-adult-red-dragon",
+      "kind": "creature",
+      "name": "Adult Red Dragon",
+      "source_ids": [
+        "1892-15-299-adult-red-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        318,
+        319
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1893-15-300-ancient-red-dragon",
+      "kind": "creature",
+      "name": "Ancient Red Dragon",
+      "source_ids": [
+        "1893-15-300-ancient-red-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        319
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1894-15-301-remorhaz",
+      "kind": "creature",
+      "name": "Remorhaz",
+      "source_ids": [
+        "1894-15-301-remorhaz"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        319,
+        320
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1895-15-303-roc",
+      "kind": "creature",
+      "name": "Roc",
+      "source_ids": [
+        "1895-15-303-roc"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        320
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1896-15-305-roper",
+      "kind": "creature",
+      "name": "Roper",
+      "source_ids": [
+        "1896-15-305-roper"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        320
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1897-15-307-rust-monster",
+      "kind": "creature",
+      "name": "Rust Monster",
+      "source_ids": [
+        "1897-15-307-rust-monster"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        320,
+        321
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1898-15-309-sahuagin",
+      "kind": "section",
+      "name": "Sahuagin",
+      "source_ids": [
+        "1898-15-309-sahuagin"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        321
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1899-15-310-sahuagin-warrior",
+      "kind": "creature",
+      "name": "Sahuagin Warrior",
+      "source_ids": [
+        "1899-15-310-sahuagin-warrior"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        321
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1900-15-311-salamander",
+      "kind": "creature",
+      "name": "Salamander",
+      "source_ids": [
+        "1900-15-311-salamander"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        321
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1901-15-313-satyr",
+      "kind": "creature",
+      "name": "Satyr",
+      "source_ids": [
+        "1901-15-313-satyr"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        321,
+        322
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1902-15-315-scout",
+      "kind": "creature",
+      "name": "Scout",
+      "source_ids": [
+        "1902-15-315-scout"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        322
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1903-15-317-sea-hag",
+      "kind": "creature",
+      "name": "Sea Hag",
+      "source_ids": [
+        "1903-15-317-sea-hag"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        322
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1904-15-319-shadow",
+      "kind": "creature",
+      "name": "Shadow",
+      "source_ids": [
+        "1904-15-319-shadow"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        322,
+        323
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1905-15-321-shambling-mound",
+      "kind": "creature",
+      "name": "Shambling Mound",
+      "source_ids": [
+        "1905-15-321-shambling-mound"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        323
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1906-15-323-shield-guardian",
+      "kind": "creature",
+      "name": "Shield Guardian",
+      "source_ids": [
+        "1906-15-323-shield-guardian"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        323
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1907-15-325-silver-dragons",
+      "kind": "section",
+      "name": "Silver Dragons",
+      "source_ids": [
+        "1907-15-325-silver-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        324
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1908-15-326-silver-dragon-wyrmling",
+      "kind": "creature",
+      "name": "Silver Dragon Wyrmling",
+      "source_ids": [
+        "1908-15-326-silver-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        324
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1909-15-327-young-silver-dragon",
+      "kind": "creature",
+      "name": "Young Silver Dragon",
+      "source_ids": [
+        "1909-15-327-young-silver-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        324
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1910-15-328-adult-silver-dragon",
+      "kind": "creature",
+      "name": "Adult Silver Dragon",
+      "source_ids": [
+        "1910-15-328-adult-silver-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        324,
+        325
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1911-15-329-ancient-silver-dragon",
+      "kind": "creature",
+      "name": "Ancient Silver Dragon",
+      "source_ids": [
+        "1911-15-329-ancient-silver-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        325
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1912-15-330-skeletons",
+      "kind": "section",
+      "name": "Skeletons",
+      "source_ids": [
+        "1912-15-330-skeletons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        325
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1913-15-331-skeleton",
+      "kind": "creature",
+      "name": "Skeleton",
+      "source_ids": [
+        "1913-15-331-skeleton"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        325,
+        326
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Skeleton"
+      }
+    },
+    {
+      "id": "1914-15-332-warhorse-skeleton",
+      "kind": "creature",
+      "name": "Warhorse Skeleton",
+      "source_ids": [
+        "1914-15-332-warhorse-skeleton"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        326
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1915-15-333-minotaur-skeleton",
+      "kind": "creature",
+      "name": "Minotaur Skeleton",
+      "source_ids": [
+        "1915-15-333-minotaur-skeleton"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        326
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1916-15-334-solar",
+      "kind": "creature",
+      "name": "Solar",
+      "source_ids": [
+        "1916-15-334-solar"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        326,
+        327
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1917-15-336-specter",
+      "kind": "creature",
+      "name": "Specter",
+      "source_ids": [
+        "1917-15-336-specter"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        327
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1918-15-338-sphinxes",
+      "kind": "section",
+      "name": "Sphinxes",
+      "source_ids": [
+        "1918-15-338-sphinxes"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        327
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1919-15-339-sphinx-of-wonder",
+      "kind": "creature",
+      "name": "Sphinx of Wonder",
+      "source_ids": [
+        "1919-15-339-sphinx-of-wonder"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        327
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1920-15-340-sphinx-of-lore",
+      "kind": "creature",
+      "name": "Sphinx of Lore",
+      "source_ids": [
+        "1920-15-340-sphinx-of-lore"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        327,
+        328
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1921-15-341-sphinx-of-valor",
+      "kind": "creature",
+      "name": "Sphinx of Valor",
+      "source_ids": [
+        "1921-15-341-sphinx-of-valor"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        328
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1922-15-342-spirit-naga",
+      "kind": "creature",
+      "name": "Spirit Naga",
+      "source_ids": [
+        "1922-15-342-spirit-naga"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        329
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1923-15-344-sprite",
+      "kind": "creature",
+      "name": "Sprite",
+      "source_ids": [
+        "1923-15-344-sprite"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        329
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1924-15-346-spy",
+      "kind": "creature",
+      "name": "Spy",
+      "source_ids": [
+        "1924-15-346-spy"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        329
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1925-15-348-stirge",
+      "kind": "creature",
+      "name": "Stirge",
+      "source_ids": [
+        "1925-15-348-stirge"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        329,
+        330
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1926-15-350-stone-giant",
+      "kind": "creature",
+      "name": "Stone Giant",
+      "source_ids": [
+        "1926-15-350-stone-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        330
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1927-15-352-stone-golem",
+      "kind": "creature",
+      "name": "Stone Golem",
+      "source_ids": [
+        "1927-15-352-stone-golem"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        330
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1928-15-354-storm-giant",
+      "kind": "creature",
+      "name": "Storm Giant",
+      "source_ids": [
+        "1928-15-354-storm-giant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        330,
+        331
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1929-15-356-succubus",
+      "kind": "creature",
+      "name": "Succubus",
+      "source_ids": [
+        "1929-15-356-succubus"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        331
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1930-15-358-tarrasque",
+      "kind": "creature",
+      "name": "Tarrasque",
+      "source_ids": [
+        "1930-15-358-tarrasque"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        331,
+        332
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1931-15-360-toughs",
+      "kind": "section",
+      "name": "Toughs",
+      "source_ids": [
+        "1931-15-360-toughs"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        332
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1932-15-361-tough",
+      "kind": "creature",
+      "name": "Tough",
+      "source_ids": [
+        "1932-15-361-tough"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        332
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1933-15-362-tough-boss",
+      "kind": "creature",
+      "name": "Tough Boss",
+      "source_ids": [
+        "1933-15-362-tough-boss"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        332
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1934-15-363-treant",
+      "kind": "creature",
+      "name": "Treant",
+      "source_ids": [
+        "1934-15-363-treant"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        333
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1935-15-365-troll",
+      "kind": "creature",
+      "name": "Troll",
+      "source_ids": [
+        "1935-15-365-troll"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        333
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1936-15-367-troll-limb",
+      "kind": "creature",
+      "name": "Troll Limb",
+      "source_ids": [
+        "1936-15-367-troll-limb"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        333
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1937-15-368-unicorn",
+      "kind": "creature",
+      "name": "Unicorn",
+      "source_ids": [
+        "1937-15-368-unicorn"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        334
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1938-15-370-vampires",
+      "kind": "section",
+      "name": "Vampires",
+      "source_ids": [
+        "1938-15-370-vampires"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        334
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1939-15-371-vampire-familiar",
+      "kind": "creature",
+      "name": "Vampire Familiar",
+      "source_ids": [
+        "1939-15-371-vampire-familiar"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        334
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1940-15-372-vampire-spawn",
+      "kind": "creature",
+      "name": "Vampire Spawn",
+      "source_ids": [
+        "1940-15-372-vampire-spawn"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        334,
+        335
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1941-15-373-vampire",
+      "kind": "creature",
+      "name": "Vampire",
+      "source_ids": [
+        "1941-15-373-vampire"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        335,
+        336
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1942-15-374-vrock",
+      "kind": "creature",
+      "name": "Vrock",
+      "source_ids": [
+        "1942-15-374-vrock"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        336
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1943-15-376-warriors",
+      "kind": "section",
+      "name": "Warriors",
+      "source_ids": [
+        "1943-15-376-warriors"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        336
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1944-15-377-warrior-infantry",
+      "kind": "creature",
+      "name": "Warrior Infantry",
+      "source_ids": [
+        "1944-15-377-warrior-infantry"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        336,
+        337
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1945-15-378-warrior-veteran",
+      "kind": "creature",
+      "name": "Warrior Veteran",
+      "source_ids": [
+        "1945-15-378-warrior-veteran"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        337
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1946-15-379-water-elemental",
+      "kind": "creature",
+      "name": "Water Elemental",
+      "source_ids": [
+        "1946-15-379-water-elemental"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        337
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1947-15-381-werebear",
+      "kind": "creature",
+      "name": "Werebear",
+      "source_ids": [
+        "1947-15-381-werebear"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        337,
+        338
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1948-15-383-wereboar",
+      "kind": "creature",
+      "name": "Wereboar",
+      "source_ids": [
+        "1948-15-383-wereboar"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        338
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1949-15-385-wererat",
+      "kind": "creature",
+      "name": "Wererat",
+      "source_ids": [
+        "1949-15-385-wererat"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        338
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1950-15-387-weretiger",
+      "kind": "creature",
+      "name": "Weretiger",
+      "source_ids": [
+        "1950-15-387-weretiger"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        339
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1951-15-389-werewolf",
+      "kind": "creature",
+      "name": "Werewolf",
+      "source_ids": [
+        "1951-15-389-werewolf"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        339
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1952-15-391-white-dragons",
+      "kind": "section",
+      "name": "White Dragons",
+      "source_ids": [
+        "1952-15-391-white-dragons"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        339
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1953-15-392-white-dragon-wyrmling",
+      "kind": "creature",
+      "name": "White Dragon Wyrmling",
+      "source_ids": [
+        "1953-15-392-white-dragon-wyrmling"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        339,
+        340
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1954-15-393-young-white-dragon",
+      "kind": "creature",
+      "name": "Young White Dragon",
+      "source_ids": [
+        "1954-15-393-young-white-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        340
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1955-15-394-adult-white-dragon",
+      "kind": "creature",
+      "name": "Adult White Dragon",
+      "source_ids": [
+        "1955-15-394-adult-white-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        340
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1956-15-395-ancient-white-dragon",
+      "kind": "creature",
+      "name": "Ancient White Dragon",
+      "source_ids": [
+        "1956-15-395-ancient-white-dragon"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        341
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1957-15-396-wight",
+      "kind": "creature",
+      "name": "Wight",
+      "source_ids": [
+        "1957-15-396-wight"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        341
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1958-15-398-will-o-wisp",
+      "kind": "creature",
+      "name": "Will-o’-Wisp",
+      "source_ids": [
+        "1958-15-398-will-o-wisp"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        341,
+        342
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1959-15-400-winter-wolf",
+      "kind": "creature",
+      "name": "Winter Wolf",
+      "source_ids": [
+        "1959-15-400-winter-wolf"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        342
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1960-15-402-worg",
+      "kind": "creature",
+      "name": "Worg",
+      "source_ids": [
+        "1960-15-402-worg"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        342
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1961-15-404-wraith",
+      "kind": "creature",
+      "name": "Wraith",
+      "source_ids": [
+        "1961-15-404-wraith"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        342,
+        343
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1962-15-406-wyvern",
+      "kind": "creature",
+      "name": "Wyvern",
+      "source_ids": [
+        "1962-15-406-wyvern"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        343
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1963-15-408-xorn",
+      "kind": "creature",
+      "name": "Xorn",
+      "source_ids": [
+        "1963-15-408-xorn"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        343
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1964-15-410-zombies",
+      "kind": "section",
+      "name": "Zombies",
+      "source_ids": [
+        "1964-15-410-zombies"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        343
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    },
+    {
+      "id": "1965-15-411-zombie",
+      "kind": "creature",
+      "name": "Zombie",
+      "source_ids": [
+        "1965-15-411-zombie"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        343,
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z",
+      "content_ref": {
+        "section": "creatures",
+        "name": "Zombie"
+      }
+    },
+    {
+      "id": "1966-15-412-ogre-zombie",
+      "kind": "creature",
+      "name": "Ogre Zombie",
+      "source_ids": [
+        "1966-15-412-ogre-zombie"
+      ],
+      "chapter_id": "1694-15-monsters-a-z",
+      "pages": [
+        344
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1694-15-monsters-a-z"
+    }
+  ],
+  "catalog_tables": []
+}

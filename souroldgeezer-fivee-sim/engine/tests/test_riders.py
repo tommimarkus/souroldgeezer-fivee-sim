@@ -1,6 +1,6 @@
 """Attack riders: bonus damage, advantage-conditional dice, and on-hit conditions.
 
-Three SRD 5.2 stat-block shapes drive this file: the goblin's extra 1d4 when the
+Three SRD 5.2.1 stat-block shapes drive this file: the goblin's extra 1d4 when the
 attack roll had Advantage, the steam mephit's claw adding fire to its slashing,
 and the giant centipede's bite poisoning "until the start of the centipede's
 next turn". The expiry tests are the point of most of it: a timed condition must
@@ -239,7 +239,7 @@ class TestOnHitConditionRiders:
 
 
 class TestSizeGatedRiders:
-    """A rider the stat block gates on target size — SRD 5.2's Wolf.
+    """A rider the stat block gates on target size — SRD 5.2.1's Wolf.
 
     "If the target is a Medium or smaller creature, it has the Prone condition."
     The pair of a refused case and an applied case is the point: a test that only
@@ -519,7 +519,7 @@ class TestPackDefinedRiderConditions:
 
 
 class TestBundledGoblinRider:
-    """SRD 5.2 p290: "plus 2 (1d4) Slashing damage if the attack roll had
+    """SRD 5.2.1 p290: "plus 2 (1d4) Slashing damage if the attack roll had
     Advantage" — modelled now, so it must be off the unmodelled list."""
 
     def test_both_goblin_attacks_carry_the_advantage_rider(self) -> None:
@@ -528,12 +528,14 @@ class TestBundledGoblinRider:
         for option in goblin.attacks:
             assert option.advantage_bonus_damage == Dice(1, 4)
 
-    def test_the_unmodelled_list_keeps_nimble_escape_and_drops_the_rider(self) -> None:
+    def test_structured_omissions_keep_only_the_unexecutable_hide_option(self) -> None:
         from fivee_sim.content import monster_records
 
-        notes = monster_records()["Goblin Warrior"]["unmodelled"]
-        assert any("Nimble Escape" in note for note in notes)
-        assert not any("Advantage" in note for note in notes)
+        record = monster_records()["Goblin Warrior"]
+        assert record["bonus_actions"] == ["disengage"]
+        assert record["unmodelled_facts"] == [
+            {"code": "unsupported_bonus_action", "feature": "Nimble Escape: Hide"}
+        ]
 
 
 class TestAttackOptionGuards:

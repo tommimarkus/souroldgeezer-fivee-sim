@@ -1,6 +1,6 @@
 """Creature traits: Pack Tactics and Undead Fortitude.
 
-Two SRD 5.2 stat-block lines drive this file. The wolf's: Advantage on an attack
+Two SRD 5.2.1 stat-block lines drive this file. The wolf's: Advantage on an attack
 roll "if at least one of the wolf's allies is within 5 feet of the creature and
 the ally doesn't have the Incapacitated condition." The zombie's: on damage that
 reduces it to 0 hit points, "a Constitution saving throw (DC 5 plus the damage

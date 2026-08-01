@@ -8,7 +8,7 @@ description: Use when running, narrating, or analysing 5E-compatible combat — 
 Run 5E-compatible combat through the `fivee_sim` MCP engine. The engine resolves
 the rules and owns the state; your job is to drive it and narrate what it reports.
 
-Bundled rules content is SRD 5.2 under CC-BY-4.0. See the plugin's `NOTICE`. A
+Bundled rules content is SRD 5.2.1 under CC-BY-4.0. See the plugin's `NOTICE`. A
 campaign may load its own content as well — see "What is actually loaded" below.
 
 ## The one rule that matters
@@ -263,14 +263,15 @@ distance and Speed (optionally Dashing and starting late) against an authored
 response delay. It reports travel rounds and the lead or deficit. It does not
 carry campaign state or decide which events reinforce which encounter.
 
-`lookup_rule` returns loaded conditions, spells, creatures, and items, each naming
-the pack it came from in `source`. Call it with no topic to see everything
-available.
+`lookup_rule` is the exact-name view of loaded executable conditions, spells,
+creatures, and items, each naming the pack it came from in `source`. With no topic
+it returns compact counts and search guidance, not an unbounded name dump.
 
-For a full written catalogue — including what is deliberately absent —
-read [`../../docs/COVERAGE.md`](../../docs/COVERAGE.md). Prefer it when a user asks
-"what do you support?", because it states the unmodelled areas that `lookup_rule`
-cannot show you: there is no entry for a class or a feat to miss on.
+Use `catalog_search` for bounded discovery across both SRD identities and loaded
+campaign content, `catalog_get` for one structured record, and `catalog_table` for
+a paged printed table. [`../../docs/COVERAGE.md`](../../docs/COVERAGE.md) contains
+only generated category, progress, and support totals; the catalog tools are the
+detailed authority.
 
 ## What is actually loaded
 
@@ -317,14 +318,15 @@ State these when they bear on a ruling rather than papering over them:
   and authored sight openings are supported. Still absent either way: falling and
   fall damage, jumping, creature size and squeezing, flanking, and forced movement
   — so nothing can shove anyone off a ledge.
-- **Only SRD 5.2 content *ships*.** `lookup_rule` refusing a name means it is not
+- **Only SRD 5.2.1 content *ships*.** `lookup_rule` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
   `content_status` before concluding it does not exist. Either way, do not invent
   the missing stat block: say it is not available and offer a loaded alternative.
-- **Stat blocks list what is not implemented.** Every creature carries an
-  `unmodelled` field naming printed traits the engine skips. Check it before
-  promising a trait will fire, and mention it if a player is counting on one.
-  Pack creatures carry the field too, empty unless their author filled it in.
+- **Stat blocks list what is not implemented.** Built-in creatures carry
+  structured `unmodelled_facts` entries for printed mechanics the engine skips.
+  Check them before promising a trait will fire, and mention one if a player is
+  counting on it. Older campaign packs may still use the legacy `unmodelled`
+  string list; the loader keeps accepting and reporting it.
   Pack Tactics, Undead Fortitude, authored Bonus Action Dash/Disengage, last-one-
   standing surrender, Redirect Attack, attack attachment damage, and conditional
   adjacent-ally damage are modelled as explicit stat-block fields, so they fire on
@@ -332,7 +334,7 @@ State these when they bear on a ruling rather than papering over them:
 - **Frightened always applies** its disadvantage. The encounter can answer simple
   sight questions, but a condition does not record which creature caused the fear,
   so it cannot test whether that particular source remains in line of sight.
-- **Exhaustion is not implemented.** SRD 5.2 defines it; this engine models the
+- **Exhaustion is not implemented.** SRD 5.2.1 defines it; this engine models the
   other fourteen conditions only. Do not apply exhaustion effects by hand — say it
   is unsupported. A pack could define an exhaustion-like condition, but only out of
   the effects the engine already applies; it cannot invent a new kind of effect.

@@ -9,7 +9,7 @@ Determinism is a requirement, not a nicety. Initiative ties break on Dexterity
 modifier then name, never randomly, and forced rolls are still rolled so the RNG
 stream stays aligned between a live encounter and its replay.
 
-All provenance: SRD 5.2 (see NOTICE).
+All provenance: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations
@@ -265,7 +265,7 @@ class OngoingEffect:
     """One condition that one spell or item is currently imposing on one creature.
 
     A condition on a creature is a bare string in a set; it carries no memory of
-    what put it there. That is fine until something has to *end* — SRD 5.2, Rules
+    what put it there. That is fine until something has to *end* — SRD 5.2.1, Rules
     Glossary, "Concentration": "If the effect's creator loses Concentration, the
     effect ends." Answering that needs the link back to the caster, and answering
     it *safely* needs to know whether anything else is imposing the same condition
@@ -1270,7 +1270,7 @@ class Encounter:
         if creature.dying:
             self._death_save(creature, rng)
         # The budget is derived *after* the death save: a natural 20 regains
-        # 1 hit point (SRD 5.2, "Death Saving Throws", Rolling 20), and the
+        # 1 hit point (SRD 5.2.1, "Death Saving Throws", Rolling 20), and the
         # revived creature is conscious for the rest of this turn — nothing in
         # the rules forfeits its movement for having been down when the turn
         # began. Deriving it first froze ``movement_left`` at 0 for the whole
@@ -1394,7 +1394,7 @@ class Encounter:
             self._emit("death", creature.name, detail="three failed death saves")
         elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
             creature.stable = True
-            # SRD 5.2, Death Saving Throws: "The number of both is reset to zero when
+            # SRD 5.2.1, Death Saving Throws: "The number of both is reset to zero when
             # you regain any Hit Points or become Stable." ``Creature.heal`` already
             # covers the first clause; this is the second. Leaving the counters
             # standing let a creature that was stabilised, then knocked down again,
@@ -1876,7 +1876,7 @@ class Encounter:
     def _pack_tactics_applies(self, actor: Creature, target: Creature) -> bool:
         """Whether Pack Tactics grants ``actor`` Advantage against ``target``.
 
-        SRD 5.2 (Wolf): Advantage on an attack roll "if at least one of the
+        SRD 5.2.1 (Wolf): Advantage on an attack roll "if at least one of the
         wolf's allies is within 5 feet of the creature and the ally doesn't have
         the Incapacitated condition." An ally is another member of the actor's
         team — never the actor, never the target — and a capable one:
@@ -1909,7 +1909,7 @@ class Encounter:
 
         **One function serves the swing path and the cast path**, and takes no
         :class:`AttackOption`, because the rule reads nothing about the attack: SRD
-        5.2 scopes it on the target's condition and the attacker's distance alone —
+        5.2.1 scopes it on the target's condition and the attacker's distance alone —
         "Any attack roll that hits you is a Critical Hit if the attacker is within 5
         feet of you." A second copy taking a weapon would be a copy that could
         disagree with this one.
@@ -1926,7 +1926,7 @@ class Encounter:
         """Advantage a spell attack against ``target`` would resolve under.
 
         The cast path's counterpart to :meth:`attack_advantage`, and deliberately
-        the same call underneath rather than a second derivation: SRD 5.2 defines
+        the same call underneath rather than a second derivation: SRD 5.2.1 defines
         an attack roll as "a D20 Test that represents making an attack with a
         weapon, an Unarmed Strike, or a spell", and no source of Advantage
         distinguishes them. A Blinded caster, a Dodging target and a Restrained one
@@ -2092,7 +2092,7 @@ class Encounter:
 
         # Cover shields a spell exactly as it shields a weapon swing: +2 behind
         # half cover, +5 behind three-quarters, on AC and on Dexterity saves
-        # alike (SRD 5.2, "Cover"). Only the origin differs between the branches
+        # alike (SRD 5.2.1, "Cover"). Only the origin differs between the branches
         # — an area measures from its point of origin, a named cast from the
         # caster's own square — so both go through one dictionary rather than the
         # area alone, which is how named targets came to consult cover nowhere.
@@ -2124,7 +2124,7 @@ class Encounter:
             actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
 
         if spell.concentration:
-            # SRD 5.2, "Concentration": "You lose Concentration on an effect the
+            # SRD 5.2.1, "Concentration": "You lose Concentration on an effect the
             # moment you start casting a spell that requires Concentration." The
             # release sits exactly here: after every refusal, because a refused
             # cast never starts and must not drop the hold — and before
@@ -2417,7 +2417,7 @@ class Encounter:
         be wrong — and on a battle map the origin must also be visible. A cone or
         line pours out of the caster, so there is nothing to range-check at all.
 
-        **Consciousness is not a filter.** SRD 5.2, "Spells" -> Targets -> Areas of
+        **Consciousness is not a filter.** SRD 5.2.1, "Spells" -> Targets -> Areas of
         Effect: "The area determines what the spell targets." A creature at 0 hit
         points is inside the blast or it is not, and the Unconscious condition's own
         clause — "You automatically fail Strength and Dexterity saving throws" —
@@ -2493,7 +2493,7 @@ class Encounter:
     ) -> None:
         """Refuse a named target the caster cannot see past total cover.
 
-        SRD 5.2, "Cover": a target with Total Cover "can't be targeted directly".
+        SRD 5.2.1, "Cover": a target with Total Cover "can't be targeted directly".
         *Directly* is the word that keeps this out of the area branch — a blast
         reaches whoever its template catches, and ``area_targets`` drops the
         sealed ones without comment because nobody named them. Someone who names
@@ -3009,7 +3009,7 @@ class Encounter:
     def stand_cost(self, actor_name: str) -> int:
         """Feet of movement standing from Prone costs the named creature.
 
-        SRD 5.2, Rules Glossary, "Prone": the condition ends when the creature
+        SRD 5.2.1, Rules Glossary, "Prone": the condition ends when the creature
         stands, "which costs an amount of movement equal to half your Speed."
         Movement is tracked in whole feet, so an odd Speed rounds the cost down.
         Public because the auto-play policy prices the act before taking it.
@@ -3308,7 +3308,7 @@ class Encounter:
 
         **An ongoing concentration effect exists exactly while its source is still
         sustaining it.** Checking that, rather than releasing at each place
-        concentration can lapse, is deliberate: SRD 5.2 ends Concentration on a
+        concentration can lapse, is deliberate: SRD 5.2.1 ends Concentration on a
         failed Constitution save, on the Incapacitated condition, on death, and on
         starting another Concentration effect — and two of those are enforced inside
         :class:`~fivee_sim.model.creature.Creature`, which cannot reach this ledger.
@@ -3316,7 +3316,7 @@ class Encounter:
         exit point added leaks silently.
 
         ``dead`` and ``active`` are consulted alongside ``concentrating_on`` rather
-        than trusting it alone, because they are what SRD 5.2 actually says
+        than trusting it alone, because they are what SRD 5.2.1 actually says
         ("Your Concentration ends if you have the Incapacitated condition or you
         die") and because not every route to death clears the field: a creature
         killed by its third failed death save is marked dead by
@@ -3363,7 +3363,7 @@ class Encounter:
             target, amount, rng, critical=critical, damage_types=damage_types
         )
         if fortitude is not None and fortitude.success:
-            # SRD 5.2 (Zombie): "On a successful save, the zombie drops to 1 Hit
+            # SRD 5.2.1 (Zombie): "On a successful save, the zombie drops to 1 Hit
             # Point instead." It never reaches 0, so none of the drop's machinery
             # runs: no Unconscious, no Prone, no death saves — and the
             # concentration check below still fires, because damage was taken.
@@ -3429,7 +3429,7 @@ class Encounter:
     ) -> D20Test | None:
         """Roll Undead Fortitude against a drop to 0, or ``None`` when it cannot apply.
 
-        SRD 5.2 (Zombie): "If damage reduces the zombie to 0 Hit Points, it
+        SRD 5.2.1 (Zombie): "If damage reduces the zombie to 0 Hit Points, it
         makes a Constitution saving throw (DC 5 plus the damage taken) unless
         the damage is Radiant or from a Critical Hit."
 

@@ -1,0 +1,2175 @@
+{
+  "pack": "srd-5.2.1-catalog-04",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "004-4-playing-the-game",
+      "kind": "section",
+      "name": "Playing the Game",
+      "source_ids": [
+        "004-4-playing-the-game"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "005-4-1-rhythm-of-play",
+      "kind": "section",
+      "name": "Rhythm of Play",
+      "source_ids": [
+        "005-4-1-rhythm-of-play"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "006-4-1-1-exceptions-supersede-general-rules",
+      "kind": "section",
+      "name": "Exceptions Supersede General Rules",
+      "source_ids": [
+        "006-4-1-1-exceptions-supersede-general-rules"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "005-4-1-rhythm-of-play"
+    },
+    {
+      "id": "007-4-2-the-six-abilities",
+      "kind": "section",
+      "name": "The Six Abilities",
+      "source_ids": [
+        "007-4-2-the-six-abilities"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "008-4-3-ability-scores",
+      "kind": "section",
+      "name": "Ability Scores",
+      "source_ids": [
+        "008-4-3-ability-scores"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "009-4-4-ability-modifiers",
+      "kind": "section",
+      "name": "Ability Modifiers",
+      "source_ids": [
+        "009-4-4-ability-modifiers"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "010-4-4-1-round-down",
+      "kind": "section",
+      "name": "Round Down",
+      "source_ids": [
+        "010-4-4-1-round-down"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        5,
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "009-4-4-ability-modifiers"
+    },
+    {
+      "id": "011-4-5-d20-tests",
+      "kind": "section",
+      "name": "D20 Tests",
+      "source_ids": [
+        "011-4-5-d20-tests"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "012-4-6-ability-checks",
+      "kind": "section",
+      "name": "Ability Checks",
+      "source_ids": [
+        "012-4-6-ability-checks"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "013-4-6-1-ability-modifier",
+      "kind": "section",
+      "name": "Ability Modifier",
+      "source_ids": [
+        "013-4-6-1-ability-modifier"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "012-4-6-ability-checks"
+    },
+    {
+      "id": "014-4-6-2-proficiency-bonus",
+      "kind": "section",
+      "name": "Proficiency Bonus",
+      "source_ids": [
+        "014-4-6-2-proficiency-bonus"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "012-4-6-ability-checks"
+    },
+    {
+      "id": "015-4-6-3-difficulty-class",
+      "kind": "section",
+      "name": "Difficulty Class",
+      "source_ids": [
+        "015-4-6-3-difficulty-class"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        6
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "012-4-6-ability-checks"
+    },
+    {
+      "id": "016-4-7-saving-throws",
+      "kind": "section",
+      "name": "Saving Throws",
+      "source_ids": [
+        "016-4-7-saving-throws"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "017-4-7-1-ability-modifier",
+      "kind": "section",
+      "name": "Ability Modifier",
+      "source_ids": [
+        "017-4-7-1-ability-modifier"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "016-4-7-saving-throws"
+    },
+    {
+      "id": "018-4-7-2-proficiency-bonus",
+      "kind": "section",
+      "name": "Proficiency Bonus",
+      "source_ids": [
+        "018-4-7-2-proficiency-bonus"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "016-4-7-saving-throws"
+    },
+    {
+      "id": "019-4-7-3-difficulty-class",
+      "kind": "section",
+      "name": "Difficulty Class",
+      "source_ids": [
+        "019-4-7-3-difficulty-class"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "016-4-7-saving-throws"
+    },
+    {
+      "id": "020-4-8-attack-rolls",
+      "kind": "section",
+      "name": "Attack Rolls",
+      "source_ids": [
+        "020-4-8-attack-rolls"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "021-4-8-1-ability-modifier",
+      "kind": "section",
+      "name": "Ability Modifier",
+      "source_ids": [
+        "021-4-8-1-ability-modifier"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "020-4-8-attack-rolls"
+    },
+    {
+      "id": "022-4-8-2-proficiency-bonus",
+      "kind": "section",
+      "name": "Proficiency Bonus",
+      "source_ids": [
+        "022-4-8-2-proficiency-bonus"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "020-4-8-attack-rolls"
+    },
+    {
+      "id": "023-4-8-3-armor-class",
+      "kind": "section",
+      "name": "Armor Class",
+      "source_ids": [
+        "023-4-8-3-armor-class"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "020-4-8-attack-rolls"
+    },
+    {
+      "id": "024-4-8-4-rolling-20-or-1",
+      "kind": "section",
+      "name": "Rolling 20 or 1",
+      "source_ids": [
+        "024-4-8-4-rolling-20-or-1"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "020-4-8-attack-rolls"
+    },
+    {
+      "id": "025-4-9-advantage-disadvantage",
+      "kind": "section",
+      "name": "Advantage/Disadvantage",
+      "source_ids": [
+        "025-4-9-advantage-disadvantage"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        7
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "026-4-9-1-heroic-inspiration",
+      "kind": "section",
+      "name": "Heroic Inspiration",
+      "source_ids": [
+        "026-4-9-1-heroic-inspiration"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "025-4-9-advantage-disadvantage"
+    },
+    {
+      "id": "027-4-9-2-roll-two-d20s",
+      "kind": "section",
+      "name": "Roll Two D20s",
+      "source_ids": [
+        "027-4-9-2-roll-two-d20s"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "025-4-9-advantage-disadvantage"
+    },
+    {
+      "id": "028-4-9-3-they-don-t-stack",
+      "kind": "section",
+      "name": "They Don’t Stack",
+      "source_ids": [
+        "028-4-9-3-they-don-t-stack"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "025-4-9-advantage-disadvantage"
+    },
+    {
+      "id": "029-4-9-4-interactions-with-rerolls",
+      "kind": "section",
+      "name": "Interactions with Rerolls",
+      "source_ids": [
+        "029-4-9-4-interactions-with-rerolls"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "025-4-9-advantage-disadvantage"
+    },
+    {
+      "id": "030-4-10-proficiency",
+      "kind": "section",
+      "name": "Proficiency",
+      "source_ids": [
+        "030-4-10-proficiency"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "031-4-11-the-bonus-doesn-t-stack",
+      "kind": "section",
+      "name": "The Bonus Doesn’t Stack",
+      "source_ids": [
+        "031-4-11-the-bonus-doesn-t-stack"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "032-4-12-skill-proficiencies",
+      "kind": "section",
+      "name": "Skill Proficiencies",
+      "source_ids": [
+        "032-4-12-skill-proficiencies"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        8,
+        9
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "033-4-12-1-skill-list",
+      "kind": "section",
+      "name": "Skill List",
+      "source_ids": [
+        "033-4-12-1-skill-list"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        9
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "032-4-12-skill-proficiencies"
+    },
+    {
+      "id": "034-4-12-2-determining-skills",
+      "kind": "section",
+      "name": "Determining Skills",
+      "source_ids": [
+        "034-4-12-2-determining-skills"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        9
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "032-4-12-skill-proficiencies"
+    },
+    {
+      "id": "035-4-13-saving-throw-proficiencies",
+      "kind": "section",
+      "name": "Saving Throw Proficiencies",
+      "source_ids": [
+        "035-4-13-saving-throw-proficiencies"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        9
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "036-4-14-equipment-proficiencies",
+      "kind": "section",
+      "name": "Equipment Proficiencies",
+      "source_ids": [
+        "036-4-14-equipment-proficiencies"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        9
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "037-4-15-actions",
+      "kind": "section",
+      "name": "Actions",
+      "source_ids": [
+        "037-4-15-actions"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        9,
+        10
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "038-4-16-one-thing-at-a-time",
+      "kind": "section",
+      "name": "One Thing at a Time",
+      "source_ids": [
+        "038-4-16-one-thing-at-a-time"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        10
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "039-4-17-bonus-actions",
+      "kind": "section",
+      "name": "Bonus Actions",
+      "source_ids": [
+        "039-4-17-bonus-actions"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        10
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "040-4-18-reactions",
+      "kind": "section",
+      "name": "Reactions",
+      "source_ids": [
+        "040-4-18-reactions"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        10
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "041-4-19-social-interaction",
+      "kind": "section",
+      "name": "Social Interaction",
+      "source_ids": [
+        "041-4-19-social-interaction"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        10
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "042-4-20-roleplaying",
+      "kind": "section",
+      "name": "Roleplaying",
+      "source_ids": [
+        "042-4-20-roleplaying"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        10,
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "043-4-21-ability-checks",
+      "kind": "section",
+      "name": "Ability Checks",
+      "source_ids": [
+        "043-4-21-ability-checks"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "044-4-22-exploration",
+      "kind": "section",
+      "name": "Exploration",
+      "source_ids": [
+        "044-4-22-exploration"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "045-4-23-adventuring-equipment",
+      "kind": "section",
+      "name": "Adventuring Equipment",
+      "source_ids": [
+        "045-4-23-adventuring-equipment"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "046-4-24-vision-and-light",
+      "kind": "section",
+      "name": "Vision and Light",
+      "source_ids": [
+        "046-4-24-vision-and-light"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "047-4-24-1-obscured-areas",
+      "kind": "section",
+      "name": "Obscured Areas",
+      "source_ids": [
+        "047-4-24-1-obscured-areas"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "046-4-24-vision-and-light"
+    },
+    {
+      "id": "048-4-24-2-light",
+      "kind": "section",
+      "name": "Light",
+      "source_ids": [
+        "048-4-24-2-light"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "046-4-24-vision-and-light"
+    },
+    {
+      "id": "049-4-24-3-special-senses",
+      "kind": "section",
+      "name": "Special Senses",
+      "source_ids": [
+        "049-4-24-3-special-senses"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "046-4-24-vision-and-light"
+    },
+    {
+      "id": "050-4-25-hiding",
+      "kind": "section",
+      "name": "Hiding",
+      "source_ids": [
+        "050-4-25-hiding"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "051-4-26-interacting-with-objects",
+      "kind": "section",
+      "name": "Interacting with Objects",
+      "source_ids": [
+        "051-4-26-interacting-with-objects"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        11,
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "052-4-26-1-what-is-an-object",
+      "kind": "section",
+      "name": "What Is an Object?",
+      "source_ids": [
+        "052-4-26-1-what-is-an-object"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "053-4-26-2-time-limited-object-interactions",
+      "kind": "section",
+      "name": "Time-Limited Object Interactions",
+      "source_ids": [
+        "053-4-26-2-time-limited-object-interactions"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "054-4-26-3-finding-hidden-objects",
+      "kind": "section",
+      "name": "Finding Hidden Objects",
+      "source_ids": [
+        "054-4-26-3-finding-hidden-objects"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "055-4-26-4-carrying-objects",
+      "kind": "section",
+      "name": "Carrying Objects",
+      "source_ids": [
+        "055-4-26-4-carrying-objects"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "056-4-26-5-breaking-objects",
+      "kind": "section",
+      "name": "Breaking Objects",
+      "source_ids": [
+        "056-4-26-5-breaking-objects"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "057-4-26-6-marching-order",
+      "kind": "section",
+      "name": "Marching Order",
+      "source_ids": [
+        "057-4-26-6-marching-order"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "051-4-26-interacting-with-objects"
+    },
+    {
+      "id": "058-4-27-hazards",
+      "kind": "section",
+      "name": "Hazards",
+      "source_ids": [
+        "058-4-27-hazards"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "059-4-28-travel",
+      "kind": "section",
+      "name": "Travel",
+      "source_ids": [
+        "059-4-28-travel"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "060-4-28-1-travel-pace",
+      "kind": "section",
+      "name": "Travel Pace",
+      "source_ids": [
+        "060-4-28-1-travel-pace"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "059-4-28-travel"
+    },
+    {
+      "id": "061-4-28-2-vehicles",
+      "kind": "section",
+      "name": "Vehicles",
+      "source_ids": [
+        "061-4-28-2-vehicles"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        12
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "059-4-28-travel"
+    },
+    {
+      "id": "062-4-29-combat",
+      "kind": "section",
+      "name": "Combat",
+      "source_ids": [
+        "062-4-29-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "063-4-30-the-order-of-combat",
+      "kind": "section",
+      "name": "The Order of Combat",
+      "source_ids": [
+        "063-4-30-the-order-of-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "064-4-30-1-combat-step-by-step",
+      "kind": "section",
+      "name": "Combat Step by Step",
+      "source_ids": [
+        "064-4-30-1-combat-step-by-step"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "063-4-30-the-order-of-combat"
+    },
+    {
+      "id": "065-4-30-2-initiative",
+      "kind": "section",
+      "name": "Initiative",
+      "source_ids": [
+        "065-4-30-2-initiative"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "063-4-30-the-order-of-combat"
+    },
+    {
+      "id": "066-4-30-3-your-turn",
+      "kind": "section",
+      "name": "Your Turn",
+      "source_ids": [
+        "066-4-30-3-your-turn"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "063-4-30-the-order-of-combat"
+    },
+    {
+      "id": "067-4-30-4-playing-on-a-grid",
+      "kind": "section",
+      "name": "Playing on a Grid",
+      "source_ids": [
+        "067-4-30-4-playing-on-a-grid"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        13,
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "063-4-30-the-order-of-combat"
+    },
+    {
+      "id": "068-4-30-5-ending-combat",
+      "kind": "section",
+      "name": "Ending Combat",
+      "source_ids": [
+        "068-4-30-5-ending-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "063-4-30-the-order-of-combat"
+    },
+    {
+      "id": "069-4-31-movement-and-position",
+      "kind": "section",
+      "name": "Movement and Position",
+      "source_ids": [
+        "069-4-31-movement-and-position"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "070-4-31-1-difficult-terrain",
+      "kind": "section",
+      "name": "Difficult Terrain",
+      "source_ids": [
+        "070-4-31-1-difficult-terrain"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "069-4-31-movement-and-position"
+    },
+    {
+      "id": "071-4-31-2-breaking-up-your-move",
+      "kind": "section",
+      "name": "Breaking Up Your Move",
+      "source_ids": [
+        "071-4-31-2-breaking-up-your-move"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "069-4-31-movement-and-position"
+    },
+    {
+      "id": "072-4-31-3-dropping-prone",
+      "kind": "section",
+      "name": "Dropping Prone",
+      "source_ids": [
+        "072-4-31-3-dropping-prone"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "069-4-31-movement-and-position"
+    },
+    {
+      "id": "073-4-31-4-creature-size",
+      "kind": "section",
+      "name": "Creature Size",
+      "source_ids": [
+        "073-4-31-4-creature-size"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "069-4-31-movement-and-position"
+    },
+    {
+      "id": "074-4-31-5-moving-around-other-creatures",
+      "kind": "section",
+      "name": "Moving around Other Creatures",
+      "source_ids": [
+        "074-4-31-5-moving-around-other-creatures"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "069-4-31-movement-and-position"
+    },
+    {
+      "id": "075-4-32-making-an-attack",
+      "kind": "section",
+      "name": "Making an Attack",
+      "source_ids": [
+        "075-4-32-making-an-attack"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "076-4-32-1-unseen-attackers-and-targets",
+      "kind": "section",
+      "name": "Unseen Attackers and Targets",
+      "source_ids": [
+        "076-4-32-1-unseen-attackers-and-targets"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        14,
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "075-4-32-making-an-attack"
+    },
+    {
+      "id": "077-4-33-cover",
+      "kind": "section",
+      "name": "Cover",
+      "source_ids": [
+        "077-4-33-cover"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "078-4-34-ranged-attacks",
+      "kind": "section",
+      "name": "Ranged Attacks",
+      "source_ids": [
+        "078-4-34-ranged-attacks"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "079-4-34-1-range",
+      "kind": "section",
+      "name": "Range",
+      "source_ids": [
+        "079-4-34-1-range"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "078-4-34-ranged-attacks"
+    },
+    {
+      "id": "080-4-34-2-ranged-attacks-in-close-combat",
+      "kind": "section",
+      "name": "Ranged Attacks in Close Combat",
+      "source_ids": [
+        "080-4-34-2-ranged-attacks-in-close-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "078-4-34-ranged-attacks"
+    },
+    {
+      "id": "081-4-35-melee-attacks",
+      "kind": "section",
+      "name": "Melee Attacks",
+      "source_ids": [
+        "081-4-35-melee-attacks"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "082-4-35-1-reach",
+      "kind": "section",
+      "name": "Reach",
+      "source_ids": [
+        "082-4-35-1-reach"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "081-4-35-melee-attacks"
+    },
+    {
+      "id": "083-4-35-2-opportunity-attacks",
+      "kind": "section",
+      "name": "Opportunity Attacks",
+      "source_ids": [
+        "083-4-35-2-opportunity-attacks"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "081-4-35-melee-attacks"
+    },
+    {
+      "id": "084-4-36-mounted-combat",
+      "kind": "section",
+      "name": "Mounted Combat",
+      "source_ids": [
+        "084-4-36-mounted-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "085-4-36-1-mounting-and-dismounting",
+      "kind": "section",
+      "name": "Mounting and Dismounting",
+      "source_ids": [
+        "085-4-36-1-mounting-and-dismounting"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        15
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "084-4-36-mounted-combat"
+    },
+    {
+      "id": "086-4-36-2-controlling-a-mount",
+      "kind": "section",
+      "name": "Controlling a Mount",
+      "source_ids": [
+        "086-4-36-2-controlling-a-mount"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "084-4-36-mounted-combat"
+    },
+    {
+      "id": "087-4-36-3-falling-off",
+      "kind": "section",
+      "name": "Falling Off",
+      "source_ids": [
+        "087-4-36-3-falling-off"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "084-4-36-mounted-combat"
+    },
+    {
+      "id": "088-4-37-underwater-combat",
+      "kind": "section",
+      "name": "Underwater Combat",
+      "source_ids": [
+        "088-4-37-underwater-combat"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "089-4-37-1-impeded-weapons",
+      "kind": "section",
+      "name": "Impeded Weapons",
+      "source_ids": [
+        "089-4-37-1-impeded-weapons"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "088-4-37-underwater-combat"
+    },
+    {
+      "id": "090-4-37-2-fire-resistance",
+      "kind": "section",
+      "name": "Fire Resistance",
+      "source_ids": [
+        "090-4-37-2-fire-resistance"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "088-4-37-underwater-combat"
+    },
+    {
+      "id": "091-4-38-damage-and-healing",
+      "kind": "section",
+      "name": "Damage and Healing",
+      "source_ids": [
+        "091-4-38-damage-and-healing"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "092-4-39-hit-points",
+      "kind": "section",
+      "name": "Hit Points",
+      "source_ids": [
+        "092-4-39-hit-points"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "093-4-39-1-resting",
+      "kind": "section",
+      "name": "Resting",
+      "source_ids": [
+        "093-4-39-1-resting"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "092-4-39-hit-points"
+    },
+    {
+      "id": "094-4-40-damage-rolls",
+      "kind": "section",
+      "name": "Damage Rolls",
+      "source_ids": [
+        "094-4-40-damage-rolls"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "095-4-41-critical-hits",
+      "kind": "section",
+      "name": "Critical Hits",
+      "source_ids": [
+        "095-4-41-critical-hits"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "096-4-42-saving-throws-and-damage",
+      "kind": "section",
+      "name": "Saving Throws and Damage",
+      "source_ids": [
+        "096-4-42-saving-throws-and-damage"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "097-4-42-1-damage-against-multiple-targets",
+      "kind": "section",
+      "name": "Damage against Multiple Targets",
+      "source_ids": [
+        "097-4-42-1-damage-against-multiple-targets"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "096-4-42-saving-throws-and-damage"
+    },
+    {
+      "id": "098-4-42-2-half-damage",
+      "kind": "section",
+      "name": "Half Damage",
+      "source_ids": [
+        "098-4-42-2-half-damage"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "096-4-42-saving-throws-and-damage"
+    },
+    {
+      "id": "099-4-43-damage-types",
+      "kind": "section",
+      "name": "Damage Types",
+      "source_ids": [
+        "099-4-43-damage-types"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        16,
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "100-4-44-resistance-and-vulnerability",
+      "kind": "section",
+      "name": "Resistance and Vulnerability",
+      "source_ids": [
+        "100-4-44-resistance-and-vulnerability"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "101-4-44-1-no-stacking",
+      "kind": "section",
+      "name": "No Stacking",
+      "source_ids": [
+        "101-4-44-1-no-stacking"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "100-4-44-resistance-and-vulnerability"
+    },
+    {
+      "id": "102-4-44-2-order-of-application",
+      "kind": "section",
+      "name": "Order of Application",
+      "source_ids": [
+        "102-4-44-2-order-of-application"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "100-4-44-resistance-and-vulnerability"
+    },
+    {
+      "id": "103-4-45-immunity",
+      "kind": "section",
+      "name": "Immunity",
+      "source_ids": [
+        "103-4-45-immunity"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "104-4-46-healing",
+      "kind": "section",
+      "name": "Healing",
+      "source_ids": [
+        "104-4-46-healing"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "105-4-46-1-knocking-out-a-creature",
+      "kind": "section",
+      "name": "Knocking Out a Creature",
+      "source_ids": [
+        "105-4-46-1-knocking-out-a-creature"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "104-4-46-healing"
+    },
+    {
+      "id": "106-4-47-dropping-to-0-hit-points",
+      "kind": "section",
+      "name": "Dropping to 0 Hit Points",
+      "source_ids": [
+        "106-4-47-dropping-to-0-hit-points"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "107-4-47-1-instant-death",
+      "kind": "section",
+      "name": "Instant Death",
+      "source_ids": [
+        "107-4-47-1-instant-death"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "106-4-47-dropping-to-0-hit-points"
+    },
+    {
+      "id": "108-4-47-2-character-demise",
+      "kind": "section",
+      "name": "Character Demise",
+      "source_ids": [
+        "108-4-47-2-character-demise"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "106-4-47-dropping-to-0-hit-points"
+    },
+    {
+      "id": "109-4-47-3-falling-unconscious",
+      "kind": "section",
+      "name": "Falling Unconscious",
+      "source_ids": [
+        "109-4-47-3-falling-unconscious"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "106-4-47-dropping-to-0-hit-points"
+    },
+    {
+      "id": "110-4-47-4-death-saving-throws",
+      "kind": "section",
+      "name": "Death Saving Throws",
+      "source_ids": [
+        "110-4-47-4-death-saving-throws"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        17,
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "106-4-47-dropping-to-0-hit-points"
+    },
+    {
+      "id": "111-4-47-5-stabilizing-a-character",
+      "kind": "section",
+      "name": "Stabilizing a Character",
+      "source_ids": [
+        "111-4-47-5-stabilizing-a-character"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "106-4-47-dropping-to-0-hit-points"
+    },
+    {
+      "id": "112-4-48-temporary-hit-points",
+      "kind": "section",
+      "name": "Temporary Hit Points",
+      "source_ids": [
+        "112-4-48-temporary-hit-points"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "004-4-playing-the-game"
+    },
+    {
+      "id": "113-4-48-1-lose-temporary-hit-points-first",
+      "kind": "section",
+      "name": "Lose Temporary Hit Points First",
+      "source_ids": [
+        "113-4-48-1-lose-temporary-hit-points-first"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "112-4-48-temporary-hit-points"
+    },
+    {
+      "id": "114-4-48-2-duration",
+      "kind": "section",
+      "name": "Duration",
+      "source_ids": [
+        "114-4-48-2-duration"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "112-4-48-temporary-hit-points"
+    },
+    {
+      "id": "115-4-48-3-they-don-t-stack",
+      "kind": "section",
+      "name": "They Don’t Stack",
+      "source_ids": [
+        "115-4-48-3-they-don-t-stack"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "112-4-48-temporary-hit-points"
+    },
+    {
+      "id": "116-4-48-4-they-re-not-hit-points-or-healing",
+      "kind": "section",
+      "name": "They’re Not Hit Points or Healing",
+      "source_ids": [
+        "116-4-48-4-they-re-not-hit-points-or-healing"
+      ],
+      "chapter_id": "004-4-playing-the-game",
+      "pages": [
+        18
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "112-4-48-temporary-hit-points"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "005-ability-descriptions",
+      "name": "Ability Descriptions",
+      "section_id": "007-4-2-the-six-abilities",
+      "page": 5,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "score-measures",
+          "name": "Score Measures ...",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "005-ability-scores",
+      "name": "Ability Scores",
+      "section_id": "008-4-3-ability-scores",
+      "page": 5,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "score",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "meaning",
+          "name": "Meaning",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 7,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "006-ability-modifiers",
+      "name": "Ability Modifiers",
+      "section_id": "010-4-4-1-round-down",
+      "page": 6,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "score",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "modifier",
+          "name": "Modifier",
+          "type": "integer"
+        },
+        {
+          "id": "score-2",
+          "name": "Score",
+          "type": "integer"
+        },
+        {
+          "id": "modifier-2",
+          "name": "Modifier",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 8,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "006-ability-check-examples",
+      "name": "Ability Check Examples",
+      "section_id": "013-4-6-1-ability-modifier",
+      "page": 6,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "make-a-check-to",
+          "name": "Make a Check To ...",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "006-typical-difficulty-classes",
+      "name": "Typical Difficulty Classes",
+      "section_id": "015-4-6-3-difficulty-class",
+      "page": 6,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "task-difficulty",
+          "name": "Task Difficulty",
+          "type": "string"
+        },
+        {
+          "id": "dc",
+          "name": "DC",
+          "type": "integer"
+        },
+        {
+          "id": "task-difficulty-2",
+          "name": "Task Difficulty",
+          "type": "string"
+        },
+        {
+          "id": "dc-2",
+          "name": "DC",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "007-attack-roll-abilities",
+      "name": "Attack Roll Abilities",
+      "section_id": "021-4-8-1-ability-modifier",
+      "page": 7,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "attack-type",
+          "name": "Attack Type",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 2,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "007-saving-throw-examples",
+      "name": "Saving Throw Examples",
+      "section_id": "017-4-7-1-ability-modifier",
+      "page": 7,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability",
+          "name": "Ability",
+          "type": "string"
+        },
+        {
+          "id": "make-a-save-to",
+          "name": "Make a Save To ...",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "008-proficiency-bonus",
+      "name": "Proficiency Bonus",
+      "section_id": "030-4-10-proficiency",
+      "page": 8,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "level-or-cr",
+          "name": "Level or CR",
+          "type": "string"
+        },
+        {
+          "id": "bonus",
+          "name": "Bonus",
+          "type": "integer"
+        },
+        {
+          "id": "level-or-cr-2",
+          "name": "Level or CR",
+          "type": "string"
+        },
+        {
+          "id": "bonus-2",
+          "name": "Bonus",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "009-skills",
+      "name": "Skills",
+      "section_id": "032-4-12-skill-proficiencies",
+      "page": 9,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "skill",
+          "name": "Skill",
+          "type": "string"
+        },
+        {
+          "id": "ability-example-uses",
+          "name": "Ability Example Uses",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 18,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "009-actions",
+      "name": "Actions",
+      "section_id": "037-4-15-actions",
+      "page": 9,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "action",
+          "name": "Action",
+          "type": "string"
+        },
+        {
+          "id": "summary",
+          "name": "Summary",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 12,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "012-travel-pace",
+      "name": "Travel Pace",
+      "section_id": "060-4-28-1-travel-pace",
+      "page": 12,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "pace",
+          "name": "Pace",
+          "type": "string"
+        },
+        {
+          "id": "distance-minute",
+          "name": "Distance Minute",
+          "type": "string"
+        },
+        {
+          "id": "traveled-per-hour",
+          "name": "Traveled Per Hour",
+          "type": "string"
+        },
+        {
+          "id": "day",
+          "name": "... Day",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "014-creature-size-and-space",
+      "name": "Creature Size and Space",
+      "section_id": "073-4-31-4-creature-size",
+      "page": 14,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "size",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "space-feet",
+          "name": "Space (Feet)",
+          "type": "string"
+        },
+        {
+          "id": "space-squares",
+          "name": "Space (Squares)",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "015-cover",
+      "name": "Cover",
+      "section_id": "077-4-33-cover",
+      "page": 15,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "degree",
+          "name": "Degree",
+          "type": "string"
+        },
+        {
+          "id": "benefit-to-target",
+          "name": "Benefit to Target",
+          "type": "string"
+        },
+        {
+          "id": "offered-by",
+          "name": "Offered By ...",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

@@ -204,7 +204,7 @@ class TestAttacking:
         assert encounter.attack_advantage(shooter, target, bow) is Advantage.NONE
 
     def test_point_blank_and_prone_cancel_for_a_ranged_attack(self) -> None:
-        """SRD 5.2 Rules Glossary, Prone, "Attacks Affected": "An attack roll
+        """SRD 5.2.1 Rules Glossary, Prone, "Attacks Affected": "An attack roll
         against you has Advantage if the attacker is within 5 feet of you.
         Otherwise, that attack roll has Disadvantage."
 
@@ -408,7 +408,7 @@ class TestGoingDown:
         return encounter, hero
 
     def test_stabilising_clears_both_death_save_counters(self) -> None:
-        """SRD 5.2, "Playing the Game" -> "Death Saving Throws", Three
+        """SRD 5.2.1, "Playing the Game" -> "Death Saving Throws", Three
         Successes/Failures: "The successes and failures don't need to be
         consecutive; keep track of both until you collect three of a kind. The
         number of both is reset to zero when you regain any Hit Points or become
@@ -451,7 +451,7 @@ class TestGoingDown:
         assert hero.death_save_successes == 0
 
     def test_a_natural_20_revival_leaves_the_full_movement_budget(self) -> None:
-        """SRD 5.2, "Death Saving Throws", Rolling 20: "If you roll a 20 on the
+        """SRD 5.2.1, "Death Saving Throws", Rolling 20: "If you roll a 20 on the
         d20, you regain 1 Hit Point." The save is rolled at the start of the
         creature's own turn, so the revived creature is conscious for the rest of
         it — and a conscious creature may move up to its Speed on its turn.
@@ -488,7 +488,7 @@ class TestGoingDown:
 class TestDamageAtZeroHitPoints:
     """Damage taken *while already* at 0 hit points is its own rule.
 
-    SRD 5.2, "Damage at 0 Hit Points": any damage costs a death saving throw
+    SRD 5.2.1, "Damage at 0 Hit Points": any damage costs a death saving throw
     failure, a critical hit costs two, and damage equalling or exceeding the hit
     point maximum kills outright. Nothing there resets the counters — only
     regaining hit points or becoming stable does that — so these tests are what
@@ -719,7 +719,7 @@ class TestDamageAtZeroHitPoints:
 class TestADownedCreatureIsStillATarget:
     """A creature at 0 hit points is a legal target; only a corpse is not.
 
-    SRD 5.2, Rules Glossary, "Unconscious [Condition]": "Attacks Affected. Attack
+    SRD 5.2.1, Rules Glossary, "Unconscious [Condition]": "Attacks Affected. Attack
     rolls against you have Advantage." and "Automatic Critical Hits. Any attack
     roll that hits you is a Critical Hit if the attacker is within 5 feet of you."
     Both clauses are dead text if the stepper refuses the attack, which is what it
@@ -727,7 +727,7 @@ class TestADownedCreatureIsStillATarget:
     automatically fail Strength and Dexterity saving throws" is likewise dead if an
     area effect filters the creature out before rolling one.
 
-    What the damage then costs is the other rule. SRD 5.2, "Playing the Game" ->
+    What the damage then costs is the other rule. SRD 5.2.1, "Playing the Game" ->
     "Damage at 0 Hit Points": "If you take any damage while you have 0 Hit Points,
     you suffer a Death Saving Throw failure. If the damage is from a Critical Hit,
     you suffer two failures instead. If the damage equals or exceeds your Hit Point
@@ -858,7 +858,7 @@ class TestADownedCreatureIsStillATarget:
         assert detail_of(events, "death") == "a third failed death save"
 
     def test_an_attack_on_a_stable_creature_starts_its_death_saves_again(self) -> None:
-        """SRD 5.2, "Stabilizing a Character": "A Stable creature doesn't make Death
+        """SRD 5.2.1, "Stabilizing a Character": "A Stable creature doesn't make Death
         Saving Throws even though it has 0 Hit Points, but it still has the
         Unconscious condition. If the creature takes damage, it stops being Stable
         and starts making Death Saving Throws again."
@@ -1615,7 +1615,7 @@ class TestMapElevation:
         assert move["cost"] == 5 + 10 + 10 + 5  # only the two rises cost double
 
     def test_a_slope_through_rough_going_is_not_doubled_twice(self) -> None:
-        # SRD 5.2: Difficult Terrain "isn't cumulative" — a slope over
+        # SRD 5.2.1: Difficult Terrain "isn't cumulative" — a slope over
         # undergrowth is the same 10 feet a slope over grass is, not 20.
         rng = Random(1)
         battle_map = strip(
@@ -1954,7 +1954,7 @@ class TestCoverShieldsSaves:
 class TestCoverReachesNamedTargetSpells:
     """Cover on a spell aimed at a named creature, measured from the caster.
 
-    SRD 5.2, "Cover" (p. 179): Half Cover is "+2 bonus to AC and Dexterity saving
+    SRD 5.2.1, "Cover" (p. 179): Half Cover is "+2 bonus to AC and Dexterity saving
     throws", Three-Quarters Cover "+5", and Total Cover "can't be targeted
     directly" — *directly* being the word that separates this from an area, which
     reaches whoever its template catches. The rule names no attack/spell split, so
@@ -3968,7 +3968,7 @@ class TestSavingThrowAdvantage:
 class TestSpellAttackAdvantage:
     """The cast path reaches the same answer about Advantage as the swing path.
 
-    SRD 5.2 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
+    SRD 5.2.1 Rules Glossary, "Attack Roll": "An attack roll is a D20 Test that
     represents making an attack with a weapon, an Unarmed Strike, or a spell."
     None of the Advantage sources distinguishes the two, so a Blinded caster, a
     Dodging target, and a Paralyzed one have to read identically whether the
@@ -4078,7 +4078,7 @@ class TestSpellAttackAdvantage:
         assert rolled_with(event) == "disadvantage"
 
     def test_a_dodging_target_imposes_disadvantage(self) -> None:
-        # SRD 5.2, Dodge: "any attack roll made against you has Disadvantage if
+        # SRD 5.2.1, Dodge: "any attack roll made against you has Disadvantage if
         # you can see the attacker". The _dodging map was never consulted on the
         # cast path, so a Dodge bought nothing against a spell.
         assert rolled_with(self.bolt(dodging=True)) == "disadvantage"
@@ -4091,7 +4091,7 @@ class TestSpellAttackAdvantage:
         assert rolled_with(event) == "none"
 
     def test_a_hit_on_a_paralyzed_target_within_5_feet_is_a_critical(self) -> None:
-        # SRD 5.2, Paralyzed: "Any attack roll that hits you is a Critical Hit if
+        # SRD 5.2.1, Paralyzed: "Any attack roll that hits you is a Critical Hit if
         # the attacker is within 5 feet of you."
         event = self.bolt(
             target_conditions=(Condition.PARALYZED,), distance=5, rng=FixedRandom(15)
@@ -4111,7 +4111,7 @@ class TestSpellAttackAdvantage:
     def test_point_blank_and_prone_cancel_for_a_ranged_spell_attack(
         self,
     ) -> None:
-        # SRD 5.2, Prone: "An attack roll against you has Advantage if the
+        # SRD 5.2.1, Prone: "An attack roll against you has Advantage if the
         # attacker is within 5 feet of you. Otherwise, that attack roll has
         # Disadvantage." The clause names a distance and no weapon, so a spell
         # attack reads it exactly as a weapon does. Guiding Bolt is a ranged spell
@@ -4252,7 +4252,7 @@ class TestTurnLegality:
 class TestConcentrationEffects:
     """A condition a Concentration spell imposes ends when the Concentration does.
 
-    SRD 5.2, Rules Glossary, "Concentration": "Some spells and other effects require
+    SRD 5.2.1, Rules Glossary, "Concentration": "Some spells and other effects require
     Concentration to remain active, as specified in their descriptions. If the
     effect's creator loses Concentration, the effect ends." Damage that fails the
     Constitution save, the Incapacitated condition, death and starting a second
@@ -4349,7 +4349,7 @@ class TestConcentrationEffects:
         assert "effect_end" in kinds(events)
 
     def test_starting_a_second_concentration_spell_ends_the_first(self) -> None:
-        """SRD 5.2: Concentration is lost "the moment you start casting" another."""
+        """SRD 5.2.1: Concentration is lost "the moment you start casting" another."""
         encounter, rng, who = self.duel(targets=2)
         self.hold(encounter, rng, "Wren", "Bandit0")
         self.hold(encounter, rng, "Wren", "Bandit1")

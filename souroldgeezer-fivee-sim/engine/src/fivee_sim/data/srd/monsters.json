@@ -1,9 +1,8 @@
 {
-  "pack": "srd-5.2-creatures",
+  "pack": "srd-5.2.1-creatures",
   "version": "1.0",
-  "provenance": "SRD 5.2",
-  "attribution": "See NOTICE. Values transcribed from the CC-BY SRD 5.2 stat blocks.",
-  "note": "Every 'unmodelled' entry is a trait the stat block has that this engine does not implement. It is listed so the gap is visible rather than silently absent.",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
   "creatures": [
     {
       "name": "Goblin Warrior",
@@ -12,6 +11,7 @@
       "max_hp": 10,
       "hit_dice": "3d6",
       "speed": 30,
+      "darkvision": 60,
       "size": "small",
       "abilities": {
         "strength": 8,
@@ -42,9 +42,10 @@
           "advantage_bonus_damage": "1d4"
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Nimble Escape: Bonus Action Disengage or Hide"
+      "bonus_actions": ["disengage"],
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_bonus_action", "feature": "Nimble Escape: Hide"}
       ]
     },
     {
@@ -54,6 +55,7 @@
       "max_hp": 21,
       "hit_dice": "6d6",
       "speed": 30,
+      "darkvision": 60,
       "size": "small",
       "abilities": {
         "strength": 10,
@@ -64,6 +66,8 @@
         "charisma": 10
       },
       "attacks_per_action": 2,
+      "bonus_actions": ["disengage"],
+      "redirect_attack": true,
       "attacks": [
         {
           "name": "Scimitar",
@@ -85,10 +89,9 @@
           "advantage_bonus_damage": "1d4"
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Nimble Escape: Bonus Action Disengage or Hide",
-        "Redirect Attack: Reaction to swap places with an ally within 5 feet, which becomes the target instead"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_bonus_action", "feature": "Nimble Escape: Hide"}
       ]
     },
     {
@@ -98,6 +101,7 @@
       "max_hp": 11,
       "hit_dice": "2d8+2",
       "speed": 40,
+      "darkvision": 60,
       "size": "medium",
       "abilities": {
         "strength": 14,
@@ -120,7 +124,7 @@
           "on_hit_max_size": "medium"
         }
       ],
-      "provenance": "SRD 5.2"
+      "provenance": "SRD 5.2.1"
     },
     {
       "name": "Zombie",
@@ -129,6 +133,7 @@
       "max_hp": 15,
       "hit_dice": "2d8+6",
       "speed": 20,
+      "darkvision": 60,
       "size": "medium",
       "abilities": {
         "strength": 13,
@@ -153,9 +158,10 @@
           "reach": 5
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Immunity to the Exhaustion and Poisoned conditions"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_condition_immunity", "feature": "Exhaustion"},
+        {"code": "unsupported_condition_immunity", "feature": "Poisoned"}
       ]
     },
     {
@@ -165,6 +171,7 @@
       "max_hp": 13,
       "hit_dice": "2d8+4",
       "speed": 30,
+      "darkvision": 60,
       "size": "medium",
       "abilities": {
         "strength": 10,
@@ -195,9 +202,10 @@
           "long_range": 320
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Immunity to the Exhaustion and Poisoned conditions"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_condition_immunity", "feature": "Exhaustion"},
+        {"code": "unsupported_condition_immunity", "feature": "Poisoned"}
       ]
     },
     {
@@ -207,6 +215,7 @@
       "max_hp": 68,
       "hit_dice": "8d10+24",
       "speed": 40,
+      "darkvision": 60,
       "size": "large",
       "abilities": {
         "strength": 19,
@@ -224,11 +233,20 @@
           "damage_type": "bludgeoning",
           "kind": "melee",
           "reach": 5
+        },
+        {
+          "name": "Javelin",
+          "attack_bonus": 6,
+          "damage": "2d6+4",
+          "damage_type": "piercing",
+          "kind": "ranged",
+          "normal_range": 30,
+          "long_range": 120
         }
       ],
-      "provenance": "SRD 5.2",
-      "unmodelled": [
-        "Javelin ranged attack option from its listed gear"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {"code": "unsupported_ammunition_count", "feature": "Javelins: 3"}
       ]
     }
   ]

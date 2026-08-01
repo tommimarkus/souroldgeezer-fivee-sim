@@ -57,7 +57,7 @@ class ItemEffect:
     condition: str | None = None
     #: Free-text, shown in narration and in ``lookup_rule``.
     description: str = ""
-    provenance: str = "SRD 5.2"
+    provenance: str = "SRD 5.2.1"
     action_cost: ActionCost = ActionCost.ACTION
 
     def __post_init__(self) -> None:

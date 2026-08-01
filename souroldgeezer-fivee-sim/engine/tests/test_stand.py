@@ -1,6 +1,6 @@
 """The stand act: getting up from Prone.
 
-SRD 5.2, Rules Glossary, "Prone": the condition ends when the creature stands,
+SRD 5.2.1, Rules Glossary, "Prone": the condition ends when the creature stands,
 which costs an amount of movement equal to half its Speed — no action — and is
 impossible when Speed is 0 or the movement left cannot cover the cost. The
 policy half matters as much as the act: the auto-play behind the batch tools

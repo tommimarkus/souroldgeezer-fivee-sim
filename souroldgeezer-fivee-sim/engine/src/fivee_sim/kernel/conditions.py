@@ -16,7 +16,7 @@ A condition is therefore identified by a plain ``str``. :class:`Condition` remai
 as named constants for the SRD set — it is a ``StrEnum``, so its members *are*
 strings and index the same table rows a pack's names do.
 
-All provenance of :data:`EFFECTS`: SRD 5.2 (see NOTICE).
+All provenance of :data:`EFFECTS`: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations

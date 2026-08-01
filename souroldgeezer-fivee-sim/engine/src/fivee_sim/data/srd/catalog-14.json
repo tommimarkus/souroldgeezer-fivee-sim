@@ -1,0 +1,680 @@
+{
+  "pack": "srd-5.2.1-catalog-14",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1658-14-monsters",
+      "kind": "section",
+      "name": "Monsters",
+      "source_ids": [
+        "1658-14-monsters"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1659-14-1-stat-block-overview",
+      "kind": "section",
+      "name": "Stat Block Overview",
+      "source_ids": [
+        "1659-14-1-stat-block-overview"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1660-14-2-parts-of-a-stat-block",
+      "kind": "section",
+      "name": "Parts of a Stat Block",
+      "source_ids": [
+        "1660-14-2-parts-of-a-stat-block"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1661-14-3-size",
+      "kind": "section",
+      "name": "Size",
+      "source_ids": [
+        "1661-14-3-size"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1662-14-4-creature-type",
+      "kind": "section",
+      "name": "Creature Type",
+      "source_ids": [
+        "1662-14-4-creature-type"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1663-14-4-1-descriptive-tags",
+      "kind": "section",
+      "name": "Descriptive Tags",
+      "source_ids": [
+        "1663-14-4-1-descriptive-tags"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1662-14-4-creature-type"
+    },
+    {
+      "id": "1664-14-5-alignment",
+      "kind": "section",
+      "name": "Alignment",
+      "source_ids": [
+        "1664-14-5-alignment"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1665-14-6-armor-class",
+      "kind": "section",
+      "name": "Armor Class",
+      "source_ids": [
+        "1665-14-6-armor-class"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1666-14-7-initiative",
+      "kind": "section",
+      "name": "Initiative",
+      "source_ids": [
+        "1666-14-7-initiative"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        254
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1667-14-8-hit-points",
+      "kind": "section",
+      "name": "Hit Points",
+      "source_ids": [
+        "1667-14-8-hit-points"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1668-14-9-speed",
+      "kind": "section",
+      "name": "Speed",
+      "source_ids": [
+        "1668-14-9-speed"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1669-14-10-ability-scores",
+      "kind": "section",
+      "name": "Ability Scores",
+      "source_ids": [
+        "1669-14-10-ability-scores"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1670-14-11-skills",
+      "kind": "section",
+      "name": "Skills",
+      "source_ids": [
+        "1670-14-11-skills"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1671-14-12-resistances-and-vulnerabilities",
+      "kind": "section",
+      "name": "Resistances and Vulnerabilities",
+      "source_ids": [
+        "1671-14-12-resistances-and-vulnerabilities"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1672-14-12-1-running-a-monster",
+      "kind": "section",
+      "name": "Running a Monster",
+      "source_ids": [
+        "1672-14-12-1-running-a-monster"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1671-14-12-resistances-and-vulnerabilities"
+    },
+    {
+      "id": "1673-14-13-immunities",
+      "kind": "section",
+      "name": "Immunities",
+      "source_ids": [
+        "1673-14-13-immunities"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1674-14-14-gear",
+      "kind": "section",
+      "name": "Gear",
+      "source_ids": [
+        "1674-14-14-gear"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1675-14-14-1-ammunition-and-ranged-attacks",
+      "kind": "section",
+      "name": "Ammunition and Ranged Attacks",
+      "source_ids": [
+        "1675-14-14-1-ammunition-and-ranged-attacks"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1674-14-14-gear"
+    },
+    {
+      "id": "1676-14-14-2-equipping-a-monster-with-other-items",
+      "kind": "section",
+      "name": "Equipping a Monster with Other Items",
+      "source_ids": [
+        "1676-14-14-2-equipping-a-monster-with-other-items"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        255,
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1674-14-14-gear"
+    },
+    {
+      "id": "1677-14-15-senses",
+      "kind": "section",
+      "name": "Senses",
+      "source_ids": [
+        "1677-14-15-senses"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1678-14-16-languages",
+      "kind": "section",
+      "name": "Languages",
+      "source_ids": [
+        "1678-14-16-languages"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1679-14-16-1-telepathy",
+      "kind": "section",
+      "name": "Telepathy",
+      "source_ids": [
+        "1679-14-16-1-telepathy"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1678-14-16-languages"
+    },
+    {
+      "id": "1680-14-17-challenge-rating",
+      "kind": "section",
+      "name": "Challenge Rating",
+      "source_ids": [
+        "1680-14-17-challenge-rating"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1681-14-17-1-experience-points",
+      "kind": "section",
+      "name": "Experience Points",
+      "source_ids": [
+        "1681-14-17-1-experience-points"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1680-14-17-challenge-rating"
+    },
+    {
+      "id": "1682-14-17-2-proficiency-bonus",
+      "kind": "section",
+      "name": "Proficiency Bonus",
+      "source_ids": [
+        "1682-14-17-2-proficiency-bonus"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1680-14-17-challenge-rating"
+    },
+    {
+      "id": "1683-14-18-traits",
+      "kind": "section",
+      "name": "Traits",
+      "source_ids": [
+        "1683-14-18-traits"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1684-14-19-actions",
+      "kind": "section",
+      "name": "Actions",
+      "source_ids": [
+        "1684-14-19-actions"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1685-14-19-1-attack-notation",
+      "kind": "section",
+      "name": "Attack Notation",
+      "source_ids": [
+        "1685-14-19-1-attack-notation"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1684-14-19-actions"
+    },
+    {
+      "id": "1686-14-19-2-saving-throw-effect-notation",
+      "kind": "section",
+      "name": "Saving Throw Effect Notation",
+      "source_ids": [
+        "1686-14-19-2-saving-throw-effect-notation"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        256
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1684-14-19-actions"
+    },
+    {
+      "id": "1687-14-19-3-damage-notation",
+      "kind": "section",
+      "name": "Damage Notation",
+      "source_ids": [
+        "1687-14-19-3-damage-notation"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1684-14-19-actions"
+    },
+    {
+      "id": "1688-14-19-4-multiattack",
+      "kind": "section",
+      "name": "Multiattack",
+      "source_ids": [
+        "1688-14-19-4-multiattack"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1684-14-19-actions"
+    },
+    {
+      "id": "1689-14-19-5-spellcasting",
+      "kind": "section",
+      "name": "Spellcasting",
+      "source_ids": [
+        "1689-14-19-5-spellcasting"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1684-14-19-actions"
+    },
+    {
+      "id": "1690-14-20-bonus-action",
+      "kind": "section",
+      "name": "Bonus Action",
+      "source_ids": [
+        "1690-14-20-bonus-action"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1691-14-21-reactions",
+      "kind": "section",
+      "name": "Reactions",
+      "source_ids": [
+        "1691-14-21-reactions"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1692-14-22-legendary-actions",
+      "kind": "section",
+      "name": "Legendary Actions",
+      "source_ids": [
+        "1692-14-22-legendary-actions"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    },
+    {
+      "id": "1693-14-23-limited-usage",
+      "kind": "section",
+      "name": "Limited Usage",
+      "source_ids": [
+        "1693-14-23-limited-usage"
+      ],
+      "chapter_id": "1658-14-monsters",
+      "pages": [
+        257
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1658-14-monsters"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "255-hit-dice-by-size",
+      "name": "Hit Dice by Size",
+      "section_id": "1667-14-8-hit-points",
+      "page": 255,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "monster-size",
+          "name": "Monster Size",
+          "type": "string"
+        },
+        {
+          "id": "hit-die",
+          "name": "Hit Die",
+          "type": "string"
+        },
+        {
+          "id": "average-hp-per-die",
+          "name": "Average HP per Die",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 6,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "256-proficiency-bonus-by-challenge-rating",
+      "name": "Proficiency Bonus by Challenge Rating",
+      "section_id": "1682-14-17-2-proficiency-bonus",
+      "page": 256,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "cr",
+          "name": "CR",
+          "type": "string"
+        },
+        {
+          "id": "pb",
+          "name": "PB",
+          "type": "integer"
+        },
+        {
+          "id": "cr-2",
+          "name": "CR",
+          "type": "string"
+        },
+        {
+          "id": "pb-2",
+          "name": "PB",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "256-experience-points-by-challenge-rating",
+      "name": "Experience Points by Challenge Rating",
+      "section_id": "1681-14-17-1-experience-points",
+      "page": 256,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "cr",
+          "name": "CR",
+          "type": "integer"
+        },
+        {
+          "id": "xp",
+          "name": "XP",
+          "type": "integer"
+        },
+        {
+          "id": "cr-2",
+          "name": "CR",
+          "type": "integer"
+        },
+        {
+          "id": "xp-2",
+          "name": "XP",
+          "type": "integer"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 17,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

@@ -33,6 +33,9 @@ EXPECTED_TOOLS = {
     "check",
     "save",
     "lookup_rule",
+    "catalog_search",
+    "catalog_get",
+    "catalog_table",
     "encounter_create",
     "encounter_state",
     "encounter_log",
@@ -221,6 +224,18 @@ def main() -> int:
             '"builtin": "include"' in status_text,
             "content_status reports the bundled slice by default",
             status_text[:300],
+        )
+
+        catalog = server.request(
+            8,
+            "tools/call",
+            {"name": "catalog_search", "arguments": {"query": "Fireball"}},
+        )
+        catalog_text = json.dumps(catalog.get("result", {}))
+        report(
+            "904-10-15-4-fireball" in catalog_text,
+            "catalog_search resolves a structured SRD identity",
+            catalog_text[:300],
         )
     finally:
         server.close()

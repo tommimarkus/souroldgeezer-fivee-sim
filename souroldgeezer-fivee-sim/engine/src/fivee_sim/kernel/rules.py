@@ -5,7 +5,7 @@ object describing what happened; nothing is mutated and nothing is logged. State
 changes are applied by the model layer, which keeps the rules auditable and lets
 the analytics replay the identical code path.
 
-All provenance: SRD 5.2 (see NOTICE).
+All provenance: SRD 5.2.1 (see NOTICE).
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class Size(StrEnum):
     Declaration order *is* the rules order, so ``list(Size)`` runs Tiny to
     Gargantuan and :func:`fits_within` reads its ranks from it.
 
-    Provenance: SRD 5.2 Creature Size and Space.
+    Provenance: SRD 5.2.1 Creature Size and Space.
     """
 
     TINY = "tiny"

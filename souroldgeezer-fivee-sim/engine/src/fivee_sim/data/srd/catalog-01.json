@@ -1,0 +1,24 @@
+{
+  "pack": "srd-5.2.1-catalog-01",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "001-1-legal-information",
+      "kind": "section",
+      "name": "Legal Information",
+      "source_ids": [
+        "001-1-legal-information"
+      ],
+      "chapter_id": "001-1-legal-information",
+      "pages": [
+        1
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    }
+  ],
+  "catalog_tables": []
+}

@@ -1,0 +1,2752 @@
+{
+  "pack": "srd-5.2.1-catalog-11",
+  "version": "1.0",
+  "provenance": "SRD 5.2.1",
+  "attribution": "See NOTICE.",
+  "catalog": [
+    {
+      "id": "1123-11-rules-glossary",
+      "kind": "section",
+      "name": "Rules Glossary",
+      "source_ids": [
+        "1123-11-rules-glossary"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "1124-11-1-glossary-conventions",
+      "kind": "section",
+      "name": "Glossary Conventions",
+      "source_ids": [
+        "1124-11-1-glossary-conventions"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1123-11-rules-glossary"
+    },
+    {
+      "id": "1125-11-2-rules-definitions",
+      "kind": "section",
+      "name": "Rules Definitions",
+      "source_ids": [
+        "1125-11-2-rules-definitions"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1123-11-rules-glossary"
+    },
+    {
+      "id": "1126-11-2-1-ability-check",
+      "kind": "glossary",
+      "name": "Ability Check",
+      "source_ids": [
+        "1126-11-2-1-ability-check"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1127-11-2-2-ability-score-and-modifier",
+      "kind": "glossary",
+      "name": "Ability Score and Modifier",
+      "source_ids": [
+        "1127-11-2-2-ability-score-and-modifier"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1128-11-2-3-action",
+      "kind": "glossary",
+      "name": "Action",
+      "source_ids": [
+        "1128-11-2-3-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1129-11-2-4-advantage",
+      "kind": "glossary",
+      "name": "Advantage",
+      "source_ids": [
+        "1129-11-2-4-advantage"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1130-11-2-5-adventure",
+      "kind": "glossary",
+      "name": "Adventure",
+      "source_ids": [
+        "1130-11-2-5-adventure"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1131-11-2-6-alignment",
+      "kind": "glossary",
+      "name": "Alignment",
+      "source_ids": [
+        "1131-11-2-6-alignment"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1132-11-2-7-ally",
+      "kind": "glossary",
+      "name": "Ally",
+      "source_ids": [
+        "1132-11-2-7-ally"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        176
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1133-11-2-8-area-of-effect",
+      "kind": "glossary",
+      "name": "Area of Effect",
+      "source_ids": [
+        "1133-11-2-8-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1134-11-2-9-armor-class",
+      "kind": "glossary",
+      "name": "Armor Class",
+      "source_ids": [
+        "1134-11-2-9-armor-class"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1135-11-2-10-armor-training",
+      "kind": "glossary",
+      "name": "Armor Training",
+      "source_ids": [
+        "1135-11-2-10-armor-training"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1136-11-2-11-attack-action",
+      "kind": "glossary",
+      "name": "Attack [Action]",
+      "source_ids": [
+        "1136-11-2-11-attack-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1137-11-2-12-attack-roll",
+      "kind": "glossary",
+      "name": "Attack Roll",
+      "source_ids": [
+        "1137-11-2-12-attack-roll"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1138-11-2-13-attitude",
+      "kind": "glossary",
+      "name": "Attitude",
+      "source_ids": [
+        "1138-11-2-13-attitude"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1139-11-2-14-attunement",
+      "kind": "glossary",
+      "name": "Attunement",
+      "source_ids": [
+        "1139-11-2-14-attunement"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1140-11-2-15-blinded-condition",
+      "kind": "glossary",
+      "name": "Blinded [Condition]",
+      "source_ids": [
+        "1140-11-2-15-blinded-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1141-11-2-16-blindsight",
+      "kind": "glossary",
+      "name": "Blindsight",
+      "source_ids": [
+        "1141-11-2-16-blindsight"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1142-11-2-17-bloodied",
+      "kind": "glossary",
+      "name": "Bloodied",
+      "source_ids": [
+        "1142-11-2-17-bloodied"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1143-11-2-18-bonus-action",
+      "kind": "glossary",
+      "name": "Bonus Action",
+      "source_ids": [
+        "1143-11-2-18-bonus-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1144-11-2-19-breaking-objects",
+      "kind": "glossary",
+      "name": "Breaking Objects",
+      "source_ids": [
+        "1144-11-2-19-breaking-objects"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        177,
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1145-11-2-20-bright-light",
+      "kind": "glossary",
+      "name": "Bright Light",
+      "source_ids": [
+        "1145-11-2-20-bright-light"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1146-11-2-21-burning-hazard",
+      "kind": "glossary",
+      "name": "Burning [Hazard]",
+      "source_ids": [
+        "1146-11-2-21-burning-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1147-11-2-22-burrow-speed",
+      "kind": "glossary",
+      "name": "Burrow Speed",
+      "source_ids": [
+        "1147-11-2-22-burrow-speed"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1148-11-2-23-campaign",
+      "kind": "glossary",
+      "name": "Campaign",
+      "source_ids": [
+        "1148-11-2-23-campaign"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1149-11-2-24-cantrip",
+      "kind": "glossary",
+      "name": "Cantrip",
+      "source_ids": [
+        "1149-11-2-24-cantrip"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1150-11-2-25-carrying-capacity",
+      "kind": "glossary",
+      "name": "Carrying Capacity",
+      "source_ids": [
+        "1150-11-2-25-carrying-capacity"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1151-11-2-26-challenge-rating",
+      "kind": "glossary",
+      "name": "Challenge Rating",
+      "source_ids": [
+        "1151-11-2-26-challenge-rating"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1152-11-2-27-character-sheet",
+      "kind": "glossary",
+      "name": "Character Sheet",
+      "source_ids": [
+        "1152-11-2-27-character-sheet"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1153-11-2-28-charmed-condition",
+      "kind": "glossary",
+      "name": "Charmed [Condition]",
+      "source_ids": [
+        "1153-11-2-28-charmed-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1154-11-2-29-climbing",
+      "kind": "glossary",
+      "name": "Climbing",
+      "source_ids": [
+        "1154-11-2-29-climbing"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        178,
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1155-11-2-30-climb-speed",
+      "kind": "glossary",
+      "name": "Climb Speed",
+      "source_ids": [
+        "1155-11-2-30-climb-speed"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1156-11-2-31-concentration",
+      "kind": "glossary",
+      "name": "Concentration",
+      "source_ids": [
+        "1156-11-2-31-concentration"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1157-11-2-32-condition",
+      "kind": "glossary",
+      "name": "Condition",
+      "source_ids": [
+        "1157-11-2-32-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1158-11-2-33-cone-area-of-effect",
+      "kind": "glossary",
+      "name": "Cone [Area of Effect]",
+      "source_ids": [
+        "1158-11-2-33-cone-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1159-11-2-34-cover",
+      "kind": "glossary",
+      "name": "Cover",
+      "source_ids": [
+        "1159-11-2-34-cover"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1160-11-2-35-crawling",
+      "kind": "glossary",
+      "name": "Crawling",
+      "source_ids": [
+        "1160-11-2-35-crawling"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1161-11-2-36-creature",
+      "kind": "glossary",
+      "name": "Creature",
+      "source_ids": [
+        "1161-11-2-36-creature"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1162-11-2-37-creature-type",
+      "kind": "glossary",
+      "name": "Creature Type",
+      "source_ids": [
+        "1162-11-2-37-creature-type"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1163-11-2-38-critical-hit",
+      "kind": "glossary",
+      "name": "Critical Hit",
+      "source_ids": [
+        "1163-11-2-38-critical-hit"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1164-11-2-39-cube-area-of-effect",
+      "kind": "glossary",
+      "name": "Cube [Area of Effect]",
+      "source_ids": [
+        "1164-11-2-39-cube-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1165-11-2-40-curses",
+      "kind": "glossary",
+      "name": "Curses",
+      "source_ids": [
+        "1165-11-2-40-curses"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        179
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1166-11-2-41-cylinder-area-of-effect",
+      "kind": "glossary",
+      "name": "Cylinder [Area of Effect]",
+      "source_ids": [
+        "1166-11-2-41-cylinder-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1167-11-2-42-d20-test",
+      "kind": "glossary",
+      "name": "D20 Test",
+      "source_ids": [
+        "1167-11-2-42-d20-test"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1168-11-2-43-damage",
+      "kind": "glossary",
+      "name": "Damage",
+      "source_ids": [
+        "1168-11-2-43-damage"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1169-11-2-44-damage-roll",
+      "kind": "glossary",
+      "name": "Damage Roll",
+      "source_ids": [
+        "1169-11-2-44-damage-roll"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1170-11-2-45-damage-threshold",
+      "kind": "glossary",
+      "name": "Damage Threshold",
+      "source_ids": [
+        "1170-11-2-45-damage-threshold"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1171-11-2-46-damage-types",
+      "kind": "glossary",
+      "name": "Damage Types",
+      "source_ids": [
+        "1171-11-2-46-damage-types"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1172-11-2-47-darkness",
+      "kind": "glossary",
+      "name": "Darkness",
+      "source_ids": [
+        "1172-11-2-47-darkness"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1173-11-2-48-darkvision",
+      "kind": "glossary",
+      "name": "Darkvision",
+      "source_ids": [
+        "1173-11-2-48-darkvision"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1174-11-2-49-dash-action",
+      "kind": "glossary",
+      "name": "Dash [Action]",
+      "source_ids": [
+        "1174-11-2-49-dash-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1175-11-2-50-dead",
+      "kind": "glossary",
+      "name": "Dead",
+      "source_ids": [
+        "1175-11-2-50-dead"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        180
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1176-11-2-51-deafened-condition",
+      "kind": "glossary",
+      "name": "Deafened [Condition]",
+      "source_ids": [
+        "1176-11-2-51-deafened-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1177-11-2-52-death-saving-throw",
+      "kind": "glossary",
+      "name": "Death Saving Throw",
+      "source_ids": [
+        "1177-11-2-52-death-saving-throw"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1178-11-2-53-dehydration-hazard",
+      "kind": "glossary",
+      "name": "Dehydration [Hazard]",
+      "source_ids": [
+        "1178-11-2-53-dehydration-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1179-11-2-54-difficult-terrain",
+      "kind": "glossary",
+      "name": "Difficult Terrain",
+      "source_ids": [
+        "1179-11-2-54-difficult-terrain"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1180-11-2-55-difficulty-class",
+      "kind": "glossary",
+      "name": "Difficulty Class",
+      "source_ids": [
+        "1180-11-2-55-difficulty-class"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1181-11-2-56-dim-light",
+      "kind": "glossary",
+      "name": "Dim Light",
+      "source_ids": [
+        "1181-11-2-56-dim-light"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1182-11-2-57-disadvantage",
+      "kind": "glossary",
+      "name": "Disadvantage",
+      "source_ids": [
+        "1182-11-2-57-disadvantage"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1183-11-2-58-disengage-action",
+      "kind": "glossary",
+      "name": "Disengage [Action]",
+      "source_ids": [
+        "1183-11-2-58-disengage-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1184-11-2-59-dodge-action",
+      "kind": "glossary",
+      "name": "Dodge [Action]",
+      "source_ids": [
+        "1184-11-2-59-dodge-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1185-11-2-60-emanation-area-of-effect",
+      "kind": "glossary",
+      "name": "Emanation [Area of Effect]",
+      "source_ids": [
+        "1185-11-2-60-emanation-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1186-11-2-61-encounter",
+      "kind": "glossary",
+      "name": "Encounter",
+      "source_ids": [
+        "1186-11-2-61-encounter"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1187-11-2-62-enemy",
+      "kind": "glossary",
+      "name": "Enemy",
+      "source_ids": [
+        "1187-11-2-62-enemy"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1188-11-2-63-exhaustion-condition",
+      "kind": "glossary",
+      "name": "Exhaustion [Condition]",
+      "source_ids": [
+        "1188-11-2-63-exhaustion-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        181
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1189-11-2-64-experience-points",
+      "kind": "glossary",
+      "name": "Experience Points",
+      "source_ids": [
+        "1189-11-2-64-experience-points"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1190-11-2-65-expertise",
+      "kind": "glossary",
+      "name": "Expertise",
+      "source_ids": [
+        "1190-11-2-65-expertise"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1191-11-2-66-falling-hazard",
+      "kind": "glossary",
+      "name": "Falling [Hazard]",
+      "source_ids": [
+        "1191-11-2-66-falling-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1192-11-2-67-flying",
+      "kind": "glossary",
+      "name": "Flying",
+      "source_ids": [
+        "1192-11-2-67-flying"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1193-11-2-68-fly-speed",
+      "kind": "glossary",
+      "name": "Fly Speed",
+      "source_ids": [
+        "1193-11-2-68-fly-speed"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1194-11-2-69-friendly-attitude",
+      "kind": "glossary",
+      "name": "Friendly [Attitude]",
+      "source_ids": [
+        "1194-11-2-69-friendly-attitude"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1195-11-2-70-frightened-condition",
+      "kind": "glossary",
+      "name": "Frightened [Condition]",
+      "source_ids": [
+        "1195-11-2-70-frightened-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1196-11-2-71-grappled-condition",
+      "kind": "glossary",
+      "name": "Grappled [Condition]",
+      "source_ids": [
+        "1196-11-2-71-grappled-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1197-11-2-72-grappling",
+      "kind": "glossary",
+      "name": "Grappling",
+      "source_ids": [
+        "1197-11-2-72-grappling"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1198-11-2-73-hazard",
+      "kind": "glossary",
+      "name": "Hazard",
+      "source_ids": [
+        "1198-11-2-73-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1199-11-2-74-healing",
+      "kind": "glossary",
+      "name": "Healing",
+      "source_ids": [
+        "1199-11-2-74-healing"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1200-11-2-75-heavily-obscured",
+      "kind": "glossary",
+      "name": "Heavily Obscured",
+      "source_ids": [
+        "1200-11-2-75-heavily-obscured"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1201-11-2-76-help-action",
+      "kind": "glossary",
+      "name": "Help [Action]",
+      "source_ids": [
+        "1201-11-2-76-help-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        182,
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1202-11-2-77-heroic-inspiration",
+      "kind": "glossary",
+      "name": "Heroic Inspiration",
+      "source_ids": [
+        "1202-11-2-77-heroic-inspiration"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1203-11-2-78-hide-action",
+      "kind": "glossary",
+      "name": "Hide [Action]",
+      "source_ids": [
+        "1203-11-2-78-hide-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1204-11-2-79-high-jump",
+      "kind": "glossary",
+      "name": "High Jump",
+      "source_ids": [
+        "1204-11-2-79-high-jump"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1205-11-2-80-hit-point-dice",
+      "kind": "glossary",
+      "name": "Hit Point Dice",
+      "source_ids": [
+        "1205-11-2-80-hit-point-dice"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1206-11-2-81-hit-points",
+      "kind": "glossary",
+      "name": "Hit Points",
+      "source_ids": [
+        "1206-11-2-81-hit-points"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1207-11-2-82-hostile-attitude",
+      "kind": "glossary",
+      "name": "Hostile [Attitude]",
+      "source_ids": [
+        "1207-11-2-82-hostile-attitude"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1208-11-2-83-hover",
+      "kind": "glossary",
+      "name": "Hover",
+      "source_ids": [
+        "1208-11-2-83-hover"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1209-11-2-84-illusions",
+      "kind": "glossary",
+      "name": "Illusions",
+      "source_ids": [
+        "1209-11-2-84-illusions"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1210-11-2-85-immunity",
+      "kind": "glossary",
+      "name": "Immunity",
+      "source_ids": [
+        "1210-11-2-85-immunity"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1211-11-2-86-improvised-weapons",
+      "kind": "glossary",
+      "name": "Improvised Weapons",
+      "source_ids": [
+        "1211-11-2-86-improvised-weapons"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        183
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1212-11-2-87-incapacitated-condition",
+      "kind": "glossary",
+      "name": "Incapacitated [Condition]",
+      "source_ids": [
+        "1212-11-2-87-incapacitated-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1213-11-2-88-indifferent-attitude",
+      "kind": "glossary",
+      "name": "Indifferent [Attitude]",
+      "source_ids": [
+        "1213-11-2-88-indifferent-attitude"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1214-11-2-89-influence-action",
+      "kind": "glossary",
+      "name": "Influence [Action]",
+      "source_ids": [
+        "1214-11-2-89-influence-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1215-11-2-90-initiative",
+      "kind": "glossary",
+      "name": "Initiative",
+      "source_ids": [
+        "1215-11-2-90-initiative"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1216-11-2-91-invisible-condition",
+      "kind": "glossary",
+      "name": "Invisible [Condition]",
+      "source_ids": [
+        "1216-11-2-91-invisible-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1217-11-2-92-jumping",
+      "kind": "glossary",
+      "name": "Jumping",
+      "source_ids": [
+        "1217-11-2-92-jumping"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1218-11-2-93-knocking-out-a-creature",
+      "kind": "glossary",
+      "name": "Knocking Out a Creature",
+      "source_ids": [
+        "1218-11-2-93-knocking-out-a-creature"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1219-11-2-94-lightly-obscured",
+      "kind": "glossary",
+      "name": "Lightly Obscured",
+      "source_ids": [
+        "1219-11-2-94-lightly-obscured"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1220-11-2-95-line-area-of-effect",
+      "kind": "glossary",
+      "name": "Line [Area of Effect]",
+      "source_ids": [
+        "1220-11-2-95-line-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1221-11-2-96-long-jump",
+      "kind": "glossary",
+      "name": "Long Jump",
+      "source_ids": [
+        "1221-11-2-96-long-jump"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        184,
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1222-11-2-97-long-rest",
+      "kind": "glossary",
+      "name": "Long Rest",
+      "source_ids": [
+        "1222-11-2-97-long-rest"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1223-11-2-98-magic-action",
+      "kind": "glossary",
+      "name": "Magic [Action]",
+      "source_ids": [
+        "1223-11-2-98-magic-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1224-11-2-99-magical-effect",
+      "kind": "glossary",
+      "name": "Magical Effect",
+      "source_ids": [
+        "1224-11-2-99-magical-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1225-11-2-100-malnutrition-hazard",
+      "kind": "glossary",
+      "name": "Malnutrition [Hazard]",
+      "source_ids": [
+        "1225-11-2-100-malnutrition-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1226-11-2-101-monster",
+      "kind": "glossary",
+      "name": "Monster",
+      "source_ids": [
+        "1226-11-2-101-monster"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1227-11-2-102-nonplayer-character",
+      "kind": "glossary",
+      "name": "Nonplayer Character",
+      "source_ids": [
+        "1227-11-2-102-nonplayer-character"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1228-11-2-103-object",
+      "kind": "glossary",
+      "name": "Object",
+      "source_ids": [
+        "1228-11-2-103-object"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1229-11-2-104-occupied-space",
+      "kind": "glossary",
+      "name": "Occupied Space",
+      "source_ids": [
+        "1229-11-2-104-occupied-space"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1230-11-2-105-opportunity-attacks",
+      "kind": "glossary",
+      "name": "Opportunity Attacks",
+      "source_ids": [
+        "1230-11-2-105-opportunity-attacks"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        185
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1231-11-2-106-paralyzed-condition",
+      "kind": "glossary",
+      "name": "Paralyzed [Condition]",
+      "source_ids": [
+        "1231-11-2-106-paralyzed-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1232-11-2-107-passive-perception",
+      "kind": "glossary",
+      "name": "Passive Perception",
+      "source_ids": [
+        "1232-11-2-107-passive-perception"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1233-11-2-108-per-day",
+      "kind": "glossary",
+      "name": "Per Day",
+      "source_ids": [
+        "1233-11-2-108-per-day"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1234-11-2-109-petrified-condition",
+      "kind": "glossary",
+      "name": "Petrified [Condition]",
+      "source_ids": [
+        "1234-11-2-109-petrified-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1235-11-2-110-player-character",
+      "kind": "glossary",
+      "name": "Player Character",
+      "source_ids": [
+        "1235-11-2-110-player-character"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1236-11-2-111-poisoned-condition",
+      "kind": "glossary",
+      "name": "Poisoned [Condition]",
+      "source_ids": [
+        "1236-11-2-111-poisoned-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1237-11-2-112-possession",
+      "kind": "glossary",
+      "name": "Possession",
+      "source_ids": [
+        "1237-11-2-112-possession"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1238-11-2-113-proficiency",
+      "kind": "glossary",
+      "name": "Proficiency",
+      "source_ids": [
+        "1238-11-2-113-proficiency"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1239-11-2-114-prone-condition",
+      "kind": "glossary",
+      "name": "Prone [Condition]",
+      "source_ids": [
+        "1239-11-2-114-prone-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1240-11-2-115-reach",
+      "kind": "glossary",
+      "name": "Reach",
+      "source_ids": [
+        "1240-11-2-115-reach"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1241-11-2-116-reaction",
+      "kind": "glossary",
+      "name": "Reaction",
+      "source_ids": [
+        "1241-11-2-116-reaction"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1242-11-2-117-ready-action",
+      "kind": "glossary",
+      "name": "Ready [Action]",
+      "source_ids": [
+        "1242-11-2-117-ready-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        186,
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1243-11-2-118-resistance",
+      "kind": "glossary",
+      "name": "Resistance",
+      "source_ids": [
+        "1243-11-2-118-resistance"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1244-11-2-119-restrained-condition",
+      "kind": "glossary",
+      "name": "Restrained [Condition]",
+      "source_ids": [
+        "1244-11-2-119-restrained-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1245-11-2-120-ritual",
+      "kind": "glossary",
+      "name": "Ritual",
+      "source_ids": [
+        "1245-11-2-120-ritual"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1246-11-2-121-round-down",
+      "kind": "glossary",
+      "name": "Round Down",
+      "source_ids": [
+        "1246-11-2-121-round-down"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1247-11-2-122-save",
+      "kind": "glossary",
+      "name": "Save",
+      "source_ids": [
+        "1247-11-2-122-save"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1248-11-2-123-saving-throw",
+      "kind": "glossary",
+      "name": "Saving Throw",
+      "source_ids": [
+        "1248-11-2-123-saving-throw"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1249-11-2-124-search-action",
+      "kind": "glossary",
+      "name": "Search [Action]",
+      "source_ids": [
+        "1249-11-2-124-search-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1250-11-2-125-shape-shifting",
+      "kind": "glossary",
+      "name": "Shape-Shifting",
+      "source_ids": [
+        "1250-11-2-125-shape-shifting"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1251-11-2-126-short-rest",
+      "kind": "glossary",
+      "name": "Short Rest",
+      "source_ids": [
+        "1251-11-2-126-short-rest"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1252-11-2-127-simultaneous-effects",
+      "kind": "glossary",
+      "name": "Simultaneous Effects",
+      "source_ids": [
+        "1252-11-2-127-simultaneous-effects"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        187
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1253-11-2-128-size",
+      "kind": "glossary",
+      "name": "Size",
+      "source_ids": [
+        "1253-11-2-128-size"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1254-11-2-129-skill",
+      "kind": "glossary",
+      "name": "Skill",
+      "source_ids": [
+        "1254-11-2-129-skill"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1255-11-2-130-speed",
+      "kind": "glossary",
+      "name": "Speed",
+      "source_ids": [
+        "1255-11-2-130-speed"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1256-11-2-131-spell",
+      "kind": "glossary",
+      "name": "Spell",
+      "source_ids": [
+        "1256-11-2-131-spell"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1257-11-2-132-spell-attack",
+      "kind": "glossary",
+      "name": "Spell Attack",
+      "source_ids": [
+        "1257-11-2-132-spell-attack"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1258-11-2-133-spellcasting-focus",
+      "kind": "glossary",
+      "name": "Spellcasting Focus",
+      "source_ids": [
+        "1258-11-2-133-spellcasting-focus"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1259-11-2-134-sphere-area-of-effect",
+      "kind": "glossary",
+      "name": "Sphere [Area of Effect]",
+      "source_ids": [
+        "1259-11-2-134-sphere-area-of-effect"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1260-11-2-135-stable",
+      "kind": "glossary",
+      "name": "Stable",
+      "source_ids": [
+        "1260-11-2-135-stable"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1261-11-2-136-stat-block",
+      "kind": "glossary",
+      "name": "Stat Block",
+      "source_ids": [
+        "1261-11-2-136-stat-block"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        188,
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1262-11-2-137-study-action",
+      "kind": "glossary",
+      "name": "Study [Action]",
+      "source_ids": [
+        "1262-11-2-137-study-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1263-11-2-138-stunned-condition",
+      "kind": "glossary",
+      "name": "Stunned [Condition]",
+      "source_ids": [
+        "1263-11-2-138-stunned-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1264-11-2-139-suffocation-hazard",
+      "kind": "glossary",
+      "name": "Suffocation [Hazard]",
+      "source_ids": [
+        "1264-11-2-139-suffocation-hazard"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1265-11-2-140-surprise",
+      "kind": "glossary",
+      "name": "Surprise",
+      "source_ids": [
+        "1265-11-2-140-surprise"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1266-11-2-141-swimming",
+      "kind": "glossary",
+      "name": "Swimming",
+      "source_ids": [
+        "1266-11-2-141-swimming"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1267-11-2-142-swim-speed",
+      "kind": "glossary",
+      "name": "Swim Speed",
+      "source_ids": [
+        "1267-11-2-142-swim-speed"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        189
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1268-11-2-143-target",
+      "kind": "glossary",
+      "name": "Target",
+      "source_ids": [
+        "1268-11-2-143-target"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1269-11-2-144-telepathy",
+      "kind": "glossary",
+      "name": "Telepathy",
+      "source_ids": [
+        "1269-11-2-144-telepathy"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1270-11-2-145-teleportation",
+      "kind": "glossary",
+      "name": "Teleportation",
+      "source_ids": [
+        "1270-11-2-145-teleportation"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1271-11-2-146-temporary-hit-points",
+      "kind": "glossary",
+      "name": "Temporary Hit Points",
+      "source_ids": [
+        "1271-11-2-146-temporary-hit-points"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1272-11-2-147-tremorsense",
+      "kind": "glossary",
+      "name": "Tremorsense",
+      "source_ids": [
+        "1272-11-2-147-tremorsense"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1273-11-2-148-truesight",
+      "kind": "glossary",
+      "name": "Truesight",
+      "source_ids": [
+        "1273-11-2-148-truesight"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1274-11-2-149-unarmed-strike",
+      "kind": "glossary",
+      "name": "Unarmed Strike",
+      "source_ids": [
+        "1274-11-2-149-unarmed-strike"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        190
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1275-11-2-150-unconscious-condition",
+      "kind": "glossary",
+      "name": "Unconscious [Condition]",
+      "source_ids": [
+        "1275-11-2-150-unconscious-condition"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1276-11-2-151-unoccupied-space",
+      "kind": "glossary",
+      "name": "Unoccupied Space",
+      "source_ids": [
+        "1276-11-2-151-unoccupied-space"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1277-11-2-152-utilize-action",
+      "kind": "glossary",
+      "name": "Utilize [Action]",
+      "source_ids": [
+        "1277-11-2-152-utilize-action"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1278-11-2-153-vulnerability",
+      "kind": "glossary",
+      "name": "Vulnerability",
+      "source_ids": [
+        "1278-11-2-153-vulnerability"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1279-11-2-154-weapon",
+      "kind": "glossary",
+      "name": "Weapon",
+      "source_ids": [
+        "1279-11-2-154-weapon"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    },
+    {
+      "id": "1280-11-2-155-weapon-attack",
+      "kind": "glossary",
+      "name": "Weapon Attack",
+      "source_ids": [
+        "1280-11-2-155-weapon-attack"
+      ],
+      "chapter_id": "1123-11-rules-glossary",
+      "pages": [
+        191
+      ],
+      "fact_status": "pending",
+      "facts": {},
+      "provenance": "SRD 5.2.1",
+      "parent_id": "1125-11-2-rules-definitions"
+    }
+  ],
+  "catalog_tables": [
+    {
+      "id": "178-object-armor-class",
+      "name": "Object Armor Class",
+      "section_id": "1144-11-2-19-breaking-objects",
+      "page": 178,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ac-substance",
+          "name": "AC Substance",
+          "type": "string"
+        },
+        {
+          "id": "ac-substance-2",
+          "name": "AC Substance",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "178-carrying-capacity-object-hit-points",
+      "name": "Carrying Capacity Object Hit Points",
+      "section_id": "1150-11-2-25-carrying-capacity",
+      "page": 178,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "size",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "fragile",
+          "name": "Fragile",
+          "type": "string"
+        },
+        {
+          "id": "resilient",
+          "name": "Resilient",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "180-damage-types",
+      "name": "Damage Types",
+      "section_id": "1171-11-2-46-damage-types",
+      "page": 180,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "type",
+          "name": "Type",
+          "type": "string"
+        },
+        {
+          "id": "examples",
+          "name": "Examples",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 13,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "181-water-needs-per-day",
+      "name": "Water Needs per Day",
+      "section_id": "1178-11-2-53-dehydration-hazard",
+      "page": 181,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "size",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "water",
+          "name": "Water",
+          "type": "string"
+        },
+        {
+          "id": "size-2",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "water-2",
+          "name": "Water",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "184-influence-checks",
+      "name": "Influence Checks",
+      "section_id": "1214-11-2-89-influence-action",
+      "page": 184,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "ability-check",
+          "name": "Ability Check",
+          "type": "string"
+        },
+        {
+          "id": "interaction",
+          "name": "Interaction",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 5,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "185-food-needs-per-day",
+      "name": "Food Needs per Day",
+      "section_id": "1225-11-2-100-malnutrition-hazard",
+      "page": 185,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "size",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "food",
+          "name": "Food",
+          "type": "string"
+        },
+        {
+          "id": "size-2",
+          "name": "Size",
+          "type": "string"
+        },
+        {
+          "id": "food-2",
+          "name": "Food",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 3,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "187-search",
+      "name": "Search",
+      "section_id": "1249-11-2-124-search-action",
+      "page": 187,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "skill",
+          "name": "Skill",
+          "type": "string"
+        },
+        {
+          "id": "thing-to-detect",
+          "name": "Thing to Detect",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "id": "189-areas-of-knowledge",
+      "name": "Areas of Knowledge",
+      "section_id": "1262-11-2-137-study-action",
+      "page": 189,
+      "fact_status": "pending",
+      "columns": [
+        {
+          "id": "skill",
+          "name": "Skill",
+          "type": "string"
+        },
+        {
+          "id": "areas",
+          "name": "Areas",
+          "type": "string"
+        }
+      ],
+      "rows": [],
+      "source_row_count": 4,
+      "omissions": [],
+      "provenance": "SRD 5.2.1"
+    }
+  ]
+}

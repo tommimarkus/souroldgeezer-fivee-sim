@@ -1,8 +1,8 @@
 """Content packs: the engine's rules data, whether we shipped it or you wrote it.
 
-A pack is one JSON file holding creatures, spells, conditions, terrain, and
-items. The bundled SRD slice under ``data/srd/`` is not a special case — it is
-two packs the engine happens to carry, parsed by the code below like any other. That is what
+A pack is one JSON file holding executable records, catalog identities, and
+printed tables. The bundled SRD slice under ``data/srd/`` is not a special case —
+its packs are parsed by the code below like any other. That is what
 makes a campaign's own file "compatible" rather than a second dialect: there is
 only one format, and we eat it too.
 
@@ -45,14 +45,27 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
+from .catalog import (
+    CatalogCell,
+    CatalogColumn,
+    CatalogRecord,
+    CatalogRow,
+    CatalogTable,
+    CatalogValueType,
+    ContentRef,
+    FactStatus,
+    freeze_json,
+)
 from .kernel.actions import AttackKind, RiderExpiry
 from .kernel.conditions import EFFECT_FLAGS, EFFECTS, Condition, ConditionEffect, ConditionTable
 from .kernel.grid import TERRAIN, TERRAIN_FLAGS, Point, TerrainEffect
@@ -83,7 +96,8 @@ CLAUDE_PROJECT_ENV = "CLAUDE_PROJECT_DIR"
 PROJECT_SUBDIR = Path(".fivee-sim") / "content"
 
 _BUILTIN_PACKAGE = "fivee_sim.data.srd"
-BUILTIN_FILES = ("monsters.json", "spells.json")
+CATALOG_FILES = tuple(f"catalog-{chapter:02d}.json" for chapter in range(1, 17))
+BUILTIN_FILES = ("monsters.json", "spells.json", *CATALOG_FILES)
 
 #: A pack larger than this fails cleanly instead of stalling session start. Packs
 #: are hand-authored rules data; the whole SRD would not approach this.
@@ -96,9 +110,15 @@ MAX_PACK_BYTES = 4 * 1024 * 1024
 STRUCTURAL_CONDITIONS = (Condition.UNCONSCIOUS, Condition.PRONE)
 
 SECTIONS = ("creatures", "spells", "conditions", "terrain", "items")
+CATALOG_SECTIONS = ("catalog", "catalog_tables")
+MERGE_SECTIONS = (*SECTIONS, *CATALOG_SECTIONS)
 
-_PACK_KEYS = frozenset({"pack", "version", "provenance", "attribution", "note", *SECTIONS})
-_COMMON_RECORD_KEYS = frozenset({"name", "provenance", "unmodelled", "overrides"})
+_PACK_KEYS = frozenset(
+    {"pack", "version", "provenance", "attribution", "note", *MERGE_SECTIONS}
+)
+_COMMON_RECORD_KEYS = frozenset(
+    {"name", "provenance", "unmodelled", "unmodelled_facts", "overrides"}
+)
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
@@ -131,6 +151,22 @@ _USE_KEYS = frozenset({
     "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
     "condition", "action_cost",
 })
+_CATALOG_KEYS = frozenset({
+    "id", "kind", "name", "source_ids", "chapter_id", "parent_id", "pages",
+    "fact_status", "facts", "aliases", "content_ref", "unmodelled_facts",
+    "provenance", "overrides",
+})
+_CATALOG_TABLE_KEYS = frozenset({
+    "id", "name", "section_id", "page", "fact_status", "columns", "rows",
+    "source_row_count", "omissions", "provenance", "overrides",
+})
+_CATALOG_COLUMN_KEYS = frozenset({"id", "name", "type"})
+_CATALOG_ROW_KEYS = frozenset({"cells"})
+_CATALOG_CELL_KEYS = frozenset({"value", "numeric_value", "omission_code"})
+_OMISSION_KEYS = frozenset({"code", "feature", "source_ids", "row", "column"})
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+MAX_CATALOG_RECORD_BYTES = 48 * 1024
+MAX_ATOMIC_FACT_CHARS = 512
 
 
 class BuiltinMode(StrEnum):
@@ -181,6 +217,12 @@ class ContentRegistry:
     terrain_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
     items: Mapping[str, ItemEffect] = field(default_factory=dict)
     item_records: Mapping[str, dict[str, Any]] = field(default_factory=dict)
+    catalog: Mapping[str, CatalogRecord] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    catalog_tables: Mapping[str, CatalogTable] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
     packs: tuple[PackInfo, ...] = ()
     sources: Mapping[tuple[str, str], str] = field(default_factory=dict)
     warnings: tuple[Diagnostic, ...] = ()
@@ -204,10 +246,24 @@ class ContentRegistry:
         return {section: sorted(self.records_for(section)) for section in SECTIONS}
 
     def summary(self) -> dict[str, Any]:
+        progress = {status.value: 0 for status in FactStatus}
+        table_progress = {status.value: 0 for status in FactStatus}
+        kinds: dict[str, int] = {}
+        for record in self.catalog.values():
+            progress[record.fact_status.value] += 1
+            kinds[record.kind] = kinds.get(record.kind, 0) + 1
+        for table in self.catalog_tables.values():
+            table_progress[table.fact_status.value] += 1
         return {
             "builtin": self.builtin.value,
             "counts": {
                 section: len(self.records_for(section)) for section in SECTIONS
+            },
+            "catalog": {
+                "records": len(self.catalog),
+                "tables": len(self.catalog_tables),
+                "kinds": dict(sorted(kinds.items())),
+                "progress": {"sections": progress, "tables": table_progress},
             },
             "packs": [pack.as_dict() for pack in self.packs],
             "retained_conditions": list(self.retained_conditions),
@@ -228,6 +284,10 @@ class _ParsedPack:
     terrain_records: dict[str, dict[str, Any]]
     items: dict[str, ItemEffect]
     item_records: dict[str, dict[str, Any]]
+    catalog: dict[str, CatalogRecord]
+    catalog_records: dict[str, dict[str, Any]]
+    catalog_tables: dict[str, CatalogTable]
+    catalog_table_records: dict[str, dict[str, Any]]
 
     def section(self, name: str) -> Mapping[str, Any]:
         return {
@@ -236,6 +296,8 @@ class _ParsedPack:
             "conditions": self.condition_records,
             "terrain": self.terrain_records,
             "items": self.item_records,
+            "catalog": self.catalog_records,
+            "catalog_tables": self.catalog_table_records,
         }[name]
 
 
@@ -287,6 +349,145 @@ def _named_records(
     return out
 
 
+def _identified_records(
+    payload: Mapping[str, Any],
+    section: str,
+    diagnostics: list[Diagnostic],
+    source: str,
+) -> list[tuple[str, Mapping[str, Any]]]:
+    """Pull an ID-keyed catalog section from a pack with duplicate diagnostics."""
+    entries = payload.get(section)
+    if entries is None:
+        return []
+    if not isinstance(entries, list):
+        diagnostics.append(
+            Diagnostic(source=source, section=section, problem="must be a list of records")
+        )
+        return []
+    out: list[tuple[str, Mapping[str, Any]]] = []
+    seen: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            diagnostics.append(
+                Diagnostic(
+                    source=source,
+                    section=section,
+                    record=f"#{index}",
+                    problem=f"must be an object, got {type(entry).__name__}",
+                )
+            )
+            continue
+        identifier = entry.get("id")
+        if not isinstance(identifier, str) or not identifier.strip():
+            diagnostics.append(
+                Diagnostic(
+                    source=source,
+                    section=section,
+                    record=f"#{index}",
+                    field="id",
+                    problem="required, and must be non-empty text",
+                )
+            )
+            continue
+        if identifier in seen:
+            diagnostics.append(
+                Diagnostic(
+                    source=source,
+                    section=section,
+                    record=identifier,
+                    problem="defined twice in the same pack",
+                )
+            )
+            continue
+        seen.add(identifier)
+        out.append((identifier, entry))
+    return out
+
+
+def _validate_json_facts(reader: _Reader, field_name: str, value: Any) -> bool:
+    """Validate bounded JSON facts recursively; prose-shaped field names are refused."""
+    ok = True
+    prose_keys = {"body", "description", "flavor", "rules", "text"}
+
+    def walk(child: Any, path: str) -> None:
+        nonlocal ok
+        if child is None or isinstance(child, bool | int | float):
+            return
+        if isinstance(child, str):
+            if len(child) > MAX_ATOMIC_FACT_CHARS:
+                reader.fail(field_name, f"{path} exceeds {MAX_ATOMIC_FACT_CHARS} characters")
+                ok = False
+            return
+        if isinstance(child, list):
+            for index, item in enumerate(child):
+                walk(item, f"{path}[{index}]")
+            return
+        if isinstance(child, dict):
+            for key, item in child.items():
+                if not isinstance(key, str) or not key:
+                    reader.fail(field_name, f"{path} keys must be non-empty text")
+                    ok = False
+                    continue
+                if key.casefold() in prose_keys:
+                    reader.fail(
+                        field_name,
+                        f"{path}.{key} is a prose field; catalog facts are structured only",
+                    )
+                    ok = False
+                walk(item, f"{path}.{key}")
+            return
+        reader.fail(field_name, f"{path} is not a JSON scalar, list, or object")
+        ok = False
+
+    walk(value, field_name)
+    return ok
+
+
+def _structured_omissions(
+    reader: _Reader, key: str = "unmodelled_facts"
+) -> tuple[Mapping[str, Any], ...]:
+    """Validate machine-readable omission codes used by execution and catalog rows."""
+    out: list[Mapping[str, Any]] = []
+    for index, value in enumerate(reader.sequence(key)):
+        if not isinstance(value, dict):
+            reader.fail(key, f"entry #{index} must be an object")
+            continue
+        unknown = sorted(set(value) - _OMISSION_KEYS)
+        if unknown:
+            reader.fail(key, f"entry #{index} has unknown keys: {', '.join(unknown)}")
+            continue
+        code = value.get("code")
+        if not isinstance(code, str) or not _IDENTIFIER.fullmatch(code):
+            reader.fail(key, f"entry #{index}.code must be a stable identifier")
+            continue
+        feature = value.get("feature")
+        if feature is not None and (
+            not isinstance(feature, str) or not feature or len(feature) > MAX_ATOMIC_FACT_CHARS
+        ):
+            reader.fail(
+                key,
+                f"entry #{index}.feature must be non-empty text of at most "
+                f"{MAX_ATOMIC_FACT_CHARS} characters",
+            )
+            continue
+        source_ids = value.get("source_ids", [])
+        if not isinstance(source_ids, list) or not all(
+            isinstance(item, str) and item for item in source_ids
+        ):
+            reader.fail(key, f"entry #{index}.source_ids must be a list of identifiers")
+            continue
+        row = value.get("row")
+        if row is not None and (isinstance(row, bool) or not isinstance(row, int) or row < 0):
+            reader.fail(key, f"entry #{index}.row must be a non-negative whole number")
+            continue
+        column = value.get("column")
+        if column is not None and (not isinstance(column, str) or not column):
+            reader.fail(key, f"entry #{index}.column must be non-empty text")
+            continue
+        out.append(freeze_json(dict(value)))
+    return tuple(out)
+
+
 def _common_fields(reader: _Reader) -> str:
     """The fields every record carries, checked identically in every section.
 
@@ -296,8 +497,259 @@ def _common_fields(reader: _Reader) -> str:
     """
     provenance = reader.string("provenance", required=True)
     reader.string_list("unmodelled")
+    _structured_omissions(reader)
     reader.boolean("overrides")
     return provenance
+
+
+def _parse_catalog_record(
+    identifier: str,
+    record: Mapping[str, Any],
+    diagnostics: list[Diagnostic],
+    source: str,
+) -> CatalogRecord | None:
+    reader = _Reader(record, diagnostics, source=source, section="catalog", name=identifier)
+    reader.unknown_keys(_CATALOG_KEYS)
+    if not _IDENTIFIER.fullmatch(identifier):
+        reader.fail("id", "must be a stable identifier using letters, numbers, '.', ':', '_', '-'")
+    kind = reader.string("kind", required=True)
+    name = reader.string("name", required=True)
+    provenance = reader.string("provenance", required=True)
+    source_ids = reader.string_list("source_ids")
+    if not source_ids:
+        reader.fail("source_ids", "must contain at least one source identifier")
+    chapter_id = reader.string("chapter_id")
+    parent_id = reader.string("parent_id")
+    aliases = tuple(reader.string_list("aliases"))
+    pages_raw = reader.sequence("pages")
+    pages: list[int] = []
+    for page in pages_raw:
+        if isinstance(page, bool) or not isinstance(page, int) or page < 1:
+            reader.fail("pages", f"entries must be positive page numbers, got {page!r}")
+        else:
+            pages.append(page)
+    if not pages:
+        reader.fail("pages", "must contain at least one printed page")
+    fact_status = reader.enum("fact_status", FactStatus)
+    facts = reader.mapping("facts")
+    _validate_json_facts(reader, "facts", facts)
+    omissions = _structured_omissions(reader)
+    reader.boolean("overrides")
+
+    content_ref: ContentRef | None = None
+    if record.get("content_ref") is not None:
+        raw_ref = reader.mapping("content_ref")
+        unknown = sorted(set(raw_ref) - {"section", "name"})
+        if unknown:
+            reader.fail("content_ref", f"unknown keys: {', '.join(unknown)}")
+        section = raw_ref.get("section")
+        content_name = raw_ref.get("name")
+        if section not in SECTIONS:
+            reader.fail("content_ref", f"section must be one of: {', '.join(SECTIONS)}")
+        elif not isinstance(content_name, str) or not content_name:
+            reader.fail("content_ref", "name must be non-empty text")
+        else:
+            content_ref = ContentRef(section=str(section), name=content_name)
+
+    encoded = json.dumps(record, ensure_ascii=False, separators=(",", ":")).encode()
+    if len(encoded) > MAX_CATALOG_RECORD_BYTES:
+        reader.fail(
+            "id",
+            f"record is {len(encoded)} bytes, over the {MAX_CATALOG_RECORD_BYTES} byte limit",
+        )
+    if not reader.ok or fact_status is None:
+        return None
+    return CatalogRecord(
+        id=identifier,
+        kind=kind,
+        name=name,
+        source_ids=tuple(source_ids),
+        chapter_id=chapter_id,
+        parent_id=parent_id,
+        pages=tuple(pages),
+        fact_status=fact_status,
+        facts=freeze_json(dict(facts)),
+        aliases=aliases,
+        content_ref=content_ref,
+        unmodelled_facts=omissions,
+        provenance=provenance,
+    )
+
+
+def _parse_catalog_table(
+    identifier: str,
+    record: Mapping[str, Any],
+    diagnostics: list[Diagnostic],
+    source: str,
+) -> CatalogTable | None:
+    reader = _Reader(
+        record, diagnostics, source=source, section="catalog_tables", name=identifier
+    )
+    reader.unknown_keys(_CATALOG_TABLE_KEYS)
+    if not _IDENTIFIER.fullmatch(identifier):
+        reader.fail("id", "must be a stable identifier")
+    name = reader.string("name", required=True)
+    section_id = reader.string("section_id", required=True)
+    page = reader.integer("page", required=True, minimum=1)
+    fact_status = reader.enum("fact_status", FactStatus)
+    provenance = reader.string("provenance", required=True)
+    reader.boolean("overrides")
+
+    columns: list[CatalogColumn] = []
+    column_ids: set[str] = set()
+    for index, raw_column in enumerate(reader.sequence("columns")):
+        if not isinstance(raw_column, dict):
+            reader.fail("columns", f"column #{index} must be an object")
+            continue
+        unknown = sorted(set(raw_column) - _CATALOG_COLUMN_KEYS)
+        if unknown:
+            reader.fail("columns", f"column #{index} has unknown keys: {', '.join(unknown)}")
+            continue
+        column_id = raw_column.get("id")
+        column_name = raw_column.get("name")
+        raw_type = raw_column.get("type")
+        if not isinstance(column_id, str) or not _IDENTIFIER.fullmatch(column_id):
+            reader.fail("columns", f"column #{index}.id must be a stable identifier")
+            continue
+        if column_id in column_ids:
+            reader.fail("columns", f"column id {column_id!r} is defined twice")
+            continue
+        if not isinstance(column_name, str) or not column_name:
+            reader.fail("columns", f"column #{index}.name must be non-empty text")
+            continue
+        try:
+            column_type = CatalogValueType(str(raw_type))
+        except (TypeError, ValueError):
+            reader.fail(
+                "columns",
+                f"column #{index}.type must be one of: "
+                f"{', '.join(member.value for member in CatalogValueType)}",
+            )
+            continue
+        column_ids.add(column_id)
+        columns.append(CatalogColumn(id=column_id, name=column_name, type=column_type))
+    if not columns:
+        reader.fail("columns", "must contain at least one typed column")
+
+    rows: list[CatalogRow] = []
+    for row_index, raw_row in enumerate(reader.sequence("rows")):
+        if not isinstance(raw_row, dict):
+            reader.fail("rows", f"row #{row_index} must be an object")
+            continue
+        unknown = sorted(set(raw_row) - _CATALOG_ROW_KEYS)
+        if unknown:
+            reader.fail("rows", f"row #{row_index} has unknown keys: {', '.join(unknown)}")
+            continue
+        raw_cells = raw_row.get("cells")
+        if not isinstance(raw_cells, list):
+            reader.fail("rows", f"row #{row_index}.cells must be a list")
+            continue
+        if len(raw_cells) != len(columns):
+            reader.fail(
+                "rows",
+                f"row #{row_index} has {len(raw_cells)} cells for {len(columns)} columns",
+            )
+            continue
+        cells: list[CatalogCell] = []
+        for cell_index, raw_cell in enumerate(raw_cells):
+            if not isinstance(raw_cell, dict):
+                reader.fail("rows", f"row #{row_index} cell #{cell_index} must be an object")
+                continue
+            unknown = sorted(set(raw_cell) - _CATALOG_CELL_KEYS)
+            if unknown:
+                reader.fail(
+                    "rows",
+                    f"row #{row_index} cell #{cell_index} has unknown keys: "
+                    f"{', '.join(unknown)}",
+                )
+                continue
+            value = raw_cell.get("value")
+            if not (
+                value is None
+                or isinstance(value, str | int | float | bool)
+            ):
+                reader.fail("rows", f"row #{row_index} cell #{cell_index} is not scalar")
+                continue
+            if isinstance(value, str) and len(value) > MAX_ATOMIC_FACT_CHARS:
+                reader.fail(
+                    "rows",
+                    f"row #{row_index} cell #{cell_index} exceeds "
+                    f"{MAX_ATOMIC_FACT_CHARS} characters",
+                )
+                continue
+            numeric = raw_cell.get("numeric_value")
+            if numeric is not None and (
+                isinstance(numeric, bool) or not isinstance(numeric, int | float)
+            ):
+                reader.fail(
+                    "rows", f"row #{row_index} cell #{cell_index}.numeric_value must be numeric"
+                )
+                continue
+            omission_code = raw_cell.get("omission_code", "")
+            if not isinstance(omission_code, str) or (
+                omission_code and not _IDENTIFIER.fullmatch(omission_code)
+            ):
+                reader.fail(
+                    "rows",
+                    f"row #{row_index} cell #{cell_index}.omission_code must be an identifier",
+                )
+                continue
+            column_type = columns[cell_index].type
+            matches_type = {
+                CatalogValueType.STRING: isinstance(value, str),
+                CatalogValueType.INTEGER: isinstance(value, int)
+                and not isinstance(value, bool),
+                CatalogValueType.NUMBER: isinstance(value, int | float)
+                and not isinstance(value, bool),
+                CatalogValueType.BOOLEAN: isinstance(value, bool),
+            }[column_type]
+            if value is None and not omission_code:
+                reader.fail(
+                    "rows",
+                    f"row #{row_index} cell #{cell_index} may be null only with an "
+                    "omission_code",
+                )
+                continue
+            if value is not None and not matches_type:
+                reader.fail(
+                    "rows",
+                    f"row #{row_index} cell #{cell_index} does not match "
+                    f"{column_type.value} column {columns[cell_index].id!r}",
+                )
+                continue
+            cells.append(
+                CatalogCell(
+                    value=value,
+                    numeric_value=numeric,
+                    omission_code=omission_code,
+                )
+            )
+        if len(cells) == len(columns):
+            rows.append(CatalogRow(cells=tuple(cells)))
+
+    source_row_count = reader.integer("source_row_count", required=True, minimum=0)
+    if source_row_count < len(rows):
+        reader.fail("source_row_count", "cannot be smaller than the committed row count")
+    omissions = _structured_omissions(reader, "omissions")
+    if fact_status is FactStatus.COMPLETE and source_row_count != len(rows):
+        reader.fail(
+            "rows",
+            "a complete table keeps every source row; omit prose-only cells with codes",
+        )
+    if not reader.ok or fact_status is None:
+        return None
+    return CatalogTable(
+        id=identifier,
+        name=name,
+        section_id=section_id,
+        page=page,
+        fact_status=fact_status,
+        columns=tuple(columns),
+        rows=tuple(rows),
+        source_row_count=source_row_count,
+        omissions=omissions,
+        provenance=provenance,
+    )
 
 
 def _parse_creature(
@@ -704,7 +1156,8 @@ def _parse_pack(
         ),
         creatures={}, spells={}, spell_records={}, condition_effects={},
         condition_records={}, terrain_effects={}, terrain_records={},
-        items={}, item_records={},
+        items={}, item_records={}, catalog={}, catalog_records={},
+        catalog_tables={}, catalog_table_records={},
     )
 
     for name, record in _named_records(payload, "creatures", diagnostics, label):
@@ -732,7 +1185,20 @@ def _parse_pack(
             parsed.items[name] = item[0]
             parsed.item_records[name] = item[1]
 
-    counts = {section: len(parsed.section(section)) for section in SECTIONS}
+    for identifier, record in _identified_records(payload, "catalog", diagnostics, label):
+        catalog_record = _parse_catalog_record(identifier, record, diagnostics, label)
+        if catalog_record is not None:
+            parsed.catalog[identifier] = catalog_record
+            parsed.catalog_records[identifier] = dict(record)
+    for identifier, record in _identified_records(
+        payload, "catalog_tables", diagnostics, label
+    ):
+        catalog_table = _parse_catalog_table(identifier, record, diagnostics, label)
+        if catalog_table is not None:
+            parsed.catalog_tables[identifier] = catalog_table
+            parsed.catalog_table_records[identifier] = dict(record)
+
+    counts = {section: len(parsed.section(section)) for section in MERGE_SECTIONS}
     parsed.info = PackInfo(
         label=parsed.info.label, level=parsed.info.level, path=parsed.info.path,
         pack=parsed.info.pack, version=parsed.info.version,
@@ -860,9 +1326,9 @@ def _builtin_condition_payload() -> dict[str, Any]:
     also means a malformed row could never ship unnoticed.
     """
     return {
-        "pack": "srd-5.2-conditions",
+        "pack": "srd-5.2.1-conditions",
         "version": "1.0",
-        "provenance": "SRD 5.2",
+        "provenance": "SRD 5.2.1",
         "note": (
             "Rendered from the engine's own condition table so it validates and "
             "merges like any other pack."
@@ -870,7 +1336,7 @@ def _builtin_condition_payload() -> dict[str, Any]:
         "conditions": [
             {
                 "name": str(name),
-                "provenance": "SRD 5.2",
+                "provenance": "SRD 5.2.1",
                 "effects": {
                     flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)
                 },
@@ -896,7 +1362,7 @@ def _builtin_terrain_payload() -> dict[str, Any]:
         "pack": "engine-terrain",
         "version": "1.0",
         "provenance": (
-            "Engine policy; movement, cover, and vision semantics follow SRD 5.2"
+            "Engine policy; movement, cover, and vision semantics follow SRD 5.2.1"
         ),
         "note": (
             "Rendered from the engine's own terrain table so it validates and "
@@ -1166,14 +1632,16 @@ def _build(
     terrain_records: dict[str, dict[str, Any]] = {}
     items: dict[str, ItemEffect] = {}
     item_records: dict[str, dict[str, Any]] = {}
+    catalog: dict[str, CatalogRecord] = {}
+    catalog_tables: dict[str, CatalogTable] = {}
     sources: dict[tuple[str, str], str] = {}
 
     ownership = {
-        section: _merge_section(section, levels, diagnostics) for section in SECTIONS
+        section: _merge_section(section, levels, diagnostics) for section in MERGE_SECTIONS
     }
     for _level, packs in levels:
         for pack in packs:
-            for section in SECTIONS:
+            for section in MERGE_SECTIONS:
                 owners = ownership[section]
                 for name in pack.section(section):
                     if owners.get(name) != pack.info.label:
@@ -1190,9 +1658,13 @@ def _build(
                     elif section == "terrain":
                         terrain_effects[name] = pack.terrain_effects[name]
                         terrain_records[name] = pack.terrain_records[name]
-                    else:
+                    elif section == "items":
                         items[name] = pack.items[name]
                         item_records[name] = pack.item_records[name]
+                    elif section == "catalog":
+                        catalog[name] = pack.catalog[name]
+                    else:
+                        catalog_tables[name] = pack.catalog_tables[name]
 
     retained: list[str] = []
     for condition in STRUCTURAL_CONDITIONS:
@@ -1206,12 +1678,9 @@ def _build(
         # disagreeing, which is the exact failure the engine exists to prevent.
         condition_records[name] = {
             "name": name,
-            "provenance": "SRD 5.2",
-            "description": (
-                "Retained by the engine: the stepper applies this itself when a "
-                "creature drops to 0 hit points."
-            ),
+            "provenance": "SRD 5.2.1",
             "unmodelled": [],
+            "unmodelled_facts": [],
         }
         retained.append(name)
 
@@ -1231,6 +1700,8 @@ def _build(
         terrain_records=terrain_records,
         items=items,
         item_records=item_records,
+        catalog=MappingProxyType(catalog),
+        catalog_tables=MappingProxyType(catalog_tables),
         packs=tuple(pack.info for _level, packs in levels for pack in packs),
         sources=sources,
         warnings=tuple(d for d in diagnostics if d.severity is Severity.WARNING),
@@ -1385,10 +1856,13 @@ def make_creature(
     active = builtin() if registry is None else registry
     record = active.creatures.get(name)
     if record is None:
-        available = ", ".join(sorted(active.creatures)) or "none"
+        names = sorted(active.creatures)
+        shown = names[:10]
+        available = ", ".join(shown) or "none"
         raise DataError(
             f"no stat block named {name!r} in the loaded content "
-            f"(built-in content is {active.builtin.value}d); available: {available}"
+            f"(built-in content is {active.builtin.value}d); available: {available} "
+            f"(showing {len(shown)} of {len(names)})"
         )
     return Creature.from_record(
         record,

@@ -1443,7 +1443,7 @@ class TestSpellShapeSchema:
 class TestHalfDamageOnSaveIsOptedInto:
     """A damage spell halves on a successful save only when its record says so.
 
-    SRD 5.2 states the half-damage clause per spell — Fireball has "half as much
+    SRD 5.2.1 states the half-damage clause per spell — Fireball has "half as much
     damage on a successful save", Sacred Flame (p. 159) has no such clause and
     deals nothing. So the *absence* of the field has to mean all-or-nothing: a
     default of half makes every faithfully-transcribed cantrip quietly generous,
@@ -1559,14 +1559,16 @@ class TestContentTools:
         status = api.content_configure([str(pack)])
         assert status["changed"] is True
         assert status["generation"] == before + 1
-        assert "Vale Stalker" in api.lookup_rule()["creatures"]
+        assert api.lookup_rule("Vale Stalker")["name"] == "Vale Stalker"
 
     def test_configure_can_switch_to_exclude(self, pack: Path) -> None:
         api.content_configure([str(pack)], builtin="exclude")
         listing = api.lookup_rule()
         assert listing["builtin"] == "exclude"
-        assert "Goblin Warrior" not in listing["creatures"]
-        assert "Vale Stalker" in listing["creatures"]
+        assert listing["counts"]["creatures"] == 1
+        with pytest.raises(api.ToolError, match="nothing loaded"):
+            api.lookup_rule("Goblin Warrior")
+        assert api.lookup_rule("Vale Stalker")["name"] == "Vale Stalker"
 
     def test_configure_adds_rather_than_replaces_when_asked(self, tmp_path: Path) -> None:
         first = write_pack(tmp_path / "a", "one.json", CAMPAIGN)
@@ -1577,7 +1579,7 @@ class TestContentTools:
         api.content_configure([str(first)])
         status = api.content_configure([str(second)], add=True)
         assert len(status["configured_paths"]) == 2
-        assert "Rope" in api.lookup_rule()["items"]
+        assert api.lookup_rule("Rope")["name"] == "Rope"
 
     def test_a_failed_configure_leaves_the_working_content_alone(
         self, tmp_path: Path
