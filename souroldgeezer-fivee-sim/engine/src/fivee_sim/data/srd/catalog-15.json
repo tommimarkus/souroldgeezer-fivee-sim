@@ -20393,8 +20393,173 @@
       "pages": [
         311
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Night Hag",
+        "size": "Medium",
+        "creature_type": "Fiend",
+        "alignment": "Neutral Evil",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 5,
+          "score": 15
+        },
+        "hit_points": {
+          "average": 112,
+          "hit_dice": "15d8 + 45"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "skills": {
+          "Deception": 6,
+          "Insight": 5,
+          "Perception": 5,
+          "Stealth": 5
+        },
+        "resistances": [
+          "Cold",
+          "Fire"
+        ],
+        "immunities": [
+          "Charmed"
+        ],
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "Abyssal",
+          "Common",
+          "Infernal",
+          "Primordial"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "traits": {
+          "coven_magic": {
+            "minimum_hag_allies": 2,
+            "maximum_distance_feet": 30,
+            "material_components_required": false,
+            "casting_time": "spell's normal casting time",
+            "ability": "Intelligence",
+            "save_dc": 14,
+            "spell_choices": [
+              "Augury",
+              "Find Familiar",
+              "Identify",
+              "Locate Object",
+              "Scrying",
+              "Unseen Servant"
+            ],
+            "repeat_cast_requires_long_rest": true
+          },
+          "magic_resistance": {
+            "advantage_on_saves_against": [
+              "spells",
+              "other magical effects"
+            ]
+          },
+          "soul_bag": {
+            "required_for": "Nightmare Haunting",
+            "must_be_held_or_carried": true,
+            "armor_class": 15,
+            "hit_points": 20,
+            "resistance": "all damage",
+            "turns_to_dust_at_zero_hit_points": true,
+            "destroyed_bag_releases_souls": true,
+            "replacement_creation_days": 7
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "claw_attacks": 2
+          },
+          "claw": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Slashing"
+          },
+          "nightmare_haunting": {
+            "uses_per_day": 1,
+            "requires": "Soul Bag",
+            "hag_plane": "Ethereal Plane",
+            "casts": "Dream",
+            "spellcasting_ability": "same as Spellcasting",
+            "messenger": "hag only",
+            "target": "visible creature on Material Plane",
+            "spell_fails_and_use_wasted_if_target_has": [
+              "Protection from Evil and Good",
+              "within Magic Circle"
+            ],
+            "hit_point_maximum_reduction": "Dream damage taken",
+            "killed_target_soul_trapped_in_bag": true,
+            "trapped_target_can_be_raised": false,
+            "raise_block_ends_when_soul_released": true
+          },
+          "spellcasting": {
+            "ability": "Intelligence",
+            "material_components_required": false,
+            "save_dc": 14,
+            "at_will": [
+              "Detect Magic",
+              "Etherealness",
+              "Magic Missile (level 4)"
+            ],
+            "twice_per_day_each": [
+              "Phantasmal Killer",
+              "Plane Shift (self only)"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "shape_shift": {
+            "forms": [
+              "Small Humanoid",
+              "Medium Humanoid",
+              "true form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20409,8 +20574,101 @@
       "pages": [
         311
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Nightmare",
+        "size": "Large",
+        "creature_type": "Fiend",
+        "alignment": "Neutral Evil",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 68,
+          "hit_dice": "8d10 + 24"
+        },
+        "speed": {
+          "walk_feet": 60,
+          "fly_feet": 90,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          }
+        },
+        "immunities": [
+          "Fire"
+        ],
+        "senses": {
+          "Passive_Perception": 11
+        },
+        "languages": [
+          "understands Abyssal, Common, and Infernal but cannot speak"
+        ],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "confer_fire_resistance": {
+            "target": "rider",
+            "active_while_rider_is_on_nightmare": true
+          },
+          "illumination": {
+            "bright_light_radius_feet": 10,
+            "additional_dim_light_feet": 10
+          }
+        },
+        "actions": {
+          "hooves": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": [
+              "2d8 + 4 Bludgeoning",
+              "3d6 Fire"
+            ]
+          },
+          "ethereal_stride": {
+            "teleports_nightmare": true,
+            "additional_willing_creatures": 3,
+            "creature_distance_feet": 5,
+            "between_planes": [
+              "Material Plane",
+              "Ethereal Plane"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20425,8 +20683,94 @@
       "pages": [
         312
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Noble",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 15,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 9,
+          "hit_dice": "2d8"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Dexterity": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Intelligence": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          }
+        },
+        "skills": {
+          "Deception": 5,
+          "Insight": 4,
+          "Persuasion": 5
+        },
+        "gear": [
+          "Breastplate",
+          "Rapier"
+        ],
+        "senses": {
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Common",
+          "two other languages"
+        ],
+        "challenge_rating": "1/8",
+        "experience_points": 25,
+        "proficiency_bonus": 2,
+        "actions": {
+          "rapier": {
+            "type": "Melee",
+            "attack_bonus": 3,
+            "reach_feet": 5,
+            "damage": "1d8 + 1 Piercing"
+          }
+        },
+        "reactions": {
+          "parry": {
+            "trigger": "hit by melee attack roll while holding weapon",
+            "armor_class_bonus_against_trigger": 2,
+            "can_cause_miss": true
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20441,8 +20785,118 @@
       "pages": [
         312
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ochre Jelly",
+        "size": "Large",
+        "creature_type": "Ooze",
+        "alignment": "Unaligned",
+        "armor_class": 8,
+        "initiative": {
+          "modifier": -2,
+          "score": 8
+        },
+        "hit_points": {
+          "average": 52,
+          "hit_dice": "7d10 + 14"
+        },
+        "speed": {
+          "walk_feet": 20,
+          "climb_feet": 20
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 2,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Charisma": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          }
+        },
+        "resistances": [
+          "Acid"
+        ],
+        "immunities": [
+          "Lightning",
+          "Slashing",
+          "Charmed",
+          "Deafened",
+          "Exhaustion",
+          "Frightened",
+          "Grappled",
+          "Prone",
+          "Restrained"
+        ],
+        "senses": {
+          "Blindsight_feet": 60,
+          "Passive_Perception": 8
+        },
+        "languages": [],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "traits": {
+          "amorphous": {
+            "minimum_gap_inches": 1,
+            "extra_movement_required": false
+          },
+          "spider_climb": {
+            "can_climb_difficult_surfaces": true,
+            "can_climb_ceilings": true,
+            "ability_check_required": false
+          }
+        },
+        "actions": {
+          "pseudopod": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "3d6 + 2 Acid"
+          }
+        },
+        "reactions": {
+          "split": {
+            "eligible_sizes": [
+              "Large",
+              "Medium"
+            ],
+            "minimum_hit_points": 10,
+            "triggers": [
+              "becomes Bloodied",
+              "subjected to Lightning damage",
+              "subjected to Slashing damage"
+            ],
+            "new_jellies": 2,
+            "new_size_change": "one size smaller",
+            "initiative": "same as original",
+            "original_hit_points_divided_evenly": true,
+            "rounding": "down"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20457,8 +20911,93 @@
       "pages": [
         312
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Ogre",
+        "size": "Large",
+        "creature_type": "Giant",
+        "alignment": "Chaotic Evil",
+        "armor_class": 11,
+        "initiative": {
+          "modifier": -1,
+          "score": 9
+        },
+        "hit_points": {
+          "average": 68,
+          "hit_dice": "8d10 + 24"
+        },
+        "speed": {
+          "walk_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 5,
+            "modifier": -3,
+            "save": -3
+          },
+          "Wisdom": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "gear": [
+          "Greatclub",
+          "3 Javelins"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 8
+        },
+        "languages": [
+          "Common",
+          "Giant"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "greatclub": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Bludgeoning"
+          },
+          "javelin": {
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "range_feet": [
+              30,
+              120
+            ],
+            "damage": "2d6 + 4 Piercing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z",
       "content_ref": {
@@ -20478,8 +21017,142 @@
         312,
         313
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Oni",
+        "size": "Large",
+        "creature_type": "Fiend",
+        "alignment": "Lawful Evil",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 119,
+          "hit_dice": "14d10 + 42"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "fly_feet": 30,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 6
+          },
+          "Intelligence": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 4
+          },
+          "Charisma": {
+            "score": 15,
+            "modifier": 2,
+            "save": 5
+          }
+        },
+        "skills": {
+          "Arcana": 5,
+          "Deception": 8,
+          "Perception": 4
+        },
+        "resistances": [
+          "Cold"
+        ],
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 14
+        },
+        "languages": [
+          "Common",
+          "Giant"
+        ],
+        "challenge_rating": "7",
+        "experience_points": 2900,
+        "proficiency_bonus": 3,
+        "traits": {
+          "regeneration": {
+            "hit_points_per_turn": 10,
+            "timing": "start of turn",
+            "minimum_current_hit_points": 1
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Claw",
+              "Nightmare Ray"
+            ],
+            "any_combination": true,
+            "may_replace_one_with": "Spellcasting"
+          },
+          "claw": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 10,
+            "damage": [
+              "1d12 + 4 Slashing",
+              "2d8 Necrotic"
+            ]
+          },
+          "nightmare_ray": {
+            "type": "Ranged",
+            "attack_bonus": 5,
+            "range_feet": 60,
+            "damage": "2d6 + 2 Psychic",
+            "hit_condition": "Frightened until start of oni's next turn"
+          },
+          "shape_shift": {
+            "forms": [
+              "Small Humanoid",
+              "Medium Humanoid",
+              "Large Giant",
+              "true form"
+            ],
+            "statistics_same_except": [
+              "size"
+            ],
+            "equipment_transformed": false
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 13,
+            "once_per_day_each": [
+              "Charm Person (level 2)",
+              "Darkness",
+              "Gaseous Form",
+              "Sleep"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "invisibility": {
+            "casts": "Invisibility on self",
+            "components_required": false,
+            "spellcasting_ability": "same as Spellcasting"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20494,8 +21167,108 @@
       "pages": [
         313
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Otyugh",
+        "size": "Large",
+        "creature_type": "Aberration",
+        "alignment": "Neutral",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 104,
+          "hit_dice": "11d10 + 44"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 19,
+            "modifier": 4,
+            "save": 7
+          },
+          "Intelligence": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "senses": {
+          "Darkvision_feet": 120,
+          "Passive_Perception": 11
+        },
+        "languages": [
+          "Otyugh",
+          "telepathy 120 feet; receiver cannot respond telepathically"
+        ],
+        "challenge_rating": "5",
+        "experience_points": 1800,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "tentacle_attacks": 2
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": "2d8 + 3 Piercing",
+            "hit_condition": "Poisoned",
+            "long_rest_save": {
+              "ability": "Constitution",
+              "dc": 15
+            },
+            "long_rest_failure_hit_point_maximum_reduction": "1d10",
+            "reduction_ends_when_poisoned_ends": true,
+            "long_rest_success": "Poisoned condition ends"
+          },
+          "tentacle": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 10,
+            "damage": "2d8 + 3 Piercing",
+            "maximum_grappled_target_size": "Medium",
+            "hit_condition": "Grappled",
+            "escape_dc": 13,
+            "tentacles_available": 2
+          },
+          "tentacle_slam": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 14
+            },
+            "targets": "each creature Grappled by otyugh",
+            "failure_damage": "3d8 + 3 Bludgeoning",
+            "failure_condition": "Stunned until start of otyugh's next turn",
+            "success_damage": "half only"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20510,8 +21283,80 @@
       "pages": [
         313
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Owlbear",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 1,
+          "score": 11
+        },
+        "hit_points": {
+          "average": 59,
+          "hit_dice": "7d10 + 21"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "climb_feet": 40
+        },
+        "abilities": {
+          "Strength": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          },
+          "Dexterity": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Constitution": {
+            "score": 17,
+            "modifier": 3,
+            "save": 3
+          },
+          "Intelligence": {
+            "score": 3,
+            "modifier": -4,
+            "save": -4
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Perception": 5
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "rend_attacks": 2
+          },
+          "rend": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 5 Slashing"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20526,8 +21371,81 @@
       "pages": [
         313
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pegasus",
+        "size": "Large",
+        "creature_type": "Celestial",
+        "alignment": "Chaotic Good",
+        "armor_class": 12,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 59,
+          "hit_dice": "7d10 + 21"
+        },
+        "speed": {
+          "walk_feet": 60,
+          "fly_feet": 90
+        },
+        "abilities": {
+          "Strength": {
+            "score": 18,
+            "modifier": 4,
+            "save": 4
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 4
+          },
+          "Constitution": {
+            "score": 16,
+            "modifier": 3,
+            "save": 5
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 15,
+            "modifier": 2,
+            "save": 4
+          },
+          "Charisma": {
+            "score": 13,
+            "modifier": 1,
+            "save": 3
+          }
+        },
+        "skills": {
+          "Perception": 6
+        },
+        "senses": {
+          "Passive_Perception": 16
+        },
+        "languages": [
+          "understands Celestial, Common, Elvish, and Sylvan but cannot speak"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "hooves": {
+            "type": "Melee",
+            "attack_bonus": 6,
+            "reach_feet": 5,
+            "damage": [
+              "1d6 + 4 Bludgeoning",
+              "2d4 Radiant"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20543,8 +21461,114 @@
         313,
         314
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Phase Spider",
+        "size": "Large",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 45,
+          "hit_dice": "7d10 + 7"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "climb_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Wisdom": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Charisma": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          }
+        },
+        "skills": {
+          "Stealth": 7
+        },
+        "senses": {
+          "Darkvision_feet": 60,
+          "Passive_Perception": 10
+        },
+        "languages": [],
+        "challenge_rating": "3",
+        "experience_points": 700,
+        "proficiency_bonus": 2,
+        "traits": {
+          "ethereal_sight": {
+            "distance_feet": 60,
+            "planes_visible_from_each_other": [
+              "Material Plane",
+              "Ethereal Plane"
+            ]
+          },
+          "spider_climb": {
+            "can_climb_difficult_surfaces": true,
+            "can_climb_ceilings": true,
+            "ability_check_required": false
+          },
+          "web_walker": {
+            "ignores_web_movement_restrictions": true,
+            "knows_location_of_creatures_touching_same_web": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 2
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": [
+              "1d10 + 3 Piercing",
+              "2d8 Poison"
+            ],
+            "if_damage_reduces_target_to_zero": {
+              "target_becomes_stable": true,
+              "condition": "Poisoned for 1 hour",
+              "while_poisoned_condition": "Paralyzed"
+            }
+          }
+        },
+        "bonus_actions": {
+          "ethereal_jaunt": {
+            "teleports_between": [
+              "Material Plane",
+              "Ethereal Plane"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20559,7 +21583,7 @@
       "pages": [
         314
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -20575,8 +21599,101 @@
       "pages": [
         314
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pirate",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 5,
+          "score": 15
+        },
+        "hit_points": {
+          "average": 33,
+          "hit_dice": "6d8 + 6"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Dexterity": {
+            "score": 16,
+            "modifier": 3,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 8,
+            "modifier": -1,
+            "save": -1
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 14,
+            "modifier": 2,
+            "save": 4
+          }
+        },
+        "gear": [
+          "6 Daggers",
+          "Leather Armor"
+        ],
+        "senses": {
+          "Passive_Perception": 11
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "1",
+        "experience_points": 200,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "dagger_attacks": 2,
+            "may_replace_one_with": "Enthralling Panache"
+          },
+          "dagger": {
+            "type": [
+              "Melee",
+              "Ranged"
+            ],
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "range_feet": [
+              20,
+              60
+            ],
+            "damage": "1d4 + 3 Piercing"
+          },
+          "enthralling_panache": {
+            "save": {
+              "ability": "Wisdom",
+              "dc": 12
+            },
+            "target": "one visible creature within 30 feet",
+            "failure_condition": "Charmed until start of pirate's next turn"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20591,8 +21708,122 @@
       "pages": [
         314
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pirate Captain",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 17,
+        "initiative": {
+          "modifier": 7,
+          "score": 17
+        },
+        "hit_points": {
+          "average": 84,
+          "hit_dice": "13d8 + 26"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 10,
+            "modifier": 0,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 18,
+            "modifier": 4,
+            "save": 7
+          },
+          "Constitution": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 5
+          },
+          "Charisma": {
+            "score": 17,
+            "modifier": 3,
+            "save": 6
+          }
+        },
+        "skills": {
+          "Acrobatics": 7,
+          "Perception": 5
+        },
+        "gear": [
+          "Pistol",
+          "Rapier"
+        ],
+        "senses": {
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "6",
+        "experience_points": 2300,
+        "proficiency_bonus": 3,
+        "actions": {
+          "multiattack": {
+            "attacks": 3,
+            "options": [
+              "Rapier",
+              "Pistol"
+            ],
+            "any_combination": true
+          },
+          "rapier": {
+            "type": "Melee",
+            "attack_bonus": 7,
+            "reach_feet": 5,
+            "damage": "2d8 + 4 Piercing",
+            "grants_advantage_on_next_attack_before_end_of_turn": true
+          },
+          "pistol": {
+            "type": "Ranged",
+            "attack_bonus": 7,
+            "range_feet": [
+              30,
+              90
+            ],
+            "damage": "2d10 + 4 Piercing"
+          }
+        },
+        "bonus_actions": {
+          "captains_charm": {
+            "save": {
+              "ability": "Wisdom",
+              "dc": 14
+            },
+            "target": "one visible creature within 30 feet",
+            "failure_condition": "Charmed until start of pirate's next turn"
+          }
+        },
+        "reactions": {
+          "riposte": {
+            "trigger": "hit by melee attack roll while holding weapon",
+            "armor_class_bonus_against_trigger": 3,
+            "can_cause_miss": true,
+            "on_miss": "one Rapier attack against triggering creature if in range"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20608,8 +21839,161 @@
         314,
         315
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pit Fiend",
+        "size": "Large",
+        "creature_type": "Fiend",
+        "alignment": "Lawful Evil",
+        "armor_class": 21,
+        "initiative": {
+          "modifier": 14,
+          "score": 24
+        },
+        "hit_points": {
+          "average": 337,
+          "hit_dice": "27d10 + 189"
+        },
+        "speed": {
+          "walk_feet": 30,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 26,
+            "modifier": 8,
+            "save": 8
+          },
+          "Dexterity": {
+            "score": 14,
+            "modifier": 2,
+            "save": 8
+          },
+          "Constitution": {
+            "score": 24,
+            "modifier": 7,
+            "save": 7
+          },
+          "Intelligence": {
+            "score": 22,
+            "modifier": 6,
+            "save": 6
+          },
+          "Wisdom": {
+            "score": 18,
+            "modifier": 4,
+            "save": 10
+          },
+          "Charisma": {
+            "score": 24,
+            "modifier": 7,
+            "save": 7
+          }
+        },
+        "descriptive_tags": [
+          "Devil"
+        ],
+        "skills": {
+          "Perception": 10,
+          "Persuasion": 19
+        },
+        "resistances": [
+          "Cold"
+        ],
+        "immunities": [
+          "Fire",
+          "Poison",
+          "Poisoned"
+        ],
+        "senses": {
+          "Truesight_feet": 120,
+          "Passive_Perception": 20
+        },
+        "languages": [
+          "Infernal",
+          "telepathy 120 feet"
+        ],
+        "challenge_rating": "20",
+        "experience_points": 25000,
+        "proficiency_bonus": 6,
+        "traits": {
+          "diabolical_restoration": {
+            "trigger": "dies outside Nine Hells",
+            "body_disappears": true,
+            "new_body": "instantly in Nine Hells",
+            "revives_with_all_hit_points": true
+          },
+          "fear_aura": {
+            "area": "20-foot Emanation",
+            "inactive_while_incapacitated": true,
+            "target": "enemy starting turn in aura",
+            "save": {
+              "ability": "Wisdom",
+              "dc": 21
+            },
+            "failure_condition": "Frightened until start of target's next turn",
+            "success_immunity_hours": 24
+          },
+          "legendary_resistance": {
+            "uses_per_day": 4,
+            "failed_save_becomes_success": true
+          },
+          "magic_resistance": {
+            "advantage_on_saves_against": [
+              "spells",
+              "other magical effects"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "devilish_claw_attacks": 2,
+            "fiery_mace_attacks": 1
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 10,
+            "damage": "3d6 + 8 Piercing",
+            "creature_target_save": {
+              "ability": "Constitution",
+              "dc": 21
+            },
+            "failure_condition": "Poisoned",
+            "while_poisoned_cannot_regain_hit_points": true,
+            "start_turn_damage": "6d6 Poison",
+            "repeat_save": "end of each target turn",
+            "automatic_success_after_minutes": 1
+          },
+          "devilish_claw": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 10,
+            "damage": "4d8 + 8 Necrotic"
+          },
+          "fiery_mace": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 10,
+            "damage": [
+              "4d6 + 8 Force",
+              "6d6 Fire"
+            ]
+          },
+          "hellfire_spellcasting": {
+            "recharge": "4-6",
+            "casts": "Fireball (level 5) twice",
+            "material_components_required": false,
+            "ability": "Charisma",
+            "save_dc": 21,
+            "may_replace_one_fireball_with": [
+              "Hold Monster (level 7)",
+              "Wall of Fire"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20624,8 +22008,154 @@
       "pages": [
         315
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Planetar",
+        "size": "Large",
+        "creature_type": "Celestial",
+        "alignment": "Lawful Good",
+        "armor_class": 19,
+        "initiative": {
+          "modifier": 10,
+          "score": 20
+        },
+        "hit_points": {
+          "average": 262,
+          "hit_dice": "21d10 + 147"
+        },
+        "speed": {
+          "walk_feet": 40,
+          "fly_feet": 120,
+          "hover": true
+        },
+        "abilities": {
+          "Strength": {
+            "score": 24,
+            "modifier": 7,
+            "save": 12
+          },
+          "Dexterity": {
+            "score": 20,
+            "modifier": 5,
+            "save": 5
+          },
+          "Constitution": {
+            "score": 24,
+            "modifier": 7,
+            "save": 12
+          },
+          "Intelligence": {
+            "score": 19,
+            "modifier": 4,
+            "save": 4
+          },
+          "Wisdom": {
+            "score": 22,
+            "modifier": 6,
+            "save": 11
+          },
+          "Charisma": {
+            "score": 25,
+            "modifier": 7,
+            "save": 12
+          }
+        },
+        "descriptive_tags": [
+          "Angel"
+        ],
+        "skills": {
+          "Perception": 11
+        },
+        "resistances": [
+          "Radiant"
+        ],
+        "immunities": [
+          "Charmed",
+          "Exhaustion",
+          "Frightened"
+        ],
+        "senses": {
+          "Truesight_feet": 120,
+          "Passive_Perception": 21
+        },
+        "languages": [
+          "all",
+          "telepathy 120 feet"
+        ],
+        "challenge_rating": "16",
+        "experience_points": 15000,
+        "proficiency_bonus": 5,
+        "traits": {
+          "divine_awareness": {
+            "knows_when_it_hears_lie": true
+          },
+          "exalted_restoration": {
+            "trigger": "dies outside Mount Celestia",
+            "body_disappears": true,
+            "new_body": "instantly in Mount Celestia",
+            "revives_with_all_hit_points": true
+          },
+          "magic_resistance": {
+            "advantage_on_saves_against": [
+              "spells",
+              "other magical effects"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "choice": [
+              "three Radiant Sword attacks",
+              "Holy Burst twice"
+            ]
+          },
+          "radiant_sword": {
+            "type": "Melee",
+            "attack_bonus": 12,
+            "reach_feet": 10,
+            "damage": [
+              "2d6 + 7 Slashing",
+              "4d8 Radiant"
+            ]
+          },
+          "holy_burst": {
+            "save": {
+              "ability": "Dexterity",
+              "dc": 20
+            },
+            "area": "20-foot-radius Sphere at visible point within 120 feet",
+            "targets": "each enemy",
+            "failure_damage": "7d6 Radiant",
+            "success_damage": "half"
+          },
+          "spellcasting": {
+            "ability": "Charisma",
+            "material_components_required": false,
+            "save_dc": 20,
+            "at_will": [
+              "Detect Evil and Good"
+            ],
+            "once_per_day_each": [
+              "Commune",
+              "Control Weather",
+              "Dispel Evil and Good",
+              "Raise Dead"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "divine_aid": {
+            "uses_per_day": 2,
+            "casts_one_of": [
+              "Cure Wounds",
+              "Invisibility",
+              "Lesser Restoration",
+              "Remove Curse"
+            ],
+            "spellcasting_ability": "same as Spellcasting"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20640,7 +22170,7 @@
       "pages": [
         316
       ],
-      "fact_status": "pending",
+      "fact_status": "no_structured_facts",
       "facts": {},
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
@@ -20656,8 +22186,116 @@
       "pages": [
         316
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Priest Acolyte",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 11,
+          "hit_dice": "2d8 + 2"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 14,
+            "modifier": 2,
+            "save": 2
+          },
+          "Charisma": {
+            "score": 11,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "descriptive_tags": [
+          "Cleric"
+        ],
+        "skills": {
+          "Medicine": 4,
+          "Religion": 2
+        },
+        "gear": [
+          "Chain Shirt",
+          "Holy Symbol",
+          "Mace"
+        ],
+        "senses": {
+          "Passive_Perception": 12
+        },
+        "languages": [
+          "Common"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "actions": {
+          "mace": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": [
+              "1d6 + 2 Bludgeoning",
+              "1d4 Radiant"
+            ]
+          },
+          "radiant_flame": {
+            "type": "Ranged",
+            "attack_bonus": 4,
+            "range_feet": 60,
+            "damage": "2d6 Radiant"
+          },
+          "spellcasting": {
+            "ability": "Wisdom",
+            "at_will": [
+              "Light",
+              "Thaumaturgy"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "divine_aid": {
+            "uses_per_day": 1,
+            "casts_one_of": [
+              "Bless",
+              "Healing Word",
+              "Sanctuary"
+            ],
+            "spellcasting_ability": "same as Spellcasting"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20672,8 +22310,131 @@
       "pages": [
         316
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Priest",
+        "size": [
+          "Medium",
+          "Small"
+        ],
+        "creature_type": "Humanoid",
+        "alignment": "Neutral",
+        "armor_class": 13,
+        "initiative": {
+          "modifier": 0,
+          "score": 10
+        },
+        "hit_points": {
+          "average": 38,
+          "hit_dice": "7d8 + 7"
+        },
+        "speed": {
+          "walk_feet": 30
+        },
+        "abilities": {
+          "Strength": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Dexterity": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Constitution": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Wisdom": {
+            "score": 16,
+            "modifier": 3,
+            "save": 3
+          },
+          "Charisma": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          }
+        },
+        "descriptive_tags": [
+          "Cleric"
+        ],
+        "skills": {
+          "Medicine": 7,
+          "Perception": 5,
+          "Religion": 5
+        },
+        "gear": [
+          "Chain Shirt",
+          "Holy Symbol",
+          "Mace"
+        ],
+        "senses": {
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "Common",
+          "one other language"
+        ],
+        "challenge_rating": "2",
+        "experience_points": 450,
+        "proficiency_bonus": 2,
+        "actions": {
+          "multiattack": {
+            "attacks": 2,
+            "options": [
+              "Mace",
+              "Radiant Flame"
+            ],
+            "any_combination": true
+          },
+          "mace": {
+            "type": "Melee",
+            "attack_bonus": 5,
+            "reach_feet": 5,
+            "damage": [
+              "1d6 + 3 Bludgeoning",
+              "2d4 Radiant"
+            ]
+          },
+          "radiant_flame": {
+            "type": "Ranged",
+            "attack_bonus": 5,
+            "range_feet": 60,
+            "damage": "2d10 Radiant"
+          },
+          "spellcasting": {
+            "ability": "Wisdom",
+            "save_dc": 13,
+            "at_will": [
+              "Light",
+              "Thaumaturgy"
+            ],
+            "once_per_day": [
+              "Spirit Guardians"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "divine_aid": {
+            "uses_per_day": 3,
+            "casts_one_of": [
+              "Bless",
+              "Dispel Magic",
+              "Healing Word",
+              "Lesser Restoration"
+            ],
+            "spellcasting_ability": "same as Spellcasting"
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20688,8 +22449,106 @@
       "pages": [
         316
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Pseudodragon",
+        "size": "Tiny",
+        "creature_type": "Dragon",
+        "alignment": "Neutral Good",
+        "armor_class": 14,
+        "initiative": {
+          "modifier": 2,
+          "score": 12
+        },
+        "hit_points": {
+          "average": 10,
+          "hit_dice": "3d4 + 3"
+        },
+        "speed": {
+          "walk_feet": 15,
+          "fly_feet": 60
+        },
+        "abilities": {
+          "Strength": {
+            "score": 6,
+            "modifier": -2,
+            "save": -2
+          },
+          "Dexterity": {
+            "score": 15,
+            "modifier": 2,
+            "save": 2
+          },
+          "Constitution": {
+            "score": 13,
+            "modifier": 1,
+            "save": 1
+          },
+          "Intelligence": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          },
+          "Wisdom": {
+            "score": 12,
+            "modifier": 1,
+            "save": 1
+          },
+          "Charisma": {
+            "score": 10,
+            "modifier": 0,
+            "save": 0
+          }
+        },
+        "skills": {
+          "Perception": 5,
+          "Stealth": 4
+        },
+        "senses": {
+          "Blindsight_feet": 10,
+          "Darkvision_feet": 60,
+          "Passive_Perception": 15
+        },
+        "languages": [
+          "understands Common and Draconic but cannot speak"
+        ],
+        "challenge_rating": "1/4",
+        "experience_points": 50,
+        "proficiency_bonus": 2,
+        "traits": {
+          "magic_resistance": {
+            "advantage_on_saves_against": [
+              "spells",
+              "other magical effects"
+            ]
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 2
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 4,
+            "reach_feet": 5,
+            "damage": "1d4 + 2 Piercing"
+          },
+          "sting": {
+            "save": {
+              "ability": "Constitution",
+              "dc": 12
+            },
+            "target": "one visible creature within 5 feet",
+            "failure_damage": "2d4 Poison",
+            "failure_condition": "Poisoned for 1 hour",
+            "failure_by_5_or_more_additional_condition": "Unconscious",
+            "unconscious_ends_early_if": [
+              "target takes damage",
+              "creature within 5 feet uses action to wake target"
+            ]
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
@@ -20705,8 +22564,135 @@
         316,
         317
       ],
-      "fact_status": "pending",
-      "facts": {},
+      "fact_status": "complete",
+      "facts": {
+        "name": "Purple Worm",
+        "size": "Gargantuan",
+        "creature_type": "Monstrosity",
+        "alignment": "Unaligned",
+        "armor_class": 18,
+        "initiative": {
+          "modifier": 3,
+          "score": 13
+        },
+        "hit_points": {
+          "average": 247,
+          "hit_dice": "15d20 + 90"
+        },
+        "speed": {
+          "walk_feet": 50,
+          "burrow_feet": 50
+        },
+        "abilities": {
+          "Strength": {
+            "score": 28,
+            "modifier": 9,
+            "save": 9
+          },
+          "Dexterity": {
+            "score": 7,
+            "modifier": -2,
+            "save": -2
+          },
+          "Constitution": {
+            "score": 22,
+            "modifier": 6,
+            "save": 11
+          },
+          "Intelligence": {
+            "score": 1,
+            "modifier": -5,
+            "save": -5
+          },
+          "Wisdom": {
+            "score": 8,
+            "modifier": -1,
+            "save": 4
+          },
+          "Charisma": {
+            "score": 4,
+            "modifier": -3,
+            "save": -3
+          }
+        },
+        "senses": {
+          "Blindsight_feet": 30,
+          "Tremorsense_feet": 60,
+          "Passive_Perception": 9
+        },
+        "languages": [],
+        "challenge_rating": "15",
+        "experience_points": 13000,
+        "proficiency_bonus": 5,
+        "traits": {
+          "tunneler": {
+            "solid_rock_burrow_speed_multiplier": 0.5,
+            "tunnel_diameter_feet": 10,
+            "leaves_tunnel": true
+          }
+        },
+        "actions": {
+          "multiattack": {
+            "bite_attacks": 1,
+            "tail_stinger_attacks": 1
+          },
+          "bite": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 10,
+            "damage": "3d8 + 9 Piercing",
+            "maximum_grappled_target_size": "Large",
+            "hit_condition": "Grappled",
+            "escape_dc": 19,
+            "additional_condition": "Restrained until grapple ends"
+          },
+          "tail_stinger": {
+            "type": "Melee",
+            "attack_bonus": 14,
+            "reach_feet": 10,
+            "damage": [
+              "2d6 + 9 Piercing",
+              "10d6 Poison"
+            ]
+          }
+        },
+        "bonus_actions": {
+          "swallow": {
+            "save": {
+              "ability": "Strength",
+              "dc": 19
+            },
+            "target": "one Large or smaller creature Grappled by worm",
+            "maximum_swallowed_creatures": 3,
+            "failure": {
+              "swallowed": true,
+              "grapple_ends": true,
+              "conditions": [
+                "Blinded",
+                "Restrained"
+              ],
+              "total_cover_from_outside": true,
+              "start_of_worm_turn_damage": "5d6 Acid"
+            },
+            "regurgitation_trigger": "30 or more damage in one turn from creature inside",
+            "regurgitation_save": {
+              "ability": "Constitution",
+              "dc": 21,
+              "timing": "end of that turn"
+            },
+            "regurgitation_failure": {
+              "regurgitates_all": true,
+              "landing_within_feet": 5,
+              "condition": "Prone"
+            },
+            "worm_death": {
+              "restrained_ends": true,
+              "escape_movement_feet": 20,
+              "exit_condition": "Prone"
+            }
+          }
+        }
+      },
       "provenance": "SRD 5.2.1",
       "parent_id": "1694-15-monsters-a-z"
     },
