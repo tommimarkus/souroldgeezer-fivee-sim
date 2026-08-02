@@ -154,11 +154,16 @@ def _validate_pack_payloads(packs: dict[int, dict[str, Any]]) -> None:
     source_path = str(ENGINE_SOURCE)
     if source_path not in sys.path:
         sys.path.insert(0, source_path)
-    from fivee_sim.content import ContentError, load_packs
+    from fivee_sim.content import ContentError, _builtin_condition_payload, load_packs
 
     try:
         with tempfile.TemporaryDirectory(prefix="fivee-srd-review-", dir="/tmp") as raw:
             scratch = Path(raw)
+            (scratch / "conditions.json").write_text(
+                json.dumps(_builtin_condition_payload(), indent=2, ensure_ascii=False)
+                + "\n",
+                encoding="utf-8",
+            )
             for chapter, payload in packs.items():
                 (scratch / _catalog_filename(chapter)).write_text(
                     json.dumps(payload, indent=2, ensure_ascii=False) + "\n",

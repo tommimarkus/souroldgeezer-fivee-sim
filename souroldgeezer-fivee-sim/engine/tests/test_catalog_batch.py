@@ -8,7 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
 
 import pytest
 
@@ -163,47 +162,62 @@ def test_bootstrap_preserves_executable_records_in_their_catalog_chapters(
     source_root = _minimal_verified_source(
         batch_module, monkeypatch, source_dir, CURRENT_SOURCE_URL
     )
-    packs: dict[int, dict[str, Any]] = {
-        chapter: {"catalog": [], "catalog_tables": []}
-        for chapter in content_module.CATALOG_CHAPTERS
-    }
-    packs[10]["spells"] = [
-        {"name": name, "level": 1, "provenance": "SRD 5.2.1"}
-        for name in ("Fireball", "Guiding Bolt", "Hold Person", "Shatter")
-    ]
-    packs[15]["creatures"] = [
-        {"name": name, "ac": 10, "max_hp": 1, "provenance": "SRD 5.2.1"}
-        for name in ("Goblin Warrior", "Goblin Boss", "Ogre", "Skeleton", "Zombie")
-    ]
-    packs[16]["creatures"] = [
-        {"name": "Wolf", "ac": 10, "max_hp": 1, "provenance": "SRD 5.2.1"}
-    ]
-    monkeypatch.setattr(batch_module, "_catalog_packs", lambda: packs)
+    committed = batch_module.DATA_ROOT
+    spells_before = json.loads(
+        (committed / batch_module._catalog_filename(10)).read_text()
+    )["spells"]
+    creatures_15_before = json.loads(
+        (committed / batch_module._catalog_filename(15)).read_text()
+    )["creatures"]
+    creatures_16_before = json.loads(
+        (committed / batch_module._catalog_filename(16)).read_text()
+    )["creatures"]
+    spells_before[0]["range_feet"] = 151
+    spells_before[0]["unmodelled_facts"].append(
+        {"code": "test_nested_sentinel", "feature": "spell bootstrap sentinel"}
+    )
+    creatures_15_before[0]["abilities"]["intelligence"] = 11
+    creatures_15_before[0]["attacks"][1]["long_range"] = 319
+    creatures_15_before[0]["unmodelled_facts"].append(
+        {"code": "test_nested_sentinel", "feature": "creature bootstrap sentinel"}
+    )
+    creatures_16_before[0]["abilities"]["wisdom"] = 13
+    creatures_16_before[0]["attacks"][0]["on_hit_max_size"] = "large"
+
     output = tmp_path / "committed"
+    output.mkdir()
     monkeypatch.setattr(batch_module, "DATA_ROOT", output)
     monkeypatch.setattr(
         batch_module, "COMMITTED_MANIFEST", output / "catalog-manifest.json"
     )
+    executable_sections = {
+        10: {"spells": spells_before},
+        15: {"creatures": creatures_15_before},
+        16: {"creatures": creatures_16_before},
+    }
+    for chapter in content_module.CATALOG_CHAPTERS:
+        payload = {
+            "pack": batch_module._catalog_pack_name(chapter),
+            "version": "1.0",
+            "provenance": "SRD 5.2.1",
+            "attribution": "See NOTICE.",
+            **executable_sections.get(chapter, {}),
+            "catalog": [],
+            "catalog_tables": [],
+        }
+        (output / batch_module._catalog_filename(chapter)).write_text(
+            json.dumps(payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
     batch_module.bootstrap(source_root)
 
     chapter_10 = json.loads((output / "catalog-10-spells.json").read_text())
     chapter_15 = json.loads((output / "catalog-15-monsters-a-z.json").read_text())
     chapter_16 = json.loads((output / "catalog-16-animals.json").read_text())
-    assert [record["name"] for record in chapter_10["spells"]] == [
-        "Fireball",
-        "Guiding Bolt",
-        "Hold Person",
-        "Shatter",
-    ]
-    assert {record["name"] for record in chapter_15["creatures"]} == {
-        "Goblin Warrior",
-        "Goblin Boss",
-        "Ogre",
-        "Skeleton",
-        "Zombie",
-    }
-    assert [record["name"] for record in chapter_16["creatures"]] == ["Wolf"]
+    assert chapter_10["spells"] == spells_before
+    assert chapter_15["creatures"] == creatures_15_before
+    assert chapter_16["creatures"] == creatures_16_before
 
 
 def test_batch_utility_refuses_an_unverified_source_root(tmp_path: Path) -> None:
