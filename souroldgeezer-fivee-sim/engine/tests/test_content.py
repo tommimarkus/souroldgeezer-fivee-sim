@@ -173,7 +173,9 @@ class TestLoading:
     def test_each_entry_records_which_pack_it_came_from(self, pack: Path) -> None:
         registry = load_packs([pack], include_environment=False)
         assert registry.source_of("creatures", "Vale Stalker") == str(pack)
-        assert registry.source_of("creatures", "Goblin Warrior") == "bundled:monsters.json"
+        assert registry.source_of("creatures", "Goblin Warrior") == (
+            "bundled:catalog-15-monsters-a-z.json"
+        )
 
     def test_a_creature_can_be_built_from_a_pack_record(self, pack: Path) -> None:
         registry = load_packs([pack], include_environment=False)
@@ -859,7 +861,7 @@ class TestConstructionSeam:
         creature = Creature.from_record(
             self.record(provenance="Original content"),
             condition_effects=EFFECTS,
-            source="bundled:monsters.json",
+            source="bundled:catalog-15-monsters-a-z.json",
         )
         assert creature.provenance == "Original content"
 
@@ -870,9 +872,11 @@ class TestConstructionSeam:
         bare = self.record()
         del bare["provenance"]
         creature = Creature.from_record(
-            bare, condition_effects=EFFECTS, source="bundled:monsters.json"
+            bare,
+            condition_effects=EFFECTS,
+            source="bundled:catalog-15-monsters-a-z.json",
         )
-        assert creature.provenance == "bundled:monsters.json"
+        assert creature.provenance == "bundled:catalog-15-monsters-a-z.json"
 
     def test_the_given_condition_table_is_what_the_creature_reads(self) -> None:
         # A pack-defined condition is a plain str with no entry in EFFECTS. If

@@ -1,19 +1,19 @@
 {
-  "pack": "srd-5.2.1-catalog-01",
+  "pack": "srd-5.2.1-catalog-02-contents",
   "version": "1.0",
   "provenance": "SRD 5.2.1",
   "attribution": "See NOTICE.",
   "catalog": [
     {
-      "id": "001-1-legal-information",
+      "id": "002-2-contents",
       "kind": "section",
-      "name": "Legal Information",
+      "name": "Contents",
       "source_ids": [
-        "001-1-legal-information"
+        "002-2-contents"
       ],
-      "chapter_id": "001-1-legal-information",
+      "chapter_id": "002-2-contents",
       "pages": [
-        1
+        2
       ],
       "fact_status": "no_structured_facts",
       "facts": {},

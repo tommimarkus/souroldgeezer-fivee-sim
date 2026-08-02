@@ -1,8 +1,96 @@
 {
-  "pack": "srd-5.2.1-catalog-10",
+  "pack": "srd-5.2.1-catalog-10-spells",
   "version": "1.0",
   "provenance": "SRD 5.2.1",
   "attribution": "See NOTICE.",
+  "spells": [
+    {
+      "name": "Fireball",
+      "level": 3,
+      "school": "Evocation",
+      "save_ability": "dexterity",
+      "damage": "8d6",
+      "damage_type": "fire",
+      "half_on_save": true,
+      "upcast_damage": "1d6",
+      "shape": "sphere",
+      "radius": 20,
+      "range_feet": 150,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_object_effect",
+          "feature": "Ignites flammable objects"
+        }
+      ]
+    },
+    {
+      "name": "Shatter",
+      "level": 2,
+      "school": "Evocation",
+      "save_ability": "constitution",
+      "damage": "3d8",
+      "damage_type": "thunder",
+      "half_on_save": true,
+      "upcast_damage": "1d8",
+      "shape": "sphere",
+      "radius": 10,
+      "range_feet": 60,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_creature_type_modifier",
+          "feature": "Construct save Disadvantage"
+        },
+        {
+          "code": "unsupported_object_effect",
+          "feature": "Damages unattended nonmagical objects"
+        }
+      ]
+    },
+    {
+      "name": "Hold Person",
+      "level": 2,
+      "school": "Enchantment",
+      "save_ability": "wisdom",
+      "condition": "paralyzed",
+      "concentration": true,
+      "range_feet": 60,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_creature_type_gate",
+          "feature": "Humanoid targets"
+        },
+        {
+          "code": "unsupported_repeat_save",
+          "feature": "End-of-turn save"
+        },
+        {
+          "code": "unsupported_upcast_targets",
+          "feature": "One additional target per slot level"
+        }
+      ]
+    },
+    {
+      "name": "Guiding Bolt",
+      "level": 1,
+      "school": "Evocation",
+      "requires_attack_roll": true,
+      "attack_kind": "ranged",
+      "damage": "4d6",
+      "damage_type": "radiant",
+      "upcast_damage": "1d6",
+      "range_feet": 120,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_followup_advantage",
+          "feature": "Next attack gains Advantage"
+        }
+      ]
+    }
+  ],
   "catalog": [
     {
       "id": "751-10-spells",

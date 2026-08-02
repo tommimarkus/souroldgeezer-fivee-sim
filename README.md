@@ -5,8 +5,8 @@ Geezer. This repository is the marketplace source and the shared plugin tree.
 
 Compatible with fifth edition (2024 rules).
 
-> **Status: v1 complete.** Engine, MCP server, plugin, skill, a starter SRD data
-> slice, and user-defined content packs all work end to end.
+> **Status: v1 complete.** Engine, MCP server, plugin, skill, the complete bundled
+> SRD structured catalog, and user-defined content packs all work end to end.
 
 ## What this is
 
@@ -109,10 +109,10 @@ the seed it used, so no result is irreproducible after the fact.
 
 ## What is covered
 
-The bundled reference catalog inventories all 2,062 SRD 5.2.1 sections and 227
-printed tables, including links for 336 stat blocks, 339 spells, and 155 glossary
-terms. Its metadata skeleton is complete; structured-fact review proceeds in
-bounded batches and every entry reports its current `fact_status`.
+The bundled reference catalog contains reviewed structured facts for all 2,062
+SRD 5.2.1 sections and 227 printed tables, including links for 336 stat blocks,
+339 spells, and 155 glossary terms. Every entry is closed as `complete` or
+`no_structured_facts`; no catalog review remains pending.
 
 Execution is a smaller, explicit subset: 6 creatures, 4 spells, 14 conditions,
 13 damage types, 7 actions, and no items. Weapon attacks with reach and ranged

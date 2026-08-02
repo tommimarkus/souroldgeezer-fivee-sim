@@ -8,8 +8,11 @@ import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
+
+from fivee_sim import content as content_module
 
 SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "srd-catalog-batch.py"
 CURRENT_SOURCE_URL = (
@@ -141,6 +144,66 @@ def test_batch_utility_documents_its_bounded_packet_and_merge_modes() -> None:
     assert "validate" in result.stdout
     assert "20" in result.stdout
     assert "40000" in result.stdout
+
+
+def test_batch_utility_catalog_mapping_is_pinned_to_the_runtime(
+    batch_module: ModuleType,
+) -> None:
+    assert batch_module.CATALOG_CHAPTERS == content_module.CATALOG_CHAPTERS
+    assert batch_module._catalog_filename(4) == "catalog-04-playing-the-game.json"
+
+
+def test_bootstrap_preserves_executable_records_in_their_catalog_chapters(
+    batch_module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    source_root = _minimal_verified_source(
+        batch_module, monkeypatch, source_dir, CURRENT_SOURCE_URL
+    )
+    packs: dict[int, dict[str, Any]] = {
+        chapter: {"catalog": [], "catalog_tables": []}
+        for chapter in content_module.CATALOG_CHAPTERS
+    }
+    packs[10]["spells"] = [
+        {"name": name, "level": 1, "provenance": "SRD 5.2.1"}
+        for name in ("Fireball", "Guiding Bolt", "Hold Person", "Shatter")
+    ]
+    packs[15]["creatures"] = [
+        {"name": name, "ac": 10, "max_hp": 1, "provenance": "SRD 5.2.1"}
+        for name in ("Goblin Warrior", "Goblin Boss", "Ogre", "Skeleton", "Zombie")
+    ]
+    packs[16]["creatures"] = [
+        {"name": "Wolf", "ac": 10, "max_hp": 1, "provenance": "SRD 5.2.1"}
+    ]
+    monkeypatch.setattr(batch_module, "_catalog_packs", lambda: packs)
+    output = tmp_path / "committed"
+    monkeypatch.setattr(batch_module, "DATA_ROOT", output)
+    monkeypatch.setattr(
+        batch_module, "COMMITTED_MANIFEST", output / "catalog-manifest.json"
+    )
+
+    batch_module.bootstrap(source_root)
+
+    chapter_10 = json.loads((output / "catalog-10-spells.json").read_text())
+    chapter_15 = json.loads((output / "catalog-15-monsters-a-z.json").read_text())
+    chapter_16 = json.loads((output / "catalog-16-animals.json").read_text())
+    assert [record["name"] for record in chapter_10["spells"]] == [
+        "Fireball",
+        "Guiding Bolt",
+        "Hold Person",
+        "Shatter",
+    ]
+    assert {record["name"] for record in chapter_15["creatures"]} == {
+        "Goblin Warrior",
+        "Goblin Boss",
+        "Ogre",
+        "Skeleton",
+        "Zombie",
+    }
+    assert [record["name"] for record in chapter_16["creatures"]] == ["Wolf"]
 
 
 def test_batch_utility_refuses_an_unverified_source_root(tmp_path: Path) -> None:
@@ -369,7 +432,9 @@ def test_reviewed_table_can_correct_an_extracted_source_row_count(
     assert result == {"changed": 1}
     assert table["source_row_count"] == 3
     assert table["rows"] == rows
-    committed = json.loads((batch_module.DATA_ROOT / "catalog-04.json").read_text())
+    committed = json.loads(
+        (batch_module.DATA_ROOT / "catalog-04-playing-the-game.json").read_text()
+    )
     assert committed["catalog_tables"][0]["source_row_count"] == 3
 
 
@@ -395,7 +460,7 @@ def test_reviewed_table_rejects_a_corrected_count_that_does_not_match_rows(
     with pytest.raises(batch_module.BatchError, match="account for every source row"):
         batch_module.merge_reviewed(tmp_path, reviewed)
 
-    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()
+    assert not (batch_module.DATA_ROOT / "catalog-04-playing-the-game.json").exists()
 
 
 @pytest.mark.parametrize("invalid_count", [[], True], ids=["list", "boolean"])
@@ -419,7 +484,7 @@ def test_reviewed_table_rejects_an_invalid_source_row_count_without_a_traceback(
     with pytest.raises(batch_module.BatchError, match="source_row_count must be an integer"):
         batch_module.merge_reviewed(tmp_path, reviewed)
 
-    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()
+    assert not (batch_module.DATA_ROOT / "catalog-04-playing-the-game.json").exists()
 
 
 def test_reviewed_table_validates_corrected_data_before_persistence(
@@ -446,4 +511,4 @@ def test_reviewed_table_validates_corrected_data_before_persistence(
     with pytest.raises(batch_module.BatchError, match="runtime pack validation"):
         batch_module.merge_reviewed(tmp_path, reviewed)
 
-    assert not (batch_module.DATA_ROOT / "catalog-04.json").exists()
+    assert not (batch_module.DATA_ROOT / "catalog-04-playing-the-game.json").exists()

@@ -43,6 +43,11 @@ DEFAULT_RECORD_LIMIT = 20
 DEFAULT_CHARACTER_LIMIT = 40_000
 CHAPTER_ORDER = (*range(4, 10), 10, 11, 12, 13, 14, 15, 16, 1, 2, 3)
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+EXECUTABLE_SPELLS = frozenset({"Fireball", "Guiding Bolt", "Hold Person", "Shatter"})
+EXECUTABLE_CREATURES = {
+    15: frozenset({"Goblin Warrior", "Goblin Boss", "Ogre", "Skeleton", "Zombie"}),
+    16: frozenset({"Wolf"}),
+}
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = (
@@ -58,8 +63,55 @@ COMMITTED_MANIFEST = DATA_ROOT / "catalog-manifest.json"
 ENGINE_SOURCE = DATA_ROOT.parents[2]
 
 
+def _runtime_catalog_chapters() -> dict[int, str]:
+    source_path = str(ENGINE_SOURCE)
+    if source_path not in sys.path:
+        sys.path.insert(0, source_path)
+    from fivee_sim.content import CATALOG_CHAPTERS as runtime_chapters
+
+    return dict(runtime_chapters)
+
+
+CATALOG_CHAPTERS = _runtime_catalog_chapters()
+
+
 class BatchError(ValueError):
     """A source or reviewed batch failed a contributor-facing invariant."""
+
+
+def _catalog_filename(chapter: int) -> str:
+    return f"catalog-{chapter:02d}-{CATALOG_CHAPTERS[chapter]}.json"
+
+
+def _catalog_pack_name(chapter: int) -> str:
+    return f"srd-5.2.1-catalog-{chapter:02d}-{CATALOG_CHAPTERS[chapter]}"
+
+
+def _preserved_executable_sections() -> dict[int, dict[str, list[dict[str, Any]]]]:
+    """Read the executable subset before bootstrap replaces the catalog packs."""
+    current = _catalog_packs()
+    expected = {
+        10: ("spells", EXECUTABLE_SPELLS),
+        15: ("creatures", EXECUTABLE_CREATURES[15]),
+        16: ("creatures", EXECUTABLE_CREATURES[16]),
+    }
+    preserved: dict[int, dict[str, list[dict[str, Any]]]] = {}
+    for chapter, (section, expected_names) in expected.items():
+        records = current[chapter].get(section)
+        if not isinstance(records, list) or not all(
+            isinstance(record, dict) for record in records
+        ):
+            raise BatchError(
+                f"catalog chapter {chapter} must retain its executable {section} records"
+            )
+        names = {str(record.get("name", "")) for record in records}
+        if names != expected_names or len(records) != len(expected_names):
+            raise BatchError(
+                f"catalog chapter {chapter} executable {section} do not match the "
+                "pinned subset"
+            )
+        preserved[chapter] = {section: [dict(record) for record in records]}
+    return preserved
 
 
 def _json(path: Path) -> Any:
@@ -108,7 +160,7 @@ def _validate_pack_payloads(packs: dict[int, dict[str, Any]]) -> None:
         with tempfile.TemporaryDirectory(prefix="fivee-srd-review-", dir="/tmp") as raw:
             scratch = Path(raw)
             for chapter, payload in packs.items():
-                (scratch / f"catalog-{chapter:02d}.json").write_text(
+                (scratch / _catalog_filename(chapter)).write_text(
                     json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
                     encoding="utf-8",
                 )
@@ -256,8 +308,9 @@ def _parents(
 
 
 def bootstrap(source_root: Path) -> dict[str, int]:
-    """Generate the sixteen metadata-only chapter packs and committed manifest."""
+    """Regenerate chapter catalogs while retaining their executable subset."""
     source = verify_source(source_root)
+    executable_sections = _preserved_executable_sections()
     sections: list[dict[str, Any]] = source["sections"]
     tables: list[dict[str, Any]] = source["tables"]
     stat_blocks: list[dict[str, Any]] = source["stat_blocks"]
@@ -267,18 +320,9 @@ def bootstrap(source_root: Path) -> dict[str, int]:
     glossary_ids = {str(entry["defined_in"]) for entry in terms}
     parent_ids, chapter_ids = _parents(sections, set(stat_by_id))
 
-    executable_creatures = {
-        "Goblin Warrior",
-        "Goblin Boss",
-        "Ogre",
-        "Skeleton",
-        "Wolf",
-        "Zombie",
-    }
-    executable_spells = {"Fireball", "Guiding Bolt", "Hold Person", "Shatter"}
     packs: dict[int, dict[str, Any]] = {
         chapter: {
-            "pack": f"srd-5.2.1-catalog-{chapter:02d}",
+            "pack": _catalog_pack_name(chapter),
             "version": "1.0",
             "provenance": PROVENANCE,
             "attribution": "See NOTICE.",
@@ -287,6 +331,8 @@ def bootstrap(source_root: Path) -> dict[str, int]:
         }
         for chapter in range(1, 17)
     }
+    for chapter, sections_to_preserve in executable_sections.items():
+        packs[chapter].update(sections_to_preserve)
     for section in sections:
         identifier = str(section["id"])
         name = str(section["title"])
@@ -315,12 +361,14 @@ def bootstrap(source_root: Path) -> dict[str, int]:
         }
         if identifier in parent_ids:
             record["parent_id"] = parent_ids[identifier]
-        if kind == "creature" and stat_by_id[identifier] in executable_creatures:
+        if kind == "creature" and stat_by_id[identifier] in {
+            name for names in EXECUTABLE_CREATURES.values() for name in names
+        }:
             record["content_ref"] = {
                 "section": "creatures",
                 "name": stat_by_id[identifier],
             }
-        elif kind == "spell" and name in executable_spells:
+        elif kind == "spell" and name in EXECUTABLE_SPELLS:
             record["content_ref"] = {"section": "spells", "name": name}
         packs[chapter]["catalog"].append(record)
 
@@ -346,7 +394,7 @@ def bootstrap(source_root: Path) -> dict[str, int]:
     _validate_pack_payloads(packs)
     DATA_ROOT.mkdir(parents=True, exist_ok=True)
     for chapter, payload in packs.items():
-        target = DATA_ROOT / f"catalog-{chapter:02d}.json"
+        target = DATA_ROOT / _catalog_filename(chapter)
         _write_text_atomic(
             target, json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
         )
@@ -370,7 +418,7 @@ def bootstrap(source_root: Path) -> dict[str, int]:
 def _catalog_packs() -> dict[int, dict[str, Any]]:
     packs: dict[int, dict[str, Any]] = {}
     for chapter in range(1, 17):
-        path = DATA_ROOT / f"catalog-{chapter:02d}.json"
+        path = DATA_ROOT / _catalog_filename(chapter)
         payload = _json(path)
         if not isinstance(payload, dict):
             raise BatchError(f"committed catalog pack is not an object: {path}")
@@ -567,7 +615,7 @@ def merge_reviewed(source_root: Path, reviewed_path: Path) -> dict[str, int]:
         changed += 1
     _validate_pack_payloads(packs)
     for chapter, payload in packs.items():
-        target = DATA_ROOT / f"catalog-{chapter:02d}.json"
+        target = DATA_ROOT / _catalog_filename(chapter)
         _write_text_atomic(
             target, json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
         )

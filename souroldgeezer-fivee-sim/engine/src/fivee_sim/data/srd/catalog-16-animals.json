@@ -1,8 +1,42 @@
 {
-  "pack": "srd-5.2.1-catalog-16",
+  "pack": "srd-5.2.1-catalog-16-animals",
   "version": "1.0",
   "provenance": "SRD 5.2.1",
   "attribution": "See NOTICE.",
+  "creatures": [
+    {
+      "name": "Wolf",
+      "team": "monsters",
+      "ac": 12,
+      "max_hp": 11,
+      "hit_dice": "2d8+2",
+      "speed": 40,
+      "darkvision": 60,
+      "size": "medium",
+      "abilities": {
+        "strength": 14,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 3,
+        "wisdom": 12,
+        "charisma": 6
+      },
+      "pack_tactics": true,
+      "attacks": [
+        {
+          "name": "Bite",
+          "attack_bonus": 4,
+          "damage": "1d6+2",
+          "damage_type": "piercing",
+          "kind": "melee",
+          "reach": 5,
+          "on_hit_condition": "prone",
+          "on_hit_max_size": "medium"
+        }
+      ],
+      "provenance": "SRD 5.2.1"
+    }
+  ],
   "catalog": [
     {
       "id": "1967-16-animals",

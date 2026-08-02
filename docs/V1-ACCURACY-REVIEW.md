@@ -154,7 +154,7 @@ reason that isn't real.
 
 ## 3. A spell-applied condition can never be removed
 
-**HIGH · code · `data/srd/spells.json:47` — architectural, not Hold-Person-specific**
+**HIGH · code · `data/srd/catalog-10-spells.json:56` — architectural, not Hold-Person-specific**
 
 Hold Person declares `"condition": "paralyzed"` and `"concentration": true`. The
 engine honours both halves separately and connects neither: `_do_cast` sets
@@ -245,7 +245,7 @@ corrupts stateful, DM-driven play through `encounter_act`.
 
 ## 6. `shape` is declared, validated in one direction, and read by nothing
 
-**MEDIUM · code · `data/srd/spells.json:17`, guard at `content.py:978`**
+**MEDIUM · code · `data/srd/catalog-10-spells.json:16`, guard at `content.py:996`**
 
 Fireball and Shatter declare `"shape": "sphere"`. `content.py` parses it into a
 `SpellShape` enum and stores it on the `Spell` dataclass. Grepping

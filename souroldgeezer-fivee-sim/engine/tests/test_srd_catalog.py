@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from fivee_sim import content as content_module
 from fivee_sim.catalog import FactStatus
 from fivee_sim.content import builtin_registry
 
@@ -20,6 +21,28 @@ EXPECTED_ATTRIBUTION = (
     "5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, "
     "available at https://creativecommons.org/licenses/by/4.0/legalcode."
 )
+EXPECTED_CATALOG_CHAPTERS = {
+    1: "legal-information",
+    2: "contents",
+    3: "index-of-stat-blocks",
+    4: "playing-the-game",
+    5: "character-creation",
+    6: "classes",
+    7: "character-origins",
+    8: "feats",
+    9: "equipment",
+    10: "spells",
+    11: "rules-glossary",
+    12: "gameplay-toolbox",
+    13: "magic-items",
+    14: "monsters",
+    15: "monsters-a-z",
+    16: "animals",
+}
+
+
+def _catalog_filename(chapter: int, slug: str) -> str:
+    return f"catalog-{chapter:02d}-{slug}.json"
 
 
 def _walk(value: Any) -> list[tuple[str, Any]]:
@@ -32,6 +55,61 @@ def _walk(value: Any) -> list[tuple[str, Any]]:
         for child in value:
             found.extend(_walk(child))
     return found
+
+
+def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> None:
+    expected_files = tuple(
+        _catalog_filename(chapter, slug)
+        for chapter, slug in EXPECTED_CATALOG_CHAPTERS.items()
+    )
+    assert content_module.CATALOG_CHAPTERS == EXPECTED_CATALOG_CHAPTERS
+    assert content_module.CATALOG_FILES == expected_files
+    assert content_module.BUILTIN_FILES == expected_files
+    assert {path.name for path in DATA.glob("*.json")} == {
+        "catalog-manifest.json",
+        *expected_files,
+    }
+
+    packs = {
+        chapter: json.loads((DATA / _catalog_filename(chapter, slug)).read_text())
+        for chapter, slug in EXPECTED_CATALOG_CHAPTERS.items()
+    }
+    for chapter, slug in EXPECTED_CATALOG_CHAPTERS.items():
+        assert packs[chapter]["pack"] == f"srd-5.2.1-catalog-{chapter:02d}-{slug}"
+
+    assert {spell["name"] for spell in packs[10]["spells"]} == {
+        "Fireball",
+        "Guiding Bolt",
+        "Hold Person",
+        "Shatter",
+    }
+    assert {creature["name"] for creature in packs[15]["creatures"]} == {
+        "Goblin Warrior",
+        "Goblin Boss",
+        "Ogre",
+        "Skeleton",
+        "Zombie",
+    }
+    assert [creature["name"] for creature in packs[16]["creatures"]] == ["Wolf"]
+
+    links = {
+        record["name"]: record["content_ref"]
+        for chapter in (10, 15, 16)
+        for record in packs[chapter]["catalog"]
+        if "content_ref" in record
+    }
+    assert links == {
+        "Fireball": {"section": "spells", "name": "Fireball"},
+        "Guiding Bolt": {"section": "spells", "name": "Guiding Bolt"},
+        "Hold Person": {"section": "spells", "name": "Hold Person"},
+        "Shatter": {"section": "spells", "name": "Shatter"},
+        "Goblin Warrior": {"section": "creatures", "name": "Goblin Warrior"},
+        "Goblin Boss": {"section": "creatures", "name": "Goblin Boss"},
+        "Ogre": {"section": "creatures", "name": "Ogre"},
+        "Skeleton": {"section": "creatures", "name": "Skeleton"},
+        "Zombie": {"section": "creatures", "name": "Zombie"},
+        "Wolf": {"section": "creatures", "name": "Wolf"},
+    }
 
 
 def test_committed_manifest_pins_the_official_source_and_complete_inventory() -> None:

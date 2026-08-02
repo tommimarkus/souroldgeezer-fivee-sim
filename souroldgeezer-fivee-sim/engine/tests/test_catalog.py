@@ -234,11 +234,23 @@ class TestCatalogQueries:
         registry = load_packs([path], include_environment=False)
 
         entry = catalog_service.get_record(registry, "1800-15-157-goblin-warrior")
-        assert entry["sources"]["catalog"] == "bundled:catalog-15.json"
+        assert entry["sources"]["catalog"] == "bundled:catalog-15-monsters-a-z.json"
         assert entry["sources"]["executable"] == str(path)
         assert entry["content_ref"] == {
             "section": "creatures",
             "name": "Goblin Warrior",
+        }
+
+        fireball = catalog_service.get_record(registry, "904-10-15-4-fireball")
+        assert fireball["sources"] == {
+            "catalog": "bundled:catalog-10-spells.json",
+            "executable": "bundled:catalog-10-spells.json",
+        }
+
+        wolf = catalog_service.get_record(registry, "2062-16-95-wolf")
+        assert wolf["sources"] == {
+            "catalog": "bundled:catalog-16-animals.json",
+            "executable": "bundled:catalog-16-animals.json",
         }
 
     def test_table_rows_are_bounded_and_paginated(self, tmp_path: Path) -> None:

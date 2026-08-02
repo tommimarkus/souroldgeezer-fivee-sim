@@ -96,8 +96,29 @@ CLAUDE_PROJECT_ENV = "CLAUDE_PROJECT_DIR"
 PROJECT_SUBDIR = Path(".fivee-sim") / "content"
 
 _BUILTIN_PACKAGE = "fivee_sim.data.srd"
-CATALOG_FILES = tuple(f"catalog-{chapter:02d}.json" for chapter in range(1, 17))
-BUILTIN_FILES = ("monsters.json", "spells.json", *CATALOG_FILES)
+CATALOG_CHAPTERS = {
+    1: "legal-information",
+    2: "contents",
+    3: "index-of-stat-blocks",
+    4: "playing-the-game",
+    5: "character-creation",
+    6: "classes",
+    7: "character-origins",
+    8: "feats",
+    9: "equipment",
+    10: "spells",
+    11: "rules-glossary",
+    12: "gameplay-toolbox",
+    13: "magic-items",
+    14: "monsters",
+    15: "monsters-a-z",
+    16: "animals",
+}
+CATALOG_FILES = tuple(
+    f"catalog-{chapter:02d}-{slug}.json"
+    for chapter, slug in CATALOG_CHAPTERS.items()
+)
+BUILTIN_FILES = CATALOG_FILES
 
 #: A pack larger than this fails cleanly instead of stalling session start. Packs
 #: are hand-authored rules data; the whole SRD would not approach this.
