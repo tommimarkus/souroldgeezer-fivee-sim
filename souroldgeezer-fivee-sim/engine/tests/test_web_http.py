@@ -1317,6 +1317,57 @@ class TestCatalogAndContent:
             "query parameter 'since' must be a whole number, not 'soon'",
         )
 
+    def test_a_record_comes_back_whole_with_both_of_its_provenances(
+        self, editor: Editor
+    ) -> None:
+        # The 404 below was this route's only exercise over the wire, and a
+        # miss proves nothing about a hit: an adapter that had stopped passing
+        # the id, or serialised the record's nested facts wrongly, would still
+        # 404 for an id that is not there.
+        response = editor.request(
+            "GET", "/api/v1/catalog/records/1800-15-157-goblin-warrior"
+        )
+
+        assert response.status == 200
+        record = response.json()
+        assert record["id"] == "1800-15-157-goblin-warrior"
+        assert (record["kind"], record["name"]) == ("creature", "Goblin Warrior")
+        assert record["provenance"] == "SRD 5.2.1"
+        assert record["facts"]["armor_class"] == 15
+        assert record["facts"]["actions"]["Scimitar"]["attack_bonus"] == 4
+        # Catalog identity and executable content are separate provenances and
+        # the record keeps them apart, which is the whole point of the field.
+        assert record["content_ref"] == {"section": "creatures", "name": "Goblin Warrior"}
+        assert record["sources"] == {
+            "catalog": "bundled:catalog-15-monsters-a-z.json",
+            "executable": "bundled:catalog-15-monsters-a-z.json",
+        }
+
+    def test_a_table_answers_a_bounded_window_and_where_the_next_starts(
+        self, editor: Editor
+    ) -> None:
+        response = editor.request(
+            "GET", "/api/v1/catalog/tables/006-ability-modifiers?since=2&limit=3"
+        )
+
+        assert response.status == 200
+        page = response.json()
+        assert page["id"] == "006-ability-modifiers"
+        assert page["name"] == "Ability Modifiers"
+        assert [column["id"] for column in page["columns"]] == [
+            "score", "modifier", "score-2", "modifier-2"
+        ]
+        # The window is the claim: three of eight rows from the third, and the
+        # offset the caller pages from next rather than a page number.
+        assert (page["since"], page["limit"], page["total"]) == (2, 3, 8)
+        assert page["next_since"] == 5
+        assert len(page["rows"]) == 3
+        assert page["rows"][0]["cells"][1] == {"value": -3, "numeric_value": -3}
+
+        whole = editor.request("GET", "/api/v1/catalog/tables/006-ability-modifiers").json()
+        assert len(whole["rows"]) == whole["total"] == 8
+        assert whole["next_since"] is None  # nothing left to page to
+
     def test_an_unknown_record_id_is_404_and_names_what_is_available(
         self, editor: Editor
     ) -> None:
@@ -1593,6 +1644,338 @@ class TestEncountersOverHttp:
         ).json()
         assert resumed["recovered"] is True
         assert resumed["state"]["round"] >= 1
+
+
+class TestEncounterActions:
+    """The widest body in the contract, and the only route that spends a turn.
+
+    ``POST /encounters/{id}/actions`` declares eighteen fields and the adapter
+    hands every one of them to ``service.encounters.act`` **positionally**. A
+    transposition there — a ``center`` arriving where ``direction`` goes — is a
+    different fight that still answers 200, so a status is not enough to know
+    the plumbing is right: these read the engine's own answer back. Which
+    creature swung, what the die showed, what the move cost, and what the
+    journal recorded is what pins field to parameter.
+
+    The dice figures are golden for seed 11 with this pair, where the Goblin
+    wins initiative 20 to 15 and acts first. A rules or dice-stream change
+    turns them red on purpose; reproduce, then recalibrate deliberately.
+    """
+
+    def start(self, editor: Editor, goblin_at: list[int]) -> Response:
+        """A fight at seed 11 with the Goblin placed where the case needs it."""
+        return editor.request(
+            "POST",
+            "/api/v1/encounters",
+            json_body={
+                "combatants": [dict(HERO), {**GOBLIN, "position": goblin_at}],
+                "seed": 11,
+            },
+        )
+
+    def log_of(self, editor: Editor, encounter_id: str) -> dict[str, Any]:
+        answer: dict[str, Any] = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/log"
+        ).json()
+        return answer
+
+    def test_an_attack_names_its_weapon_and_lands_on_the_named_target(
+        self, editor: Editor
+    ) -> None:
+        created = self.start(editor, [5, 0])
+        encounter_id = created.json()["encounter_id"]
+        assert created.json()["state"]["turn"] == "Goblin"
+
+        struck = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
+        )
+
+        assert struck.status == 200
+        swing, wound = struck.json()["events"]
+        # `attack` chose the weapon and `target` chose whom: a body whose two
+        # string fields were swapped would resolve the Goblin's other weapon,
+        # or nothing at all, and still answer 200.
+        assert (swing["kind"], swing["actor"], swing["target"]) == (
+            "attack", "Goblin", "Thora"
+        )
+        assert swing["data"]["attack"] == "Scimitar"
+        assert (swing["data"]["natural"], swing["data"]["total"]) == (15, 19)
+        assert swing["data"]["hit"] is True
+        assert swing["data"]["damage"] == 6
+        assert wound["kind"] == "damage" and wound["data"]["amount"] == 6
+        # And the fight moved: the damage is on the creature, and the swing
+        # spent the turn's one attack rather than being replayed as a preview.
+        hit_points = {row["name"]: row["hp"] for row in struck.json()["state"]["combatants"]}
+        assert hit_points["Thora"] == 30 - swing["data"]["damage"] == 24
+        turn_state = struck.json()["state"]["turn_state"]
+        assert turn_state["action_used"] is True and turn_state["attacks_left"] == 0
+        assert struck.headers["ETag"] != created.headers["ETag"]
+
+    def test_the_journal_records_the_action_that_was_asked_for(
+        self, editor: Editor
+    ) -> None:
+        # "durably audit it" is what the route promises beyond taking the turn,
+        # and the audit is of the *arguments*: a field the adapter dropped on
+        # the way through would be missing here even though the swing landed.
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+        editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
+        )
+
+        log = self.log_of(editor, encounter_id)
+
+        assert log["total_actions"] == 1
+        (recorded,) = log["actions"]
+        assert recorded["actor"] == "Goblin"
+        assert recorded["action"] == {
+            "kind": "attack",
+            "target": "Thora",
+            "attack": "Scimitar",
+            "as_bonus_action": False,
+        }
+
+    def test_a_move_carries_the_creature_and_spends_only_its_speed(
+        self, editor: Editor
+    ) -> None:
+        created = self.start(editor, [15, 0])
+        encounter_id = created.json()["encounter_id"]
+
+        moved = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "move", "to_position": [10, 0]},
+        )
+
+        assert moved.status == 200
+        (step,) = moved.json()["events"]
+        assert step["kind"] == "move" and step["actor"] == "Goblin"
+        assert step["data"]["origin"] == [15, 0]
+        assert step["data"]["destination"] == [10, 0]
+        assert step["data"]["cost"] == 5 and step["data"]["completed"] is True
+        state = moved.json()["state"]
+        assert {row["name"]: row["position"] for row in state["combatants"]} == {
+            "Goblin": [10, 0],
+            "Thora": [0, 0],
+        }
+        # A move is not the action: 5 of 30 feet gone, the action still in hand.
+        assert state["turn_state"]["movement_left"] == 25
+        assert state["turn_state"]["action_used"] is False
+
+    def test_an_unknown_body_key_is_refused_naming_it_and_the_valid_keys(
+        self, editor: Editor
+    ) -> None:
+        # The widest body is where a misspelling is likeliest and quietest: a
+        # dropped 'target' would make an attack answer "needs a target", but a
+        # dropped 'set_open' would flip a door the caller meant to open.
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+
+        refused = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "dodge", "targetted": "Thora"},
+        )
+
+        problem = assert_problem(refused, 400, "unknown key(s): 'targetted'")
+        assert (
+            "Valid keys: as_bonus_action, attack, center, direction, feature, item, "
+            "kind, movement_mode, path, set_open, slot_level, spell, target, targets, "
+            "to_level, to_position, toward" in problem["detail"]
+        )
+        assert self.log_of(editor, encounter_id)["total_actions"] == 0
+
+    def test_a_wrong_typed_field_is_refused_by_the_schema_not_the_engine(
+        self, editor: Editor
+    ) -> None:
+        # The schema the contract publishes is the schema the dispatcher
+        # enforces, so a destination that is not a point never reaches
+        # ``specs.parse_point`` — whose own refusal for the same field says
+        # "feet along the x-axis", and whose absence is what tells the two
+        # 400s apart.
+        encounter_id = self.start(editor, [15, 0]).json()["encounter_id"]
+
+        misplaced = assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "move", "to_position": "north"},
+            ),
+            400,
+            "'to_position' must be a list, a whole number or null",
+        )
+        assert "feet along the x-axis" not in misplaced["detail"]
+        assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "attack", "target": "Thora", "targets": "Thora"},
+            ),
+            400,
+            "'targets' must be a list or null",
+        )
+        assert self.log_of(editor, encounter_id)["total_actions"] == 0
+
+    def test_an_action_without_a_kind_is_refused_before_the_fight_is_touched(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"target": "Thora", "attack": "Scimitar"},
+            ),
+            400,
+            "'kind' is required",
+        )
+        assert self.log_of(editor, encounter_id)["total_actions"] == 0
+
+    def test_an_unknown_kind_names_every_action_this_engine_takes(
+        self, editor: Editor
+    ) -> None:
+        # A kind that is text reaches the service and comes back naming the
+        # ten; a kind that is not text is refused by the schema first, so the
+        # two are told apart by their detail rather than the status they share.
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "yodel"},
+            ),
+            400,
+            "kind must be one of: attack, cast, move, dash, disengage, dodge, "
+            "use_item, interact, stand, surrender",
+        )
+        schema_refusal = assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": 7},
+            ),
+            400,
+            "'kind' must be text",
+        )
+        assert "kind must be one of" not in schema_refusal["detail"]
+
+    def test_an_action_the_rules_forbid_is_refused_with_the_rule(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+        editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
+        )
+
+        refused = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "dodge"},
+        )
+
+        assert_problem(refused, 400, "Goblin has already taken an action this turn")
+        # Refused, not adjusted and not recorded: the journal still holds one
+        # action, so a reader of the audit sees the turn that happened.
+        assert self.log_of(editor, encounter_id)["total_actions"] == 1
+
+    def test_a_move_beyond_the_creatures_speed_names_what_it_would_cost(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.start(editor, [15, 0]).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST",
+                f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "move", "to_position": [200, 0]},
+            ),
+            400,
+            "Goblin has 30 ft of movement, needs 185 ft",
+        )
+        assert self.log_of(editor, encounter_id)["total_actions"] == 0
+
+    def test_a_retried_action_under_one_key_swings_once(self, editor: Editor) -> None:
+        encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
+        swing = {"kind": "attack", "target": "Thora", "attack": "Scimitar"}
+
+        first = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body=swing,
+            headers={"Idempotency-Key": "swing-1"},
+        )
+        again = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body=swing,
+            headers={"Idempotency-Key": "swing-1"},
+        )
+
+        assert first.status == again.status == 200
+        assert again.json() == first.json()
+        assert again.headers["ETag"] == first.headers["ETag"]
+        # Not merely equal-looking. A second swing would have been refused for
+        # having no attacks left, so equality alone could be a cached refusal;
+        # one journalled action and 6 damage rather than 12 is what proves the
+        # recorded result came back instead of the turn being taken twice.
+        assert self.log_of(editor, encounter_id)["total_actions"] == 1
+        state = editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()
+        assert {row["name"]: row["hp"] for row in state["combatants"]}["Thora"] == 24
+
+    def test_an_action_from_a_version_the_fight_has_moved_past_is_409(
+        self, editor: Editor
+    ) -> None:
+        created = self.start(editor, [5, 0])
+        encounter_id = created.json()["encounter_id"]
+        stale = created.headers["ETag"]
+        editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
+        )
+
+        # A move, and legal: the precondition is the only thing standing
+        # between this write and the journal, so a guard that stopped checking
+        # would land it rather than fail for some second reason.
+        refused = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "move", "to_position": [5, 5]},
+            headers={"If-Match": stale},
+        )
+
+        problem = assert_problem(refused, 409, "has advanced since you read it")
+        assert f"encounter {encounter_id!r}" in problem["detail"]
+        assert "read it again and reapply" in problem["detail"]
+        # Refused rather than merged, and refused before the fight was touched:
+        # two divergent copies of one turn produce a journal replaying as
+        # neither, which is why nothing here may have happened.
+        assert self.log_of(editor, encounter_id)["total_actions"] == 1
+        state = editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()
+        assert {row["name"]: row["position"] for row in state["combatants"]}["Goblin"] == (
+            [5, 0]
+        )
+        assert state["turn_state"]["movement_left"] == 30
+
+    def test_an_action_matching_the_head_is_taken(self, editor: Editor) -> None:
+        # The control for the case above: a guard that refused every If-Match
+        # would pass it, so the version the caller really did read must work.
+        created = self.start(editor, [5, 0])
+        encounter_id = created.json()["encounter_id"]
+
+        struck = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
+            headers={"If-Match": created.headers["ETag"]},
+        )
+
+        assert struck.status == 200
+        assert struck.json()["events"][0]["data"]["hit"] is True
+        assert self.log_of(editor, encounter_id)["total_actions"] == 1
 
 
 class TestEncounterPreconditions:
