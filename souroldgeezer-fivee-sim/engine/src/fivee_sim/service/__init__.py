@@ -10,6 +10,13 @@ problem+json on the other) and does nothing else.
 """
 
 from .common import resolve_seed, sha256_of, slugify
-from .errors import MapEditError, MapError
+from .errors import MapEditError, MapError, RequestError
 
-__all__ = ["MapEditError", "MapError", "resolve_seed", "sha256_of", "slugify"]
+__all__ = [
+    "MapEditError",
+    "MapError",
+    "RequestError",
+    "resolve_seed",
+    "sha256_of",
+    "slugify",
+]

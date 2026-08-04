@@ -10,7 +10,30 @@ from typing import Any
 
 from ..map_document import MapError as MapError
 
-__all__ = ["MapEditError", "MapError", "ReplayError", "StaleWriteError"]
+__all__ = [
+    "MapEditError",
+    "MapError",
+    "ReplayError",
+    "RequestError",
+    "StaleWriteError",
+]
+
+
+class RequestError(ValueError):
+    """The caller asked for something this layer will not do, and said why.
+
+    The catch-all of this family: bad input, an unknown id, a refused action, a
+    file that cannot be written. It exists because the service layer used to
+    raise ``ToolError`` — an MCP concept by name and by import direction — for
+    all of that, which is the one thing a transport-neutral layer may not do.
+    Each adapter translates it: the MCP server into a ``ToolError``, the editor
+    into problem+json.
+
+    Where a failure has more to say than a sentence, it gets its own class here:
+    :class:`MapError` and :class:`ReplayError` carry diagnostics,
+    :class:`MapEditError` the offending operation's index, and
+    :class:`StaleWriteError` both versions. This is what the rest is.
+    """
 
 
 class StaleWriteError(ValueError):

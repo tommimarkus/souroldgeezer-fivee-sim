@@ -31,20 +31,12 @@ from typing import Any
 
 from ..content import ContentError, builtin_mode, builtin_registry, load_packs
 from ..kernel.grid import TerrainTable
+from ..paths import STATE_FILENAME, state_file_for
 from ..service import maps as map_service
 from ..service import replay as replay_service
 from .http_server import EditorServer
 
 __all__ = ["STATE_FILENAME", "main", "read_state", "state_file_for"]
-
-#: The state file's name; it lives next to the maps directory (for the default
-#: ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
-STATE_FILENAME = "editor-server.json"
-
-
-def state_file_for(maps_dir: str | Path) -> Path:
-    """Where the launch state file for ``maps_dir`` lives: next to the maps dir."""
-    return Path(maps_dir).expanduser().parent / STATE_FILENAME
 
 
 def read_state(path: str | Path) -> dict[str, Any] | None:

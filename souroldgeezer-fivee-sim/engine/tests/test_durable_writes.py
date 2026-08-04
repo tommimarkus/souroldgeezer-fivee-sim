@@ -19,6 +19,7 @@ import pytest
 
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import durable, encounter_journal
+from fivee_sim.service import sessions as sessions_service
 
 from .conftest import mapless_fight
 
@@ -209,7 +210,7 @@ def test_map_save_refuses_a_version_someone_else_replaced(
 
     # A cell that is actually floor, so the edit genuinely moves the file on:
     # painting an already-wall square writes identical bytes and nothing is stale.
-    document = api._map_session(map_id).document
+    document = sessions_service.map_session_for(api._STATE, map_id).document
     floor = next(
         (row.index("."), y) for y, row in enumerate(document.tiles) if "." in row
     )
@@ -276,7 +277,7 @@ def test_map_save_defaults_to_the_version_this_session_last_saw(
 
     # A second session loads the same file and moves it on.
     theirs = str(api.map_load(target)["map_id"])
-    document = api._map_session(theirs).document
+    document = sessions_service.map_session_for(api._STATE, theirs).document
     floor = next(
         (row.index("."), y) for y, row in enumerate(document.tiles) if "." in row
     )

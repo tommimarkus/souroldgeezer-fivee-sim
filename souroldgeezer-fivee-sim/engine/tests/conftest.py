@@ -3,10 +3,10 @@
 Two jobs, and they are separate.
 
 **Isolation.** ``mcp_server.server`` keeps its sessions, maps, content registry and
-id counters in module-level globals. A test that creates an encounter or loads a
-map mutates process state that outlives it, so the suite's result could depend on
-collection order. :func:`_isolate_server_state` saves all five around every test
-and puts them back, which makes each test start from the same globals it would see
+id counters in one process-wide ``EngineState``. A test that creates an encounter or
+loads a map mutates process state that outlives it, so the suite's result could depend
+on collection order. :func:`_isolate_server_state` saves all five fields around every
+test and puts them back, which makes each test start from the same state it would see
 if it ran alone.
 
 **Shared helpers.** These used to live in ``test_kernel`` and ``test_encounter``,
@@ -65,28 +65,28 @@ def _isolate_server_state(
 ) -> Iterator[None]:
     """Save and restore every module-level global in the MCP server around each test.
 
-    ``_CONTENT`` is loaded lazily, so restoring it also *resets* it: the value put
-    back is the ``None`` the module started with, and the next test that asks for
+    ``content`` is loaded lazily, so restoring it also *resets* it: the value put
+    back is the ``None`` the state started with, and the next test that asks for
     content loads it fresh. That is what the two per-class fixtures in
-    ``test_content`` used to arrange by hand for ``_CONTENT`` and ``_SESSIONS``;
-    doing it here covers ``_MAPS`` and both id counters as well, which they missed.
+    ``test_content`` used to arrange by hand for the content and the sessions;
+    doing it here covers the maps and both id counters as well, which they missed.
     """
-    sessions = dict(api._SESSIONS)
-    maps = dict(api._MAPS)
-    content = api._CONTENT
-    next_id = api._NEXT_ID
-    next_map_id = api._NEXT_MAP_ID
+    sessions = dict(api._STATE.sessions)
+    maps = dict(api._STATE.maps)
+    content = api._STATE.content
+    next_id = api._STATE.next_id
+    next_map_id = api._STATE.next_map_id
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
     try:
         yield
     finally:
-        api._SESSIONS.clear()
-        api._SESSIONS.update(sessions)
-        api._MAPS.clear()
-        api._MAPS.update(maps)
-        api._CONTENT = content
-        api._NEXT_ID = next_id
-        api._NEXT_MAP_ID = next_map_id
+        api._STATE.sessions.clear()
+        api._STATE.sessions.update(sessions)
+        api._STATE.maps.clear()
+        api._STATE.maps.update(maps)
+        api._STATE.content = content
+        api._STATE.next_id = next_id
+        api._STATE.next_map_id = next_map_id
 
 
 class FixedRandom(Random):

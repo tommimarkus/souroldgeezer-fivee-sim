@@ -22,6 +22,7 @@ from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import parse_document
 from fivee_sim.mcp_server import server as api
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.service import map_ops
 from fivee_sim.service import replay as replay_service
 
 from .conftest import (
@@ -371,7 +372,7 @@ class TestSizeGate:
         result = api.replay_export(mapless_fight())
         assert "bundle" in result
         assert "path" not in result
-        assert result["bytes"] <= api._INLINE_BUNDLE_BYTES
+        assert result["bytes"] <= map_ops.INLINE_BUNDLE_BYTES
 
     def test_a_large_bundle_goes_to_disk_at_the_default_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -386,7 +387,7 @@ class TestSizeGate:
         replays_dir = tmp_path / "replays"
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
         monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
-        monkeypatch.setattr(api, "_INLINE_BUNDLE_BYTES", 64)
+        monkeypatch.setattr(map_ops, "INLINE_BUNDLE_BYTES", 64)
         encounter_id = mapless_fight(seed=47)
         result = api.replay_export(encounter_id)
         assert "bundle" not in result

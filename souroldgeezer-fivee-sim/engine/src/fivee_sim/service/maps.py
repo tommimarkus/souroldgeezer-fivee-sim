@@ -28,14 +28,12 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import os
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from random import Random
 from typing import Any, NoReturn
 
-from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 from ..kernel.grid import (
     DiagonalRule,
     Square,
@@ -76,6 +74,7 @@ from ..map_document import (
     validate_document,
 )
 from ..model.battlemap import MapPlane, SquareClaim
+from ..paths import MAPS_ENV, MAPS_SUBDIR, environment_roots, maps_root
 from ..validation import Diagnostic, Severity
 from . import durable
 from .common import discover_json_files, sha256_of
@@ -83,6 +82,7 @@ from .errors import MapEditError
 
 __all__ = [
     "MAPS_ENV",
+    "MAPS_SUBDIR",
     "RENDER_BUDGET",
     "ResolvedLevel",
     "apply_edits",
@@ -97,12 +97,6 @@ __all__ = [
     "render_ascii",
     "save_file",
 ]
-
-#: Environment variable holding an ``os.pathsep``-separated list of map files
-#: or directories — the maps analogue of ``FIVEE_SIM_CONTENT``.
-MAPS_ENV = "FIVEE_SIM_MAPS"
-#: Where maps live inside a project when nothing else is configured.
-MAPS_SUBDIR = Path(".fivee-sim") / "maps"
 
 #: The hard ceiling on rendered cells after downsampling. Above it, a render
 #: is refused with instructions rather than emitted as a wall of text.
@@ -1592,34 +1586,6 @@ def query(
 
 
 # --- files ------------------------------------------------------------------
-def environment_roots(env: Mapping[str, str] | None = None) -> list[str]:
-    """Map roots the environment asks for, mirroring the content precedence.
-
-    ``FIVEE_SIM_MAPS`` wins outright when set; entries may be files or
-    directories. Only when it is unset does the project directory apply.
-    """
-    environ = os.environ if env is None else env
-    configured = environ.get(MAPS_ENV, "").strip()
-    if configured:
-        return [part for part in configured.split(os.pathsep) if part.strip()]
-    project = (
-        environ.get(PROJECT_ENV, "").strip()
-        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
-    )
-    if project:
-        return [str(Path(project) / MAPS_SUBDIR)]
-    return []
-
-
-def maps_root(env: Mapping[str, str] | None = None) -> Path:
-    """Where maps are saved by default: the first configured root, or the
-    project's ``.fivee-sim/maps``, or the same under the current directory."""
-    roots = environment_roots(env)
-    if roots:
-        return Path(roots[0]).expanduser()
-    return Path.cwd() / MAPS_SUBDIR
-
-
 def parse_payload(
     payload: Mapping[str, Any], *, source: str, terrain: TerrainTable
 ) -> tuple[MapDocument, list[Diagnostic]]:
