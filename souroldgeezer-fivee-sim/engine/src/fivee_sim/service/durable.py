@@ -27,7 +27,9 @@ dies, which removes the dead-owner reclamation a lease would have to hand-roll.
 from __future__ import annotations
 
 import os
+import stat
 import sys
+import tempfile
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -62,7 +64,11 @@ def file_lock(path: Path) -> Iterator[None]:
     """
     guard = lock_path(path)
     guard.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(guard, os.O_RDWR | os.O_CREAT, 0o600)
+    # O_NOFOLLOW so a symlink planted at the lock path cannot redirect the open;
+    # a lock that cannot be taken safely fails the write rather than skipping it.
+    descriptor = os.open(
+        guard, os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600
+    )
     try:
         if sys.platform == "win32":  # pragma: no cover - POSIX is the developed platform
             msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
@@ -88,17 +94,47 @@ def fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+def _inherited_file_mode() -> int:
+    """The mode an ordinary create would have produced under this umask.
+
+    ``mkstemp`` creates 0600, which would silently tighten every map and journal
+    this module writes. Reading the umask costs a momentary ``os.umask(0)``, so
+    it is sampled once at import — while the process is still single-threaded —
+    rather than per write on a threading server, where another thread could
+    create a file during the window.
+    """
+    current = os.umask(0)
+    os.umask(current)
+    return 0o666 & ~current
+
+
+_DEFAULT_FILE_MODE = _inherited_file_mode()
+
+
 def atomic_write(path: str | Path, text: str) -> None:
     """Publish ``text`` at ``path`` by rename, never by truncate-and-write."""
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    # Same directory, so the rename stays within one filesystem and is atomic.
-    scratch = target.parent / f".{target.name}.{os.getpid()}.tmp"
+    # mkstemp, not a constructed name: it creates with O_CREAT|O_EXCL and an
+    # unpredictable suffix, so a symlink cannot be planted at the scratch path
+    # to divert the write. The directory is the target's, so the rename stays
+    # within one filesystem and is atomic.
+    handle_fd, scratch_name = tempfile.mkstemp(
+        dir=target.parent, prefix=f".{target.name}.", suffix=".tmp"
+    )
+    scratch = Path(scratch_name)
     try:
-        with scratch.open("w", encoding="utf-8") as handle:
+        with os.fdopen(handle_fd, "w", encoding="utf-8") as handle:
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
+        # Keep the permissions a plain write would have left: replacing a file
+        # must not quietly change who can read it.
+        existing = target.stat().st_mode if target.exists() else None
+        os.chmod(
+            scratch,
+            stat.S_IMODE(existing) if existing is not None else _DEFAULT_FILE_MODE,
+        )
         os.replace(scratch, target)
         fsync_directory(target.parent)
     except BaseException:

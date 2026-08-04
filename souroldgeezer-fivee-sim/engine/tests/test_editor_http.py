@@ -765,38 +765,56 @@ class TestConcurrentEdits:
     editing one map silently dropped whichever edit landed first.
     """
 
-    def test_two_simultaneous_edits_keep_one_and_refuse_the_other(
+    def test_no_simultaneous_edit_is_acknowledged_and_then_lost(
         self, editor: Editor
     ) -> None:
+        """Every edit told it succeeded survives; a loser is refused, not dropped.
+
+        Asserting a strict one-winner-one-refusal split would be flaky, and was:
+        the barrier synchronises the two *requests*, not the two handlers, so a
+        run where the first finishes before the second loads the document ends
+        200/200 and is perfectly correct. Measured at roughly one run in twelve.
+        What holds under every interleaving is the property the bug violated —
+        an acknowledged edit is never silently discarded — so that is what this
+        asserts. The deterministic refusal branch is pinned at the service layer
+        by test_map_service's TestConcurrentWrites.
+        """
         editor.put_map("editor-chamber", payload())
         start = threading.Barrier(2)
-        results: list[Response] = []
+        results: list[tuple[int, Response]] = []
         guard = threading.Lock()
 
-        def paint(column: int) -> None:
+        def paint(row: int) -> None:
             start.wait(timeout=10)
             response = editor.request(
                 "POST",
                 "/api/maps/editor-chamber/edits",
                 json_body={
-                    "operations": [
-                        {"op": "paint", "cells": [[1, column]], "terrain": "wall"}
-                    ]
+                    "operations": [{"op": "paint", "cells": [[1, row]], "terrain": "wall"}]
                 },
             )
             with guard:
-                results.append(response)
+                results.append((row, response))
 
-        threads = [threading.Thread(target=paint, args=(column,)) for column in (1, 2)]
+        threads = [threading.Thread(target=paint, args=(row,)) for row in (1, 2)]
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join(timeout=20)
 
-        statuses = sorted(response.status for response in results)
-        assert statuses == [200, 409], f"expected one winner and one refusal, got {statuses}"
-        loser = next(response for response in results if response.status == 409)
-        assert_problem(loser, 409, "has advanced")
-        winner = next(response for response in results if response.status == 200)
-        on_disk = sha256_of(editor.file_of("editor-chamber").read_text())
-        assert on_disk == winner.json()["sha256"]
+        assert len(results) == 2
+        assert {response.status for _row, response in results} <= {200, 409}
+        acknowledged = [(row, r) for row, r in results if r.status == 200]
+        assert acknowledged, "at least one writer must make progress"
+        for _row, refused in ((row, r) for row, r in results if r.status == 409):
+            assert_problem(refused, 409, "has advanced")
+
+        final = json.loads(editor.file_of("editor-chamber").read_text())
+        for row, response in acknowledged:
+            assert final["tiles"][row][1] == "#", (
+                f"row {row} was acknowledged with sha {response.json()['sha256']} "
+                "but its paint is missing from the saved file"
+            )
+        assert sha256_of(editor.file_of("editor-chamber").read_text()) in {
+            response.json()["sha256"] for _row, response in acknowledged
+        }

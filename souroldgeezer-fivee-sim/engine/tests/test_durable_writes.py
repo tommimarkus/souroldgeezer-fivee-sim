@@ -109,9 +109,17 @@ def test_a_stale_expected_head_is_refused_rather_than_forking_the_chain(
     assert len(verified) == 2
 
 
-def test_guarded_processes_lose_appends_but_never_the_journal(
+def test_two_guarded_processes_still_leave_a_verifiable_chain(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Integrity under the guarded path; the refusal itself is pinned above.
+
+    This case deliberately does not assert that a refusal happened. Whether the
+    two children collide is a timing question, so asserting it would be flaky,
+    and hand-mutation confirms the gap is real: disabling the expected_head
+    check leaves this test green while the two tests either side of it fail.
+    Its job is the invariant that survives whatever the interleaving was.
+    """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
     encounter_id = mapless_fight(seed=203)
@@ -125,8 +133,10 @@ def test_guarded_processes_lose_appends_but_never_the_journal(
 
     records, warning = encounter_journal.read(encounter_id)
     assert warning is None
+    # Every acknowledged append landed exactly once, and read() re-verifies the
+    # whole chain — the property a second writer used to destroy outright.
     assert len(records) == 1 + sum(wins for wins, _refusals in tallies)
-    assert sum(wins for wins, _refusals in tallies) <= 2 * rounds
+    assert sum(wins + refusals for wins, refusals in tallies) == 2 * rounds
 
 
 def test_a_second_process_acting_on_a_live_encounter_is_refused_not_merged(
@@ -180,6 +190,9 @@ def test_atomic_write_never_exposes_a_half_written_file(tmp_path: Path) -> None:
             pytest.fail("a reader observed a partially written file")
     _stdout, stderr = writer.communicate(timeout=120)
     assert writer.returncode == 0, stderr
+    # Without this the case is vacuous: an empty ``seen`` satisfies the subset
+    # check, so a write that outran the reader would pass having proved nothing.
+    assert seen, "the reader never observed the file; the race went unexercised"
     assert seen <= {0, 1}
 
 
@@ -205,3 +218,41 @@ def test_map_save_refuses_a_version_someone_else_replaced(
 
     with pytest.raises(api.ToolError, match="has advanced"):
         api.map_save(map_id, path=target, overwrite=True, expected_sha256=read_at)
+
+
+def test_a_symlink_planted_at_the_scratch_path_cannot_divert_a_write(
+    tmp_path: Path,
+) -> None:
+    """A constructed scratch name was guessable and ``open('w')`` follows links.
+
+    With ``.{name}.{pid}.tmp`` this diverted the write into the link's target
+    and then renamed the symlink over the map, so every later write landed on
+    the victim too — a directory-write primitive escalating to arbitrary-file
+    write. ``mkstemp`` closes it: unpredictable name, ``O_CREAT|O_EXCL``.
+    """
+    target = tmp_path / "map.json"
+    durable.atomic_write(target, '{"generation": 0}')
+    victim = tmp_path / "victim.txt"
+    victim.write_text("do not clobber", encoding="utf-8")
+    import os as _os
+
+    (tmp_path / f".{target.name}.{_os.getpid()}.tmp").symlink_to(victim)
+
+    durable.atomic_write(target, '{"generation": 1}')
+
+    assert victim.read_text(encoding="utf-8") == "do not clobber"
+    assert not target.is_symlink()
+    assert json.loads(target.read_text(encoding="utf-8"))["generation"] == 1
+
+
+def test_a_replaced_file_keeps_the_permissions_it_had(tmp_path: Path) -> None:
+    """``mkstemp`` creates 0600; a replace must not silently tighten a file."""
+    import stat as _stat
+
+    target = tmp_path / "map.json"
+    durable.atomic_write(target, '{"generation": 0}')
+    target.chmod(0o644)
+
+    durable.atomic_write(target, '{"generation": 1}')
+
+    assert _stat.S_IMODE(target.stat().st_mode) == 0o644
