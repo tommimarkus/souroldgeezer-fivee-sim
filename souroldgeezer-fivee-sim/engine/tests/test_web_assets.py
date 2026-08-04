@@ -61,7 +61,12 @@ _EXTERNAL = re.compile(
 )
 #: Every src/href value, including one inside a JS string with escaped quotes.
 _REFERENCE = re.compile(r"""(?:src|href)=\\?["']([^"'\\]+)""")
-_ALLOWED_REFERENCES = frozenset({"/assets/renderer.js", "renderer.js"})
+#: Same-origin routes the one server actually answers on. Root-relative paths
+#: are local by construction, but the set stays explicit rather than becoming
+#: ``startswith("/")``: a typo'd route should fail here, not 404 in a browser.
+_ALLOWED_REFERENCES = frozenset(
+    {"/assets/renderer.js", "renderer.js", "/", "/viewer"}
+)
 
 
 def read(name: str) -> str:
@@ -90,6 +95,41 @@ class TestInjectionContracts:
 
     def test_the_renderer_defines_its_single_namespace(self) -> None:
         assert "var FiveeRenderer" in read("renderer.js")
+
+
+class TestOneServiceTwoPages:
+    """Both pages belong to one launch, and each says so in its own way.
+
+    The asymmetry is the contract and is why these are separate assertions:
+    the editor is only ever served, so its link out is unconditional; the
+    viewer also ships as a standalone export, so everything that depends on a
+    server has to start hidden. Whether the gate actually *works* is a
+    behaviour claim — ``scripts/check-editor-behaviour.mjs`` owns it.
+    """
+
+    def test_the_editor_links_to_the_viewer_on_the_same_server(self) -> None:
+        assert read("editor.html").count('href="/viewer"') == 1
+
+    def test_the_viewer_ships_its_served_controls_hidden(self) -> None:
+        source = read("viewer.html")
+        # `hidden` on the element itself, so the export is correct before a
+        # single line of script runs — not un-hidden and then re-hidden.
+        assert '<label id="served-replays" hidden>' in source
+        assert '<a id="link-editor" href="/" hidden>' in source
+
+    def test_the_viewer_reaches_the_network_only_behind_the_config_gate(self) -> None:
+        # The offline guarantee, as source: the page's single fetch call sits
+        # inside apiGet, and apiGet is only reachable from connectToServer,
+        # which the boot block calls only when the injected config exists.
+        source = read("viewer.html")
+        assert source.count("window.fetch(") == 1
+        assert "else if (window.__FIVEE_EDITOR__) { connectToServer(); }" in source
+
+    def test_the_served_viewer_reuses_the_one_bundle_load_path(self) -> None:
+        # A second load path is how the validation, the level wiring and the
+        # empty-state hiding drift apart; the served source must land in the
+        # same loadBundle the file picker uses.
+        assert "loadBundle(answer.json, id);" in read("viewer.html")
 
 
 class TestViewerFeatureVisibility:

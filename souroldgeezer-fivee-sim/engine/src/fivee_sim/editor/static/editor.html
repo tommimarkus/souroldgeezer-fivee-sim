@@ -170,6 +170,10 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
   <span id="provenance"></span>
   <span class="spacer"></span>
   <span id="mode-note"></span>
+  <!-- The other half of the same launch. Unconditional, unlike the viewer's
+       link back: the editor is only ever served, so this route always exists
+       for a user who is looking at this page. -->
+  <a id="link-viewer" href="/viewer">Replay viewer</a>
   <button id="btn-open">Open&#8230;</button>
   <button id="btn-open-file">Open file&#8230;</button>
   <input id="file-input" type="file" accept=".json,application/json" hidden>

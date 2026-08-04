@@ -25,6 +25,8 @@ from fivee_sim.editor.cli import STATE_FILENAME, read_state, state_file_for
 from fivee_sim.editor.http_server import TOKEN_HEADER
 from fivee_sim.mcp_server import server as api
 
+from .conftest import mapless_fight
+
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32", reason="the lifecycle rests on POSIX signal semantics"
 )
@@ -119,6 +121,40 @@ class TestCliLifecycle:
         maps_dir = tmp_path / ".fivee-sim" / "maps"
         assert state_file_for(maps_dir) == tmp_path / ".fivee-sim" / STATE_FILENAME
 
+    def test_one_launch_serves_maps_and_replays_and_says_so(self, tmp_path: Path) -> None:
+        """The launch is one service, so its record and its ping describe both.
+
+        Without this, a caller that wanted to know where the running server
+        reads replays from would have to guess it from ``maps_dir`` — which is
+        exactly the derivation the replay root deliberately does not make.
+        """
+        maps_dir = tmp_path / "maps"
+        replays_dir = tmp_path / "elsewhere" / "replays"
+        state_path = tmp_path / "state" / "editor-server.json"
+        process = _spawn_cli(
+            [
+                "--maps-dir", str(maps_dir),
+                "--replays-dir", str(replays_dir),
+                "--state-file", str(state_path),
+                "--port", "0",
+            ]
+        )
+        try:
+            assert _wait_for(
+                lambda: read_state(state_path) is not None
+            ), "the state file never appeared"
+            state = read_state(state_path)
+            assert state is not None
+            assert state["replays_dir"] == str(replays_dir)
+
+            answer = _ping(state["port"], state["token"])
+            assert answer["replays_dir"] == str(replays_dir)
+            assert answer["maps_dir"] == str(maps_dir)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate(timeout=10)
+
 
 class TestEditorTools:
     def test_serve_is_idempotent_and_stop_tears_down(
@@ -149,6 +185,98 @@ class TestEditorTools:
                     os.kill(state["pid"], signal.SIGKILL)
                 except OSError:
                     pass
+
+    def test_serve_reports_the_viewer_as_part_of_the_same_launch(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """One process, two pages, so one call reports both URLs.
+
+        Before this the viewer page was served and unreachable in practice —
+        nothing told anyone it was there. A caller handing a URL to the user
+        should not have to know the route by heart.
+        """
+        maps_dir = tmp_path / "maps"
+        replays_dir = tmp_path / "replays"
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
+        monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
+        state_path = state_file_for(maps_dir)
+        result = api.map_editor_serve()
+        try:
+            assert result["viewer_url"] == f"http://127.0.0.1:{result['port']}/viewer"
+            assert result["replays_dir"] == str(replays_dir)
+
+            again = api.map_editor_serve()
+            assert again["already_running"] is True
+            assert again["viewer_url"] == result["viewer_url"]
+        finally:
+            api.map_editor_stop()
+            state = read_state(state_path)
+            if state is not None and isinstance(state.get("pid"), int):
+                try:
+                    os.kill(state["pid"], signal.SIGKILL)
+                except OSError:
+                    pass
+
+    def test_an_export_links_into_a_running_viewer_and_stays_quiet_otherwise(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``viewer_url`` appears only when a server is actually up.
+
+        A link to a server nobody is running is worse than no link: the user
+        clicks it, gets a connection refused, and blames the export. So the
+        export reports one only after the live-state ping has answered.
+        """
+        maps_dir = tmp_path / "maps"
+        replays_dir = tmp_path / "replays"
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
+        monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
+        encounter_id = mapless_fight(seed=93)
+
+        cold = api.replay_export(encounter_id, path=str(replays_dir / "cold.json"))
+        assert "viewer_url" not in cold
+
+        state_path = state_file_for(maps_dir)
+        served = api.map_editor_serve()
+        try:
+            warm = api.replay_export(encounter_id, path=str(replays_dir / "warm.json"))
+            assert warm["viewer_url"] == (
+                f"http://127.0.0.1:{served['port']}/viewer?replay=warm"
+            )
+
+            # A file written outside the served replays directory is not
+            # something that server can play, so it gets no link.
+            outside = api.replay_export(
+                encounter_id, path=str(tmp_path / "elsewhere" / "stray.json")
+            )
+            assert "viewer_url" not in outside
+        finally:
+            api.map_editor_stop()
+            state = read_state(state_path)
+            if state is not None and isinstance(state.get("pid"), int):
+                try:
+                    os.kill(state["pid"], signal.SIGKILL)
+                except OSError:
+                    pass
+
+    def test_an_export_with_no_path_lands_in_the_replays_root_not_under_maps(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Replays are a sibling of maps, never a child.
+
+        Written under the maps root they would sit inside every ``list_maps``
+        walk, and the served editor would be offering to open them as maps.
+        """
+        maps_dir = tmp_path / ".fivee-sim" / "maps"
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
+        monkeypatch.setenv("FIVEE_SIM_PROJECT_DIR", str(tmp_path))
+        monkeypatch.delenv("FIVEE_SIM_REPLAYS", raising=False)
+        encounter_id = mapless_fight(seed=94)
+
+        # Forced to a file rather than inline, so there is a path to check.
+        written = Path(api.replay_export(encounter_id, embed=True)["path"])
+
+        assert written.parent == tmp_path / ".fivee-sim" / "replays"
+        assert maps_dir not in written.parents
 
     def test_stop_without_a_server_reports_nothing_running(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

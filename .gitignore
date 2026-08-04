@@ -9,7 +9,9 @@
 .gitconfig
 .gitmodules
 .idea
-/.mcp.json
+# Unanchored: the devcontainer also mounts /dev/null over engine/.mcp.json in a
+# fresh worktree, and a character device must never reach the index.
+.mcp.json
 .profile
 .ripgreprc
 .vscode

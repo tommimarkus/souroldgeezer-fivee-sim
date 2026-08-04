@@ -376,13 +376,22 @@ class TestSizeGate:
     def test_a_large_bundle_goes_to_disk_at_the_default_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path))
+        """The default path is the *replays* root, which maps never decide.
+
+        This used to read ``FIVEE_SIM_MAPS`` and land under the maps root.
+        Replays are rooted independently now, so a maps root pointed somewhere
+        exotic no longer drags the fight records along with it — and the
+        assertion below names the replays root to say so.
+        """
+        replays_dir = tmp_path / "replays"
+        monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
+        monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
         monkeypatch.setattr(api, "_INLINE_BUNDLE_BYTES", 64)
         encounter_id = mapless_fight(seed=47)
         result = api.replay_export(encounter_id)
         assert "bundle" not in result
         assert result["path"] == str(
-            tmp_path / "replays" / f"{encounter_id}-{result['seed']}.json"
+            replays_dir / f"{encounter_id}-{result['seed']}.json"
         )
         text = Path(str(result["path"])).read_text(encoding="utf-8")
         assert result["bytes"] == len(text.encode("utf-8"))

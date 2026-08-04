@@ -109,6 +109,12 @@ footer {
   <label>Storey <select id="level-select" aria-label="visible storey"></select></label>
   <label><input id="follow-level" type="checkbox" checked> Follow action</label>
   <span class="spacer"></span>
+  <!-- Both revealed only when this page is served: a standalone export has no
+       server to list replays from and no editor to link back to, and an
+       always-visible control that cannot work is worse than an absent one. -->
+  <label id="served-replays" hidden>Replay
+    <select id="replay-select" aria-label="replay to play"></select></label>
+  <a id="link-editor" href="/" hidden>Map editor</a>
   <button id="btn-open-file">Open replay&#8230;</button>
   <input id="file-input" type="file" accept=".json,application/json" hidden>
 </header>
@@ -116,7 +122,8 @@ footer {
   <main id="canvas-wrap">
     <canvas id="stage"></canvas>
     <div id="empty-note">No replay loaded.<br>
-      Open a replay bundle file, or drop one anywhere on this page.</div>
+      <span id="empty-hint">Open a replay bundle file, or drop one anywhere on
+        this page.</span></div>
   </main>
   <aside id="sidebar" aria-label="encounter state and audit timeline">
     <section id="combatant-state" aria-live="polite"></section>
@@ -1262,13 +1269,110 @@ if (typeof FiveeRenderer === "undefined") {
   });
   window.addEventListener("resize", redraw);
 
+  /* --- the served half -------------------------------------------------- */
+  /* Everything below runs only when window.__FIVEE_EDITOR__ is present, which
+     the server injects and a standalone export does not carry. That is the
+     whole offline guarantee: an exported file cannot reach this code, so it
+     cannot issue a request, so adding a network path to this page did not
+     give the export one. Gate on the config object, never on the protocol. */
+  /* Deliberately the same shape as editor.html's `request`: status plus parsed
+     body, never a throw on an HTTP error, and a network-level rejection folded
+     into status 0 so every caller's chain completes instead of hanging as an
+     unhandled rejection. Two pages talking to one server should not disagree
+     about what a failed call looks like. */
+  function apiGet(path) {
+    var config = window.__FIVEE_EDITOR__;
+    return window.fetch(config.apiBase + path, {
+      headers: { "X-Fivee-Editor-Token": config.token }
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
+        return { status: response.status, json: parsed };
+      });
+    }).catch(function (error) {
+      return { status: 0, json: { detail: "replay server unreachable (" + error + ")" } };
+    });
+  }
+
+  /* The server answers problem+json; its `detail` is the same prose the MCP
+     tool would report, so surface that rather than a status number. */
+  function refusal(answer, fallback) {
+    return (answer.json && answer.json.detail) || (fallback + " (HTTP " + answer.status + ")");
+  }
+
+  function playServed(id) {
+    if (!id) { return; }
+    return apiGet("/replays/" + encodeURIComponent(id)).then(function (answer) {
+      if (answer.status !== 200) {
+        /* A bundle whose hashes no longer verify is listed but refused, so
+           this is the path that names which file is broken. */
+        window.alert("cannot play " + id + ": " + refusal(answer, "refused"));
+        return;
+      }
+      loadBundle(answer.json, id);
+    });
+  }
+
+  function fillReplayChooser(replays) {
+    var select = byId("replay-select");
+    select.textContent = "";
+    var blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "choose…";
+    select.appendChild(blank);
+    replays.forEach(function (row) {
+      var option = document.createElement("option");
+      option.value = row.id;
+      option.textContent = row.seed === undefined || row.seed === null
+        ? (row.name || row.id)
+        : (row.name || row.id) + " · seed " + row.seed;
+      select.appendChild(option);
+    });
+    byId("served-replays").hidden = false;
+    /* The empty state has to name the control that just appeared, or the
+       chooser is a thing the user has to notice rather than be told about. */
+    byId("empty-hint").textContent =
+      "Pick a replay above, open a bundle file, or drop one anywhere on this page.";
+  }
+
+  function wantedReplay() {
+    var search = (window.location && window.location.search) || "";
+    var match = /[?&]replay=([^&]*)/.exec(search);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function connectToServer() {
+    byId("link-editor").hidden = false;
+    byId("replay-select").addEventListener("change", function () {
+      playServed(byId("replay-select").value);
+    });
+    return apiGet("/replays").then(function (answer) {
+      /* Deliberately quiet on failure. The chooser is a convenience and the
+         file picker is not: a server with no /api/replays must still leave
+         this page usable rather than greeting the user with an error. */
+      if (answer.status !== 200) { return; }
+      var replays = (answer.json && answer.json.replays) || [];
+      if (!replays.length) { return; }
+      fillReplayChooser(replays);
+      var wanted = wantedReplay();
+      var known = replays.some(function (row) { return row.id === wanted; });
+      if (wanted && known) {
+        byId("replay-select").value = wanted;
+        return playServed(wanted);
+      }
+    });
+  }
+
   /* Data sources, in priority order: the embedded slot a standalone export
-     fills, then a file opened or dropped by hand. */
+     fills, then the running server's own replays, then a file opened or
+     dropped by hand. */
   var embedded = null;
   try {
     embedded = JSON.parse(document.getElementById("embedded-data").textContent);
   } catch (error) { embedded = null; }
   if (embedded !== null) { loadBundle(embedded, "embedded replay"); }
+  else if (window.__FIVEE_EDITOR__) { connectToServer(); }
 })();
 </script>
 </body>
