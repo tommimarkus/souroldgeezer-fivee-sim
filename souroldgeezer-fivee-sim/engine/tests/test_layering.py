@@ -187,6 +187,47 @@ def test_the_client_reaches_the_engine_only_over_http() -> None:
     )
 
 
+def test_the_suites_own_door_stays_a_door_and_never_becomes_an_adapter() -> None:
+    """``tests/api.py`` may only forward. A branch there is a second engine.
+
+    Deleting the MCP server left 186 in-process call sites across eleven test
+    modules, and ``tests/api.py`` is what they now go through: one
+    ``EngineState`` threaded in, one call out, no error translation. Its
+    docstring says exactly that — "not an adapter, not the contract, not a
+    second implementation. Every body below is one call."
+
+    That claim is load-bearing and was unenforced, which is the asymmetry this
+    closes: the sibling claim about ``fivee_sim.client`` gets an AST check
+    directly above, while this one relied on nobody ever finding it convenient
+    to add a default here. The failure it prevents is quiet — a coercion or a
+    fallback added to make one test's life easier means those 186 sites stop
+    describing what ``service/`` does and start describing what this file does
+    instead, and every one of them keeps passing while it happens.
+
+    So: one statement per function, and it must be a ``return`` of a call.
+    Anything richer belongs in ``service/``, where the shipped adapters and
+    their tests can see it too.
+    """
+    path = Path(__file__).with_name("api.py")
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    offenders: list[str] = []
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef) or node.name.startswith("_"):
+            continue
+        body = [item for item in node.body if not isinstance(item, ast.Expr)]
+        if len(body) != 1 or not isinstance(body[0], ast.Return):
+            offenders.append(f"api.py:{node.lineno} {node.name} is more than one return")
+            continue
+        if not isinstance(body[0].value, ast.Call):
+            offenders.append(f"api.py:{node.lineno} {node.name} returns something not a call")
+    assert not offenders, (
+        "tests/api.py forwards to service/ and does nothing else — that is what "
+        "makes the 186 call sites behind it evidence about the engine rather "
+        "than about this file. Put the branch in service/, where /api/v1 and "
+        "its tests reach it too:\n  " + "\n  ".join(offenders)
+    )
+
+
 def test_every_layer_rule_actually_saw_some_source() -> None:
     """A resolver that silently matched nothing would make all four vacuous."""
     for prefix in (

@@ -43,6 +43,25 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   so a DNS-rebinding page cannot drive it; no CORS headers are ever emitted;
   bodies are size-bounded before being read; and map ids resolve strictly under
   the maps directory. **Anything that bypasses one of those is a real finding.**
+- **Four operations take a path you give them, and are not contained.** The
+  bullet above is about *ids*, and it would be easy to read it as covering
+  everything. It does not. `map.uvtt` and `encounter.replay` write to any
+  `path` you pass, and `content.validate` and `content.configure` read and
+  parse any `paths` you pass as content packs. That is the feature — exporting
+  a map to a virtual tabletop and loading a campaign's own material are the
+  point of those operations — but it means **the token authorises arbitrary
+  local file writes and reads under the launching user**, not only writes
+  inside `.fivee-sim/`.
+  
+  This is a real change in who can reach that capability, and it is worth
+  stating rather than discovering. Until `2026.08.34` those four were tools on
+  a stdio server, so reaching them meant already being able to run code as you
+  — which is out of scope below. They are now HTTP operations, so reaching them
+  means holding the token. The token is well defended (random per launch,
+  `0600` at rest, constant-time compared, never logged and never in a URL), and
+  we know of no way to obtain it short of code execution as the user. **A way
+  to obtain it is therefore a serious finding, and more serious than it looks**,
+  because of what it now reaches.
 - **The browser assets are offline.** `editor.html`, `viewer.html`, and
   `renderer.js` load nothing from a network; `tests/test_web_assets.py` asserts
   it.

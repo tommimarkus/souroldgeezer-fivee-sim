@@ -604,6 +604,15 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        # Cross-origin *reads* are already impossible three times over — no
+        # CORS header is ever sent, the token header is not CORS-safelisted so
+        # a preflight fails first, and a full HTML document cannot be included
+        # as a classic script. What none of that stops is UI redress: framing
+        # the real page, token and all, and clicking its real buttons. These
+        # two close that, and cost a header each.
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
+        self.send_header("X-Content-Type-Options", "nosniff")
         for key, value in (headers or {}).items():
             self.send_header(key, value)
         self.end_headers()

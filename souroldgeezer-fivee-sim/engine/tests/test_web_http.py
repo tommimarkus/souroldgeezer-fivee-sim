@@ -420,8 +420,16 @@ class TestGuards:
             body = json.loads(response.read())
         finally:
             connection.close()
+        # The detail, not only the status: this test builds its own connection
+        # so it can send a Content-Length without the body, which puts it
+        # outside assert_problem's reach and so outside the AST check that
+        # would otherwise have caught a status-only assertion here. Naming the
+        # refusal is what distinguishes "the size guard fired" from "something
+        # else answered 413", which is the whole reason that check exists.
         assert response.status == 413
         assert body["status"] == 413
+        assert str(MAX_BODY_BYTES) in body["detail"], body["detail"]
+        assert "over the" in body["detail"], body["detail"]
 
     def test_a_non_numeric_content_length_is_400(self, editor: Editor) -> None:
         connection = http.client.HTTPConnection("127.0.0.1", editor.server.port, timeout=10)
@@ -504,6 +512,28 @@ class TestStaticPages:
         assert response.headers["Content-Type"].startswith("text/javascript")
         assert response.headers["Cache-Control"] == "no-store"
         assert "__FIVEE_EDITOR__" not in response.text
+
+    def test_a_served_page_refuses_to_be_framed(self, editor: Editor) -> None:
+        """The one browser-side gap the auth model did not already close.
+
+        Cross-origin *reads* are already impossible three times over: no CORS
+        header is ever sent, the token header is not CORS-safelisted so a
+        preflight fails before the real request, and the page is a full HTML
+        document so ``<script src>`` inclusion cannot parse it. None of that
+        stops UI redress — an attacker page framing the real editor, token and
+        all, and clicking its real buttons. These two headers do.
+        """
+        for path in ("/", "/viewer"):
+            response = editor.request("GET", path, token=False)
+            assert response.status == 200, path
+            assert response.headers["X-Frame-Options"] == "DENY", path
+            assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"], path
+
+    def test_every_response_forbids_content_type_sniffing(self, editor: Editor) -> None:
+        """Including the API's, whose problem+json a sniffer could read as HTML."""
+        for path, token in (("/", False), ("/assets/renderer.js", False), ("/api/v1/ping", True)):
+            response = editor.request("GET", path, token=token)
+            assert response.headers["X-Content-Type-Options"] == "nosniff", path
 
 
 class TestMapsRoundTrip:

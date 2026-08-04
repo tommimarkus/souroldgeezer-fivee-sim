@@ -188,7 +188,13 @@ def spawn(
         arguments += ["--maps-dir", str(maps_dir)]
     if port is not None:
         arguments += ["--port", str(port)]
-    with open(log_path, "ab") as log_file:
+    # 0600 from the first byte, for the reason the state file beside it is:
+    # nothing written here carries the token today — every print in web/cli.py
+    # and every handler log line reports the port and URL only — but a future
+    # traceback that echoed a header dict would, and a write-then-chmod leaves
+    # a window the umask governs.
+    log_fd = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(log_fd, "ab") as log_file:
         process = subprocess.Popen(
             arguments,
             stdin=subprocess.DEVNULL,

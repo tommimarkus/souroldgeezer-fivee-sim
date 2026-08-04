@@ -23,6 +23,7 @@ import io
 import json
 import os
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -35,8 +36,26 @@ import pytest
 
 from fivee_sim.client import cli, discovery
 
+#: SIGKILL where there is one, SIGTERM where there is not. Referencing
+#: ``signal.SIGKILL`` directly would raise ``AttributeError`` at import on
+#: Windows, which is a worse failure than the skip below: it would take the
+#: whole module out before pytest could report why.
+_HARD_KILL = getattr(signal, "SIGKILL", signal.SIGTERM)
+
+# Module-wide, and the reason matters for whoever narrows it. It is *not* the
+# teardown — that is portable now (see _HARD_KILL). It is that every test here
+# needs a running server, and `discovery.spawn` detaches with
+# `start_new_session=True`, which is POSIX-only and raises on Windows. So the
+# ~19 tests in TestHelp/TestInvocation/TestFailures — argument parsing, exit
+# codes, near-miss suggestions, none of it platform-dependent — lose Windows
+# coverage as collateral, and the way to recover them is to give
+# `discovery.spawn` a Windows branch (CREATE_NEW_PROCESS_GROUP), not to move
+# this marker. Deliberately not attempted here: there is no Windows host in
+# this environment to verify it on, and an unverified port is worse than a
+# documented skip.
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32", reason="the lifecycle rests on POSIX signal semantics"
+    sys.platform == "win32",
+    reason="discovery.spawn detaches with start_new_session, which is POSIX-only",
 )
 
 ENGINE_SRC = Path(__file__).resolve().parent.parent / "src"
@@ -89,11 +108,17 @@ def _teardown() -> None:
     a workspace it knows nothing about.
     """
     state_path = discovery.state_path_for()
-    state = discovery.read_state(state_path)
     discovery.stop(state_path)
+    # Re-read *after* the graceful stop, never before. A pid captured first is
+    # a pid the OS may already have reissued by the time the kill lands, so an
+    # unconditional SIGKILL on it can hit an unrelated process — and a
+    # successful stop removes the record, which is exactly how this backstop
+    # learns it has nothing to do. `test_web_lifecycle` and
+    # `scripts/check-api-smoke.py` both read fresh here for the same reason.
+    state = discovery.read_state(state_path)
     if state is not None and isinstance(state.get("pid"), int):
         with contextlib.suppress(OSError):
-            os.kill(state["pid"], signal.SIGKILL)
+            os.kill(state["pid"], _HARD_KILL)
 
 
 @pytest.fixture(scope="module")
@@ -258,6 +283,27 @@ class TestLifecycle:
             "the message must name the log, which is the only place a cold "
             "start's traceback can be"
         )
+
+    def test_the_spawned_servers_log_is_readable_only_by_its_owner(
+        self, workspace: Path
+    ) -> None:
+        """0600, for the reason the state file beside it is 0600.
+
+        Nothing written here carries the token today — every message names the
+        port and URL only — so this is resilience, not a live leak: the file a
+        future traceback would echo a header dict into should not be
+        world-readable by default, and a write-then-chmod leaves a window the
+        umask governs.
+        """
+        state_path = discovery.state_path_for()
+        discovery.ensure_server(state_path=state_path)
+        try:
+            log_path = state_path.parent / "fivee-sim-server.log"
+            assert log_path.is_file(), "the spawn writes its child's output here"
+            mode = stat.S_IMODE(log_path.stat().st_mode)
+            assert mode == 0o600, f"the log is {oct(mode)}, not 0600"
+        finally:
+            discovery.stop(state_path)
 
     def test_the_command_works_as_its_own_process_not_only_in_this_one(
         self, workspace: Path
