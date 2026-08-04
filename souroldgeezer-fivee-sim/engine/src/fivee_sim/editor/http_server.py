@@ -508,20 +508,6 @@ class _Handler(BaseHTTPRequestHandler):
             headers={"ETag": _etag_of(str(saved["sha256"]))},
         )
 
-    def _current_sha(self, path: Path) -> str:
-        """The saved file's canonical sha — falling back to raw bytes when the
-        file no longer parses, so an If-Match against it still gets a truthful
-        mismatch rather than a validation error for a document the client is
-        trying to replace."""
-        try:
-            document, _warnings = map_service.load_file(path, terrain=self.editor.terrain)
-        except MapError:
-            try:
-                return sha256_of(path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeDecodeError):
-                return "unreadable"
-        return sha256_of(serialize(document))
-
     def _h_post_edits(self, match: re.Match[str]) -> None:
         map_id = self._map_id(match)
         body = self._read_object(_EDITS_KEYS)
