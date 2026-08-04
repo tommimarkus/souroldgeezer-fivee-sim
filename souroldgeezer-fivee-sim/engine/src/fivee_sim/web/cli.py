@@ -1,19 +1,23 @@
-"""The ``fivee-sim-editor`` launcher and its state-file conventions.
+"""The ``fivee-sim-server`` launcher and its state-file conventions.
 
-Two callers start the editor: a developer at a shell, and the MCP server's
-``map_editor_serve`` tool spawning ``python -m fivee_sim.editor`` detached.
-Both find the running server the same way — through the **state file**, a small
-JSON record ``{pid, port, token, maps_dir, started}`` written *after* the
+Two callers start this server: a developer at a shell, and an agent spawning
+``python -m fivee_sim.web`` detached. Both find a running one the same way —
+through the **state file**, a small JSON record
+``{pid, port, token, maps_dir, replays_dir, started}`` written *after* the
 socket is bound, next to the maps directory. The helpers that name, read, and
 remove it live here so both sides share one convention rather than two
 almost-identical ones.
 
-The launcher loads content exactly as the MCP server does — configured packs
-with a fall-back to the bundled slice — so a pack-defined terrain kind
-validates identically over REST and over MCP. On SIGTERM it shuts the server
-down gracefully and removes the state file; the token is printed nowhere, and
-in particular never into a URL, because shell history and browser history both
-outlive a launch. The served page configures itself.
+Content is not loaded here. The server owns an ``EngineState`` and loads
+configured packs on first use, with the same fall-back to the bundled slice
+every other entry point takes — so a pack-defined terrain kind validates
+identically however the engine was started, and there is no second copy of the
+terrain table to fall out of step with a reconfiguration made over the API.
+
+On SIGTERM the launcher shuts the server down gracefully and removes the state
+file; the token is printed nowhere, and in particular never into a URL, because
+shell history and browser history both outlive a launch. The served page
+configures itself.
 """
 
 from __future__ import annotations
@@ -29,22 +33,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ..content import ContentError, builtin_mode, builtin_registry, load_packs
-from ..kernel.grid import TerrainTable
+from ..paths import STATE_FILENAME, state_file_for
 from ..service import maps as map_service
 from ..service import replay as replay_service
-from .http_server import EditorServer
+from .http_server import EngineServer
 
 __all__ = ["STATE_FILENAME", "main", "read_state", "state_file_for"]
-
-#: The state file's name; it lives next to the maps directory (for the default
-#: ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
-STATE_FILENAME = "editor-server.json"
-
-
-def state_file_for(maps_dir: str | Path) -> Path:
-    """Where the launch state file for ``maps_dir`` lives: next to the maps dir."""
-    return Path(maps_dir).expanduser().parent / STATE_FILENAME
 
 
 def read_state(path: str | Path) -> dict[str, Any] | None:
@@ -62,36 +56,22 @@ def read_state(path: str | Path) -> dict[str, Any] | None:
     return payload
 
 
-def _terrain_table() -> TerrainTable:
-    """The active terrain table, loaded the way the MCP server loads content.
-
-    A pack the environment names but that will not load must not stop the
-    editor from starting: the bundled slice loads instead and the failure goes
-    to the log, mirroring the server's own fall-back.
-    """
-    try:
-        return load_packs(builtin=builtin_mode()).terrain_effects
-    except ContentError as error:
-        print(f"fivee-sim-editor: falling back to bundled content: {error}", file=sys.stderr)
-        return builtin_registry().terrain_effects
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     """Bind, write the state file, announce the URL, and serve until told to stop."""
     parser = argparse.ArgumentParser(
-        prog="fivee-sim-editor",
-        description="Serve the 5E-compatible map editor on localhost.",
+        prog="fivee-sim-server",
+        description="Serve the 5E-compatible simulation engine on localhost.",
     )
     parser.add_argument(
         "--maps-dir",
         default=None,
-        help="directory the editor reads and writes maps in "
+        help="directory this server reads and writes maps in "
         "(default: the configured maps root)",
     )
     parser.add_argument(
         "--replays-dir",
         default=None,
-        help="directory the viewer plays replays from, read-only "
+        help="directory the replay viewer plays bundles from, read-only "
         "(default: the configured replays root)",
     )
     parser.add_argument(
@@ -101,7 +81,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--state-file",
         default=None,
         help="where to record {pid, port, token, maps_dir, started} once bound "
-        "(default: editor-server.json next to the maps directory)",
+        "(default: fivee-sim-server.json next to the maps directory)",
     )
     args = parser.parse_args(argv)
 
@@ -118,10 +98,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         Path(args.state_file).expanduser() if args.state_file else state_file_for(maps_dir)
     )
 
-    server = EditorServer(
+    server = EngineServer(
         maps_dir=maps_dir,
         replays_dir=replays_dir,
-        terrain=_terrain_table(),
         port=args.port,
     )
 
@@ -155,7 +134,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     signal.signal(signal.SIGTERM, _on_sigterm)
 
-    print(f"Serving the map editor on {server.url}")
+    print(f"Serving the 5E-compatible engine on {server.url}")
+    print(f"API: {server.url}api/v1/operations — the map editor is the root page.")
     print("Open it in a browser; the page configures its own access token.")
     sys.stdout.flush()
     try:

@@ -40,17 +40,20 @@ Put a file in `.fivee-sim/content/` at the root of your campaign repository:
 
 That is enough in an installed plugin. Claude Code exports `CLAUDE_PROJECT_DIR`;
 on hosts without a project-root variable, the bundled skill detects the workspace
-directory and loads it with `content_configure`. For a direct server launch, set
+directory and loads it with `content.configure`. For a direct server launch, set
 `FIVEE_SIM_PROJECT_DIR` to the campaign repository root.
 
-Then, in a session:
+Then, from a shell or an assistant driving `fivee`:
 
-- **`content_status`** — what is loaded, from where, and under which mode.
-- **`content_validate`** — check a pack without loading it. Use this while writing.
-- **`content_configure`** — load packs, or switch whether the bundled slice is
-  included.
-- **`catalog_search`**, **`catalog_get`**, **`catalog_table`** — bounded discovery,
-  one structured record, and one paged printed table.
+- **`fivee content.status`** — what is loaded, from where, and under which mode.
+- **`fivee content.validate --paths '["…"]'`** — check a pack without loading it.
+  Use this while writing.
+- **`fivee content.configure`** — load packs, or switch whether the bundled slice
+  is included.
+- **`fivee catalog.search`**, **`fivee catalog.get`**, **`fivee catalog.table`** —
+  bounded discovery, one structured record, and one paged printed table.
+
+`fivee help <operation>` gives any of them its arguments and a line to paste.
 
 ## Where content comes from
 
@@ -64,7 +67,7 @@ In precedence order, lowest first:
    only when `FIVEE_SIM_CONTENT` is unset — so exporting the variable does not
    silently also load whatever sits in the repository you happen to be standing
    in;
-4. **paths given to `content_configure`** during the session.
+4. **paths given to `content.configure`** during the session.
 
 `FIVEE_SIM_BUILTIN` is `include` (the default) or `exclude`.
 
@@ -76,7 +79,7 @@ than a preference.
 
 Two conditions survive `exclude`: **`unconscious`** and **`prone`**. The stepper
 applies them itself when a creature drops to 0 hit points, so removing them would
-make a creature falling over crash the fight. `content_status` lists them under
+make a creature falling over crash the fight. `content.status` lists them under
 `retained_conditions` so the exception is visible rather than silent, and a pack of
 your own defining either name replaces the retained row.
 
@@ -279,7 +282,7 @@ item that does nothing costs an action for no reason, so it is refused.
 Give a creature items with `"items": { "Potion of Healing": 2 }`. **Quantity is the
 charge count** — modelling both would be two ways of saying one thing.
 
-Use one with `encounter_act(kind="use_item", item="Potion of Healing")`. It spends
+Use one with `encounter.act --kind use_item --item "Potion of Healing"`. It spends
 its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
 Targeting another creature requires being within 5 ft.
 
@@ -311,7 +314,7 @@ copied. A complete table must account for every printed source row.
 
 At pack level and on every record. Once SRD and original material can sit in one
 session, "where did this come from?" has to be answerable per entry — and
-`lookup_rule` answers it, in the `source` and `provenance` fields.
+`rules.lookup` answers it, in the `source` and `provenance` fields.
 
 ### Unknown keys are errors
 
@@ -335,7 +338,7 @@ Precisely:
   `overrides`*, because packs at one level load in path order and the winner would
   be an accident of filenames.
 - **Across levels** — the later level wins. That ordering is declared, so a
-  `content_configure` pack may override a project pack, which may override a
+  `content.configure` pack may override a project pack, which may override a
   built-in.
 - **`overrides` with nothing to override** is a *warning*, not an error. In
   `exclude` mode it is the normal case, but it also catches a misspelled name.
@@ -343,7 +346,7 @@ Precisely:
 ### Validation merges first, then cross-checks
 
 A spell naming `"condition": "vale-cursed"` is valid exactly when some pack in the
-merged set defines it. No per-file check can know that, so `content_validate`
+merged set defines it. No per-file check can know that, so `content.validate`
 performs the merge and then checks references across it.
 
 An unresolved **condition** is an error — nothing could apply it. An unresolved
@@ -360,11 +363,11 @@ session start.
 
 ## Reloading during a session
 
-`content_configure` builds a **new** registry; it never mutates the one in use.
+`content.configure` builds a **new** registry; it never mutates the one in use.
 
 **Encounters already in progress keep the content they started with.** This is not
 laziness — switching to `exclude` mid-fight would otherwise strip the very creature
-currently taking its turn. `content_status` lists any encounter running on older
+currently taking its turn. `content.status` lists any encounter running on older
 content under `encounters_on_older_content`, so the divergence is visible rather
 than mysterious. Start a new encounter to use new content.
 
@@ -372,12 +375,12 @@ Analytics binds its registry once, when called. A reconfiguration landing part-w
 through a batch would make the result unreproducible from its seed, which is the
 one property those numbers rest on.
 
-A **failed** `content_configure` changes nothing. The error carries every
+A **failed** `content.configure` changes nothing. The error carries every
 diagnostic, not the first, and the content you had keeps working.
 
 ## Two things to know
 
-**`simulate_rounds` uses healing, not arbitrary item tactics.** The auto-play
+**`analytics.rounds` uses healing, not arbitrary item tactics.** The auto-play
 policy revives a downed ally and heals one at half HP or below with a healing
 spell or item, respecting action and Bonus Action costs. It does not value other
 item effects, control spells, or long-term resource conservation.

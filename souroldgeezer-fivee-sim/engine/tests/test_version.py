@@ -3,7 +3,7 @@
 The source of truth is the ``version`` field of ``.claude-plugin/plugin.json``
 (calver ``YYYY.0M.build``). Its mirrors are the strict-semver Codex manifest,
 the README plugin table, the engine's ``pyproject.toml``, and
-``fivee_sim.__version__`` — the value every MCP client sees in the ``initialize``
+``fivee_sim.__version__`` — the value every client sees in the ``server.ping``
 handshake's ``serverInfo``. PEP 440 and semver strip the month's zero-padding,
 so agreement is checked numerically, not textually.
 """

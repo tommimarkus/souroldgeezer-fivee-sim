@@ -3,7 +3,7 @@
 Plain functions over :mod:`fivee_sim.map_document`,
 :mod:`fivee_sim.kernel.mapgen`, and :mod:`fivee_sim.kernel.grid`. Every
 function takes explicit inputs — a document, a terrain table, a seed — and
-raises plain :class:`ValueError` family errors, so the MCP and REST adapters
+raises plain :class:`ValueError` family errors, so the REST adapter
 stay serialization and error mapping only.
 
 Three behaviours worth naming:
@@ -28,14 +28,13 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import os
+import re
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from random import Random
 from typing import Any, NoReturn
 
-from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 from ..kernel.grid import (
     DiagonalRule,
     Square,
@@ -76,33 +75,35 @@ from ..map_document import (
     validate_document,
 )
 from ..model.battlemap import MapPlane, SquareClaim
+from ..paths import MAPS_ENV, MAPS_SUBDIR, environment_roots, maps_root
 from ..validation import Diagnostic, Severity
 from . import durable
-from .common import discover_json_files, sha256_of
-from .errors import MapEditError
+from .common import discover_json_files, sha256_of, slugify
+from .errors import MapEditError, NotFoundError
 
 __all__ = [
+    "ID_PATTERN",
     "MAPS_ENV",
+    "MAPS_SUBDIR",
     "RENDER_BUDGET",
     "ResolvedLevel",
     "apply_edits",
+    "current_sha256",
     "environment_roots",
     "generate",
+    "index",
     "linked_open_features",
     "list_maps",
+    "load_by_id",
     "load_file",
     "maps_root",
     "parse_payload",
+    "path_for_id",
     "query",
     "render_ascii",
+    "resolve_id",
     "save_file",
 ]
-
-#: Environment variable holding an ``os.pathsep``-separated list of map files
-#: or directories — the maps analogue of ``FIVEE_SIM_CONTENT``.
-MAPS_ENV = "FIVEE_SIM_MAPS"
-#: Where maps live inside a project when nothing else is configured.
-MAPS_SUBDIR = Path(".fivee-sim") / "maps"
 
 #: The hard ceiling on rendered cells after downsampling. Above it, a render
 #: is refused with instructions rather than emitted as a wall of text.
@@ -1592,34 +1593,6 @@ def query(
 
 
 # --- files ------------------------------------------------------------------
-def environment_roots(env: Mapping[str, str] | None = None) -> list[str]:
-    """Map roots the environment asks for, mirroring the content precedence.
-
-    ``FIVEE_SIM_MAPS`` wins outright when set; entries may be files or
-    directories. Only when it is unset does the project directory apply.
-    """
-    environ = os.environ if env is None else env
-    configured = environ.get(MAPS_ENV, "").strip()
-    if configured:
-        return [part for part in configured.split(os.pathsep) if part.strip()]
-    project = (
-        environ.get(PROJECT_ENV, "").strip()
-        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
-    )
-    if project:
-        return [str(Path(project) / MAPS_SUBDIR)]
-    return []
-
-
-def maps_root(env: Mapping[str, str] | None = None) -> Path:
-    """Where maps are saved by default: the first configured root, or the
-    project's ``.fivee-sim/maps``, or the same under the current directory."""
-    roots = environment_roots(env)
-    if roots:
-        return Path(roots[0]).expanduser()
-    return Path.cwd() / MAPS_SUBDIR
-
-
 def parse_payload(
     payload: Mapping[str, Any], *, source: str, terrain: TerrainTable
 ) -> tuple[MapDocument, list[Diagnostic]]:
@@ -1768,3 +1741,68 @@ def list_maps(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]
         )
     listed.sort(key=lambda entry: str(entry["path"]))
     return listed
+
+
+#: What a map id may look like: the :func:`~fivee_sim.service.common.slugify`
+#: alphabet, nothing else. An id outside this grammar cannot name a file under
+#: the maps directory, so it is reported as an unknown map rather than
+#: half-resolved — traversal attempts land here before any directory is read.
+ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
+
+
+def index(root: str | Path) -> dict[str, dict[str, Any]]:
+    """Every map under ``root``, keyed by id.
+
+    An id is the ``slugify`` of the file's stem — the same name a save writes
+    by default — so a URL naming a map and a tool naming one agree. Two files
+    slugifying to the same id would collide; the first in path order claims it,
+    mirroring the first-wins rule everywhere content merges.
+    """
+    found: dict[str, dict[str, Any]] = {}
+    for entry in list_maps([root]):
+        map_id = slugify(Path(str(entry["path"])).stem)
+        if map_id in found:
+            continue
+        found[map_id] = {"id": map_id, **entry}
+    return found
+
+
+def path_for_id(map_id: str, root: str | Path) -> Path:
+    """Where a map id lives under ``root``, whether or not it exists yet.
+
+    Containment is checked rather than assumed: an id outside the grammar never
+    reaches here, and a symlink pointing out of the maps directory is reported
+    as an unknown map rather than followed.
+    """
+    if ID_PATTERN.fullmatch(map_id) is None:
+        raise NotFoundError(f"no map {map_id!r}")
+    directory = Path(root).expanduser()
+    target = directory / f"{map_id}.json"
+    if target.exists() and not target.resolve().is_relative_to(directory.resolve()):
+        raise NotFoundError(f"no map {map_id!r} under {directory}")
+    return target
+
+
+def resolve_id(map_id: str, root: str | Path) -> Path:
+    """The file a saved map id names, or a 'not found' that says what is there.
+
+    Naming the alternatives is what makes the refusal actionable: a bare "not
+    found" leaves the caller guessing whether the id was wrong or the directory
+    was empty.
+    """
+    if ID_PATTERN.fullmatch(map_id) is None:
+        raise NotFoundError(f"no map {map_id!r}")
+    entry = index(root).get(map_id)
+    if entry is None:
+        known = ", ".join(sorted(index(root))) or "none"
+        raise NotFoundError(f"no map {map_id!r}; maps here: {known}")
+    return Path(str(entry["path"]))
+
+
+def load_by_id(
+    map_id: str, root: str | Path, *, terrain: TerrainTable
+) -> tuple[MapDocument, Path]:
+    """One saved map, loaded from the file its id names. Files are the truth."""
+    path = resolve_id(map_id, root)
+    document, _warnings = load_file(path, terrain=terrain)
+    return document, path

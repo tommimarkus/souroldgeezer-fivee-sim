@@ -23,7 +23,6 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service.errors import ReplayError
 from fivee_sim.service.replay import (
     REPLAYS_ENV,
@@ -33,6 +32,7 @@ from fivee_sim.service.replay import (
     replays_root,
 )
 
+from . import api
 from .conftest import mapless_fight
 
 

@@ -1,23 +1,58 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim MCP engine, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
 ---
 
 # Encounter Simulation
 
-Run 5E-compatible combat through the `fivee_sim` MCP engine. The engine resolves
-the rules and owns the state; your job is to drive it and narrate what it reports.
+Run 5E-compatible combat through the `fivee` command. The engine resolves the
+rules and owns the state; your job is to drive it and narrate what it reports.
 
 Bundled rules content is SRD 5.2.1 under CC-BY-4.0. See the plugin's `NOTICE`. A
 campaign may load its own content as well — see "What is actually loaded" below.
+
+## Running the command
+
+Everything below is a Bash call. Use `fivee` if it is already on `PATH`;
+otherwise use `scripts/fivee.sh` in this plugin, which is `../../scripts/fivee.sh`
+from this skill's own directory — the one the harness named when it loaded this
+skill. Resolve that against the announced directory and use the absolute path;
+nothing expands a `${...}` placeholder in this prose. Check once, then keep using
+whichever answered:
+
+```bash
+command -v fivee || echo "<skill dir>/../../scripts/fivee.sh"
+```
+
+Either way there is nothing to start first. Every command finds the engine's
+local server or starts one, so ordering cannot be got wrong.
+
+Two commands make the rest self-describing, and they read the *running* server,
+so they cannot go stale:
+
+```bash
+fivee help                       # every operation, grouped
+fivee help encounter.act         # one operation's arguments, and a line to paste
+```
+
+`fivee encounter.act` and `fivee encounter act` are the same command. Results are
+JSON on stdout and nothing else, so `$(fivee ...)` is always parseable; prose,
+refusals, and the `etag` note go to stderr. The exit code separates the four
+failures that have four different fixes: **2** the command was wrong, **3** the
+engine refused, **4** the engine broke, **5** nothing answered.
+
+An argument that no flag grammar should try to spell — a creature list, a map
+document — goes in `--json '{...}'`, or `--json -` to read it from stdin. Given
+both, `--json` is the base and flags override its keys, so "the same fight with
+one thing changed" is an edit to the command line.
 
 ## The one rule that matters
 
 **Never state combat state from memory. Read it from the engine.**
 
 Hit points, initiative order, conditions, remaining movement, spell slots, and
-death saves all live in `encounter_state`. That is the authoritative view. If your
-narration and `encounter_state` disagree, the state is right and you are wrong —
+death saves all live in `encounter.state`. That is the authoritative view. If your
+narration and `encounter.state` disagree, the state is right and you are wrong —
 re-read it rather than reconciling from what you remember.
 
 This is the entire reason the engine exists. A model tracking a fight in prose
@@ -27,124 +62,148 @@ narrating from memory puts it straight back.
 
 ## Running a fight
 
-1. **`encounter_create`** with the combatants and a seed. Each is either a bundled
-   stat block — `{"monster": "Goblin Warrior", "label": "Goblin A", "team":
-   "monsters", "position": [15, 0]}` — or an explicit build with at least `name`,
-   `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they identify
-   combatants in every later call. `arrival_round` schedules a reinforcement:
-   before that round it is absent, untargetable, and unable to act, but its side
-   still keeps the encounter open. A position is `[x, y]` in feet on a flat plane
-   (a bare number still means feet along the x-axis), and `encounter_state`
-   reports positions in the same `[x, y]` form. Diagonals cost 5 ft by default;
-   pass `movement_rule: "5-10-5"` for the every-second-diagonal-costs-double
-   variant. Give creation and later state-changing calls a stable `request_id`
-   whenever a host may retry them; the engine returns the first recorded result
+1. **`fivee encounter.create`** with the combatants and a seed. Each is either a
+   bundled stat block — `{"monster": "Goblin Warrior", "label": "Goblin A",
+   "team": "monsters", "position": [15, 0]}` — or an explicit build with at least
+   `name`, `team`, `ac`, `max_hp`, plus `attacks`. Labels must be unique; they
+   identify combatants in every later call. `arrival_round` schedules a
+   reinforcement: before that round it is absent, untargetable, and unable to act,
+   but its side still keeps the encounter open. A position is `[x, y]` in feet on
+   a flat plane (a bare number still means feet along the x-axis), and
+   `encounter.state` reports positions in the same `[x, y]` form. Diagonals cost
+   5 ft by default; pass `--movement-rule 5-10-5` for the
+   every-second-diagonal-costs-double variant.
+
+   ```bash
+   fivee encounter.create --seed 41 --json '{"combatants": [
+     {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0],
+      "attacks": [{"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3",
+                   "damage_type": "slashing", "kind": "melee"}]},
+     {"monster": "Goblin Warrior", "label": "Goblin A", "team": "monsters",
+      "position": [15, 0]}
+   ]}'
+   ```
+
+   Give creation and later state-changing calls a stable `--idempotency-key`
+   whenever a call may be retried; the engine returns the first recorded result
    instead of acting twice.
-2. **`encounter_state`** to see whose turn it is and what the situation is.
-3. **`encounter_act`** for each action: `attack`, `cast`, `use_item`, `move`,
-   `dash`, `disengage`, `dodge`, `stand` (up from Prone — half Speed in
-   movement, no action), or `surrender`. A creature whose pack lists Dash or
-   Disengage in `bonus_actions` uses it with `as_bonus_action=true`. It returns
-   the events it generated plus fresh state.
-4. **`encounter_advance`** to end the turn. Death saves for dying creatures are
-   rolled automatically at the start of their turn.
+2. **`fivee encounter.state <id>`** to see whose turn it is and what the situation
+   is. The id is a bare word — it is the subject of the command, so no flag is
+   needed.
+3. **`fivee encounter.act <id> --kind …`** for each action: `attack`, `cast`,
+   `use_item`, `move`, `dash`, `disengage`, `dodge`, `stand` (up from Prone — half
+   Speed in movement, no action), or `surrender`. A creature whose pack lists Dash
+   or Disengage in `bonus_actions` uses it with `--as-bonus-action`. It returns the
+   events it generated plus fresh state.
+
+   ```bash
+   fivee encounter.act enc-1 --kind attack --target "Goblin A" --attack Longsword
+   fivee encounter.act enc-1 --kind move --to-position '[10, 0]'
+   ```
+4. **`fivee encounter.advance <id>`** to end the turn. Death saves for dying
+   creatures are rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
-**One encounter id has one writer at a time.** Every server on the machine
-shares the encounter journals, so if another session has advanced this fight
-since you last acted, your next call is refused with an error saying the
-encounter *has advanced since you read it*. Your copy is a different fight by
-then, so do not retry: call `encounter_state` to see where the fight actually
-is, tell the user it moved on elsewhere, and continue from there. Handing the
-same id to two agents at once is what produces this, and is worth avoiding.
+**One encounter id has one writer at a time.** Every server on the machine shares
+the encounter journals, so if another session has advanced this fight since you
+last acted, your next call is refused with an error saying the encounter *has
+advanced since you read it*. Your copy is a different fight by then, so do not
+retry: call `encounter.state` to see where the fight actually is, tell the user it
+moved on elsewhere, and continue from there. Handing the same id to two agents at
+once is what produces this, and is worth avoiding.
 
-Past events are never lost: **`encounter_log`** pages the whole history
-(`since`/`limit`), each event stamped with its round and turn, plus the action
-records that — with the reported seed — reproduce the fight exactly. Recap
-earlier rounds from it rather than from memory; `encounter_state` stays the view
-of *now*.
+Every state-changing encounter call also accepts `--if-match`, and every response
+reports the fight's new version as an `etag` line on stderr. Pass the version you
+read to refuse a write that would land on a fight that has moved on — the same
+guard, asked for deliberately rather than inferred.
 
-The history survives the MCP process. Creation, every attempt, and every result
-are fsynced into a hash-chained journal under `.fivee-sim/encounters/` (or
-`FIVEE_SIM_ENCOUNTERS`). Use `encounter_list` to discover active/finalized
-fights, `encounter_resume` after a restart, and `encounter_finalize` when play is
-done; finalization writes replay v2 and retains the journal. If narration or an
-adjudication must be part of the record, use `encounter_note` rather than leaving
-it only in prose.
+Past events are never lost: **`fivee encounter.log <id>`** pages the whole history
+(`--since`/`--limit`), each event stamped with its round and turn, plus the action
+records that — with the reported seed — reproduce the fight exactly. Recap earlier
+rounds from it rather than from memory; `encounter.state` stays the view of *now*.
 
-`roll`, `check`, and `save` accept an `encounter_id` and `request_id`. A scoped
-check can name `ability` and `skill` (for example Charisma/Persuasion or
-Charisma/Intimidation); this is audit metadata around the supplied modifier, not
-a proficiency system. Scoped primitives are recorded without consuming the
-encounter's combat RNG or advancing its turn.
+The history survives the process. Creation, every attempt, and every result are
+fsynced into a hash-chained journal under `.fivee-sim/encounters/` (or
+`FIVEE_SIM_ENCOUNTERS`). Use **`fivee encounter.list`** to discover
+active/finalized fights, **`fivee encounter.resume <id>`** after a restart, and
+**`fivee encounter.finalize <id>`** when play is done; finalization writes replay
+v2 and retains the journal. If narration or an adjudication must be part of the
+record, use **`fivee encounter.note <id> --text "…"`** rather than leaving it only
+in prose.
+
+`dice.roll`, `dice.check`, and `dice.save` accept an `--encounter-id` and an
+`--idempotency-key`. A scoped check can name `--ability` and `--skill` (for
+example Charisma/Persuasion or Charisma/Intimidation); this is audit metadata
+around the supplied modifier, not a proficiency system. Scoped primitives are
+recorded without consuming the encounter's combat RNG or advancing its turn.
 
 An illegal action is **refused with a reason** — out of reach, no slots left, no
-attacks remaining, none of that potion left, speed 0 while Grappled. Read the
-reason and adapt. Do not retry the same call hoping for a different answer, and do
-not narrate the action as though it happened.
+attacks remaining, none of that potion left, speed 0 while Grappled. The reason is
+the problem's `detail` on stderr, and the exit code is 3. Read the reason and
+adapt. Do not retry the same call hoping for a different answer, and do not
+narrate the action as though it happened.
 
-For a portable record, `replay_export` defaults to version 2: normalized starting
-combatants, captured inline/loaded maps and storeys, captured content, successful
-actions, refused attempts, timestamps, full state checkpoints, and integrity
-hashes. `replay_validate` and the viewer verify the nested schema and hashes;
-the hashes detect alteration but are not author signatures. Use
-`format_version=1` only for a legacy consumer.
+For a portable record, **`fivee encounter.replay <id>`** defaults to version 2:
+normalized starting combatants, captured inline/loaded maps and storeys, captured
+content, successful actions, refused attempts, timestamps, full state checkpoints,
+and integrity hashes. `replay.validate` and the viewer verify the nested schema
+and hashes; the hashes detect alteration but are not author signatures. Use
+`--format-version 1` only for a legacy consumer.
 
 ## Fighting on a map
 
-`encounter_create` takes an optional `map` of 5-ft squares: `{"width", "height",
+`encounter.create` takes an optional `map` of 5-ft squares: `{"width", "height",
 "rows": [".#..", ...], "legend": {".": "normal", "#": "wall"}, "features":
-[{"name": "door", "square": [1, 1]}]}` — rows top-first, one character per
-square. With a map the engine charges terrain for movement, routes moves around
-walls and enemies (pass-through opportunity attacks apply), grades cover (+2/+5
-to AC and to Dexterity saves, against a weapon swing and a spell alike; total
-cover refuses an attack or a named-target spell outright and shelters a creature
-from an area entirely), and blocks sight. Positions snap to
-square centres, and `state["map"]` reports dimensions and door state.
+[{"name": "door", "square": [1, 1]}]}` — rows top-first, one character per square.
+With a map the engine charges terrain for movement, routes moves around walls and
+enemies (pass-through opportunity attacks apply), grades cover (+2/+5 to AC and to
+Dexterity saves, against a weapon swing and a spell alike; total cover refuses an
+attack or a named-target spell outright and shelters a creature from an area
+entirely), and blocks sight. Positions snap to square centres, and `state["map"]`
+reports dimensions and door state.
 
-`encounter_act(kind="interact", feature="door")` opens or closes a door — free,
-once per turn, from the feature's square or one next to it and on its own
-storey. `simulate_rounds` accepts the same `map` and `movement_rule`, so batches
+`fivee encounter.act <id> --kind interact --feature door` opens or closes a door —
+free, once per turn, from the feature's square or one next to it and on its own
+storey. `analytics.rounds` accepts the same `map` and `movement_rule`, so batches
 fight on the terrain too.
 
 A door is the simple case of a **fixture**: any map feature carrying a state is
-one, and a loaded map may hold levers, spikes, and sluice gates as well. A
-fixture can govern squares beyond its own, so working it changes terrain *and*
-ground height immediately, under whoever is standing there. Read
+one, and a loaded map may hold levers, spikes, and sluice gates as well. A fixture
+can govern squares beyond its own, so working it changes terrain *and* ground
+height immediately, under whoever is standing there. Read
 `state["map"]["features"]` before promising anything — a fixture reports
 `affects`, `requires`, `blocked_by`, `trigger`, `costs_action`, and `check`
-whenever it carries them, so you can tell the party what a thing will cost
-before they spend a turn on it. Five things to state out loud rather than let a
-player assume:
+whenever it carries them, so you can tell the party what a thing will cost before
+they spend a turn on it. Five things to state out loud rather than let a player
+assume:
 
 - **`costs_action` spends the action**, not the free interaction, so a chain of
-  three such fixtures is three actions — three turns unless the party splits
-  the work. A failed check spends it and moves nothing.
-- **The check is a raw ability check.** There are no skill proficiencies
-  anywhere in this engine, so a `check` of `{"ability": "strength", "dc": 15}`
-  is a flat Strength check against 15 — no Athletics, no proficiency bonus, no
-  Help.
+  three such fixtures is three actions — three turns unless the party splits the
+  work. A failed check spends it and moves nothing.
+- **The check is a raw ability check.** There are no skill proficiencies anywhere
+  in this engine, so a `check` of `{"ability": "strength", "dc": 15}` is a flat
+  Strength check against 15 — no Athletics, no proficiency bonus, no Help.
 - **`blocked_by` names what is still shut.** Prerequisites gate *opening* only;
   closing is never blocked.
 - **A `trigger` is automatic fixture logic.** `when` is an AND predicate over
-  fixture states. `edge` fires on false→true and rearms after false;
-  `maintained` holds its configured state while true and refuses a contrary
-  manual interaction before spending anything. When maintained becomes false,
-  it leaves the fixture where it is. Automatic `interact` events have an empty
-  actor and carry `automatic: true` plus `triggered_by`; narrate the mechanism,
-  not an invisible creature operating it.
+  fixture states. `edge` fires on false→true and rearms after false; `maintained`
+  holds its configured state while true and refuses a contrary manual interaction
+  before spending anything. When maintained becomes false, it leaves the fixture
+  where it is. Automatic `interact` events have an empty actor and carry
+  `automatic: true` plus `triggered_by`; narrate the mechanism, not an invisible
+  creature operating it.
 - **Nobody is moved by a fixture.** A creature standing where the ground turns
   impassable stays and may walk out — entry cost governs entering a square, not
   remaining in one, and there is no forced movement to shove it.
 
-Pass `set_open: true`/`false` to say which way rather than flipping whatever is
+Pass `--set-open true`/`false` to say which way rather than flipping whatever is
 there. Use it whenever you drive a fixture to a known state, because `interact`
 alone **toggles**: "open the sluice" on a sluice that already stands open closes
 it.
 
-Movement defaults to Walk. Pass `movement_mode` as `climb`, `swim`, or `fly` to
+Movement defaults to Walk. Pass `--movement-mode` as `climb`, `swim`, or `fly` to
 use that authored speed. A Swim speed avoids underwater terrain's doubled cost;
-Fly can change storeys without a connector. `encounter_state` reports all four
+Fly can change storeys without a connector. `encounter.state` reports all four
 speeds, Darkvision/Blindsight, terrain overrides, death rule, Bonus Actions, and
 reaction availability plus `arrival_round`/`present`, so narration never has to
 infer them from the pack. Auto-play chooses among authored movement modes when it
@@ -152,41 +211,56 @@ closes, including swimming through underwater terrain and flying between storeys
 
 ## Maps
 
-Six tools manage maps as first-class documents. **`map_generate`** builds a
-dungeon, caves, or overland map under a seed (always reported — quote it);
-**`map_render`** shows any of them as glyph rows, with `x`/`y`/`width`/`height`
-viewports and `downsample` for big maps, `show_elevation` for the ground
-heights as a second set of rows, and an `encounter_id` overlay that
-letters the combatants; **`map_edit`** applies verbal tweaks atomically —
-paint, line, carve_corridor, set_terrain, add/remove_feature, toggle_door,
-resize, set_legend, set_name, set_palette, set_elevation, adjust_elevation — a
-bad operation
-names its index and changes nothing; **`map_save`** writes canonical JSON (refusing silent overwrites) and
-**`map_load`** reads a file or inline document back, so the workflow is
-generate → render → edit → save, and load by path next session.
-**`map_query`** answers distance, line-of-sight, and pathing questions on a
-bare map. `encounter_create(map_id=...)` and `simulate_rounds(map_id=...)` put
-a fight on a loaded map; the fight captures the document as it stands, and
-`encounter_state["map_source"].stale` turns true if the map is edited after —
+Nine operations manage maps, and a map is a **file addressed by an id** — not a
+session object. `fivee map.list` names every one under the maps directory, and
+that id is what every other call takes.
+
+**`fivee map.generate --kind dungeon --seed 71203941`** builds a dungeon, caves,
+or overland map and returns the whole document **unsaved** (the seed is always
+reported — quote it); add `--save-as <id>` to write it under that id in the same
+call. **`map.render`** shows a saved or inline map as glyph rows, with
+`--x`/`--y`/`--width`/`--height` viewports and `--downsample` for big maps,
+`--show-elevation` for the ground heights as a second set of rows, and an
+`--encounter-id` overlay that letters the combatants. **`map.edit`** applies verbal
+tweaks atomically — paint, line, carve_corridor, set_terrain, add/set/remove_feature,
+toggle_door, resize, set_legend, set_name, set_palette, set_elevation,
+adjust_elevation — a bad operation names its index and changes nothing.
+**`map.query`** answers distance, line-of-sight, and pathing questions on a bare
+map.
+
+**A guarded write is two calls, and there is no third.** `fivee map.get <id>`
+returns the document and reports its sha256 as an `etag` on stderr; `fivee map.put
+<id> --if-match <that etag> --json -` writes the new bytes and is refused with a
+409 if anything else got there first. The listing deliberately carries no hash, so
+the version you write against is always one you actually read. `--if-match '*'`
+creates a new id, or takes an existing file over on purpose — say so when you do.
+
+`encounter.create --map-id <id>` and `analytics.rounds --map-id <id>` put a fight
+on a saved map; the fight captures the document as it stands, and
+`encounter.state`'s `map_source.stale` turns true if the map is edited after —
 re-create the encounter when the new layout should apply.
 
-For the full map workflow — generation seeds, the interactive browser editor,
-and exporting a fight as a shareable replay — use the **map-forge** skill.
+For the full map workflow — generation seeds, the browser editor, and exporting a
+fight as a shareable replay — use the **map-forge** skill.
 
 ## Aiming a spell
 
-`cast` takes `target` for one creature, `targets` for several, or an area aim:
-**`center`** for a sphere (or a cube's minimum corner) — an `[x, y]` point in
-feet, not a creature — **`direction`** for a cone (one of the eight unit
-offsets, such as `[1, 0]` or `[-1, 1]`), **`toward`** for a line (a combatant
-name or a point). On a map, a sphere or cube also needs its point of origin in
-the caster's sight.
+`--kind cast` takes `--target` for one creature, `--targets` for several, or an
+area aim: **`--center`** for a sphere (or a cube's minimum corner) — an `[x, y]`
+point in feet, not a creature — **`--direction`** for a cone (one of the eight
+unit offsets, such as `[1, 0]` or `[-1, 1]`), **`--toward`** for a line (a
+combatant name or a point). On a map, a sphere or cube also needs its point of
+origin in the caster's sight.
 
-`center` is what makes a Fireball a Fireball. Named targets are each hit
-individually, so a 20-ft blast dropped with `target` catches exactly one creature
-however tightly the enemy is packed. Give a point of origin instead and it catches
-everything within its radius — **including allies and the caster**, which is a real
-tactical cost and the engine will not protect you from it.
+```bash
+fivee encounter.act enc-1 --kind cast --spell Fireball --center '[20, 15]' --slot-level 3
+```
+
+`--center` is what makes a Fireball a Fireball. Named targets are each hit
+individually, so a 20-ft blast dropped with `--target` catches exactly one
+creature however tightly the enemy is packed. Give a point of origin instead and
+it catches everything within its radius — **including allies and the caster**,
+which is a real tactical cost and the engine will not protect you from it.
 
 Range is checked against the point of origin for an area, and against each named
 creature otherwise. A creature at the far edge of a blast can therefore sit past
@@ -194,11 +268,11 @@ the spell's range legitimately; the origin is what has to be reachable.
 
 ## Items
 
-`encounter_act(kind="use_item", item="Potion of Healing")` spends the item's
-declared action or Bonus Action.
-Healing defaults to the user; a damaging or condition-applying item needs a
-`target`, and any item used on another creature needs to be within 5 ft. Quantity
-is the charge count, and `encounter_state` shows what each combatant has left.
+`fivee encounter.act <id> --kind use_item --item "Potion of Healing"` spends the
+item's declared action or Bonus Action. Healing defaults to the user; a damaging
+or condition-applying item needs a `--target`, and any item used on another
+creature needs to be within 5 ft. Quantity is the charge count, and
+`encounter.state` shows what each combatant has left.
 
 No items ship in the bundled slice — they arrive through a content pack.
 
@@ -215,12 +289,12 @@ handling is the interesting part, and hiding it makes the fight feel arbitrary.
 
 ## Analysis rather than play
 
-- **`simulate_rounds`** auto-plays the same encounter many times and reports win
-  rates, rounds, and per-team HP, casualty, spell-slot, and item-use
+- **`fivee analytics.rounds`** auto-plays the same encounter many times and
+  reports win rates, rounds, and per-team HP, casualty, spell-slot, and item-use
   distributions. Use it for "is this encounter too hard?"
-- **`simulate_dpr`** measures damage a build lands over N rounds against a given
-  AC, at a `distance` you choose (5 ft by default). Use it for "is this build
-  actually better?"
+- **`fivee analytics.dpr`** measures damage a build lands over N rounds against a
+  given `--target-ac`, at a `--distance` you choose (5 ft by default). Use it for
+  "is this build actually better?"
 
 Both replay the same stepper live play uses, so their numbers cannot drift from
 the rules. Iteration `i` uses `seed + i`, so one iteration reproduces a single
@@ -252,7 +326,7 @@ bear on the question:
   readying. Treat a win rate as "what these statistics do when both sides swing
   hard", not as what a good table would achieve.
 
-`simulate_dpr` returns an `actions` breakdown of what the build actually did. Read
+`analytics.dpr` returns an `actions` breakdown of what the build actually did. Read
 it before trusting a damage figure — a spell that does not appear there was never
 cast, and the number is measuring something narrower than you asked for.
 
@@ -262,24 +336,27 @@ resource/casualty tails are the play experience a win percentage hides.
 
 ## Primitives
 
-`roll`, `check`, and `save` handle one-off rolls outside a tracked encounter.
-Every one accepts an optional `seed` and **always reports the seed it used**, so
-any result can be replayed exactly. Quote the seed when a roll matters.
+`fivee dice.roll`, `fivee dice.check`, and `fivee dice.save` handle one-off rolls
+outside a tracked encounter. Every one accepts an optional `--seed` and **always
+reports the seed it used**, so any result can be replayed exactly. Quote the seed
+when a roll matters.
 
-`scenario_timing` handles one narrow route-level check outside combat: fixed
-distance and Speed (optionally Dashing and starting late) against an authored
-response delay. It reports travel rounds and the lead or deficit. It does not
-carry campaign state or decide which events reinforce which encounter.
+`fivee analytics.scenario-timing` handles one narrow route-level check outside
+combat: fixed distance and Speed (optionally dashing and starting late) against an
+authored response delay. It reports travel rounds and the lead or deficit. It does
+not carry campaign state or decide which events reinforce which encounter.
 
-`lookup_rule` is the exact-name view of loaded executable conditions, spells,
-creatures, and items, each naming the pack it came from in `source`. With no topic
-it returns compact counts and search guidance, not an unbounded name dump.
+`fivee rules.lookup --topic <name>` is the exact-name view of loaded executable
+conditions, spells, creatures, and items, each naming the pack it came from in
+`source`. With no topic it returns compact counts and search guidance, not an
+unbounded name dump.
 
-Use `catalog_search` for bounded discovery across both SRD identities and loaded
-campaign content, `catalog_get` for one structured record, and `catalog_table` for
-a paged printed table. [`../../docs/COVERAGE.md`](../../docs/COVERAGE.md) contains
-only generated category, progress, and support totals; the catalog tools are the
-detailed authority.
+Use `fivee catalog.search --query …` for bounded discovery across both SRD
+identities and loaded campaign content, `fivee catalog.get <id>` for one structured
+record, and `fivee catalog.table <id>` for a paged printed table.
+[`../../docs/COVERAGE.md`](../../docs/COVERAGE.md) contains only generated
+category, progress, and support totals; the catalog operations are the detailed
+authority.
 
 ## What is actually loaded
 
@@ -288,23 +365,28 @@ creatures, spells, conditions, and items as content packs, and can exclude the
 bundled SRD content entirely to run on its own material.
 
 At first use in a workspace, check whether `.fivee-sim/content/` exists under the
-workspace root. Call `content_status`; if that resolved directory is not already
-represented in the loaded packs, call `content_configure` with its **absolute**
-path and `add=true` before looking up content or starting an encounter. This is
-the portable fallback for hosts that do not export a project-root variable;
-repeating an already loaded path is harmless but unnecessary.
+workspace root. Call `fivee content.status`; if that resolved directory is not
+already represented in the loaded packs, call `fivee content.configure` with its
+**absolute** path and `--add` before looking up content or starting an encounter.
+This is the portable fallback for hosts that do not export a project-root
+variable; repeating an already loaded path is harmless but unnecessary.
 
-- **`content_status`** — what is loaded, from where, under which mode. Call this
+```bash
+fivee content.configure --add --json '{"paths": ["/abs/path/.fivee-sim/content"]}'
+```
+
+- **`content.status`** — what is loaded, from where, under which mode. Call this
   before telling anyone what the engine supports, and whenever a name you expected
   is missing. It also flags any encounter still running on content from before the
   last change.
-- **`content_validate`** — check a pack without loading it. The diagnostics name
+- **`content.validate`** — check a pack without loading it. The diagnostics name
   the pack, section, record, and field, so use them verbatim when helping an author
   fix their JSON.
-- **`content_configure`** — load packs, or switch the bundled slice in or out.
+- **`content.configure`** — load packs, or switch the bundled slice in or out with
+  `--builtin include|exclude`.
 
 Encounters in progress keep the content they started with; only new ones use
-freshly loaded content. A failed `content_configure` changes nothing.
+freshly loaded content. A failed `content.configure` changes nothing.
 
 To help someone write a pack, read
 [`../../docs/CONTENT-PACKS.md`](../../docs/CONTENT-PACKS.md) — it has the format,
@@ -326,9 +408,9 @@ State these when they bear on a ruling rather than papering over them:
   and authored sight openings are supported. Still absent either way: falling and
   fall damage, jumping, creature size and squeezing, flanking, and forced movement
   — so nothing can shove anyone off a ledge.
-- **Only SRD 5.2.1 content *ships*.** `lookup_rule` refusing a name means it is not
+- **Only SRD 5.2.1 content *ships*.** `rules.lookup` refusing a name means it is not
   loaded — either outside the SRD, or in a pack nobody has loaded yet. Check
-  `content_status` before concluding it does not exist. Either way, do not invent
+  `content.status` before concluding it does not exist. Either way, do not invent
   the missing stat block: say it is not available and offer a loaded alternative.
 - **Stat blocks list what is not implemented.** Built-in creatures carry
   structured `unmodelled_facts` entries for printed mechanics the engine skips.

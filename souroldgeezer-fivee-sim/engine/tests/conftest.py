@@ -2,11 +2,11 @@
 
 Two jobs, and they are separate.
 
-**Isolation.** ``mcp_server.server`` keeps its sessions, maps, content registry and
-id counters in module-level globals. A test that creates an encounter or loads a
-map mutates process state that outlives it, so the suite's result could depend on
-collection order. :func:`_isolate_server_state` saves all five around every test
-and puts them back, which makes each test start from the same globals it would see
+**Isolation.** ``tests.api`` keeps its sessions, maps, content registry and
+id counters in one process-wide ``EngineState``. A test that creates an encounter or
+loads a map mutates process state that outlives it, so the suite's result could depend
+on collection order. :func:`_isolate_server_state` saves all five fields around every
+test and puts them back, which makes each test start from the same state it would see
 if it ran alone.
 
 **Shared helpers.** These used to live in ``test_kernel`` and ``test_encounter``,
@@ -29,9 +29,10 @@ from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
-from fivee_sim.mcp_server import server as api
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import Encounter
+
+from . import api
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
@@ -63,30 +64,34 @@ REPLAY_GOBLIN: dict[str, Any] = {
 def _isolate_server_state(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> Iterator[None]:
-    """Save and restore every module-level global in the MCP server around each test.
+    """Save and restore the shared engine state, and root every file it writes.
 
-    ``_CONTENT`` is loaded lazily, so restoring it also *resets* it: the value put
-    back is the ``None`` the module started with, and the next test that asks for
+    ``content`` is loaded lazily, so restoring it also *resets* it: the value put
+    back is the ``None`` the state started with, and the next test that asks for
     content loads it fresh. That is what the two per-class fixtures in
-    ``test_content`` used to arrange by hand for ``_CONTENT`` and ``_SESSIONS``;
-    doing it here covers ``_MAPS`` and both id counters as well, which they missed.
+    ``test_content`` used to arrange by hand for the content and the sessions;
+    doing it here covers the id counter as well, which they missed.
+
+    The three directory variables matter more than they used to. A map is a
+    *file* now rather than an entry in a process dictionary, so a test that
+    saves one writes to whatever ``maps_root()`` resolves — the current
+    directory's ``.fivee-sim/maps`` when nothing says otherwise, which is the
+    repository. Pointing all three at ``tmp_path`` keeps the suite's writes
+    inside the test and keeps one test's maps invisible to the next.
     """
-    sessions = dict(api._SESSIONS)
-    maps = dict(api._MAPS)
-    content = api._CONTENT
-    next_id = api._NEXT_ID
-    next_map_id = api._NEXT_MAP_ID
+    sessions = dict(api.STATE.sessions)
+    content = api.STATE.content
+    next_id = api.STATE.next_id
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
+    monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
+    monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(tmp_path / "replays"))
     try:
         yield
     finally:
-        api._SESSIONS.clear()
-        api._SESSIONS.update(sessions)
-        api._MAPS.clear()
-        api._MAPS.update(maps)
-        api._CONTENT = content
-        api._NEXT_ID = next_id
-        api._NEXT_MAP_ID = next_map_id
+        api.STATE.sessions.clear()
+        api.STATE.sessions.update(sessions)
+        api.STATE.content = content
+        api.STATE.next_id = next_id
 
 
 class FixedRandom(Random):
@@ -137,7 +142,7 @@ def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) ->
 
 
 def advance_encounter_to(encounter_id: str, name: str, limit: int = 24) -> None:
-    """Advance an MCP encounter until ``name`` holds the turn."""
+    """Advance an in-process encounter until ``name`` holds the turn."""
     for _ in range(limit):
         if api.encounter_state(encounter_id)["turn"] == name:
             return
@@ -146,7 +151,7 @@ def advance_encounter_to(encounter_id: str, name: str, limit: int = 24) -> None:
 
 
 def mapless_fight(seed: int = 41) -> str:
-    """Create the shared two-combatant replay fixture through the public tool API."""
+    """Create the shared two-combatant replay fixture through the engine."""
     created = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed
     )

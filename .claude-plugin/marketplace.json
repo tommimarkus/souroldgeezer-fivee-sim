@@ -1,6 +1,6 @@
 {
   "name": "souroldgeezer-tabletop",
-  "description": "Plugins by Sour Old Geezer for tabletop roleplaying simulation: seeded, deterministic rules engines exposed over MCP, with the skills that drive them.",
+  "description": "Plugins by Sour Old Geezer for tabletop roleplaying simulation: seeded, deterministic rules engines served over a local HTTP API, with the commands and skills that drive them.",
   "owner": {
     "name": "Sour Old Geezer",
     "email": "claude-marketplace-a.varsity439@passmail.net"

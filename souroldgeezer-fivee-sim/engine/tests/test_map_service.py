@@ -953,7 +953,7 @@ class TestFixtureEdits:
     def test_a_refused_resize_leaves_the_document_byte_identical(self) -> None:
         before = spiked()
         frozen = serialize(before)
-        with pytest.raises(MapEditError) as caught:
+        with pytest.raises(MapEditError, match="operation #1") as caught:
             service.apply_edits(
                 before,
                 [
@@ -1104,7 +1104,7 @@ class TestSetFeature:
     def test_a_refused_set_feature_leaves_the_document_byte_identical(self) -> None:
         before = spiked()
         frozen = serialize(before)
-        with pytest.raises(MapEditError) as caught:
+        with pytest.raises(MapEditError, match="operation #1") as caught:
             service.apply_edits(
                 before,
                 [
@@ -1122,7 +1122,7 @@ class TestEditAtomicity:
     def test_a_bad_op_names_its_index_and_applies_nothing(self) -> None:
         before = document()
         frozen = serialize(before)
-        with pytest.raises(MapEditError) as caught:
+        with pytest.raises(MapEditError, match="operation #2") as caught:
             service.apply_edits(
                 before,
                 [
@@ -1605,7 +1605,7 @@ class TestFiles:
         broken["features"][1]["id"] = "door-1"
         target = tmp_path / "broken.json"
         target.write_text(json.dumps(broken), encoding="utf-8")
-        with pytest.raises(MapError) as caught:
+        with pytest.raises(MapError, match="2 map error") as caught:
             service.load_file(target, terrain=TERRAIN)
         assert len(caught.value.diagnostics) == 2
 

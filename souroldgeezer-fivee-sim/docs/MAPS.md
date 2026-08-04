@@ -43,8 +43,9 @@ A complete, valid document — a walled room with a door and a stair:
 
 Squares are zero-based `[x, y]`, origin top-left, y downward; `tiles` lists the
 top row first, one character per square, each resolved through the document's
-own `legend`. Save it under the maps directory and `map_load` it by path, or
-hand the object to `map_load` inline.
+own `legend`. Write it under the maps directory with `map.put` and every other
+operation can name it by id, or hand the object inline as the `document` of a
+`map.render`, `map.query`, `map.uvtt`, or `map.validate` call.
 
 ## Where maps live
 
@@ -57,9 +58,9 @@ In precedence order:
    when the variable is unset — the maps analogue of the content-pack convention.
 3. The same `.fivee-sim/maps/` under the current directory, as a last resort.
 
-The first configured root is also where `map_save` writes by default
-(`<slug-of-name>.json`) and where `replay_export` puts its files (under
-`replays/`).
+The first configured root is where `map.put` and `map.generate --save-as` write
+(`<id>.json`), and its sibling `replays/` is where `encounter.replay` puts its
+files.
 
 ## The document, field by field
 
@@ -70,7 +71,7 @@ silently become a default.
 | --- | --- |
 | `format` | Always `"fivee-sim-map"`. |
 | `format_version` | Always `1`. |
-| `name` | Display name; `map_save`'s default filename is its slug. |
+| `name` | Display name. The **id** is the filename, not this — `map.generate --save-as` and `map.put` both take the id directly. |
 | `grid` | `width` and `height` in squares (1–512 each), `cell_feet` fixed at 5. |
 | `legend` | Single character → terrain-kind string. The glyphs `+` `/` `<` `>` `@` are reserved for renderer overlays and may not be claimed. |
 | `tiles` | One string per row, top row first, every character defined in the legend, every row exactly `width` long. |
@@ -205,7 +206,7 @@ its own `at`, and every cell of every overlay. The document refuses a second
 claim, and so does an encounter adopting the map, because a battle map can be
 hand-built with no document behind it. The rule earns its refusals by removing
 the precedence question outright: there is no document order to consult and no
-history to replay, which is what lets `map_query` resolve terrain over a bare
+history to replay, which is what lets `map.query` resolve terrain over a bare
 map — no fight, no history — and still agree with what the live encounter sees.
 
 **`requires` gates opening only.** Closing is never gated, or the fiction that
@@ -239,7 +240,7 @@ operating it. Each is still an ordinary `interact` event after the event that
 caused it, with an empty actor and `automatic: true`, `triggered_by`, `feature`,
 and `open` in its data; linked leaves also retain `linked`. The usual
 `open_features` overlay and replay folding therefore remain the only live map
-state machinery. `map_query` stays a snapshot resolver: an explicitly supplied
+state machinery. `map.query` stays a snapshot resolver: an explicitly supplied
 open-state set is authoritative and it never runs triggers.
 
 **The check is a raw ability check.** Creatures here carry ability modifiers and
@@ -256,7 +257,8 @@ the operation or shoving the occupant aside would each invent a rule SRD 5.2.1
 does not have — the engine models no forced movement at all — so nothing happens
 to it. That is a deliberate non-behaviour, not an oversight.
 
-Operating a fixture is the encounter's business: `encounter_act(kind="interact",
+Operating a fixture is the encounter's business: `encounter.act` with
+`kind="interact"`,
 feature=...)`, from its square or one beside it and on its own storey. `interact`
 **toggles** by default; pass `set_open` to drive a fixture to the state you mean,
 which is what to use when working a chain — asking to "open" a gate that already
@@ -383,9 +385,9 @@ file is the truth and regeneration would lose the hand's work.
 
 ## Edit operations
 
-`map_edit` (MCP) and `POST /api/maps/{id}/edits` (REST) accept the same list
-of operations and apply it **atomically** — a bad operation names its index
-and nothing changes. Each operation is an object with an `op` key:
+`map.edit` — `POST /api/v1/maps/{id}/edits` — takes a list of operations and
+applies it **atomically**: a bad operation names its index and nothing changes.
+Each operation is an object with an `op` key:
 
 | `op` | Keys |
 | --- | --- |
@@ -466,18 +468,19 @@ format rather than by the operation.
 
 ## The interactive editor
 
-Two ways to start it, one server either way:
+The editor is a page the engine serves, so starting it is starting the engine:
 
-- **MCP**: `map_editor_serve` spawns a detached editor process and returns its
-  URL; calling it again finds the running one (`already_running`).
-  `map_editor_stop` shuts it down.
-- **CLI**: `fivee-sim-editor [--maps-dir DIR] [--port N]` from the engine's
-  environment, for development.
+- **`fivee serve`** starts one and prints `url` (the editor) and `viewer_url`
+  (the replay viewer), or reports the running one with `already_running` true.
+  `fivee stop` shuts it down. Any other `fivee` command starts one too if
+  nothing is serving — `serve` exists for when the URL is what you want.
+- **`fivee-sim-server [--maps-dir DIR] [--port N]`** runs it in the foreground
+  from the engine's own environment, for development.
 
 **Which engine you are looking at.** The footer's right corner names the
 serving engine's version, and keeps naming it — the status line beside it is
 for the last thing that happened. It arrives in the injected launch
-configuration rather than over `/api/ping`, so it is on screen before any
+configuration rather than over `/api/v1/ping`, so it is on screen before any
 request finishes; a page opened from disk has no server to have been told by,
 and says nothing there rather than guessing. This is the cheapest way to see
 that an install is serving the engine you think it is — the failure recorded
@@ -486,20 +489,25 @@ under "A venv also outlives the engine it was built from" in
 looks identical to a fresh one from the outside.
 
 **Token model.** The server binds `127.0.0.1` only and mints a fresh token per
-launch. Every `/api/*` request must carry it in `X-Fivee-Editor-Token`; the
+launch. Every `/api/v1/*` request must carry it in `X-Fivee-Editor-Token`; the
 token reaches the browser only by being injected into the served page, and it
 is never put in a URL, so the URL alone is safe to hand around on the machine.
 Requests with a foreign `Host` header are refused, which is what keeps a
 DNS-rebinding page from driving the API.
 
 **ETag semantics.** A map's identity is the sha256 of its canonical bytes, and
-that hash is its `ETag`. `PUT /api/maps/{id}` requires `If-Match`: the ETag
+that hash is its `ETag`. `PUT /api/v1/maps/{id}` requires `If-Match`: the ETag
 from your last `GET` to update, or `*` to create. A stale hash is a `409`
 (someone saved in between — re-`GET` and reapply), a missing header is `428`,
 and an invalid document is `422` carrying the same diagnostics the validator
-prints. `POST /api/generate` **never persists** — the page reviews the result
-and saves the keeper with `PUT`, exactly as `map_generate` hands off to
-`map_save`.
+prints. `POST /api/v1/maps/generate` **never persists** unless it is given
+`save_as` — the page reviews the result and saves the keeper with `PUT`, which
+is the same two steps `fivee map.generate` and `fivee map.put` are.
+
+The listing at `GET /api/v1/maps` deliberately carries **no hash**. A guarded
+write reads the version it is about to replace: `GET` the map, take the `ETag`
+off that response, `PUT` with `If-Match`. A hash in the listing would invite a
+write preconditioned on a version nobody read.
 
 **Ground height.** The Height tool paints absolute feet with the same brush
 sizes as terrain, and the datum control in the side panel moves the height
@@ -584,16 +592,18 @@ attack modifiers, so the document, editor, replay, and fight read one source.
 The preview shows **terrain only**. The Heights overlay reads the storey's own
 height layer, so a fixture that drops a water level five feet recolors the room
 without re-shading it, and the cursor readout reports the authored height there.
-A fight is the authority on that: `encounter_state` reports a creature's live
+A fight is the authority on that: `encounter.state` reports a creature's live
 elevation, and it is the number that governs movement.
 
-After saving in the editor, the file has moved on from any session copy:
-`map_load` (with `replace` to keep the same map id) re-reads it. Once
-hand-edited, the file is the source of truth — re-load, never assume.
+After saving in the editor, the file has moved on from whatever you last read.
+There is no session copy to refresh — a map **is** the file, and every operation
+that names one by id reads it fresh — but a hash you are holding is stale, so
+`GET` the map again before the next guarded write.
 
 ## The replay bundle
 
-`replay_export` turns an encounter into a portable, self-contained audit record.
+`encounter.replay` turns an encounter into a portable, self-contained audit
+record.
 Version 2 is the default:
 
 ```json
@@ -618,7 +628,7 @@ Version 2 is the default:
 ```
 
 `map` is the document **as the fight captured it** — an edit made after
-`encounter_create` never changes an export. Version 2 also converts an inline
+`encounter.create` never changes an export. Version 2 also converts an inline
 `map` spec to a complete map document and preserves every storey; only a mapless
 fight carries `null`. `initial.combatants` is the normalized creation input,
 including attacks and resources, while the captured content records preserve
@@ -684,7 +694,7 @@ and ends on the recorded outcome.
 
 ## Universal VTT export
 
-`uvtt_export` writes a loaded map as a Universal VTT JSON file (`format:
+`map.uvtt` writes a map as a Universal VTT JSON file (`format:
 0.3`) — the interchange format other virtual tabletops import — at
 `<maps root>/uvtt/<slug-of-name>.uvtt` by default. The result is always a
 file, never inlined (the payload embeds a base64 image), and an existing
@@ -715,12 +725,12 @@ What is exported:
   from its name using the same fallback formula the editor renderer documents.
   Pixel parity with the themed canvas is not promised.
 
-`uvtt_export` takes a `level` (default the ground). The format has one plane
+`map.uvtt` takes a `level` (default the ground). The format has one plane
 and no notion of storeys, so a map with floors exports one file per floor
 rather than a flattened picture true of neither.
 
 `open_features` names the fixtures to export **as open** — a fight's live set,
-which `encounter_state`'s map block reports. Given it, the walls, the image and
+which `encounter.state`'s map block reports. Given it, the walls, the image and
 the portals all show the map that fight is on rather than the map on disk: a
 raised portcullis stops being a wall, a sluice's flooded room exports as water,
 and a door the party opened exports as an open portal. Omit it and the export is

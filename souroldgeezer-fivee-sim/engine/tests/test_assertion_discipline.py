@@ -1,28 +1,40 @@
 """An error-branch test must say *which* refusal it got, not just the status.
 
-Nine unexercised request-validation branches in ``editor/http_server.py`` were
+Nine unexercised request-validation branches in ``web/http_server.py`` were
 given tests by deleting each branch and rerunning: nine of nine failed. But
 **four of those mutants still returned HTTP 400** — the non-object body, the
 non-list ``operations``, the non-string ``kind``, and the non-object ``params``.
 A test asserting only the status code would have passed against a server with
-the check removed. ``'kind'`` is the sharpest: the guard and the service layer's
-own ``ValueError`` both answer 400 with a message naming ``caves, dungeon,
-overland``, so only the ``detail`` text tells the two apart.
+the check removed. ``'kind'`` is the sharpest: the schema guard and the service
+layer's own ``ValueError`` both answer 400, so only the ``detail`` text tells
+the two apart.
 
 So the rule, which these tests enforce over the suite's own source:
 
 * every ``assert_problem(...)`` call passes a non-empty ``detail`` fragment;
-* every ``pytest.raises(api.ToolError)`` passes a ``match=``.
+* every ``pytest.raises(...)`` on the **refusal family** passes a ``match=``.
 
-The second is the same weakness in the MCP lane — a bare ``raises`` proves a
-refusal happened, not which one. It already held everywhere when the rule was
-written; enforcing it keeps it holding.
+The family is :data:`REFUSAL_ERRORS`, which is exactly what
+``fivee_sim.service.errors`` exports:
+``RequestError``/``NotFoundError``/``MapError``/``MapEditError``/``ReplayError``/
+``StaleWriteError``. It started as a rule about the MCP adapter's ``ToolError``,
+which flattened all of them into one class, and outlived it: every one of these
+means *the caller asked for something the engine will not do*, and a bare
+``raises`` proves only that some refusal happened. Which refusal is the whole
+content of the test.
+
+Two members are load-bearing in ways a status is not. ``NotFoundError`` is the
+only thing separating a 404 from a 400 over HTTP, so a test that accepts either
+would pass against an adapter that had stopped telling them apart.
+``StaleWriteError`` carries the remedy — re-read and reapply — and a test
+matching only the type would pass against a 400 that tells the caller nothing
+they can act on.
 
 A fragment must also be *discriminating*, which no parser can check: it has to
 be text the neighbouring branches sharing that status do not produce. See
-``test_editor_http.test_a_traversal_id_is_404_from_the_grammar_not_the_index``
-for a case where the obvious fragment is a prefix of the fall-through message
-and so needed a second assertion to bite.
+``test_web_http.test_a_traversal_id_is_404_from_the_grammar_not_the_index`` for
+a case where the obvious fragment is a prefix of the fall-through message and so
+needed a second assertion to bite.
 
 There are no exemptions today, and :data:`FRAGMENT_EXEMPTIONS` is empty. One
 would be warranted only where no fragment could distinguish a branch from
@@ -41,6 +53,20 @@ TESTS_DIR = Path(__file__).resolve().parent
 #: Call sites permitted to assert a status with no distinguishing fragment,
 #: as ``"<file>::<enclosing test>"``. Empty; the docstring above sets the bar.
 FRAGMENT_EXEMPTIONS: frozenset[str] = frozenset()
+
+#: The refusal family: raising any of these means the caller asked for something
+#: the engine will not do, so a test must say which refusal it got. Matched on
+#: the trailing name, since the suite imports them by several routes.
+REFUSAL_ERRORS: frozenset[str] = frozenset(
+    {
+        "RequestError",
+        "NotFoundError",
+        "MapError",
+        "MapEditError",
+        "ReplayError",
+        "StaleWriteError",
+    }
+)
 
 
 def _dotted(node: ast.expr) -> str:
@@ -118,22 +144,46 @@ def test_every_problem_assertion_names_a_detail_fragment_not_only_a_status() -> 
     )
 
 
-def test_every_tool_error_assertion_matches_the_message_not_only_the_type() -> None:
+def test_every_refusal_assertion_matches_the_message_not_only_the_type() -> None:
     offenders: list[str] = []
-    checked = 0
+    seen: set[str] = set()
     for path, holder, call in _suite_calls():
         if _dotted(call.func) not in ("pytest.raises", "raises"):
             continue
-        if not call.args or not _dotted(call.args[0]).endswith("ToolError"):
+        if not call.args:
             continue
-        checked += 1
+        name = _dotted(call.args[0]).rpartition(".")[2]
+        if name not in REFUSAL_ERRORS:
+            continue
+        seen.add(name)
         if not any(keyword.arg == "match" for keyword in call.keywords):
             offenders.append(_site(path, holder, call))
-    assert checked, "no ToolError raises found at all — has the exception been renamed?"
+    assert seen, "no refusal raises found at all — has the family been renamed?"
     assert not offenders, (
-        "A ToolError test asserts the message, never the type alone: "
-        "pytest.raises(api.ToolError) with no match= is the MCP lane's status-only "
-        "assertion, proving a refusal happened but not which one. Give each of "
-        "these a match= naming text that branch alone produces:\n  "
+        "A refusal test asserts the message, never the type alone: "
+        "pytest.raises(RequestError) with no match= is the status-only assertion "
+        "in another lane, proving a refusal happened but not which one. Give each "
+        "of these a match= naming text that branch alone produces:\n  "
         + "\n  ".join(offenders)
+    )
+
+
+def test_the_refusal_family_is_the_one_the_service_layer_actually_raises() -> None:
+    """A family listed here but gone from the source would enforce nothing.
+
+    The rule above is a name match, so a renamed exception would silently stop
+    being checked while the suite stayed green. This is the check on the check:
+    :data:`REFUSAL_ERRORS` is neither more nor less than what
+    ``fivee_sim.service.errors`` exports. Equality in both directions, because
+    a name listed here and gone from the source enforces nothing, and a refusal
+    exported there and missing here escapes the rule entirely.
+    """
+    from fivee_sim.service import errors
+
+    assert REFUSAL_ERRORS <= set(errors.__all__), sorted(
+        REFUSAL_ERRORS - set(errors.__all__)
+    )
+    assert REFUSAL_ERRORS == set(errors.__all__), (
+        "service/errors.py exports a refusal this rule does not enforce: "
+        f"{sorted(set(errors.__all__) - REFUSAL_ERRORS)}"
     )

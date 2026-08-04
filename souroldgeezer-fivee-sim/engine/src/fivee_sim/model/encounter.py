@@ -2069,8 +2069,8 @@ class Encounter:
         # Every reason to refuse is gathered before a single thing is spent. The
         # slot-level check in particular used to live only inside ``resolve_spell``,
         # which runs after the action is marked used and the slot decremented — so a
-        # refusal cost the caster both, and arrived as a bare ``ValueError`` the MCP
-        # adapter does not catch. Validate here, in the layer that owns the state and
+        # refusal cost the caster both, and arrived as a bare ``ValueError`` no
+        # adapter catches. Validate here, in the layer that owns the state and
         # speaks ``EncounterError``.
         if slot_level < spell.level:
             raise EncounterError(

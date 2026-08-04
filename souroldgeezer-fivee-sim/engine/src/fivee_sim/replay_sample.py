@@ -750,7 +750,7 @@ def sample_bundle() -> dict[str, Any]:
 
 def write_sample(output: str | Path = DEFAULT_OUTPUT) -> Path:
     """Write the self-contained showcase HTML and return its path."""
-    static = resources.files("fivee_sim.editor") / "static"
+    static = resources.files("fivee_sim.web") / "static"
     viewer = (static / "viewer.html").read_text(encoding="utf-8")
     renderer = (static / "renderer.js").read_text(encoding="utf-8")
     bundle_json = replay_service.serialize_bundle(sample_bundle())

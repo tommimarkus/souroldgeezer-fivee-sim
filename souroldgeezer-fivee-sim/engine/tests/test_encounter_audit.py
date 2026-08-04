@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from fivee_sim.mcp_server import server as api
-
+from . import api
 from .conftest import mapless_fight
 
 

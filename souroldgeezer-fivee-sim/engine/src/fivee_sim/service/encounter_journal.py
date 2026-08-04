@@ -16,12 +16,13 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
+from ..paths import ENCOUNTERS_ENV, ENCOUNTERS_SUBDIR, encounters_root
 from . import durable
 from .errors import StaleWriteError
 
 __all__ = [
     "ENCOUNTERS_ENV",
+    "ENCOUNTERS_SUBDIR",
     "JournalError",
     "StaleWriteError",
     "append",
@@ -31,26 +32,12 @@ __all__ = [
     "read",
 ]
 
-ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
-ENCOUNTERS_SUBDIR = Path(".fivee-sim") / "encounters"
 _SAFE_ID = re.compile(r"^enc-[A-Za-z0-9_-]+$")
 _JOURNAL_LOCK = RLock()
 
 
 class JournalError(ValueError):
     """A journal cannot be trusted or written."""
-
-
-def encounters_root(env: Mapping[str, str] | None = None) -> Path:
-    environ = os.environ if env is None else env
-    configured = environ.get(ENCOUNTERS_ENV, "").strip()
-    if configured:
-        return Path(configured).expanduser()
-    project = (
-        environ.get(PROJECT_ENV, "").strip()
-        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
-    )
-    return Path(project or Path.cwd()) / ENCOUNTERS_SUBDIR
 
 
 def journal_path(encounter_id: str) -> Path:
@@ -160,7 +147,7 @@ def append(
     it simply takes its turn.
 
     The two locks are not redundant. The ``flock`` excludes other *processes* —
-    every MCP server on a host shares this directory — while the ``RLock``
+    every engine server on a host shares this directory — while the ``RLock``
     keeps this process's own threads from interleaving, and keeps ``read``
     reentrant inside the critical section.
     """

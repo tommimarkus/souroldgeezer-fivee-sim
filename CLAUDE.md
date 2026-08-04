@@ -1,9 +1,9 @@
 # Repository guidance
 
 A Claude Code and Codex marketplace plugin providing a 5E-compatible simulation
-engine: a pure Python rules kernel exposed over MCP, plus the skills that teach
-the active assistant to drive it. See [README.md](README.md) for the project
-overview.
+engine: a pure Python rules kernel served over a local HTTP API, the `fivee`
+command that drives it, plus the skills that teach the active assistant to use
+them. See [README.md](README.md) for the project overview.
 
 ## Environment hazards — read before any `git add`
 
@@ -214,17 +214,25 @@ a defect.
 use. A test pins that a 1-iteration analytics run equals a single stateful run
 at the same seed; if the two ever diverge, the statistics are lying.
 
-**The MCP layer is a thin adapter.** `fivee_sim.mcp_server.server` validates
-input, calls the kernel, serialises results. No rules logic belongs there — and
-the map, replay, and UVTT tools reach it through `service/` rather than
-implementing anything, which is what keeps it thin. The package is `mcp_server`,
-not `mcp`, so it can never be confused with the third-party `mcp` distribution
-it imports.
+**There is one adapter, and it is HTTP.** `fivee_sim.web` validates input from
+a route table, calls into `service/`, and serialises results as JSON or
+problem+json. No rules logic belongs there. An MCP stdio server sat beside it
+until the surface was consolidated; deleting it is why the engine now declares
+**zero runtime dependencies** — `pyproject.toml`'s `dependencies` list is empty
+and should stay that way, because a dependency there is one every install
+inherits.
 
-`stdout` of the MCP launcher is the JSON-RPC channel. Anything diagnostic must
-go to `stderr`, or the protocol breaks. `scripts/check-mcp-handshake.py` exists
-to catch exactly that: it requires every line the server emits on stdout to parse
-as JSON.
+**`fivee_sim.client` is the other half of that decision.** The CLI reaches the
+engine over HTTP and by no other route — `tests/test_layering.py` pins that it
+imports nothing from this package but `fivee_sim.paths`. So every feature the
+command demonstrably has is a feature `/api/v1` demonstrably serves, and "the
+REST surface can do everything" stops being a claim a reader has to audit two
+call graphs for.
+
+`souroldgeezer-fivee-sim/scripts/fivee.sh` is the launcher and the plugin's whole
+entry point: it builds or finds the environment and `exec`s the venv's `fivee`
+console script with every argument passed through. Its own diagnostics go to
+`stderr`, because stdout belongs to `fivee` and callers capture it.
 
 **Layer boundaries.** `kernel/` holds the primitives — dice, resolution,
 conditions, attacks, spells, items — and knows nothing about creatures; callers pass
@@ -232,20 +240,21 @@ the handful of values a roll depends on. `model/` owns creatures and is the only
 place combat state changes. Spell and item definitions live in `kernel/` rather than
 a separate layer because they are resolution primitives like the rest.
 
-**`service/` holds the tool bodies, and both adapters go through it.** This
+**`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
 `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `replay.py`, and
 `uvtt.py`.
-Nothing in it may import MCP, HTTP, or any transport's error type: a function
+Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
-`ValueError`-family errors. That is the whole reason two adapters can both be
-thin. `mcp_server/server.py` maps those errors onto `ToolError`,
-`editor/http_server.py` onto problem+json, and neither does anything more than
-that and serialisation. A tool body written into an adapter belongs here instead.
+`ValueError`-family errors. That rule outlived the second adapter it was written
+for, and it is what keeps the one that remains thin. `web/http_server.py` maps those errors onto problem+json and does nothing
+more than that and serialisation; `tests/api.py` is the suite's in-process door
+to the same functions and translates nothing at all. An operation body written
+into an adapter belongs here instead.
 
 **`service/` also owns durable-write concurrency, because it owns the state.**
-Several processes reach these files — every MCP server on a host resolves the
-same encounter and map roots, and the editor is a threading HTTP server — so
+Several processes reach these files — every engine server on a host resolves the
+same encounter and map roots, and each is a threading HTTP server — so
 `durable.py` separates two guarantees. *Integrity* is unconditional: a `flock`
 makes read-modify-write atomic across processes and `atomic_write` publishes by
 rename, so a reader never sees a prefix. *Ownership* is a precondition the caller
@@ -295,8 +304,8 @@ its condition table into every combatant, which is load-bearing rather than tidy
 `analytics/montecarlo.py` builds the `simulate_dpr` dummy itself, where no caller
 can pass a table.
 
-**Every tool reports its seed.** A tool called without one picks a seed and
-returns it, so no result is ever irreproducible.
+**Every operation reports its seed.** An operation called without one picks a
+seed and returns it, so no result is ever irreproducible.
 
 **The browser assets are checked in two halves, and the split is the point.**
 This paragraph used to read "checked as text, not driven … a renderer defect
@@ -330,7 +339,7 @@ wrong.
 
 **An error-branch test names the refusal, not just its status.** A status code or
 an exception type alone does not identify a branch: when nine
-`editor/http_server.py` request guards were mutated to check the tests written
+`web/http_server.py` request guards were mutated to check the tests written
 for them, four of the mutants still answered 400, so a status-only assertion
 would have passed against a server with the check deleted. Every
 `assert_problem(...)` therefore carries a problem+json `detail` fragment and
@@ -351,15 +360,55 @@ uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
 # From the repo root, against a contributor's verified local extraction.
 python3 scripts/srd-catalog-batch.py --source-root /path/to/extracted validate
 
-# From the repo root: real JSON-RPC against the real launcher.
-python3 scripts/check-mcp-handshake.py
+# From the repo root: the real launcher, end to end. Builds or finds the
+# environment, starts the engine, prints every operation the server serves.
+bash souroldgeezer-fivee-sim/scripts/fivee.sh help
+bash souroldgeezer-fivee-sim/scripts/fivee.sh stop
 bash scripts/test-launcher-freshness.sh
+
+# The same launcher, checked rather than eyeballed — see below. Stdlib only.
+python3 scripts/check-api-smoke.py
+
 bash scripts/hooks/test-ip-hygiene-check.sh
 bash scripts/hooks/test-stop-audit-check.sh
 
 # The browser assets, driven rather than read. Needs node — see below.
 node scripts/check-editor-behaviour.mjs
 ```
+
+**`scripts/check-api-smoke.py` is the repository's automated end-to-end gate**,
+and the only thing that checks the shipped surface the way a host uses it.
+`fivee.sh help` above is a look, not a check; this is the check. It boots the
+**real launcher** — never `python -m fivee_sim.web`, never the dev venv — runs a
+complete seeded fight over plain HTTP, runs the identical fight in a second
+server and a third time through the `fivee` binary as a subprocess, and requires
+all three to agree. Then it holds `GET /api/v1/operations`, `GET
+/api/v1/openapi.json` and `fivee help` against the route table's own source.
+
+Three of those claims exist nowhere else. **Reproducibility across processes**:
+every other determinism test runs in one interpreter. **That the launcher
+works**: nothing in pytest execs it. **That `/api/v1` is complete**: the client
+is pinned by `tests/test_layering.py` to import nothing of the engine but
+`fivee_sim.paths`, so a fight it can drive end to end is a fight the REST
+surface serves — which is why the command run is the load-bearing one rather
+than a convenience.
+
+**Standard library only, and no pytest**, because it has to run against an
+environment that has built nothing but the plugin's own `--no-dev` runtime. It
+does not import the engine either: it reads `web/routes.py` with `ast` rather
+than importing it, since an imported copy is not the copy the launcher is
+serving. Every server it starts is pointed at a fresh `tempfile` directory —
+honouring `TMPDIR`, which is what makes it runnable where `/tmp` is read-only —
+and stopped and removed in a `finally`, because a leaked detached server would
+make the next run lie.
+
+Its fight constants are **golden values for one seed**, so a change to the rules
+or the dice stream turns it red on purpose; reproduce, then recalibrate
+deliberately. One thing it deliberately does *not* compare is the whole-file
+sha256 of an exported replay: a v2 bundle stamps every event and checkpoint with
+the wall clock, so it is not byte-reproducible and never will be. The
+timestamp-free integrity hashes — initial state, actions, latest state, map,
+content — are compared instead, and those are what the seed determines.
 
 **`node` is a dependency of exactly one check.**
 `scripts/check-editor-behaviour.mjs` is the only thing in the repo that wants
@@ -368,9 +417,9 @@ That constraint is the price of admission — a browser toolchain has no busines
 in a Python repository, and the moment this check needs one it should be
 argued for rather than installed. **The Python suite is unaffected**: it neither
 imports nor spawns `node`, so an environment without it runs `ruff`, `mypy`,
-`pytest` and the handshake check exactly as before, and only this one command is
-unavailable. Run it after touching anything under
-`engine/src/fivee_sim/editor/static/`.
+and `pytest` exactly as before, and only this one command is unavailable. Run it
+after touching anything under
+`engine/src/fivee_sim/web/static/`.
 
 It takes an optional static-directory argument, and that argument is its own
 self-check: copy the static directory somewhere scratch, delete a guard, and
@@ -383,8 +432,8 @@ catalog record, table, or executable record means regenerating it;
 category, progress, simulation-support, and executable totals only. Detailed
 identity and table lookup belongs to the bounded catalog tools.
 
-It describes the **bundled** slice only. What a session actually has loaded is the
-`content_status` tool's answer, and the skill says so — a generated document cannot
+It describes the **bundled** slice only. What a session actually has loaded is
+`content.status`'s answer, and the skill says so — a generated document cannot
 know about a pack it has never seen.
 
 `uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
@@ -398,8 +447,9 @@ mypy` use.
 
 At runtime the launcher **execs the venv's own console script** rather than going
 through `uv run`. That keeps uv out of the spawn path — one process instead of
-two, and uv is needed only when the environment has to be built. The handshake
-check passes with `uv` removed from `PATH` entirely, which is the test of it.
+two, and uv is needed only when the environment has to be built.
+`bash souroldgeezer-fivee-sim/scripts/fivee.sh help` succeeds with `uv` removed
+from `PATH` entirely once the environment exists, which is the test of it.
 
 The launcher syncs with `--no-dev`, so a venv it built has no test tooling. That
 only happens on a cold start; `uv run pytest` re-syncs the dev group
@@ -413,12 +463,13 @@ still resolves, and rebuilds. If you relocate the repo and something behaves
 oddly, `rm -rf` the venv rather than debugging it.
 
 **A host-managed runtime must outlive the plugin root without outliving its own
-engine build.** Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex's
-bundled MCP children do not currently receive `${PLUGIN_DATA}`, so `.mcp.json`
-marks the host and the launcher derives Codex's plugin-data location from
-`${CODEX_HOME}` (or `${HOME}/.codex`); an explicit host variable still wins.
-The installed plugin root can disappear when another session refreshes the host
-cache, so host-managed environments live at
+engine build.** Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex
+supplies neither that nor `${PLUGIN_DATA}`, so the launcher derives its
+plugin-data location from `${CODEX_HOME}` alone — never from `${HOME}/.codex`, a
+guess that would put a plain checkout on the host-managed path. The host marker
+that used to answer this arrived through the deleted `.mcp.json`. An explicit
+host variable still wins. The installed plugin root can disappear when another
+session refreshes the host cache, so host-managed environments live at
 `$plugin_data/venvs/<engine-build-id>` and are installed with `--no-editable`.
 The build identity covers `pyproject.toml`, `uv.lock`, and every shipped source
 file. A new build is created beside old ones rather than refreshing a venv that a
@@ -427,8 +478,8 @@ cannot know which other host process still owns one.
 
 Before exec the launcher also changes into the durable plugin-data directory.
 That is load-bearing: maps and encounter journals may resolve a default from
-`Path.cwd()` at tool time, and a process left inside a retired plugin cache would
-otherwise turn its next journal append into raw `ENOENT`. Explicit project-root,
+`Path.cwd()` when an operation runs, and a process left inside a retired plugin
+cache would otherwise turn its next journal append into raw `ENOENT`. Explicit project-root,
 content, map, and encounter environment variables continue to win.
 
 Every cold build of the same identity is guarded by an atomic sibling-directory
@@ -453,7 +504,7 @@ hotfixes, spikes/throwaway, work a domain skill owns end to end. Opt out per
 task by saying "skip planning" (logged). Enforcement model.
 
 software-design: when work shapes code or module structure — a new module or
-layer, the kernel/model/content/MCP seams, dependency direction, coupling,
+layer, the kernel/model/content/service/web seams, dependency direction, coupling,
 ownership of state, principle/pattern tradeoffs, or non-functional targets —
 load the `souroldgeezer-design:software-design` skill (it pulls its python
 extension) and do the design or review under it before writing the code. Not

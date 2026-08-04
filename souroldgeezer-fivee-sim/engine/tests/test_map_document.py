@@ -130,7 +130,7 @@ class TestParse:
         payload = document()
         payload["tiles"][1] = "#..?.#"  # unknown glyph
         payload["features"][1]["id"] = "door-1"  # and a duplicate id
-        with pytest.raises(MapError) as caught:
+        with pytest.raises(MapError, match="2 map error") as caught:
             parse_document(payload, source="test", terrain=TERRAIN)
         found = problems(list(caught.value.diagnostics))
         assert len(found) == 2

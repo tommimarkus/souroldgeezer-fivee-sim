@@ -44,10 +44,11 @@ from fivee_sim.kernel.conditions import (
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.rules import Size
 from fivee_sim.kernel.spells import SpellShape
-from fivee_sim.mcp_server import server as api
 from fivee_sim.model.creature import Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
+from fivee_sim.service.errors import NotFoundError, RequestError
 
+from . import api
 from .conftest import advance_to
 
 # The bundled slice's own size, read from the data rather than written down. Both
@@ -1570,7 +1571,7 @@ class TestContentTools:
         listing = api.lookup_rule()
         assert listing["builtin"] == "exclude"
         assert listing["counts"]["creatures"] == 1
-        with pytest.raises(api.ToolError, match="nothing loaded"):
+        with pytest.raises(NotFoundError, match="nothing loaded"):
             api.lookup_rule("Goblin Warrior")
         assert api.lookup_rule("Vale Stalker")["name"] == "Vale Stalker"
 
@@ -1590,18 +1591,18 @@ class TestContentTools:
     ) -> None:
         broken = write_pack(tmp_path, "broken.json", {"pack": "x", "creatures": []})
         before = api.content_status()
-        with pytest.raises(api.ToolError, match="content not changed"):
+        with pytest.raises(RequestError, match="content not changed"):
             api.content_configure([str(broken)])
         after = api.content_status()
         assert after["generation"] == before["generation"]
         assert after["counts"] == before["counts"]
 
     def test_configure_with_nothing_to_change_is_refused(self) -> None:
-        with pytest.raises(api.ToolError, match="nothing to change"):
+        with pytest.raises(RequestError, match="nothing to change"):
             api.content_configure()
 
     def test_a_bad_mode_lists_the_valid_ones(self) -> None:
-        with pytest.raises(api.ToolError, match="include, exclude"):
+        with pytest.raises(RequestError, match="include, exclude"):
             api.content_configure(builtin="maybe")
 
     def test_lookup_reports_the_pack_a_custom_entry_came_from(self, pack: Path) -> None:

@@ -20,10 +20,12 @@ import pytest
 from fivee_sim import __version__
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import parse_document
-from fivee_sim.mcp_server import server as api
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.service import map_ops
 from fivee_sim.service import replay as replay_service
+from fivee_sim.service.errors import NotFoundError, RequestError
 
+from . import api
 from .conftest import (
     REPLAY_GOBLIN,
     REPLAY_HERO,
@@ -70,7 +72,9 @@ def chamber() -> dict[str, Any]:
 
 
 def mapped_fight(seed: int = 43) -> tuple[str, str]:
-    map_id = str(api.map_load(document=chamber())["map_id"])
+    # A map is a file; saving it under an id is how a fight can name it.
+    map_id = "replay-chamber"
+    api.map_save(map_id, chamber())
     created = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed, map_id=map_id
     )
@@ -117,7 +121,7 @@ class TestBundleSchema:
         assert bundle["events"][0]["kind"] == "round"
 
     def test_an_unknown_encounter_is_refused(self) -> None:
-        with pytest.raises(api.ToolError, match="unknown encounter"):
+        with pytest.raises(NotFoundError, match="unknown encounter"):
             api.replay_export("enc-never")
 
 
@@ -286,7 +290,7 @@ class TestBundleV2:
         assert captured["attacks"][0]["detach_after_damage"] == 10
 
     def test_unknown_replay_versions_are_refused(self) -> None:
-        with pytest.raises(api.ToolError, match="format_version must be 1 or 2"):
+        with pytest.raises(RequestError, match="format_version must be 1 or 2"):
             api.replay_export(mapless_fight(), format_version=99)
 
     def test_v2_state_checkpoints_include_transient_turn_and_effect_state(self) -> None:
@@ -336,7 +340,8 @@ class TestBundleV2:
                 "source": FIXTURE,
             },
         }
-        map_id = str(api.map_load(document=document)["map_id"])
+        map_id = "storeyed-chamber"
+        api.map_save(map_id, document)
         created = api.encounter_create(
             [
                 dict(REPLAY_HERO, position=[0, 15]),
@@ -371,7 +376,7 @@ class TestSizeGate:
         result = api.replay_export(mapless_fight())
         assert "bundle" in result
         assert "path" not in result
-        assert result["bytes"] <= api._INLINE_BUNDLE_BYTES
+        assert result["bytes"] <= map_ops.INLINE_BUNDLE_BYTES
 
     def test_a_large_bundle_goes_to_disk_at_the_default_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -386,7 +391,7 @@ class TestSizeGate:
         replays_dir = tmp_path / "replays"
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
         monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
-        monkeypatch.setattr(api, "_INLINE_BUNDLE_BYTES", 64)
+        monkeypatch.setattr(map_ops, "INLINE_BUNDLE_BYTES", 64)
         encounter_id = mapless_fight(seed=47)
         result = api.replay_export(encounter_id)
         assert "bundle" not in result
