@@ -32,6 +32,7 @@ from typing import Any
 from ..content import ContentError, builtin_mode, builtin_registry, load_packs
 from ..kernel.grid import TerrainTable
 from ..service import maps as map_service
+from ..service import replay as replay_service
 from .http_server import EditorServer
 
 __all__ = ["STATE_FILENAME", "main", "read_state", "state_file_for"]
@@ -88,6 +89,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "(default: the configured maps root)",
     )
     parser.add_argument(
+        "--replays-dir",
+        default=None,
+        help="directory the viewer plays replays from, read-only "
+        "(default: the configured replays root)",
+    )
+    parser.add_argument(
         "--port", type=int, default=0, help="port to bind on 127.0.0.1 (default: ephemeral)"
     )
     parser.add_argument(
@@ -102,11 +109,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         Path(args.maps_dir).expanduser() if args.maps_dir else map_service.maps_root()
     )
     maps_dir.mkdir(parents=True, exist_ok=True)
+    replays_dir = (
+        Path(args.replays_dir).expanduser()
+        if args.replays_dir
+        else replay_service.replays_root()
+    )
     state_path = (
         Path(args.state_file).expanduser() if args.state_file else state_file_for(maps_dir)
     )
 
-    server = EditorServer(maps_dir=maps_dir, terrain=_terrain_table(), port=args.port)
+    server = EditorServer(
+        maps_dir=maps_dir,
+        replays_dir=replays_dir,
+        terrain=_terrain_table(),
+        port=args.port,
+    )
 
     # Written only after the bind succeeded, so a reader never finds a state
     # file describing a server that never came up. It carries the token, so it
@@ -122,6 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "port": server.port,
                 "token": server.token,
                 "maps_dir": str(maps_dir),
+                "replays_dir": str(replays_dir),
                 "started": datetime.now(UTC).isoformat(timespec="seconds"),
             },
             handle,

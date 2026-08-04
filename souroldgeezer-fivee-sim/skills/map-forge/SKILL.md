@@ -48,10 +48,11 @@ session or file — is currently the truth.
    version that is actually on disk, and save again. Only pass
    `expected_sha256="*"` when you mean to discard whatever the other writer
    did, and say so when you do.
-5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
-   returns its URL — hand that URL to the user to open in a browser. The
-   served page configures its own access token; there is nothing else to
-   pass along. `map_editor_stop` shuts it down.
+5. **Hand-tuning: `map_editor_serve`** starts one local service carrying two
+   pages and returns both URLs — `url` for the map editor, `viewer_url` for
+   the replay viewer (step 8). Hand the user whichever they asked for; the
+   pages link to each other, and each configures its own access token, so
+   there is nothing else to pass along. `map_editor_stop` shuts both down.
 6. **After GUI edits, `map_load` before further use.** Once hand-edited, the
    file is the source of truth — re-load, never assume. When the user says
    they have saved in the editor, call `map_load` with `path` and `replace`
@@ -69,10 +70,17 @@ session or file — is currently the truth.
    export defaults to the same v2 contract: the seed, normalized roster,
    captured content, the captured map (including inline maps and every
    storey), timestamped events and attempts, authoritative state checkpoints,
-   and integrity hashes. For a file to hand the user, call `replay_export` with
-   `embed` true: the result is a single self-contained HTML page that plays the
-   fight back in any browser — no server, no install. Report the written path
-   and SHA-256; small plain bundles come back inline instead. Use
+   and integrity hashes. Bundles land in the **replays root**, a sibling of
+   the maps directory, never inside it.
+
+   Two ways to show a fight, and they answer different asks. If the local
+   service from step 5 is running, a written bundle comes back with a
+   `viewer_url` — hand that over and it plays in the browser they already
+   have open. For a file to give someone who is *not* at this machine, call
+   `replay_export` with `embed` true: the result is a single self-contained
+   HTML page that plays the fight back in any browser — no server, no
+   install. Report the written path and SHA-256; small plain bundles come
+   back inline instead. Use
    `replay_validate` before accepting a bundle from elsewhere; the viewer also
    checks the nested schema and hashes before rendering. Integrity hashes detect
    alteration but do not authenticate the file's author. Request

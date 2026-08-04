@@ -35,7 +35,7 @@ from pathlib import Path
 from random import Random
 from typing import Any, NoReturn
 
-from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV, contained_json_files
+from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 from ..kernel.grid import (
     DiagonalRule,
     Square,
@@ -78,7 +78,7 @@ from ..map_document import (
 from ..model.battlemap import MapPlane, SquareClaim
 from ..validation import Diagnostic, Severity
 from . import durable
-from .common import sha256_of
+from .common import discover_json_files, sha256_of
 from .errors import MapEditError
 
 __all__ = [
@@ -1733,27 +1733,6 @@ def save_file(
     }
 
 
-def _discover_files(roots: Sequence[str | Path]) -> list[Path]:
-    """Every ``*.json`` the roots name, with the content loader's containment
-    rule: a named file is taken at its word, a directory refuses symlinks that
-    escape it. Unreadable entries are skipped — this feeds a listing, and a
-    listing's job is to show what is usable."""
-    found: list[Path] = []
-    for entry in roots:
-        try:
-            root = Path(entry).expanduser().resolve()
-        except OSError:
-            continue
-        if not root.exists():
-            continue
-        if root.is_file():
-            if root.suffix.lower() == ".json":
-                found.append(root)
-            continue
-        found.extend(contained_json_files(root))
-    return found
-
-
 def list_maps(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]:
     """Every map document under the given (or configured) roots, briefly.
 
@@ -1766,7 +1745,7 @@ def list_maps(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]
         configured = environment_roots()
         roots = configured if configured else [maps_root()]
     listed: list[dict[str, Any]] = []
-    for path in _discover_files(roots):
+    for path in discover_json_files(roots):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):

@@ -6,9 +6,11 @@ the service layer's failures needs one import, not a tour of the engine.
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..map_document import MapError as MapError
 
-__all__ = ["MapEditError", "MapError", "StaleWriteError"]
+__all__ = ["MapEditError", "MapError", "ReplayError", "StaleWriteError"]
 
 
 class StaleWriteError(ValueError):
@@ -41,3 +43,24 @@ class MapEditError(ValueError):
     def __init__(self, op_index: int, message: str) -> None:
         self.op_index = op_index
         super().__init__(f"operation #{op_index}: {message}")
+
+
+class ReplayError(ValueError):
+    """One replay bundle could not be read, or could not be played.
+
+    ``diagnostics`` carries whatever :func:`~fivee_sim.service.replay.validate_replay`
+    reported — already plain ``{"path", "message"}`` dictionaries rather than
+    :class:`~fivee_sim.validation.Diagnostic` objects, which is the one way this
+    differs from :class:`~fivee_sim.map_document.MapError`. The replay validator
+    was written to answer an MCP tool *and* the browser's own copy of the same
+    checks, so its diagnostics were JSON from the start; re-wrapping them in a
+    dataclass here would only make every adapter unwrap them again.
+
+    It is empty for a file that never reached the validator — unreadable, or not
+    JSON at all. Those failures are about the file, not about the bundle, so the
+    message carries them and there is nothing per-field to say.
+    """
+
+    def __init__(self, message: str, diagnostics: list[dict[str, Any]] | None = None) -> None:
+        self.diagnostics = diagnostics if diagnostics is not None else []
+        super().__init__(message)

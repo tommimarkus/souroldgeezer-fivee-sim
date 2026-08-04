@@ -40,10 +40,13 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 from ..kernel.grid import as_point
 from ..kernel.rules import Ability
 from ..model.battlemap import BattleMap, FeatureOverlay, MapFeature, MapPlane
 from ..model.creature import AttackOption, Creature
+from .common import discover_json_files
+from .errors import ReplayError
 
 __all__ = [
     "EMBED_SLOT",
@@ -51,13 +54,19 @@ __all__ = [
     "FORMAT_VERSION",
     "LATEST_FORMAT_VERSION",
     "RENDERER_TAG",
+    "REPLAYS_ENV",
+    "REPLAYS_SUBDIR",
     "atomic_write_text",
     "battle_map_payload",
     "canonical_sha256",
     "embed_in_viewer",
+    "environment_replay_roots",
+    "list_replays",
+    "load_bundle_file",
     "normalized_combatant_payload",
     "replay_bundle",
     "replay_bundle_v2",
+    "replays_root",
     "serialize_bundle",
     "sha256_bytes",
     "validate_replay",
@@ -66,6 +75,15 @@ __all__ = [
 FORMAT = "fivee-sim-replay"
 FORMAT_VERSION = 1
 LATEST_FORMAT_VERSION = 2
+
+#: Environment variable holding an ``os.pathsep``-separated list of replay
+#: files or directories — the replays analogue of ``FIVEE_SIM_MAPS``.
+REPLAYS_ENV = "FIVEE_SIM_REPLAYS"
+#: Where replays live inside a project when nothing else is configured. A
+#: *sibling* of the maps directory, not a child of it: a replay is a record of
+#: a fight, not a map, and burying them under the maps root would put them in
+#: front of every ``list_maps`` walk that has no use for them.
+REPLAYS_SUBDIR = Path(".fivee-sim") / "replays"
 
 #: The exact slot the viewer page carries for embedded data. ``test_web_assets``
 #: pins that the page contains it exactly once, exactly like this.
@@ -806,6 +824,105 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
 def serialize_bundle(bundle: Mapping[str, Any]) -> str:
     """The bundle as one line of JSON plus a trailing newline."""
     return json.dumps(bundle, ensure_ascii=False) + "\n"
+
+
+# --- reading replays off disk ------------------------------------------------
+def environment_replay_roots(env: Mapping[str, str] | None = None) -> list[str]:
+    """Replay roots the environment asks for, mirroring the maps precedence.
+
+    ``FIVEE_SIM_REPLAYS`` wins outright when set; entries may be files or
+    directories. Only when it is unset does the project directory apply.
+    """
+    environ = os.environ if env is None else env
+    configured = environ.get(REPLAYS_ENV, "").strip()
+    if configured:
+        return [part for part in configured.split(os.pathsep) if part.strip()]
+    project = (
+        environ.get(PROJECT_ENV, "").strip()
+        or environ.get(CLAUDE_PROJECT_ENV, "").strip()
+    )
+    if project:
+        return [str(Path(project) / REPLAYS_SUBDIR)]
+    return []
+
+
+def replays_root(env: Mapping[str, str] | None = None) -> Path:
+    """Where replays are written by default: the first configured root, or the
+    project's ``.fivee-sim/replays``, or the same under the current directory."""
+    roots = environment_replay_roots(env)
+    if roots:
+        return Path(roots[0]).expanduser()
+    return Path.cwd() / REPLAYS_SUBDIR
+
+
+def list_replays(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]:
+    """Every replay bundle under the given (or configured) roots, briefly.
+
+    Reads each file just far enough for a catalogue row, and deliberately does
+    **not** validate: a listing's job is to show what is there, and a bundle
+    whose hashes no longer verify still needs to appear so the user can see
+    which file is the broken one. :func:`load_bundle_file` is where a bundle is
+    graded. Files that are not replay bundles at all are skipped in silence,
+    exactly as :func:`~fivee_sim.service.maps.list_maps` skips non-maps.
+    """
+    if roots is None:
+        configured = environment_replay_roots()
+        roots = configured if configured else [replays_root()]
+    listed: list[dict[str, Any]] = []
+    for path in discover_json_files(roots):
+        try:
+            raw = path.read_bytes()
+            payload = json.loads(raw.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict) or payload.get("format") != FORMAT:
+            continue
+        events = payload.get("events")
+        encounter = payload.get("encounter")
+        listed.append(
+            {
+                "name": payload.get("name"),
+                "path": str(path),
+                "format_version": payload.get("format_version"),
+                "seed": payload.get("seed"),
+                "events": len(events) if isinstance(events, list) else 0,
+                # v1 has no ``encounter`` block at all; a row reports ``None``
+                # rather than omitting the key, so a caller never has to ask
+                # which version it is holding before it can read the row.
+                "encounter_id": (
+                    encounter.get("id") if isinstance(encounter, dict) else None
+                ),
+                "sha256": sha256_bytes(raw),
+            }
+        )
+    listed.sort(key=lambda entry: str(entry["path"]))
+    return listed
+
+
+def load_bundle_file(path: str | Path) -> dict[str, Any]:
+    """One replay bundle, parsed and validated, or :class:`ReplayError`.
+
+    The refusal carries :func:`validate_replay`'s own diagnostics, so a bundle
+    rejected here is rejected in the same words ``replay_validate`` would use
+    and an adapter has nothing to translate but the envelope.
+    """
+    target = Path(path).expanduser()
+    try:
+        text = target.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise ReplayError(f"{target} cannot be read: {error}") from None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ReplayError(f"{target} is not valid JSON: {error}") from None
+    diagnostics = validate_replay(payload)
+    if diagnostics:
+        raise ReplayError(
+            f"{target} is not a playable replay bundle: {len(diagnostics)} problem(s)",
+            diagnostics,
+        )
+    assert isinstance(payload, dict)  # validate_replay refuses anything else
+    return payload
 
 
 def embed_in_viewer(

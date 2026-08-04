@@ -1,12 +1,16 @@
-"""Cross-cutting service helpers: seeds, filesystem-safe names, and hashes."""
+"""Cross-cutting service helpers: seeds, filesystem-safe names, hashes, discovery."""
 
 from __future__ import annotations
 
 import hashlib
 import random
 import re
+from collections.abc import Sequence
+from pathlib import Path
 
-__all__ = ["resolve_seed", "sha256_of", "slugify"]
+from ..content import contained_json_files
+
+__all__ = ["discover_json_files", "resolve_seed", "sha256_of", "slugify"]
 
 
 def resolve_seed(seed: int | None) -> int:
@@ -35,3 +39,31 @@ def slugify(name: str) -> str:
 def sha256_of(text: str) -> str:
     """The SHA-256 hex digest of ``text`` as UTF-8. The identity of a document."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def discover_json_files(roots: Sequence[str | Path]) -> list[Path]:
+    """Every ``*.json`` the roots name, with the content loader's containment
+    rule: a named file is taken at its word, a directory refuses symlinks that
+    escape it. Unreadable entries are skipped — this feeds a listing, and a
+    listing's job is to show what is usable.
+
+    Maps and replays are both directories of JSON the user points us at, so
+    they share this rather than each carrying a copy. The containment rule is
+    the reason that matters: two copies of a security check are two chances for
+    one of them to drift, which is the same argument
+    :func:`~fivee_sim.content.contained_json_files` makes for owning the walk.
+    """
+    found: list[Path] = []
+    for entry in roots:
+        try:
+            root = Path(entry).expanduser().resolve()
+        except OSError:
+            continue
+        if not root.exists():
+            continue
+        if root.is_file():
+            if root.suffix.lower() == ".json":
+                found.append(root)
+            continue
+        found.extend(contained_json_files(root))
+    return found

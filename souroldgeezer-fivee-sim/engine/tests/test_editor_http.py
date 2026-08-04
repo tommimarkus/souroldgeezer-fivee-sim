@@ -25,7 +25,10 @@ import pytest
 from fivee_sim import __version__
 from fivee_sim.editor.http_server import CONFIG_MARKER, MAX_BODY_BYTES, TOKEN_HEADER, EditorServer
 from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.mcp_server import server as api
 from fivee_sim.service.common import sha256_of
+
+from .conftest import mapless_fight
 
 PROBLEM_TYPE = "application/problem+json"
 CONFIG_RE = re.compile(
@@ -66,6 +69,27 @@ def payload() -> dict[str, Any]:
     }
 
 
+def replay_bundle() -> dict[str, Any]:
+    """A real v2 bundle, built by the exporter that writes them for real.
+
+    Hand-rolling one here would mean hand-rolling its integrity hashes, and a
+    fixture whose hashes were computed by the test is a fixture that agrees
+    with the test rather than with the format.
+    """
+    encounter_id = mapless_fight(seed=91)
+    exported = api.replay_export(encounter_id)
+    # Asserted, not assumed: `bundle` is only present on the inline branch, so
+    # a v2 envelope that grew past the size gate would otherwise take every
+    # test in TestReplays down with a KeyError in setup rather than a failure
+    # anyone could read.
+    assert "bundle" in exported, (
+        f"the fixture fight no longer fits the inline branch "
+        f"({exported.get('bytes')} bytes); read the written path instead"
+    )
+    bundle: dict[str, Any] = exported["bundle"]
+    return bundle
+
+
 @dataclass
 class Response:
     status: int
@@ -87,6 +111,7 @@ class Editor:
     server: EditorServer
     thread: threading.Thread
     maps_dir: Path
+    replays_dir: Path
     log: io.StringIO = field(default_factory=io.StringIO)
 
     def request(
@@ -136,11 +161,28 @@ class Editor:
     def file_of(self, map_id: str) -> Path:
         return self.maps_dir / f"{map_id}.json"
 
+    def put_replay(self, replay_id: str, bundle: Mapping[str, Any]) -> Path:
+        """Drop a bundle where the engine would have written one.
+
+        There is no REST route that writes a replay, and there deliberately is
+        not: the engine records fights, the browser only plays them back. So a
+        test that needs one on disk puts it there itself.
+        """
+        self.replays_dir.mkdir(parents=True, exist_ok=True)
+        target = self.replays_dir / f"{replay_id}.json"
+        target.write_text(json.dumps(bundle), encoding="utf-8")
+        return target
+
 
 @pytest.fixture()
 def editor(tmp_path: Path) -> Iterator[Editor]:
     log = io.StringIO()
-    server = EditorServer(maps_dir=tmp_path / "maps", terrain=TERRAIN, log=log)
+    server = EditorServer(
+        maps_dir=tmp_path / "maps",
+        replays_dir=tmp_path / "replays",
+        terrain=TERRAIN,
+        log=log,
+    )
     # A short poll interval, because shutdown() blocks until the serve loop next
     # wakes: at the stdlib default this fixture spent half a second per test
     # dying, which was most of the file's runtime and most of the suite's.
@@ -148,7 +190,13 @@ def editor(tmp_path: Path) -> Iterator[Editor]:
         target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
     )
     thread.start()
-    yield Editor(server=server, thread=thread, maps_dir=tmp_path / "maps", log=log)
+    yield Editor(
+        server=server,
+        thread=thread,
+        maps_dir=tmp_path / "maps",
+        replays_dir=tmp_path / "replays",
+        log=log,
+    )
     server.shutdown()
     server.close()
     thread.join(timeout=5)
@@ -740,6 +788,132 @@ class TestGenerateAndValidate:
         answer = response.json()
         assert answer["ok"] is False
         assert len(answer["errors"]) >= 2
+
+
+class TestReplays:
+    """The read-only half of the surface: what the served viewer plays from.
+
+    The editor writes maps; nothing over REST writes a replay. That asymmetry
+    is the contract, so the method guard is pinned alongside the happy path —
+    a replay route that quietly accepted a PUT would let a browser overwrite a
+    fight's audit record, which is the one thing the format exists to prevent.
+    """
+
+    def test_the_list_is_empty_when_no_fight_has_been_exported(
+        self, editor: Editor
+    ) -> None:
+        response = editor.request("GET", "/api/replays")
+        assert response.status == 200
+        assert response.json() == {"replays": []}
+
+    def test_a_bundle_on_disk_is_listed_under_the_id_the_get_route_takes(
+        self, editor: Editor
+    ) -> None:
+        editor.put_replay("gatehouse-brawl", replay_bundle())
+
+        listed = editor.request("GET", "/api/replays").json()["replays"]
+
+        assert [row["id"] for row in listed] == ["gatehouse-brawl"]
+        assert editor.request("GET", "/api/replays/gatehouse-brawl").status == 200
+
+    def test_the_row_carries_what_a_chooser_shows_without_a_second_request(
+        self, editor: Editor
+    ) -> None:
+        bundle = replay_bundle()
+        editor.put_replay("gatehouse-brawl", bundle)
+
+        (row,) = editor.request("GET", "/api/replays").json()["replays"]
+
+        assert row["name"] == bundle["name"]
+        assert row["seed"] == bundle["seed"]
+        assert row["events"] == len(bundle["events"])
+        assert row["format_version"] == 2
+
+    def test_listing_needs_the_token_like_every_other_api_route(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            editor.request("GET", "/api/replays", token=False), 401, TOKEN_HEADER
+        )
+
+    def test_fetching_one_needs_the_token_too(self, editor: Editor) -> None:
+        editor.put_replay("gatehouse-brawl", replay_bundle())
+        assert_problem(
+            editor.request("GET", "/api/replays/gatehouse-brawl", token=False),
+            401,
+            TOKEN_HEADER,
+        )
+
+    def test_the_bundle_comes_back_whole_with_its_hash_as_an_etag(
+        self, editor: Editor
+    ) -> None:
+        target = editor.put_replay("gatehouse-brawl", replay_bundle())
+
+        response = editor.request("GET", "/api/replays/gatehouse-brawl")
+
+        assert response.status == 200
+        assert response.json() == json.loads(target.read_text(encoding="utf-8"))
+        assert response.headers["ETag"] == f'"{sha256_of(target.read_text("utf-8"))}"'
+
+    def test_an_unknown_id_is_404_and_names_what_is_actually_there(
+        self, editor: Editor
+    ) -> None:
+        editor.put_replay("gatehouse-brawl", replay_bundle())
+        problem = assert_problem(
+            editor.request("GET", "/api/replays/no-such-fight"), 404, "no replay"
+        )
+        assert "gatehouse-brawl" in problem["detail"]
+
+    def test_a_traversal_id_is_simply_an_unknown_replay(self, editor: Editor) -> None:
+        assert_problem(
+            editor.request("GET", "/api/replays/..%2f..%2fetc%2fpasswd"),
+            404,
+            "no replay",
+        )
+
+    def test_a_corrupt_bundle_is_422_with_the_validator_diagnostics(
+        self, editor: Editor
+    ) -> None:
+        broken = replay_bundle()
+        del broken["events"]
+        editor.put_replay("broken-fight", broken)
+
+        problem = assert_problem(
+            editor.request("GET", "/api/replays/broken-fight"),
+            422,
+            "not a playable replay bundle",
+        )
+
+        assert problem["diagnostics"]
+        assert {"path", "problem"} <= set(problem["diagnostics"][0])
+
+    def test_a_corrupt_bundle_is_still_listed_so_the_user_can_see_which_it_is(
+        self, editor: Editor
+    ) -> None:
+        broken = replay_bundle()
+        del broken["events"]
+        editor.put_replay("broken-fight", broken)
+
+        listed = editor.request("GET", "/api/replays").json()["replays"]
+
+        assert [row["id"] for row in listed] == ["broken-fight"]
+
+    def test_replays_are_read_only_over_rest(self, editor: Editor) -> None:
+        editor.put_replay("gatehouse-brawl", replay_bundle())
+        assert_problem(
+            editor.request(
+                "PUT", "/api/replays/gatehouse-brawl", json_body=replay_bundle()
+            ),
+            405,
+            "PUT is not supported",
+        )
+
+    def test_the_collection_refuses_writes_too(self, editor: Editor) -> None:
+        assert_problem(
+            editor.request("POST", "/api/replays", json_body={}),
+            405,
+            "POST is not supported",
+        )
 
 
 class TestShutdown:

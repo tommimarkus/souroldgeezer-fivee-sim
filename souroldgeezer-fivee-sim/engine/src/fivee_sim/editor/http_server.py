@@ -1,11 +1,19 @@
-"""The localhost REST server behind the interactive map editor.
+"""The localhost REST server behind the interactive map editor and replay viewer.
 
 A stdlib :class:`~http.server.ThreadingHTTPServer` bound to ``127.0.0.1``,
-speaking JSON over ``/api/*`` and serving the editor's static pages. It is an
+speaking JSON over ``/api/*`` and serving both browser pages. It is an
 adapter in exactly the sense the MCP server is one: every endpoint validates
-input, calls :mod:`fivee_sim.service.maps`, and serialises the result — no
-rules or map logic lives here, and error prose comes verbatim from the service
-exception the tool surface would also report.
+input, calls :mod:`fivee_sim.service.maps` or :mod:`fivee_sim.service.replay`,
+and serialises the result — no rules, map, or replay logic lives here, and
+error prose comes verbatim from the service exception the tool surface would
+also report.
+
+**Maps are read-write here; replays are read-only, and that asymmetry is the
+contract.** The editor exists to change a map, so ``/api/maps`` takes PUT and
+POST. A replay is the audit record of a fight the engine ran: the browser
+plays one back and never writes one, so ``/api/replays`` answers GET and
+nothing else. A route that quietly accepted a write would let a page overwrite
+the very thing the bundle's integrity hashes exist to protect.
 
 Security posture, for a single-user localhost tool:
 
@@ -46,8 +54,9 @@ from .. import __version__
 from ..kernel.grid import TerrainTable
 from ..map_document import as_payload, serialize, validate_document
 from ..service import maps as map_service
+from ..service import replay as replay_service
 from ..service.common import resolve_seed, sha256_of, slugify
-from ..service.errors import MapEditError, MapError, StaleWriteError
+from ..service.errors import MapEditError, MapError, ReplayError, StaleWriteError
 from ..validation import Severity
 
 __all__ = ["CONFIG_MARKER", "MAX_BODY_BYTES", "TOKEN_HEADER", "EditorServer"]
@@ -139,11 +148,21 @@ class EditorServer:
         *,
         maps_dir: str | Path,
         terrain: TerrainTable,
+        replays_dir: str | Path | None = None,
         port: int = 0,
         token: str | None = None,
         log: TextIO | None = None,
     ) -> None:
         self.maps_dir = Path(maps_dir).expanduser()
+        # Replays are rooted independently of maps rather than derived from
+        # them: a caller may point FIVEE_SIM_MAPS anywhere, and deriving the
+        # replay root from that path would put fights in whatever directory
+        # happened to be the maps one's neighbour.
+        self.replays_dir = (
+            Path(replays_dir).expanduser()
+            if replays_dir is not None
+            else replay_service.replays_root()
+        )
         self.terrain = terrain
         self.token = token if token else secrets.token_urlsafe(16)
         self.log = log if log is not None else sys.stderr
@@ -194,6 +213,22 @@ class EditorServer:
             if map_id in index:
                 continue
             index[map_id] = {"id": map_id, **entry}
+        return index
+
+    def replay_index(self) -> dict[str, dict[str, Any]]:
+        """Every replay under the replays directory, keyed by id.
+
+        The same id rule the maps index uses — the ``slugify`` of the file's
+        stem, first in path order wins — so a URL naming a replay is built the
+        same way a URL naming a map is, and neither surface needs a lookup
+        table to explain itself.
+        """
+        index: dict[str, dict[str, Any]] = {}
+        for entry in replay_service.list_replays([self.replays_dir]):
+            replay_id = slugify(Path(str(entry["path"])).stem)
+            if replay_id in index:
+                continue
+            index[replay_id] = {"id": replay_id, **entry}
         return index
 
     def path_for_new(self, map_id: str) -> Path:
@@ -382,22 +417,41 @@ class _Handler(BaseHTTPRequestHandler):
             pass
 
     # -- ids and documents ---------------------------------------------------
-    def _map_id(self, match: re.Match[str]) -> str:
-        map_id = unquote(match.group(1))
-        if _ID_PATTERN.fullmatch(map_id) is None:
-            # Traversal attempts and other junk land here: nothing outside the
-            # id grammar can name a file under the maps directory.
-            raise _Problem(HTTPStatus.NOT_FOUND, f"no map {map_id!r}")
-        return map_id
+    def _checked_id(self, match: re.Match[str], noun: str) -> str:
+        """The id in the URL, or 404 — one grammar for maps and replays alike.
 
-    def _entry_for(self, map_id: str) -> dict[str, Any]:
-        entry = self.editor.map_index().get(map_id)
+        Traversal attempts and other junk land here: nothing outside the id
+        grammar can name a file under either directory. ``noun`` only shapes
+        the message; sharing the *rule* is the point, because a second copy is
+        a second chance for one of them to loosen.
+        """
+        value = unquote(match.group(1))
+        if _ID_PATTERN.fullmatch(value) is None:
+            raise _Problem(HTTPStatus.NOT_FOUND, f"no {noun} {value!r}")
+        return value
+
+    def _entry_in(
+        self, index: Mapping[str, dict[str, Any]], entry_id: str, noun: str, plural: str
+    ) -> dict[str, Any]:
+        """One index row, or a 404 that names what is actually there.
+
+        Naming the alternatives is what makes the refusal actionable — a bare
+        "not found" leaves the caller guessing whether the id was wrong or the
+        directory was empty.
+        """
+        entry = index.get(entry_id)
         if entry is None:
-            known = ", ".join(sorted(self.editor.map_index())) or "none"
+            known = ", ".join(sorted(index)) or "none"
             raise _Problem(
-                HTTPStatus.NOT_FOUND, f"no map {map_id!r}; maps here: {known}"
+                HTTPStatus.NOT_FOUND, f"no {noun} {entry_id!r}; {plural} here: {known}"
             )
         return entry
+
+    def _map_id(self, match: re.Match[str]) -> str:
+        return self._checked_id(match, "map")
+
+    def _entry_for(self, map_id: str) -> dict[str, Any]:
+        return self._entry_in(self.editor.map_index(), map_id, "map", "maps")
 
     def _load(self, path: str) -> Any:
         try:
@@ -431,7 +485,12 @@ class _Handler(BaseHTTPRequestHandler):
     def _h_ping(self, match: re.Match[str]) -> None:
         self._send_json(
             HTTPStatus.OK,
-            {"ok": True, "version": __version__, "maps_dir": str(self.editor.maps_dir)},
+            {
+                "ok": True,
+                "version": __version__,
+                "maps_dir": str(self.editor.maps_dir),
+                "replays_dir": str(self.editor.replays_dir),
+            },
         )
 
     def _h_list_maps(self, match: re.Match[str]) -> None:
@@ -552,6 +611,31 @@ class _Handler(BaseHTTPRequestHandler):
             headers={"ETag": _etag_of(str(saved["sha256"]))},
         )
 
+    def _h_list_replays(self, match: re.Match[str]) -> None:
+        index = self.editor.replay_index()
+        self._send_json(
+            HTTPStatus.OK, {"replays": [index[replay_id] for replay_id in sorted(index)]}
+        )
+
+    def _h_get_replay(self, match: re.Match[str]) -> None:
+        replay_id = self._checked_id(match, "replay")
+        entry = self._entry_in(
+            self.editor.replay_index(), replay_id, "replay", "replays"
+        )
+        path = Path(str(entry["path"]))
+        try:
+            bundle = replay_service.load_bundle_file(path)
+        except ReplayError as error:
+            # A listing shows a broken bundle; a load refuses it. The 422 is
+            # what tells the user *which* file is broken, which is the whole
+            # reason the listing does not silently drop it.
+            raise _Problem(
+                HTTPStatus.UNPROCESSABLE_ENTITY, str(error), diagnostics=error.diagnostics
+            ) from None
+        self._send_json(
+            HTTPStatus.OK, bundle, headers={"ETag": _etag_of(str(entry["sha256"]))}
+        )
+
     def _h_generate(self, match: re.Match[str]) -> None:
         body = self._read_object(_GENERATE_KEYS)
         kind = body.get("kind")
@@ -610,6 +694,8 @@ _ROUTES: tuple[tuple[str, re.Pattern[str], _RouteHandler], ...] = (
     ("GET", re.compile(r"/api/maps/([^/]+)"), _Handler._h_get_map),
     ("PUT", re.compile(r"/api/maps/([^/]+)"), _Handler._h_put_map),
     ("POST", re.compile(r"/api/maps/([^/]+)/edits"), _Handler._h_post_edits),
+    ("GET", re.compile(r"/api/replays"), _Handler._h_list_replays),
+    ("GET", re.compile(r"/api/replays/([^/]+)"), _Handler._h_get_replay),
     ("POST", re.compile(r"/api/generate"), _Handler._h_generate),
     ("POST", re.compile(r"/api/validate"), _Handler._h_validate),
     ("POST", re.compile(r"/api/shutdown"), _Handler._h_shutdown),
