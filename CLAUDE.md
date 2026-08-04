@@ -365,12 +365,50 @@ python3 scripts/srd-catalog-batch.py --source-root /path/to/extracted validate
 bash souroldgeezer-fivee-sim/scripts/fivee.sh help
 bash souroldgeezer-fivee-sim/scripts/fivee.sh stop
 bash scripts/test-launcher-freshness.sh
+
+# The same launcher, checked rather than eyeballed — see below. Stdlib only.
+python3 scripts/check-api-smoke.py
+
 bash scripts/hooks/test-ip-hygiene-check.sh
 bash scripts/hooks/test-stop-audit-check.sh
 
 # The browser assets, driven rather than read. Needs node — see below.
 node scripts/check-editor-behaviour.mjs
 ```
+
+**`scripts/check-api-smoke.py` is the repository's automated end-to-end gate**,
+and the only thing that checks the shipped surface the way a host uses it.
+`fivee.sh help` above is a look, not a check; this is the check. It boots the
+**real launcher** — never `python -m fivee_sim.web`, never the dev venv — runs a
+complete seeded fight over plain HTTP, runs the identical fight in a second
+server and a third time through the `fivee` binary as a subprocess, and requires
+all three to agree. Then it holds `GET /api/v1/operations`, `GET
+/api/v1/openapi.json` and `fivee help` against the route table's own source.
+
+Three of those claims exist nowhere else. **Reproducibility across processes**:
+every other determinism test runs in one interpreter. **That the launcher
+works**: nothing in pytest execs it. **That `/api/v1` is complete**: the client
+is pinned by `tests/test_layering.py` to import nothing of the engine but
+`fivee_sim.paths`, so a fight it can drive end to end is a fight the REST
+surface serves — which is why the command run is the load-bearing one rather
+than a convenience.
+
+**Standard library only, and no pytest**, because it has to run against an
+environment that has built nothing but the plugin's own `--no-dev` runtime. It
+does not import the engine either: it reads `web/routes.py` with `ast` rather
+than importing it, since an imported copy is not the copy the launcher is
+serving. Every server it starts is pointed at a fresh `tempfile` directory —
+honouring `TMPDIR`, which is what makes it runnable where `/tmp` is read-only —
+and stopped and removed in a `finally`, because a leaked detached server would
+make the next run lie.
+
+Its fight constants are **golden values for one seed**, so a change to the rules
+or the dice stream turns it red on purpose; reproduce, then recalibrate
+deliberately. One thing it deliberately does *not* compare is the whole-file
+sha256 of an exported replay: a v2 bundle stamps every event and checkpoint with
+the wall clock, so it is not byte-reproducible and never will be. The
+timestamp-free integrity hashes — initial state, actions, latest state, map,
+content — are compared instead, and those are what the seed determines.
 
 **`node` is a dependency of exactly one check.**
 `scripts/check-editor-behaviour.mjs` is the only thing in the repo that wants

@@ -101,6 +101,15 @@ whole path independently of either host: it builds the environment if it has to,
 starts the engine, and prints every operation the running server serves. Stop it
 again with `bash souroldgeezer-fivee-sim/scripts/fivee.sh stop`.
 
+`python3 scripts/check-api-smoke.py` does the same thing without a human reading
+the output. It boots the real launcher, runs a complete seeded fight over HTTP,
+runs it again in a second server and once more through the `fivee` binary, and
+requires all three to agree — then checks that the operations index, the OpenAPI
+document and `fivee help` all describe the same contract. It needs nothing but
+Python, prints `PASS`/`FAIL` per case, and exits non-zero if any of them failed.
+Every server it starts is pointed at a scratch directory and stopped again, so a
+run leaves nothing behind.
+
 ## Operations
 
 Thirty-nine, under `/api/v1`, each reachable as `fivee <group>.<verb>`.
