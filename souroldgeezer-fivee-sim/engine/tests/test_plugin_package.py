@@ -44,8 +44,17 @@ def test_neither_host_manifest_asks_to_spawn_a_server() -> None:
     """
     for manifest_path in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
         assert "mcpServers" not in _json(manifest_path), manifest_path
-    assert not (PLUGIN_ROOT / ".mcp.json").exists(), (
-        "the Codex MCP config is gone with the server it described"
+    # ``is_file`` rather than ``exists``, and the difference is not pedantry.
+    # The claim is that no MCP config *ships*; the development devcontainer
+    # mounts /dev/null over this path — see CLAUDE.md "Environment hazards" —
+    # and did so the moment the real file was deleted, so ``exists()`` is true
+    # for a character device that carries nothing and cannot be committed.
+    # ``is_file()`` is false for that device and true for anything shippable,
+    # which is the property actually being pinned.
+    manifest = PLUGIN_ROOT / ".mcp.json"
+    assert not manifest.is_file(), (
+        "the Codex MCP config is gone with the server it described; found a "
+        f"real file at {manifest}"
     )
 
 
