@@ -17,6 +17,8 @@
 # re-adds one.
 /.mcp.json
 /souroldgeezer-fivee-sim/engine/.mcp.json
+/souroldgeezer-fivee-sim/engine/src/.mcp.json
+/souroldgeezer-fivee-sim/engine/src/fivee_sim/.mcp.json
 .profile
 .ripgreprc
 .vscode
