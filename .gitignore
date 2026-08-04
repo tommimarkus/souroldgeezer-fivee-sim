@@ -9,9 +9,14 @@
 .gitconfig
 .gitmodules
 .idea
-# Unanchored: the devcontainer also mounts /dev/null over engine/.mcp.json in a
-# fresh worktree, and a character device must never reach the index.
-.mcp.json
+# Anchored to the two paths the devcontainer actually mounts /dev/null over.
+# Deliberately NOT the bare name: `souroldgeezer-fivee-sim/.mcp.json` is a real,
+# tracked, shipped file — the plugin's MCP manifest — and an unanchored pattern
+# matches it and every future plugin's too. Ignoring a tracked file changes
+# nothing today, which is exactly what makes it a trap for the restructure that
+# re-adds one.
+/.mcp.json
+/souroldgeezer-fivee-sim/engine/.mcp.json
 .profile
 .ripgreprc
 .vscode
