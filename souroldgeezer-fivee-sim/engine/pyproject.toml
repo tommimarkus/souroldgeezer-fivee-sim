@@ -8,6 +8,7 @@ dependencies = [
 ]
 
 [project.scripts]
+fivee = "fivee_sim.client.cli:main"
 fivee-sim-mcp = "fivee_sim.mcp_server.server:main"
 fivee-sim-server = "fivee_sim.web.cli:main"
 fivee-sim-replay-sample = "fivee_sim.replay_sample:main"
