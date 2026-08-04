@@ -17,10 +17,13 @@ from threading import RLock
 from typing import Any
 
 from ..content import CLAUDE_PROJECT_ENV, PROJECT_ENV
+from . import durable
+from .errors import StaleWriteError
 
 __all__ = [
     "ENCOUNTERS_ENV",
     "JournalError",
+    "StaleWriteError",
     "append",
     "encounters_root",
     "journal_path",
@@ -142,14 +145,33 @@ def _read_unlocked(
     return records, warning
 
 
-def append(encounter_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Append and fsync one hash-chained record."""
-    with _JOURNAL_LOCK:
-        return _append_unlocked(encounter_id, payload)
+def append(
+    encounter_id: str,
+    payload: Mapping[str, Any],
+    *,
+    expected_head: str | None = None,
+) -> dict[str, Any]:
+    """Append and fsync one hash-chained record.
+
+    ``expected_head`` is the chain head the caller last saw. Pass it and a
+    second writer is refused with
+    :class:`~fivee_sim.service.errors.StaleWriteError` instead of chaining onto
+    a head that has moved; omit it and the append still cannot corrupt the file,
+    it simply takes its turn.
+
+    The two locks are not redundant. The ``flock`` excludes other *processes* —
+    every MCP server on a host shares this directory — while the ``RLock``
+    keeps this process's own threads from interleaving, and keeps ``read``
+    reentrant inside the critical section.
+    """
+    path = journal_path(encounter_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with _JOURNAL_LOCK, durable.file_lock(path):
+        return _append_unlocked(encounter_id, payload, expected_head=expected_head)
 
 
 def _append_unlocked(
-    encounter_id: str, payload: Mapping[str, Any]
+    encounter_id: str, payload: Mapping[str, Any], *, expected_head: str | None = None
 ) -> dict[str, Any]:
     path = journal_path(encounter_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +180,10 @@ def _append_unlocked(
         records, _ = read(encounter_id)
         if records:
             previous = str(records[-1]["sha256"])
+    if expected_head is not None and expected_head != previous:
+        raise StaleWriteError(
+            f"encounter {encounter_id!r}", expected=expected_head, current=previous
+        )
     record = {**dict(payload), "previous_sha256": previous}
     record["sha256"] = _record_hash(record)
     encoded = _canonical_bytes(record) + b"\n"

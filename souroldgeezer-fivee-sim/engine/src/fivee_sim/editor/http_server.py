@@ -47,7 +47,7 @@ from ..kernel.grid import TerrainTable
 from ..map_document import as_payload, serialize, validate_document
 from ..service import maps as map_service
 from ..service.common import resolve_seed, sha256_of, slugify
-from ..service.errors import MapEditError, MapError
+from ..service.errors import MapEditError, MapError, StaleWriteError
 from ..validation import Severity
 
 __all__ = ["CONFIG_MARKER", "MAX_BODY_BYTES", "TOKEN_HEADER", "EditorServer"]
@@ -478,16 +478,20 @@ class _Handler(BaseHTTPRequestHandler):
         else:
             assert entry is not None
             target = Path(str(entry["path"]))
-            if _etag_value(if_match) != "*":
-                current = self._current_sha(target)
-                if _etag_value(if_match) != current:
-                    raise _Problem(
-                        HTTPStatus.CONFLICT,
-                        f"the saved map {map_id!r} has changed since it was read "
-                        f"(its sha256 is now {current}); GET it again and reapply",
-                    )
+        # The comparison belongs under the write lock, so it is handed to the
+        # service rather than performed here: checking first and writing second
+        # is the race this precondition exists to close.
+        expected = None if _etag_value(if_match) == "*" else _etag_value(if_match)
         try:
-            saved = map_service.save_file(document, target, overwrite=True)
+            saved = map_service.save_file(
+                document,
+                target,
+                overwrite=True,
+                expected_sha256=expected,
+                terrain=self.editor.terrain,
+            )
+        except StaleWriteError as error:
+            raise _Problem(HTTPStatus.CONFLICT, str(error)) from None
         except OSError as error:
             raise _Problem(
                 HTTPStatus.INTERNAL_SERVER_ERROR, f"cannot write {target}: {error}"
@@ -528,6 +532,10 @@ class _Handler(BaseHTTPRequestHandler):
             )
         entry = self._entry_for(map_id)
         document, _warnings = self._load(str(entry["path"]))
+        # The version these edits were computed against. Without it this is a
+        # read-modify-write on a threading server, and the slower of two tabs
+        # silently discards the faster one's work.
+        base = sha256_of(serialize(document))
         try:
             edited = map_service.apply_edits(
                 document, operations, terrain=self.editor.terrain
@@ -536,7 +544,16 @@ class _Handler(BaseHTTPRequestHandler):
             raise _Problem(HTTPStatus.BAD_REQUEST, str(error)) from None
         except MapError as error:
             raise _validation_problem(error) from None
-        saved = map_service.save_file(edited, str(entry["path"]), overwrite=True)
+        try:
+            saved = map_service.save_file(
+                edited,
+                str(entry["path"]),
+                overwrite=True,
+                expected_sha256=base,
+                terrain=self.editor.terrain,
+            )
+        except StaleWriteError as error:
+            raise _Problem(HTTPStatus.CONFLICT, str(error)) from None
         self._send_json(
             HTTPStatus.OK,
             {

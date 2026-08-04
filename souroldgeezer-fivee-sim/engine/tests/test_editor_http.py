@@ -567,7 +567,7 @@ class TestMapsRoundTrip:
         renamed = payload()
         renamed["name"] = "should not land"
         response = editor.put_map("editor-chamber", renamed, if_match='"not-the-sha"')
-        assert_problem(response, 409, "sha256")
+        assert_problem(response, 409, "has advanced since you read it")
         assert editor.file_of("editor-chamber").read_bytes() == before
 
     def test_put_without_if_match_is_428(self, editor: Editor) -> None:
@@ -755,3 +755,48 @@ class TestShutdown:
             editor.request("POST", "/api/shutdown", token=False), 401, TOKEN_HEADER
         )
         assert editor.thread.is_alive()
+
+
+class TestConcurrentEdits:
+    """The editor is a threading server, so its own handlers race each other.
+
+    ``PUT`` has required ``If-Match`` since it was written; ``POST /edits`` is
+    a read-modify-write that had no precondition at all, so two browser tabs
+    editing one map silently dropped whichever edit landed first.
+    """
+
+    def test_two_simultaneous_edits_keep_one_and_refuse_the_other(
+        self, editor: Editor
+    ) -> None:
+        editor.put_map("editor-chamber", payload())
+        start = threading.Barrier(2)
+        results: list[Response] = []
+        guard = threading.Lock()
+
+        def paint(column: int) -> None:
+            start.wait(timeout=10)
+            response = editor.request(
+                "POST",
+                "/api/maps/editor-chamber/edits",
+                json_body={
+                    "operations": [
+                        {"op": "paint", "cells": [[1, column]], "terrain": "wall"}
+                    ]
+                },
+            )
+            with guard:
+                results.append(response)
+
+        threads = [threading.Thread(target=paint, args=(column,)) for column in (1, 2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=20)
+
+        statuses = sorted(response.status for response in results)
+        assert statuses == [200, 409], f"expected one winner and one refusal, got {statuses}"
+        loser = next(response for response in results if response.status == 409)
+        assert_problem(loser, 409, "has advanced")
+        winner = next(response for response in results if response.status == 200)
+        on_disk = sha256_of(editor.file_of("editor-chamber").read_text())
+        assert on_disk == winner.json()["sha256"]

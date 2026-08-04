@@ -137,6 +137,11 @@ class _Session:
     checkpoint_timestamps: list[str] = field(default_factory=list)
     attempts: list[dict[str, Any]] = field(default_factory=list)
     request_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+    #: The journal chain head this session last wrote. Every server on a host
+    #: shares the encounter directory, so this is what distinguishes "my copy of
+    #: the fight is current" from "someone else has advanced it" — without it a
+    #: second process would append its own divergent turns to the same journal.
+    journal_head: str = ""
     finalized: bool = False
     finalization_result: dict[str, Any] | None = None
 
@@ -202,11 +207,30 @@ def _capture_checkpoint(session: _Session, timestamp: str) -> None:
     session.checkpoint_timestamps.append(timestamp)
 
 
-def _journal_append(encounter_id: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+def _journal_append(
+    encounter_id: str, payload: Mapping[str, Any], session: _Session | None = None
+) -> dict[str, Any]:
+    """Append on this session's behalf, refusing to write from a stale copy.
+
+    Passing the session opts into the ownership check: if another process has
+    advanced this encounter, our in-memory copy is a different fight and writing
+    from it would splice the two. Dropping the session forces the next call to
+    recover the journal's version rather than continue from ours.
+    """
     try:
-        return _journal_service.append(encounter_id, payload)
+        record = _journal_service.append(
+            encounter_id,
+            payload,
+            expected_head=None if session is None else session.journal_head,
+        )
+    except _journal_service.StaleWriteError as error:
+        _SESSIONS.pop(encounter_id, None)
+        raise ToolError(str(error)) from error
     except _journal_service.JournalError as error:
         raise ToolError(str(error)) from error
+    if session is not None:
+        session.journal_head = str(record["sha256"])
+    return record
 
 
 def _cached_request(session: _Session, request_id: str | None) -> dict[str, Any] | None:
@@ -242,6 +266,7 @@ def _attempt_started(
             "request_id": request_id,
             "arguments": deepcopy(dict(arguments)),
         },
+        session,
     )
     return index, timestamp
 
@@ -274,7 +299,7 @@ def _attempt_finished(
     if error is not None:
         audit["error"] = error
     try:
-        _journal_append(encounter_id, {"kind": "result", **audit})
+        _journal_append(encounter_id, {"kind": "result", **audit}, session)
     except ToolError:
         # The caller cannot safely continue from state the durable record did
         # not acknowledge. Dropping the cache forces recovery from the valid
@@ -1480,6 +1505,10 @@ def _recover_session(encounter_id: str) -> tuple[_Session, dict[str, str] | None
                 "error": "the process stopped before recording a result",
             }
         )
+    # Recovery adopts the journal's head, not a fresh one: this session is now
+    # a continuation of whatever is on disk, and its next append must chain onto
+    # exactly the record it just read.
+    session.journal_head = str(records[-1]["sha256"]) if records else ""
     _SESSIONS[encounter_id] = session
     if encounter_id.startswith("enc-") and encounter_id[4:].isdigit():
         _NEXT_ID = max(_NEXT_ID, int(encounter_id[4:]))
@@ -1631,6 +1660,7 @@ def encounter_create(
                 "map_open_features": session.initial_open_features,
                 "initial_state": session.initial_state,
             },
+            session,
         )
     except ToolError:
         _SESSIONS.pop(encounter_id, None)
@@ -2093,6 +2123,7 @@ def encounter_finalize(encounter_id: str) -> dict[str, Any]:
     _journal_append(
         encounter_id,
         {"kind": "finalized", "timestamp": _utc_now(), "result": result},
+        session,
     )
     session.finalized = True
     session.finalization_result = deepcopy(result)
@@ -2470,13 +2501,23 @@ def map_load(
 
 
 @server.tool()
-def map_save(map_id: str, path: str | None = None, overwrite: bool = False) -> dict[str, Any]:
+def map_save(
+    map_id: str,
+    path: str | None = None,
+    overwrite: bool = False,
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
     """Write a loaded map to disk as canonical JSON, refusing silent overwrites.
 
     ``path`` defaults to ``<maps root>/<slug-of-name>.json`` under the
     project's ``.fivee-sim/maps`` (or ``FIVEE_SIM_MAPS``). An existing file is
     only replaced when ``overwrite`` is true. Returns the written path, byte
     count, and sha256 — the hash to quote when handing the file elsewhere.
+
+    ``expected_sha256`` is the hash you last read. Pass it and the write is
+    refused if anything else — another session, or the open editor — has
+    changed the file since; ``overwrite`` alone guards against clobbering a
+    file you did not know about, not a version you did not read.
     """
     session = _map_session(map_id)
     target = (
@@ -2485,7 +2526,13 @@ def map_save(map_id: str, path: str | None = None, overwrite: bool = False) -> d
         else str(_map_service.maps_root() / f"{slugify(session.document.name)}.json")
     )
     try:
-        saved = _map_service.save_file(session.document, target, overwrite=overwrite)
+        saved = _map_service.save_file(
+            session.document,
+            target,
+            overwrite=overwrite,
+            expected_sha256=expected_sha256,
+            terrain=_registry().terrain_effects,
+        )
     except (OSError, ValueError) as error:
         raise ToolError(str(error)) from error
     session.path = str(saved["path"])

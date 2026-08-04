@@ -77,6 +77,7 @@ from ..map_document import (
 )
 from ..model.battlemap import MapPlane, SquareClaim
 from ..validation import Diagnostic, Severity
+from . import durable
 from .common import sha256_of
 from .errors import MapEditError
 
@@ -1666,18 +1667,65 @@ def load_file(
     return parse_payload(payload, source=source, terrain=terrain)
 
 
+def current_sha256(path: str | Path, *, terrain: TerrainTable) -> str | None:
+    """The saved file's canonical sha — ``None`` when there is no file yet.
+
+    Canonical rather than raw bytes, because that is what a reader was handed:
+    a hand-formatted file carries the same document as its re-serialisation, and
+    comparing raw bytes would refuse every write to it for ever rather than
+    once. A file that no longer parses falls back to its bytes, so a precondition
+    against it still gets a truthful mismatch rather than a validation error for
+    a document the caller is trying to replace.
+    """
+    file = Path(path).expanduser()
+    if not file.exists():
+        return None
+    try:
+        document, _warnings = load_file(file, terrain=terrain)
+    except MapError:
+        try:
+            return sha256_of(file.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            return "unreadable"
+    return sha256_of(serialize(document))
+
+
 def save_file(
-    document: MapDocument, path: str | Path, *, overwrite: bool = False
+    document: MapDocument,
+    path: str | Path,
+    *,
+    overwrite: bool = False,
+    expected_sha256: str | None = None,
+    terrain: TerrainTable | None = None,
 ) -> dict[str, Any]:
-    """Write the document's canonical text, refusing a silent overwrite."""
+    """Write the document's canonical text, refusing a silent overwrite.
+
+    ``overwrite`` and ``expected_sha256`` guard different things and both earn
+    their place: the first refuses to clobber a file the caller did not know
+    about, the second refuses to clobber a *version* the caller did not read.
+    Supplying ``expected_sha256`` requires ``terrain``, since deciding what is
+    currently on disk means parsing it.
+    """
     file = Path(path).expanduser()
     if file.exists() and not overwrite:
         raise ValueError(
             f"{file} already exists; pass overwrite=True to replace it deliberately"
         )
+    if expected_sha256 is not None and terrain is None:
+        raise ValueError("expected_sha256 needs terrain to read the current version")
     text = serialize(document)
     file.parent.mkdir(parents=True, exist_ok=True)
-    file.write_text(text, encoding="utf-8")
+    durable.guarded_write(
+        file,
+        lambda: text,
+        expected=expected_sha256,
+        # Read under the lock, never before it: computing this first is exactly
+        # the race the precondition exists to close.
+        current=lambda: (
+            None if terrain is None else current_sha256(file, terrain=terrain)
+        ),
+        subject=f"the saved map {file.stem!r}",
+    )
     return {
         "path": str(file),
         "bytes": len(text.encode("utf-8")),

@@ -27,7 +27,7 @@ from fivee_sim.map_document import (
 )
 from fivee_sim.service import maps as service
 from fivee_sim.service.common import resolve_seed, sha256_of, slugify
-from fivee_sim.service.errors import MapEditError
+from fivee_sim.service.errors import MapEditError, StaleWriteError
 
 
 def payload() -> dict[str, Any]:
@@ -1669,3 +1669,54 @@ class TestFiles:
 
         listed = service.list_maps([maps])
         assert [Path(entry["path"]).name for entry in listed] == ["own.json"]
+
+
+class TestConcurrentWrites:
+    """``save_file`` is reachable from two adapters and several processes."""
+
+    def test_a_stale_expected_sha_is_refused_and_the_file_is_untouched(
+        self, tmp_path: Path
+    ) -> None:
+        document, _warnings = service.parse_payload(payload(), source="t", terrain=TERRAIN)
+        target = tmp_path / "keep.json"
+        first = service.save_file(document, target)
+
+        edited = service.apply_edits(
+            document,
+            [{"op": "paint", "cells": [[1, 1]], "terrain": "wall"}],
+            terrain=TERRAIN,
+        )
+        service.save_file(edited, target, overwrite=True)
+        after_other_writer = target.read_bytes()
+
+        with pytest.raises(StaleWriteError, match="has advanced"):
+            service.save_file(
+                document,
+                target,
+                overwrite=True,
+                expected_sha256=str(first["sha256"]),
+                terrain=TERRAIN,
+            )
+        assert target.read_bytes() == after_other_writer
+
+    def test_a_matching_expected_sha_writes(self, tmp_path: Path) -> None:
+        document, _warnings = service.parse_payload(payload(), source="t", terrain=TERRAIN)
+        target = tmp_path / "keep.json"
+        saved = service.save_file(document, target)
+
+        again = service.save_file(
+            document,
+            target,
+            overwrite=True,
+            expected_sha256=str(saved["sha256"]),
+            terrain=TERRAIN,
+        )
+        assert again["sha256"] == saved["sha256"]
+
+    def test_no_expectation_still_writes_so_single_writer_callers_are_unchanged(
+        self, tmp_path: Path
+    ) -> None:
+        document, _warnings = service.parse_payload(payload(), source="t", terrain=TERRAIN)
+        target = tmp_path / "keep.json"
+        service.save_file(document, target)
+        assert service.save_file(document, target, overwrite=True)["path"] == str(target)

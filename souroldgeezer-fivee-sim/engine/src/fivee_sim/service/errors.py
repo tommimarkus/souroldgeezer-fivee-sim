@@ -8,7 +8,26 @@ from __future__ import annotations
 
 from ..map_document import MapError as MapError
 
-__all__ = ["MapEditError", "MapError"]
+__all__ = ["MapEditError", "MapError", "StaleWriteError"]
+
+
+class StaleWriteError(ValueError):
+    """The durable record moved on between the caller's read and its write.
+
+    Retryable only by re-reading. Nothing here merges the two versions: for a
+    map that would silently drop an edit, and for an encounter it would splice
+    two divergent fights into a journal that replays as neither.
+    """
+
+    def __init__(self, subject: str, *, expected: str | None, current: str | None) -> None:
+        self.subject = subject
+        self.expected = expected
+        self.current = current
+        super().__init__(
+            f"{subject} has advanced since you read it "
+            f"(expected {expected or 'nothing'}, found {current or 'nothing'}); "
+            "read it again and reapply"
+        )
 
 
 class MapEditError(ValueError):
