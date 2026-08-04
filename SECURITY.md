@@ -28,18 +28,21 @@ nothing has shipped and nothing has been explained.
 
 Worth stating plainly, because it shapes what counts as a vulnerability here.
 
-- **The MCP server speaks stdio, not a socket.** The active plugin host spawns it
-  as a child process and owns both ends of the pipe. It listens on no port.
-- **The map editor is the one thing that binds a port.** It is a single-user
-  localhost tool, and the controls it does have are listed in the module
-  docstring of `souroldgeezer-fivee-sim/engine/src/fivee_sim/web/http_server.py`:
-  bound to `127.0.0.1` on an ephemeral port; every `/api/*` request must carry a
-  per-launch random token; a request whose `Host` is neither `127.0.0.1` nor
-  `localhost` is refused, so a DNS-rebinding page cannot drive it; no CORS
-  headers are ever emitted; bodies are size-bounded before being read; and map
-  ids resolve strictly under the maps directory. **Anything that bypasses one of
-  those is a real finding** — that list is the contract, and it is what a report
-  should aim at.
+- **The engine binds a port, and that is now the whole of it.** There used to be
+  a stdio server here that listened on nothing, with the browser editor as the
+  one component that opened a socket. The stdio server is gone: every operation
+  is served by one localhost HTTP process, started on demand by the `fivee`
+  command, and the editor and replay viewer are two pages that process serves.
+  So the controls below are not a side surface any more — they are the engine's
+  only front door, and they are what a report should aim at.
+- **What those controls are**, listed in the module docstring of
+  `souroldgeezer-fivee-sim/engine/src/fivee_sim/web/http_server.py`: bound to
+  `127.0.0.1` on an ephemeral port; every `/api/*` request must carry a
+  per-launch random token, written to a state file only the launching user can
+  read; a request whose `Host` is neither `127.0.0.1` nor `localhost` is refused,
+  so a DNS-rebinding page cannot drive it; no CORS headers are ever emitted;
+  bodies are size-bounded before being read; and map ids resolve strictly under
+  the maps directory. **Anything that bypasses one of those is a real finding.**
 - **The browser assets are offline.** `editor.html`, `viewer.html`, and
   `renderer.js` load nothing from a network; `tests/test_web_assets.py` asserts
   it.
@@ -48,10 +51,11 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   or reaches the filesystem outside its own directory is a real finding.
 - **No telemetry, no accounts, no secrets.** Nothing here needs a credential to
   run, and nothing is collected or sent anywhere. The engine does make HTTP
-  requests, and they are worth knowing about before you flag them: the
-  `map_editor_serve` and `map_editor_stop` tools ping and shut down the editor
-  over `http://127.0.0.1:<port>`, with the launch token attached. Loopback only,
-  hardcoded — there is no other outbound call in the tree.
+  requests, and they are worth knowing about before you flag them: `fivee` is an
+  HTTP client, so every operation it performs is a request to
+  `http://127.0.0.1:<port>` with the launch token attached, as are the liveness
+  ping and the shutdown it uses to find and stop a server. Loopback only, and the
+  host is hardcoded — there is no other outbound call in the tree.
 
 Out of scope: the security of Claude Code or Codex itself (report those to the
 respective host vendor), `uv` and the Python packages in `uv.lock` (report
@@ -62,8 +66,15 @@ on the machine.
 
 ## Bundled dependencies
 
-Runtime dependencies are pinned in
-[`souroldgeezer-fivee-sim/engine/uv.lock`](souroldgeezer-fivee-sim/engine/uv.lock),
-and the launcher installs strictly from that lock. If you are reporting a
-vulnerable transitive dependency, quote the locked version — the lock is the
-answer to "what is actually installed", not the manifest.
+**The engine has no runtime dependencies.** `engine/pyproject.toml` declares an
+empty `dependencies` list, and the launcher syncs with `--no-dev`, so a runtime
+environment holds this package and the standard library. There is no third-party
+runtime code here to report a CVE against, which is the point of keeping it that
+way.
+
+Development tooling — pytest, mypy, ruff — is pinned in
+[`souroldgeezer-fivee-sim/engine/uv.lock`](souroldgeezer-fivee-sim/engine/uv.lock)
+and installed only into a development environment. If you are reporting a
+vulnerable dependency, quote the locked version and say whether it reaches a
+runtime install; the lock is the answer to "what is actually installed", not the
+manifest.

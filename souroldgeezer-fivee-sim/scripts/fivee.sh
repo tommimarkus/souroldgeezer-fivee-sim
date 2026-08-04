@@ -1,41 +1,42 @@
 #!/usr/bin/env bash
-# Launcher for the bundled fivee-sim Model Context Protocol (MCP) stdio server.
+# Launcher for the bundled `fivee` command: the plugin's whole entry point.
 #
-# Declared as the plugin's `fivee_sim` MCP command. The active plugin host spawns
-# and owns this process when the plugin is enabled.
+# Nothing spawns this. A skill runs it the way a person would — with the
+# operation and its arguments — and `fivee` finds the engine's HTTP server or
+# starts one before it answers. Every argument this script is given is passed
+# straight through.
 #
-# stdout carries JSON-RPC only. Every diagnostic here is deliberately routed to
-# stderr — a single stray line on stdout corrupts the protocol stream and the
-# server appears broken rather than noisy.
+# stdout belongs to `fivee`, which puts results there as JSON and nothing else.
+# Every diagnostic here therefore goes to stderr, so `$(fivee.sh ...)` is always
+# either a parseable document or empty. That is a weaker constraint than the
+# JSON-RPC stream this launcher used to feed — a stray line is now noise rather
+# than a broken protocol — but it is the property callers rely on, so keep it.
 #
-# uv builds the virtual environment; the server then runs straight out of that
+# uv builds the virtual environment; the command then runs straight out of that
 # venv. Keeping uv out of the spawn path matters: `uv run` would re-resolve and
 # add a process to every start, whereas exec'ing the venv's own console script is
 # one process and needs uv present only when the environment has to be built.
 #
-# Resolve-on-demand, bounded. A stdio server that exits at spawn gets no auto-retry:
-# it stays dead until the next session or a plugin reload. So the sync runs only
-# when the venv is missing, unusable, or built from a different engine, is bounded
-# so it can never hang session start, and on failure reports once and exits rather
-# than looping. Session start is non-blocking, so only a turn that actually needs a
-# tool waits on a cold build.
+# Resolve-on-demand, bounded. The sync runs only when the venv is missing,
+# unusable, or built from a different engine, is bounded so a cold build cannot
+# hang indefinitely, and on failure reports once and exits rather than looping.
 #
 # An explicit uv environment wins; otherwise the launcher derives durable storage from
-# ${PLUGIN_DATA}, then ${CLAUDE_PLUGIN_DATA}, then a host-specific fallback. Codex
-# currently needs that fallback under ${CODEX_HOME}; a direct checkout still uses
+# ${PLUGIN_DATA}, then ${CLAUDE_PLUGIN_DATA}, then ${CODEX_HOME} for a Codex
+# install, which supplies neither of the first two; a direct checkout still uses
 # engine/.venv. A host-managed environment is a non-editable, content-addressed
-# runtime copy under plugin data. Old and new sessions never mutate one another's
-# runtime, and the server changes into that durable directory before exec so a
-# retired plugin cache cannot invalidate its working directory.
+# runtime copy under plugin data. Old and new runtimes never mutate one another,
+# and the command changes into that durable directory before exec so a retired
+# plugin cache cannot invalidate its working directory.
 set -euo pipefail
 
-log() { printf 'fivee-sim-mcp: %s\n' "$1" >&2; }
+log() { printf 'fivee: %s\n' "$1" >&2; }
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 engine_dir="$script_dir/../engine"
 
 if [ ! -f "$engine_dir/pyproject.toml" ]; then
-  log "engine not found at $engine_dir; server not started."
+  log "engine not found at $engine_dir; nothing to run."
   exit 1
 fi
 
@@ -43,20 +44,19 @@ fi
 # its build stamp, and the host-managed build reads source from it once.
 engine_dir="$(cd "$engine_dir" && pwd)"
 plugin_data="${PLUGIN_DATA:-${CLAUDE_PLUGIN_DATA:-}}"
-if [ -z "$plugin_data" ] && [ "${FIVEE_SIM_PLUGIN_HOST:-}" = "codex" ]; then
-  codex_home="${CODEX_HOME:-}"
-  if [ -z "$codex_home" ]; then
-    if [ -z "${HOME:-}" ]; then
-      log "Codex runtime storage cannot be resolved because CODEX_HOME and HOME are unset; server not started."
-      exit 1
-    fi
-    codex_home="$HOME/.codex"
-  fi
-  plugin_data="$codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
+# Codex exports neither of those, so its durable storage is derived from
+# ${CODEX_HOME} — the one variable that says a Codex install is what is running
+# this. It used to be a host marker injected through the plugin's `.mcp.json`,
+# which went with the MCP server. Keyed off CODEX_HOME alone rather than falling
+# back to ${HOME}/.codex: a home directory is not evidence of a Codex install,
+# and guessing one would put a developer's direct checkout on the host-managed
+# path.
+if [ -z "$plugin_data" ] && [ -n "${CODEX_HOME:-}" ]; then
+  plugin_data="$CODEX_HOME/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
 fi
 if [ -n "$plugin_data" ]; then
   if ! mkdir -p "$plugin_data"; then
-    log "could not create the durable runtime directory at $plugin_data; server not started."
+    log "could not create the durable runtime directory at $plugin_data; nothing run."
     exit 1
   fi
   plugin_data="$(cd "$plugin_data" && pwd)"
@@ -67,7 +67,8 @@ fi
 # so an editable install would leave a live process with imports and resources
 # pointing into a directory the host is free to remove. Content-addressing the
 # environment also means an upgrade builds beside an older live runtime instead
-# of mutating it underneath that process.
+# of mutating it underneath that process — and the engine server a previous
+# `fivee` call left running is exactly such a process.
 runtime_copy=0
 runtime_build_id=""
 runtime_build_identity() {
@@ -107,7 +108,7 @@ if [ -z "${UV_CACHE_DIR:-}" ] && [ -n "$plugin_data" ]; then
   export UV_CACHE_DIR="$plugin_data/uv-cache"
 fi
 venv_dir="$UV_PROJECT_ENVIRONMENT"
-server_bin="$venv_dir/bin/fivee-sim-mcp"
+command_bin="$venv_dir/bin/fivee"
 stamp_file="$venv_dir/.fivee-sim-build-stamp"
 build_lock_dir="$venv_dir.fivee-sim-build-lock"
 build_lock_owner="$build_lock_dir/owner"
@@ -128,9 +129,9 @@ bounded() {
 # that exists and is executable but cannot start. Checking that the shebang still
 # resolves catches that in pure shell, and costs nothing on the warm path.
 venv_is_usable() {
-  [ -x "$server_bin" ] || return 1
+  [ -x "$command_bin" ] || return 1
   local interpreter
-  interpreter="$(head -n 1 "$server_bin" | sed -e 's|^#!||' -e 's|^[[:space:]]*||' | cut -d' ' -f1)"
+  interpreter="$(head -n 1 "$command_bin" | sed -e 's|^#!||' -e 's|^[[:space:]]*||' | cut -d' ' -f1)"
   [ -n "$interpreter" ] && [ -x "$interpreter" ]
 }
 
@@ -196,7 +197,7 @@ acquire_build_lock() {
   local lock_parent start_seconds observed_owner current_owner wait_logged
   lock_parent="$(dirname "$build_lock_dir")"
   if ! mkdir -p "$lock_parent"; then
-    log "could not create the runtime directory at $lock_parent; server not started."
+    log "could not create the runtime directory at $lock_parent; nothing run."
     return 1
   fi
 
@@ -204,7 +205,7 @@ acquire_build_lock() {
   wait_logged=0
   while ! mkdir "$build_lock_dir" 2>/dev/null; do
     if [ ! -d "$build_lock_dir" ]; then
-      log "could not create the environment build lock at $build_lock_dir; server not started."
+      log "could not create the environment build lock at $build_lock_dir; nothing run."
       return 1
     fi
 
@@ -228,7 +229,7 @@ acquire_build_lock() {
       wait_logged=1
     fi
     if [ $((SECONDS - start_seconds)) -ge 300 ]; then
-      log "timed out after 300 seconds waiting for the environment build lock; server not started."
+      log "timed out after 300 seconds waiting for the environment build lock; nothing run."
       return 1
     fi
     sleep 1
@@ -237,7 +238,7 @@ acquire_build_lock() {
   build_lock_token="$$:${RANDOM}:${SECONDS}"
   if ! printf '%s\n' "$build_lock_token" > "$build_lock_owner"; then
     rm -rf "$build_lock_dir"
-    log "could not record ownership of the environment build lock; server not started."
+    log "could not record ownership of the environment build lock; nothing run."
     return 1
   fi
   build_lock_acquired=1
@@ -268,21 +269,21 @@ if sync_is_needed; then
     fi
 
     if ! command -v uv >/dev/null 2>&1; then
-      log "uv is required to build the environment and is not on PATH; see https://docs.astral.sh/uv/. Server not started."
+      log "uv is required to build the environment and is not on PATH; see https://docs.astral.sh/uv/. Nothing run."
       exit 1
     fi
-    # --no-dev keeps the runtime environment to what the server actually imports;
+    # --no-dev keeps the runtime environment to what the command actually imports;
     # test and lint tooling belongs to the development environment only.
     sync_args=(sync --project "$engine_dir" --frozen --no-dev)
     if [ "$runtime_copy" = "1" ]; then
       sync_args+=(--no-editable)
     fi
     if ! bounded uv "${sync_args[@]}" 1>&2; then
-      log "environment build failed; server not started (it will retry next session)."
+      log "environment build failed; nothing run (the next call will try again)."
       exit 1
     fi
     if ! venv_is_usable; then
-      log "environment built but $server_bin is still not runnable; server not started."
+      log "environment built but $command_bin is still not runnable; nothing run."
       exit 1
     fi
     # Losing the stamp costs a redundant sync next start, which is not worth
@@ -297,7 +298,9 @@ if sync_is_needed; then
 fi
 
 if [ -n "$plugin_data" ] && ! cd "$plugin_data"; then
-  log "durable runtime directory disappeared at $plugin_data; server not started."
+  log "durable runtime directory disappeared at $plugin_data; nothing run."
   exit 1
 fi
-exec "$server_bin"
+# Every argument straight through: this script is `fivee` with an environment
+# built around it, never a wrapper with opinions of its own.
+exec "$command_bin" "$@"

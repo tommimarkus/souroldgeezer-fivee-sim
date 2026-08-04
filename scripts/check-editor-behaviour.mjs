@@ -48,7 +48,7 @@ const SHIPPED = path.join(
 );
 const STATIC = process.argv[2] ? path.resolve(process.argv[2]) : SHIPPED;
 
-/* --- reporting, in the shape check-mcp-handshake.py uses ------------------ */
+/* --- reporting, in the shape the repo's other check scripts use ---------- */
 
 let passed = 0;
 let failed = 0;

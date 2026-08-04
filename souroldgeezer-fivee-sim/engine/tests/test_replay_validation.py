@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service.replay import canonical_sha256, validate_replay
 
+from . import api
 from .conftest import mapless_fight
 
 

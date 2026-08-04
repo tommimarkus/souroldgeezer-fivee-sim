@@ -1,7 +1,7 @@
 """The layer boundaries, enforced over the engine's own import graph.
 
 CLAUDE.md states the dependency direction as a fact about this tree:
-``mcp_server``/``editor`` -> ``service`` -> the root tier
+``web`` -> ``service`` -> the root tier
 (``content``/``maps``/``validation``/``coverage``) -> ``model`` -> ``kernel``,
 with ``kernel`` importing nothing outside itself. Nothing checked it, and it had
 already drifted: ``fivee_sim/data/__init__.py`` — a package named for the JSON
@@ -155,9 +155,10 @@ def test_the_client_reaches_the_engine_only_over_http() -> None:
     """``fivee``'s features are the REST surface's features, proved by import.
 
     This rule is not hygiene, it is the claim the client exists to make. The
-    engine's operations used to be reachable two ways — in-process through the
-    MCP adapter, and over HTTP — and "the REST surface can do everything" was
-    something a reader had to take on faith while auditing two call graphs.
+    engine's operations used to be reachable two ways — in-process through an MCP
+    adapter, and over HTTP — and "the REST surface can do everything" was
+    something a reader had to take on faith while auditing two call graphs. The
+    MCP adapter is gone; this is what stops the second route growing back.
 
     ``fivee_sim.client`` may import ``fivee_sim.paths`` (where the state file
     lives, which is not an operation) and nothing else from this engine. So it

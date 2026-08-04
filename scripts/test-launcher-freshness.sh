@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for the venv freshness decision in fivee-sim-mcp.sh.
+# Tests for the venv freshness decision in fivee.sh.
 #
 # The launcher straddles two directories with different lifetimes: the plugin
 # root can be replaced while a host's plugin-data directory is durable. A
@@ -10,8 +10,9 @@
 # Hermetic and offline. Each case plants a throwaway plugin root and drives the
 # real launcher against a fake `uv` that materialises just enough of a venv for
 # the launcher's own checks — a console script whose shebang resolves, echoing
-# the engine it was built from so a test can tell v1 from v2. Nothing here
-# touches the real repo, the real venv, or the network.
+# the engine it was built from and the arguments it was given, so a test can
+# tell v1 from v2 and see that the command line survived the launcher. Nothing
+# here touches the real repo, the real venv, or the network.
 #
 # Usage: bash scripts/test-launcher-freshness.sh
 
@@ -19,7 +20,7 @@ set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$here/.." && pwd)"
-launcher="$repo_root/souroldgeezer-fivee-sim/scripts/fivee-sim-mcp.sh"
+launcher="$repo_root/souroldgeezer-fivee-sim/scripts/fivee.sh"
 
 pass=0
 fail=0
@@ -74,9 +75,10 @@ printf '%s\n' "$project" > "$UV_PROJECT_ENVIRONMENT/runtime-engine"
   printf '  done\n'
   printf 'else\n'
   printf '  printf "engine="; cat "$(dirname "$0")/../runtime-engine"\n'
+  printf '  printf "args=%%s\\n" "$*"\n'
   printf 'fi\n'
-} > "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
-chmod +x "$UV_PROJECT_ENVIRONMENT/bin/fivee-sim-mcp"
+} > "$UV_PROJECT_ENVIRONMENT/bin/fivee"
+chmod +x "$UV_PROJECT_ENVIRONMENT/bin/fivee"
 FAKE_UV
 chmod +x "$tmp/bin/uv"
 
@@ -101,13 +103,17 @@ fi
 plant() { # plant <label> — a throwaway plugin root at $tmp/<label>
   local root="$tmp/$1"
   mkdir -p "$root/scripts" "$root/engine/src"
-  cp "$launcher" "$root/scripts/fivee-sim-mcp.sh"
+  cp "$launcher" "$root/scripts/fivee.sh"
   printf '[project]\nname = "fivee-sim"\nversion = "0.0.0"\n' > "$root/engine/pyproject.toml"
   printf 'version = 1\nrequires-python = ">=3.11"\n' > "$root/engine/uv.lock"
   printf '%s' "$root"
 }
 
 out=""; err=""; rc=0; uvcalls=0
+#: Command-line arguments for the next `launch`, reset after every call. A
+#: separate variable rather than another positional, because `launch`'s trailing
+#: arguments are already environment assignments and `env` would swallow these.
+launch_args=()
 launch() { # launch <label> <venv-name> [VAR=value ...]
   local root="$tmp/$1" venv="$tmp/venvs/$2"
   shift 2
@@ -116,10 +122,11 @@ launch() { # launch <label> <venv-name> [VAR=value ...]
       PATH="${LAUNCH_PATH:-$tmp/bin:$PATH}" \
       UV_LOG="$uvlog" \
       UV_PROJECT_ENVIRONMENT="$venv" \
-      timeout 10 bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
+      timeout 10 bash "$root/scripts/fivee.sh" "${launch_args[@]}" 2>"$tmp/stderr")"
   rc=$?
   err="$(cat "$tmp/stderr")"
   uvcalls="$(grep -c . "$uvlog")"
+  launch_args=()
 }
 
 launch_with_host_data() { # launch_with_host_data <label> [VAR=value ...]
@@ -131,7 +138,7 @@ launch_with_host_data() { # launch_with_host_data <label> [VAR=value ...]
       "$@" \
       PATH="${LAUNCH_PATH:-$tmp/bin:$PATH}" \
       UV_LOG="$uvlog" \
-      timeout 10 bash "$root/scripts/fivee-sim-mcp.sh" 2>"$tmp/stderr")"
+      timeout 10 bash "$root/scripts/fivee.sh" 2>"$tmp/stderr")"
   rc=$?
   err="$(cat "$tmp/stderr")"
   uvcalls="$(grep -c . "$uvlog")"
@@ -199,7 +206,7 @@ wait_for_text() { # wait_for_text <path> <literal>
 
 runtime_server() { # runtime_server <plugin-data>
   find "$1/venvs" -mindepth 3 -maxdepth 3 -type f \
-    -path '*/bin/fivee-sim-mcp' -print -quit 2>/dev/null
+    -path '*/bin/fivee' -print -quit 2>/dev/null
 }
 
 mkdir -p "$tmp/venvs"
@@ -244,7 +251,7 @@ fi
 explicit_data="$tmp/explicit-data"
 launch v1 explicit PLUGIN_DATA="$explicit_data"
 want_rc "an explicit UV environment wins over host plugin data" 0
-if [ -x "$tmp/venvs/explicit/bin/fivee-sim-mcp" ] && [ ! -e "$explicit_data/venv" ]; then
+if [ -x "$tmp/venvs/explicit/bin/fivee" ] && [ ! -e "$explicit_data/venv" ]; then
   report 0 "explicit UV storage precedes host storage" ""
 else
   report 1 "explicit UV storage precedes host storage" \
@@ -257,14 +264,16 @@ launch v1 explicit-cache \
 want_rc "an explicit UV cache wins over host plugin data" 0
 want_uv_args "explicit UV cache precedes host storage" "cache=$explicit_cache"
 
-# Codex does not currently inject PLUGIN_DATA into bundled MCP children. The
-# manifest marks the host explicitly, so the launcher must derive durable state
-# outside the replaceable plugin cache without weakening any existing override.
+# Codex exports neither PLUGIN_DATA nor CLAUDE_PLUGIN_DATA, so ${CODEX_HOME} is
+# what identifies the install. The launcher must derive durable state outside
+# the replaceable plugin cache from that alone — the host marker it used to
+# read came through the deleted .mcp.json — and without weakening any existing
+# override.
 codex_home="$tmp/codex-home"
 codex_runtime="$codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
 CODEX_V1="$(plant codex-cache-v1)"
 launch_with_host_data codex-cache-v1 \
-  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$codex_home"
+  CODEX_HOME="$codex_home"
 want_rc    "Codex fallback storage builds successfully" 0
 want_syncs "Codex fallback storage syncs once" 1
 want_uv_args "Codex fallback owns the uv cache" "cache=$codex_runtime/uv-cache"
@@ -277,9 +286,10 @@ else
     "durable venv missing or cache-local venv unexpectedly created"
 fi
 
-# The server must leave the replaceable plugin root before exec. Codex can
-# retire that root when another session refreshes the plugin cache; the first
-# process still has a live fight and must be able to resolve durable paths.
+# The command must leave the replaceable plugin root before exec. Codex can
+# retire that root when another session refreshes the plugin cache; a long-
+# running child still has a live fight and must be able to resolve durable
+# paths.
 live_codex_home="$tmp/live-codex-home"
 live_codex_data="$live_codex_home/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop"
 LIVE_CODEX_ROOT="$(plant codex-live-root)"
@@ -293,9 +303,9 @@ exec 9<> "$live_commands"
   env -u UV_PROJECT_ENVIRONMENT -u UV_CACHE_DIR \
     -u PLUGIN_DATA -u CLAUDE_PLUGIN_DATA \
     PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" \
-    FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$live_codex_home" \
+    CODEX_HOME="$live_codex_home" \
     SERVER_PROBE_READY="$live_ready" \
-    bash scripts/fivee-sim-mcp.sh < "$live_commands"
+    bash scripts/fivee.sh < "$live_commands"
 ) > "$live_out" 2> "$tmp/live-codex.err" &
 live_pid=$!
 if wait_for_path "$live_ready"; then
@@ -304,7 +314,7 @@ if wait_for_path "$live_ready"; then
   printf '[project]\nname = "fivee-sim"\nversion = "0.0.1"\n' \
     > "$LIVE_CODEX_REPLACEMENT/engine/pyproject.toml"
   launch_with_host_data codex-live-replacement \
-    FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$live_codex_home"
+    CODEX_HOME="$live_codex_home"
   printf 'engine\n' >&9
   if wait_for_text "$live_out" "engine=$LIVE_CODEX_ROOT/engine"; then
     report 0 "a newer session cannot mutate a live server runtime" ""
@@ -344,14 +354,14 @@ CODEX_V2="$(plant codex-cache-v2)"
 printf '[project]\nname = "fivee-sim"\nversion = "0.0.1"\n' \
   > "$CODEX_V2/engine/pyproject.toml"
 launch_with_host_data codex-cache-v2 \
-  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$codex_home"
+  CODEX_HOME="$codex_home"
 want_rc     "replacement plugin root starts successfully" 0
 want_syncs  "replacement plugin root refreshes once" 1
 want_stdout "replacement plugin root runs the new engine" "engine=$CODEX_V2/engine"
 
 codex_claude_data="$tmp/codex-claude-data"
 launch_with_host_data v1 \
-  FIVEE_SIM_PLUGIN_HOST=codex CODEX_HOME="$tmp/ignored-codex-home" \
+  CODEX_HOME="$tmp/ignored-codex-home" \
   CLAUDE_PLUGIN_DATA="$codex_claude_data"
 want_rc "Claude plugin data still precedes the Codex fallback" 0
 if [ -x "$(runtime_server "$codex_claude_data")" ] && \
@@ -431,8 +441,8 @@ want_syncs  "and then goes warm again" 0
 V3="$(plant v3)"
 launch v3 moved
 want_rc "a fresh venv for the moved case" 0
-printf '#!/nonexistent/python\necho engine=stale\n' > "$tmp/venvs/moved/bin/fivee-sim-mcp"
-chmod +x "$tmp/venvs/moved/bin/fivee-sim-mcp"
+printf '#!/nonexistent/python\necho engine=stale\n' > "$tmp/venvs/moved/bin/fivee"
+chmod +x "$tmp/venvs/moved/bin/fivee"
 launch v3 moved
 want_rc     "an unusable venv is rebuilt, not run" 0
 want_syncs  "an unusable venv re-syncs" 1
@@ -472,13 +482,13 @@ mkfifo "$concurrent_gate"
 env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" SERVER_LOG="$server_log" \
   UV_PROJECT_ENVIRONMENT="$concurrent_venv" \
   FAKE_UV_GATE="$concurrent_gate" FAKE_UV_READY="$concurrent_ready" \
-  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee-sim-mcp.sh" \
+  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee.sh" \
   >"$tmp/concurrent-1.out" 2>"$tmp/concurrent-1.err" &
 concurrent_pid_1=$!
 wait_for_path "$concurrent_ready"
 env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" SERVER_LOG="$server_log" \
   UV_PROJECT_ENVIRONMENT="$concurrent_venv" \
-  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee-sim-mcp.sh" \
+  timeout 10 bash "$CONCURRENT_ROOT/scripts/fivee.sh" \
   >"$tmp/concurrent-2.out" 2>"$tmp/concurrent-2.err" &
 concurrent_pid_2=$!
 concurrent_contended=0
@@ -548,7 +558,7 @@ mkfifo "$signal_gate"
 env PATH="$tmp/bin:$PATH" UV_LOG="$uvlog" \
   UV_PROJECT_ENVIRONMENT="$signal_venv" \
   FAKE_UV_GATE="$signal_gate" FAKE_UV_READY="$signal_ready_path" \
-  bash "$SIGNAL_ROOT/scripts/fivee-sim-mcp.sh" \
+  bash "$SIGNAL_ROOT/scripts/fivee.sh" \
   >"$tmp/signal.out" 2>"$tmp/signal.err" &
 signal_pid=$!
 if wait_for_path "$signal_ready_path" && [ -f "$signal_lock/owner" ]; then
@@ -605,15 +615,31 @@ else
 fi
 
 # --- warm with no uv anywhere ---------------------------------------------
-# The property scripts/check-mcp-handshake.py relies on: once built, the server
-# starts with uv removed from PATH entirely.
+# The property the whole stamp exists for, stated from the other side: once
+# built, the command runs with uv removed from PATH entirely. uv is needed to
+# build an environment and never to use one.
 LAUNCH_PATH="$tmp/minbin" launch v4 norebuild
 want_rc     "warm with no uv on PATH still starts" 0
 want_stdout "warm with no uv on PATH runs the engine" "engine=$V4/engine"
 
+# --- arguments reach the command ------------------------------------------
+# The launcher is `fivee` with an environment built around it, so a caller's
+# command line has to survive it intact. Without this, a launcher that dropped
+# "$@" would pass every other case here and then answer every real invocation
+# with the same thing.
+ARGS_ROOT="$(plant args)"
+launch args args-passthrough
+want_rc     "a fresh venv for the argument case" 0
+launch_args=(encounter.state enc-7f3a --compact)
+launch args args-passthrough
+want_rc     "arguments do not disturb the warm path" 0
+want_syncs  "the argument case stays warm" 0
+want_stdout "the command line reaches the command" \
+  "args=encounter.state enc-7f3a --compact"
+
 # --- a plugin root with no engine -----------------------------------------
 mkdir -p "$tmp/empty/scripts"
-cp "$launcher" "$tmp/empty/scripts/fivee-sim-mcp.sh"
+cp "$launcher" "$tmp/empty/scripts/fivee.sh"
 launch empty missing
 want_rc "a plugin root with no engine does not start" 1
 

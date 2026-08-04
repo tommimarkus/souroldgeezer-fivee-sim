@@ -2,7 +2,7 @@
 
 Two jobs, and they are separate.
 
-**Isolation.** ``mcp_server.server`` keeps its sessions, maps, content registry and
+**Isolation.** ``tests.api`` keeps its sessions, maps, content registry and
 id counters in one process-wide ``EngineState``. A test that creates an encounter or
 loads a map mutates process state that outlives it, so the suite's result could depend
 on collection order. :func:`_isolate_server_state` saves all five fields around every
@@ -29,9 +29,10 @@ from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell, SpellShape
-from fivee_sim.mcp_server import server as api
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import Encounter
+
+from . import api
 
 FIXTURE = "synthetic test fixture, not SRD content"
 
@@ -63,7 +64,7 @@ REPLAY_GOBLIN: dict[str, Any] = {
 def _isolate_server_state(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> Iterator[None]:
-    """Save and restore the MCP server's process state, and root every file it writes.
+    """Save and restore the shared engine state, and root every file it writes.
 
     ``content`` is loaded lazily, so restoring it also *resets* it: the value put
     back is the ``None`` the state started with, and the next test that asks for
@@ -78,19 +79,19 @@ def _isolate_server_state(
     repository. Pointing all three at ``tmp_path`` keeps the suite's writes
     inside the test and keeps one test's maps invisible to the next.
     """
-    sessions = dict(api._STATE.sessions)
-    content = api._STATE.content
-    next_id = api._STATE.next_id
+    sessions = dict(api.STATE.sessions)
+    content = api.STATE.content
+    next_id = api.STATE.next_id
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
     monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
     monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(tmp_path / "replays"))
     try:
         yield
     finally:
-        api._STATE.sessions.clear()
-        api._STATE.sessions.update(sessions)
-        api._STATE.content = content
-        api._STATE.next_id = next_id
+        api.STATE.sessions.clear()
+        api.STATE.sessions.update(sessions)
+        api.STATE.content = content
+        api.STATE.next_id = next_id
 
 
 class FixedRandom(Random):
@@ -141,7 +142,7 @@ def advance_to(encounter: Encounter, name: str, rng: Random, limit: int = 24) ->
 
 
 def advance_encounter_to(encounter_id: str, name: str, limit: int = 24) -> None:
-    """Advance an MCP encounter until ``name`` holds the turn."""
+    """Advance an in-process encounter until ``name`` holds the turn."""
     for _ in range(limit):
         if api.encounter_state(encounter_id)["turn"] == name:
             return
@@ -150,7 +151,7 @@ def advance_encounter_to(encounter_id: str, name: str, limit: int = 24) -> None:
 
 
 def mapless_fight(seed: int = 41) -> str:
-    """Create the shared two-combatant replay fixture through the public tool API."""
+    """Create the shared two-combatant replay fixture through the engine."""
     created = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed
     )

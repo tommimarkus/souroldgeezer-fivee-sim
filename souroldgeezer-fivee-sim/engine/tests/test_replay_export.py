@@ -20,11 +20,12 @@ import pytest
 from fivee_sim import __version__
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import parse_document
-from fivee_sim.mcp_server import server as api
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
 from fivee_sim.service import map_ops
 from fivee_sim.service import replay as replay_service
+from fivee_sim.service.errors import NotFoundError, RequestError
 
+from . import api
 from .conftest import (
     REPLAY_GOBLIN,
     REPLAY_HERO,
@@ -120,7 +121,7 @@ class TestBundleSchema:
         assert bundle["events"][0]["kind"] == "round"
 
     def test_an_unknown_encounter_is_refused(self) -> None:
-        with pytest.raises(api.ToolError, match="unknown encounter"):
+        with pytest.raises(NotFoundError, match="unknown encounter"):
             api.replay_export("enc-never")
 
 
@@ -289,7 +290,7 @@ class TestBundleV2:
         assert captured["attacks"][0]["detach_after_damage"] == 10
 
     def test_unknown_replay_versions_are_refused(self) -> None:
-        with pytest.raises(api.ToolError, match="format_version must be 1 or 2"):
+        with pytest.raises(RequestError, match="format_version must be 1 or 2"):
             api.replay_export(mapless_fight(), format_version=99)
 
     def test_v2_state_checkpoints_include_transient_turn_and_effect_state(self) -> None:

@@ -147,7 +147,7 @@ def append(
     it simply takes its turn.
 
     The two locks are not redundant. The ``flock`` excludes other *processes* —
-    every MCP server on a host shares this directory — while the ``RLock``
+    every engine server on a host shares this directory — while the ``RLock``
     keeps this process's own threads from interleaving, and keeps ``read``
     reentrant inside the critical section.
     """

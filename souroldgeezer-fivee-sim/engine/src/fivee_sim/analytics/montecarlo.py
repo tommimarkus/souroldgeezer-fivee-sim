@@ -977,8 +977,8 @@ def simulate_rounds(
 
     **Pass ``spellbook`` if any combatant casts.** The policy looks its spells up
     there and skips what it cannot find, so omitting it does not fail — it returns a
-    plausible batch in which nobody cast anything. The MCP tool always supplies it;
-    a direct caller has to remember.
+    plausible batch in which nobody cast anything. The service layer always
+    supplies it; a direct caller has to remember.
 
     ``wins`` counts ``"none"`` only for a mutual wipe, where the last combatants on
     both sides fall together. A fight still going at ``max_rounds`` is counted in

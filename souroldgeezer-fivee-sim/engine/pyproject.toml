@@ -1,15 +1,16 @@
 [project]
 name = "fivee-sim"
 version = "2026.8.34"
-description = "5E-compatible rules kernel and MCP server: seeded, deterministic combat resolution."
+description = "5E-compatible rules kernel and HTTP engine: seeded, deterministic combat resolution."
 requires-python = ">=3.11"
-dependencies = [
-  "mcp>=1.2",
-]
+# Deliberately empty, and worth keeping that way. The kernel, the service layer,
+# the HTTP server and the client are all stdlib-only, so a cold start installs
+# nothing but this package and an install cannot be broken by somebody else's
+# release. A dependency added here is a dependency every host inherits.
+dependencies = []
 
 [project.scripts]
 fivee = "fivee_sim.client.cli:main"
-fivee-sim-mcp = "fivee_sim.mcp_server.server:main"
 fivee-sim-server = "fivee_sim.web.cli:main"
 fivee-sim-replay-sample = "fivee_sim.replay_sample:main"
 

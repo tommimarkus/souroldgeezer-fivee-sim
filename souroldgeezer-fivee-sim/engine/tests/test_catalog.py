@@ -11,8 +11,9 @@ import pytest
 
 from fivee_sim.catalog import FactStatus, SimulationSupport
 from fivee_sim.content import ContentError, builtin_registry, load_packs
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service import catalog as catalog_service
+
+from . import api
 
 
 def _write_pack(root: Path, name: str, payload: dict[str, Any]) -> Path:

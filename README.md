@@ -5,24 +5,30 @@ Geezer. This repository is the marketplace source and the shared plugin tree.
 
 Compatible with fifth edition (2024 rules).
 
-> **Status: v1 complete.** Engine, MCP server, plugin, skill, the complete bundled
-> SRD structured catalog, and user-defined content packs all work end to end.
+> **Status: v1 complete.** Engine, HTTP service, the `fivee` command, plugin,
+> skills, the complete bundled SRD structured catalog, and user-defined content
+> packs all work end to end.
 
 ## What this is
 
 A model asked to track a fight will drift: hit points wander, a condition gets
 forgotten a round later, a die roll conveniently favours the narrative. Here the
-rules live in a Python engine exposed over the Model Context Protocol, so hit
-points, dice, initiative order, and conditions are computed and owned by the
-engine rather than recalled. Ask for the same seed twice and you get the same
-fight twice.
+rules live in a Python engine served over a local HTTP API, so hit points,
+dice, initiative order, and conditions are computed and owned by the engine
+rather than recalled. Ask for the same seed twice and you get the same fight
+twice.
+
+The assistant drives it with **`fivee`**, a command that starts the engine if
+nothing is serving, reads the operation list off the server it is about to call,
+and prints JSON. There is nothing to launch first and no tool list to memorise:
+`fivee help` is the whole surface.
 
 One kernel answers two questions:
 
-- **"What happens in this fight?"** — stateful tools step an encounter round by
-  round, and the assistant narrates what the engine reports.
-- **"Is this build actually good?"** — analytics tools replay that same stepper
-  across thousands of seeded iterations and report a distribution.
+- **"What happens in this fight?"** — the encounter operations step a fight round
+  by round, and the assistant narrates what the engine reports.
+- **"Is this build actually good?"** — the analytics operations replay that same
+  stepper across thousands of seeded iterations and report a distribution.
 
 Because both run on the one kernel, the statistics cannot drift from the rules
 live play uses.
@@ -33,9 +39,10 @@ live play uses.
 
 ## Install
 
-Needs Python 3.11+ and [`uv`](https://docs.astral.sh/uv/). The MCP launcher builds
-its own `uv`-managed environment on first run, so there is nothing to install
-globally.
+Needs Python 3.11+ and [`uv`](https://docs.astral.sh/uv/). The bundled launcher
+builds its own `uv`-managed environment on first run, so there is nothing to
+install globally — and the engine itself has no runtime dependencies, so that
+environment is this package and a Python interpreter.
 
 The marketplace is not published yet, so point either host at a clone.
 
@@ -46,8 +53,7 @@ codex plugin marketplace add /absolute/path/to/this/repo
 codex plugin add souroldgeezer-fivee-sim@souroldgeezer-tabletop
 ```
 
-Start a new Codex session after installation so the bundled skills and MCP
-server are loaded.
+Start a new Codex session after installation so the bundled skills are loaded.
 
 Codex keeps this plugin's generated runtime under
 `${CODEX_HOME:-$HOME/.codex}/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop`,
@@ -90,22 +96,33 @@ Once it is published, the same thing is two commands:
 /plugin install souroldgeezer-fivee-sim@souroldgeezer-tabletop
 ```
 
-From a clone, `python3 scripts/check-mcp-handshake.py` verifies the MCP server
-independently of either host.
+From a clone, `bash souroldgeezer-fivee-sim/scripts/fivee.sh help` verifies the
+whole path independently of either host: it builds the environment if it has to,
+starts the engine, and prints every operation the running server serves. Stop it
+again with `bash souroldgeezer-fivee-sim/scripts/fivee.sh stop`.
 
-## Tools
+## Operations
 
-| Group | Tools |
+Thirty-nine, under `/api/v1`, each reachable as `fivee <group>.<verb>`.
+
+| Group | Operations |
 | --- | --- |
-| Stateful | `encounter_create`, `encounter_state`, `encounter_act`, `encounter_advance`, `encounter_note`, `encounter_log`, `encounter_list`, `encounter_resume`, `encounter_finalize` |
-| Replay | `replay_export`, `replay_validate` |
-| Analytics | `simulate_rounds`, `simulate_dpr` |
-| Primitives | `roll`, `check`, `save`, `lookup_rule` |
-| Catalog | `catalog_search`, `catalog_get`, `catalog_table` |
-| Content | `content_status`, `content_configure`, `content_validate` |
+| Encounters | `encounter.create`, `encounter.state`, `encounter.act`, `encounter.advance`, `encounter.note`, `encounter.log`, `encounter.list`, `encounter.resume`, `encounter.finalize`, `encounter.replay` |
+| Maps | `map.list`, `map.generate`, `map.get`, `map.put`, `map.edit`, `map.render`, `map.query`, `map.validate`, `map.uvtt` |
+| Replays | `replay.list`, `replay.get`, `replay.validate` |
+| Analytics | `analytics.rounds`, `analytics.dpr`, `analytics.scenario-timing` |
+| Dice | `dice.roll`, `dice.check`, `dice.save` |
+| Rules and catalog | `rules.lookup`, `catalog.search`, `catalog.get`, `catalog.table` |
+| Content | `content.status`, `content.configure`, `content.validate` |
+| The server itself | `server.ping`, `server.operations`, `server.openapi`, `server.shutdown` |
 
-Every tool that consumes randomness accepts an optional `seed` and always reports
-the seed it used, so no result is irreproducible after the fact.
+That table is a convenience, not the source: `fivee help` renders
+`GET /api/v1/operations` from the running server, and `fivee help <operation>`
+reads that operation's arguments out of its OpenAPI document. Neither can
+describe an operation the server does not route, or miss one it does.
+
+Every operation that consumes randomness accepts an optional `seed` and always
+reports the seed it used, so no result is irreproducible after the fact.
 
 ## What is covered
 
@@ -136,9 +153,9 @@ Limits worth knowing before you report one as a bug:
   applies its disadvantage unconditionally because there is no visibility model.
 
 [COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md) is the generated compact
-totals report. Use `catalog_search`, `catalog_get`, and `catalog_table` for detailed,
-bounded discovery; a drift test reconciles their committed inventory with the
-pinned source manifest.
+totals report. Use `catalog.search`, `catalog.get`, and `catalog.table` for
+detailed, bounded discovery; a drift test reconciles their committed inventory
+with the pinned source manifest.
 
 ## Your own content
 

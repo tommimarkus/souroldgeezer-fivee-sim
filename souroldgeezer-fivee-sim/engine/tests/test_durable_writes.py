@@ -17,9 +17,10 @@ from pathlib import Path
 
 import pytest
 
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service import durable, encounter_journal
+from fivee_sim.service.errors import RequestError, StaleWriteError
 
+from . import api
 from .conftest import mapless_fight
 
 #: Each child re-reads and retries, so a refusal costs progress but never the file.
@@ -27,6 +28,7 @@ _APPENDER = """
 import os, sys
 os.environ["FIVEE_SIM_ENCOUNTERS"] = {root!r}
 from fivee_sim.service import durable, encounter_journal
+from fivee_sim.service.errors import StaleWriteError
 tag, rounds = sys.argv[1], int(sys.argv[2])
 wins = refusals = 0
 for index in range(rounds):
@@ -154,8 +156,8 @@ def test_a_second_process_acting_on_a_live_encounter_is_refused_not_merged(
             sys.executable,
             "-c",
             f"import os\nos.environ['FIVEE_SIM_ENCOUNTERS'] = {str(root)!r}\n"
-            "from fivee_sim.mcp_server import server as api\n"
-            f"api.encounter_advance({encounter_id!r})\n",
+            "from fivee_sim.service import encounters, sessions\n"
+            f"encounters.advance(sessions.EngineState(), {encounter_id!r})\n",
         ],
         capture_output=True,
         text=True,
@@ -163,7 +165,10 @@ def test_a_second_process_acting_on_a_live_encounter_is_refused_not_merged(
     )
     assert elsewhere.returncode == 0, elsewhere.stderr
 
-    with pytest.raises(api.ToolError, match="has advanced"):
+    # A ``RequestError`` rather than a ``StaleWriteError``: the encounter
+    # session drops its stale copy and re-raises, because the caller's fix here
+    # is to read the fight again rather than to re-send the same write.
+    with pytest.raises(RequestError, match="has advanced"):
         api.encounter_advance(encounter_id)
 
 
@@ -213,7 +218,7 @@ def test_map_save_refuses_a_version_someone_else_replaced(tmp_path: Path) -> Non
     )
     assert edited["sha256"] != read_at
 
-    with pytest.raises(api.ToolError, match="has advanced"):
+    with pytest.raises(StaleWriteError, match="has advanced"):
         api.map_save("shared", generated["document"], expected_sha256=read_at)
 
 
@@ -275,7 +280,7 @@ def test_a_map_edit_guards_itself_without_the_caller_asking(tmp_path: Path) -> N
     # Someone else edits the same file first.
     api.map_edit("shared", [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}])
 
-    with pytest.raises(api.ToolError, match="has advanced"):
+    with pytest.raises(StaleWriteError, match="has advanced"):
         api.map_edit(
             "shared",
             [{"op": "set_name", "name": "mine"}],

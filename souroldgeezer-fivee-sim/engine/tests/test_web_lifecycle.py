@@ -1,9 +1,15 @@
-"""The editor's launch lifecycle: the real CLI process, and the MCP tools.
+"""The server's launch lifecycle: the real CLI process, and finding it again.
 
 These spawn ``python -m fivee_sim.web`` for real — the state-file protocol
 (written after bind, removed on shutdown) is exactly the part an in-process
 test cannot vouch for. Linux is the target platform; the SIGTERM semantics are
 skipped where they do not exist.
+
+The discovery half used to be a pair of MCP tools that spawned the editor and
+shut it back down. That is :mod:`fivee_sim.client.discovery` now, and it is the
+same claims about the same state file: a second call finds the first server
+rather than starting a second, a record nobody answers for is cleared rather
+than trusted, and stopping removes it.
 """
 
 from __future__ import annotations
@@ -21,10 +27,11 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.mcp_server import server as api
+from fivee_sim.client import discovery
 from fivee_sim.web.cli import STATE_FILENAME, read_state, state_file_for
 from fivee_sim.web.http_server import API_PREFIX, TOKEN_HEADER
 
+from . import api
 from .conftest import mapless_fight
 
 pytestmark = pytest.mark.skipif(
@@ -156,107 +163,66 @@ class TestCliLifecycle:
                 process.communicate(timeout=10)
 
 
-class TestEditorTools:
-    def test_serve_is_idempotent_and_stop_tears_down(
+class TestServerDiscovery:
+    """Find the server, or start one. The client's half of the state file."""
+
+    def _kill_leftover(self, state_path: Path) -> None:
+        state = read_state(state_path)
+        if state is not None and isinstance(state.get("pid"), int):
+            try:
+                os.kill(state["pid"], signal.SIGKILL)
+            except OSError:
+                pass
+
+    def test_ensure_is_idempotent_and_stop_tears_down(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         maps_dir = tmp_path / "maps"
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
-        state_path = state_file_for(maps_dir)
-        first = api.map_editor_serve()
+        state_path = discovery.state_path_for()
+        first = discovery.ensure_server()
         try:
-            assert first["already_running"] is False
-            assert first["url"] == f"http://127.0.0.1:{first['port']}/"
-            assert first["maps_dir"] == str(maps_dir)
-            assert Path(first["log"]).exists()
+            assert first.spawned is True
+            assert first.url == f"http://127.0.0.1:{first.port}/"
+            assert first.maps_dir == str(maps_dir)
+            assert (state_path.parent / "fivee-sim-server.log").exists()
             assert state_path.exists()
 
-            second = api.map_editor_serve()
-            assert second["already_running"] is True
-            assert second["port"] == first["port"]
+            second = discovery.ensure_server()
+            assert second.spawned is False
+            assert second.port == first.port
 
-            stopped = api.map_editor_stop()
-            assert stopped == {"stopped": True, "was_running": True}
+            stopped = discovery.stop(state_path)
+            assert stopped["stopped"] is True and stopped["was_running"] is True
             assert not state_path.exists()
         finally:
-            state = read_state(state_path)
-            if state is not None and isinstance(state.get("pid"), int):
-                try:
-                    os.kill(state["pid"], signal.SIGKILL)
-                except OSError:
-                    pass
+            self._kill_leftover(state_path)
 
-    def test_serve_reports_the_viewer_as_part_of_the_same_launch(
+    def test_one_launch_answers_for_maps_and_replays_alike(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """One process, two pages, so one call reports both URLs.
+        """One process, two roots, so one record reports both.
 
         Before this the viewer page was served and unreachable in practice —
-        nothing told anyone it was there. A caller handing a URL to the user
-        should not have to know the route by heart.
+        nothing told anyone where its bundles came from. A caller handing a URL
+        to the user should not have to derive the replays root from the maps one.
         """
         maps_dir = tmp_path / "maps"
         replays_dir = tmp_path / "replays"
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
         monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
-        state_path = state_file_for(maps_dir)
-        result = api.map_editor_serve()
+        state_path = discovery.state_path_for()
+        server = discovery.ensure_server()
         try:
-            assert result["viewer_url"] == f"http://127.0.0.1:{result['port']}/viewer"
-            assert result["replays_dir"] == str(replays_dir)
+            assert server.replays_dir == str(replays_dir)
+            assert server.maps_dir == str(maps_dir)
 
-            again = api.map_editor_serve()
-            assert again["already_running"] is True
-            assert again["viewer_url"] == result["viewer_url"]
+            again = discovery.ensure_server()
+            assert again.spawned is False
+            assert again.replays_dir == server.replays_dir
         finally:
-            api.map_editor_stop()
-            state = read_state(state_path)
-            if state is not None and isinstance(state.get("pid"), int):
-                try:
-                    os.kill(state["pid"], signal.SIGKILL)
-                except OSError:
-                    pass
-
-    def test_an_export_links_into_a_running_viewer_and_stays_quiet_otherwise(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """``viewer_url`` appears only when a server is actually up.
-
-        A link to a server nobody is running is worse than no link: the user
-        clicks it, gets a connection refused, and blames the export. So the
-        export reports one only after the live-state ping has answered.
-        """
-        maps_dir = tmp_path / "maps"
-        replays_dir = tmp_path / "replays"
-        monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
-        monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(replays_dir))
-        encounter_id = mapless_fight(seed=93)
-
-        cold = api.replay_export(encounter_id, path=str(replays_dir / "cold.json"))
-        assert "viewer_url" not in cold
-
-        state_path = state_file_for(maps_dir)
-        served = api.map_editor_serve()
-        try:
-            warm = api.replay_export(encounter_id, path=str(replays_dir / "warm.json"))
-            assert warm["viewer_url"] == (
-                f"http://127.0.0.1:{served['port']}/viewer?replay=warm"
-            )
-
-            # A file written outside the served replays directory is not
-            # something that server can play, so it gets no link.
-            outside = api.replay_export(
-                encounter_id, path=str(tmp_path / "elsewhere" / "stray.json")
-            )
-            assert "viewer_url" not in outside
-        finally:
-            api.map_editor_stop()
-            state = read_state(state_path)
-            if state is not None and isinstance(state.get("pid"), int):
-                try:
-                    os.kill(state["pid"], signal.SIGKILL)
-                except OSError:
-                    pass
+            discovery.stop(state_path)
+            self._kill_leftover(state_path)
 
     def test_an_export_with_no_path_lands_in_the_replays_root_not_under_maps(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -282,29 +248,33 @@ class TestEditorTools:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
-        assert api.map_editor_stop() == {"stopped": False, "was_running": False}
+        assert discovery.stop(discovery.state_path_for()) == {
+            "stopped": False, "was_running": False
+        }
 
     def test_a_stale_state_file_is_cleared_and_a_fresh_server_spawned(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         maps_dir = tmp_path / "maps"
         monkeypatch.setenv("FIVEE_SIM_MAPS", str(maps_dir))
-        state_path = state_file_for(maps_dir)
+        state_path = discovery.state_path_for()
         state_path.parent.mkdir(parents=True, exist_ok=True)
-        # What makes this record stale is the *port*: ``_live_editor_state`` pings
-        # the port with the token and only trusts a server that answers, so port 1
-        # — which nothing serves — is the whole reason the stale branch is taken.
-        # The pid is never consulted on this path; it is here so the record has the
-        # shape a real one does, and it is a reaped child's so it names nothing live.
+        # What makes this record stale is the *port*: ``find_running`` pings the
+        # port with the token and only trusts a server that answers, so port 1 —
+        # which nothing serves — is the whole reason the stale branch is taken.
+        # The pid is never consulted on this path; it is here so the record has
+        # the shape a real one does, and it is a reaped child's so it names
+        # nothing live.
         state_path.write_text(
             json.dumps({
                 "pid": _reaped_pid(), "port": 1, "token": "gone",
                 "maps_dir": str(maps_dir),
             })
         )
-        result = api.map_editor_serve()
+        server = discovery.ensure_server()
         try:
-            assert result["already_running"] is False
-            assert result["port"] != 1
+            assert server.spawned is True
+            assert server.port != 1
         finally:
-            api.map_editor_stop()
+            discovery.stop(state_path)
+            self._kill_leftover(state_path)

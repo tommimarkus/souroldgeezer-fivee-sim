@@ -27,7 +27,6 @@ from typing import Any
 import pytest
 
 from fivee_sim import __version__
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
 from fivee_sim.web.http_server import (
@@ -38,6 +37,7 @@ from fivee_sim.web.http_server import (
     EngineServer,
 )
 
+from . import api
 from .conftest import mapless_fight
 
 PROBLEM_TYPE = "application/problem+json"
@@ -1563,6 +1563,23 @@ class TestEncountersOverHttp:
         )
         # The bundle it just wrote is the one the viewer would play.
         assert editor.request("GET", "/api/v1/replays/brawl").status == 200
+
+    def test_a_bundle_written_outside_the_served_root_gets_no_viewer_link(
+        self, editor: Editor
+    ) -> None:
+        """A link this server could not honour is worse than no link at all.
+
+        The viewer plays what is under the replays root this launch serves, so
+        a bundle written anywhere else would 404 in the user's browser and be
+        blamed on the export. The absence is the contract, not an oversight.
+        """
+        encounter_id = self.create(editor).json()["encounter_id"]
+        exported = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/replay",
+            json_body={"path": str(editor.replays_dir.parent / "stray" / "away.json")},
+        ).json()
+        assert Path(exported["path"]).exists()
+        assert "viewer_url" not in exported
 
     def test_resuming_reads_the_fight_back_from_its_journal(
         self, editor: Editor

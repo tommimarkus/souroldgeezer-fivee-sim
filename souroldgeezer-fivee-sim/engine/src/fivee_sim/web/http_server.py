@@ -2,7 +2,7 @@
 
 A stdlib :class:`~http.server.ThreadingHTTPServer` bound to ``127.0.0.1``,
 speaking JSON under ``/api/v1`` and serving the two browser pages. It is an
-adapter in exactly the sense the MCP server is one: every endpoint validates
+adapter and nothing else: every endpoint validates
 input, calls a function in :mod:`fivee_sim.service`, and serialises the
 result — no rules, map, or replay logic lives here, and error prose comes
 verbatim from the service exception any other adapter would also report.

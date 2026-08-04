@@ -1,10 +1,24 @@
-"""The Claude Code and Codex packages expose one shared plugin implementation."""
+"""The Claude Code and Codex packages expose one shared plugin implementation.
+
+The plugin used to ship an MCP server, so these tests asked whether each host
+manifest named it and whether the Codex ``.mcp.json`` launched it. There is no
+server for a host to spawn any more: the engine is an HTTP service the ``fivee``
+command starts on demand, the skills drive that command, and what a host has to
+carry is the skills and the launcher script they reach for.
+
+So what is pinned here is the shape that replaced it — no host spawns anything,
+both manifests describe the same plugin, and the launcher the skills name is
+present and executable.
+"""
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
+
+LAUNCHER = "scripts/fivee.sh"
 
 
 def _json(relative_path: str) -> dict[str, Any]:
@@ -13,26 +27,43 @@ def _json(relative_path: str) -> dict[str, Any]:
     return payload
 
 
-def test_codex_manifest_points_at_the_shared_skill_and_mcp_config() -> None:
+def test_the_codex_manifest_points_at_the_shared_skills() -> None:
     manifest = _json(".codex-plugin/plugin.json")
 
     assert manifest["name"] == PLUGIN_ROOT.name
     assert manifest["skills"] == "./skills/"
-    assert manifest["mcpServers"] == "./.mcp.json"
     assert (PLUGIN_ROOT / manifest["skills"]).is_dir()
-    assert (PLUGIN_ROOT / manifest["mcpServers"]).is_file()
 
 
-def test_codex_mcp_config_launches_the_shared_server_from_the_plugin_root() -> None:
-    config = _json(".mcp.json")
-    server = config["mcpServers"]["fivee_sim"]
+def test_neither_host_manifest_asks_to_spawn_a_server() -> None:
+    """The engine is started by the command that needs it, not by the host.
 
-    assert server["command"] == "bash"
-    assert server["args"] == ["./scripts/fivee-sim-mcp.sh"]
-    assert server["cwd"] == "."
-    assert server["env"] == {"FIVEE_SIM_PLUGIN_HOST": "codex"}
-    assert server["startup_timeout_sec"] >= 300
-    assert (PLUGIN_ROOT / server["args"][0]).is_file()
+    A leftover ``mcpServers`` key would have a host spawning a stdio server that
+    no longer exists — a plugin that fails at load rather than at first use, and
+    fails for every session rather than for the one that asked for a fight.
+    """
+    for manifest_path in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
+        assert "mcpServers" not in _json(manifest_path), manifest_path
+    assert not (PLUGIN_ROOT / ".mcp.json").exists(), (
+        "the Codex MCP config is gone with the server it described"
+    )
+
+
+def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
+    """Both skills tell the reader to fall back to this path, so it must exist.
+
+    They locate it relative to the skill directory the harness announces —
+    ``../../scripts/fivee.sh`` from ``skills/<name>/`` — which is this file.
+    A rename that missed the skills would leave that instruction pointing at
+    nothing, and the reader would find out mid-fight.
+    """
+    launcher = PLUGIN_ROOT / LAUNCHER
+    assert launcher.is_file()
+    assert os.access(launcher, os.X_OK), f"{LAUNCHER} must be executable"
+
+    for skill in ("encounter-sim", "map-forge"):
+        text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+        assert "../../scripts/fivee.sh" in text, skill
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:
@@ -41,11 +72,3 @@ def test_host_manifests_identify_the_same_plugin() -> None:
 
     for field in ("name", "description", "author", "license"):
         assert codex[field] == claude[field]
-
-
-def test_claude_mcp_lets_the_launcher_own_the_host_runtime_layout() -> None:
-    manifest = _json(".claude-plugin/plugin.json")
-    environment = manifest["mcpServers"]["fivee_sim"].get("env", {})
-
-    assert "UV_PROJECT_ENVIRONMENT" not in environment
-    assert "UV_CACHE_DIR" not in environment

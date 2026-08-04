@@ -3,7 +3,7 @@
 Plain functions over :mod:`fivee_sim.map_document`,
 :mod:`fivee_sim.kernel.mapgen`, and :mod:`fivee_sim.kernel.grid`. Every
 function takes explicit inputs — a document, a terrain table, a seed — and
-raises plain :class:`ValueError` family errors, so the MCP and REST adapters
+raises plain :class:`ValueError` family errors, so the REST adapter
 stay serialization and error mapping only.
 
 Three behaviours worth naming:

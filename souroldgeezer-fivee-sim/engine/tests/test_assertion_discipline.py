@@ -14,13 +14,14 @@ So the rule, which these tests enforce over the suite's own source:
 * every ``assert_problem(...)`` call passes a non-empty ``detail`` fragment;
 * every ``pytest.raises(...)`` on the **refusal family** passes a ``match=``.
 
-The family is :data:`REFUSAL_ERRORS`: the service layer's own
+The family is :data:`REFUSAL_ERRORS`, which is exactly what
+``fivee_sim.service.errors`` exports:
 ``RequestError``/``NotFoundError``/``MapError``/``MapEditError``/``ReplayError``/
-``StaleWriteError``, and the ``ToolError`` the MCP adapter maps them onto. It
-started as the ``ToolError`` rule alone, and grew when the service layer got an
-error family of its own: every one of these means *the caller asked for
-something the engine will not do*, and a bare ``raises`` proves only that some
-refusal happened. Which refusal is the whole content of the test.
+``StaleWriteError``. It started as a rule about the MCP adapter's ``ToolError``,
+which flattened all of them into one class, and outlived it: every one of these
+means *the caller asked for something the engine will not do*, and a bare
+``raises`` proves only that some refusal happened. Which refusal is the whole
+content of the test.
 
 Two members are load-bearing in ways a status is not. ``NotFoundError`` is the
 only thing separating a 404 from a 400 over HTTP, so a test that accepts either
@@ -58,7 +59,6 @@ FRAGMENT_EXEMPTIONS: frozenset[str] = frozenset()
 #: the trailing name, since the suite imports them by several routes.
 REFUSAL_ERRORS: frozenset[str] = frozenset(
     {
-        "ToolError",
         "RequestError",
         "NotFoundError",
         "MapError",
@@ -173,14 +173,17 @@ def test_the_refusal_family_is_the_one_the_service_layer_actually_raises() -> No
 
     The rule above is a name match, so a renamed exception would silently stop
     being checked while the suite stayed green. This is the check on the check:
-    every name in :data:`REFUSAL_ERRORS` is either the adapter's ``ToolError``
-    or something ``fivee_sim.service.errors`` still exports.
+    :data:`REFUSAL_ERRORS` is neither more nor less than what
+    ``fivee_sim.service.errors`` exports. Equality in both directions, because
+    a name listed here and gone from the source enforces nothing, and a refusal
+    exported there and missing here escapes the rule entirely.
     """
     from fivee_sim.service import errors
 
-    named = {name for name in REFUSAL_ERRORS if name != "ToolError"}
-    assert named <= set(errors.__all__), sorted(named - set(errors.__all__))
-    assert named == set(errors.__all__), (
+    assert REFUSAL_ERRORS <= set(errors.__all__), sorted(
+        REFUSAL_ERRORS - set(errors.__all__)
+    )
+    assert REFUSAL_ERRORS == set(errors.__all__), (
         "service/errors.py exports a refusal this rule does not enforce: "
-        f"{sorted(set(errors.__all__) - named)}"
+        f"{sorted(set(errors.__all__) - REFUSAL_ERRORS)}"
     )

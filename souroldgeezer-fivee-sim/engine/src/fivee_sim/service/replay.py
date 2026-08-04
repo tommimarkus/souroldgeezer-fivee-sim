@@ -641,7 +641,7 @@ def _validate_map(value: Any, found: list[dict[str, str]]) -> None:
 def validate_replay(payload: Any) -> list[dict[str, str]]:
     """Validate a replay bundle and verify v2 component hashes.
 
-    Diagnostics are deliberately small JSON objects so the MCP tool and the
+    Diagnostics are deliberately small JSON objects so the HTTP adapter and the
     browser's shared invalid corpus can present the same paths and meanings.
     """
     found: list[dict[str, str]] = []

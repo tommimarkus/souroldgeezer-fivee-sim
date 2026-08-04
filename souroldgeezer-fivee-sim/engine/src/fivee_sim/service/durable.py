@@ -1,8 +1,8 @@
 """Durable writes that survive a second writer.
 
-Two adapters reach this layer and several processes reach those adapters: every
-MCP server on a host resolves the same encounter and map roots, and the editor
-is a threading HTTP server whose handlers race each other. A ``threading.RLock``
+Several processes reach this layer at once: every engine server on a host
+resolves the same encounter and map roots, and each is a threading HTTP
+server whose handlers race each other. A ``threading.RLock``
 answers none of that, so the primitives here are the ones that do.
 
 Two guarantees, deliberately separate:

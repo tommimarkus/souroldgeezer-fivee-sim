@@ -1,6 +1,6 @@
 """The engine's HTTP face: a localhost REST adapter over :mod:`fivee_sim.service`.
 
-The same rule that governs the MCP server governs this package: endpoints are
+One rule governs this package: endpoints are
 validation, serialization and error mapping only, and everything they do is one
 call into the service layer. :mod:`~fivee_sim.web.routes` declares every
 operation once; :mod:`~fivee_sim.web.http_server` dispatches from that table

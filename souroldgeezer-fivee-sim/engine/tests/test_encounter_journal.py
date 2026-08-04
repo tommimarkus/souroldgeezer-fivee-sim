@@ -10,10 +10,11 @@ from threading import Barrier
 import pytest
 
 from fivee_sim.content import BuiltinMode, ContentRegistry
-from fivee_sim.mcp_server import server as api
 from fivee_sim.service import encounter_journal
 from fivee_sim.service import sessions as sessions_service
+from fivee_sim.service.errors import RequestError
 
+from . import api
 from .conftest import REPLAY_GOBLIN, REPLAY_HERO, mapless_fight
 
 
@@ -71,7 +72,7 @@ def test_creation_request_ids_are_idempotent_even_after_memory_loss() -> None:
     first = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=102, request_id="create-duel"
     )
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
     second = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=999, request_id="create-duel"
@@ -94,7 +95,7 @@ def test_a_repeated_request_id_returns_the_original_result_without_acting_twice(
 def test_a_refused_action_is_part_of_the_audit_record() -> None:
     encounter_id = mapless_fight(seed=107)
 
-    with pytest.raises(api.ToolError, match="needs a target"):
+    with pytest.raises(RequestError, match="needs a target"):
         api.encounter_act(encounter_id, "attack", request_id="bad-attack")
 
     bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
@@ -107,7 +108,7 @@ def test_an_active_encounter_recovers_after_process_memory_is_lost() -> None:
     encounter_id = mapless_fight(seed=109)
     api.encounter_advance(encounter_id, request_id="turn-1")
     before = api.encounter_state(encounter_id)
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
     recovered = api.encounter_resume(encounter_id)
 
@@ -130,7 +131,7 @@ def test_an_attempt_interrupted_before_its_result_is_audited_and_safe_to_retry()
             "arguments": {},
         },
     )
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
     api.encounter_resume(encounter_id)
     interrupted = api.replay_export(encounter_id, format_version=2)["bundle"][
@@ -147,8 +148,8 @@ def test_an_attempt_interrupted_before_its_result_is_audited_and_safe_to_retry()
 def test_recovery_uses_captured_content_when_the_live_registry_has_changed() -> None:
     encounter_id = mapless_fight(seed=111)
     before = api.encounter_state(encounter_id)
-    api._STATE.sessions.clear()
-    api._STATE.content = sessions_service.Content(
+    api.STATE.sessions.clear()
+    api.STATE.content = sessions_service.Content(
         registry=ContentRegistry(builtin=BuiltinMode.EXCLUDE), generation=9
     )
 
@@ -179,7 +180,7 @@ def test_discovery_and_idempotent_finalization_keep_the_journal(
 def test_finalization_is_idempotent_after_process_memory_is_lost() -> None:
     encounter_id = mapless_fight(seed=117)
     first = api.encounter_finalize(encounter_id)
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
     second = api.encounter_finalize(encounter_id)
 
@@ -196,7 +197,7 @@ def test_a_partial_tail_is_preserved_and_the_valid_prefix_recovers(
     path = journal_path(root, encounter_id)
     with path.open("ab") as handle:
         handle.write(b'{"partial"')
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
     result = api.encounter_resume(encounter_id)
 
@@ -216,7 +217,7 @@ def test_hash_chain_tampering_is_refused_instead_of_silently_replayed(
     line = json.loads(path.read_text(encoding="utf-8"))
     line["seed"] = 150
     path.write_text(json.dumps(line) + "\n", encoding="utf-8")
-    api._STATE.sessions.clear()
+    api.STATE.sessions.clear()
 
-    with pytest.raises(api.ToolError, match="invalid sha256"):
+    with pytest.raises(RequestError, match="invalid sha256"):
         api.encounter_resume(encounter_id)
