@@ -10,6 +10,7 @@ property a corrupted chain takes away: the fight can still be read back.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -256,3 +257,87 @@ def test_a_replaced_file_keeps_the_permissions_it_had(tmp_path: Path) -> None:
     durable.atomic_write(target, '{"generation": 1}')
 
     assert _stat.S_IMODE(target.stat().st_mode) == 0o644
+
+
+def test_map_save_defaults_to_the_version_this_session_last_saw(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Opt-in protection protects nobody: the encounter path guards itself.
+
+    A session that has saved or loaded a file knows which bytes it last saw
+    there, so it can supply its own precondition. Requiring the caller to pass
+    one left two MCP sessions free to lost-update a shared map — the very case
+    the editor is now guarded against.
+    """
+    monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
+    target = str(tmp_path / "maps" / "shared.json")
+    mine = str(api.map_generate("dungeon", {"width": 20, "height": 16}, seed=13)["map_id"])
+    api.map_save(mine, path=target)
+
+    # A second session loads the same file and moves it on.
+    theirs = str(api.map_load(target)["map_id"])
+    document = api._map_session(theirs).document
+    floor = next(
+        (row.index("."), y) for y, row in enumerate(document.tiles) if "." in row
+    )
+    api.map_edit(theirs, [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}])
+    api.map_save(theirs, path=target, overwrite=True)
+
+    # The first session saves again, passing no precondition of its own.
+    with pytest.raises(api.ToolError, match="has advanced"):
+        api.map_save(mine, path=target, overwrite=True)
+
+
+class TestLockLifecycle:
+    """The platform call is one line; the lifecycle around it is the contract.
+
+    ``fcntl.flock`` runs here and ``msvcrt.locking`` never does, so the Windows
+    branch has no direct coverage and this repo has no Windows CI to give it
+    any. What *is* platform-independent is the order — acquire, body, release,
+    close — and that a body which raises still releases. Substituting the two
+    primitives pins that much on every platform.
+    """
+
+    def test_the_lock_is_released_and_closed_after_a_normal_body(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        calls: list[str] = []
+        monkeypatch.setattr(durable, "_acquire", lambda fd: calls.append("acquire"))
+        monkeypatch.setattr(durable, "_release", lambda fd: calls.append("release"))
+
+        with durable.file_lock(tmp_path / "map.json"):
+            calls.append("body")
+
+        assert calls == ["acquire", "body", "release"]
+
+    def test_a_raising_body_still_releases_the_lock(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        calls: list[str] = []
+        monkeypatch.setattr(durable, "_acquire", lambda fd: calls.append("acquire"))
+        monkeypatch.setattr(durable, "_release", lambda fd: calls.append("release"))
+
+        with pytest.raises(RuntimeError, match="boom"):
+            with durable.file_lock(tmp_path / "map.json"):
+                raise RuntimeError("boom")
+
+        assert calls == ["acquire", "release"], "a failed body must not strand the lock"
+
+    def test_a_failing_release_still_closes_the_descriptor(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        leaked: list[int] = []
+
+        def remember(descriptor: int) -> None:
+            leaked.append(descriptor)
+            raise OSError("release failed")
+
+        monkeypatch.setattr(durable, "_acquire", lambda fd: None)
+        monkeypatch.setattr(durable, "_release", remember)
+
+        with pytest.raises(OSError, match="release failed"):
+            with durable.file_lock(tmp_path / "map.json"):
+                pass
+
+        with pytest.raises(OSError):
+            os.fstat(leaked[0])

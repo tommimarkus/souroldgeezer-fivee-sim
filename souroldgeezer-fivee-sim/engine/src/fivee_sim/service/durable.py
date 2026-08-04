@@ -26,6 +26,7 @@ dies, which removes the dead-owner reclamation a lease would have to hand-roll.
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 import sys
@@ -38,8 +39,30 @@ from .errors import StaleWriteError
 
 if sys.platform == "win32":  # pragma: no cover - POSIX is the developed platform
     import msvcrt
+
+    def _acquire(descriptor: int) -> None:
+        # ``LK_LOCK`` gives up after ten one-second attempts and raises, where
+        # ``flock`` simply waits. Loop so "blocking" means the same thing on
+        # both platforms rather than becoming a spurious refusal under load.
+        while True:
+            try:
+                msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+                return
+            except OSError as error:
+                if error.errno != errno.EDEADLOCK:
+                    raise
+
+    def _release(descriptor: int) -> None:
+        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+
 else:
     import fcntl
+
+    def _acquire(descriptor: int) -> None:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+
+    def _release(descriptor: int) -> None:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
 
 __all__ = ["StaleWriteError", "atomic_write", "file_lock", "guarded_write", "lock_path"]
 
@@ -50,6 +73,12 @@ def lock_path(path: Path) -> Path:
     A sibling rather than the file itself: the guarded file may not exist yet,
     and a journal's own directory listing must not grow a phantom entry — the
     ``.lock`` suffix keeps it outside the ``enc-*.jsonl`` glob.
+
+    These files accumulate and are **never reaped**, which is deliberate rather
+    than neglected. Mutual exclusion here is a property of the inode: unlinking
+    a lock another process is holding lets the next arrival create a fresh one
+    and take a lock that excludes nobody. An empty file per map and per
+    encounter is the cheaper end of that trade.
     """
     return path.parent / f"{path.name}.lock"
 
@@ -70,17 +99,13 @@ def file_lock(path: Path) -> Iterator[None]:
         guard, os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600
     )
     try:
-        if sys.platform == "win32":  # pragma: no cover - POSIX is the developed platform
-            msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
-        else:
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+        _acquire(descriptor)
         yield
     finally:
+        # Both, always: a body that raised still holds the lock, and a release
+        # that fails must not leak the descriptor on top of it.
         try:
-            if sys.platform == "win32":  # pragma: no cover
-                msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
-            else:
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            _release(descriptor)
         finally:
             os.close(descriptor)
 

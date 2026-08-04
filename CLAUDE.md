@@ -234,13 +234,31 @@ a separate layer because they are resolution primitives like the rest.
 
 **`service/` holds the tool bodies, and both adapters go through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
-`errors.py`, `maps.py`, `replay.py`, and `uvtt.py`.
+`durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `replay.py`, and
+`uvtt.py`.
 Nothing in it may import MCP, HTTP, or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
 `ValueError`-family errors. That is the whole reason two adapters can both be
 thin. `mcp_server/server.py` maps those errors onto `ToolError`,
 `editor/http_server.py` onto problem+json, and neither does anything more than
 that and serialisation. A tool body written into an adapter belongs here instead.
+
+**`service/` also owns durable-write concurrency, because it owns the state.**
+Several processes reach these files — every MCP server on a host resolves the
+same encounter and map roots, and the editor is a threading HTTP server — so
+`durable.py` separates two guarantees. *Integrity* is unconditional: a `flock`
+makes read-modify-write atomic across processes and `atomic_write` publishes by
+rename, so a reader never sees a prefix. *Ownership* is a precondition the caller
+opts into: pass the version you read and a `StaleWriteError` refuses the write
+when someone else got there first.
+
+Serialising alone would be a false fix. Two servers holding divergent copies of
+one fight would produce an interleaved journal that replays as neither, so the
+lock protects the bytes and only the precondition protects the meaning. That is
+also why a stale writer is refused rather than merged, and why the refusal is
+*not* opt-in in practice: an encounter session tracks its journal head and a map
+session the bytes it last saw on disk, so both supply their own precondition and
+a caller has to pass `"*"` to deliberately take a file over.
 
 **Five modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `validation.py`, and `coverage.py`

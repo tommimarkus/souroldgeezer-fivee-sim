@@ -42,7 +42,12 @@ session or file — is currently the truth.
    toggling either moves both. `to_level` on a feature makes it a connector
    between storeys.
 4. **`map_save`** writes canonical JSON and refuses to overwrite unless told
-   to. Quote the path and the sha256.
+   to. Quote the path and the sha256. It also refuses when the file changed
+   since you last saw it — another session, or the open editor, got there
+   first. That is not a retry: `map_load` the file, reapply your edits to the
+   version that is actually on disk, and save again. Only pass
+   `expected_sha256="*"` when you mean to discard whatever the other writer
+   did, and say so when you do.
 5. **Hand-tuning: `map_editor_serve`** starts the interactive editor and
    returns its URL — hand that URL to the user to open in a browser. The
    served page configures its own access token; there is nothing else to

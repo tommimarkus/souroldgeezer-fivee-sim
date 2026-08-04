@@ -154,6 +154,11 @@ class _MapSession:
     document: MapDocument
     generation: int = 1
     path: str | None = None
+    #: The bytes this session last saw at :attr:`path` — set when it loaded the
+    #: file or wrote it, and deliberately *not* updated by an edit, since an edit
+    #: moves the document away from disk rather than moving disk. It is what lets
+    #: a save guard itself without the caller supplying a hash.
+    disk_sha256: str = ""
 
 
 @dataclass(slots=True)
@@ -2481,15 +2486,19 @@ def map_load(
             )
     except ValueError as error:
         raise ToolError(str(error)) from error
+    # Only a file gives this session a version to guard against; an inline
+    # document has no disk state to be stale relative to.
+    on_disk = sha256_of(_serialize_map(loaded)) if path is not None else ""
     if replace is not None:
         session = _map_session(replace)
         session.document = loaded
         session.generation += 1
         session.path = path
+        session.disk_sha256 = on_disk
         map_id = replace
     else:
         map_id = _new_map_id()
-        _MAPS[map_id] = _MapSession(document=loaded, path=path)
+        _MAPS[map_id] = _MapSession(document=loaded, path=path, disk_sha256=on_disk)
     return {
         "map_id": map_id,
         "name": loaded.name,
@@ -2514,10 +2523,15 @@ def map_save(
     only replaced when ``overwrite`` is true. Returns the written path, byte
     count, and sha256 — the hash to quote when handing the file elsewhere.
 
-    ``expected_sha256`` is the hash you last read. Pass it and the write is
-    refused if anything else — another session, or the open editor — has
-    changed the file since; ``overwrite`` alone guards against clobbering a
-    file you did not know about, not a version you did not read.
+    ``expected_sha256`` is the hash you last read. The write is refused if
+    anything else — another session, or the open editor — has changed the file
+    since; ``overwrite`` alone guards against clobbering a file you did not know
+    about, not a version you did not read.
+
+    You rarely need to pass it. When this session already loaded or wrote the
+    target, it supplies its own last-seen hash, so a concurrent change is
+    refused by default rather than only when the caller remembered to ask. Pass
+    ``"*"`` to write regardless, which is the deliberate way to take a file over.
     """
     session = _map_session(map_id)
     target = (
@@ -2525,17 +2539,30 @@ def map_save(
         if path is not None
         else str(_map_service.maps_root() / f"{slugify(session.document.name)}.json")
     )
+    if expected_sha256 == "*":
+        expected = None
+    elif expected_sha256 is not None:
+        expected = expected_sha256
+    elif session.path == target and session.disk_sha256:
+        expected = session.disk_sha256
+    else:
+        # Nothing this session has seen lives there, so there is no version to
+        # be stale against; `overwrite` remains the only guard, as before.
+        expected = None
     try:
         saved = _map_service.save_file(
             session.document,
             target,
             overwrite=overwrite,
-            expected_sha256=expected_sha256,
+            expected_sha256=expected,
             terrain=_registry().terrain_effects,
         )
     except (OSError, ValueError) as error:
         raise ToolError(str(error)) from error
     session.path = str(saved["path"])
+    # What this session now knows is on disk, so a second save guards against
+    # anyone who writes between the two.
+    session.disk_sha256 = str(saved["sha256"])
     return {**saved, "map_id": map_id, "provenance": as_payload(session.document)["provenance"]}
 
 

@@ -50,6 +50,14 @@ narrating from memory puts it straight back.
    rolled automatically at the start of their turn.
 5. Repeat until `state["over"]` is true; `state["winner"]` names the surviving side.
 
+**One encounter id has one writer at a time.** Every server on the machine
+shares the encounter journals, so if another session has advanced this fight
+since you last acted, your next call is refused with an error saying the
+encounter *has advanced since you read it*. Your copy is a different fight by
+then, so do not retry: call `encounter_state` to see where the fight actually
+is, tell the user it moved on elsewhere, and continue from there. Handing the
+same id to two agents at once is what produces this, and is worth avoiding.
+
 Past events are never lost: **`encounter_log`** pages the whole history
 (`since`/`limit`), each event stamped with its round and turn, plus the action
 records that — with the reported seed — reproduce the fight exactly. Recap
