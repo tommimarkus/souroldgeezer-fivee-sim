@@ -9,16 +9,17 @@
 .gitconfig
 .gitmodules
 .idea
-# Anchored to the two paths the devcontainer actually mounts /dev/null over.
-# Deliberately NOT the bare name: `souroldgeezer-fivee-sim/.mcp.json` is a real,
-# tracked, shipped file — the plugin's MCP manifest — and an unanchored pattern
-# matches it and every future plugin's too. Ignoring a tracked file changes
-# nothing today, which is exactly what makes it a trap for the restructure that
-# re-adds one.
-/.mcp.json
-/souroldgeezer-fivee-sim/engine/.mcp.json
-/souroldgeezer-fivee-sim/engine/src/.mcp.json
-/souroldgeezer-fivee-sim/engine/src/fivee_sim/.mcp.json
+# The bare name, and it is now the right pattern. This block used to anchor
+# each path individually and said so at length, because
+# `souroldgeezer-fivee-sim/.mcp.json` was a real tracked file — the plugin's MCP
+# manifest — that an unanchored pattern would have swallowed.
+#
+# Dropping MCP deleted that file, and no `.mcp.json` is tracked anywhere now.
+# The devcontainer promptly revealed a /dev/null mount at that path too, which
+# the real file had been masking, and the anchored list had no entry for it.
+# Enumerating mount points loses that race every time; the bare name does not.
+# Restore the anchors if a tracked `.mcp.json` is ever re-added.
+.mcp.json
 .profile
 .ripgreprc
 .vscode
