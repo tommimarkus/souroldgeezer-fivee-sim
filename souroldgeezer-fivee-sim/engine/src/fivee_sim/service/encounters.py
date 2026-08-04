@@ -56,8 +56,6 @@ def creation_response(
     }
     map_source = sessions.map_source_of(state, session)
     if map_source is not None:
-        if session.map_sha256:
-            map_source["sha256"] = session.map_sha256
         result["map_source"] = map_source
     return result
 
@@ -92,7 +90,7 @@ def create(
     used = specs.checked_seed(seed)
     rng = Random(used)
     content = sessions.active_content(state)
-    battle_map, map_source = sessions.resolve_battle_map(state, map_spec, map_id)
+    battle_map, map_source, map_document = sessions.resolve_battle_map(state, map_spec, map_id)
     try:
         built_combatants = specs.combatants_from_specs(combatants, content.registry)
         encounter = sessions.new_encounter(
@@ -119,15 +117,13 @@ def create(
     sessions.capture_checkpoint(session, created_at)
     if encounter.map_state is not None:
         session.initial_open_features = sorted(encounter.map_state.open_features)
-    if map_source is not None:
+    if map_source is not None and map_document is not None:
         session.map_id = str(map_source["map_id"])
-        session.map_generation = int(map_source["generation"])
         session.map_sha256 = str(map_source["sha256"])
-        # The payload, not the session reference: replay_export must see the
-        # document as it stands now, whatever happens to the map later.
-        session.map_payload = as_payload(
-            sessions.map_session_for(state, session.map_id).document
-        )
+        # The payload, not a reference to the file: replay_export must see the
+        # document as it stood when the fight started, whatever is written to
+        # the map afterwards.
+        session.map_payload = as_payload(map_document)
     elif battle_map is not None:
         session.inline_map_payload = replay_service.battle_map_payload(battle_map)
     state.sessions[encounter_id] = session

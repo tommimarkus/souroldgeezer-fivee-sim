@@ -1,9 +1,18 @@
 """Operations over a map *document*, and the replay bundles fights export to.
 
 What unites these is their subject. A map here is a document — generated,
-loaded, edited, rendered, queried, exported — not a fight; the session that
-holds one is a handle on a document, and the only place a fight enters is as an
-overlay on a render or as the encounter a replay was made from.
+edited, rendered, queried, exported — not a fight; the only place a fight
+enters is as an overlay on a render or as the encounter a replay was made from.
+
+**A map is a file, addressed by id.** There used to be a dictionary of loaded
+map sessions in front of the files, with generation counters to say how far a
+copy had drifted. It is gone: an id is the ``slugify`` of a filename under the
+maps directory, every operation reads the file it names, and the only version
+anything compares against is the file's own canonical hash. That is what makes
+two servers on one host agree about a map instead of each holding a private
+copy it believes is current. The operations that only need a *document* — a
+render, a query, a UVTT export — accept one inline as well, which is what keeps
+generate -> look -> tweak -> save possible without anything being loaded.
 
 Two policies live here rather than in the adapter because both are about the
 *result*, not the transport. A map small enough renders inline and a larger one
@@ -21,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import __version__
-from ..kernel.grid import Square, UnknownTerrain, as_point, to_square
+from ..kernel.grid import Square, TerrainTable, UnknownTerrain, as_point, to_square
 from ..map_document import GROUND_LEVEL, MapDocument, MapLevel, as_payload
 from ..map_document import serialize as serialize_map
 from . import maps as map_service
@@ -29,24 +38,27 @@ from . import replay as replay_service
 from . import sessions, specs
 from . import uvtt as uvtt_service
 from .common import sha256_of, slugify
-from .errors import RequestError
+from .errors import MapEditError, RequestError, StaleWriteError
 from .sessions import EngineState
 
 __all__ = [
     "INLINE_BUNDLE_BYTES",
     "INLINE_RENDER_CELLS",
+    "document_of",
     "edit",
     "edit_render",
     "encounter_tokens",
     "generate",
-    "load",
+    "get_map",
+    "map_list",
     "map_summary",
     "query_map",
     "render",
     "replay_export",
     "replay_validate",
-    "save",
+    "save_map",
     "storey_summary",
+    "terrain_of",
     "uvtt_export",
 ]
 
@@ -244,128 +256,159 @@ def edit_render(before: MapDocument, after: MapDocument) -> dict[str, Any]:
     )
 
 
-# --- the map tools ---------------------------------------------------------
+# --- resolving what a call is about ----------------------------------------
+def terrain_of(state: EngineState) -> TerrainTable:
+    return sessions.active_registry(state).terrain_effects
+
+
+def document_of(
+    state: EngineState, map_id: str | None, document: dict[str, Any] | None
+) -> tuple[MapDocument, str | None]:
+    """The document one call is about: a saved map's, or one given inline.
+
+    Exactly one, and the refusal names both — an operation over "the map" has
+    to know which map, and silently preferring one of two given subjects is how
+    a caller ends up looking at a document it did not send.
+    """
+    if (map_id is None) == (document is None):
+        raise RequestError("give exactly one of 'map_id' (a saved map) or 'document' (inline)")
+    if map_id is not None:
+        loaded, _path = map_service.load_by_id(
+            map_id, sessions.maps_dir_of(state), terrain=terrain_of(state)
+        )
+        return loaded, map_id
+    assert document is not None
+    parsed, _warnings = map_service.parse_payload(
+        document, source="inline", terrain=terrain_of(state)
+    )
+    return parsed, None
+
+
+def map_list(state: EngineState) -> dict[str, Any]:
+    """Every saved map under this adapter's maps directory, keyed by id."""
+    found = map_service.index(sessions.maps_dir_of(state))
+    return {"maps": [found[map_id] for map_id in sorted(found)]}
+
+
+def get_map(state: EngineState, map_id: str) -> dict[str, Any]:
+    """One saved map: its canonical payload, and the hash that identifies it."""
+    document, path = map_service.load_by_id(
+        map_id, sessions.maps_dir_of(state), terrain=terrain_of(state)
+    )
+    return {
+        "map_id": map_id,
+        "path": str(path),
+        "sha256": sha256_of(serialize_map(document)),
+        "document": as_payload(document),
+    }
+
+
+def save_map(
+    state: EngineState,
+    map_id: str,
+    document: dict[str, Any],
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Write a document under ``map_id``, refusing a write from a stale read.
+
+    ``expected_sha256`` is the version the caller read: ``"*"`` writes
+    regardless, a hash is compared *under the write lock* rather than before it,
+    and ``None`` requires the id to be free — a caller who did not read cannot
+    claim to know what it is replacing.
+    """
+    directory = sessions.maps_dir_of(state)
+    target = map_service.path_for_id(map_id, directory)
+    parsed, warnings = map_service.parse_payload(
+        document, source=map_id, terrain=terrain_of(state)
+    )
+    expected = None if expected_sha256 == "*" else expected_sha256
+    try:
+        saved = map_service.save_file(
+            parsed,
+            target,
+            overwrite=expected_sha256 is not None,
+            expected_sha256=expected,
+            terrain=terrain_of(state),
+        )
+    except OSError as error:
+        raise RequestError(f"cannot write {target}: {error}") from error
+    except StaleWriteError:
+        # A ValueError like the rest, and the one this must not flatten: the
+        # caller's remedy is to re-read, which "bad request" does not say.
+        raise
+    except ValueError as error:
+        if expected is None and target.exists():
+            # ``overwrite`` names an argument neither adapter's caller has:
+            # what they have is the version they read, so say that instead.
+            raise RequestError(
+                f"map {map_id!r} already exists; supply the version you read "
+                f"to replace it, or '*' to take it over"
+            ) from error
+        raise RequestError(str(error)) from error
+    return {
+        "saved": True,
+        "map_id": map_id,
+        "created": expected is None,
+        "path": str(saved["path"]),
+        "bytes": saved["bytes"],
+        "sha256": saved["sha256"],
+        "name": parsed.name,
+        "summary": map_summary(parsed),
+        "warnings": [warning.as_dict() for warning in warnings],
+        "provenance": as_payload(parsed)["provenance"],
+    }
+
+
+# --- the map operations ----------------------------------------------------
 def generate(
     state: EngineState,
     kind: str,
     params: dict[str, Any] | None = None,
     seed: int | None = None,
     name: str | None = None,
+    save_as: str | None = None,
 ) -> dict[str, Any]:
+    """Generate a map under a seed; ``save_as`` also writes it under that id.
+
+    The document comes back either way. Generation is cheap and reproducible
+    from its seed, so a caller is free to look before keeping — but keeping it
+    is one call rather than two, because the alternative was a session holding
+    the result in the meantime, which is the thing that no longer exists.
+    """
     used = specs.checked_seed(seed)
     try:
         document = map_service.generate(kind, params, used, name=name)
     except ValueError as error:
         raise RequestError(str(error)) from error
-    map_id = sessions.new_map_id(state)
-    state.maps[map_id] = sessions.MapSession(document=document)
     result: dict[str, Any] = {
-        "map_id": map_id,
+        "map_id": None,
         "seed": used,
         "kind": kind,
         "name": document.name,
         "params": dict(document.provenance.params),
         "summary": map_summary(document),
         "provenance": as_payload(document)["provenance"],
+        "document": as_payload(document),
     }
     if document.grid.width * document.grid.height <= INLINE_RENDER_CELLS:
         result["render"] = map_service.render_ascii(document)
     else:
         result["render"] = None
         result["note"] = (
-            "the map is too large to render inline; call map_render with a viewport "
+            "the map is too large to render inline; render it with a viewport "
             "(x, y, width, height) or a downsample factor"
         )
+    if save_as is not None:
+        saved = save_map(state, save_as, as_payload(document), expected_sha256=None)
+        result["map_id"] = save_as
+        result["saved"] = saved
     return result
-
-
-def load(
-    state: EngineState,
-    path: str | None = None,
-    document: dict[str, Any] | None = None,
-    replace: str | None = None,
-) -> dict[str, Any]:
-    if (path is None) == (document is None):
-        raise RequestError("give exactly one of 'path' (a file) or 'document' (inline JSON)")
-    terrain = sessions.active_registry(state).terrain_effects
-    try:
-        if path is not None:
-            loaded, warnings = map_service.load_file(path, terrain=terrain)
-        else:
-            assert document is not None
-            loaded, warnings = map_service.parse_payload(
-                document, source="inline", terrain=terrain
-            )
-    except ValueError as error:
-        raise RequestError(str(error)) from error
-    # Only a file gives this session a version to guard against; an inline
-    # document has no disk state to be stale relative to.
-    on_disk = sha256_of(serialize_map(loaded)) if path is not None else ""
-    if replace is not None:
-        session = sessions.map_session_for(state, replace)
-        session.document = loaded
-        session.generation += 1
-        session.path = path
-        session.disk_sha256 = on_disk
-        map_id = replace
-    else:
-        map_id = sessions.new_map_id(state)
-        state.maps[map_id] = sessions.MapSession(
-            document=loaded, path=path, disk_sha256=on_disk
-        )
-    return {
-        "map_id": map_id,
-        "name": loaded.name,
-        "summary": map_summary(loaded),
-        "warnings": [warning.as_dict() for warning in warnings],
-        "provenance": as_payload(loaded)["provenance"],
-        "sha256": sha256_of(serialize_map(loaded)),
-    }
-
-
-def save(
-    state: EngineState,
-    map_id: str,
-    path: str | None = None,
-    overwrite: bool = False,
-    expected_sha256: str | None = None,
-) -> dict[str, Any]:
-    session = sessions.map_session_for(state, map_id)
-    target = (
-        path
-        if path is not None
-        else str(map_service.maps_root() / f"{slugify(session.document.name)}.json")
-    )
-    if expected_sha256 == "*":
-        expected = None
-    elif expected_sha256 is not None:
-        expected = expected_sha256
-    elif session.path == target and session.disk_sha256:
-        expected = session.disk_sha256
-    else:
-        # Nothing this session has seen lives there, so there is no version to
-        # be stale against; `overwrite` remains the only guard, as before.
-        expected = None
-    try:
-        saved = map_service.save_file(
-            session.document,
-            target,
-            overwrite=overwrite,
-            expected_sha256=expected,
-            terrain=sessions.active_registry(state).terrain_effects,
-        )
-    except (OSError, ValueError) as error:
-        raise RequestError(str(error)) from error
-    session.path = str(saved["path"])
-    # What this session now knows is on disk, so a second save guards against
-    # anyone who writes between the two.
-    session.disk_sha256 = str(saved["sha256"])
-    return {**saved, "map_id": map_id, "provenance": as_payload(session.document)["provenance"]}
 
 
 def render(
     state: EngineState,
-    map_id: str,
+    map_id: str | None = None,
+    document: dict[str, Any] | None = None,
     x: int = 0,
     y: int = 0,
     width: int | None = None,
@@ -376,12 +419,12 @@ def render(
     level: int = 0,
     encounter_id: str | None = None,
 ) -> dict[str, Any]:
-    session = sessions.map_session_for(state, map_id)
+    subject, resolved_id = document_of(state, map_id, document)
     tokens: dict[Square, str] = {}
     letters: dict[str, str] = {}
     open_features: list[str] | None = None
     if encounter_id is not None:
-        tokens, letters = encounter_tokens(state, session.document, encounter_id)
+        tokens, letters = encounter_tokens(state, subject, encounter_id)
         # The fight's live fixture states. A mapless fight has none, and a fight
         # on some other map contributes names this document simply does not
         # have — the same leniency the token overlay already takes with a
@@ -391,7 +434,7 @@ def render(
             open_features = sorted(map_state.open_features)
     try:
         rendered = map_service.render_ascii(
-            session.document,
+            subject,
             x=x, y=y, width=width, height=height,
             downsample=downsample, show_features=show_features,
             show_elevation=show_elevation, level=level,
@@ -399,45 +442,69 @@ def render(
         )
     except ValueError as error:
         raise RequestError(str(error)) from error
-    result: dict[str, Any] = {"map_id": map_id, "generation": session.generation, **rendered}
+    result: dict[str, Any] = {
+        "map_id": resolved_id,
+        "sha256": sha256_of(serialize_map(subject)),
+        **rendered,
+    }
     if encounter_id is not None:
         result["tokens"] = letters
     return result
 
 
 def edit(
-    state: EngineState, map_id: str, operations: list[dict[str, Any]]
+    state: EngineState,
+    map_id: str,
+    operations: list[dict[str, Any]],
+    expected_sha256: str | None = None,
 ) -> dict[str, Any]:
-    session = sessions.map_session_for(state, map_id)
-    before = session.document
+    """Apply edits to a saved map and write the result: all of them, or none.
+
+    A read-modify-write, so the version read is the precondition the write
+    carries — without it two editors of one file each acknowledge an edit and
+    the slower one silently discards the faster one's. The caller may name the
+    version it read; by default it is the one this call just read, which closes
+    the window between the two rather than leaving it open by default.
+    """
+    directory = sessions.maps_dir_of(state)
+    path = map_service.resolve_id(map_id, directory)
+    before, _warnings = map_service.load_file(path, terrain=terrain_of(state))
+    base = expected_sha256 or sha256_of(serialize_map(before))
     try:
-        after = map_service.apply_edits(
-            before, operations, terrain=sessions.active_registry(state).terrain_effects
-        )
+        after = map_service.apply_edits(before, operations, terrain=terrain_of(state))
+    except MapEditError:
+        raise
     except ValueError as error:
         raise RequestError(str(error)) from error
-    if after is not before:
-        session.document = after
-        session.generation += 1
+    saved = map_service.save_file(
+        after,
+        path,
+        overwrite=True,
+        expected_sha256=None if base == "*" else base,
+        terrain=terrain_of(state),
+    )
     return {
+        "saved": True,
         "applied": len(operations),
         "map_id": map_id,
-        "generation": session.generation,
+        "sha256": saved["sha256"],
         "edited": after.provenance.edited,
         "summary": map_summary(after),
         "render": edit_render(before, after),
+        "document": as_payload(after),
     }
 
 
 def query_map(
     state: EngineState,
-    map_id: str,
-    query: str,
+    map_id: str | None = None,
+    document: dict[str, Any] | None = None,
+    query: str = "",
     frm: list[int] | None = None,
     to: list[int] | None = None,
     level: int = 0,
 ) -> dict[str, Any]:
-    session = sessions.map_session_for(state, map_id)
+    subject, resolved_id = document_of(state, map_id, document)
 
     def _square_arg(value: list[int] | None, what: str) -> Square:
         if not (
@@ -452,28 +519,29 @@ def query_map(
     target = _square_arg(to, "to")
     try:
         answer = map_service.query(
-            session.document, query, origin, target,
-            terrain=sessions.active_registry(state).terrain_effects, level=level,
+            subject, query, origin, target,
+            terrain=terrain_of(state), level=level,
         )
     except (UnknownTerrain, ValueError) as error:
         raise RequestError(str(error)) from error
-    return {"map_id": map_id, **answer}
+    return {"map_id": resolved_id, **answer}
 
 
 def uvtt_export(
     state: EngineState,
-    map_id: str,
+    map_id: str | None = None,
+    document: dict[str, Any] | None = None,
     path: str | None = None,
     pixels_per_grid: int = 32,
     include_image: bool = True,
     level: int = 0,
     open_features: list[str] | None = None,
 ) -> dict[str, Any]:
-    session = sessions.map_session_for(state, map_id)
+    subject, resolved_id = document_of(state, map_id, document)
     try:
         payload = uvtt_service.to_uvtt(
-            session.document,
-            terrain=sessions.active_registry(state).terrain_effects,
+            subject,
+            terrain=terrain_of(state),
             pixels_per_grid=pixels_per_grid,
             include_image=include_image,
             level=level,
@@ -484,7 +552,7 @@ def uvtt_export(
     target = (
         Path(path).expanduser()
         if path is not None
-        else map_service.maps_root() / "uvtt" / f"{slugify(session.document.name)}.uvtt"
+        else map_service.maps_root() / "uvtt" / f"{slugify(subject.name)}.uvtt"
     )
     text = json.dumps(payload) + "\n"
     try:
@@ -495,7 +563,7 @@ def uvtt_export(
     return {
         "path": str(target),
         "bytes": len(text.encode("utf-8")),
-        "map_id": map_id,
+        "map_id": resolved_id,
         "resolution": payload["resolution"],
         "wall_polylines": len(payload["line_of_sight"]),
         "portals": len(payload["portals"]),
@@ -595,7 +663,7 @@ def replay_export(
     }
 
     if embed:
-        static = resources.files("fivee_sim.editor") / "static"
+        static = resources.files("fivee_sim.web") / "static"
         viewer = (static / "viewer.html").read_text(encoding="utf-8")
         renderer = (static / "renderer.js").read_text(encoding="utf-8")
         html = replay_service.embed_in_viewer(
@@ -636,6 +704,6 @@ def replay_export(
         "sha256": replay_service.sha256_bytes(serialized.encode("utf-8")),
     }
     # Only the bundle branch: an embedded .html is opened directly and is not
-    # in the served /api/replays listing, which reads bundles alone.
+    # in the served replay listing, which reads bundles alone.
     viewer_url = viewer_link(target) if viewer_link is not None else None
     return written if viewer_url is None else {**written, "viewer_url": viewer_url}

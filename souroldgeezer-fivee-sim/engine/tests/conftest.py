@@ -63,30 +63,34 @@ REPLAY_GOBLIN: dict[str, Any] = {
 def _isolate_server_state(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Any
 ) -> Iterator[None]:
-    """Save and restore every module-level global in the MCP server around each test.
+    """Save and restore the MCP server's process state, and root every file it writes.
 
     ``content`` is loaded lazily, so restoring it also *resets* it: the value put
     back is the ``None`` the state started with, and the next test that asks for
     content loads it fresh. That is what the two per-class fixtures in
     ``test_content`` used to arrange by hand for the content and the sessions;
-    doing it here covers the maps and both id counters as well, which they missed.
+    doing it here covers the id counter as well, which they missed.
+
+    The three directory variables matter more than they used to. A map is a
+    *file* now rather than an entry in a process dictionary, so a test that
+    saves one writes to whatever ``maps_root()`` resolves — the current
+    directory's ``.fivee-sim/maps`` when nothing says otherwise, which is the
+    repository. Pointing all three at ``tmp_path`` keeps the suite's writes
+    inside the test and keeps one test's maps invisible to the next.
     """
     sessions = dict(api._STATE.sessions)
-    maps = dict(api._STATE.maps)
     content = api._STATE.content
     next_id = api._STATE.next_id
-    next_map_id = api._STATE.next_map_id
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path / "encounters"))
+    monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
+    monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(tmp_path / "replays"))
     try:
         yield
     finally:
         api._STATE.sessions.clear()
         api._STATE.sessions.update(sessions)
-        api._STATE.maps.clear()
-        api._STATE.maps.update(maps)
         api._STATE.content = content
         api._STATE.next_id = next_id
-        api._STATE.next_map_id = next_map_id
 
 
 class FixedRandom(Random):

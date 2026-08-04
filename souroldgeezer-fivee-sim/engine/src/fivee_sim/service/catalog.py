@@ -15,6 +15,7 @@ from ..catalog import (
 )
 from ..content import SECTIONS, ContentRegistry
 from .common import slugify
+from .errors import NotFoundError, RequestError
 
 MAX_PAGE_SIZE = 25
 _KIND_BY_SECTION = {
@@ -28,9 +29,9 @@ _KIND_BY_SECTION = {
 
 def _bounded_page(since: int, limit: int) -> tuple[int, int]:
     if since < 0:
-        raise ValueError("since must be a non-negative whole number")
+        raise RequestError("since must be a non-negative whole number")
     if limit < 1:
-        raise ValueError("limit must be at least 1")
+        raise RequestError("limit must be at least 1")
     return since, min(limit, MAX_PAGE_SIZE)
 
 
@@ -210,7 +211,9 @@ def get_record(registry: ContentRegistry, identifier: str) -> dict[str, Any]:
         }
 
     names = sorted([*registry.catalog, *synthetic])
-    raise ValueError(f"no catalog record with id {identifier!r}." + _available_suffix(names))
+    raise NotFoundError(
+        f"no catalog record with id {identifier!r}." + _available_suffix(names)
+    )
 
 
 def get_table(
@@ -221,7 +224,9 @@ def get_table(
     table = registry.catalog_tables.get(identifier)
     if table is None:
         names = sorted(registry.catalog_tables)
-        raise ValueError(f"no catalog table with id {identifier!r}." + _available_suffix(names))
+        raise NotFoundError(
+            f"no catalog table with id {identifier!r}." + _available_suffix(names)
+        )
     rows = table.rows[since : since + limit]
     next_since = since + len(rows)
     payload = table.as_dict(include_rows=False)

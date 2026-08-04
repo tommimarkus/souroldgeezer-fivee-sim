@@ -2447,7 +2447,7 @@ if (typeof FiveeRenderer === "undefined") {
     }
     var name = byId("gen-name").value.trim();
     if (name) { body.name = name; }
-    request("POST", "/generate", body).then(function (response) {
+    request("POST", "/maps/generate", body).then(function (response) {
       if (response.status !== 200) {
         if (response.json && response.json.diagnostics) {
           showDiagnostics("generate refused:", response.json.diagnostics);
@@ -2467,7 +2467,7 @@ if (typeof FiveeRenderer === "undefined") {
   /* --- validate --------------------------------------------------------- */
   byId("btn-validate").addEventListener("click", function () {
     if (!doc) { return; }
-    request("POST", "/validate", doc).then(function (response) {
+    request("POST", "/maps/validate", doc).then(function (response) {
       var result = response.json || {};
       if (result.ok) {
         var warned = (result.warnings || []).length;

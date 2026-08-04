@@ -23,7 +23,7 @@ from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
 from ..kernel.grid import TerrainEffect
 from ..kernel.rules import Ability, make_d20_test
 from . import sessions, specs
-from .errors import RequestError
+from .errors import NotFoundError, RequestError
 from .sessions import EngineState
 
 __all__ = [
@@ -399,7 +399,7 @@ def lookup_rule(state: EngineState, topic: str = "") -> dict[str, Any]:
             if name.casefold() == key:
                 return build(registry, name)
 
-    raise RequestError(
-        f"nothing loaded for {topic!r}. Call catalog_search to find catalog or custom "
-        f"content, or content_status to see which packs are loaded."
+    raise NotFoundError(
+        f"nothing loaded for {topic!r}. Search the catalog to find catalog or custom "
+        f"content, or read the content status to see which packs are loaded."
     )

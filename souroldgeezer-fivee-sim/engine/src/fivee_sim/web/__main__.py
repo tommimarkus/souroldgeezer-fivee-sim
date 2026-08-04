@@ -1,4 +1,4 @@
-"""``python -m fivee_sim.editor`` launches the editor server."""
+"""``python -m fivee_sim.web`` launches the engine's HTTP server."""
 
 from .cli import main
 

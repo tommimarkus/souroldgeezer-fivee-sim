@@ -41,8 +41,6 @@ from mcp.server.mcpserver import MCPServer
 
 from .. import __version__
 from ..content import ContentRegistry
-from ..editor.cli import read_state, state_file_for
-from ..editor.http_server import TOKEN_HEADER
 from ..service import analytics as _analytics
 from ..service import catalog as _catalog_service
 from ..service import content_ops as _content_ops
@@ -53,7 +51,15 @@ from ..service import primitives as _primitives
 from ..service import replay as _replay_service
 from ..service import sessions as _sessions
 from ..service.common import slugify
-from ..service.errors import RequestError
+from ..service.errors import (
+    MapEditError,
+    MapError,
+    ReplayError,
+    RequestError,
+    StaleWriteError,
+)
+from ..web.cli import read_state, state_file_for
+from ..web.http_server import API_PREFIX, TOKEN_HEADER
 
 INSTRUCTIONS = """\
 A 5E-compatible combat engine. The engine owns the fight: hit points, initiative
@@ -90,12 +96,14 @@ def _call(tool: Callable[..., dict[str, Any]], *args: Any, **kwargs: Any) -> dic
 
     The service layer raises :class:`~fivee_sim.service.errors.RequestError` and
     its siblings because it may not know what a ``ToolError`` is; this is the
-    one place that knows both. Anything that is not a refusal — a defect —
-    propagates untouched, since dressing a bug as bad input is how a bug hides.
+    one place that knows both. The whole family is named rather than caught as
+    ``ValueError``: a refusal becomes a message the caller can act on, and
+    anything else — a defect — propagates untouched, since dressing a bug as
+    bad input is how a bug hides.
     """
     try:
         return tool(*args, **kwargs)
-    except RequestError as error:
+    except (RequestError, MapError, MapEditError, ReplayError, StaleWriteError) as error:
         raise ToolError(str(error)) from error
 
 
@@ -304,11 +312,11 @@ def encounter_create(
     climbing up costs. Sight, cover, and area templates are measured flat, so
     high ground confers no advantage beyond the movement it costs to reach.
 
-    ``map_id`` fights on a loaded map session (see map_generate and map_load)
-    instead of an inline spec — one or the other, never both. The fight captures
-    the document by value: a later map_edit does not reach into it, and the
-    ``map_source`` field here and in encounter_state reports the captured
-    generation and whether the live map has since moved on.
+    ``map_id`` fights on a saved map (see map_list and map_generate's
+    ``save_as``) instead of an inline spec — one or the other, never both. The
+    fight captures the document by value: a later map_edit does not reach into
+    it, and the ``map_source`` field here and in encounter_state reports the
+    captured ``sha256`` and whether the file has since moved on.
     """
     return _call(
         _encounters.create,
@@ -327,8 +335,8 @@ def encounter_state(encounter_id: str) -> dict[str, Any]:
     """The authoritative state of an encounter. Narrate from this, not from memory.
 
     Each combatant's ``position`` is ``[x, y]`` in feet on the plane. For a
-    fight created from a ``map_id``, ``map_source`` reports the map generation
-    it captured and whether the live map has been edited since (``stale``).
+    fight created from a ``map_id``, ``map_source`` reports the document hash it
+    captured and whether the saved file has been edited since (``stale``).
     A map fixture reports its live state and optional trigger definition; an
     automatic transition is an ordinary interact event with an empty actor,
     ``automatic: true``, and ``triggered_by``.
@@ -498,67 +506,65 @@ def map_generate(
     params: dict[str, Any] | None = None,
     seed: int | None = None,
     name: str | None = None,
+    save_as: str | None = None,
 ) -> dict[str, Any]:
     """Generate a battle map — "dungeon", "caves", or "overland" — under a seed.
 
     The seed is always reported; the same seed, kind, and params reproduce the
     map exactly. ``params`` overrides the kind's defaults (call with an unknown
     key to be told the valid ones), and the result's ``params`` comes back
-    fully resolved. The map is held in this session under ``map_id`` for
-    map_render, map_edit, map_query, map_save, and encounter_create; small maps
-    include an inline render, larger ones return ``render: null`` and a note —
-    use map_render with a viewport or downsample.
+    fully resolved. The whole ``document`` comes back too, unsaved: pass it
+    straight to map_render, map_query or uvtt_export to look before keeping it.
+
+    ``save_as`` is a map id — lowercase letters, digits and hyphens — and writes
+    the map to ``<maps root>/<id>.json`` in the same call, which is how it
+    becomes addressable by ``map_id`` everywhere else. An id already in use is
+    refused rather than replaced.
+
+    Small maps include an inline render, larger ones return ``render: null``
+    and a note — use map_render with a viewport or downsample.
     """
-    return _call(_map_ops.generate, _STATE, kind, params, seed, name)
+    return _call(_map_ops.generate, _STATE, kind, params, seed, name, save_as)
 
 
 @server.tool()
-def map_load(
-    path: str | None = None,
-    document: dict[str, Any] | None = None,
-    replace: str | None = None,
-) -> dict[str, Any]:
-    """Load a map document into the session — from a file, or given inline.
+def map_list() -> dict[str, Any]:
+    """Every saved map under the maps root, with the id the other tools take.
 
-    Exactly one of ``path`` and ``document``. Validation is strict and a
-    failure reports every diagnostic; warnings ride along with success.
-    ``replace`` rebinds an existing map_id to the loaded document (bumping its
-    generation) instead of minting a new id — the way to re-read a file after
-    an external editor saved it. ``sha256`` is the canonical document hash.
+    A map is a file, and its id is its filename: what this lists is what
+    ``map_id`` means. Nothing is "loaded" — an id names the file every process
+    on this machine sees, so two servers can never disagree about a map.
     """
-    return _call(_map_ops.load, _STATE, path, document, replace)
+    return _call(_map_ops.map_list, _STATE)
 
 
 @server.tool()
 def map_save(
     map_id: str,
-    path: str | None = None,
-    overwrite: bool = False,
+    document: dict[str, Any],
     expected_sha256: str | None = None,
 ) -> dict[str, Any]:
-    """Write a loaded map to disk as canonical JSON, refusing silent overwrites.
+    """Write a map document to disk as canonical JSON under ``map_id``.
 
-    ``path`` defaults to ``<maps root>/<slug-of-name>.json`` under the
-    project's ``.fivee-sim/maps`` (or ``FIVEE_SIM_MAPS``). An existing file is
-    only replaced when ``overwrite`` is true. Returns the written path, byte
-    count, and sha256 — the hash to quote when handing the file elsewhere.
+    The file lands at ``<maps root>/<map_id>.json`` — the project's
+    ``.fivee-sim/maps`` unless ``FIVEE_SIM_MAPS`` says otherwise — and the id is
+    how every other map tool then names it. Validation is strict and a failure
+    reports every diagnostic; warnings ride along with success.
 
-    ``expected_sha256`` is the hash you last read. The write is refused if
-    anything else — another session, or the open editor — has changed the file
-    since; ``overwrite`` alone guards against clobbering a file you did not know
-    about, not a version you did not read.
-
-    You rarely need to pass it. When this session already loaded or wrote the
-    target, it supplies its own last-seen hash, so a concurrent change is
-    refused by default rather than only when the caller remembered to ask. Pass
-    ``"*"`` to write regardless, which is the deliberate way to take a file over.
+    ``expected_sha256`` is the version you last read, and it decides what this
+    call is allowed to do. Omit it and the id must be free: a caller who has not
+    read the file cannot claim to know what it would be replacing. Give the hash
+    and the write is refused if anything else — another session, or the open
+    editor — has changed the file since. Pass ``"*"`` to write regardless, which
+    is the deliberate way to take a file over.
     """
-    return _call(_map_ops.save, _STATE, map_id, path, overwrite, expected_sha256)
+    return _call(_map_ops.save_map, _STATE, map_id, document, expected_sha256)
 
 
 @server.tool()
 def map_render(
-    map_id: str,
+    map_id: str | None = None,
+    document: dict[str, Any] | None = None,
     x: int = 0,
     y: int = 0,
     width: int | None = None,
@@ -569,7 +575,11 @@ def map_render(
     level: int = 0,
     encounter_id: str | None = None,
 ) -> dict[str, Any]:
-    """Render a viewport of a loaded map as rows of glyphs.
+    """Render a viewport of a map as rows of glyphs.
+
+    Give exactly one subject: ``map_id`` for a saved map, or ``document`` for
+    one that is not saved — a freshly generated map, or the result of an edit
+    you have not kept yet.
 
     The viewport (``x``, ``y``, ``width``, ``height``, in squares) is clamped
     to the map; ``downsample=k`` renders each k-by-k block as its majority
@@ -595,6 +605,7 @@ def map_render(
         _map_ops.render,
         _STATE,
         map_id,
+        document,
         x,
         y,
         width,
@@ -608,8 +619,12 @@ def map_render(
 
 
 @server.tool()
-def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
-    """Edit a loaded map atomically: all operations apply, or none do.
+def map_edit(
+    map_id: str,
+    operations: list[dict[str, Any]],
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Edit a saved map atomically: all operations apply, or none do.
 
     Each operation is an object with an ``op`` key: ``set_terrain`` {rect:
     [x, y, w, h], terrain}, ``paint`` {cells: [[x, y], ...], terrain},
@@ -639,25 +654,30 @@ def map_edit(map_id: str, operations: list[dict[str, Any]]) -> dict[str, Any]:
     connector — the square a creature may step between storeys on, which is what
     turns a drawn stairway into a walkable one.
 
-    A bad operation is refused with its index and changes nothing. A successful edit bumps the
-    map's generation, marks it edited, and returns a render covering what
-    changed. Fights already created from this map keep the version they
-    captured — their encounter_state reports ``stale`` instead.
+    A bad operation is refused with its index and changes nothing. A successful
+    edit is written back to the file, marks it edited, and returns the new
+    ``sha256`` with a render covering what changed. This is a read-modify-write,
+    so the version read is the precondition the write carries;
+    ``expected_sha256`` names a different one, and ``"*"`` writes regardless.
+    Fights already created from this map keep the version they captured — their
+    encounter_state reports ``stale`` instead.
     """
-    return _call(_map_ops.edit, _STATE, map_id, operations)
+    return _call(_map_ops.edit, _STATE, map_id, operations, expected_sha256)
 
 
 @server.tool()
 def map_query(
-    map_id: str,
-    query: str,
+    map_id: str | None = None,
+    query: str = "",
+    document: dict[str, Any] | None = None,
     frm: list[int] | None = None,
     to: list[int] | None = None,
     level: int = 0,
 ) -> dict[str, Any]:
-    """Geometry over a loaded map: "distance", "line_of_sight", or "path".
+    """Geometry over a map: "distance", "line_of_sight", or "path".
 
-    ``frm`` and ``to`` are ``[x, y]`` square indices (``frm`` because ``from``
+    Give exactly one subject: ``map_id`` for a saved map, or ``document`` for an
+    unsaved one. ``frm`` and ``to`` are ``[x, y]`` square indices (``frm`` because ``from``
     is a reserved word in the implementation language). Doors count in their
     recorded default state and nothing is occupied — for questions inside a
     fight, use the encounter tools, which see live doors and creatures.
@@ -667,19 +687,23 @@ def map_query(
     climb, and the result names both ends' elevation so a large cost is
     explainable — but ``distance`` and ``line_of_sight`` are measured flat.
     """
-    return _call(_map_ops.query_map, _STATE, map_id, query, frm, to, level)
+    return _call(_map_ops.query_map, _STATE, map_id, document, query, frm, to, level)
 
 
 @server.tool()
 def uvtt_export(
-    map_id: str,
+    map_id: str | None = None,
+    document: dict[str, Any] | None = None,
     path: str | None = None,
     pixels_per_grid: int = 32,
     include_image: bool = True,
     level: int = 0,
     open_features: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Export a loaded map as a Universal VTT file another virtual tabletop can import.
+    """Export a map as a Universal VTT file another virtual tabletop can import.
+
+    Give exactly one subject: ``map_id`` for a saved map, or ``document`` for an
+    unsaved one.
 
     The payload carries wall polylines derived from the terrain, one portal per
     door feature (with its recorded default open/closed state), and — unless
@@ -707,6 +731,7 @@ def uvtt_export(
         _map_ops.uvtt_export,
         _STATE,
         map_id,
+        document,
         path,
         pixels_per_grid,
         include_image,
@@ -729,9 +754,9 @@ def _editor_maps_dir(maps_dir: str | None) -> Path:
 
 
 def _editor_ping(port: int, token: str) -> dict[str, Any] | None:
-    """The editor's ``/api/ping`` answer, or ``None`` when nothing answers."""
+    """The server's ``ping`` answer, or ``None`` when nothing answers."""
     request = urllib.request.Request(
-        f"http://127.0.0.1:{port}/api/ping", headers={TOKEN_HEADER: token}
+        f"http://127.0.0.1:{port}{API_PREFIX}/ping", headers={TOKEN_HEADER: token}
     )
     try:
         with urllib.request.urlopen(request, timeout=2.0) as response:
@@ -748,9 +773,9 @@ def _viewer_link(target: Path) -> str | None:
     no link — the user clicks it, gets a refused connection, and blames the
     export rather than the absent server:
 
-    * a server for the default maps root answers its own ``/api/ping``;
+    * a server for the default maps root answers its own ``ping``;
     * it reports a ``replays_dir``, which only a server new enough to serve
-      ``/api/replays`` does;
+      the replay listing does;
     * the file just written is actually inside that directory, so that server
       can see it. An export aimed somewhere else is not its to play.
 
@@ -800,9 +825,9 @@ def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> di
     token, so the URL alone is enough. Calling
     this again while the editor runs returns the same URL with
     ``already_running`` true rather than starting a second one. After the user
-    saves in the editor, the file is the truth — ``map_load`` (with
-    ``replace``) re-reads it into the session. ``maps_dir`` defaults to the
-    configured maps root; ``port`` defaults to an ephemeral one.
+    saves in the editor, the file is the truth and every map tool reads it
+    there — nothing has to be re-loaded. ``maps_dir`` defaults to the configured
+    maps root; ``port`` defaults to an ephemeral one.
     """
     root = _editor_maps_dir(maps_dir)
     state_path = state_file_for(root)
@@ -824,7 +849,7 @@ def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> di
     state_path.parent.mkdir(parents=True, exist_ok=True)
     log_path = state_path.parent / "editor.log"
     arguments = [
-        sys.executable, "-m", "fivee_sim.editor",
+        sys.executable, "-m", "fivee_sim.web",
         "--maps-dir", str(root),
         "--state-file", str(state_path),
     ]
@@ -888,7 +913,7 @@ def map_editor_stop(maps_dir: str | None = None) -> dict[str, Any]:
     stopped = False
     if isinstance(port, int) and isinstance(token, str):
         request = urllib.request.Request(
-            f"http://127.0.0.1:{port}/api/shutdown",
+            f"http://127.0.0.1:{port}{API_PREFIX}/shutdown",
             method="POST",
             headers={TOKEN_HEADER: token},
             data=b"",
@@ -982,15 +1007,15 @@ def simulate_rounds(
     """Auto-play the same encounter many times and report win rates and length.
 
     Combatant specs match ``encounter_create``, as do ``movement_rule``, the
-    inline ``map`` spec, and ``map_id`` (a loaded map session; one or the
+    inline ``map`` spec, and ``map_id`` (a saved map; one or the
     other, not both) — with a map, every iteration fights on it: terrain
     costs, cover, sight, and pathfinding all apply, the policy chooses authored
     Walk/Climb/Swim/Fly modes, and doors reset to their initial state between
     iterations. ``arrival_round`` schedules the same reinforcement in every
     iteration. Iteration ``i`` uses ``seed + i``, so one
     iteration reproduces a single hand-played encounter at that seed. With
-    ``map_id`` the result's ``map_source`` records the exact map generation
-    and hash the batch ran on.
+    ``map_id`` the result's ``map_source`` records the exact document hash the
+    batch ran on.
     """
     return _call(
         _analytics.simulate_rounds,

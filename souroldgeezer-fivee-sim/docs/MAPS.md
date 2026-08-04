@@ -471,7 +471,7 @@ Two ways to start it, one server either way:
 - **MCP**: `map_editor_serve` spawns a detached editor process and returns its
   URL; calling it again finds the running one (`already_running`).
   `map_editor_stop` shuts it down.
-- **CLI**: `fivee-sim-editor [--maps-dir DIR] [--port N]` from the engine's
+- **CLI**: `fivee-sim-server [--maps-dir DIR] [--port N]` from the engine's
   environment, for development.
 
 **Which engine you are looking at.** The footer's right corner names the

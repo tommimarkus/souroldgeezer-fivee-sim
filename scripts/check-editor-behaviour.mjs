@@ -12,7 +12,7 @@
  * This is the same technique, kept.
  *
  * It loads the **shipped** assets — the ones under
- * souroldgeezer-fivee-sim/engine/src/fivee_sim/editor/static, never a copy — runs
+ * souroldgeezer-fivee-sim/engine/src/fivee_sim/web/static, never a copy — runs
  * renderer.js in a `node:vm` context, and runs each page's own inline script in
  * that context against a stub DOM. What is asserted is therefore the text a
  * user gets, driven through the page's real wiring: a document is dropped on
@@ -44,7 +44,7 @@ import vm from "node:vm";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "..");
 const SHIPPED = path.join(
-  REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "src", "fivee_sim", "editor", "static"
+  REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "src", "fivee_sim", "web", "static"
 );
 const STATIC = process.argv[2] ? path.resolve(process.argv[2]) : SHIPPED;
 

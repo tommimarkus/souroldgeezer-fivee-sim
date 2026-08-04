@@ -157,7 +157,7 @@ class TestLookup:
         # Not "only SRD content ships" any more — that stopped being true the moment
         # a campaign could load its own. The miss has to send the caller to the
         # listing rather than assert a fixed catalogue.
-        with pytest.raises(api.ToolError, match="content_status"):
+        with pytest.raises(api.ToolError, match="read the content status"):
             api.lookup_rule("Beholder")
 
 
@@ -495,13 +495,13 @@ class TestMapElevationTools:
             )
 
     def raised_map(self) -> str:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         api.map_edit(map_id, [{"op": "set_elevation", "rect": [3, 0, 2, 4], "feet": 20}])
         return map_id
 
     def test_the_edit_ops_raise_ground_and_the_summary_reports_it(self) -> None:
         applied = api.map_edit(
-            str(api.map_load(document=map_document())["map_id"]),
+            saved_map(),
             [
                 {"op": "set_elevation", "rect": [3, 0, 2, 4], "feet": 20},
                 {"op": "adjust_elevation", "cells": [[4, 0]], "by": 5},
@@ -719,15 +719,27 @@ def storeyed_document() -> dict[str, Any]:
     return payload
 
 
+def saved_map(document: dict[str, Any] | None = None, map_id: str = "chamber") -> str:
+    """Write a document under an id and hand the id back.
+
+    The setup every map test used to do with ``map_load``, which no longer
+    exists: a map is a file, and its id is what names the file. The maps root
+    is ``tmp_path`` for every test (see conftest), so this writes nowhere the
+    test does not own.
+    """
+    api.map_save(map_id, document if document is not None else map_document())
+    return map_id
+
+
 class TestMapLevelAdapters:
     """The level rides through the adapters as a plain parameter, nothing more."""
 
     def load(self) -> str:
-        return str(api.map_load(document=storeyed_document())["map_id"])
+        return saved_map(storeyed_document(), "storeyed")
 
     def test_the_summary_names_every_level(self) -> None:
-        loaded = api.map_load(document=storeyed_document())
-        assert loaded["summary"]["levels"] == [0, 1]
+        saved = api.map_save("storeyed", storeyed_document())
+        assert saved["summary"]["levels"] == [0, 1]
 
     def test_render_draws_the_level_it_is_given(self) -> None:
         map_id = self.load()
@@ -758,12 +770,12 @@ class TestMapLevelAdapters:
     # --- the summary describes the map, not the floor of it ----------------
     def test_the_summary_counts_the_terrain_of_every_storey(self) -> None:
         """The ground is 17 floor and 3 wall; the gallery is 20 of floor."""
-        summary = api.map_load(document=storeyed_document())["summary"]
+        summary = api.map_save("storeyed", storeyed_document())["summary"]
         assert summary["terrain_counts"] == {"floor": 37, "wall": 3}
 
     def test_the_summary_counts_the_fixtures_of_every_storey(self) -> None:
         """A stair is two records — a foot downstairs and a head upstairs."""
-        summary = api.map_load(document=storeyed_document())["summary"]
+        summary = api.map_save("storeyed", storeyed_document())["summary"]
         assert summary["features"] == 2
 
     def test_the_summary_elevation_spans_the_storeys_and_names_no_shared_datum(
@@ -774,13 +786,13 @@ class TestMapLevelAdapters:
         ``default`` is a plane's datum and these two do not share one, so
         the document-wide answer is ``None`` and the two live in ``by_level``.
         """
-        summary = api.map_load(document=storeyed_document())["summary"]
+        summary = api.map_save("storeyed", storeyed_document())["summary"]
         assert summary["elevation"] == {
             "default": None, "min": 0, "max": 10, "raised_squares": 0,
         }
 
     def test_the_summary_still_breaks_out_one_storey_at_a_time(self) -> None:
-        summary = api.map_load(document=storeyed_document())["summary"]
+        summary = api.map_save("storeyed", storeyed_document())["summary"]
         assert [level["index"] for level in summary["by_level"]] == [0, 1]
         ground, gallery = summary["by_level"]
         assert (ground["name"], gallery["name"]) == ("ground", "gallery")
@@ -905,7 +917,7 @@ class TestMapAdapters:
     """The map tools as thin shims: sessions, seeds, and error mapping."""
 
     def load(self) -> str:
-        return str(api.map_load(document=map_document())["map_id"])
+        return saved_map()
 
     def test_map_generate_reports_its_seed_and_reproduces(self) -> None:
         first = api.map_generate("dungeon", {"width": 24, "height": 20}, seed=9)
@@ -915,9 +927,32 @@ class TestMapAdapters:
         assert first["params"]["width"] == 24
         assert first["params"]["min_room"] == 4  # defaults come back resolved
         assert first["provenance"]["edited"] is False
-        rendered_one = api.map_render(str(first["map_id"]))
-        rendered_two = api.map_render(str(second["map_id"]))
+        rendered_one = api.map_render(document=first["document"])
+        rendered_two = api.map_render(document=second["document"])
         assert rendered_one["rows"] == rendered_two["rows"]
+
+    def test_map_generate_saves_nothing_unless_asked(self, tmp_path: Path) -> None:
+        result = api.map_generate("caves", {"width": 12, "height": 10}, seed=3)
+        assert result["map_id"] is None
+        assert "saved" not in result
+        assert not list((tmp_path / "maps").glob("*.json"))
+
+    def test_map_generate_save_as_writes_it_under_that_id(self, tmp_path: Path) -> None:
+        result = api.map_generate(
+            "caves", {"width": 12, "height": 10}, seed=3, save_as="hollow"
+        )
+        assert result["map_id"] == "hollow"
+        assert result["saved"]["path"] == str(tmp_path / "maps" / "hollow.json")
+        # Addressable straight away, which is the whole point of saving in the
+        # same call: the id names a file every process on this host can read.
+        assert api.map_render("hollow")["sha256"] == result["saved"]["sha256"]
+
+    def test_map_generate_save_as_refuses_an_id_already_in_use(self) -> None:
+        api.map_generate("caves", {"width": 12, "height": 10}, seed=3, save_as="hollow")
+        with pytest.raises(api.ToolError, match="already exists; supply the version"):
+            api.map_generate(
+                "caves", {"width": 12, "height": 10}, seed=4, save_as="hollow"
+            )
 
     def test_map_generate_without_a_seed_still_reports_one(self) -> None:
         result = api.map_generate("caves", {"width": 12, "height": 10})
@@ -931,52 +966,71 @@ class TestMapAdapters:
         with pytest.raises(api.ToolError, match="min_room"):
             api.map_generate("dungeon", {"rooms": 9}, seed=1)
 
-    def test_map_load_requires_exactly_one_source(self) -> None:
-        with pytest.raises(api.ToolError, match="exactly one"):
-            api.map_load()
-        with pytest.raises(api.ToolError, match="exactly one"):
-            api.map_load(path="/tmp/x.json", document=map_document())
+    def test_a_render_takes_a_saved_id_or_an_inline_document_and_not_both(self) -> None:
+        # The subject of a map operation is one thing. Naming none leaves the
+        # engine guessing; naming two makes it choose, and a caller who is
+        # shown a document it did not send has no way to notice.
+        with pytest.raises(api.ToolError, match="exactly one of 'map_id'"):
+            api.map_render()
+        with pytest.raises(api.ToolError, match="exactly one of 'map_id'"):
+            api.map_render(map_id=saved_map(), document=map_document())
 
-    def test_map_load_reports_every_diagnostic(self) -> None:
+    def test_an_inline_document_renders_without_being_saved(self, tmp_path: Path) -> None:
+        rendered = api.map_render(document=map_document())
+        assert rendered["rows"][0] == "..#.."
+        assert rendered["map_id"] is None
+        assert not list((tmp_path / "maps").glob("*.json"))
+
+    def test_saving_a_broken_document_reports_every_diagnostic(self) -> None:
         broken = map_document()
         broken["tiles"][0] = "..?.."
         broken["grid"]["depth"] = 3
         with pytest.raises(api.ToolError, match="2 map error"):
-            api.map_load(document=broken)
+            api.map_save("broken", broken)
 
-    def test_an_unknown_map_id_lists_the_active_ones(self) -> None:
+    def test_an_unknown_map_id_names_the_maps_that_are_there(self) -> None:
         self.load()
-        with pytest.raises(api.ToolError, match="active:"):
+        with pytest.raises(api.ToolError, match="maps here: chamber"):
             api.map_render("map-does-not-exist")
 
-    def test_save_then_load_by_path_round_trips(self, tmp_path: Path) -> None:
-        map_id = self.load()
-        target = str(tmp_path / "chamber.json")
-        saved = api.map_save(map_id, path=target)
-        assert saved["path"] == target
-        reloaded = api.map_load(path=target)
-        assert reloaded["sha256"] == saved["sha256"]
-        assert reloaded["name"] == "adapter chamber"
-        assert reloaded["warnings"] == []
+    def test_a_save_lands_in_the_maps_root_under_its_id(self, tmp_path: Path) -> None:
+        saved = api.map_save("chamber", map_document())
+        assert saved["path"] == str(tmp_path / "maps" / "chamber.json")
+        assert saved["name"] == "adapter chamber"
+        assert saved["warnings"] == []
+        assert api.map_list()["maps"] == [
+            {
+                "id": "chamber",
+                "name": "adapter chamber",
+                "path": saved["path"],
+                "width": 5,
+                "height": 4,
+                "generator": "hand",
+                "edited": False,
+            }
+        ]
 
-    def test_map_save_defaults_into_the_maps_root_and_refuses_overwrite(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path))
-        map_id = self.load()
-        saved = api.map_save(map_id)
-        assert saved["path"] == str(tmp_path / "adapter-chamber.json")
-        with pytest.raises(api.ToolError, match="overwrite"):
-            api.map_save(map_id)
-        assert api.map_save(map_id, overwrite=True)["sha256"] == saved["sha256"]
-
-    def test_map_load_replace_rebinds_the_id_and_bumps_the_generation(self) -> None:
-        map_id = self.load()
+    def test_a_save_with_no_precondition_cannot_replace_a_map(self) -> None:
+        # Files are the truth, so "I did not read it" and "I may overwrite it"
+        # cannot both hold: a caller who has not read the file has nothing to
+        # be stale against, so the id must be free.
+        first = api.map_save("chamber", map_document())
         renamed = map_document()
         renamed["name"] = "replacement"
-        result = api.map_load(document=renamed, replace=map_id)
-        assert result["map_id"] == map_id
-        assert api.map_render(map_id)["generation"] == 2
+        with pytest.raises(api.ToolError, match="already exists; supply the version"):
+            api.map_save("chamber", renamed)
+
+        replaced = api.map_save("chamber", renamed, expected_sha256=first["sha256"])
+        assert replaced["sha256"] != first["sha256"]
+        assert api.map_render("chamber")["sha256"] == replaced["sha256"]
+
+    def test_a_save_against_a_version_someone_else_moved_is_refused(self) -> None:
+        first = api.map_save("chamber", map_document())
+        api.map_edit("chamber", [{"op": "paint", "cells": [[0, 0]], "terrain": "wall"}])
+        renamed = map_document()
+        renamed["name"] = "replacement"
+        with pytest.raises(api.ToolError, match="has advanced since you read it"):
+            api.map_save("chamber", renamed, expected_sha256=first["sha256"])
 
     def test_map_edit_is_atomic_over_the_wire(self) -> None:
         map_id = self.load()
@@ -987,19 +1041,33 @@ class TestMapAdapters:
                 {"op": "paint", "cells": [[99, 99]], "terrain": "wall"},
             ])
         after = api.map_render(map_id)
-        assert after["generation"] == before["generation"]
+        assert after["sha256"] == before["sha256"]
         assert after["rows"] == before["rows"]
 
-    def test_map_edit_applies_bumps_and_marks_edited(self) -> None:
+    def test_map_edit_writes_the_file_and_marks_it_edited(self) -> None:
         map_id = self.load()
+        before = api.map_render(map_id)["sha256"]
         result = api.map_edit(map_id, [
             {"op": "paint", "cells": [[0, 0]], "terrain": "wall"},
         ])
         assert result["applied"] == 1
-        assert result["generation"] == 2
+        assert result["sha256"] != before
         assert result["edited"] is True
         assert result["summary"]["terrain_counts"] == {"floor": 16, "wall": 4}
         assert result["render"]["rows"][0] == "#.#.."
+        # The file, not a copy of it: the next read sees the edit.
+        assert api.map_render(map_id)["sha256"] == result["sha256"]
+
+    def test_map_edit_refuses_a_version_the_file_has_moved_past(self) -> None:
+        map_id = self.load()
+        stale = api.map_render(map_id)["sha256"]
+        api.map_edit(map_id, [{"op": "paint", "cells": [[0, 0]], "terrain": "wall"}])
+        with pytest.raises(api.ToolError, match="has advanced since you read it"):
+            api.map_edit(
+                map_id,
+                [{"op": "paint", "cells": [[1, 1]], "terrain": "wall"}],
+                expected_sha256=stale,
+            )
 
     def test_map_edit_parity_with_the_service_layer(self) -> None:
         operations: list[dict[str, Any]] = [
@@ -1029,7 +1097,7 @@ class TestMapAdapters:
         payload["name"] = "wide floor"
         payload["grid"] = {"width": 100, "height": 50, "cell_feet": 5}
         payload["tiles"] = ["." * 100] * 50
-        return str(api.map_load(document=payload)["map_id"])
+        return saved_map(payload, "payload")
 
     def test_an_edit_render_boxes_the_squares_an_elevation_op_raised(self) -> None:
         """A raised square is a changed square, so the box must hold it.
@@ -1074,7 +1142,7 @@ class TestUvttExport:
     """uvtt_export: always a file on disk, never an inlined payload."""
 
     def load(self) -> str:
-        return str(api.map_load(document=map_document())["map_id"])
+        return saved_map()
 
     def test_export_writes_the_file_and_the_counts_match(self, tmp_path: Path) -> None:
         map_id = self.load()
@@ -1107,7 +1175,7 @@ class TestUvttExport:
         # The gap: the export could only ever say what the file said, so a map
         # handed to another tabletop mid-fight showed the sluice shut and the
         # room dry however the fight had left them.
-        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        map_id = saved_map(sluice_document(), "sluice")
         target = str(tmp_path / "flooded.uvtt")
         result = api.uvtt_export(
             map_id, path=target, pixels_per_grid=8, include_image=False,
@@ -1121,9 +1189,9 @@ class TestUvttExport:
         authored = json.loads(Path(target).read_text(encoding="utf-8"))
         assert authored["portals"][0]["closed"] is True
 
-    def test_an_unknown_map_id_lists_the_active_ones(self) -> None:
+    def test_an_unknown_map_id_names_the_maps_that_are_there(self) -> None:
         self.load()
-        with pytest.raises(api.ToolError, match="active:"):
+        with pytest.raises(api.ToolError, match="maps here: chamber"):
             api.uvtt_export("map-does-not-exist")
 
     def test_an_oversized_image_is_refused_with_the_remedy(self, tmp_path: Path) -> None:
@@ -1139,37 +1207,39 @@ class TestEncountersOnLoadedMaps:
         return [dict(HERO), {**GOBLIN, "position": [15, 0]}]
 
     def test_a_fight_captures_the_map_and_reports_its_source(self) -> None:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
         source = created["map_source"]
         assert source["map_id"] == map_id
-        assert source["generation"] == 1
-        assert source["current_generation"] == 1
         assert source["stale"] is False
         assert len(source["sha256"]) == 64
+        assert source["current_sha256"] == source["sha256"]
         assert created["state"]["map"]["width"] == 5
 
         state = api.encounter_state(str(created["encounter_id"]))
         assert state["map_source"] == {
             "map_id": map_id,
-            "generation": 1,
-            "current_generation": 1,
+            "sha256": source["sha256"],
+            "current_sha256": source["sha256"],
             "stale": False,
         }
 
     def test_staleness_flips_after_a_map_edit(self) -> None:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
         encounter_id = str(created["encounter_id"])
-        api.map_edit(map_id, [{"op": "paint", "cells": [[4, 3]], "terrain": "wall"}])
+        edited = api.map_edit(map_id, [
+            {"op": "paint", "cells": [[4, 3]], "terrain": "wall"},
+        ])
         source = api.encounter_state(encounter_id)["map_source"]
         assert source["stale"] is True
-        assert source["current_generation"] == 2
+        assert source["current_sha256"] == edited["sha256"]
+        assert source["sha256"] != edited["sha256"]
         # The fight itself still resolves on the map it captured.
         assert api.encounter_state(encounter_id)["map"]["width"] == 5
 
     def test_an_inline_map_and_a_map_id_together_are_refused(self) -> None:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         with pytest.raises(api.ToolError, match="not both"):
             api.encounter_create(
                 self.combatants(), seed=1,
@@ -1182,7 +1252,7 @@ class TestEncountersOnLoadedMaps:
         assert api.encounter_state(str(created["encounter_id"]))["map_source"] is None
 
     def test_map_render_overlays_the_encounters_combatants(self) -> None:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         created = api.encounter_create(self.combatants(), seed=11, map_id=map_id)
         rendered = api.map_render(map_id, encounter_id=str(created["encounter_id"]))
         assert set(rendered["tokens"].values()) == {"Thora", "Goblin"}
@@ -1194,7 +1264,7 @@ class TestEncountersOnLoadedMaps:
 
     def sluice_fight(self) -> tuple[str, str]:
         """A loaded sluice map and a fight on it, Thora within reach of the gate."""
-        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        map_id = saved_map(sluice_document(), "sluice")
         # Positions are feet, so these are squares (1, 3) and (4, 3): Thora next
         # to the gate at (2, 3), the goblin marooned on the far side of it and
         # clear of the room that floods.
@@ -1251,20 +1321,20 @@ class TestEncountersOnLoadedMaps:
         assert api.map_render(map_id)["rows"][0] == "..#.."
 
     def test_a_mapless_fight_contributes_positions_and_no_fixture_states(self) -> None:
-        map_id = str(api.map_load(document=sluice_document())["map_id"])
+        map_id = saved_map(sluice_document(), "sluice")
         created = api.encounter_create([HERO, GOBLIN], seed=1)
         rendered = api.map_render(map_id, encounter_id=str(created["encounter_id"]))
         assert set(rendered["tokens"].values()) == {"Thora", "Goblin"}
         assert "~" not in "".join(rendered["rows"])
 
     def test_simulate_rounds_accepts_a_map_id_and_reports_the_source(self) -> None:
-        map_id = str(api.map_load(document=map_document())["map_id"])
+        map_id = saved_map()
         result = api.simulate_rounds(
             self.combatants(), iterations=5, seed=7, max_rounds=10, map_id=map_id
         )
         assert sum(result["wins"].values()) == 5
         assert result["map_source"]["map_id"] == map_id
-        assert result["map_source"]["generation"] == api.map_render(map_id)["generation"]
+        assert result["map_source"]["sha256"] == api.map_render(map_id)["sha256"]
 
 
 class TestAnalyticsTools:

@@ -42,9 +42,9 @@ from pathlib import Path
 
 import pytest
 
-from fivee_sim.editor.http_server import CONFIG_MARKER
+from fivee_sim.web.http_server import CONFIG_MARKER
 
-STATIC = Path(str(resources.files("fivee_sim.editor"))) / "static"
+STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
 PAGES = ("editor.html", "viewer.html")
 ASSETS = ("editor.html", "viewer.html", "renderer.js")
 

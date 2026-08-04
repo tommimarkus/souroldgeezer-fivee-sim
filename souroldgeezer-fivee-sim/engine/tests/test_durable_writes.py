@@ -19,7 +19,6 @@ import pytest
 
 from fivee_sim.mcp_server import server as api
 from fivee_sim.service import durable, encounter_journal
-from fivee_sim.service import sessions as sessions_service
 
 from .conftest import mapless_fight
 
@@ -198,28 +197,24 @@ def test_atomic_write_never_exposes_a_half_written_file(tmp_path: Path) -> None:
     assert seen <= {0, 1}
 
 
-def test_map_save_refuses_a_version_someone_else_replaced(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The fourth writer: two sessions, or a session and the open editor."""
-    monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
-    generated = api.map_generate("dungeon", {"width": 20, "height": 16}, seed=11)
-    map_id = str(generated["map_id"])
-    target = str(tmp_path / "maps" / "shared.json")
-    read_at = str(api.map_save(map_id, path=target)["sha256"])
+def test_map_save_refuses_a_version_someone_else_replaced(tmp_path: Path) -> None:
+    """The fourth writer: two agents, or an agent and the open editor."""
+    generated = api.map_generate(
+        "dungeon", {"width": 20, "height": 16}, seed=11, save_as="shared"
+    )
+    read_at = str(generated["saved"]["sha256"])
 
     # A cell that is actually floor, so the edit genuinely moves the file on:
     # painting an already-wall square writes identical bytes and nothing is stale.
-    document = sessions_service.map_session_for(api._STATE, map_id).document
-    floor = next(
-        (row.index("."), y) for y, row in enumerate(document.tiles) if "." in row
+    tiles = generated["document"]["tiles"]
+    floor = next((row.index("."), y) for y, row in enumerate(tiles) if "." in row)
+    edited = api.map_edit(
+        "shared", [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}]
     )
-    api.map_edit(map_id, [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}])
-    moved_on = str(api.map_save(map_id, path=target, overwrite=True)["sha256"])
-    assert moved_on != read_at
+    assert edited["sha256"] != read_at
 
     with pytest.raises(api.ToolError, match="has advanced"):
-        api.map_save(map_id, path=target, overwrite=True, expected_sha256=read_at)
+        api.map_save("shared", generated["document"], expected_sha256=read_at)
 
 
 def test_a_symlink_planted_at_the_scratch_path_cannot_divert_a_write(
@@ -260,33 +255,32 @@ def test_a_replaced_file_keeps_the_permissions_it_had(tmp_path: Path) -> None:
     assert _stat.S_IMODE(target.stat().st_mode) == 0o644
 
 
-def test_map_save_defaults_to_the_version_this_session_last_saw(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Opt-in protection protects nobody: the encounter path guards itself.
+def test_a_map_edit_guards_itself_without_the_caller_asking(tmp_path: Path) -> None:
+    """Opt-in protection protects nobody, so the read-modify-write guards itself.
 
-    A session that has saved or loaded a file knows which bytes it last saw
-    there, so it can supply its own precondition. Requiring the caller to pass
-    one left two MCP sessions free to lost-update a shared map — the very case
-    the editor is now guarded against.
+    An edit reads the file, changes the document, and writes it back. Without a
+    precondition, two agents editing one map each get told they succeeded and
+    the slower one's edit is gone. The version this call read *is* the
+    precondition it writes under, so the loser is refused instead — here the
+    caller supplies a version deliberately, which is the same check reached from
+    the outside.
     """
-    monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
-    target = str(tmp_path / "maps" / "shared.json")
-    mine = str(api.map_generate("dungeon", {"width": 20, "height": 16}, seed=13)["map_id"])
-    api.map_save(mine, path=target)
-
-    # A second session loads the same file and moves it on.
-    theirs = str(api.map_load(target)["map_id"])
-    document = sessions_service.map_session_for(api._STATE, theirs).document
-    floor = next(
-        (row.index("."), y) for y, row in enumerate(document.tiles) if "." in row
+    generated = api.map_generate(
+        "dungeon", {"width": 20, "height": 16}, seed=13, save_as="shared"
     )
-    api.map_edit(theirs, [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}])
-    api.map_save(theirs, path=target, overwrite=True)
+    tiles = generated["document"]["tiles"]
+    floor = next((row.index("."), y) for y, row in enumerate(tiles) if "." in row)
+    read_at = str(generated["saved"]["sha256"])
 
-    # The first session saves again, passing no precondition of its own.
+    # Someone else edits the same file first.
+    api.map_edit("shared", [{"op": "paint", "cells": [list(floor)], "terrain": "wall"}])
+
     with pytest.raises(api.ToolError, match="has advanced"):
-        api.map_save(mine, path=target, overwrite=True)
+        api.map_edit(
+            "shared",
+            [{"op": "set_name", "name": "mine"}],
+            expected_sha256=read_at,
+        )
 
 
 class TestLockLifecycle:

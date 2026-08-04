@@ -41,7 +41,7 @@ def simulate_rounds(
     # a reconfiguration land mid-batch and make the result unreproducible from its
     # seed, which is the one property these numbers rest on.
     registry = sessions.active_registry(state)
-    battle_map, map_source = sessions.resolve_battle_map(state, map_spec, map_id)
+    battle_map, map_source, _document = sessions.resolve_battle_map(state, map_spec, map_id)
 
     def factory() -> list[Creature]:
         return specs.combatants_from_specs(given, registry)

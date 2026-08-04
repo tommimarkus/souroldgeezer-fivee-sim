@@ -1,6 +1,6 @@
 """The editor's launch lifecycle: the real CLI process, and the MCP tools.
 
-These spawn ``python -m fivee_sim.editor`` for real — the state-file protocol
+These spawn ``python -m fivee_sim.web`` for real — the state-file protocol
 (written after bind, removed on shutdown) is exactly the part an in-process
 test cannot vouch for. Linux is the target platform; the SIGTERM semantics are
 skipped where they do not exist.
@@ -21,9 +21,9 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.editor.cli import STATE_FILENAME, read_state, state_file_for
-from fivee_sim.editor.http_server import TOKEN_HEADER
 from fivee_sim.mcp_server import server as api
+from fivee_sim.web.cli import STATE_FILENAME, read_state, state_file_for
+from fivee_sim.web.http_server import API_PREFIX, TOKEN_HEADER
 
 from .conftest import mapless_fight
 
@@ -61,7 +61,7 @@ def _spawn_cli(arguments: list[str]) -> subprocess.Popen[str]:
     env = dict(os.environ)
     env["PYTHONPATH"] = str(ENGINE_SRC) + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.Popen(
-        [sys.executable, "-m", "fivee_sim.editor", *arguments],
+        [sys.executable, "-m", "fivee_sim.web", *arguments],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -72,7 +72,7 @@ def _spawn_cli(arguments: list[str]) -> subprocess.Popen[str]:
 
 def _ping(port: int, token: str) -> dict[str, Any]:
     request = urllib.request.Request(
-        f"http://127.0.0.1:{port}/api/ping", headers={TOKEN_HEADER: token}
+        f"http://127.0.0.1:{port}{API_PREFIX}/ping", headers={TOKEN_HEADER: token}
     )
     with urllib.request.urlopen(request, timeout=5) as response:
         answer: dict[str, Any] = json.loads(response.read())
@@ -84,7 +84,7 @@ class TestCliLifecycle:
         self, tmp_path: Path
     ) -> None:
         maps_dir = tmp_path / "maps"
-        state_path = tmp_path / "state" / "editor-server.json"
+        state_path = tmp_path / "state" / "fivee-sim-server.json"
         process = _spawn_cli(
             ["--maps-dir", str(maps_dir), "--state-file", str(state_path), "--port", "0"]
         )
@@ -130,7 +130,7 @@ class TestCliLifecycle:
         """
         maps_dir = tmp_path / "maps"
         replays_dir = tmp_path / "elsewhere" / "replays"
-        state_path = tmp_path / "state" / "editor-server.json"
+        state_path = tmp_path / "state" / "fivee-sim-server.json"
         process = _spawn_cli(
             [
                 "--maps-dir", str(maps_dir),

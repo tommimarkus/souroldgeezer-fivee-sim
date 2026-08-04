@@ -13,6 +13,7 @@ from ..map_document import MapError as MapError
 __all__ = [
     "MapEditError",
     "MapError",
+    "NotFoundError",
     "ReplayError",
     "RequestError",
     "StaleWriteError",
@@ -33,6 +34,18 @@ class RequestError(ValueError):
     :class:`MapError` and :class:`ReplayError` carry diagnostics,
     :class:`MapEditError` the offending operation's index, and
     :class:`StaleWriteError` both versions. This is what the rest is.
+    """
+
+
+class NotFoundError(RequestError):
+    """The caller named something that is not there — an id, not a mistake.
+
+    A subclass rather than a flag because the two adapters part company exactly
+    here and nowhere else: over HTTP a missing encounter, map, replay, catalog
+    record or loaded rule is a ``404`` while a malformed argument is a ``400``,
+    and an adapter that had to tell them apart by reading the message would be
+    one rephrasing away from mislabelling both. MCP sees no difference: it
+    catches :class:`RequestError`, which this is.
     """
 
 

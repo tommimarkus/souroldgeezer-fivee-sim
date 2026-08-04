@@ -48,7 +48,7 @@ EXPECTED_TOOLS = {
     "replay_export",
     "replay_validate",
     "map_generate",
-    "map_load",
+    "map_list",
     "map_save",
     "map_render",
     "map_edit",

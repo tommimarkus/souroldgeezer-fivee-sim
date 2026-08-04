@@ -240,7 +240,7 @@ Nothing in it may import MCP, HTTP, or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
 `ValueError`-family errors. That is the whole reason two adapters can both be
 thin. `mcp_server/server.py` maps those errors onto `ToolError`,
-`editor/http_server.py` onto problem+json, and neither does anything more than
+`web/http_server.py` onto problem+json, and neither does anything more than
 that and serialisation. A tool body written into an adapter belongs here instead.
 
 **`service/` also owns durable-write concurrency, because it owns the state.**
@@ -330,7 +330,7 @@ wrong.
 
 **An error-branch test names the refusal, not just its status.** A status code or
 an exception type alone does not identify a branch: when nine
-`editor/http_server.py` request guards were mutated to check the tests written
+`web/http_server.py` request guards were mutated to check the tests written
 for them, four of the mutants still answered 400, so a status-only assertion
 would have passed against a server with the check deleted. Every
 `assert_problem(...)` therefore carries a problem+json `detail` fragment and
@@ -370,7 +370,7 @@ argued for rather than installed. **The Python suite is unaffected**: it neither
 imports nor spawns `node`, so an environment without it runs `ruff`, `mypy`,
 `pytest` and the handshake check exactly as before, and only this one command is
 unavailable. Run it after touching anything under
-`engine/src/fivee_sim/editor/static/`.
+`engine/src/fivee_sim/web/static/`.
 
 It takes an optional static-directory argument, and that argument is its own
 self-check: copy the static directory somewhere scratch, delete a guard, and

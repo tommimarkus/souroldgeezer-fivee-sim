@@ -71,7 +71,9 @@ def chamber() -> dict[str, Any]:
 
 
 def mapped_fight(seed: int = 43) -> tuple[str, str]:
-    map_id = str(api.map_load(document=chamber())["map_id"])
+    # A map is a file; saving it under an id is how a fight can name it.
+    map_id = "replay-chamber"
+    api.map_save(map_id, chamber())
     created = api.encounter_create(
         [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=seed, map_id=map_id
     )
@@ -337,7 +339,8 @@ class TestBundleV2:
                 "source": FIXTURE,
             },
         }
-        map_id = str(api.map_load(document=document)["map_id"])
+        map_id = "storeyed-chamber"
+        api.map_save(map_id, document)
         created = api.encounter_create(
             [
                 dict(REPLAY_HERO, position=[0, 15]),

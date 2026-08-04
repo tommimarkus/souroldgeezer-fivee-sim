@@ -5,7 +5,7 @@ directory* — with the same three-step rule: the surface's own environment
 variable wins outright, then the project directory, then the current one. That
 rule was written out four times, in :mod:`fivee_sim.service.maps`,
 :mod:`fivee_sim.service.replay`, :mod:`fivee_sim.service.encounter_journal` and
-:mod:`fivee_sim.editor.cli`, which is three chances for one of them to drift
+:mod:`fivee_sim.web.cli`, which is three chances for one of them to drift
 from the others.
 
 It lives here instead, beside the other cross-cutting root modules: this is
@@ -59,7 +59,7 @@ ENCOUNTERS_SUBDIR = Path(".fivee-sim") / "encounters"
 
 #: The editor's launch state file; it lives next to the maps directory (for the
 #: default ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
-STATE_FILENAME = "editor-server.json"
+STATE_FILENAME = "fivee-sim-server.json"
 
 
 def project_root(env: Mapping[str, str] | None = None) -> str:

@@ -1,17 +1,21 @@
 """Who owns the engine's live state, and for how long.
 
-One :class:`EngineState` holds every fight in progress, every loaded map, and
-the active content registry. It is passed to the service functions that need
-it rather than reached for, which is the whole difference from the module-level
-dictionaries this replaced: an adapter constructs one and hands it down, a test
-constructs one and hands it down, and neither has to reach into another
-module's globals to do it.
+One :class:`EngineState` holds every fight in progress and the active content
+registry. It is passed to the service functions that need it rather than
+reached for, which is the whole difference from the module-level dictionaries
+this replaced: an adapter constructs one and hands it down, a test constructs
+one and hands it down, and neither has to reach into another module's globals
+to do it.
+
+Maps are not in it, and that is the point. A map is a file addressed by id;
+what a fight keeps is the hash of the document it started on, so "has the map
+moved since?" is answered against the file every process can see rather than
+against a private copy each process believed was current.
 
 The durable half lives here too, because it is the same ownership question
 asked of disk. A session tracks the journal head it last wrote, so its next
-append can refuse to chain onto someone else's fight; a map session tracks the
-bytes it last saw on disk for the same reason. Recovery is the inverse — a
-journal read back into a session that is a *continuation* of what is on disk
+append can refuse to chain onto someone else's fight. Recovery is the inverse —
+a journal read back into a session that is a *continuation* of what is on disk
 rather than a second copy of it.
 """
 
@@ -22,6 +26,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from random import Random
 from typing import Any
 
@@ -44,12 +49,11 @@ from . import encounter_journal as journal_service
 from . import maps as map_service
 from . import specs
 from .common import sha256_of
-from .errors import RequestError
+from .errors import NotFoundError, RequestError
 
 __all__ = [
     "Content",
     "EngineState",
-    "MapSession",
     "Session",
     "active_content",
     "active_registry",
@@ -59,11 +63,10 @@ __all__ = [
     "capture_checkpoint",
     "initial_creatures",
     "journal_append",
-    "map_session_for",
     "map_source_of",
+    "maps_dir_of",
     "new_encounter",
     "new_encounter_id",
-    "new_map_id",
     "recover_session",
     "resolve_battle_map",
     "session_for",
@@ -80,11 +83,12 @@ class Session:
     #: resolving under the content it started with, so this is how a later
     #: reconfiguration becomes visible rather than mysterious.
     content_generation: int = 0
-    #: The map session this fight was built from, if any, with the generation and
-    #: document hash it captured — the same staleness idiom as content: an edit
-    #: never reaches into a fight, so the divergence is reported instead.
+    #: The saved map this fight was built from, if any, and the hash of the
+    #: exact document it captured — the same staleness idiom as content: an edit
+    #: to the file never reaches into a fight, so the divergence is reported
+    #: instead. The hash is the whole handle, because the file is the truth:
+    #: there is no session in between to carry a generation counter.
     map_id: str | None = None
-    map_generation: int = 0
     map_sha256: str = ""
     #: What a replay bundle needs, snapshotted the moment the encounter was
     #: built: the combatants as they stood before any turn, which features
@@ -115,21 +119,6 @@ class Session:
 
 
 @dataclass(slots=True)
-class MapSession:
-    """One loaded map. The document is frozen; edits replace it and bump the
-    generation, which is how an encounter built from it can tell it moved on."""
-
-    document: MapDocument
-    generation: int = 1
-    path: str | None = None
-    #: The bytes this session last saw at :attr:`path` — set when it loaded the
-    #: file or wrote it, and deliberately *not* updated by an edit, since an edit
-    #: moves the document away from disk rather than moving disk. It is what lets
-    #: a save guard itself without the caller supplying a hash.
-    disk_sha256: str = ""
-
-
-@dataclass(slots=True)
 class Content:
     """The active registry, replaced wholesale rather than mutated."""
 
@@ -142,19 +131,25 @@ class Content:
 
 @dataclass(slots=True)
 class EngineState:
-    """Every fight, map, and registry one engine process is holding.
+    """Every fight and registry one engine process is holding.
 
     Passed to the service functions that touch it. An adapter owns exactly one
     and threads it down; nothing here is reachable any other way, which is what
     makes a second adapter — or a test — able to run the same tool bodies
     against state it constructed itself.
+
+    Maps are conspicuously absent, and their absence is the design: a map is a
+    *file*, addressed by the id its filename gives it. There used to be a
+    dictionary of loaded map sessions here, which meant two servers on one host
+    each held a private copy of the same map and each thought its own was
+    current. :attr:`maps_dir` is the one thing left — which directory this
+    adapter's ids resolve in — and ``None`` means the configured root.
     """
 
     sessions: dict[str, Session] = field(default_factory=dict)
-    maps: dict[str, MapSession] = field(default_factory=dict)
     content: Content | None = None
     next_id: int = 0
-    next_map_id: int = 0
+    maps_dir: Path | None = None
 
 
 def utc_now() -> str:
@@ -197,11 +192,6 @@ def new_encounter_id(state: EngineState) -> str:
             return candidate
 
 
-def new_map_id(state: EngineState) -> str:
-    state.next_map_id += 1
-    return f"map-{state.next_map_id}"
-
-
 def session_for(state: EngineState, encounter_id: str) -> Session:
     found = state.sessions.get(encounter_id)
     if found is None:
@@ -209,12 +199,9 @@ def session_for(state: EngineState, encounter_id: str) -> Session:
     return found
 
 
-def map_session_for(state: EngineState, map_id: str) -> MapSession:
-    found = state.maps.get(map_id)
-    if found is None:
-        known = ", ".join(sorted(state.maps)) or "none"
-        raise RequestError(f"unknown map {map_id!r}; active: {known}")
-    return found
+def maps_dir_of(state: EngineState) -> Path:
+    """Where this adapter's map ids resolve: its own directory, or the root."""
+    return state.maps_dir if state.maps_dir is not None else map_service.maps_root()
 
 
 # --- building a fight ------------------------------------------------------
@@ -256,50 +243,69 @@ def initial_creatures(encounter: Encounter) -> list[dict[str, Any]]:
 
 
 # --- the map a fight is on -------------------------------------------------
-def map_source_of(state: EngineState, session: Session) -> dict[str, Any] | None:
-    """How the fight's map relates to the live map session, or ``None``.
+def current_map_sha256(state: EngineState, map_id: str) -> str | None:
+    """The canonical hash of the saved map ``map_id`` names, or ``None``.
 
-    ``stale`` flips when the map has been edited or reloaded since the fight
-    captured it — the fight keeps resolving on what it captured, and this is
-    the divergence made visible, exactly as content generations work.
+    ``None`` covers every way the file can fail to answer — deleted, renamed,
+    no longer parsing — because from a fight's point of view they are the same
+    fact: what it captured is no longer what is on disk.
+    """
+    try:
+        path = map_service.resolve_id(map_id, maps_dir_of(state))
+    except RequestError:
+        return None
+    return map_service.current_sha256(path, terrain=active_registry(state).terrain_effects)
+
+
+def map_source_of(state: EngineState, session: Session) -> dict[str, Any] | None:
+    """How the fight's map relates to the file it came from, or ``None``.
+
+    ``stale`` flips when the file has changed since the fight captured it — the
+    fight keeps resolving on what it captured, and this is the divergence made
+    visible, exactly as content generations work. The comparison is against the
+    file rather than against a loaded copy, because the file is the only thing
+    two servers on one host both see.
     """
     if session.map_id is None:
         return None
-    live = state.maps.get(session.map_id)
-    current = live.generation if live is not None else None
+    current = current_map_sha256(state, session.map_id)
     return {
         "map_id": session.map_id,
-        "generation": session.map_generation,
-        "current_generation": current,
-        "stale": current != session.map_generation,
+        "sha256": session.map_sha256,
+        "current_sha256": current,
+        "stale": current != session.map_sha256,
     }
 
 
 def resolve_battle_map(
     state: EngineState, map_spec: dict[str, Any] | None, map_id: str | None
-) -> tuple[BattleMap | None, dict[str, Any] | None]:
-    """The battle map a tool call names — inline spec or loaded session.
+) -> tuple[BattleMap | None, dict[str, Any] | None, MapDocument | None]:
+    """The battle map a tool call names — inline spec or saved map file.
 
-    A session-backed map also yields the ``map_source`` capture: which map,
-    which generation, and the hash of the exact document the fight is on.
-    The shape matches :func:`map_source_of`, so a caller reads ``stale`` off
-    either tool's result — at capture time it is ``False`` by construction —
-    plus ``sha256``, which only the capture can name.
+    A saved map also yields the ``map_source`` capture (which map, and the hash
+    of the exact document the fight is on) and the document itself, so a caller
+    that must snapshot it by value does not read the file a second time and
+    risk snapshotting a different version than it resolved. The capture's shape
+    matches :func:`map_source_of`, so a caller reads ``stale`` off either
+    result — at capture time it is ``False`` by construction.
     """
     if map_spec is not None and map_id is not None:
-        raise RequestError("give 'map' (an inline spec) or 'map_id' (a loaded map), not both")
+        raise RequestError("give 'map' (an inline spec) or 'map_id' (a saved map), not both")
     if map_spec is not None:
-        return specs.battle_map_from_spec(map_spec), None
+        return specs.battle_map_from_spec(map_spec), None, None
     if map_id is not None:
-        found = map_session_for(state, map_id)
-        return to_grid(found.document), {
+        document, _path = map_service.load_by_id(
+            map_id, maps_dir_of(state), terrain=active_registry(state).terrain_effects
+        )
+        sha256 = sha256_of(serialize_map(document))
+        source = {
             "map_id": map_id,
-            "generation": found.generation,
-            "current_generation": found.generation,
+            "sha256": sha256,
+            "current_sha256": sha256,
             "stale": False,
-            "sha256": sha256_of(serialize_map(found.document)),
         }
-    return None, None
+        return to_grid(document), source, document
+    return None, None, None
 
 
 # --- the durable record ----------------------------------------------------
@@ -428,7 +434,7 @@ def recover_session(
     except journal_service.JournalError as error:
         known = ", ".join(sorted(state.sessions)) or "none"
         if "unknown encounter" in str(error):
-            raise RequestError(
+            raise NotFoundError(
                 f"unknown encounter {encounter_id!r}; active: {known}"
             ) from error
         raise RequestError(str(error)) from error
@@ -483,7 +489,6 @@ def recover_session(
         source = created.get("map_source")
         if isinstance(source, Mapping):
             session.map_id = str(source.get("map_id"))
-            session.map_generation = int(source.get("generation", 0))
             session.map_sha256 = str(source.get("sha256", ""))
     elif map_kind == "inline" and isinstance(captured_map, Mapping):
         session.inline_map_payload = deepcopy(dict(captured_map))

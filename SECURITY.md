@@ -32,7 +32,7 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   as a child process and owns both ends of the pipe. It listens on no port.
 - **The map editor is the one thing that binds a port.** It is a single-user
   localhost tool, and the controls it does have are listed in the module
-  docstring of `souroldgeezer-fivee-sim/engine/src/fivee_sim/editor/http_server.py`:
+  docstring of `souroldgeezer-fivee-sim/engine/src/fivee_sim/web/http_server.py`:
   bound to `127.0.0.1` on an ephemeral port; every `/api/*` request must carry a
   per-launch random token; a request whose `Host` is neither `127.0.0.1` nor
   `localhost` is refused, so a DNS-rebinding page cannot drive it; no CORS
