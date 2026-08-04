@@ -82,6 +82,31 @@ async function suite(title, stubSite, body) {
   }
 }
 
+/* Let a page's promise chain finish before asserting on it. The stub `fetch`
+ * resolves immediately, but each `.then` still costs a microtask turn, and a
+ * served page spends several of them (list, then bundle, then draw). A fixed
+ * number of turns is enough because nothing here is really asynchronous —
+ * there is no timer and no socket to wait on. */
+async function flush(turns = 24) {
+  for (let i = 0; i < turns; i += 1) { await Promise.resolve(); }
+}
+
+/* Every id the shipped markup ships `hidden`, read off the page rather than
+ * listed by hand. The stub DOM does not parse HTML — it invents an element the
+ * first time the page asks for one — so without this every element starts
+ * visible and "the page left it hidden" would be unfalsifiable. Derived from
+ * the source so it cannot drift from the markup it is modelling. */
+function hiddenElementIds(html) {
+  const found = new Set();
+  const tags = html.match(/<[a-z][^>]*>/gi) || [];
+  tags.forEach((tag) => {
+    if (!/[\s"']hidden[\s>/]/.test(tag)) { return; }
+    const id = /\sid="([^"]+)"/.exec(tag);
+    if (id) { found.add(id[1]); }
+  });
+  return found;
+}
+
 /* The failure this script is most likely to have, and the one the throwaways
  * kept having: the page grew a call the stubs do not answer. An opaque
  * `ReferenceError: foo is not defined` reads as a page defect. It is not — it
@@ -339,6 +364,7 @@ function makePage(options) {
       if (options.seed && Object.prototype.hasOwnProperty.call(options.seed, id)) {
         el.textContent = options.seed[id];
       }
+      if (options.hiddenIds && options.hiddenIds.has(id)) { el.hidden = true; }
       elements.set(id, el);
     }
     return elements.get(id);
@@ -408,6 +434,9 @@ function makePage(options) {
       removeItem: (key) => store.delete(key),
     },
     __FIVEE_EDITOR__: options.config || null,
+    /* Enough of `location` for a page to read its own query string. Only the
+     * deep-link path uses it, and only ever to read — nothing here navigates. */
+    location: { search: options.search || "", href: "http://127.0.0.1/", hash: "" },
     Headers: class { get() { return null; } },
     Blob: class { constructor(parts) { this.parts = parts; blobs.push(parts.join("")); } },
     URL: { createObjectURL: () => "blob:harness", revokeObjectURL: () => {} },
@@ -1267,6 +1296,184 @@ await suite("viewer.html: animated playback", "the manual animation clock in mak
         && pausePage.element("btn-play").textContent === "Play",
       show([pausePage.last().overlays.tokens[0].at,
         pausePage.element("btn-play").textContent]));
+  });
+
+const VIEWER_HIDDEN = hiddenElementIds(viewerHtml);
+
+await suite("viewer.html: the served replay list", "the page sandbox in makePage()",
+  async () => {
+    /* The viewer is now a page of the running service as well as a standalone
+     * export, and those two lives share one file. Everything below is about
+     * the seam between them: what the served page reaches for, and — the case
+     * that matters most — what the exported page must never reach for.
+     *
+     * That negative is exactly the claim text cannot make. A grep can see that
+     * a fetch sits behind `if (window.__FIVEE_EDITOR__)`; it cannot see whether
+     * the boot block actually took that branch. Here the stub counts requests,
+     * so "no config, no request" is an observation. */
+    const listed = {
+      replays: [
+        { id: "gatehouse", name: "gatehouse brawl", seed: 61, events: 4, format_version: 2 },
+        { id: "cellar", name: "cellar ambush", seed: 62, events: 4, format_version: 2 },
+      ],
+    };
+
+    /* 1. Standalone: no injected config, so no network, at all. */
+    const offline = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" },
+      hiddenIds: VIEWER_HIDDEN });
+    offline.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await Promise.resolve();
+    check("an exported page issues no request when there is no server config",
+      offline.requests.length === 0, show(offline.requests));
+    check("and keeps its server-only controls hidden",
+      offline.element("served-replays").hidden === true
+        && offline.element("link-editor").hidden === true,
+      show([offline.element("served-replays").hidden,
+        offline.element("link-editor").hidden]));
+
+    /* 2. Standalone with an embedded bundle: still no network. The embedded
+     *    slot wins outright, and winning must not mean "fetch anyway". */
+    const embedded = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(replayBundle(["door-1"])) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    embedded.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await Promise.resolve();
+    check("an embedded replay plays without any request",
+      embedded.renders.length > 0 && embedded.requests.length === 0,
+      show([embedded.renders.length, embedded.requests]));
+
+    /* 3. Served: the chooser fills from /api/replays and carries the token. */
+    const served = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    served.reply = (url) => (
+      url === "/api/replays"
+        ? { status: 200, body: listed }
+        : { status: 200, body: replayBundle(["door-1"]) }
+    );
+    served.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("a served page asks the server for its replays",
+      served.requests.length === 1 && served.requests[0].url === "/api/replays",
+      show(served.requests));
+    check("the chooser lists every replay plus the empty choice",
+      served.element("replay-select").children.length === 3,
+      String(served.element("replay-select").children.length));
+    check("and reveals itself and the link back to the editor",
+      served.element("served-replays").hidden === false
+        && served.element("link-editor").hidden === false,
+      show([served.element("served-replays").hidden,
+        served.element("link-editor").hidden]));
+    check("the empty state names the control that just appeared",
+      served.element("empty-hint").textContent.indexOf("Pick a replay above") === 0,
+      served.element("empty-hint").textContent);
+    check("nothing is drawn until a replay is chosen",
+      served.renders.length === 0, String(served.renders.length));
+
+    /* 4. Choosing one goes through the same loadBundle the file picker uses. */
+    served.element("replay-select").value = "cellar";
+    served.element("replay-select").dispatch("change");
+    await flush();
+    check("choosing a replay fetches it by id",
+      served.requests.length === 2 && served.requests[1].url === "/api/replays/cellar",
+      show(served.requests));
+    check("and it reaches the canvas through the shared load path",
+      served.renders.length > 0 && served.alerts.length === 0,
+      show([served.renders.length, served.alerts]));
+
+    /* 5. A refused bundle names itself. A corrupt replay is *listed* — that is
+     *    deliberate, so the user can see which file is broken — so the refusal
+     *    on load is the only place the name is ever said. */
+    const refused = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    refused.reply = (url) => (
+      url === "/api/replays"
+        ? { status: 200, body: listed }
+        : {
+          status: 422,
+          body: { detail: "broken.json is not a playable replay bundle: 1 problem(s)" },
+        }
+    );
+    refused.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    refused.element("replay-select").value = "gatehouse";
+    refused.element("replay-select").dispatch("change");
+    await flush();
+    check("a refused bundle reports the server's own words, not a status code",
+      refused.alerts.length === 1
+        && refused.alerts[0].indexOf("is not a playable replay bundle") !== -1,
+      show(refused.alerts));
+    check("and nothing is drawn from it",
+      refused.renders.length === 0, String(refused.renders.length));
+
+    /* 6. A server with no /api/replays leaves the page usable. The chooser is
+     *    a convenience; the file picker is the guarantee. */
+    const older = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    older.reply = () => ({ status: 404, body: { detail: "no route for /api/replays" } });
+    older.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("a server without the replay route raises no alarm",
+      older.alerts.length === 0, show(older.alerts));
+    check("and leaves the chooser hidden rather than empty and clickable",
+      older.element("served-replays").hidden === true,
+      String(older.element("served-replays").hidden));
+    await older.drop(replayBundle(["door-1"]), "hand-opened.json");
+    check("and a hand-opened file still plays",
+      older.renders.length > 0, String(older.renders.length));
+
+    /* 7. ?replay=<id> deep-links, which is what replay_export hands back. */
+    const linked = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      search: "?replay=cellar",
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    linked.reply = (url) => (
+      url === "/api/replays"
+        ? { status: 200, body: listed }
+        : { status: 200, body: replayBundle(["door-1"]) }
+    );
+    linked.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("a deep link plays its replay without a click",
+      linked.requests.length === 2
+        && linked.requests[1].url === "/api/replays/cellar"
+        && linked.renders.length > 0,
+      show([linked.requests, linked.renders.length]));
+    check("and the chooser shows what is playing",
+      linked.element("replay-select").value === "cellar",
+      linked.element("replay-select").value);
+
+    /* 8. A deep link naming something the server does not have is ignored
+     *    rather than fetched: a stale bookmark should land on the chooser. */
+    const stale = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": "null" },
+      config: { token: "launch-token", apiBase: "/api", version: "test" },
+      search: "?replay=deleted-last-week",
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    stale.reply = () => ({ status: 200, body: listed });
+    stale.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("an unknown deep link asks for nothing and draws nothing",
+      stale.requests.length === 1 && stale.renders.length === 0,
+      show([stale.requests, stale.renders.length]));
   });
 
 /* --- editor.html ---------------------------------------------------------- */

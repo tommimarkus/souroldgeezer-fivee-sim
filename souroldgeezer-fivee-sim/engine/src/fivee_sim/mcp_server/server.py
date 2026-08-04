@@ -33,6 +33,7 @@ from importlib import resources
 from pathlib import Path
 from random import Random
 from typing import Any
+from urllib.parse import quote
 
 from mcp.server.mcpserver import MCPServer
 
@@ -2132,12 +2133,17 @@ def replay_export(
 
     Plain export: a small bundle is returned inline as ``bundle``; a large
     one — or any call with ``path`` — is written to disk (default
-    ``<maps root>/replays/<name>-<seed>.json``) and answered with ``path``,
-    ``bytes``, and ``sha256``. With ``embed`` true the bundle is baked into
-    the replay viewer page instead, producing one self-contained ``.html``
-    the user opens directly in a browser — no server, hand the file over.
-    An existing file at the target is replaced: the export is derived from
-    the session, not an original.
+    ``<replays root>/<name>-<seed>.json``, a sibling of the maps directory)
+    and answered with ``path``, ``bytes``, and ``sha256``. With ``embed`` true
+    the bundle is baked into the replay viewer page instead, producing one
+    self-contained ``.html`` the user opens directly in a browser — no server,
+    hand the file over. An existing file at the target is replaced: the export
+    is derived from the session, not an original.
+
+    Two ways to show it, and they answer different asks. If
+    ``map_editor_serve`` is already running, a written bundle comes back with
+    a ``viewer_url`` that plays it in that browser tab — best when the user is
+    at the machine. ``embed`` is for handing the fight to someone who is not.
     """
     session = _session(encounter_id)
     if format_version == 1:
@@ -2215,7 +2221,7 @@ def replay_export(
         target = (
             Path(path).expanduser()
             if path is not None
-            else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.html"
+            else _replay_service.replays_root() / f"{slug}-{session.seed}.html"
         )
         try:
             _replay_service.atomic_write_text(target, html)
@@ -2234,18 +2240,22 @@ def replay_export(
     target = (
         Path(path).expanduser()
         if path is not None
-        else _map_service.maps_root() / "replays" / f"{slug}-{session.seed}.json"
+        else _replay_service.replays_root() / f"{slug}-{session.seed}.json"
     )
     try:
         _replay_service.atomic_write_text(target, serialized)
     except OSError as error:
         raise ToolError(f"cannot write {target}: {error}") from error
-    return {
+    written = {
         **result,
         "path": str(target),
         "bytes": size,
         "sha256": _replay_service.sha256_bytes(serialized.encode("utf-8")),
     }
+    # Only the bundle branch: an embedded .html is opened directly and is not
+    # in the served /api/replays listing, which reads bundles alone.
+    viewer_url = _viewer_link(target)
+    return written if viewer_url is None else {**written, "viewer_url": viewer_url}
 
 
 # --- maps ------------------------------------------------------------------
@@ -2748,6 +2758,41 @@ def _editor_ping(port: int, token: str) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def _viewer_link(target: Path) -> str | None:
+    """A URL into a **running** viewer for a just-written bundle, or ``None``.
+
+    Offered only when all three hold, because a link that fails is worse than
+    no link — the user clicks it, gets a refused connection, and blames the
+    export rather than the absent server:
+
+    * a server for the default maps root answers its own ``/api/ping``;
+    * it reports a ``replays_dir``, which only a server new enough to serve
+      ``/api/replays`` does;
+    * the file just written is actually inside that directory, so that server
+      can see it. An export aimed somewhere else is not its to play.
+
+    The id is the ``slugify`` of the stem, which is how the server's own
+    replay index names it — the same rule on both sides, not a guess.
+    """
+    live = _live_editor_state(state_file_for(_map_service.maps_root()))
+    if live is None:
+        return None
+    served = live.get("replays_dir")
+    if not isinstance(served, str):
+        return None
+    try:
+        written = target.resolve()
+        root = Path(served).expanduser().resolve()
+    except OSError:
+        return None
+    if not written.is_relative_to(root):
+        return None
+    return (
+        f"http://127.0.0.1:{live['port']}/viewer"
+        f"?replay={quote(slugify(written.stem), safe='')}"
+    )
+
+
 def _live_editor_state(state_path: Path) -> dict[str, Any] | None:
     """The state file's record, but only when the server it names still answers."""
     state = read_state(state_path)
@@ -2763,11 +2808,13 @@ def _live_editor_state(state_path: Path) -> dict[str, Any] | None:
 
 @server.tool()
 def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> dict[str, Any]:
-    """Start the browser map editor and report its URL — or find it already up.
+    """Start the browser map editor and replay viewer — or find them already up.
 
-    The editor is a separate localhost-only process serving the maps
-    directory; hand its ``url`` to the user to open in a browser. The served
-    page configures its own access token, so the URL alone is enough. Calling
+    One localhost-only process serves both pages: ``url`` is the map editor,
+    ``viewer_url`` the replay viewer, which plays any bundle under the
+    ``replays_dir`` it reports. Hand the user whichever fits what they asked
+    for; each page links to the other, and each configures its own access
+    token, so the URL alone is enough. Calling
     this again while the editor runs returns the same URL with
     ``already_running`` true rather than starting a second one. After the user
     saves in the editor, the file is the truth — ``map_load`` (with
@@ -2780,8 +2827,12 @@ def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> di
     if live is not None:
         return {
             "url": f"http://127.0.0.1:{live['port']}/",
+            "viewer_url": f"http://127.0.0.1:{live['port']}/viewer",
             "port": live["port"],
             "maps_dir": str(live.get("maps_dir", root)),
+            "replays_dir": str(
+                live.get("replays_dir", _replay_service.replays_root())
+            ),
             "already_running": True,
         }
     # A state file nobody answers for describes a dead server; clear it so the
@@ -2828,8 +2879,10 @@ def map_editor_serve(port: int | None = None, maps_dir: str | None = None) -> di
         )
     return {
         "url": f"http://127.0.0.1:{state['port']}/",
+        "viewer_url": f"http://127.0.0.1:{state['port']}/viewer",
         "port": state["port"],
         "maps_dir": str(root),
+        "replays_dir": str(state.get("replays_dir", _replay_service.replays_root())),
         "already_running": False,
         "log": str(log_path),
     }
