@@ -15,6 +15,7 @@ validator, one vocabulary, whichever surface asked.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -30,7 +31,6 @@ from fivee_sim.service.replay import (
     list_replays,
     load_bundle_file,
     replays_root,
-    sha256_bytes,
 )
 
 from .conftest import mapless_fight
@@ -128,7 +128,10 @@ class TestListReplays:
 
         (row,) = list_replays([tmp_path])
 
-        assert row["sha256"] == sha256_bytes(target.read_bytes())
+        # Hashed by the stdlib, not by the service's own sha256_bytes: an
+        # expected value computed with the SUT's helper agrees with it however
+        # wrong that helper becomes.
+        assert row["sha256"] == hashlib.sha256(target.read_bytes()).hexdigest()
 
     def test_files_that_are_not_replay_bundles_are_skipped_in_silence(
         self, tmp_path: Path

@@ -78,6 +78,14 @@ def replay_bundle() -> dict[str, Any]:
     """
     encounter_id = mapless_fight(seed=91)
     exported = api.replay_export(encounter_id)
+    # Asserted, not assumed: `bundle` is only present on the inline branch, so
+    # a v2 envelope that grew past the size gate would otherwise take every
+    # test in TestReplays down with a KeyError in setup rather than a failure
+    # anyone could read.
+    assert "bundle" in exported, (
+        f"the fixture fight no longer fits the inline branch "
+        f"({exported.get('bytes')} bytes); read the written path instead"
+    )
     bundle: dict[str, Any] = exported["bundle"]
     return bundle
 

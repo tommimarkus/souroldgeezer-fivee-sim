@@ -1322,7 +1322,11 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     const offline = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" },
       hiddenIds: VIEWER_HIDDEN });
     offline.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
-    await Promise.resolve();
+    /* The same depth the positive cases use, and for a sharper reason: a
+     * "no request was made" assertion is only worth its turn budget. Checked
+     * at one turn this passed against a page that really did fetch, two turns
+     * late — the exact defect the offline guarantee exists to prevent. */
+    await flush();
     check("an exported page issues no request when there is no server config",
       offline.requests.length === 0, show(offline.requests));
     check("and keeps its server-only controls hidden",
@@ -1339,7 +1343,7 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
       hiddenIds: VIEWER_HIDDEN,
     });
     embedded.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
-    await Promise.resolve();
+    await flush();
     check("an embedded replay plays without any request",
       embedded.renders.length > 0 && embedded.requests.length === 0,
       show([embedded.renders.length, embedded.requests]));
