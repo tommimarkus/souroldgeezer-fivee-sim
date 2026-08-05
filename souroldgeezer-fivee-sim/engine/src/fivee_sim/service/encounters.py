@@ -479,10 +479,12 @@ def act(
     return result
 
 
-def execute_advance(state: EngineState, encounter_id: str) -> dict[str, Any]:
+def execute_advance(
+    state: EngineState, encounter_id: str, natural: int | list[int] | None = None
+) -> dict[str, Any]:
     """End the current turn and begin the next, rolling any death saves that are due."""
     session = sessions.session_for(state, encounter_id)
-    events = session.encounter.advance(session.rng)
+    events = session.encounter.advance(session.rng, specs.parse_natural(natural))
     completed_at = sessions.utc_now()
     session.event_timestamps.extend([completed_at] * len(events))
     sessions.capture_checkpoint(session, completed_at)
@@ -493,21 +495,27 @@ def execute_advance(state: EngineState, encounter_id: str) -> dict[str, Any]:
 
 
 def advance(
-    state: EngineState, encounter_id: str, request_id: str | None = None
+    state: EngineState,
+    encounter_id: str,
+    natural: int | list[int] | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
         return cached
-    arguments: dict[str, Any] = {}
+    # Recorded for the reason ``act`` records its own: a death save the caller
+    # rolled is an input, and a resume that re-rolled it would recover a fight
+    # where somebody died who did not.
+    arguments: dict[str, Any] = {"natural": list(specs.parse_natural(natural))}
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_advance", arguments, request_id
     )
     try:
         if session.finalized:
             raise RequestError(f"encounter {encounter_id!r} is finalized")
-        result = execute_advance(state, encounter_id)
-    except (RequestError, EncounterError) as error:
+        result = execute_advance(state, encounter_id, natural)
+    except (RequestError, EncounterError, DiceError) as error:
         sessions.attempt_finished(
             state,
             encounter_id,

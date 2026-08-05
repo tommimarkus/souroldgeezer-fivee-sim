@@ -1296,7 +1296,7 @@ class Encounter:
         return state
 
     # --- turn lifecycle ---------------------------------------------------
-    def _begin_turn(self, rng: Random) -> None:
+    def _begin_turn(self, rng: Random, natural: tuple[int, ...] = ()) -> None:
         creature = self.current
         self._dodging[creature.name] = False
         self._disengaged[creature.name] = False
@@ -1311,7 +1311,14 @@ class Encounter:
             return
         self._resolve_attached_damage(creature, rng)
         if creature.dying:
-            self._death_save(creature, rng)
+            self._death_save(creature, rng, natural)
+        elif natural:
+            # Refused rather than dropped, as everywhere else a face is
+            # reported for a roll that is not going to happen.
+            raise EncounterError(
+                f"{creature.name} makes no death save this turn, so there is "
+                "no face to report"
+            )
         # The budget is derived *after* the death save: a natural 20 regains
         # 1 hit point (SRD 5.2.1, "Death Saving Throws", Rolling 20), and the
         # revived creature is conscious for the rest of this turn — nothing in
@@ -1400,8 +1407,10 @@ class Encounter:
         self._attachments.remove(link)
         self._emit("detach", link.source, link.target, detail=detail)
 
-    def _death_save(self, creature: Creature, rng: Random) -> None:
-        roll = roll_d20(rng)
+    def _death_save(
+        self, creature: Creature, rng: Random, natural: tuple[int, ...] = ()
+    ) -> None:
+        roll = roll_d20(rng, supplied=natural or None)
         if roll.natural == 20:
             creature.heal(1)
             self._emit("death_save", creature.name,
@@ -1463,8 +1472,14 @@ class Encounter:
                 level=creature.level,
             )
 
-    def advance(self, rng: Random) -> list[Event]:
-        """End the current turn and begin the next, wrapping the round."""
+    def advance(self, rng: Random, natural: tuple[int, ...] = ()) -> list[Event]:
+        """End the current turn and begin the next, wrapping the round.
+
+        ``natural`` is the face the creature whose turn is *starting* rolled for
+        its own death save, for a player who would rather roll their own. At
+        most one death save happens per advance — it is taken at the start of a
+        dying creature's turn — so one reported face is never ambiguous.
+        """
         before = len(self.log)
         in_round, by = self.round, self.current_name
         self._emit("turn_end", self.current_name)
@@ -1491,7 +1506,7 @@ class Encounter:
                 self._expire_timed("end", self.current_name)
             self._emit("turn_start", self.current_name)
             self._expire_timed("start", self.current_name)
-            self._begin_turn(rng)
+            self._begin_turn(rng, natural)
         # Recorded even when the fight is over: the call still emitted its
         # turn_end, and a replay that skipped it would miss that event.
         self.actions.append(ActionRecord(

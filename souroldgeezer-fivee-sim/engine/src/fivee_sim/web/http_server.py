@@ -981,7 +981,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _h_encounter_advance(self, request: _Request) -> None:
         self._check_encounter_version(request.id)
-        result = encounter_service.advance(self.state, request.id, self._idempotency_key())
+        result = encounter_service.advance(
+            self.state, request.id, request.body["natural"], self._idempotency_key()
+        )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_note(self, request: _Request) -> None:

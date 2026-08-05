@@ -674,7 +674,7 @@ ROUTES: tuple[Route, ...] = (
         "POST", f"{API_PREFIX}/encounters/{{id}}/advance", "encounter.advance",
         "End this turn, begin the next, and record the transition.",
         params=(_ID, _IF_MATCH, _IDEMPOTENCY),
-        body_schema={"type": "object", "properties": {}},
+        body_schema={"type": "object", "properties": {"natural": _NATURAL}},
         handler="encounter_advance", errors=(409,),
     ),
     Route(

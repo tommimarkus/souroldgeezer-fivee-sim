@@ -146,6 +146,52 @@ class TestTheFightRemembersIt:
         assert goblin_hp(missed) > goblin_hp(landed)
 
 
+class TestDeathSaves:
+    """The one roll that is not taken on the roller's own action.
+
+    A death save happens at the start of a dying creature's turn, inside
+    ``advance`` — so the face is reported there rather than on ``act``. It is
+    also the roll a player most wants in their own hand, which is why it is in
+    scope at all.
+    """
+
+    def _dying(self, seed: int = 41) -> str:
+        # hp 0 and not stable is dying, by the derivation the state payload uses.
+        # Kesh is here to keep the fight *running*: with Thora down and nobody
+        # else standing, the party has lost and no further turn ever begins.
+        down = dict(REPLAY_HERO) | {"hp": 0, "position": [30, 30]}
+        kesh = dict(REPLAY_HERO) | {"name": "Kesh", "position": [30, 25]}
+        return str(
+            api.encounter_create(
+                [down, kesh, dict(REPLAY_GOBLIN)], seed=seed
+            )["encounter_id"]
+        )
+
+    def _wind_to_thoras_turn(self, encounter_id: str) -> dict[str, Any]:
+        # The save rolls at the *start* of Thora's turn, so the advance that
+        # carries the face is the one taken on whoever acts just before her.
+        for _ in range(6):
+            if api.encounter_state(encounter_id)["turn"] == "Goblin":
+                return dict(api.encounter_advance(encounter_id, natural=20))
+            api.encounter_advance(encounter_id)
+        raise AssertionError("never reached the turn before Thora's")
+
+    def test_a_reported_twenty_brings_the_dying_back_at_one_hit_point(self) -> None:
+        encounter_id = self._dying()
+        result = self._wind_to_thoras_turn(encounter_id)
+        save = next(e for e in result["events"] if e["kind"] == "death_save")
+        assert save["data"]["natural"] == 20
+        thora = next(
+            c for c in result["state"]["combatants"] if c["name"] == "Thora"
+        )
+        assert thora["hp"] == 1
+
+    def test_a_face_reported_when_nobody_is_dying_is_refused(self) -> None:
+        encounter_id = _fight()
+        with pytest.raises(RequestError, match="no death save"):
+            api.encounter_advance(encounter_id, natural=20)
+
+
 class TestThePrimitives:
     def test_a_check_uses_the_face_the_caller_rolled(self) -> None:
         result = api.check(modifier=3, dc=10, natural=15)

@@ -203,8 +203,12 @@ def encounter_act(
     )
 
 
-def encounter_advance(encounter_id: str, request_id: str | None = None) -> dict[str, Any]:
-    return _encounters.advance(STATE, encounter_id, request_id)
+def encounter_advance(
+    encounter_id: str,
+    natural: int | list[int] | None = None,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    return _encounters.advance(STATE, encounter_id, natural, request_id)
 
 
 def encounter_resume(encounter_id: str) -> dict[str, Any]:
