@@ -198,7 +198,7 @@ const EDITOR_IDS = [
   "feature-light-bright", "feature-light-dim", "feature-light-color", "btn-undo",
   "provenance", "dlg-resize", "dlg-resize-go", "rs-width", "rs-height", "rs-anchor",
   "rs-fill", "door-config", "door-orientation", "door-hinge", "door-swing",
-  "door-linked",
+  "door-linked", "facing-config", "feature-facing", "map-compass",
 ];
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
@@ -307,27 +307,64 @@ function makeElementClass(contextOf) {
   };
 }
 
-/* The fake 2D context. Every drawing call is a no-op except fillRect, which is
- * how "the picture changed" is observed: the colour a square was painted, and
- * the alpha it was painted at.
+/* The fake 2D context. Two observation channels, and the split matters.
  *
- * Alpha is recorded because the context outlives the frame. A glyph that sets
- * globalAlpha inside a save()/restore() pair and loses the restore leaves every
- * later fill — this frame and every frame after it, since render() never resets
- * alpha — painted at the value it borrowed. Reading fillStyle alone cannot see
- * that: the colour string is unchanged and the whole map just goes faint. */
-function makeContext(fills) {
+ * `fills` records fillRect: the colour a square was painted, and the alpha it
+ * was painted at. Alpha is recorded because the context outlives the frame. A
+ * glyph that sets globalAlpha inside a save()/restore() pair and loses the
+ * restore leaves every later fill — this frame and every frame after it, since
+ * render() never resets alpha — painted at the value it borrowed. Reading
+ * fillStyle alone cannot see that: the colour string is unchanged and the whole
+ * map just goes faint.
+ *
+ * `paths` records the other way this renderer draws: build a path with
+ * beginPath/moveTo/lineTo/arc, then commit it with fill() or stroke(). Until
+ * this existed, every such glyph was invisible here — the door's swing arc was
+ * the documented example, and a case asserting it would have passed with the
+ * arc deleted. A committed path carries the ops that built it and the style at
+ * the moment of commit, because a path stroked in the wrong ink or at a
+ * borrowed alpha is as wrong as one never drawn.
+ *
+ * What this still does not see: geometry. Nothing here rasterises, so a chevron
+ * pointing the wrong way is a path whose *coordinates* a case must judge for
+ * itself. The recorder hands over the numbers; it does not know what they mean. */
+function makeContext(fills, paths) {
   const state = {
     fillStyle: "", strokeStyle: "", lineWidth: 1, font: "",
     textAlign: "", textBaseline: "", globalAlpha: 1, lineCap: "", lineJoin: "",
     canvas: null,
   };
   const saved = [];
+  let building = [];
+  const commit = (kind) => {
+    /* A commit with no path behind it is a no-op, not a record: fill() after a
+     * bare rect() is legal canvas and says nothing about a glyph. */
+    if (!building.length) { return; }
+    paths.push({
+      kind,
+      ops: building.slice(),
+      ink: kind === "fill" ? state.fillStyle : state.strokeStyle,
+      alpha: state.globalAlpha,
+      lineWidth: state.lineWidth,
+    });
+  };
   return new Proxy(state, {
     get(target, prop) {
       if (prop === "fillRect") {
         return (x, y, w, h) => fills.push([x, y, w, h, target.fillStyle, target.globalAlpha]);
       }
+      /* Path construction: recorded verbatim, in call order, so a case can read
+       * the shape a glyph actually described. */
+      if (prop === "beginPath") { return () => { building = []; }; }
+      if (prop === "moveTo") { return (x, y) => building.push(["moveTo", x, y]); }
+      if (prop === "lineTo") { return (x, y) => building.push(["lineTo", x, y]); }
+      if (prop === "closePath") { return () => building.push(["closePath"]); }
+      if (prop === "arc") {
+        return (x, y, r, from, to, ccw) =>
+          building.push(["arc", x, y, r, from, to, Boolean(ccw)]);
+      }
+      if (prop === "fill") { return () => commit("fill"); }
+      if (prop === "stroke") { return () => commit("stroke"); }
       /* save/restore are the two no-ops with state behind them: a glyph that
        * borrows alpha or a line cap has to give it back. */
       if (prop === "save") {
@@ -354,7 +391,8 @@ function makeContext(fills) {
  * painted, and the blobs the page tried to hand the user. */
 function makePage(options) {
   const fills = [];
-  const context = makeContext(fills);
+  const paths = [];
+  const context = makeContext(fills, paths);
   const El = makeElementClass(() => context);
   const elements = new Map();
   const canvasIds = new Set(options.canvasIds || []);
@@ -395,7 +433,7 @@ function makePage(options) {
   let nextAnimationFrame = 1;
   let immediateFrameTime = 0;
   const page = {
-    fills, context, element, elements, documentStub, requests, blobs, alerts,
+    fills, paths, context, element, elements, documentStub, requests, blobs, alerts,
     renders: [],
     reply: () => ({ status: 200, body: {} }),
   };
@@ -473,8 +511,11 @@ function makePage(options) {
   const realRender = renderer.render;
   renderer.render = function (ctx, doc, view, overlays) {
     fills.length = 0;
+    paths.length = 0;
     realRender(ctx, doc, view, overlays);
-    page.renders.push({ doc, view, overlays, fills: fills.slice() });
+    page.renders.push({
+      doc, view, overlays, fills: fills.slice(), paths: paths.slice(),
+    });
   };
   page.renderer = renderer;
 
@@ -634,8 +675,10 @@ await suite("renderer.js: the override channel", "the renderer sandbox", async (
  *
  * The leaf is a fillRect, so the fake canvas can see it — this is a claim about
  * what the page *decided* to paint, which is the kind this harness can make.
- * The swing arc drawn beside it is not: `arc` and `stroke` are no-ops here, and
- * no case below pretends otherwise. */
+ * The swing arc beside it is a stroked path, and it used to be invisible here;
+ * the recorder now captures path construction and its commit, so the arc has a
+ * case of its own below. That case is also the recorder's self-check: delete
+ * the `ctx.arc(...)` in drawSwing and it is the one that goes red. */
 
 const DOOR_INK = "#6b4f2a";  /* the leaf's light-theme ink; the matchMedia stub says light */
 const DOOR_VIEW = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
@@ -745,6 +788,269 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
   R.render(page.context, doorDoc("horizontal", "open"), DOOR_VIEW, {});
   const faint = page.last().fills.filter((fill) => fill[5] !== 1);
   check("a door that swings hands the context back at full opacity",
+    faint.length === 0, "painted under a borrowed alpha: " + show(faint.slice(0, 3)));
+
+  /* 6. The arc itself, which no case could see until the recorder learned to
+   *    capture paths. This is the recorder's own self-check as much as the
+   *    door's: delete the ctx.arc() in drawSwing and only these go red. */
+  R.render(page.context, doorDoc("horizontal", "open"), DOOR_VIEW, {});
+  const arcs = page.last().paths.filter(
+    (path) => path.kind === "stroke" && path.ops.some((op) => op[0] === "arc"));
+  check("an open door strokes a swing arc, and it is drawn as an arc",
+    arcs.length === 1, show(page.last().paths));
+  /* The centre is the hinge, which sits mid-edge on the jamb the leaf hangs
+   * from — not the square's corner and not its centre. Asserted as "on this
+   * square, in its west half" rather than as the exact pixel: the recorder
+   * hands over coordinates, and pinning the inset would pin the leaf's
+   * thickness to this case for no gain. */
+  const arcAt = arcs.length === 1 ? arcs[0].ops[0] : null;
+  check("the arc is struck about the hinge, at the leaf's own ink",
+    arcAt !== null && arcs[0].ink === DOOR_INK
+      && arcAt[1] >= px && arcAt[1] < px + DOOR_VIEW.scale / 2
+      && near(arcAt[2], py + DOOR_VIEW.scale / 2),
+    show(arcs));
+  check("and it is the faint one — the arc is what borrows the alpha",
+    arcs.length === 1 && arcs[0].alpha < 1, show(arcs));
+
+  /* Both orientations, because they are separate branches in drawFeature: a
+   * case naming only one leaves the other free to stroke an arc a shut door has
+   * no business drawing. Found by mutation — the first version of this case
+   * checked "horizontal" alone and survived an arc added to the vertical
+   * branch. */
+  const shutArcs = (orientation) => {
+    R.render(page.context, doorDoc(orientation, "closed"), DOOR_VIEW, {});
+    return page.last().paths.filter((path) => path.ops.some((op) => op[0] === "arc"));
+  };
+  /* Each rendered once and held: calling shutArcs() again for the failure
+   * detail would report a *different* frame than the one that failed, and this
+   * suite exists to catch renders that are not idempotent (case 5 above turns
+   * on exactly that). */
+  const shutArcsH = shutArcs("horizontal");
+  const shutArcsV = shutArcs("vertical");
+  check("a closed door strokes no arc: there is nothing to show swinging",
+    shutArcsH.length === 0, show(shutArcsH));
+  check("and a closed vertical door strokes none either",
+    shutArcsV.length === 0, show(shutArcsV));
+});
+
+/* --- facing ---------------------------------------------------------------
+ * One vocabulary on three carriers — a creature, a map feature, and the map
+ * itself — and every one of them draws as a path rather than a rect, so none of
+ * this was observable here until the recorder learned to capture path
+ * construction.
+ *
+ * What makes these cases mean anything is that renderer.js draws the chevron in
+ * **absolute coordinates**. The recorder stores moveTo/lineTo arguments as
+ * passed, so a glyph drawn under a translate/rotate pair would record the same
+ * three points for all eight facings, and every direction case below would pass
+ * against a renderer that ignored the facing entirely. tests/test_web_assets.py
+ * holds the source to that rule; these cases spend it.
+ *
+ * The other half is telling this glyph's path from the dozen others a frame
+ * contains — the token circle, the HP ring, the dead cross, the door's arc. The
+ * facing ink is used by nothing else, and a chevron is exactly three ops, so
+ * `chevronsIn` names one shape and not "some path exists". */
+
+const FACING_INK = "#a8462a";  /* the light-theme facing ink; the stub says light */
+const FACING_VIEW = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
+const FACING_AT = [3, 2];
+
+/* The eight names and the grid step each points along: north is −y. Written out
+ * rather than imported, because a table this file shared with renderer.js could
+ * not catch renderer.js getting it wrong. */
+const FACING_STEPS = {
+  north: [0, -1], northeast: [1, -1], east: [1, 0], southeast: [1, 1],
+  south: [0, 1], southwest: [-1, 1], west: [-1, 0], northwest: [-1, -1],
+};
+
+const inkPaths = (frame) => frame.paths.filter((path) => path.ink === FACING_INK);
+/* A chevron: two wings and a tip, stroked, in the facing ink. The tip is the
+ * middle op — moveTo(wing), lineTo(tip), lineTo(wing). */
+const chevronsIn = (frame) => inkPaths(frame).filter(
+  (path) => path.kind === "stroke" && path.ops.length === 3
+    && path.ops[0][0] === "moveTo" && path.ops[1][0] === "lineTo"
+    && path.ops[2][0] === "lineTo"
+);
+const tipOf = (chevron) => [chevron.ops[1][1], chevron.ops[1][2]];
+
+function facingDoc(options) {
+  const feature = { id: "slit", kind: "opening", at: [FACING_AT[0], FACING_AT[1]] };
+  if (options.facing !== undefined) { feature.facing = options.facing; }
+  const doc = {
+    grid: { width: 8, height: 6 },
+    legend: { ".": "floor", "#": "wall" },
+    tiles: ["########", "#......#", "#......#", "#......#", "#......#", "########"],
+    features: options.bare ? [] : [feature],
+  };
+  if (options.compass !== undefined) { doc.compass = options.compass; }
+  return doc;
+}
+
+await suite("renderer.js: a feature's facing", "the renderer sandbox", async () => {
+  const page = makePage({ canvasIds: ["map"] });
+  const R = page.renderer;
+  const s = FACING_VIEW.scale;
+  const cx = FACING_AT[0] * s + s / 2;
+  const cy = FACING_AT[1] * s + s / 2;
+  const draw = (facing) => {
+    R.render(page.context, facingDoc({ facing: facing }), FACING_VIEW, {});
+    return chevronsIn(page.last());
+  };
+
+  /* Named rather than thrown, unlike the door suite's ink guard: three suites
+   * filter on this ink, so a retuned colour would empty all of them, and the
+   * two causes are indistinguishable from the frame — the hint therefore rides
+   * the failure of the case it explains, and the rest of the suite still
+   * runs. */
+  const east = draw("east");
+  check("a feature that states a facing is drawn with one chevron",
+    east.length === 1,
+    "no three-op stroked path in " + FACING_INK + ": either the facing ink changed, and"
+    + " FACING_INK in scripts/check-editor-behaviour.mjs is stale, or the chevron is gone."
+    + "\n  every path in this frame: " + show(page.last().paths));
+  check("and it is struck about the feature's own square, not the canvas",
+    east.length === 1 && east[0].ops.every(
+      (op) => Math.abs(op[1] - cx) <= s && Math.abs(op[2] - cy) <= s),
+    show(east));
+
+  /* The negative that makes the case above mean anything: a chevron drawn for
+   * every feature would satisfy it while saying nothing about the key. */
+  R.render(page.context, facingDoc({}), FACING_VIEW, {});
+  check("a feature that states none is drawn without one",
+    chevronsIn(page.last()).length === 0, show(page.last().paths));
+
+  /* And the key is read, not merely present: a name outside the eight draws
+   * nothing rather than guessing, and `constructor` is a string a hand-opened
+   * file may carry into an object lookup. */
+  R.render(page.context, facingDoc({ facing: "up" }), FACING_VIEW, {});
+  check("a name outside the eight draws no chevron at all",
+    chevronsIn(page.last()).length === 0, show(page.last().paths));
+  R.render(page.context, facingDoc({ facing: "constructor" }), FACING_VIEW, {});
+  check("and neither does a name off the prototype chain",
+    chevronsIn(page.last()).length === 0, show(page.last().paths));
+
+  /* All eight in one case, because the claim is that the *name* decides the
+   * direction. A renderer that drew a fixed arrow would pass every case above
+   * this one. */
+  const misaimed = [];
+  const tips = new Set();
+  Object.keys(FACING_STEPS).forEach((name) => {
+    const found = draw(name);
+    if (found.length !== 1) {
+      misaimed.push(name + ": " + found.length + " chevrons");
+      return;
+    }
+    const tip = tipOf(found[0]);
+    tips.add(tip.join(","));
+    const step = FACING_STEPS[name];
+    if (Math.sign(tip[0] - cx) !== step[0] || Math.sign(tip[1] - cy) !== step[1]) {
+      misaimed.push(name + " tips toward " + show([tip[0] - cx, tip[1] - cy]));
+    }
+  });
+  check("each of the eight names aims the chevron its own way",
+    misaimed.length === 0, misaimed.join("; "));
+  check("and no two of them describe the same path",
+    tips.size === 8, show(Array.from(tips)));
+});
+
+await suite("renderer.js: a token's facing", "the renderer sandbox", async () => {
+  const page = makePage({ canvasIds: ["map"] });
+  const R = page.renderer;
+  const s = FACING_VIEW.scale;
+  const cx = FACING_AT[0] * s + s / 2;
+  const cy = FACING_AT[1] * s + s / 2;
+  /* The HP ring is stroked on r + max(1.5, 0.07·s) at that width, so its outer
+   * edge is half a width further out. "Outside the ring" is measured against
+   * that, not against the token's own radius. */
+  const ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
+  const away = (point) => Math.sqrt(
+    (point[1] - cx) * (point[1] - cx) + (point[2] - cy) * (point[2] - cy));
+  const draw = (token) => {
+    R.render(page.context, facingDoc({ bare: true }), FACING_VIEW,
+      { tokens: [Object.assign({ at: FACING_AT, label: "Hero", team: "party" }, token)] });
+    return chevronsIn(page.last());
+  };
+
+  const north = draw({ hpFraction: 0.5, facing: "north" });
+  check("a token that carries a facing is drawn with one chevron",
+    north.length === 1, show(page.last().paths));
+  check("and every part of it lies outside the HP ring",
+    north.length === 1 && north[0].ops.every((op) => away(op) > ringEdge),
+    show([north.map((chevron) => chevron.ops.map(away)), ringEdge]));
+  check("and it points the way the token faces",
+    north.length === 1 && tipOf(north[0])[1] < cy - ringEdge
+      && Math.abs(tipOf(north[0])[0] - cx) < 0.01,
+    show(north));
+
+  check("a token that carries none is drawn without one",
+    draw({ hpFraction: 0.5 }).length === 0, show(page.last().paths));
+  /* The token overlay is the only carrier with a state where the direction
+   * stops being a fact: a body is not facing anywhere, and the square already
+   * says so with a cross. */
+  check("and a dead one loses its chevron rather than keeping the last bearing",
+    draw({ hpFraction: 0, dead: true, facing: "north" }).length === 0,
+    show(page.last().paths));
+
+  /* Details are evaluated eagerly, so every one in this file reads through a
+   * chevron that may not be there — a failure that dereferenced the missing
+   * glyph would take the rest of the suite with it and hide its own cause. */
+  const west = draw({ hpFraction: 0.5, facing: "west" });
+  check("a differently facing token aims its chevron differently",
+    west.length === 1 && north.length === 1
+      && tipOf(west[0])[0] < cx - ringEdge && Math.abs(tipOf(west[0])[1] - cy) < 0.01,
+    show([west.map(tipOf), north.map(tipOf)]));
+});
+
+await suite("renderer.js: the document's compass", "the renderer sandbox", async () => {
+  const page = makePage({ canvasIds: ["map"] });
+  const R = page.renderer;
+  const draw = (compass, view) => {
+    R.render(page.context, facingDoc({ bare: true, compass: compass }),
+      view || FACING_VIEW, {});
+    return page.last();
+  };
+
+  const east = draw("east");
+  const eastRose = chevronsIn(east);
+  check("a document that states a compass draws a rose",
+    eastRose.length === 1, show(east.paths));
+  check("and the rose is a needle as well as a head",
+    inkPaths(east).length === 2, show(inkPaths(east)));
+  /* A property of the map, not of a square: it belongs to the corner of the
+   * view, and no cell can be drawn over it. */
+  check("it is struck in the corner of the view rather than on a square",
+    eastRose.length === 1 && tipOf(eastRose[0])[0] > FACING_VIEW.width * 0.6
+      && tipOf(eastRose[0])[1] < FACING_VIEW.height * 0.4, show(eastRose));
+  /* Every detail below reads through `.map`, not `[0]`: they are evaluated
+   * whether the case passed or not, and a rose that is simply missing must not
+   * be reported as this file throwing. */
+  const panned = draw("east", { x: 2.5, y: 1.5, scale: 32, width: 160, height: 120 });
+  /* The length is asserted as well as the equality: two empty lists are equal,
+   * so an unqualified comparison here would be satisfied by a rose that was
+   * never drawn at all — which is exactly the mutant the case beside it kills. */
+  check("and it stays put when the map pans and zooms under it",
+    chevronsIn(panned).length === 1 && show(chevronsIn(panned)) === show(eastRose),
+    show([chevronsIn(panned), eastRose]));
+
+  check("a document that states none draws no rose at all",
+    inkPaths(draw(undefined)).length === 0, show(draw(undefined).paths));
+  check("and a compass outside the eight names draws none either",
+    inkPaths(draw("toward the sea")).length === 0, show(draw("toward the sea").paths));
+
+  const west = chevronsIn(draw("west"));
+  check("the rose turns with the compass",
+    west.length === 1 && eastRose.length === 1
+      && tipOf(west[0])[0] < tipOf(eastRose[0])[0],
+    show([west.map(tipOf), eastRose.map(tipOf)]));
+
+  /* The rose borrows alpha the way the door's swing arc does, and the context
+   * outlives the frame: a lost restore leaves every later frame — the whole map,
+   * not one ornament — painted at eighty-five hundredths. Two frames, because
+   * the rose is the last thing this document draws. */
+  draw("east");
+  const second = draw("east");
+  const faint = second.fills.filter((fill) => fill[5] !== 1);
+  check("a drawn rose hands the context back at full opacity",
     faint.length === 0, "painted under a borrowed alpha: " + show(faint.slice(0, 3)));
 });
 
@@ -1070,6 +1376,44 @@ await suite("viewer.html: replay v2 state and validation", "the page sandbox in 
           && page.alerts[page.alerts.length - 1].indexOf(invalid.diagnostic_path) !== -1,
         show(page.alerts.slice(before)));
     }
+  });
+
+/* The viewer builds its token model twice — once from the bundle's initial
+ * state and again from whatever authoritative state a scrub lands on — and the
+ * two are separate assignments in separate functions. A pass-through added to
+ * one of them looks entirely correct from a replay that never leaves event 0,
+ * so these cases give the two frames *different* facings and read both. */
+await suite("viewer.html: a replay's facing", "the page sandbox in makePage()",
+  async () => {
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    page.element("follow-level").checked = true;
+
+    const turning = replayV2();
+    turning.initial.state.combatants[0].facing = "east";
+    turning.checkpoints[0].state.combatants[0].facing = "south";
+    turning.latest_state = copy(turning.checkpoints[0].state);
+    sealReplayV2(turning);
+    await page.drop(turning, "facing-v2.json");
+    const tokenNow = () => page.last().overlays.tokens[0];
+    check("the facing a bundle's initial state carries reaches the token overlay",
+      tokenNow() !== undefined && tokenNow().facing === "east", show(tokenNow()));
+    check("and it is drawn, not merely carried",
+      chevronsIn(page.last()).length === 1, show(page.last().paths));
+
+    page.element("scrub").value = "1";
+    page.element("scrub").dispatch("input");
+    check("a checkpoint's facing replaces it, through the second build site",
+      tokenNow() !== undefined && tokenNow().facing === "south", show(tokenNow()));
+
+    /* Every replay written before this key existed, which is all of them: the
+     * overlay must carry no facing rather than a default one, or every archived
+     * fight acquires a bearing the engine never recorded. */
+    await page.drop(replayV2(), "no-facing-v2.json");
+    check("a bundle that carries no facing hands the renderer none",
+      tokenNow() !== undefined && !tokenNow().facing, show(tokenNow()));
+    check("and nothing is drawn for it",
+      chevronsIn(page.last()).length === 0, show(page.last().paths));
   });
 
 await suite("viewer.html: animated playback", "the manual animation clock in makePage()",
@@ -2027,6 +2371,117 @@ await suite("editor.html: door configuration", "the page sandbox in makePage()",
       && feature(unlinked, "right").linked_to === undefined,
     show(unlinked.features));
 });
+
+/* The editor's half of the same vocabulary: a feature's facing and the
+ * document's compass, both authored through selects and both reaching the
+ * canvas through the renderer above. The interesting claims are the two the
+ * format imposes rather than the page — that a door is offered no facing at
+ * all, because the format refuses the key on one, and that north is written by
+ * being left out. */
+const FACING_MAP = {
+  format: "fivee-sim-map",
+  format_version: 1,
+  name: "arrow slit",
+  grid: { width: 6, height: 5, cell_feet: 5 },
+  legend: { ".": "floor", "#": "wall" },
+  tiles: ["######", "#....#", "#....#", "#....#", "######"],
+  features: [
+    { id: "slit", kind: "opening", at: [2, 2], facing: "east" },
+    { id: "gate", kind: "door", at: [4, 1], orientation: "vertical", state: "closed" },
+  ],
+  provenance: { generator: "hand", seed: 7, params: {}, edited: false, source: "test" },
+};
+
+await suite("editor.html: facing and the compass", "the page sandbox in makePage()",
+  async () => {
+    const page = makeEditorPage();
+    const select = (x, y) => {
+      const view = page.last().view;
+      const event = {
+        clientX: (x - view.x) * view.scale + view.scale / 2,
+        clientY: (y - view.y) * view.scale + view.scale / 2,
+        button: 0, pointerId: 1,
+      };
+      page.element("map").dispatch("pointerdown", event);
+      page.element("map").dispatch("pointerup", event);
+    };
+    const saved = () => JSON.parse(page.downloaded());
+    const featureNamed = (id) => saved().features.find((each) => each.id === id);
+    /* The editor fits the view to the map, so its scale and origin are the
+     * page's business rather than this file's — a cell's centre has to be
+     * computed from the frame that was actually drawn. */
+    const centreOf = (x, y) => {
+      const view = page.last().view;
+      return [(x + 0.5 - view.x) * view.scale, (y + 0.5 - view.y) * view.scale];
+    };
+
+    await page.drop(copy(FACING_MAP));
+    check("an authored facing reaches the canvas on a fresh open",
+      chevronsIn(page.last()).length === 1, show(page.last().paths));
+
+    select(2, 2);
+    check("selecting a feature reveals the facing control at its authored value",
+      page.element("facing-config").hidden === false
+        && page.element("feature-facing").value === "east",
+      show([page.element("facing-config").hidden, page.element("feature-facing").value]));
+    check("and the inspector says so in the document's own key order",
+      page.element("feature-info").textContent
+        === "id: slit\nkind: opening\nat: [2,2]\nfacing: east",
+      show(page.element("feature-info").textContent));
+
+    /* The one refusal the format imposes on this control: a door already says
+     * where it points three ways over, so it is offered no fourth answer. */
+    select(4, 1);
+    check("selecting a door hides the facing control entirely",
+      page.element("facing-config").hidden === true
+        && page.element("door-config").hidden === false,
+      show([page.element("facing-config").hidden, page.element("door-config").hidden]));
+
+    select(2, 2);
+    page.element("feature-facing").value = "northwest";
+    page.element("feature-facing").dispatch("change");
+    const turned = chevronsIn(page.last());
+    check("choosing a facing writes it to the document and turns the chevron",
+      featureNamed("slit").facing === "northwest" && turned.length === 1
+        && tipOf(turned[0])[0] < centreOf(2, 2)[0]
+        && tipOf(turned[0])[1] < centreOf(2, 2)[1],
+      show([featureNamed("slit"), turned.map(tipOf), centreOf(2, 2)]));
+    page.element("btn-undo").click();
+    check("and it participates in undo", featureNamed("slit").facing === "east",
+      show(featureNamed("slit")));
+
+    select(2, 2);
+    page.element("feature-facing").value = "";
+    page.element("feature-facing").dispatch("change");
+    check("clearing it omits the key rather than writing an empty one",
+      Object.prototype.hasOwnProperty.call(featureNamed("slit"), "facing") === false,
+      show(featureNamed("slit")));
+    check("and the chevron goes with it",
+      chevronsIn(page.last()).length === 0, show(page.last().paths));
+
+    /* The compass is document-wide and canonicalised by omission, the way
+     * `bright` ambient light is: north is what a file that says nothing means,
+     * so writing it back would make the document differ from the one the server
+     * would have written. */
+    await page.drop(copy(FACING_MAP));
+    check("a document with no compass selects north and draws no rose",
+      page.element("map-compass").value === "north"
+        && inkPaths(page.last()).length === 1,
+      show([page.element("map-compass").value, page.last().paths]));
+    page.element("map-compass").value = "east";
+    page.element("map-compass").dispatch("change");
+    check("choosing a compass writes it and draws the rose",
+      saved().compass === "east" && inkPaths(page.last()).length === 3,
+      show([saved().compass, inkPaths(page.last())]));
+    page.element("map-compass").value = "north";
+    page.element("map-compass").dispatch("change");
+    check("choosing north takes the key back out of the document",
+      Object.prototype.hasOwnProperty.call(saved(), "compass") === false,
+      show(saved().compass));
+    page.element("btn-undo").click();
+    check("and the compass participates in undo too", saved().compass === "east",
+      show(saved().compass));
+  });
 
 await suite("editor.html: the resize dialog", "the page sandbox in makePage()", async () => {
   const page = makeEditorPage();

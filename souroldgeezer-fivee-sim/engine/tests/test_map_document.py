@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.kernel.grid import TERRAIN, Facing
 from fivee_sim.kernel.rules import Ability
 from fivee_sim.map_document import (
     DEFAULT_LEGEND,
@@ -603,6 +603,139 @@ class TestPaletteDiagnostics:
         assert any("must be a hex color" in p for p in errors_of(payload))
 
 
+class TestCompass:
+    """Where *true* north lies. Absent means grid north, and absent writes nothing."""
+
+    def test_a_document_without_the_key_faces_grid_north(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert doc.compass is Facing.NORTH
+
+    def test_a_compass_parses_onto_the_document(self) -> None:
+        payload = document()
+        payload["compass"] = "east"
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.compass is Facing.EAST
+
+    @pytest.mark.parametrize("name", [facing.value for facing in Facing])
+    def test_every_one_of_the_eight_names_is_accepted(self, name: str) -> None:
+        payload = document()
+        payload["compass"] = name
+        assert parse_document(payload, source="test", terrain=TERRAIN).compass == name
+
+    def test_a_document_facing_grid_north_writes_no_compass_key(self) -> None:
+        # The guarantee that keeps every map saved before the compass existed
+        # quiet under version control.
+        text = serialize(parse_document(document(), source="test", terrain=TERRAIN))
+        assert "compass" not in json.loads(text)
+
+    def test_declaring_the_default_writes_no_key_either(self) -> None:
+        # Omission is a rule about the *value*, not about the key's absence: a
+        # file that spells out grid north writes back the bytes a file that
+        # never mentioned it does.
+        payload = document()
+        payload["compass"] = "north"
+        with_key = serialize(parse_document(payload, source="a", terrain=TERRAIN))
+        without = serialize(parse_document(document(), source="a", terrain=TERRAIN))
+        assert with_key == without
+
+    def test_a_declared_compass_is_written_beside_the_grid(self) -> None:
+        payload = document()
+        payload["compass"] = "southwest"
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert written["compass"] == "southwest"
+        assert list(written)[:5] == ["format", "format_version", "name", "grid", "compass"]
+
+    def test_a_document_with_a_compass_round_trips_byte_stably(self) -> None:
+        payload = document()
+        payload["compass"] = "northwest"
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+        assert again == doc
+
+
+class TestCompassDoesNotRedefineGridNorth:
+    """The decision the whole vocabulary rests on, pinned rather than assumed.
+
+    Four of the eight names are already spent on disk, on door hinge and swing,
+    and they mean −y and +y. A compass that could re-aim them would silently
+    change the meaning of every map already saved, so it does not: it says where
+    true north lies for a rose and for narration, and door validation never
+    consults it.
+    """
+
+    def horizontal_door(self, compass: str, **keys: str) -> dict[str, Any]:
+        payload = document()
+        payload["compass"] = compass
+        payload["features"][0].update(keys)
+        return payload
+
+    def test_a_document_facing_east_still_refuses_a_horizontal_door_hinged_north(
+        self,
+    ) -> None:
+        payload = self.horizontal_door("east", hinge="north")
+        assert any(
+            "a horizontal door hinge must be one of: west, east" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_document_facing_east_still_refuses_a_horizontal_door_swinging_east(
+        self,
+    ) -> None:
+        # The mirror case: 'east' is the compass's own answer, and the door
+        # vocabulary is no more willing to take it than before.
+        payload = self.horizontal_door("east", swing="east")
+        assert any(
+            "a horizontal door swing must be one of: north, south" in p
+            for p in errors_of(payload)
+        )
+
+    def test_the_grid_relative_hinge_and_swing_stay_valid_under_any_compass(self) -> None:
+        for name in (facing.value for facing in Facing):
+            payload = self.horizontal_door(name, hinge="west", swing="north")
+            doc = parse_document(payload, source="test", terrain=TERRAIN)
+            assert (doc.features[0].hinge, doc.features[0].swing) == ("west", "north")
+            assert doc.compass == name
+
+
+class TestCompassDiagnostics:
+    def test_an_unknown_name_lists_the_eight(self) -> None:
+        payload = document()
+        payload["compass"] = "up"
+        assert any(
+            "'up' is not valid; must be one of: north, northeast, east, southeast, "
+            "south, southwest, west, northwest" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_non_string_compass_is_refused(self) -> None:
+        payload = document()
+        payload["compass"] = 90
+        assert any("must be one of: north" in p for p in errors_of(payload))
+
+    def test_a_bad_compass_stops_the_document_parsing(self) -> None:
+        payload = document()
+        payload["compass"] = "nor'east"
+        with pytest.raises(MapError, match="must be one of: north"):
+            parse_document(payload, source="test", terrain=TERRAIN)
+
+    def test_a_level_may_not_carry_one(self) -> None:
+        # A storey is a floor of one building, not a map of its own: two
+        # storeys disagreeing about where true north lies is not a thing a
+        # building can do.
+        payload = document()
+        payload["levels"] = [
+            {"index": 1, "name": "upper", "tiles": payload["tiles"], "compass": "east"}
+        ]
+        # Matched on the level's own key list, not on "unknown key" alone: the
+        # document refusing the key would say the same first two words.
+        assert any(
+            "Valid keys: ambient_light, elevation, features, index, name, tiles" in p
+            for p in errors_of(payload)
+        )
+
+
 class TestSerialize:
     def test_round_trip_is_byte_stable(self) -> None:
         doc = parse_document(document(), source="test", terrain=TERRAIN)
@@ -1054,6 +1187,106 @@ class TestFeatureFixtures:
         written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
         gate = next(f for f in written["features"] if f["id"] == "gate")
         assert "costs_action" not in gate
+
+
+class TestFeatureFacing:
+    """Which way a feature points, in the same eight names everything else uses."""
+
+    def facing_statue(self, facing: str = "east") -> dict[str, Any]:
+        payload = document()
+        payload["features"].append(
+            {"id": "statue", "kind": "statue", "at": [4, 3], "facing": facing}
+        )
+        return payload
+
+    def test_a_facing_parses_onto_the_record(self) -> None:
+        doc = parse_document(self.facing_statue(), source="test", terrain=TERRAIN)
+        assert doc.features[-1].facing == "east"
+
+    @pytest.mark.parametrize("name", [facing.value for facing in Facing])
+    def test_every_one_of_the_eight_names_is_accepted(self, name: str) -> None:
+        doc = parse_document(self.facing_statue(name), source="test", terrain=TERRAIN)
+        assert doc.features[-1].facing == name
+
+    def test_a_feature_that_does_not_point_carries_none(self) -> None:
+        doc = parse_document(document(), source="test", terrain=TERRAIN)
+        assert [f.facing for f in doc.features] == [None, None]
+
+    def test_facing_is_written_between_at_and_orientation(self) -> None:
+        payload = self.facing_statue()
+        payload["features"][-1].update({"orientation": "vertical", "team": "foe"})
+        written = json.loads(serialize(parse_document(payload, source="t", terrain=TERRAIN)))
+        assert list(written["features"][-1]) == [
+            "id", "kind", "at", "facing", "orientation", "team",
+        ]
+
+    def test_a_feature_without_one_writes_no_facing_key(self) -> None:
+        written = json.loads(serialize(parse_document(document(), source="t", terrain=TERRAIN)))
+        assert all("facing" not in entry for entry in written["features"])
+
+    def test_a_facing_document_round_trips_byte_stably(self) -> None:
+        doc = parse_document(self.facing_statue("southwest"), source="test", terrain=TERRAIN)
+        text = serialize(doc)
+        again = parse_document(json.loads(text), source="round-trip", terrain=TERRAIN)
+        assert serialize(again) == text
+        assert again == doc
+
+    def test_facing_claims_no_square(self) -> None:
+        # A feature points at a square; it does not govern it. Two fixtures may
+        # face each other across one, and neither has taken it — which is the
+        # rule that would have to break for facing to enter _check_claims.
+        payload = document()
+        payload["features"].extend(
+            [
+                {"id": "west spike", "kind": "spike", "at": [2, 3],
+                 "facing": "east", "state": "closed"},
+                {"id": "east spike", "kind": "spike", "at": [4, 3],
+                 "facing": "west", "state": "closed"},
+            ]
+        )
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert [f.facing for f in doc.features[-2:]] == ["east", "west"]
+
+
+class TestFeatureFacingDiagnostics:
+    def test_an_unknown_name_lists_the_eight(self) -> None:
+        payload = document()
+        payload["features"][1]["facing"] = "widdershins"
+        assert any(
+            "'widdershins' is not valid; must be one of: north, northeast, east, "
+            "southeast, south, southwest, west, northwest" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_non_string_facing_is_refused(self) -> None:
+        payload = document()
+        payload["features"][1]["facing"] = 90
+        assert any("must be one of: north" in p for p in errors_of(payload))
+
+    def test_a_door_may_not_carry_one(self) -> None:
+        # A door already answers this three ways over, and the format refuses a
+        # second answer to one question the way it refuses a fixture with no
+        # state: silently preferring one of them is the failure to avoid.
+        payload = document()
+        payload["features"][0]["facing"] = "north"
+        assert any(
+            "only a feature that is not a door may carry 'facing'" in p
+            for p in errors_of(payload)
+        )
+
+    def test_the_door_refusal_names_what_already_points(self) -> None:
+        payload = document()
+        payload["features"][0]["facing"] = "north"
+        assert any(
+            "orientation, hinge and swing already say where a door points" in p
+            for p in errors_of(payload)
+        )
+
+    def test_a_bad_facing_drops_the_record_rather_than_half_reading_it(self) -> None:
+        payload = document()
+        payload["features"][1]["facing"] = "up"
+        with pytest.raises(MapError, match="must be one of: north"):
+            parse_document(payload, source="test", terrain=TERRAIN)
 
 
 class TestFeatureTriggers:

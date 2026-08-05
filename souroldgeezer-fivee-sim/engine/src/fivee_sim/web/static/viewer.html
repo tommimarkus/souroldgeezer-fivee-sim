@@ -306,6 +306,10 @@ if (typeof FiveeRenderer === "undefined") {
         name: creature.name,
         team: creature.team,
         at: feetToCell(creature.position),
+        /* Null rather than a default direction: the engine omits the key for a
+           creature whose facing nobody is tracking, and inventing north for it
+           would draw a chevron the fight never recorded. */
+        facing: creature.facing || null,
         hp: creature.hp,
         maxHp: creature.max_hp,
         ac: creature.ac,
@@ -357,6 +361,13 @@ if (typeof FiveeRenderer === "undefined") {
       var token = current.tokens[creature.name];
       if (!token) { return; }
       token.at = feetToCell(creature.position);
+      /* Read from the authoritative state and nowhere else. A move event
+         carries an origin and a destination, so the page could derive the
+         turn — but the engine already derived it from the move's final step,
+         and a second implementation of that rule here is how the chevron and
+         the fight come to disagree. Between checkpoints the facing is the last
+         one the state reported, exactly like ac and conditions. */
+      token.facing = creature.facing || null;
       token.hp = creature.hp;
       token.maxHp = creature.max_hp;
       token.ac = creature.ac;
@@ -551,7 +562,8 @@ if (typeof FiveeRenderer === "undefined") {
         hpFraction: token.maxHp > 0 ? hp / token.maxHp : 0,
         down: token.down,
         dead: token.dead,
-        stable: token.stable
+        stable: token.stable,
+        facing: token.facing
       });
     });
     R.render(ctx, mapDoc, view, {

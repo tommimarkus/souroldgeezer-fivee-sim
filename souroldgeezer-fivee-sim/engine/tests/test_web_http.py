@@ -1811,9 +1811,9 @@ class TestEncounterActions:
 
         problem = assert_problem(refused, 400, "unknown key(s): 'targetted'")
         assert (
-            "Valid keys: as_bonus_action, attack, center, direction, feature, item, "
-            "kind, movement_mode, path, set_open, slot_level, spell, target, targets, "
-            "to_level, to_position, toward" in problem["detail"]
+            "Valid keys: as_bonus_action, attack, center, direction, facing, feature, "
+            "item, kind, movement_mode, path, set_open, slot_level, spell, target, "
+            "targets, to_level, to_position, toward" in problem["detail"]
         )
         assert self.log_of(editor, encounter_id)["total_actions"] == 0
 

@@ -4543,3 +4543,85 @@ class TestConcentrationEffects:
             "the transcript must contain a release, or it pins nothing"
         )
         assert first == transcript()
+
+
+class TestFacing:
+    """Where a creature is looking: derived from its move, or set outright.
+
+    Facing changes no roll — SRD 5.2.1 has no facing rule, and inventing one
+    would be shipping mechanics the licence boundary does not cover. These
+    cases pin that it is recorded and reported faithfully, and nothing more.
+    """
+
+    def test_a_creature_nobody_tracks_reports_no_facing(self) -> None:
+        fight = Encounter([fighter("Thora"), fighter("Goblin", team="monsters")], Random(1))
+
+        assert "facing" not in fight.state()["combatants"][0]
+
+    def test_a_creature_given_one_reports_it(self) -> None:
+        thora = fighter("Thora")
+        thora.facing = "north"
+        fight = Encounter([thora, fighter("Goblin", team="monsters")], Random(1))
+
+        reported = next(
+            entry for entry in fight.state()["combatants"] if entry["name"] == "Thora"
+        )
+        assert reported["facing"] == "north"
+
+    def test_a_move_turns_a_tracked_creature_the_way_it_went(self) -> None:
+        thora = fighter("Thora", position=(0, 0))
+        thora.facing = "north"
+        goblin = fighter("Goblin", team="monsters", position=(100, 100))
+        fight = Encounter([thora, goblin], Random(1))
+        advance_to(fight, "Thora", Random(1))
+
+        fight.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), Random(1))
+
+        assert thora.facing == "east"
+
+    def test_a_move_that_ends_where_it_began_leaves_the_facing_alone(self) -> None:
+        # The case the primitive refuses a bearing for: a creature that did not
+        # travel did not turn, and must not be handed north.
+        thora = fighter("Thora", position=(15, 15))
+        thora.facing = "west"
+        goblin = fighter("Goblin", team="monsters", position=(100, 100))
+        fight = Encounter([thora, goblin], Random(1))
+        advance_to(fight, "Thora", Random(1))
+
+        fight.act(Action(kind=ActionKind.MOVE, to_position=(15, 15)), Random(1))
+
+        assert thora.facing == "west"
+
+    def test_a_move_does_not_enrol_an_untracked_creature(self) -> None:
+        thora = fighter("Thora", position=(0, 0))
+        goblin = fighter("Goblin", team="monsters", position=(100, 100))
+        fight = Encounter([thora, goblin], Random(1))
+        advance_to(fight, "Thora", Random(1))
+
+        fight.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), Random(1))
+
+        assert thora.facing is None
+        assert "facing" not in fight.state()["combatants"][0]
+
+    def test_an_explicit_facing_beats_what_the_move_derived(self) -> None:
+        thora = fighter("Thora", position=(0, 0))
+        thora.facing = "north"
+        goblin = fighter("Goblin", team="monsters", position=(100, 100))
+        fight = Encounter([thora, goblin], Random(1))
+        advance_to(fight, "Thora", Random(1))
+
+        fight.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0), facing="southwest"),
+            Random(1),
+        )
+
+        assert thora.facing == "southwest"
+
+    def test_an_explicit_facing_is_how_an_untracked_creature_gains_one(self) -> None:
+        thora = fighter("Thora")
+        fight = Encounter([thora, fighter("Goblin", team="monsters")], Random(1))
+        advance_to(fight, "Thora", Random(1))
+
+        fight.act(Action(kind=ActionKind.DODGE, facing="northwest"), Random(1))
+
+        assert thora.facing == "northwest"

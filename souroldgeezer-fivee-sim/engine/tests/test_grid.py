@@ -16,11 +16,13 @@ import pytest
 
 from fivee_sim.kernel.grid import (
     CLIMB_FEET,
+    FACING_OFFSETS,
     SLOPE_DIFFICULT_FEET,
     TERRAIN,
     TERRAIN_FLAGS,
     CoverGrade,
     DiagonalRule,
+    Facing,
     Square,
     UnknownTerrain,
     cone_squares,
@@ -28,6 +30,7 @@ from fivee_sim.kernel.grid import (
     cover_between,
     cube_squares,
     distance_feet,
+    facing_toward,
     find_path,
     has_line_of_sight,
     line_squares,
@@ -282,6 +285,120 @@ class TestAoeTemplates:
         assert cube_squares((2, 3), 15) == frozenset({
             (2, 3), (2, 4), (2, 5), (3, 3), (3, 4), (3, 5), (4, 3), (4, 4), (4, 5),
         })
+
+
+class TestFacing:
+    """The eight-name direction vocabulary, and the seam it forms with cones.
+
+    The vocabulary exists so a creature, a map feature, and a document's compass
+    name directions the same way. Its whole value is that it stays the *same*
+    eight directions :func:`cone_squares` already accepts, so the first test here
+    is the one that matters: it is what stops this becoming a second list that
+    drifts from the first.
+    """
+
+    @pytest.mark.parametrize(("facing", "squares"), [
+        (Facing.NORTH, 7), (Facing.NORTHEAST, 11),
+        (Facing.EAST, 7), (Facing.SOUTHEAST, 11),
+        (Facing.SOUTH, 7), (Facing.SOUTHWEST, 11),
+        (Facing.WEST, 7), (Facing.NORTHWEST, 11),
+    ])
+    def test_every_facing_aims_a_cone(self, facing: Facing, squares: int) -> None:
+        # The seam, asserted through behaviour rather than against the private
+        # offset sets: a facing cone_squares refused would be one a creature
+        # could hold and not act on. Parametrized rather than looped so a
+        # regression names the direction, and sized rather than merely non-empty
+        # so it also pins which *kind* of wedge each aim rasters — the counts are
+        # TestAoeTemplates' own goldens for a 15 ft cone.
+        assert len(cone_squares((0, 0), FACING_OFFSETS[facing], 15)) == squares
+
+    def test_the_offsets_are_the_eight_unit_directions(self) -> None:
+        assert len(FACING_OFFSETS) == len(Facing) == 8
+        assert set(FACING_OFFSETS.values()) == {
+            (dx, dy)
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+            if (dx, dy) != (0, 0)
+        }
+
+    def test_north_is_negative_y(self) -> None:
+        # The convention the door tables have always assumed and never stated.
+        assert FACING_OFFSETS[Facing.NORTH] == (0, -1)
+        assert FACING_OFFSETS[Facing.SOUTH] == (0, 1)
+
+    def test_the_door_vocabulary_is_a_subset(self) -> None:
+        # map_document's _DOOR_HINGES/_DOOR_SWINGS spell these four; they keep
+        # their exact strings because Facing already contains them.
+        assert {"north", "south", "east", "west"} <= {str(f) for f in Facing}
+
+    @pytest.mark.parametrize(("target", "expected"), [
+        ((0, -3), Facing.NORTH),
+        ((3, -3), Facing.NORTHEAST),
+        ((4, 0), Facing.EAST),
+        ((2, 2), Facing.SOUTHEAST),
+        ((0, 5), Facing.SOUTH),
+        ((-1, 1), Facing.SOUTHWEST),
+        ((-6, 0), Facing.WEST),
+        ((-2, -2), Facing.NORTHWEST),
+        ((1, 0), Facing.EAST),
+    ])
+    def test_a_bearing_snaps_to_the_nearest_of_eight(
+        self, target: Square, expected: Facing
+    ) -> None:
+        assert facing_toward((0, 0), target) == expected
+
+    def test_a_bearing_either_side_of_the_octant_boundary_snaps_apart(self) -> None:
+        # The boundary between a cardinal and a diagonal sits at 22.5 degrees.
+        # These two straddle it as closely as small integers can: 5:2 is 21.8
+        # degrees, 5:3 is 31.0.
+        assert facing_toward((0, 0), (5, 2)) == Facing.EAST
+        assert facing_toward((0, 0), (5, 3)) == Facing.SOUTHEAST
+
+    def test_no_integer_bearing_lands_on_the_octant_boundary(self) -> None:
+        # The claim the snap rests on, asserted rather than reasoned about in a
+        # docstring: on the boundary the shorter leg is (sqrt(2) - 1) times the
+        # longer, i.e. (shorter + longer)**2 == 2 * longer**2. sqrt(2) is
+        # irrational, so no pair of integers satisfies it and there is no tie to
+        # break. Swept rather than argued, over every bearing on a 60x60 field.
+        on_the_boundary = [
+            (dx, dy)
+            for dx in range(-60, 61)
+            for dy in range(-60, 61)
+            if (min(abs(dx), abs(dy)) + max(abs(dx), abs(dy))) ** 2
+            == 2 * max(abs(dx), abs(dy)) ** 2
+            and (dx, dy) != (0, 0)
+        ]
+        assert on_the_boundary == []
+
+    def test_a_square_has_no_bearing_to_itself(self) -> None:
+        # Refused rather than defaulted: a move that ends where it began has not
+        # turned the creature, and the caller must say so rather than be handed
+        # north. See the move path in model/encounter.py.
+        with pytest.raises(ValueError, match="no bearing"):
+            facing_toward((3, 3), (3, 3))
+
+    def test_the_snap_is_symmetric_under_reflection(self) -> None:
+        # Both axes, not just one: mirroring a shallow bearing across x must
+        # mirror the facing, and the same across y. A sign error in either
+        # branch of the cardinal fallback survives a one-axis check.
+        assert facing_toward((0, 0), (3, -1)) == Facing.EAST
+        assert facing_toward((0, 0), (-3, -1)) == Facing.WEST
+        assert facing_toward((0, 0), (3, 1)) == Facing.EAST
+        assert facing_toward((0, 0), (-3, 1)) == Facing.WEST
+        assert facing_toward((0, 0), (1, -3)) == Facing.NORTH
+        assert facing_toward((0, 0), (-1, -3)) == Facing.NORTH
+        assert facing_toward((0, 0), (1, 3)) == Facing.SOUTH
+        assert facing_toward((0, 0), (-1, 3)) == Facing.SOUTH
+
+    def test_a_facing_is_its_own_name(self) -> None:
+        # A StrEnum, like Condition: the payloads carry plain strings and a
+        # caller never needs .value. Bound through a str to assert what a
+        # serialiser sees — comparing the member to a literal in place is what
+        # mypy calls a non-overlapping equality check.
+        serialised: str = Facing.NORTHEAST
+        assert serialised == "northeast"
+        assert f"{Facing.SOUTHWEST}" == "southwest"
+        assert sorted(FACING_OFFSETS) == sorted(str(f) for f in Facing)
 
 
 def flat(_origin: Square, _step_to: Square, doubled: bool) -> int:

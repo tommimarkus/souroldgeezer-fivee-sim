@@ -11,6 +11,13 @@ The format, ``fivee-sim-map`` version 1:
 
 - ``grid`` — width and height in squares (1..``MAX_MAP_DIM``), with
   ``cell_feet`` fixed at 5 so the file says what its numbers mean.
+- ``compass`` — optional: where *true* north lies, one of the eight
+  :class:`~fivee_sim.kernel.grid.Facing` names. Presentation and narration only.
+  **Grid north is −y whatever it says**, because the door hinge and swing
+  vocabulary already spells four of those names and has meant −y and +y since
+  the format existed; a compass that re-aimed them would silently change the
+  meaning of every map already on disk. Omitted entirely when it is grid north,
+  so a file written before it existed round-trips to the same bytes.
 - ``tiles`` — one string per row, top row first, each character resolved
   through the per-document ``legend`` to a terrain-kind string. Opacity is
   tile-based; the format has no edge walls.
@@ -74,7 +81,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
-from .kernel.grid import FEET_PER_SQUARE, Square, TerrainTable
+from .kernel.grid import FEET_PER_SQUARE, Facing, Square, TerrainTable
 from .kernel.mapgen import GeneratedMap
 from .kernel.rules import Ability
 from .model.battlemap import (
@@ -154,8 +161,8 @@ DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
 
 _DOCUMENT_KEYS = frozenset(
     {
-        "format", "format_version", "name", "grid", "legend", "palette", "tiles",
-        "elevation", "features", "levels", "ambient_light", "provenance",
+        "format", "format_version", "name", "grid", "compass", "legend", "palette",
+        "tiles", "elevation", "features", "levels", "ambient_light", "provenance",
     }
 )
 #: The two themes a palette entry may name; one color for both is the short form.
@@ -170,7 +177,7 @@ _LEVEL_KEYS = frozenset(
 )
 _FEATURE_KEYS = frozenset(
     {
-        "id", "kind", "at", "orientation", "hinge", "swing", "state",
+        "id", "kind", "at", "facing", "orientation", "hinge", "swing", "state",
         "linked_to", "team", "to_level", "sight_to_levels", "light",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
         "trigger",
@@ -301,11 +308,19 @@ class MapFeatureRecord:
     it automatically (``trigger``). All seven are optional and omitted on write,
     so a file that predates them is unchanged
     by a round trip.
+
+    ``facing`` is which way it points — an arrow slit out of the corridor, a
+    statue down it — in the eight :class:`~fivee_sim.kernel.grid.Facing` names.
+    Grid-relative like everything else here, and refused on a door, which
+    already answers the question three ways over. A plain ``str``, like a
+    condition: what the eight are is the vocabulary's business, not this
+    record's.
     """
 
     id: str
     kind: str
     at: Square
+    facing: str | None = None
     orientation: str | None = None
     hinge: str | None = None
     swing: str | None = None
@@ -377,6 +392,15 @@ class MapDocument:
     #: per level, like the legend: a kind that looks one way downstairs and
     #: another way up is two kinds.
     palette: Mapping[str, MapColor] = dataclasses.field(default_factory=dict)
+    #: Where *true* north lies, for a compass rose and for narration. It
+    #: redefines nothing: grid north is −y here permanently, because four of
+    #: these eight names are already spent on door hinge and swing and mean −y
+    #: and +y on every map already saved. A document is free to say true north
+    #: is east; its horizontal doors still hinge west or east and swing north or
+    #: south. Document-wide like the legend — a storey of a building does not
+    #: get its own north — and omitted on write when it is the default, so a
+    #: file that predates it round-trips byte-for-byte.
+    compass: Facing = Facing.NORTH
 
     @property
     def ground(self) -> MapLevel:
@@ -1005,6 +1029,8 @@ def _parse_features(
                     f"({at[0]}, {at[1]}) is outside the {grid.width}x{grid.height} grid",
                 )
 
+        parsed_facing = sub.enum("facing", Facing)
+        facing = parsed_facing.value if parsed_facing is not None else None
         orientation = sub.string("orientation") or None
         if orientation is not None and orientation not in _DOOR_ORIENTATIONS:
             sub.fail(
@@ -1083,6 +1109,16 @@ def _parse_features(
                 sub.fail("orientation", "required for a door")
             if state is None:
                 sub.fail("state", "required for a door; the document stores the default")
+            # Two answers to one question is the ambiguity this format refuses
+            # everywhere else — a fixture key without a state, a legend claiming
+            # a reserved glyph — and a door that both hangs and points would be
+            # read one way by the renderer and the other by a reader.
+            if "facing" in entry:
+                sub.fail(
+                    "facing",
+                    "only a feature that is not a door may carry 'facing'; "
+                    "orientation, hinge and swing already say where a door points",
+                )
             if orientation in _DOOR_HINGES:
                 allowed_hinges = _DOOR_HINGES[orientation]
                 if hinge is not None and hinge not in allowed_hinges:
@@ -1177,7 +1213,7 @@ def _parse_features(
         if sub.ok and not unusable and at is not None:
             features.append(
                 MapFeatureRecord(
-                    id=feature_id, kind=kind, at=at,
+                    id=feature_id, kind=kind, at=at, facing=facing,
                     orientation=orientation, hinge=hinge, swing=swing, state=state,
                     linked_to=linked_to, team=team, to_level=to_level,
                     sight_to_levels=sight_to_levels, light=light,
@@ -1663,6 +1699,9 @@ def _parse(
         reader.fail("name", "must be non-empty text")
 
     grid = _parse_grid(payload, reader, diagnostics, source)
+    # Absent means grid north, which is also what a document declaring it says:
+    # the compass never re-aims the grid, so the default is not a guess.
+    compass = reader.enum("compass", Facing)
     legend = _parse_legend(payload, reader, terrain=terrain)
     palette = _parse_palette(payload, reader, diagnostics, source, terrain=terrain)
     tiles = _parse_tiles(payload, reader, grid, legend)
@@ -1705,6 +1744,7 @@ def _parse(
         provenance=provenance,
         levels=MappingProxyType(levels),
         palette=MappingProxyType(palette),
+        compass=compass if compass is not None else Facing.NORTH,
     )
 
 
@@ -1747,6 +1787,10 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
         "kind": feature.kind,
         "at": [feature.at[0], feature.at[1]],
     }
+    # Beside ``at``: where it stands and which way it points are one fact about
+    # the feature's geometry, and reading them apart helps nobody.
+    if feature.facing is not None:
+        entry["facing"] = feature.facing
     if feature.orientation is not None:
         entry["orientation"] = feature.orientation
     if feature.hinge is not None:
@@ -1872,8 +1916,8 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
     column — and the whole key is omitted from a flat map at zero, so a document
     written before heights existed writes back byte-for-byte. The palette sorts by
     kind, writes a matched pair as the single color it is, and is likewise omitted
-    when empty. This is what makes :func:`serialize` byte-stable across a parse
-    round-trip.
+    when empty, as is a compass pointing at grid north. This is what makes
+    :func:`serialize` byte-stable across a parse round-trip.
 
     The ground plane writes to the top-level ``tiles``/``elevation``/``features``
     keys and the storeys to ``levels``, sorted by index. A map with no storeys
@@ -1889,8 +1933,10 @@ def as_payload(document: MapDocument) -> dict[str, Any]:
             "height": document.grid.height,
             "cell_feet": document.grid.cell_feet,
         },
-        "legend": {glyph: document.legend[glyph] for glyph in sorted(document.legend)},
     }
+    if document.compass is not Facing.NORTH:
+        payload["compass"] = document.compass.value
+    payload["legend"] = {glyph: document.legend[glyph] for glyph in sorted(document.legend)}
     if document.palette:
         payload["palette"] = {
             kind: _color_payload(document.palette[kind]) for kind in sorted(document.palette)

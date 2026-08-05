@@ -103,6 +103,33 @@ var FiveeRenderer = (function () {
       : "hsl(" + hue + ", 55%, 42%)";
   }
 
+  /* --- facing ------------------------------------------------------------
+     The eight names and the unit step each one points along. Grid north is −y:
+     the same convention the door hinge and swing words have always carried on
+     disk, and the one the engine's own Facing enum states. This is that table
+     spelled for a canvas, not a second vocabulary — a name absent from it draws
+     nothing rather than guessing.
+
+     One ink serves all three carriers — a creature, a map feature, and the map
+     itself — because they are one vocabulary and should read as one mark. */
+  var FACING_UNITS = {
+    "north": [0, -1], "northeast": [1, -1], "east": [1, 0], "southeast": [1, 1],
+    "south": [0, 1], "southwest": [-1, 1], "west": [-1, 0], "northwest": [-1, -1]
+  };
+  var FACING_INK = ["#a8462a", "#e8a488"];  /* [light, dark] */
+
+  /* hasOwnProperty rather than a bare lookup: this reads a name out of a
+     hand-opened file, and "constructor" is a string. */
+  function facingUnit(name) {
+    var key = String(name);
+    if (!Object.prototype.hasOwnProperty.call(FACING_UNITS, key)) { return null; }
+    var step = FACING_UNITS[key];
+    var length = Math.sqrt(step[0] * step[0] + step[1] * step[1]);
+    return [step[0] / length, step[1] / length];
+  }
+
+  function facingInk(dark) { return FACING_INK[dark ? 1 : 0]; }
+
   /* --- view helpers ----------------------------------------------------- */
   function cellAt(view, px, py) {
     return [
@@ -348,6 +375,82 @@ var FiveeRenderer = (function () {
     ctx.restore();
   }
 
+  /* One arrowhead about (cx, cy): the tip sits `reach` along the facing, and
+     the two wings sit `arm` back from the tip and `arm` to either side of the
+     axis. Nothing is claimed by it — a facing is recorded, drawn and reported,
+     and decides no square.
+
+     **Absolute coordinates, deliberately, and this is load-bearing.** A
+     translate/rotate pair would be the obvious way to write this and would draw
+     the same picture, but scripts/check-editor-behaviour.mjs records moveTo and
+     lineTo arguments exactly as passed: under a rotated context all eight
+     facings would record the identical three points, and every check that a
+     chevron points the right way would pass with the facing ignored. The
+     transform this file uses is the DPR one in resizeCanvas and no other.
+
+     Saved and restored like drawStairs: the round cap and join are this glyph's
+     own, and left behind on the shared context they bead the per-cell overlay
+     segments that stroke after it. */
+  function drawChevron(ctx, cx, cy, reach, arm, facing, ink, width) {
+    var unit = facingUnit(facing);
+    if (!unit) { return; }
+    var ux = unit[0];
+    var uy = unit[1];
+    var backX = cx + ux * (reach - arm);
+    var backY = cy + uy * (reach - arm);
+    ctx.save();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(backX - uy * arm, backY + ux * arm);
+    ctx.lineTo(cx + ux * reach, cy + uy * reach);
+    ctx.lineTo(backX + uy * arm, backY - ux * arm);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* The document's compass: where *true* north lies relative to the grid. It is
+     a property of the whole map rather than of any square, so it is drawn as a
+     dial in the corner of the view and not on a cell — and it redefines
+     nothing. Grid north is −y whatever this says, which is why a door hinged
+     north on a map whose true north is east still hangs on the same edge.
+
+     Drawn only when the document states one. A map that carries no compass says
+     nothing about true north, and a rose invented for it would claim a fact the
+     file does not make — so every document that has never heard of the field
+     draws exactly as it did before. */
+  function drawCompass(ctx, view, compass, dark) {
+    var unit = facingUnit(compass);
+    if (!unit) { return; }
+    var radius = Math.max(10, Math.min(18, view.width * 0.05));
+    var cx = view.width - radius - 12;
+    var cy = radius + 12;
+    var ink = facingInk(dark);
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = dark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.30)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - unit[0] * radius * 0.72, cy - unit[1] * radius * 0.72);
+    ctx.lineTo(cx + unit[0] * radius * 0.72, cy + unit[1] * radius * 0.72);
+    ctx.stroke();
+    drawChevron(ctx, cx, cy, radius * 0.95, radius * 0.34, compass, ink, 2);
+    ctx.fillStyle = ink;
+    ctx.font = "bold " + Math.round(radius * 0.62)
+      + "px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("N", cx + unit[0] * radius * 1.45, cy + unit[1] * radius * 1.45);
+    ctx.restore();
+  }
+
   function drawToken(ctx, px, py, size, token, dark) {
     var cx = px + size / 2;
     var cy = py + size / 2;
@@ -371,6 +474,18 @@ var FiveeRenderer = (function () {
         + (dark ? "50%" : "40%") + ")";
       ctx.lineWidth = Math.max(1.5, size * 0.07);
       ctx.stroke();
+    }
+    /* Outside the HP ring, computed from the ring rather than guessed past it:
+       the ring is stroked on r + max(1.5, 0.07·size) at that same width, so its
+       outer edge is half a width further out again, and the chevron's wings
+       start clear of it at every scale and every fraction of health. Not drawn
+       for the dead — a body is not facing anywhere, and the cross below is what
+       that square has to say. */
+    if (token.facing && !token.dead) {
+      var ringEdge = r + Math.max(1.5, size * 0.07) * 1.5;
+      drawChevron(ctx, cx, cy, ringEdge + Math.max(3, size * 0.16),
+        Math.max(2.5, size * 0.11), token.facing, facingInk(dark),
+        Math.max(1.5, size * 0.06));
     }
     if (token.label) {
       ctx.fillStyle = "#fff";
@@ -450,9 +565,11 @@ var FiveeRenderer = (function () {
 
   /* render(ctx, doc, view, overlays)
      doc — a map document payload: {grid: {width, height}, legend, tiles,
-       features}, plus an optional palette. Only those keys are consulted, so a
-       synthesized stand-in (the viewer's mapless plane) works too — it carries
-       no palette and every kind falls through to a computed color.
+       features}, plus an optional palette and an optional compass, one of the
+       eight facing names, saying where true north lies. Only those keys are
+       consulted, so a synthesized stand-in (the viewer's mapless plane) works
+       too — it carries no palette and every kind falls through to a computed
+       color, and it states no compass so none is drawn.
      overlays — all optional: {
        featureStates: {featureId: bool},  // live door state over the defaults
        marks: [{at: [x, y], w, h, color, alpha}],  // translucent cell washes;
@@ -465,7 +582,9 @@ var FiveeRenderer = (function () {
        terrainOverrides: {"x,y": kind},  // what a square is *now*, over its
          // glyph — the channel a fixture's effect arrives through. Squares
          // and kinds only: the renderer never learns what decided them
-       tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable}]
+       tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable,
+         facing}]  // facing is one of the eight names, or absent for a
+         // creature whose direction nobody is tracking
      } */
   function render(ctx, doc, view, overlays) {
     overlays = overlays || {};
@@ -547,6 +666,16 @@ var FiveeRenderer = (function () {
         drawOpening(ctx, fpx, fpy, s, dark);
       }
       if (feature.light) { drawLight(ctx, fpx, fpy, s, feature); }
+      /* Drawn over whichever glyph the branches above chose, because a facing
+         is a property of the thing rather than a thing of its own: an arrow
+         slit pointing out of the corridor is still an opening. A door never
+         reaches here in a document the engine wrote — the format refuses the
+         key on one, which already says where it points three ways over — but
+         this loop draws what it is handed and does not police the file. */
+      if (feature.facing) {
+        drawChevron(ctx, fpx + s / 2, fpy + s / 2, s * 0.44, s * 0.16,
+          feature.facing, facingInk(dark), Math.max(1.5, s * 0.07));
+      }
     }
 
     /* One save for the whole pass, not one per mark: the relief overlay hands
@@ -614,6 +743,11 @@ var FiveeRenderer = (function () {
       drawToken(ctx, (token.at[0] - view.x) * s, (token.at[1] - view.y) * s,
         s, token, dark);
     }
+
+    /* Last, and in view coordinates rather than world ones: the dial belongs to
+       the picture, not to a square, so it neither pans nor zooms and nothing
+       may be drawn over it. */
+    drawCompass(ctx, view, doc.compass, dark);
   }
 
   return {

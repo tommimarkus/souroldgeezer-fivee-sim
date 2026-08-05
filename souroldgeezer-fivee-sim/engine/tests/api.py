@@ -167,6 +167,7 @@ def encounter_act(
     to_level: int | None = None,
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
+    facing: str | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
@@ -189,6 +190,7 @@ def encounter_act(
         to_level,
         movement_mode,
         as_bonus_action,
+        facing,
         request_id,
     )
 

@@ -481,6 +481,7 @@ ROUTES: tuple[Route, ...] = (
                 "to_level": {"type": ["integer", "null"], "default": None},
                 "movement_mode": {"type": ["string", "null"], "default": None},
                 "as_bonus_action": {"type": "boolean", "default": False},
+                "facing": {"type": ["string", "null"], "default": None},
             },
             "required": ["kind"],
         },

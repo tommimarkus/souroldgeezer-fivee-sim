@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -10,7 +11,9 @@ from threading import Barrier
 import pytest
 
 from fivee_sim.content import BuiltinMode, ContentRegistry
-from fivee_sim.service import encounter_journal
+from fivee_sim.kernel.grid import MovementMode
+from fivee_sim.model.encounter import Action, ActionKind, ActionRecord
+from fivee_sim.service import encounter_journal, specs
 from fivee_sim.service import sessions as sessions_service
 from fivee_sim.service.errors import RequestError
 
@@ -115,6 +118,59 @@ def test_an_active_encounter_recovers_after_process_memory_is_lost() -> None:
     assert recovered["recovered"] is True
     assert recovered["state"] == before
     assert api.encounter_state(encounter_id) == before
+
+
+def test_a_bonus_action_survives_the_journal_and_replays_on_resume() -> None:
+    # The read side of the Action round-trip. encounters.act records
+    # movement_mode and as_bonus_action in the journal, but action_from_journal
+    # rebuilt neither, so a Dash taken as a bonus action came back as an
+    # ordinary one — and the action that legitimately followed it was then
+    # refused as a second action, out of a resume the caller cannot retry.
+    hero = dict(REPLAY_HERO)
+    hero["bonus_actions"] = ["dash"]
+    encounter_id = str(
+        api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=115)["encounter_id"]
+    )
+    api.encounter_act(encounter_id, "dash", as_bonus_action=True, request_id="ba-dash")
+    api.encounter_act(encounter_id, "dodge", request_id="then-dodge")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["recovered"] is True
+    assert recovered["state"] == before
+
+
+def test_every_action_field_survives_the_journal_round_trip() -> None:
+    # The trap the two hand-written lists set for each other. ``Action.as_dict``
+    # names every optional scalar to write; ``action_from_journal`` names every
+    # one to read; and a field added to the dataclass but missed by either is
+    # dropped silently from a record that promises to replay the call exactly.
+    # That is how ``to_level`` went missing from cross-storey moves, and how
+    # ``movement_mode`` and ``as_bonus_action`` were missing from the read side
+    # until this test was written. Derived from the dataclass rather than
+    # restated, so the next field added is covered without touching this test.
+    every_field = Action(
+        kind=ActionKind.MOVE,
+        target="Goblin", attack="Longsword", item="Potion", spell="Firebolt",
+        slot_level=2, to_position=(3, 4), targets=("Goblin", "Thora"),
+        center=(5, 6), path=((1, 1), (2, 2)), direction=(0, -1), toward="Goblin",
+        feature="door-1", set_open=True, to_level=1,
+        movement_mode=MovementMode.FLY, as_bonus_action=True,
+    )
+    recorded = ActionRecord(
+        index=0, round=1, actor="Thora", action=every_field,
+        first_event=0, event_count=0,
+    ).as_dict()["action"]
+
+    rebuilt = specs.action_from_journal(recorded)
+
+    for field in dataclasses.fields(Action):
+        assert getattr(rebuilt, field.name) == getattr(every_field, field.name), (
+            f"{field.name} did not survive the journal round trip: add it to "
+            f"Action.as_dict, to action_from_journal, or to both"
+        )
 
 
 def test_an_attempt_interrupted_before_its_result_is_audited_and_safe_to_retry() -> None:
