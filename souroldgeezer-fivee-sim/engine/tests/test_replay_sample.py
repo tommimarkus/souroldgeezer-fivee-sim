@@ -14,6 +14,18 @@ from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import parse_document
 from fivee_sim.service import replay as replay_service
 
+#: The families the viewer animates, declared once and read by three checks —
+#: ``tests/test_web_assets.py`` holds it against the viewer's own dispatch,
+#: ``scripts/check-editor-behaviour.mjs`` proves the page really animates each
+#: one, and the test below requires the showcase to put every one on screen. A
+#: hard-coded list here was the defect: it pinned the sample against itself, so
+#: a family the viewer gained could never turn it red.
+ANIMATED_FAMILIES: list[dict[str, Any]] = json.loads(
+    (Path(__file__).parent / "fixtures" / "animated-event-families.json").read_text(
+        encoding="utf-8"
+    )
+)
+
 
 def embedded_bundle(html: str) -> dict[str, Any]:
     found = re.findall(
@@ -37,27 +49,14 @@ def test_the_showcase_covers_each_animated_event_family() -> None:
     assert parse_document(bundle["map"], source="sample", terrain=TERRAIN).name == (
         "Gatehouse Skirmish"
     )
-    assert [event["kind"] for event in bundle["events"]] == [
-        "move",
-        "attack",
-        "damage",
-        "interact",
-        "move",
-        "attack",
-        "damage",
-        "move",
-        "cast",
-        "use_item",
-        "heal",
-        "interact",
-        "move",
-        "turn_end",
-        "round",
-        "turn_start",
-        "attack",
-        "damage",
-        "down",
-    ]
+    shown = {event["kind"] for event in bundle["events"]}
+    missing = sorted(
+        family["kind"] for family in ANIMATED_FAMILIES if family["kind"] not in shown
+    )
+    assert missing == [], (
+        f"the showcase animates nothing for {missing}; its whole purpose is to put "
+        "every animated family on screen"
+    )
     assert bundle["map"]["features"] == [
         {
             "id": "inner-gate",
@@ -110,6 +109,64 @@ def test_the_showcase_demonstrates_replay_v2_audit_and_state() -> None:
     assert bundle["integrity"]["algorithm"] == "sha256"
 
 
+def test_the_showcase_state_agrees_with_the_fight_it_records() -> None:
+    """The authored final state is reconciled against the authored event log.
+
+    `_events()` and `_state_combatants()` are two hand-written fictions, and
+    nothing else compares them: `validate_replay` hashes `latest_state` and the
+    checkpoints but never folds the events to see whether they arrive there. So
+    an edit to one half alone would leave a showcase whose checkpoint
+    contradicts its own log, with every other test green — the same shape of
+    unnoticed drift the hard-coded family list used to have.
+
+    The expectation is derived from the events rather than restated, so it is
+    the *relationship* being pinned, not a second copy of the constants.
+    """
+    bundle = replay_sample.sample_bundle()
+    events = bundle["events"]
+    final = {
+        combatant["name"]: combatant for combatant in bundle["latest_state"]["combatants"]
+    }
+
+    for name, combatant in final.items():
+        hp_changes = [
+            event
+            for event in events
+            if event["kind"] in {"damage", "heal"} and event.get("target") == name
+        ]
+        if hp_changes:
+            assert combatant["hp"] == hp_changes[-1]["data"]["hp"], (
+                f"{name} ends on {combatant['hp']} hp, but the last hit-point event "
+                f"in the log leaves them on {hp_changes[-1]['data']['hp']}"
+            )
+
+        saves = [
+            event
+            for event in events
+            if event["kind"] == "death_save" and event.get("actor") == name
+        ]
+        expected_saves = (
+            {
+                "successes": saves[-1]["data"]["successes"],
+                "failures": saves[-1]["data"]["failures"],
+            }
+            if saves
+            else {"successes": 0, "failures": 0}
+        )
+        assert combatant["death_saves"] == expected_saves, (
+            f"{name}'s recorded death saves disagree with the log's last "
+            f"death_save event"
+        )
+
+        died = any(
+            event["kind"] == "death" and event.get("actor") == name for event in events
+        )
+        assert combatant["dead"] is died, (
+            f"{name} is dead={combatant['dead']} in the final state but the log "
+            f"{'does' if died else 'does not'} record a death for them"
+        )
+
+
 def test_the_showcase_ends_in_a_recorded_party_victory() -> None:
     bundle = replay_sample.sample_bundle()
 
@@ -122,8 +179,20 @@ def test_the_showcase_ends_in_a_recorded_party_victory() -> None:
     )
     assert brute["hp"] == 0
     assert brute["conscious"] is False
-    assert bundle["events"][-1]["kind"] == "down"
+    assert brute["dead"] is True
+    assert brute["death_saves"] == {"successes": 0, "failures": 1}
+    assert bundle["events"][-1]["kind"] == "death"
     assert bundle["events"][-1]["actor"] == "Gatehouse Brute"
+    # The party's own casualty is recorded too: Arin was dropped, steadied and
+    # brought back up, which is what leaves the fight with a `stabilised` and a
+    # `down` in it at all.
+    arin = next(
+        combatant
+        for combatant in bundle["latest_state"]["combatants"]
+        if combatant["name"] == "Arin"
+    )
+    assert arin["conscious"] is True
+    assert arin["hp"] == 8
 
     assert bundle["attempts"][-1]["operation"] == "encounter_note"
     assert bundle["attempts"][-1]["status"] == "success"
@@ -135,7 +204,16 @@ def test_the_showcase_ends_in_a_recorded_party_victory() -> None:
         attempt for attempt in bundle["attempts"] if attempt["status"] == "refused"
     )
     assert refused["index"] < bundle["attempts"][-1]["index"]
-    assert bundle["events"][12]["timestamp"] <= refused["timestamp"]
+    # The refusal is "Mira cannot reach the gate from the gallery", so it has to
+    # stamp after the move that put her there. Found by what it means rather
+    # than by index: the scenario grows, and an index silently comes to name a
+    # different event while the assertion goes on passing.
+    reached_gallery = next(
+        event
+        for event in bundle["events"]
+        if event["kind"] == "move" and event.get("data", {}).get("to_level") == 1
+    )
+    assert reached_gallery["timestamp"] <= refused["timestamp"]
     assert refused["timestamp"] < bundle["events"][-1]["timestamp"]
     assert bundle["events"][-1]["timestamp"] < bundle["attempts"][-1]["timestamp"]
 
@@ -167,6 +245,6 @@ def test_the_cli_reports_the_written_path_and_seed(
     output = capsys.readouterr().out
     assert str(target) in output
     assert "Seed: 731204" in output
-    assert "Events: 19" in output
+    assert "Events: 33" in output
     assert "Format: replay v2" in output
     assert "Audit records: 4" in output

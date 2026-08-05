@@ -59,7 +59,7 @@ wheels = [
 
 [[package]]
 name = "fivee-sim"
-version = "2026.8.38"
+version = "2026.8.39"
 source = { editable = "." }
 
 [package.dev-dependencies]

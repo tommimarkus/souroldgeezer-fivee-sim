@@ -1,0 +1,109 @@
+[
+  {
+    "name": "a move slides the token and pulses where it lands",
+    "kind": "move",
+    "pulse": true,
+    "changes": "at",
+    "event": {
+      "actor": "Hero",
+      "data": { "origin": [10, 10], "destination": [25, 10], "cost": 15 }
+    }
+  },
+  {
+    "name": "damage drains the hit-point ring and pulses the target",
+    "kind": "damage",
+    "pulse": true,
+    "changes": "hpFraction",
+    "event": { "target": "Hero", "data": { "amount": 6, "hp": 3, "max_hp": 9 } }
+  },
+  {
+    "name": "healing refills the ring and pulses the target",
+    "kind": "heal",
+    "pulse": true,
+    "changes": "hpFraction",
+    "initial": { "hp": 3 },
+    "event": { "target": "Hero", "data": { "amount": 6, "hp": 9, "max_hp": 9 } }
+  },
+  {
+    "name": "going down marks the token and pulses it",
+    "kind": "down",
+    "pulse": true,
+    "becomes": "down",
+    "initial": { "hp": 0 },
+    "event": { "actor": "Hero", "data": {} }
+  },
+  {
+    "name": "a death marks the token dead and pulses it",
+    "kind": "death",
+    "pulse": true,
+    "becomes": "dead",
+    "initial": { "hp": 0 },
+    "event": { "actor": "Hero", "data": {} }
+  },
+  {
+    "name": "stabilising marks the token stable and pulses it",
+    "kind": "stabilised",
+    "pulse": true,
+    "becomes": "stable",
+    "initial": { "hp": 0 },
+    "event": { "actor": "Hero", "data": {} }
+  },
+  {
+    "name": "a death save updates the recorded saves in the state panel",
+    "kind": "death_save",
+    "pulse": false,
+    "panel": "saves 1✓/2✗",
+    "initial": { "hp": 0 },
+    "event": {
+      "actor": "Hero",
+      "data": { "successes": 1, "failures": 2, "roll": 7 }
+    }
+  },
+  {
+    "name": "operating a feature pulses the feature's own square",
+    "kind": "interact",
+    "pulse": true,
+    "event": {
+      "actor": "Hero",
+      "data": { "feature": "sluice", "open": true }
+    }
+  },
+  {
+    "name": "an attack flashes the participants",
+    "kind": "attack",
+    "pulse": true,
+    "event": {
+      "actor": "Hero",
+      "target": "Hero",
+      "data": { "attack": "Long Blade", "hit": true, "damage": 5 }
+    }
+  },
+  {
+    "name": "an opportunity attack flashes the same way a taken action does",
+    "kind": "opportunity_attack",
+    "pulse": true,
+    "event": {
+      "actor": "Hero",
+      "target": "Hero",
+      "data": { "attack": "Long Blade", "hit": true, "damage": 4 }
+    }
+  },
+  {
+    "name": "a cast flashes the caster and every named target",
+    "kind": "cast",
+    "pulse": true,
+    "event": {
+      "actor": "Hero",
+      "data": { "spell": "Signal Flare", "slot_level": 1, "targets": ["Hero"] }
+    }
+  },
+  {
+    "name": "a spell effect flashes the area it lands on",
+    "kind": "spell_effect",
+    "pulse": true,
+    "event": {
+      "actor": "Hero",
+      "data": { "spell": "Signal Flare", "center": [25, 10], "targets": ["Hero"] }
+    }
+  }
+]

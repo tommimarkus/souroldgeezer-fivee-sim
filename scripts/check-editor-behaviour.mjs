@@ -186,6 +186,15 @@ const replayInvalidCorpus = JSON.parse(readFileSync(path.join(
   REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
   "replay-invalid.json"
 ), "utf8"));
+/* The families viewer.html animates, declared once. `test_web_assets.py` holds
+ * this list against the viewer's own dispatch and `test_replay_sample.py`
+ * requires the showcase to demonstrate every entry; this file is the half that
+ * proves the page actually does something for each one, so the declaration
+ * cannot list a family that animates nothing. */
+const animatedFamilies = JSON.parse(readFileSync(path.join(
+  REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
+  "animated-event-families.json"
+), "utf8"));
 
 /* --- preflight ------------------------------------------------------------
  * Everything below drives the pages through named element ids and named
@@ -1651,6 +1660,68 @@ await suite("viewer.html: animated playback", "the manual animation clock in mak
         && pausePage.element("btn-play").textContent === "Play",
       show([pausePage.last().overlays.tokens[0].at,
         pausePage.element("btn-play").textContent]));
+  });
+
+/* Every declared family, driven the same way. The bespoke suites above read
+ * one family each in depth — the exact eased hit-point fraction, the exact
+ * cell a move is halfway between — and they stay, because depth is what
+ * catches an easing or folding defect. This loop asserts only the shallow
+ * thing they cannot: that *nothing in the declaration animates nothing*. A
+ * family added to viewer.html and to the fixture, but wired to no dispatch
+ * branch that paints or folds, fails here rather than passing three files
+ * later as a showcase event nobody can see. */
+await suite("viewer.html: every declared animated family", "the page sandbox in makePage()",
+  async () => {
+    for (const family of animatedFamilies) {
+      const bundle = replayBundle([]);
+      Object.assign(bundle.initial.creatures[0], family.initial || {});
+      bundle.events = [{
+        kind: family.kind,
+        round: 1,
+        turn: "Hero",
+        actor: family.event.actor || "",
+        target: family.event.target || "",
+        data: family.event.data || {},
+      }];
+
+      const page = makePage({
+        canvasIds: ["stage"], seed: { "embedded-data": "null" },
+        manualAnimationFrames: true,
+      });
+      page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+      await page.drop(bundle, family.kind + ".json");
+      page.frame(0);
+      page.element("speed").value = "1";
+      const token = () => page.last().overlays.tokens[0];
+      const before = token() && show(token()[family.changes]);
+
+      page.element("btn-play").click();
+      page.frame(0);
+      page.frame(250);
+      if (family.pulse) {
+        check(family.kind + " pulses — " + family.name,
+          page.last().overlays.marks.length > 0,
+          "no mark painted at the event midpoint · " + show(page.last().overlays.marks));
+      }
+
+      page.frame(500);
+      if (family.changes) {
+        check(family.kind + " moves the token's " + family.changes,
+          token() !== undefined && show(token()[family.changes]) !== before,
+          family.changes + " never moved off " + before);
+      }
+      if (family.becomes) {
+        check(family.kind + " sets the token's " + family.becomes,
+          token() !== undefined && token()[family.becomes] === true,
+          family.becomes + " is " + show(token() && token()[family.becomes]));
+      }
+      if (family.panel) {
+        const panel = page.element("combatant-state").textContent;
+        check(family.kind + " reaches the state panel as " + show(family.panel),
+          panel.indexOf(family.panel) !== -1,
+          "state panel never showed " + show(family.panel) + " · " + show(panel));
+      }
+    }
   });
 
 const VIEWER_HIDDEN = hiddenElementIds(viewerHtml);
