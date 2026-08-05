@@ -25,7 +25,12 @@ Four properties are checked that the in-process suite structurally cannot:
 * **The contract cannot drift.** ``GET /api/v1/operations``, ``GET
   /api/v1/openapi.json`` and ``fivee help`` are rendered from one route table,
   and all three are checked against that table's own source here, outside
-  pytest.
+  pytest. That now includes the worked examples the table declares for its
+  object-valued arguments: the source names which operations have one, the
+  served document must carry one for each, and the line ``fivee help`` prints
+  for one of them is pasted straight back into ``fivee`` and must come back
+  zero. An example is the one piece of the contract whose only failure mode is
+  being *wrong* rather than missing, so nothing short of running it is a check.
 
 Standard library only, and deliberately so: it must run in an environment where
 nothing has been built at all, which since the launcher stopped creating virtual
@@ -513,6 +518,29 @@ def declared_operations() -> set[str]:
     return found
 
 
+def declared_examples() -> set[str]:
+    """Every contract operation whose ``Route`` declares a worked example body.
+
+    Read as source for the same reason the operations are, and read as keyword
+    *presence* rather than as a value: the examples reference module constants
+    that no literal evaluator can resolve, and the claim worth checking here is
+    which operations have one — the value itself is the served document's to
+    publish and the launcher's to run.
+    """
+    tree = ast.parse(ROUTES_SOURCE.read_text(encoding="utf-8"))
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "Route":
+            continue
+        if not any(keyword.arg == "example" for keyword in node.keywords):
+            continue
+        if len(node.args) >= 3 and isinstance(node.args[2], ast.Constant):
+            found.add(str(node.args[2].value))
+    return found
+
+
 def declared_pages() -> dict[str, tuple[str, str]]:
     """The ``PAGES`` table as source: served path -> (filename, content type).
 
@@ -768,6 +796,51 @@ def main() -> int:
             f"exit={helped.returncode} unrendered={unrendered}",
         )
 
+        # -- 6b. and the examples that make an object-valued argument callable --
+        exemplified = declared_examples()
+        by_id = {
+            str(operation.get("operationId", "")): operation
+            for methods in document.get("paths", {}).values()
+            for operation in methods.values()
+        }
+        unpublished = sorted(
+            name
+            for name in exemplified
+            if by_id.get(_operation_id(name), {})
+            .get("requestBody", {})
+            .get("content", {})
+            .get("application/json", {})
+            .get("example")
+            is None
+        )
+        report(
+            bool(exemplified) and not unpublished,
+            f"the served document carries the worked example all "
+            f"{len(exemplified)} of those operations declare",
+            f"declared={sorted(exemplified)} unpublished={unpublished}",
+        )
+
+        # The claim an example exists to make, and the only way to check it:
+        # take the line off the printed page and run it. Anything less would
+        # pass against an example that is merely present.
+        shown = primary.launcher("help", "encounter.create")
+        printed = [
+            line.strip()
+            for line in shown.stdout.splitlines()
+            if line.strip().startswith("fivee encounter.create ")
+        ]
+        pasted = printed[-1].partition("--json ")[2].strip().strip("'") if printed else ""
+        ran = primary.launcher("encounter.create", "--json", pasted, "--compact")
+        report(
+            "encounter.create" in exemplified
+            and bool(pasted)
+            and ran.returncode == 0
+            and bool(_parsed(ran.stdout).get("encounter_id")),
+            "the example fivee help prints is pasted back into fivee and answered",
+            f"example={pasted[:180]!r} exit={ran.returncode} "
+            f"stderr={ran.stderr.strip()[-200:]!r}",
+        )
+
         pages = declared_pages()
         # Before walking the table, prove the table was read. `declared_pages`
         # parses source, and a parse that quietly returns nothing would run
@@ -834,6 +907,20 @@ def main() -> int:
             print(f"  - {label}")
         return 1
     return 0
+
+
+def _parsed(text: str) -> dict[str, Any]:
+    """One command's stdout as JSON, or an empty document when it is not.
+
+    A failing command prints nothing on stdout by design, and a check that
+    raised on that would report a decode error where the interesting fact is
+    the exit code its own case is already reading.
+    """
+    try:
+        found = json.loads(text or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return found if isinstance(found, dict) else {}
 
 
 def _operation_id(operation: str) -> str:
