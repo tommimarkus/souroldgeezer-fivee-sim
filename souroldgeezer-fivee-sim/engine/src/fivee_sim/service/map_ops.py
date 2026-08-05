@@ -573,7 +573,25 @@ def uvtt_export(
 
 # --- replays ---------------------------------------------------------------
 def replay_validate(bundle: dict[str, Any]) -> dict[str, Any]:
-    diagnostics = replay_service.validate_replay(bundle)
+    """Grade a bundle, choosing the validator by what the document says it is.
+
+    Two formats reach this one operation: a fight's replay and an adventure's
+    composed replay, which nests fights as chapters. They share no required
+    field, so the ``format`` discriminator picks the validator rather than one
+    validator growing a second shape — and a caller holding a file it did not
+    compose does not have to know which it has before asking.
+
+    An unrecognised ``format`` falls through to the replay validator, which
+    names it as the first diagnostic. That is the right answer for a document
+    that is neither: the reply says what it should have been.
+    """
+    if (
+        isinstance(bundle, Mapping)
+        and bundle.get("format") == replay_service.ADVENTURE_FORMAT
+    ):
+        diagnostics = replay_service.validate_adventure_replay(bundle)
+    else:
+        diagnostics = replay_service.validate_replay(bundle)
     return {
         "valid": not diagnostics,
         "error_count": len(diagnostics),

@@ -27,6 +27,24 @@ map into a complete map document, including storeys.
 self-contained HTML file: the bundle lands in the page's embedded-data slot,
 and the shared renderer can be inlined so the file works over ``file://``
 with no server and no sibling assets.
+
+**An adventure's replay is a second format, not a third version of this one.**
+:func:`validate_replay`'s version-agnostic prefix demands ``seed``,
+``initial.creatures``, ``initial.map_open_features``, ``map`` and ``events``
+*before* it reaches the v1 early return, and an envelope carrying whole fights
+as chapters has none of them — so ``format_version: 3`` would be a document that
+fails its own validator on every field. :data:`ADVENTURE_FORMAT` says what it is
+instead, :func:`adventure_replay_bundle` composes one and
+:func:`validate_adventure_replay` grades it.
+
+Both halves of that format live here, beside the format they nest, for two
+reasons. One is the recurring defect this feature kept producing: a composer and
+a validator in different modules are two declarations that must agree, and
+:data:`ADVENTURE_INTEGRITY_KEYS` is the single one they both read. The other is
+a hard import constraint — ``service/encounters.py`` imports ``map_ops``, so
+``map_ops`` cannot import ``service/adventures.py``, and the dispatch in
+``map_ops.replay_validate`` has to reach the envelope validator through a module
+it already has.
 """
 
 from __future__ import annotations
@@ -54,6 +72,9 @@ from .common import discover_json_files
 from .errors import ReplayError
 
 __all__ = [
+    "ADVENTURE_FORMAT",
+    "ADVENTURE_FORMAT_VERSION",
+    "ADVENTURE_INTEGRITY_KEYS",
     "EMBED_SLOT",
     "FORMAT",
     "FORMAT_VERSION",
@@ -61,6 +82,7 @@ __all__ = [
     "RENDERER_TAG",
     "REPLAYS_ENV",
     "REPLAYS_SUBDIR",
+    "adventure_replay_bundle",
     "atomic_write_text",
     "battle_map_payload",
     "canonical_sha256",
@@ -74,12 +96,26 @@ __all__ = [
     "replays_root",
     "serialize_bundle",
     "sha256_bytes",
+    "validate_adventure_replay",
     "validate_replay",
 ]
 
 FORMAT = "fivee-sim-replay"
 FORMAT_VERSION = 1
 LATEST_FORMAT_VERSION = 2
+
+#: What an adventure's composed replay says it is. A distinct discriminator
+#: rather than a third ``format_version``, for the reason in the module
+#: docstring, and what ``map_ops.replay_validate`` dispatches on.
+ADVENTURE_FORMAT = "fivee-sim-adventure-replay"
+ADVENTURE_FORMAT_VERSION = 1
+
+#: The envelope blocks the integrity hashes cover, read by the composer and by
+#: the validator so the two cannot cover different sets. Everything else in an
+#: envelope is metadata: the discriminator (which must not hash itself, or a
+#: document renamed to another format would still verify), the engine version
+#: that wrote it, and the block of hashes itself.
+ADVENTURE_INTEGRITY_KEYS: tuple[str, ...] = ("adventure", "chapters")
 
 #: The exact slot the viewer page carries for embedded data. ``test_web_assets``
 #: pins that the page contains it exactly once, exactly like this.
@@ -833,6 +869,129 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
             return found
         if recorded != actual or integrity.get("content") != actual:
             found.append(_diagnostic("integrity.content", "does not match content"))
+    return found
+
+
+def adventure_replay_bundle(
+    *,
+    engine_version: str,
+    adventure: Mapping[str, Any],
+    chapters: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Compose one run's frozen fights into a single envelope.
+
+    ``chapters`` are already-composed v2 bundles wearing the run's own record of
+    each — index, encounter id, when it was linked, who was carried in. They are
+    copied at the top level only: the nested bundle is the artifact that was
+    frozen at finalization and is carried verbatim, because re-deriving it is
+    exactly what an adventure replay must never do.
+
+    The envelope's integrity block covers order and membership. Per-chapter
+    integrity is already inside each chapter and stays :func:`validate_replay`'s
+    job, which is why nothing here re-hashes a fight.
+    """
+    bundle: dict[str, Any] = {
+        "format": ADVENTURE_FORMAT,
+        "format_version": ADVENTURE_FORMAT_VERSION,
+        "engine_version": engine_version,
+        "adventure": dict(adventure),
+        "chapters": [dict(chapter) for chapter in chapters],
+    }
+    bundle["integrity"] = {
+        "algorithm": "sha256",
+        **{key: canonical_sha256(bundle[key]) for key in ADVENTURE_INTEGRITY_KEYS},
+    }
+    return bundle
+
+
+def _validate_chapters(value: Any, found: list[dict[str, str]]) -> None:
+    """Order, membership, and each chapter's own bundle graded by its own rules."""
+    if not isinstance(value, list):
+        found.append(_diagnostic("chapters", "must be an array"))
+        return
+    if not value:
+        found.append(_diagnostic("chapters", "must name at least one encounter"))
+        return
+    seen: dict[str, int] = {}
+    for index, chapter in enumerate(value):
+        at = f"chapters.{index}"
+        if not isinstance(chapter, Mapping):
+            found.append(_diagnostic(at, "must be an object"))
+            continue
+        # Position rather than uniqueness, the way a v2 event's ``seq`` is
+        # checked: a chapter that is where it says it is cannot be duplicated
+        # or reordered without one of the two disagreeing.
+        if chapter.get("index") != index:
+            found.append(_diagnostic(f"{at}.index", f"must be {index}"))
+        encounter_id = chapter.get("encounter_id")
+        if not isinstance(encounter_id, str) or not encounter_id.strip():
+            found.append(
+                _diagnostic(f"{at}.encounter_id", "must be a non-empty string")
+            )
+        elif encounter_id in seen:
+            # Distinct from the index check: two chapters can be numbered 0 and
+            # 1 and still be one fight, which makes the run's history disagree
+            # with the party the carry-over says walked between them.
+            found.append(
+                _diagnostic(
+                    f"{at}.encounter_id", f"repeats the fight in chapter {seen[encounter_id]}"
+                )
+            )
+        else:
+            seen[encounter_id] = index
+        nested = chapter.get("replay")
+        if not isinstance(nested, Mapping):
+            found.append(_diagnostic(f"{at}.replay", "must be an object"))
+            continue
+        found.extend(
+            _diagnostic(f"{at}.replay.{one['path']}", one["problem"])
+            for one in validate_replay(nested)
+        )
+
+
+def validate_adventure_replay(payload: Any) -> list[dict[str, str]]:
+    """Validate an adventure's composed replay, chapters included.
+
+    A sibling of :func:`validate_replay` rather than a branch inside it: the two
+    formats share no required field, and folding a second shape into a validator
+    the browser's invalid corpus is also written against would make every one of
+    those cases ambiguous.
+
+    What this function checks is the *envelope* — that the chapters are in order,
+    that no fight appears twice, and that the integrity block matches what it
+    covers. Each chapter's own bundle is graded by :func:`validate_replay`, whose
+    diagnostics are re-rooted under that chapter, so a broken fight is reported
+    where it lives rather than as one opaque "chapter is invalid".
+    """
+    found: list[dict[str, str]] = []
+    if not isinstance(payload, Mapping):
+        return [_diagnostic("$", "must be an object")]
+    if payload.get("format") != ADVENTURE_FORMAT:
+        found.append(_diagnostic("format", f"must be {ADVENTURE_FORMAT!r}"))
+    if payload.get("format_version") != ADVENTURE_FORMAT_VERSION:
+        found.append(
+            _diagnostic("format_version", f"must be {ADVENTURE_FORMAT_VERSION}")
+        )
+    adventure = payload.get("adventure")
+    if not isinstance(adventure, Mapping):
+        found.append(_diagnostic("adventure", "must be an object"))
+    elif not isinstance(adventure.get("id"), str) or not adventure.get("id", "").strip():
+        found.append(_diagnostic("adventure.id", "must be a non-empty string"))
+    _validate_chapters(payload.get("chapters"), found)
+    integrity = payload.get("integrity")
+    if not isinstance(integrity, Mapping):
+        found.append(_diagnostic("integrity", "must be an object"))
+        return found
+    if integrity.get("algorithm") != "sha256":
+        found.append(_diagnostic("integrity.algorithm", "must be 'sha256'"))
+    for key in ADVENTURE_INTEGRITY_KEYS:
+        try:
+            actual = canonical_sha256(payload.get(key))
+        except (TypeError, ValueError):
+            found.append(_diagnostic(f"integrity.{key}", f"{key} is not canonical JSON"))
+            continue
+        if integrity.get(key) != actual:
+            found.append(_diagnostic(f"integrity.{key}", f"does not match {key}"))
     return found
 
 
