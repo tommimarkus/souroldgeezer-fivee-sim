@@ -3460,13 +3460,13 @@ class Encounter:
                 enemy for enemy in self.enemies_of(actor.name)
                 if distance_feet(
                     as_point(enemy.position), previous, self.movement_rule
-                ) <= MELEE_THRESHOLD
+                ) <= self._opportunity_attack_reach(enemy)
             ]
             actor.position = step
             for enemy in threatening:
                 if distance_feet(
                     as_point(enemy.position), step, self.movement_rule
-                ) <= MELEE_THRESHOLD:
+                ) <= self._opportunity_attack_reach(enemy):
                     continue
                 self._opportunity_attack(enemy, actor, rng)
             if not actor.conscious:
@@ -3630,13 +3630,13 @@ class Encounter:
                     if distance_feet(
                         as_point(enemy.position), square_center(previous),
                         self.movement_rule,
-                    ) <= MELEE_THRESHOLD
+                    ) <= self._opportunity_attack_reach(enemy)
                 ]
             actor.position = square_center(step)
             for enemy in threatening:
                 if distance_feet(
                     as_point(enemy.position), square_center(step), self.movement_rule
-                ) <= MELEE_THRESHOLD:
+                ) <= self._opportunity_attack_reach(enemy):
                     continue
                 self._opportunity_attack(enemy, actor, rng)
             if not actor.conscious:
@@ -3978,6 +3978,24 @@ class Encounter:
                           f"{self._turn.movement_left} ft left)",
                    cost=cost, movement_left=self._turn.movement_left)
 
+    def _opportunity_attack_reach(self, attacker: Creature) -> int:
+        """The reach an Opportunity Attack from ``attacker`` would threaten with.
+
+        :meth:`_opportunity_attack` always swings the *first* melee option in
+        ``attacker.attacks``, so the radius that triggers the attack must be
+        that option's reach — a Reach weapon "adds 5 feet ... as well as when
+        determining your reach for Opportunity Attacks with it" (SRD 5.2.1).
+        Deriving both from the same lookup is what keeps them from disagreeing;
+        a creature with no melee option at all threatens nothing, but the
+        ordinary 5-ft default is returned rather than 0 so a caller that only
+        wants to know "how close is close" gets a sane answer either way.
+        """
+        melee = next(
+            (option for option in attacker.attacks if option.kind is AttackKind.MELEE),
+            None,
+        )
+        return melee.reach if melee is not None else MELEE_THRESHOLD
+
     def _opportunity_attack(self, attacker: Creature, mover: Creature, rng: Random) -> None:
         if not self._reaction_available.get(attacker.name, False) or not attacker.active:
             return
@@ -3987,11 +4005,18 @@ class Encounter:
         )
         if melee is None:
             return
+        # "You can make an Opportunity Attack when a creature that you can
+        # see leaves your reach" (SRD 5.2.1) — checked after the reaction and
+        # attacker.active guards above but before the reaction is spent, so an
+        # attacker that cannot see the mover keeps its Reaction for something
+        # else rather than burning it on a swing it was never entitled to.
+        if not self._can_see(attacker, mover):
+            return
         self._reaction_available[attacker.name] = False
         advantage = compute_attack_advantage(
             attacker_conditions=attacker.conditions,
             target_conditions=mover.conditions,
-            distance=MELEE_THRESHOLD,
+            distance=melee.reach,
             # An opportunity attack is an attack roll, so Pack Tactics reads
             # here too — against the mover wherever the walk has taken it.
             extra_advantage=1 if self._pack_tactics_applies(attacker, mover) else 0,

@@ -1278,6 +1278,79 @@ class TestMovementAndReactions:
         )
         assert "opportunity_attack" in kinds(events)
 
+    def test_a_reach_weapon_threatens_beyond_5_feet(self) -> None:
+        # The pikeman sits at (15, 8): never within the old hardcoded 5 ft
+        # threshold at any point on Thora's walk (the y offset alone is 8),
+        # but within its own 10 ft reach while Thora passes x=5..25. Leaving
+        # that band — the step from x=25 (distance 10) to x=30 (distance 15)
+        # — should draw an opportunity attack the old MELEE_THRESHOLD gate
+        # can never see, because the enemy is never "threatening" under it.
+        rng = Random(6)
+        pikeman = fighter("Pikeman", position=(15, 8), team="foes")
+        pike = AttackOption(
+            name="Pike",
+            attack_bonus=5,
+            damage=Dice(1, 10, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.MELEE,
+            reach=10,
+            provenance=FIXTURE,
+        )
+        pikeman.attacks = (pike,)
+        encounter = Encounter([fighter(), pikeman], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" in kinds(events)
+
+    def test_a_reach_5_attacker_still_gates_on_5_feet(self) -> None:
+        # Regression pin: a reach-5 attacker must not gain any new opportunity
+        # attack from the change above. Placed the same way as the reach-10
+        # case (offset (15, 8)) it never threatens at all, since even Thora's
+        # closest approach (x=15, distance 8) is outside its 5 ft reach.
+        rng = Random(6)
+        swordsman = fighter("Swordsman", position=(15, 8), team="foes")
+        encounter = Encounter([fighter(), swordsman], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" not in kinds(events)
+
+        # And it does provoke normally when the mover actually leaves 5 ft,
+        # pinning today's ordinary behaviour untouched by the reach change.
+        rng2 = Random(6)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=5)
+        encounter2 = Encounter([fighter(), goblin], rng2)
+        advance_to(encounter2, "Thora", rng2)
+        events2 = encounter2.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" in kinds(events2)
+
+    def test_an_unseen_mover_draws_no_opportunity_attack_and_keeps_the_reaction(
+        self,
+    ) -> None:
+        # The SRD gates an opportunity attack on a creature "that you can see".
+        # Thora turns invisible before moving, so the goblin — sighted, no
+        # blindsight, no darkvision need here — should neither get the attack
+        # nor spend the reaction it would need for something else.
+        rng = Random(6)
+        thora = fighter()
+        thora.add_condition(Condition.INVISIBLE)
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=5)
+        encounter = Encounter([thora, goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        assert "opportunity_attack" not in kinds(events)
+        goblin_state = next(
+            c for c in encounter.state()["combatants"] if c["name"] == "Goblin"
+        )
+        assert goblin_state["reaction_available"] is True
+
     def test_disengaging_first_prevents_the_opportunity_attack(self) -> None:
         rng = Random(6)
         goblin = make_monster("Goblin Warrior", label="Goblin", position=5)
