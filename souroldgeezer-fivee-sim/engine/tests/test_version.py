@@ -1,11 +1,12 @@
-"""One release number wears five coats, and they must agree.
+"""One release number wears six coats, and they must agree.
 
 The source of truth is the ``version`` field of ``.claude-plugin/plugin.json``
 (calver ``YYYY.0M.build``). Its mirrors are the strict-semver Codex manifest,
-the README plugin table, the engine's ``pyproject.toml``, and
-``fivee_sim.__version__`` — the value every client sees in the ``server.ping``
-handshake's ``serverInfo``. PEP 440 and semver strip the month's zero-padding,
-so agreement is checked numerically, not textually.
+the README plugin table, the engine's ``pyproject.toml``, ``uv.lock``'s entry
+for the workspace package itself, and ``fivee_sim.__version__`` — the value
+every client sees in the ``server.ping`` handshake's ``serverInfo``. PEP 440 and
+semver strip the month's zero-padding, so agreement is checked numerically, not
+textually.
 """
 
 import json
@@ -62,6 +63,21 @@ def test_pyproject_version_matches_plugin() -> None:
         (PLUGIN_ROOT / "engine" / "pyproject.toml").read_text(encoding="utf-8")
     )
     assert _numeric(pyproject["project"]["version"]) == _numeric(_plugin_version())
+
+
+def test_lockfile_version_matches_plugin() -> None:
+    """The sixth coat, and the one that kept slipping off.
+
+    ``uv.lock`` records the workspace package's own version, so a bump that does
+    not refresh it leaves the lock describing a release that no longer exists.
+    Nothing regenerates it as part of bumping — only the next ``uv sync`` or
+    ``uv run`` does, whenever that happens to be — so it went stale across two
+    consecutive releases with nothing going red.
+    """
+    lock = tomllib.loads((PLUGIN_ROOT / "engine" / "uv.lock").read_text(encoding="utf-8"))
+    entries = [package for package in lock["package"] if package["name"] == "fivee-sim"]
+    assert len(entries) == 1, f"expected one fivee-sim entry in uv.lock, found {len(entries)}"
+    assert _numeric(entries[0]["version"]) == _numeric(_plugin_version())
 
 
 def test_readme_mirror_matches_plugin() -> None:

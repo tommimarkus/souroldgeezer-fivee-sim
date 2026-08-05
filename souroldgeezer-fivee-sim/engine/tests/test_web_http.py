@@ -39,6 +39,7 @@ from fivee_sim.web.http_server import (
     _HANDLERS,
     CONFIG_MARKER,
     MAX_BODY_BYTES,
+    SOURCE_ID_ENV,
     TOKEN_HEADER,
     EngineServer,
 )
@@ -275,6 +276,47 @@ def test_the_server_serves_and_stops_under_a_short_poll_interval(tmp_path: Path)
         server.close()
         thread.join(timeout=5)
     assert not thread.is_alive(), "a short poll interval must still stop the server"
+
+
+def test_the_ping_names_the_source_the_launch_had_not_the_one_asked_for_later(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A running server answers for the source it started from, and only that.
+
+    Read once at construction, the id is a fact about this process. Re-read per
+    request it would follow whatever the environment says *now*, and the
+    client's whole question — does this process run what I am editing — cannot
+    be answered by a value that tracks the asker instead of the process.
+
+    Every other case in the suite fixes the environment for a process's whole
+    life, which makes the two readings indistinguishable; this is the one that
+    separates them, and without it a handler reverted to `os.environ.get` passes
+    the entire suite.
+    """
+    monkeypatch.setenv(SOURCE_ID_ENV, "a" * 64)
+    log = io.StringIO()
+    server = EngineServer(maps_dir=tmp_path / "maps", log=log)
+    thread = threading.Thread(
+        target=lambda: server.serve_forever(poll_interval=0.01), daemon=True
+    )
+    thread.start()
+    try:
+        monkeypatch.setenv(SOURCE_ID_ENV, "b" * 64)
+        connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=10)
+        try:
+            connection.request("GET", "/api/v1/ping", headers={TOKEN_HEADER: server.token})
+            answer = json.loads(connection.getresponse().read())
+        finally:
+            connection.close()
+    finally:
+        if thread.is_alive():
+            server.shutdown()
+        server.close()
+        thread.join(timeout=5)
+
+    assert answer["source_id"] == "a" * 64, (
+        "the ping followed the environment rather than reporting the launch"
+    )
 
 
 def assert_problem(response: Response, status: int, fragment: str = "") -> dict[str, Any]:
