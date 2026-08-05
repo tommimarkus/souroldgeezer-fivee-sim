@@ -118,39 +118,28 @@ legibility finding, not just a line of colour.
 
 ## 4. The adventuring day
 
-An adventure is a run of encounters that share a party, and the engine has a
-resource for exactly that. Use it rather than hand-carrying hit points:
+**Link the fights; never create them fresh.** The engine's `adventure.*`
+operations carry the whole cast from one encounter into the next exactly as the
+last fight left them — hit points, conditions, spell slots, death saves, who is
+stable and who is dead.
 
-```bash
-fivee adventure.create --name "The Sunless Chantry"
-fivee adventure.encounter adv-1 --if-match '*' --json '{"combatants": [ ... ], "seed": 20260805}'
-fivee adventure.encounter adv-1 --if-match '*' --json '{"combatants": [{"monster": "Goblin Warrior", "label": "Sentry", "team": "monsters", "position": [20, 0]}]}'
-fivee adventure.finalize adv-1 --if-match '*'
-```
+That is not a convenience here, it is the measurement. **Attrition across the day
+is the single most important thing a playtest finds**, and it is invisible to any
+single-encounter number: the third fight is the one that kills people. A run that
+starts each encounter at full strength has measured a different adventure from
+the one the developer wrote.
 
-The second call carries the whole previous cast forward **exactly as the last
-fight left them** — hit points, conditions, spell slots, death saves, who is
-stable and who is dead. That attrition across the day is the single most
-important thing a playtest measures, and it is why fights are linked rather than
-created fresh.
+The **encounter-sim** skill documents the commands, the version discipline every
+write needs, and `adventure.replay`. Read it there rather than here. Two things
+belong to *this* skill:
 
-A rest is a `recovery` delta the caller states, because the engine does not
-invent rest rules:
-
-```bash
-fivee adventure.encounter adv-1 --if-match '*' --json '{
-  "recovery": {"Thora": {"hp": 30, "spell_slots": {"1": 2}}},
-  "combatants": [ ... ]
-}'
-```
-
-`fivee adventure.state adv-1` lists the run's encounters in order.
-
-When play is done, **`fivee adventure.replay adv-1`** composes the run's
-finalized encounters into one replay bundle on disk — the whole playtest as a
-single shareable artifact, rather than N encounter bundles beside a transcript.
-It composes *frozen* files, so finalize each encounter before asking for it, and
-link the result from the report.
+- **A rest is a `recovery` delta you state**, because the engine does not model
+  resting. Whatever the module says the party recovers, you say so explicitly —
+  and then say so again in the report, because it is your assumption and not an
+  engine rule.
+- **Finalize each encounter as it ends.** `adventure.replay` composes frozen
+  files, so a run with a live encounter in it cannot be exported — and that
+  bundle is what the report links.
 
 ## 5. Between fights
 
