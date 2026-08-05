@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.kernel.grid import TERRAIN, Square
+from fivee_sim.kernel.grid import TERRAIN, Facing, Square
 from fivee_sim.map_document import (
     RESERVED_GLYPHS,
     MapColor,
@@ -669,6 +669,127 @@ class TestPaletteEdits:
                 document(),
                 {"op": "set_palette", "terrain": "floor", "color": {"light": "#aabbcc"}},
             )
+
+
+class TestCompassEdits:
+    """``set_compass``: turn the rose, and nothing else."""
+
+    def turned(self, compass: str = "east") -> MapDocument:
+        return edited(document(), {"op": "set_compass", "compass": compass})
+
+    def test_set_compass_turns_the_rose(self) -> None:
+        doc = self.turned()
+        assert doc.compass is Facing.EAST
+        assert doc.provenance.edited is True
+        assert json.loads(serialize(doc))["compass"] == "east"
+
+    @pytest.mark.parametrize("name", [facing.value for facing in Facing])
+    def test_every_one_of_the_eight_names_is_accepted(self, name: str) -> None:
+        assert self.turned(name).compass == name
+
+    def test_turning_the_rose_moves_no_geometry(self) -> None:
+        # The whole claim of the compass: it is presentation. Tiles, doors and
+        # the hinge that reads as -y are exactly where they were.
+        doc = self.turned()
+        assert doc.tiles == document().tiles
+        assert [(f.id, f.at, f.orientation) for f in doc.features] == [
+            (f.id, f.at, f.orientation) for f in document().features
+        ]
+
+    def test_setting_the_compass_it_already_has_changes_nothing(self) -> None:
+        before = document()
+        after = edited(before, {"op": "set_compass", "compass": "north"})
+        assert after is before
+
+    def test_an_unrelated_edit_keeps_the_compass(self) -> None:
+        # The trap: apply_edits rebuilds the whole payload, so a layer the edit
+        # state forgets is one every unrelated edit silently discards.
+        doc = edited(self.turned(), {"op": "set_name", "name": "renamed"})
+        assert doc.name == "renamed"
+        assert doc.compass is Facing.EAST
+
+    def test_a_resize_keeps_the_compass(self) -> None:
+        # A compass has no coordinate frame, so the op that reframes everything
+        # else must leave it exactly where it was.
+        doc = edited(self.turned(), {"op": "resize", "width": 8, "height": 5})
+        assert doc.compass is Facing.EAST
+
+    def test_an_unknown_name_lists_the_eight(self) -> None:
+        with pytest.raises(MapEditError, match="must be one of: north, northeast"):
+            edited(document(), {"op": "set_compass", "compass": "up"})
+
+    def test_a_non_string_compass_is_refused(self) -> None:
+        with pytest.raises(MapEditError, match="must be one of: north"):
+            edited(document(), {"op": "set_compass", "compass": 90})
+
+    def test_set_compass_takes_no_level(self) -> None:
+        # Document-wide by nature, like set_name and set_palette: a storey of a
+        # building does not get its own north.
+        with pytest.raises(MapEditError, match=r"unknown key\(s\): 'level'"):
+            edited(document(), {"op": "set_compass", "compass": "east", "level": 1})
+
+
+class TestFeatureFacingEdits:
+    """A feature's ``facing`` through the two ops that write a feature."""
+
+    def statue(self, facing: str = "east") -> dict[str, Any]:
+        return {"id": "statue", "kind": "statue", "at": [2, 2], "facing": facing}
+
+    def test_add_feature_carries_a_facing(self) -> None:
+        doc = edited(document(), {"op": "add_feature", "feature": self.statue()})
+        assert doc.features[-1].facing == "east"
+        assert json.loads(serialize(doc))["features"][-1] == self.statue()
+
+    def test_set_feature_carries_a_facing(self) -> None:
+        doc = edited(
+            document(),
+            {"op": "set_feature", "feature": {
+                "id": "spawn-party", "kind": "spawn", "at": [1, 1],
+                "facing": "southwest", "team": "party",
+            }},
+        )
+        assert doc.features[1].facing == "southwest"
+
+    def test_a_facing_left_out_of_a_set_is_a_facing_removed(self) -> None:
+        # set_feature replaces rather than merges, and facing is no exception.
+        placed = edited(document(), {"op": "add_feature", "feature": self.statue()})
+        doc = edited(
+            placed,
+            {"op": "set_feature", "feature": {"id": "statue", "kind": "statue", "at": [2, 2]}},
+        )
+        assert doc.features[-1].facing is None
+
+    def test_a_door_given_a_facing_is_refused_by_the_document(self) -> None:
+        # The service shapes the record and the final parse_document decides,
+        # exactly as it does for which fixture governs a square.
+        with pytest.raises(MapError, match="only a feature that is not a door"):
+            edited(document(), {"op": "add_feature", "feature": {
+                "id": "side door", "kind": "door", "at": [2, 3],
+                "orientation": "vertical", "state": "closed", "facing": "east"}})
+
+    def test_an_unknown_facing_name_is_refused_with_the_eight(self) -> None:
+        with pytest.raises(MapError, match="must be one of: north, northeast"):
+            edited(document(), {"op": "add_feature", "feature": self.statue("up")})
+
+    def test_features_in_view_carry_the_facing(self) -> None:
+        doc = edited(document(), {"op": "add_feature", "feature": self.statue()})
+        rendered = service.render_ascii(doc)
+        assert [f["facing"] for f in rendered["features_in_view"] if f["id"] == "statue"] == [
+            "east"
+        ]
+
+    def test_the_ascii_render_is_unchanged_by_a_facing(self) -> None:
+        # RESERVED_GLYPHS is closed, so facing rides only in the structured
+        # features_in_view — there is no ninth glyph coming for it.
+        plain = {"id": "statue", "kind": "statue", "at": [2, 2]}
+        without = service.render_ascii(
+            edited(document(), {"op": "add_feature", "feature": plain})
+        )
+        with_facing = service.render_ascii(
+            edited(document(), {"op": "add_feature", "feature": self.statue()})
+        )
+        assert with_facing["rows"] == without["rows"]
+        assert with_facing["legend"] == without["legend"]
 
 
 def sluice_payload() -> dict[str, Any]:
@@ -1720,3 +1841,48 @@ class TestConcurrentWrites:
         target = tmp_path / "keep.json"
         service.save_file(document, target)
         assert service.save_file(document, target, overwrite=True)["path"] == str(target)
+
+
+class TestAmbientLightSurvivesAnEdit:
+    """The same trap the compass and the height layer are pinned against.
+
+    ``apply_edits`` rebuilds the whole payload from ``_EditState``, so a field
+    that state does not carry is one every unrelated edit silently resets. Found
+    while wiring the compass, which needed the identical three lines; this one
+    was already wrong and had no test anywhere in the suite.
+    """
+
+    def darkened(self, light: str = "darkness") -> MapDocument:
+        raw = payload()
+        raw["ambient_light"] = light
+        return parse_document(raw, source="test", terrain=TERRAIN)
+
+    def test_an_unrelated_edit_keeps_the_documents_ambient_light(self) -> None:
+        doc = edited(self.darkened(), {"op": "set_name", "name": "renamed"})
+        assert doc.name == "renamed"
+        assert doc.levels[0].ambient_light == "darkness"
+
+    def test_a_resize_keeps_it_too(self) -> None:
+        doc = edited(
+            self.darkened("dim"),
+            {"op": "resize", "width": 9, "height": 9, "anchor": "top-left"},
+        )
+        assert doc.levels[0].ambient_light == "dim"
+
+    def test_a_storeys_own_ambient_light_survives_an_edit_to_the_ground(self) -> None:
+        # Levels carry their own, so the per-plane copy needs the same wiring:
+        # a cellar is dark whatever the sky above it is doing.
+        raw = payload()
+        raw["ambient_light"] = "bright"
+        raw["levels"] = [{
+            "index": 1,
+            "name": "cellar",
+            "tiles": raw["tiles"],
+            "ambient_light": "darkness",
+        }]
+        doc = parse_document(raw, source="test", terrain=TERRAIN)
+
+        after = edited(doc, {"op": "set_name", "name": "renamed"})
+
+        assert after.levels[0].ambient_light == "bright"
+        assert after.levels[1].ambient_light == "darkness"
