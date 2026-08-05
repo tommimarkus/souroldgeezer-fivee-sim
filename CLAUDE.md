@@ -569,9 +569,15 @@ lets a live server survive its plugin root being retired.
 
 planning-policy: default — before new feature or build work, brainstorm the
 approach in plan mode and get it approved (`ExitPlanMode`) before implementing.
-Scope: new feature, build, or creative work. Exceptions (logged): trivial edits,
-hotfixes, spikes/throwaway, work a domain skill owns end to end. Opt out per
-task by saying "skip planning" (logged). Enforcement model.
+The approved plan names who implements it, and the strong default is subagents:
+delegate every decomposable step unless the plan states the case against —
+indivisible work, work that needs the live conversation, context that will not
+survive a handoff brief, or parallel edits that would collide without worktree
+isolation. "I can just do it" is not one of those. The parent session keeps
+integration and verification. Scope: new feature, build, or creative work.
+Exceptions (logged): trivial edits, hotfixes, spikes/throwaway, work a domain
+skill owns end to end. Opt out per task by saying "skip planning" (logged).
+Enforcement model.
 
 software-design: when work shapes code or module structure — a new module or
 layer, the kernel/model/content/service/web seams, dependency direction, coupling,
