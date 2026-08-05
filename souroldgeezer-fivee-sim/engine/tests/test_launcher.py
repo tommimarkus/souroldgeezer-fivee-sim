@@ -24,6 +24,7 @@ import stat
 import subprocess
 import sys
 import urllib.request
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import ModuleType
@@ -589,3 +590,205 @@ def test_a_host_managed_launch_runs_from_durable_storage(
     assert (copies[0] / "fivee_sim" / "web" / "static" / "editor.html").is_file(), (
         "the durable copy must carry the assets a live server reads at request time"
     )
+
+
+# -- naming the source a reload watches --------------------------------------
+# Watching the source is opt-in, and the launcher's whole part in it is to say
+# *which* source: it hashes the tree it is about to run and hands that id to the
+# process tree. Everything below is about the hand-off, not about the watching.
+
+
+class _StubClient(ModuleType):
+    """Stands in for ``fivee_sim.client.cli`` at the door ``main`` calls through.
+
+    The launcher's job ends when it hands argv to the client, and the real one
+    would start a server for anything that is not the usage branch. Which client
+    answers is also not a thing these cases should depend on: the planted tree
+    below carries no client, and whether the *installed* one is importable from
+    this interpreter depends on what else pytest happened to collect.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("fivee_sim.client.cli")
+
+    def main(self, argv: list[str]) -> int:
+        return 0
+
+
+def _plant_plugin(root: Path, marker: str = "original") -> tuple[ModuleType, Path]:
+    """A planted engine with the launcher beside it, loaded from that copy.
+
+    ``main`` finds its engine relative to its own ``__file__``, so a case that
+    drives it against a two-file tree has to move the launcher next to one. The
+    alternative — hashing and copying the real engine per case — would make
+    these report the size of the repository rather than the behaviour.
+    """
+    engine = _plant_engine(root, marker)
+    scripts = root / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    copy = scripts / "fivee.py"
+    copy.write_bytes(LAUNCHER_PATH.read_bytes())
+
+    spec = importlib.util.spec_from_file_location("_fivee_launcher_planted", copy)
+    assert spec is not None and spec.loader is not None, copy
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module, engine
+
+
+def _drive_main(
+    module: ModuleType, monkeypatch: pytest.MonkeyPatch, environment: dict[str, str]
+) -> dict[str, str]:
+    """Run ``main`` in this process and hand back the environment it exported into.
+
+    The mapping ``main`` is *given* and the one it *writes to* are two objects
+    here, exactly as they are at the entry point, where the argument is
+    ``dict(os.environ)``. A launcher that wrote its exports into that copy would
+    satisfy every assertion below and still leave a spawned child knowing
+    nothing, so the two must not be conflated.
+
+    ``sys.path`` and the working directory are restored for the ordinary reason:
+    ``main`` mutates process state that would otherwise outlive the test.
+    """
+    exported = dict(environment)
+    monkeypatch.setattr(os, "environ", exported)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setitem(sys.modules, "fivee_sim.client.cli", _StubClient())
+
+    working_directory = Path.cwd()
+    try:
+        assert module.main([], environment) == 0
+    finally:
+        os.chdir(working_directory)
+    return exported
+
+
+def test_the_reload_flag_exports_the_identity_of_the_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module, engine = _plant_plugin(tmp_path / "plugin")
+
+    exported = _drive_main(module, monkeypatch, {"FIVEE_SIM_RELOAD": "1"})
+
+    assert exported["FIVEE_SIM_SOURCE_ID"] == module.source_identity(engine)
+
+
+def test_nothing_is_exported_without_the_reload_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Absent, not blank: a reader has one question to ask, and it is ``in``."""
+    module, _ = _plant_plugin(tmp_path / "plugin")
+
+    exported = _drive_main(module, monkeypatch, {})
+
+    assert "FIVEE_SIM_SOURCE_ID" not in exported, exported
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t\n"])
+def test_a_blank_reload_flag_is_unset_rather_than_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, blank: str
+) -> None:
+    """The reading `resolve_plugin_data` gives the host variables, applied here too."""
+    module, _ = _plant_plugin(tmp_path / "plugin")
+
+    exported = _drive_main(module, monkeypatch, {"FIVEE_SIM_RELOAD": blank})
+
+    assert "FIVEE_SIM_SOURCE_ID" not in exported, exported
+
+
+def test_the_exported_identity_changes_when_a_source_file_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The id is worth exporting only if it distinguishes one tree from the next."""
+    first, engine = _plant_plugin(tmp_path / "before")
+    before = _drive_main(first, monkeypatch, {"FIVEE_SIM_RELOAD": "1"})
+
+    second, changed = _plant_plugin(tmp_path / "after", marker="changed")
+    after = _drive_main(second, monkeypatch, {"FIVEE_SIM_RELOAD": "1"})
+
+    assert before["FIVEE_SIM_SOURCE_ID"] != after["FIVEE_SIM_SOURCE_ID"]
+    assert after["FIVEE_SIM_SOURCE_ID"] == second.source_identity(changed)
+
+
+def test_a_durable_reload_hashes_the_source_exactly_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two callers want the same digest of the same tree, and it is a whole-tree read.
+
+    ``main`` needs the identity to export it and ``ensure_durable_source`` needs
+    it to name the copy. Hashing per caller is the cost content-addressing pays
+    once by design, so the count here is exact rather than a bound.
+    """
+    module, engine = _plant_plugin(tmp_path / "plugin")
+    hash_source: Callable[[Path], str] = module.source_identity
+    hashed: list[Path] = []
+
+    def counted(engine_dir: Path) -> str:
+        hashed.append(engine_dir)
+        return hash_source(engine_dir)
+
+    monkeypatch.setattr(module, "source_identity", counted)
+
+    exported = _drive_main(
+        module,
+        monkeypatch,
+        {"FIVEE_SIM_RELOAD": "1", "PLUGIN_DATA": str(tmp_path / "data")},
+    )
+
+    assert hashed == [engine.resolve()], hashed
+    assert exported["FIVEE_SIM_SOURCE_ID"] == hash_source(engine)
+    published = sorted((tmp_path / "data" / "src").iterdir())
+    assert published == [tmp_path / "data" / "src" / hash_source(engine)], published
+
+
+#: A client that does one thing: spawn a child the way the real one spawns its
+#: server, and report what that child inherited. Planted rather than imported,
+#: because the point is the process boundary and not this interpreter.
+_REPORTING_CLIENT = '''\
+import subprocess
+import sys
+
+
+def main(argv):
+    child = subprocess.run(
+        [sys.executable, "-c", "import os; print(os.environ.get('FIVEE_SIM_SOURCE_ID', ''))"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    sys.stdout.write(child.stdout)
+    return child.returncode
+'''
+
+
+@requires_host_python
+def test_a_spawned_server_inherits_the_source_identity(tmp_path: Path) -> None:
+    """The boundary ``test_a_spawned_server_can_import_the_engine`` names, one variable along.
+
+    The client spawns its server as a fresh interpreter that inherits this
+    process's environment and nothing else. An id held in ``sys.path``, in a
+    local, or in the copy of the environment ``main`` was handed passes every
+    in-process case above and never reaches the process that has to act on it.
+    """
+    root = tmp_path / "plugin"
+    engine = _plant_engine(root)
+    client = engine / "src" / "fivee_sim" / "client"
+    client.mkdir()
+    (client / "__init__.py").write_text("", encoding="utf-8")
+    (client / "cli.py").write_text(_REPORTING_CLIENT, encoding="utf-8")
+    copy = root / "scripts" / "fivee.py"
+    copy.parent.mkdir()
+    copy.write_bytes(LAUNCHER_PATH.read_bytes())
+
+    environment = dict(os.environ)
+    environment.pop("PYTHONPATH", None)
+    # A durable copy is beside the point here, and honouring a host variable this
+    # session happens to carry would write one into the host's real plugin data.
+    for host_variable in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA", "CODEX_HOME"):
+        environment.pop(host_variable, None)
+    environment["FIVEE_SIM_RELOAD"] = "1"
+
+    result = _call(environment, launcher=copy)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == launcher.source_identity(engine), result.stdout
