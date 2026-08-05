@@ -687,7 +687,13 @@ def _example(operation: Operation) -> str:
         elif param.required or param.location == "path":
             parts += [_flag(param.name), _placeholder(param.name, param.schema)]
     if operation.example is not None:
-        return " ".join([*parts, "--json", f"'{json.dumps(operation.example)}'"])
+        # Through the same helper the parameter examples use. A published body
+        # is repo-authored today and arrives over a token-gated loopback
+        # socket, so this is not guarding against an attacker — it is refusing
+        # to make the printed line's shell-safety depend on a test that forbids
+        # apostrophes. A creature called "Bandit's Captain" is the ordinary way
+        # that test starts mattering.
+        return " ".join([*parts, "--json", _shell_word(json.dumps(operation.example))])
     payload: dict[str, Any] = {}
     for name in operation.body_required:
         schema = operation.properties.get(name, {})

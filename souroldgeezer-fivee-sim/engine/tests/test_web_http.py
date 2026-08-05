@@ -1447,15 +1447,30 @@ class TestDeclaredExamples:
     def test_the_document_carries_an_example_for_every_shapeless_argument(
         self, editor: Editor
     ) -> None:
-        """The finding, restated as a test: the document used to hold zero."""
+        """The finding, restated as a test: the document used to hold zero.
+
+        Read with ``.get`` at every step rather than subscripted. Subscripting
+        made a missing example a ``KeyError`` raised while *building* the list,
+        which meant both assertions below were unreachable — the case still
+        failed, but on a traceback that named a dict key instead of the
+        operation whose help had nothing to show.
+        """
         document = editor.request("GET", "/api/v1/openapi.json").json()
-        described = [
-            document["paths"][route.path][route.method.lower()]["requestBody"]
-            ["content"]["application/json"]["example"]
+        undescribed = sorted(
+            route.operation
             for route in routes_needing_an_example()
-        ]
-        assert all(one is not None for one in described)
-        assert len(described) == len(routes_needing_an_example())
+            if document["paths"][route.path][route.method.lower()]
+            .get("requestBody", {})
+            .get("content", {})
+            .get("application/json", {})
+            .get("example")
+            is None
+        )
+        assert not undescribed, (
+            "the served document publishes no example for these operations, so "
+            "`fivee help` has nothing to print for an argument whose shape the "
+            "schema cannot show: " + ", ".join(undescribed)
+        )
 
 
 class TestDeclaredEnums:

@@ -663,11 +663,27 @@ class TestHelp:
         Derived from ``ActionKind`` rather than listed here: this file asserting
         its own copy of the set would pass against a contract that had drifted
         from the engine, which is the failure the derivation exists to remove.
+
+        Searched in the ``--kind`` line rather than the whole page, because the
+        page says several of these words for unrelated reasons: ``attack`` is
+        also a flag, ``move`` sits inside ``--movement-mode``, and ``dodge`` is
+        the declared example. Stripping the enum out entirely still left those
+        three "present" in a page-wide search — the case failed on the other
+        seven, so it worked, but three tenths of it were not testing anything.
         """
         assert run("help", "encounter.act") == cli.EXIT_OK
         rendered = capsys.readouterr().out
+        kind_line = next(
+            (
+                line
+                for line in rendered.splitlines()
+                if line.strip().startswith("--kind ")
+            ),
+            "",
+        )
+        assert kind_line, "the help prints no --kind line at all"
         missing = sorted(
-            kind.value for kind in ActionKind if kind.value not in rendered
+            kind.value for kind in ActionKind if kind.value not in kind_line
         )
         assert not missing, (
             f"`fivee help encounter.act` prints no way to learn these action "
