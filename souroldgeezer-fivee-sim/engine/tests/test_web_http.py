@@ -31,7 +31,7 @@ from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
-from fivee_sim.model.encounter import ActionKind
+from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
@@ -109,6 +109,16 @@ def payload() -> dict[str, Any]:
             "edited": False,
             "source": "Authored for the test suite; 5E-compatible original content",
         },
+    }
+
+
+def scene_payload() -> dict[str, Any]:
+    """A whole scene: the roster of a fight nobody has started yet."""
+    return {
+        "name": "Ambush at the ford",
+        "combatants": [dict(HERO), dict(GOBLIN)],
+        "seed": 20260805,
+        "movement_rule": "5-5-5",
     }
 
 
@@ -199,6 +209,16 @@ class Editor:
     def put_map(self, map_id: str, document: dict[str, Any], if_match: str = "*") -> Response:
         return self.request(
             "PUT", f"/api/v1/maps/{map_id}", json_body=document, headers={"If-Match": if_match}
+        )
+
+    def put_scene(
+        self, scene_id: str, document: dict[str, Any], if_match: str = "*"
+    ) -> Response:
+        return self.request(
+            "PUT",
+            f"/api/v1/scenes/{scene_id}",
+            json_body=document,
+            headers={"If-Match": if_match},
         )
 
     def file_of(self, map_id: str) -> Path:
@@ -1450,6 +1470,7 @@ class TestDeclaredExamples:
             "adventure.encounter": adventure.json()["id"],
             "map.put": "example-map",
             "map.edit": "saved-map",
+            "scene.put": "example-scene",
         }
         needed = routes_needing_an_example()
         templated = {route.operation for route in needed if "{" in route.path}
@@ -2050,6 +2071,80 @@ class TestEncountersOverHttp:
             "note text must not be blank",
         )
 
+    def test_an_unsaved_editor_buffer_posts_inline_as_the_document_it_is(
+        self, editor: Editor
+    ) -> None:
+        """Play on a buffer that has never been saved, over the real transport.
+
+        The editor sends ``map_id`` for a map the server already has and the
+        whole buffer for one it does not, and a buffer is a ``fivee-sim-map``
+        document. The spec parser used to answer that with ``unknown map key
+        'format'`` — a 400 naming the very key that identifies the format — so
+        Play on an unsaved map was broken end to end. The unit cases in
+        ``tests/test_encounter_map_input.py`` own the dispatch; this is the
+        claim the browser depends on.
+        """
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={
+                # Feet, not squares: the chamber is five squares wide and its
+                # only floor is the 3x2 interior, so (5, 5) and (15, 10).
+                "combatants": [
+                    {**HERO, "position": [5, 5]}, {**GOBLIN, "position": [15, 10]}
+                ],
+                "seed": 11,
+                "map": payload(),
+            },
+        )
+
+        assert created.status == 201, created.body
+        state = editor.request(
+            "GET", f"/api/v1/encounters/{created.json()['encounter_id']}"
+        ).json()
+        assert state["map"]["name"] == "editor chamber"
+        assert state["map_source"] is None, "an inline map has no file to source"
+
+    def test_an_inline_document_that_does_not_parse_is_422_with_its_diagnostics(
+        self, editor: Editor
+    ) -> None:
+        """The refusal a *saved* map gets, for a map that was never saved.
+
+        422 and a diagnostic list rather than a bare 400: an inline document is
+        parsed by the map service, so it is refused in the map service's own
+        words. ``source`` says ``inline map`` so a client knows the complaint is
+        about the body it sent and not some file on the host.
+        """
+        broken = {**payload(), "tiles": ["##", "##"]}
+
+        problem = assert_problem(
+            editor.request(
+                "POST", "/api/v1/encounters",
+                json_body={
+                    "combatants": [{**HERO, "position": [5, 5]}, dict(GOBLIN)],
+                    "seed": 11,
+                    "map": broken,
+                },
+            ),
+            422,
+            "the grid is 5 squares wide",
+        )
+        assert [one["source"] for one in problem["diagnostics"]] == ["inline map"] * 3
+
+    def test_an_inline_map_that_is_neither_shape_is_refused_as_a_spec(
+        self, editor: Editor
+    ) -> None:
+        """No ``format``, so it is read as a spec and told which keys a spec has.
+
+        The complement of the case above, and the reason the dispatch is on the
+        key's *presence*: an object that never claimed to be a document is still
+        judged by the spec parser, whose refusal lists the spec's own keys.
+        """
+        assert_problem(
+            self.create(editor, map={"grid": {"width": 5, "height": 4}}),
+            400,
+            "unknown map key 'grid'",
+        )
+
     def attempts(self, editor: Editor, encounter_id: str) -> list[dict[str, Any]]:
         exported = editor.request(
             "POST", f"/api/v1/encounters/{encounter_id}/replay",
@@ -2195,6 +2290,472 @@ class TestEncountersOverHttp:
         ).json()
         assert resumed["recovered"] is True
         assert resumed["state"]["round"] >= 1
+
+
+#: A fight with something to hide: a foe whose sheet carries unmistakable
+#: values, and a reinforcement who is in the initiative order but not on the
+#: battlefield. The numbers are chosen so that finding one in a response is
+#: proof of where it came from — no position, initiative, round or distance in
+#: this fixture can produce them.
+BRIEFING_FOE_AC = 4093
+BRIEFING_FOE_MAX_HP = 4400
+BRIEFING_FOE_HP = 3300
+BRIEFING_FOE_ATTACK = "Rustcleaver"
+BRIEFING_AMBUSHER = "Zzaxil"
+
+
+def briefing_roster() -> list[dict[str, Any]]:
+    return [
+        dict(HERO),
+        {
+            "name": "Grelk",
+            "team": "monsters",
+            "ac": BRIEFING_FOE_AC,
+            "max_hp": BRIEFING_FOE_MAX_HP,
+            "hp": BRIEFING_FOE_HP,
+            "items": {"Emberflask": 5},
+            "spell_slots": {"3": 2},
+            "attacks": [
+                {
+                    "name": BRIEFING_FOE_ATTACK,
+                    "attack_bonus": 6,
+                    "damage": "2d6+4",
+                    "damage_type": "slashing",
+                    "kind": "melee",
+                }
+            ],
+            "position": [35, 0],
+        },
+        {
+            "name": BRIEFING_AMBUSHER,
+            "team": "monsters",
+            "ac": 12,
+            "max_hp": 9,
+            "position": [60, 0],
+            "arrival_round": 9,
+        },
+    ]
+
+
+#: The foe a *write* can actually hurt. Grelk's AC is 4093 and it stands 35 feet
+#: off — both deliberate, both right for the brief above, and both fatal to a
+#: write case: the leak those exist to catch rides in on a ``damage`` event, and
+#: a swing that cannot reach and could never land emits none. So the writes add
+#: one more monster, next to the hero and hittable, whose hit points are as
+#: unmistakable as everything else in this fixture.
+BRIEFING_DUMMY = "Skrit"
+BRIEFING_DUMMY_MAX_HP = 7700
+BRIEFING_DUMMY_HP = 6600
+
+
+def briefing_brawl() -> list[dict[str, Any]]:
+    return [
+        *briefing_roster(),
+        {
+            "name": BRIEFING_DUMMY,
+            "team": "monsters",
+            "ac": 5,
+            "max_hp": BRIEFING_DUMMY_MAX_HP,
+            "hp": BRIEFING_DUMMY_HP,
+            "position": [5, 0],
+        },
+    ]
+
+
+class TestThePlayerBriefOverHttp:
+    """``encounter.brief`` is the seat's view, and its promise is byte-level.
+
+    The unit cases in ``tests/test_player_brief.py`` own the classification;
+    what is checked here is the thing a client actually receives. The assertions
+    read ``response.body`` rather than the parsed dictionary because the leak
+    being guarded against is a nested one — a withheld value surviving inside
+    some summary a key check never looks at.
+    """
+
+    def create(self, editor: Editor) -> str:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": briefing_roster(), "seed": 11},
+        )
+        assert created.status == 201, created.body
+        return str(created.json()["encounter_id"])
+
+    def test_the_brief_answers_200_and_carries_the_encounters_etag(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor)
+
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
+
+        assert brief.status == 200
+        assert brief.json()["as"] == "Thora"
+        state = editor.request("GET", f"/api/v1/encounters/{encounter_id}")
+        assert brief.headers["ETag"] == state.headers["ETag"]
+
+    def test_the_response_bytes_hold_no_part_of_an_opponents_sheet(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor)
+
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
+
+        gm = editor.request("GET", f"/api/v1/encounters/{encounter_id}").body
+        for secret in (
+            str(BRIEFING_FOE_AC),
+            str(BRIEFING_FOE_MAX_HP),
+            str(BRIEFING_FOE_HP),
+            BRIEFING_FOE_ATTACK,
+            "Emberflask",
+        ):
+            # In the GM's payload by construction, and out of the player's.
+            assert secret.encode("utf-8") in gm, secret
+            assert secret.encode("utf-8") not in brief.body, secret
+
+    def test_a_creature_who_has_not_arrived_is_named_nowhere_in_the_response(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor)
+
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
+
+        gm = editor.request("GET", f"/api/v1/encounters/{encounter_id}").body
+        assert BRIEFING_AMBUSHER.encode("utf-8") in gm
+        assert BRIEFING_AMBUSHER.encode("utf-8") not in brief.body
+
+    def test_the_askers_own_sheet_arrives_whole_and_the_foe_gets_a_band(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor)
+
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        ).json()
+
+        seat = brief["you"]
+        assert seat["hp"] == HERO["max_hp"]
+        assert seat["ac"] == HERO["ac"]
+        assert seat["attacks"] == ["Longsword"]
+        foe = next(one for one in brief["enemies"] if one["name"] == "Grelk")
+        assert foe["health"] in HEALTH_BANDS
+        assert "hp" not in foe and "ac" not in foe
+
+    def test_a_seat_the_fight_does_not_hold_is_404_and_names_no_one_else(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor)
+
+        refused = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Nobody"
+        )
+
+        problem = assert_problem(refused, 404, "no combatant named 'Nobody'")
+        # The refusal must not become the disclosure: listing the cast would
+        # hand a player-chair client the very name the projection withholds.
+        assert BRIEFING_AMBUSHER not in json.dumps(problem)
+
+    def test_the_seat_must_be_named_at_all(self, editor: Editor) -> None:
+        encounter_id = self.create(editor)
+
+        refused = editor.request("GET", f"/api/v1/encounters/{encounter_id}/brief")
+
+        assert_problem(refused, 400, "query parameter 'as' is required")
+
+
+class TestThePlayerBriefOnTheWrites:
+    """``as=`` on the four operations that answer a caller with a fight's state.
+
+    ``encounter.brief`` was this projection's only door for a release, and every
+    *mutating* operation answered the seat that posted it with the GM's whole
+    snapshot: an opponent's exact hit points, AC, items and weapons, in the body
+    of the player's own action. ``web/static/play.js`` survived that by reading
+    ``events`` out of the answer and discarding the rest — client-side hiding,
+    which is the failure mode this projection was written to avoid, and which is
+    inert against devtools, a proxy or an extension.
+
+    So the four routes take the same ``as=`` ``encounter.brief`` does, they
+    answer with the same projection in the same shape, and the same 404 refuses
+    a name the fight does not hold. These cases read ``response.body`` for the
+    reason the class above does: the leak being guarded against is a nested
+    one.
+
+    **The parameter is optional, and its absence is a promise.** The CLI, the
+    ``encounter-sim`` skill and the ``playtest`` skill all read ``state`` from
+    these answers, so a call that names no chair must get back exactly what it
+    got before — which is a claim in its own right below, not an assumption.
+
+    **The events are narrowed with it, and for a release they were not.** This
+    docstring used to close by calling that a boundary of the fix rather than an
+    oversight, and the cases below acted with ``dodge`` — whose events name
+    nobody but the actor and carry no number worth hiding — so the byte
+    assertions passed over the events channel without ever touching it. They
+    were passing vacuously. ``events[].data`` was the same fight's own account
+    with none of it withheld: a ``damage`` event answered a player's own swing
+    with ``{"hp": 6594, "max_hp": 7700}`` beside a ``state`` that said "hurt",
+    and an ``attack`` event's ``total`` bracketed the AC it was rolled against.
+    So the cases below now swing, land, and hurt somebody.
+    """
+
+    #: Every value from the other side's sheets that finding in a response is
+    #: proof of. The ambusher's *name* rides along because an undetected
+    #: creature is omitted rather than unlabelled, and a write must omit them
+    #: too. The hit points the swing actually moves are not written down here —
+    #: :meth:`secrets_of` reads them back, because a constant would go stale the
+    #: moment the blow landed and pass against the number the response holds.
+    SECRETS = (
+        str(BRIEFING_FOE_AC),
+        str(BRIEFING_FOE_MAX_HP),
+        str(BRIEFING_FOE_HP),
+        BRIEFING_FOE_ATTACK,
+        "Emberflask",
+        BRIEFING_AMBUSHER,
+        str(BRIEFING_DUMMY_MAX_HP),
+        str(BRIEFING_DUMMY_HP),
+    )
+
+    def create(self, editor: Editor, seat: str = "") -> Response:
+        return editor.request(
+            "POST",
+            "/api/v1/encounters" + (f"?as={seat}" if seat else ""),
+            json_body={"combatants": briefing_brawl(), "seed": 11},
+        )
+
+    def ready(self, editor: Editor) -> str:
+        """A fight standing at Thora's turn, so the next write is hers to make."""
+        encounter_id = str(self.create(editor).json()["encounter_id"])
+        for _ in range(12):
+            state = editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()
+            if state["turn"] == "Thora":
+                return encounter_id
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        raise AssertionError("Thora never got a turn")
+
+    def swing(self, editor: Editor, encounter_id: str, seat: str = "") -> Response:
+        """The write that leaks: a real attack that lands on a real opponent."""
+        return editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions"
+            + (f"?as={seat}" if seat else ""),
+            json_body={
+                "kind": "attack", "target": BRIEFING_DUMMY, "attack": "Longsword"
+            },
+        )
+
+    def secrets_of(self, editor: Editor, encounter_id: str) -> tuple[str, ...]:
+        """:data:`SECRETS`, plus whatever hit points the fight now stands at."""
+        state = editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()
+        hurt = next(
+            one for one in state["combatants"] if one["name"] == BRIEFING_DUMMY
+        )
+        return (*self.SECRETS, str(hurt["hp"]))
+
+    def assert_briefed(
+        self, editor: Editor, response: Response, seat: str, encounter_id: str
+    ) -> None:
+        """This is that seat's brief, and holds no byte of anyone else's sheet."""
+        assert response.status in (200, 201), response.body
+        # The brief's own shape, not a relabelled snapshot: one projection
+        # answers the read and the write, so a client has one thing to render.
+        state = response.json()["state"]
+        assert state["as"] == seat
+        assert "combatants" not in state and "ongoing_effects" not in state
+        for secret in self.secrets_of(editor, encounter_id):
+            assert secret.encode("utf-8") not in response.body, secret
+
+    def assert_whole(self, response: Response) -> None:
+        """This is the GM's answer: the fight reported as it always was.
+
+        The hit points are read off the answer's own ``state`` rather than
+        supplied, because the swing moves them: a fixed number would make this
+        assert that a *stale* value is present, which the response quite
+        correctly no longer carries.
+        """
+        assert response.status in (200, 201), response.body
+        state = response.json()["state"]
+        assert "as" not in state
+        hurt = next(
+            one for one in state["combatants"] if one["name"] == BRIEFING_DUMMY
+        )
+        for secret in (*self.SECRETS[:-1], str(hurt["hp"])):
+            assert secret.encode("utf-8") in response.body, secret
+
+    def test_creating_from_a_seat_answers_that_seat_and_no_one_elses_sheet(
+        self, editor: Editor
+    ) -> None:
+        created = self.create(editor, seat="Thora")
+
+        self.assert_briefed(
+            editor, created, "Thora", created.json()["encounter_id"]
+        )
+
+    def test_acting_from_a_seat_answers_that_seat_and_no_one_elses_sheet(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.ready(editor)
+
+        acted = self.swing(editor, encounter_id, seat="Thora")
+
+        # The events are the half this used to pass over: the fixture is built
+        # so the swing lands, so there is a damage event here to be narrowed.
+        assert [one["kind"] for one in acted.json()["events"]] == ["attack", "damage"]
+        self.assert_briefed(editor, acted, "Thora", encounter_id)
+
+    def test_a_briefed_action_still_reports_what_the_table_watched(
+        self, editor: Editor
+    ) -> None:
+        """Redaction that emptied the events would pass the case above."""
+        encounter_id = self.ready(editor)
+
+        acted = self.swing(editor, encounter_id, seat="Thora").json()
+
+        swung, wound = acted["events"]
+        assert swung["data"]["hit"] is True
+        assert wound["data"]["amount"] > 0
+        # Her own swing is hers to know, arithmetic and all: a table that says
+        # "fifteen hits" has told the player who rolled it exactly this.
+        assert swung["data"]["total"] == swung["data"]["natural"] + 5
+        assert swung["data"]["attack"] == "Longsword"
+        # And what the projection took is the target's sheet, not the account.
+        assert "hp" not in wound["data"] and "max_hp" not in wound["data"]
+        assert "detail" not in swung and "detail" not in wound
+
+    def test_advancing_from_a_seat_answers_that_seat_and_no_one_elses_sheet(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.ready(editor)
+        self.swing(editor, encounter_id)
+
+        advanced = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?as=Thora"
+        )
+
+        self.assert_briefed(editor, advanced, "Thora", encounter_id)
+
+    def test_resuming_from_a_seat_answers_that_seat_and_no_one_elses_sheet(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.ready(editor)
+        self.swing(editor, encounter_id)
+        # Off the journal rather than out of memory, which is the path a
+        # player's client actually takes after the server it was talking to
+        # went away — and the one that reads ``map_source`` back in.
+        editor.server.state.sessions.clear()
+
+        resumed = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/resume?as=Thora"
+        )
+
+        self.assert_briefed(editor, resumed, "Thora", encounter_id)
+
+    def test_a_retried_creation_is_briefed_like_the_first_answer(
+        self, editor: Editor
+    ) -> None:
+        """The one whose events are not ``events``.
+
+        ``create`` answers with ``log``, and an idempotent retry answers with
+        the *whole* log of a fight already in progress rather than the opening
+        pair a fresh one has. A projection that narrowed only ``events`` would
+        hand a player every round of it.
+        """
+        body = {"combatants": briefing_brawl(), "seed": 11}
+        again = {"Idempotency-Key": "the-same-fight"}
+        first = editor.request(
+            "POST", "/api/v1/encounters", json_body=body, headers=again
+        )
+        encounter_id = str(first.json()["encounter_id"])
+        for _ in range(12):
+            if (
+                editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()[
+                    "turn"
+                ]
+                == "Thora"
+            ):
+                break
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        self.swing(editor, encounter_id)
+
+        retried = editor.request(
+            "POST", "/api/v1/encounters?as=Thora", json_body=body, headers=again
+        )
+
+        assert retried.json()["encounter_id"] == encounter_id
+        assert len(retried.json()["log"]) > 2, "the retry replayed no fight to narrow"
+        self.assert_briefed(editor, retried, "Thora", encounter_id)
+
+    def test_naming_no_seat_leaves_every_write_answering_the_fight_whole(
+        self, editor: Editor
+    ) -> None:
+        # The additive promise, pinned rather than assumed: this is what the
+        # CLI and both skills read, and the fix must not have moved it.
+        created = self.create(editor)
+        encounter_id = str(created.json()["encounter_id"])
+        for _ in range(12):
+            if (
+                editor.request("GET", f"/api/v1/encounters/{encounter_id}").json()[
+                    "turn"
+                ]
+                == "Thora"
+            ):
+                break
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        acted = self.swing(editor, encounter_id)
+        advanced = editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        editor.server.state.sessions.clear()
+        resumed = editor.request("POST", f"/api/v1/encounters/{encounter_id}/resume")
+
+        for whole in (created, acted, advanced, resumed):
+            self.assert_whole(whole)
+        # Including the account of what happened, sentence and numbers both.
+        struck = acted.json()["events"][0]
+        assert struck["detail"] and "vs AC" in struck["detail"]
+        assert acted.json()["events"][1]["data"]["max_hp"] == BRIEFING_DUMMY_MAX_HP
+
+    def test_a_seat_the_fight_does_not_hold_is_refused_by_every_write(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.ready(editor)
+        base = f"/api/v1/encounters/{encounter_id}"
+
+        for method, path, body in (
+            ("POST", f"{base}/actions?as=Nobody", {"kind": "dodge"}),
+            ("POST", f"{base}/advance?as=Nobody", None),
+            ("POST", f"{base}/resume?as=Nobody", None),
+        ):
+            refused = editor.request(method, path, json_body=body)
+
+            problem = assert_problem(refused, 404, "no combatant named 'Nobody'")
+            # The refusal is not the disclosure, exactly as ``encounter.brief``'s
+            # is not: listing the cast would name the creature it withholds.
+            assert BRIEFING_AMBUSHER not in json.dumps(problem), path
+
+    def test_creating_under_a_seat_the_roster_lacks_starts_no_fight(
+        self, editor: Editor
+    ) -> None:
+        # The one refusal that has to land *before* the operation runs. Left to
+        # the projection it would refuse after the fight had been created,
+        # journaled and given an id — a 404 with an orphan encounter behind it.
+        refused = self.create(editor, seat="Nobody")
+
+        assert_problem(refused, 404, "no combatant named 'Nobody'")
+        listed = editor.request("GET", "/api/v1/encounters?status=all").json()
+        assert listed["encounters"] == [], listed
+
+    def test_a_briefed_write_still_carries_the_encounters_etag(
+        self, editor: Editor
+    ) -> None:
+        # A player's client polls on the same version the GM's does, so a chair
+        # that writes must be handed the same journal head a chair that reads is.
+        encounter_id = self.ready(editor)
+
+        acted = self.swing(editor, encounter_id, seat="Thora")
+
+        state = editor.request("GET", f"/api/v1/encounters/{encounter_id}")
+        assert acted.headers["ETag"] == state.headers["ETag"]
 
 
 class TestEncounterActions:
@@ -3214,3 +3775,178 @@ class TestReplayValidation:
         ).json()
 
         assert answer == {"valid": True, "error_count": 0, "diagnostics": []}
+
+
+class TestScenesOverHttp:
+    """A scene is a saved ``encounter.create`` body, addressed like a map.
+
+    Same shape as the map routes on purpose — sha256 ``ETag``, ``If-Match`` on
+    every write, ``*`` to create — because it is the same kind of thing: one
+    document, rewritten whole, that two servers on a host can both be holding.
+
+    What is deliberately absent is a ``scene.play``. The last case here is why:
+    a stored scene starts a fight by being posted to ``encounter.create``, so
+    there is exactly one code path into a fight and a scene cannot become a
+    second, quieter one.
+    """
+
+    def test_list_is_empty_before_anything_is_saved(self, editor: Editor) -> None:
+        response = editor.request("GET", "/api/v1/scenes")
+        assert response.status == 200
+        assert response.json() == {"scenes": []}
+
+    def test_put_creates_gets_match_and_the_listing_names_it(
+        self, editor: Editor
+    ) -> None:
+        created = editor.put_scene("ford", scene_payload())
+        assert created.status == 201, created.body
+        answer = created.json()
+        assert answer["saved"] is True
+        assert answer["scene_id"] == "ford"
+        assert answer["warnings"] == []
+        sha256 = answer["sha256"]
+        assert created.headers["ETag"] == f'"{sha256}"'
+
+        fetched = editor.request("GET", "/api/v1/scenes/ford")
+        assert fetched.status == 200
+        assert fetched.headers["ETag"] == f'"{sha256}"'
+        assert fetched.json() == scene_payload()
+
+        listing = editor.request("GET", "/api/v1/scenes").json()
+        assert [entry["id"] for entry in listing["scenes"]] == ["ford"]
+        assert listing["scenes"][0]["name"] == "Ambush at the ford"
+        assert listing["scenes"][0]["combatants"] == 2
+
+    def test_a_write_from_a_stale_read_is_refused_rather_than_merged(
+        self, editor: Editor
+    ) -> None:
+        first = editor.put_scene("ford", scene_payload()).json()["sha256"]
+        moved = {**scene_payload(), "name": "Ambush, second thoughts"}
+        assert editor.put_scene("ford", moved, if_match=f'"{first}"').status == 200
+
+        stale = editor.put_scene("ford", scene_payload(), if_match=f'"{first}"')
+        assert_problem(stale, 409, "has advanced since you read it")
+        assert editor.request("GET", "/api/v1/scenes/ford").json()["name"] == (
+            "Ambush, second thoughts"
+        )
+
+    def test_a_put_with_no_if_match_is_refused_before_anything_is_written(
+        self, editor: Editor
+    ) -> None:
+        response = editor.request(
+            "PUT", "/api/v1/scenes/ford", json_body=scene_payload()
+        )
+        assert_problem(response, 428, "If-Match is required")
+        assert editor.request("GET", "/api/v1/scenes").json() == {"scenes": []}
+
+    def test_creating_under_a_hash_nobody_has_read_is_refused(
+        self, editor: Editor
+    ) -> None:
+        response = editor.put_scene("ford", scene_payload(), if_match=f'"{"a" * 64}"')
+        assert_problem(response, 409, "there is no saved scene 'ford' to match against")
+
+    def test_an_invalid_envelope_is_refused_and_names_the_key(
+        self, editor: Editor
+    ) -> None:
+        headless = scene_payload()
+        del headless["combatants"]
+        assert_problem(editor.put_scene("ford", headless), 400, "'combatants' is required")
+        assert editor.request("GET", "/api/v1/scenes").json() == {"scenes": []}
+
+    def test_an_unknown_scene_is_a_404_naming_what_is_there(
+        self, editor: Editor
+    ) -> None:
+        editor.put_scene("ford", scene_payload())
+        assert_problem(
+            editor.request("GET", "/api/v1/scenes/crypt"), 404, "scenes here: ford"
+        )
+
+    def test_validation_reads_this_launchs_maps_and_stores_nothing(
+        self, editor: Editor
+    ) -> None:
+        """The one check that needs a second directory, over the wire.
+
+        The service takes the known map ids as an argument; this is the case
+        that says the adapter passes *this server's* maps directory rather than
+        whatever the process happens to be standing in.
+        """
+        named = {**scene_payload(), "map_id": "editor-chamber"}
+        before = editor.request("POST", "/api/v1/scenes/validate", json_body=named)
+        assert before.status == 200
+        assert before.json()["ok"] is False
+        assert any(
+            "no saved map 'editor-chamber'" in entry["problem"]
+            for entry in before.json()["errors"]
+        )
+
+        editor.put_map("editor-chamber", payload())
+        after = editor.request("POST", "/api/v1/scenes/validate", json_body=named)
+        assert after.json() == {"ok": True, "errors": [], "warnings": []}
+        # Validation is not a write: nothing was stored on the way through.
+        assert editor.request("GET", "/api/v1/scenes").json() == {"scenes": []}
+
+    def test_a_combatant_spec_is_the_fights_business_not_the_scenes(
+        self, editor: Editor
+    ) -> None:
+        """A draft that will not start is still a draft, and saves.
+
+        ``encounter.create`` is the one owner of what a combatant is, so it is
+        the one that refuses this — at Play, in its own words. The scene layer
+        holding a second copy of that judgement is the duplication the design
+        rejected.
+
+        The chain is *walked* rather than described: the draft is PUT, read
+        back over HTTP, and the roster posted to the fight is the one GET
+        answered. Posting a second copy hand-built here would assert nothing
+        about storage — a scene service that quietly rewrote what it stored
+        would satisfy that test and fails this one.
+        """
+        broken = {"team": "party", "ac": 16}
+        unbuildable = {**scene_payload(), "combatants": [broken, dict(GOBLIN)]}
+        assert editor.put_scene("draft", unbuildable).status == 201
+
+        stored = editor.request("GET", "/api/v1/scenes/draft").json()
+        assert stored["combatants"] == [broken, dict(GOBLIN)], stored
+
+        refused = editor.request(
+            "POST", "/api/v1/encounters", json_body={"combatants": stored["combatants"]}
+        )
+        # Named rather than merely refused, and the stored roster is two long,
+        # so what comes back is the *spec* being judged and not the arity.
+        assert_problem(refused, 400, "combatant spec is missing 'name'")
+
+    def test_a_saved_scene_starts_the_fight_it_describes(self, editor: Editor) -> None:
+        """Play is a POST of the stored body, which is why there is no scene.play.
+
+        Read back over HTTP and handed to ``encounter.create`` unchanged but for
+        the label around it — one code path into a fight, and this is the proof
+        that the body a scene stores is one that path accepts.
+        """
+        editor.put_scene("ford", scene_payload())
+        stored = editor.request("GET", "/api/v1/scenes/ford").json()
+
+        body = {
+            key: stored[key]
+            for key in ("combatants", "seed", "movement_rule")
+            if key in stored
+        }
+        started = editor.request("POST", "/api/v1/encounters", json_body=body)
+        assert started.status == 201, started.body
+        assert started.json()["seed"] == stored["seed"]
+        assert sorted(started.json()["state"]["order"]) == sorted(
+            str(one["label"] if "label" in one else one["name"])
+            for one in stored["combatants"]
+        )
+
+    def test_there_is_no_play_route_and_that_is_the_design(
+        self, editor: Editor
+    ) -> None:
+        editor.put_scene("ford", scene_payload())
+        assert_problem(
+            editor.request("POST", "/api/v1/scenes/ford/play", json_body={}),
+            404,
+            "no route for /api/v1/scenes/ford/play",
+        )
+        assert not [
+            route for route in routes.api_routes() if route.operation == "scene.play"
+        ]

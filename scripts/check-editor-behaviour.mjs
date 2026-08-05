@@ -179,6 +179,7 @@ function inlineScript(html, source, marker) {
 }
 
 const rendererSrc = read("renderer.js");
+const playSrc = read("play.js");
 const editorHtml = read("editor.html");
 const viewerHtml = read("viewer.html");
 const homeHtml = read("home.html");
@@ -195,6 +196,13 @@ const animatedFamilies = JSON.parse(readFileSync(path.join(
   REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
   "animated-event-families.json"
 ), "utf8"));
+/* The playtest pregens, read rather than retyped. Each member's `sheet` is a
+ * combatant spec `encounter.create` already accepts — which is the whole claim
+ * the roster cases make about the specs the editor carries, so a spec invented
+ * here would be checking the harness against itself. */
+const pregens = JSON.parse(readFileSync(path.join(
+  REPO_ROOT, "souroldgeezer-fivee-sim", "skills", "playtest", "assets", "pregens.json"
+), "utf8"));
 
 /* --- preflight ------------------------------------------------------------
  * Everything below drives the pages through named element ids and named
@@ -209,6 +217,11 @@ const EDITOR_IDS = [
   "provenance", "dlg-resize", "dlg-resize-go", "rs-width", "rs-height", "rs-anchor",
   "rs-fill", "door-config", "door-orientation", "door-hinge", "door-swing",
   "door-linked", "facing-config", "feature-facing", "map-compass",
+  "toolbar", "panel", "mode-edit", "mode-play", "play-panel", "play-root", "play-note",
+  "content-status", "content-paths", "btn-content-load", "btn-content-refresh",
+  "catalog-query", "btn-catalog-search", "catalog-results",
+  "roster-list", "roster-team", "roster-spec", "btn-roster-apply", "btn-roster-remove",
+  "btn-roster-add", "btn-roster-spawn",
 ];
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
@@ -445,6 +458,13 @@ function makePage(options) {
   };
   documentStub.visibilityState = "visible";
   documentStub.body = new El("body");
+  /* Where a stylesheet goes. play.js injects its own look rather than leaving
+     it in editor.html, so without a head to append to, the driver throws on
+     start() and every case in every play suite fails at once — and the two
+     elements are kept apart on purpose, because "renders into the root it was
+     handed and nowhere else" is a claim about `body` that a shared stub would
+     make unfalsifiable. */
+  documentStub.head = new El("head");
 
   const store = new Map();
   const requests = [];
@@ -2482,9 +2502,12 @@ const RESIZE_MAP = {
   provenance: { generator: "hand", seed: 4, params: {}, edited: false, source: "test" },
 };
 
-function makeEditorPage() {
+function makeEditorPage(options) {
+  const settings = options || {};
   const El = makeElementClass(() => null);
-  const tools = ["pan", "brush", "rect", "line", "fill", "feature", "height"].map((name) => {
+  const tools = [
+    "pan", "brush", "rect", "line", "fill", "feature", "height", "place", "erase",
+  ].map((name) => {
     const el = new El("button");
     el.dataset.tool = name;
     el.className = "tool";
@@ -2503,10 +2526,40 @@ function makeEditorPage() {
   };
   const page = makePage({
     canvasIds: ["map"],
-    config: { token: "harness", apiBase: "/api", version: "test" },
+    config: settings.config === undefined
+      ? { token: "harness", apiBase: "/api", version: "test" } : settings.config,
     selectAll,
+    manualAnimationFrames: settings.manualAnimationFrames,
   });
+  /* Before the script runs, unlike every other page here: the editor asks the
+   * server what content is loaded as part of booting, so a reply installed
+   * afterwards would arrive too late to be the one that answer came from. */
+  if (settings.reply) { page.reply = settings.reply; }
+  /* The shipped driver, in the page's own sandbox — the branch editor.html
+   * takes when the script is already there ("served with the page, or inlined
+   * by an export"), so no tag is asked for and the real FiveePlay is what
+   * enterPlay() finds. Opt-in, because the suites that check what a missing
+   * driver does need it missing. */
+  if (settings.withPlayDriver) { page.run(playSrc); }
   page.run(inlineScript(editorHtml, "editor.html", "function loadDocument("));
+  page.tool = (name) => {
+    const found = tools.find((each) => each.dataset.tool === name);
+    if (!found) { throw new Error("this harness defines no " + name + " tool button"); }
+    return found;
+  };
+  /* A click that does not pan, which is how the page picks a square: pointer
+   * down and up on the same one. Read off the last frame's camera rather than
+   * assumed, so it keeps working whatever fitView chose. */
+  page.clickCell = (x, y) => {
+    const view = page.last().view;
+    const at = {
+      clientX: (x - view.x) * view.scale + view.scale / 2,
+      clientY: (y - view.y) * view.scale + view.scale / 2,
+      button: 0, pointerId: 1,
+    };
+    page.element("map").dispatch("pointerdown", at);
+    page.element("map").dispatch("pointerup", at);
+  };
   page.rows = () => page.element("fixture-list").children;
   page.boxFor = (id) => {
     const row = page.rows().find(
@@ -3123,6 +3176,1452 @@ await suite("editor.html: the resize dialog", "the page sandbox in makePage()", 
   }
   check("no prototype was polluted along the way", ({}).polluted === undefined,
     "Object.prototype carries `polluted`");
+});
+
+/* --- editor.html: modes, content and the roster --------------------------- */
+
+/* A map whose author left two spawn hints. They are *suggested placements* and
+ * nothing more — map_document.py is deliberately stateless about creatures — so
+ * the roster reads them and never writes back through them. The team on each
+ * one is the hint the author meant it to carry. */
+const ROSTER_MAP = {
+  format: "fivee-sim-map",
+  format_version: 1,
+  name: "muster yard",
+  grid: { width: 8, height: 6, cell_feet: 5 },
+  legend: { ".": "floor", "#": "wall" },
+  tiles: ["########", "#......#", "#......#", "#......#", "#......#", "########"],
+  features: [
+    { id: "spawn-party", kind: "spawn", at: [1, 1], team: "party" },
+    { id: "spawn-foes", kind: "spawn", at: [6, 4], team: "monsters" },
+  ],
+  provenance: { generator: "hand", seed: 9, params: {}, edited: false, source: "test" },
+};
+const ROSTER_MAP_BYTES = JSON.stringify(ROSTER_MAP, null, 2) + "\n";
+
+/* Shaped as `content_ops.status` answers: the generation, what was configured,
+ * and one entry per loaded pack carrying the keys PackInfo.as_dict writes. */
+const CONTENT_STATUS = {
+  generation: 3,
+  configured_paths: ["/packs/goblins.json"],
+  builtin: "include",
+  counts: { creatures: 42, spells: 9, items: 4, conditions: 15, terrain: 6 },
+  packs: [
+    { label: "bundled", level: "srd", pack: "srd-5.2.1", version: "5.2.1",
+      provenance: "SRD 5.2.1", path: "", counts: { creatures: 40 } },
+    { label: "campaign", level: "custom", pack: "goblins", version: "1",
+      provenance: "hand", path: "/packs/goblins.json", counts: { creatures: 2 } },
+  ],
+  warnings: [],
+};
+
+const CATALOG_ANSWER = {
+  query: "gob", kind: "creature", simulation: null,
+  since: 0, limit: 10, total: 2, next_since: null,
+  results: [
+    { id: "1695-15-1-goblin", kind: "creature", name: "Goblin",
+      simulation: "executable", source: "SRD 5.2.1" },
+    { id: "1695-15-1-goblin-boss", kind: "creature", name: "Goblin Boss",
+      simulation: "reference_only", source: "SRD 5.2.1" },
+  ],
+};
+
+/* The script element the page builds when it goes looking for the driver. It
+ * appends to document.body, so the last child is the one it just asked for. */
+const driverTag = (page) => {
+  const kids = page.documentStub.body.children;
+  return kids.length ? kids[kids.length - 1] : null;
+};
+
+const PREGEN_SHEET = pregens.parties["level-1"].members[0].sheet;
+
+await suite("editor.html: the mode switch and the play seam",
+  "the page sandbox in makePage()", async () => {
+  const page = makeEditorPage();
+  await page.drop(copy(ROSTER_MAP));
+
+  /* 1. Edit is what the page is when it loads, said on the switch and in the
+   *    columns — not implied by a play panel nobody has revealed yet. */
+  check("the page boots in Edit and says so on the switch",
+    page.element("mode-edit").classList.contains("active")
+      && page.element("mode-play").classList.contains("active") === false,
+    show([page.element("mode-edit").classList.contains("active"),
+      page.element("mode-play").classList.contains("active")]));
+  check("Edit shows the authoring columns and hides the play panel",
+    page.element("toolbar").hidden === false && page.element("panel").hidden === false
+      && page.element("play-panel").hidden === true,
+    show([page.element("toolbar").hidden, page.element("panel").hidden,
+      page.element("play-panel").hidden]));
+  check("and nothing has gone looking for the play driver yet",
+    driverTag(page) === null, show(driverTag(page) && driverTag(page).src));
+
+  /* 2. Entering Play hands the driver its context, once. */
+  const calls = [];
+  page.sandbox.FiveePlay = {
+    start: (context) => { calls.push(["start", context]); },
+    stop: () => { calls.push(["stop", null]); },
+  };
+  page.element("mode-play").click();
+  await flush();
+  check("entering Play starts the driver exactly once",
+    calls.length === 1 && calls[0][0] === "start", show(calls.map((each) => each[0])));
+  check("and asks for no script, the driver being already present",
+    driverTag(page) === null, show(driverTag(page) && driverTag(page).src));
+  check("Play hides the authoring columns and reveals the play panel",
+    page.element("toolbar").hidden === true && page.element("panel").hidden === true
+      && page.element("play-panel").hidden === false,
+    show([page.element("toolbar").hidden, page.element("panel").hidden,
+      page.element("play-panel").hidden]));
+
+  /* 3. The context is the seam, so every handle in it is checked for being the
+   *    real thing rather than merely present. */
+  const context = calls[0][1];
+  check("the driver is given the panel element it owns, not the whole page",
+    context.root === page.element("play-root"), show(context.root && context.root.id));
+  check("and the page's own request helper, renderer and canvas",
+    typeof context.request === "function" && context.renderer === page.renderer
+      && context.canvas === page.element("map"),
+    show([typeof context.request, context.renderer === page.renderer,
+      context.canvas === page.element("map")]));
+  check("and the live camera, so it draws where the author was looking",
+    context.view === page.last().view, show(context.view));
+  check("and a hit test that answers in map squares",
+    typeof context.cellAt === "function"
+      && show(context.cellAt(
+        (3 - context.view.x) * context.view.scale + context.view.scale / 2,
+        (2 - context.view.y) * context.view.scale + context.view.scale / 2
+      )) === show([3, 2]),
+    show(typeof context.cellAt === "function" ? context.cellAt(0, 0) : null));
+  check("and the status line and the token channel, as functions",
+    typeof context.setStatus === "function" && typeof context.setTokens === "function",
+    show([typeof context.setStatus, typeof context.setTokens]));
+
+  /* 4. The token channel really is the renderer's, so the driver never needs a
+   *    drawing path of its own. */
+  context.setTokens([{ at: [3, 2], label: "Gb", team: "monsters" }]);
+  check("a driver's tokens reach the renderer's own token channel",
+    (page.last().overlays.tokens || []).length === 1
+      && page.last().overlays.tokens[0].label === "Gb",
+    show(page.last().overlays.tokens));
+  context.setStatus("the goblin goes first", "ok");
+  check("and its status line reaches the footer the editor already has",
+    page.element("status").textContent === "the goblin goes first",
+    page.element("status").textContent);
+
+  /* 5. Leaving Play stops the driver, clears its picture, and — the claim
+   *    Decision 3 is actually about — leaves the document untouched. */
+  page.element("mode-edit").click();
+  check("leaving Play stops the driver exactly once",
+    calls.length === 2 && calls[1][0] === "stop", show(calls.map((each) => each[0])));
+  check("and takes the driver's tokens off the canvas",
+    page.last().overlays.tokens === undefined, show(page.last().overlays.tokens));
+  check("and the columns come back",
+    page.element("toolbar").hidden === false && page.element("play-panel").hidden === true,
+    show([page.element("toolbar").hidden, page.element("play-panel").hidden]));
+  check("the document is byte-identical across Play and back",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 200));
+
+  /* 6. The scene handed over is a copy. A driver is free to do what it likes
+   *    with what it was given; none of it may reach the buffer being edited. */
+  context.scene.combatants.push({ name: "smuggled", team: "party" });
+  context.scene.map.name = "vandalised";
+  page.element("mode-play").click();
+  await flush();
+  const second = calls[calls.length - 1][1];
+  check("a scene the driver scribbled on does not become the next one",
+    second.scene.combatants.length === 0 && second.scene.map.name === "muster yard",
+    show([second.scene.combatants.length, second.scene.map.name]));
+  check("and the document still is what it was",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 200));
+});
+
+await suite("editor.html: Play without the driver", "the page sandbox in makePage()",
+  async () => {
+  const page = makeEditorPage();
+  await page.drop(copy(ROSTER_MAP));
+
+  page.element("mode-play").click();
+  await flush();
+  const tag = driverTag(page);
+  check("entering Play asks for the extracted driver by its served route",
+    tag !== null && tag.src === "/assets/play.js", show(tag && tag.src));
+
+  tag.dispatch("error", {});
+  await flush();
+  check("a driver that never arrives is reported, naming what is missing",
+    page.element("play-note").textContent.indexOf("/assets/play.js") !== -1,
+    page.element("play-note").textContent);
+  check("and nothing was drawn for a fight that never started",
+    page.last().overlays.tokens === undefined, show(page.last().overlays.tokens));
+
+  page.element("mode-edit").click();
+  check("Edit is still there to go back to",
+    page.element("toolbar").hidden === false && page.element("play-panel").hidden === true,
+    show([page.element("toolbar").hidden, page.element("play-panel").hidden]));
+  check("and the document survived the whole attempt",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 200));
+
+  page.element("mode-play").click();
+  await flush();
+  check("a second try does not ask the server a second time",
+    page.documentStub.body.children.length === 1,
+    show(page.documentStub.body.children.length));
+});
+
+await suite("editor.html: the content panel", "the page sandbox in makePage()", async () => {
+  let generation = CONTENT_STATUS.generation;
+  const page = makeEditorPage({
+    reply: (url, init) => {
+      const path_ = String(url);
+      if (path_.indexOf("/api/content/configuration") === 0) {
+        const asked = JSON.parse((init || {}).body || "{}");
+        if ((asked.paths || []).indexOf("/packs/broken.json") !== -1) {
+          return { status: 400, body: { detail: "content not changed. no such pack" } };
+        }
+        generation += 1;
+        return {
+          status: 200,
+          body: Object.assign({ changed: true }, CONTENT_STATUS, {
+            generation, configured_paths: asked.paths,
+          }),
+        };
+      }
+      if (path_.indexOf("/api/content") === 0) {
+        return { status: 200, body: CONTENT_STATUS };
+      }
+      if (path_.indexOf("/api/catalog/search") === 0) {
+        return { status: 200, body: CATALOG_ANSWER };
+      }
+      return { status: 200, body: { ok: true, maps_dir: "/tmp/maps" } };
+    },
+  });
+  await flush();
+
+  /* 1. What is loaded, and from where — asked for on the path routes.py
+   *    declares, and reported from the answer rather than from the markup. */
+  check("the editor asks the server what content is loaded",
+    page.requests.some((each) => each.method === "GET" && each.url === "/api/content"),
+    show(page.requests.map((each) => each.method + " " + each.url)));
+  const loaded = page.element("content-status").textContent;
+  check("and names the generation, every pack, and where each came from",
+    loaded.indexOf("generation 3") !== -1 && loaded.indexOf("goblins") !== -1
+      && loaded.indexOf("/packs/goblins.json") !== -1 && loaded.indexOf("srd-5.2.1") !== -1,
+    loaded);
+  check("a bundled pack says so rather than showing an empty path",
+    loaded.indexOf("built in") !== -1, loaded);
+
+  /* 2. Loading a campaign's packs. Split and trimmed here, because a path list
+   *    typed into one box is what a user has. */
+  page.element("content-paths").value = " /packs/ogres.json , /packs/goblins.json ";
+  page.element("btn-content-load").click();
+  await flush();
+  const posted = page.requests.filter((each) => each.method === "POST").pop();
+  check("Load posts the split, trimmed paths to the configuration route",
+    posted !== undefined && posted.url === "/api/content/configuration"
+      && show(posted.body.paths) === show(["/packs/ogres.json", "/packs/goblins.json"]),
+    show(posted));
+  check("and the panel re-reads itself from the answer, not from what it asked for",
+    page.element("content-status").textContent.indexOf("generation 4") !== -1,
+    page.element("content-status").textContent);
+
+  /* 3. A refusal is the server's own words. "It failed" would leave a user
+   *    guessing which of their paths was wrong. */
+  page.element("content-paths").value = "/packs/broken.json";
+  page.element("btn-content-load").click();
+  await flush();
+  check("a refused load reports the server's detail rather than its status",
+    page.element("status").className === "error"
+      && page.element("status").textContent.indexOf("no such pack") !== -1,
+    page.element("status").textContent);
+  check("and leaves the panel showing the content that is still loaded",
+    page.element("content-status").textContent.indexOf("generation 4") !== -1,
+    page.element("content-status").textContent);
+
+  /* 4. Browsing creatures. */
+  page.element("catalog-query").value = "gob";
+  page.element("btn-catalog-search").click();
+  await flush();
+  const search = page.requests.filter(
+    (each) => String(each.url).indexOf("/api/catalog/search") === 0).pop();
+  check("Search asks the catalog route for creatures matching the query",
+    search !== undefined && search.url.indexOf("query=gob") !== -1
+      && search.url.indexOf("kind=creature") !== -1, show(search));
+  const results = page.element("catalog-results").children.map((row) => row.textContent);
+  check("every result is listed, with the name a spec would have to name",
+    results.length === 2 && results[0].indexOf("Goblin") === 0, show(results));
+  check("and one a fight cannot run is marked as such where it is chosen",
+    results[1].indexOf("reference only") !== -1, show(results));
+
+  /* 5. A dropped connection is a status line, not an unhandled rejection —
+   *    the request helper's own branch, reached through the new panel. */
+  page.sandbox.fetch = () => Promise.reject(new Error("connection refused"));
+  page.element("btn-content-refresh").click();
+  await settle();
+  check("a dropped connection becomes a status line rather than a hung page",
+    page.element("status").className === "error"
+      && page.element("status").textContent.indexOf("unreachable") !== -1,
+    page.element("status").textContent);
+});
+
+await suite("editor.html: the roster is the scene, never the map",
+  "the page sandbox in makePage()", async () => {
+  const page = makeEditorPage({
+    reply: (url) => {
+      if (String(url).indexOf("/api/catalog/search") === 0) {
+        return { status: 200, body: CATALOG_ANSWER };
+      }
+      if (String(url).indexOf("/api/content") === 0) {
+        return { status: 200, body: CONTENT_STATUS };
+      }
+      return { status: 200, body: { ok: true, maps_dir: "/tmp/maps" } };
+    },
+  });
+  await page.drop(copy(ROSTER_MAP));
+  await flush();
+
+  /* The scene is read through the seam, because the seam is the only thing
+   * entitled to it: entering Play and leaving again hands the stub whatever
+   * the page would have sent an engine. */
+  const started = [];
+  page.sandbox.FiveePlay = { start: (c) => started.push(c), stop: () => {} };
+  const sceneNow = async () => {
+    page.element("mode-play").click();
+    await flush();
+    page.element("mode-edit").click();
+    return started[started.length - 1].scene;
+  };
+
+  /* 1. Placing a searched creature on a square. */
+  page.element("catalog-query").value = "gob";
+  page.element("btn-catalog-search").click();
+  await flush();
+  page.element("catalog-results").children[0].click();
+  page.element("roster-team").value = "monsters";
+  page.tool("place").click();
+  page.clickCell(3, 2);
+
+  let scene = await sceneNow();
+  check("a placed creature becomes one combatant of the scene",
+    scene.combatants.length === 1, show(scene.combatants));
+  check("named as encounter.create resolves a loaded creature, on the team chosen",
+    scene.combatants[0].creature === "Goblin" && scene.combatants[0].team === "monsters",
+    show(scene.combatants[0]));
+  check("and positioned in feet, not squares — five to the square",
+    show(scene.combatants[0].position) === show([15, 10]),
+    show(scene.combatants[0].position));
+  check("the placement is visible on the canvas as a token",
+    (page.last().overlays.tokens || []).length === 1
+      && show(page.last().overlays.tokens[0].at) === show([3, 2]),
+    show(page.last().overlays.tokens));
+  check("and the roster panel lists it",
+    page.element("roster-list").textContent.indexOf("Goblin") !== -1,
+    page.element("roster-list").textContent);
+
+  /* 2. An unsaved map travels whole; exactly one of map and map_id. */
+  check("an unsaved map rides along inside the scene",
+    scene.map !== undefined && scene.map.name === "muster yard"
+      && scene.map_id === undefined,
+    show([scene.map && scene.map.name, scene.map_id]));
+
+  /* 3. Spawn features are suggestions. Taking one gives its square and the
+   *    team its author meant, and takes nothing away from the document. */
+  page.element("catalog-results").children[0].click();
+  page.element("btn-roster-spawn").click();
+  scene = await sceneNow();
+  check("placing at a spawn hint takes the hint's square, in feet",
+    scene.combatants.length === 2 && show(scene.combatants[1].position) === show([5, 5]),
+    show(scene.combatants[1]));
+  check("and the team the author wrote on the hint, over the panel's own",
+    scene.combatants[1].team === "party", show(scene.combatants[1]));
+  page.element("catalog-results").children[0].click();
+  page.element("btn-roster-spawn").click();
+  scene = await sceneNow();
+  check("a second one takes the next free hint rather than stacking",
+    show(scene.combatants[2].position) === show([30, 20]), show(scene.combatants[2]));
+
+  /* 4. A described spec — the shape the playtest pregens already ship — is
+   *    carried into the scene exactly as written. */
+  page.element("roster-list").children[0].click();
+  page.element("roster-spec").value = JSON.stringify(PREGEN_SHEET, null, 2);
+  page.element("btn-roster-apply").click();
+  scene = await sceneNow();
+  check("a pregen's own sheet round-trips through the spec editor unchanged",
+    show(scene.combatants[0]) === show(PREGEN_SHEET), show(scene.combatants[0]));
+
+  page.element("roster-spec").value = "{not json";
+  page.element("btn-roster-apply").click();
+  scene = await sceneNow();
+  check("a spec that is not JSON is refused, and the entry is left alone",
+    page.element("status").className === "error"
+      && show(scene.combatants[0]) === show(PREGEN_SHEET),
+    page.element("status").textContent);
+
+  page.element("btn-roster-remove").click();
+  scene = await sceneNow();
+  check("removing an entry takes it out of the scene and nothing else",
+    scene.combatants.length === 2
+      && scene.combatants.every((each) => each.name !== PREGEN_SHEET.name),
+    show(scene.combatants));
+
+  /* 5. The constraint the whole panel exists under. */
+  check("the document the Download button writes never learned any of this",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 300));
+  page.reply = () => ({ status: 200, body: { provenance: {}, sha256: "x", warnings: [] } });
+  page.element("btn-save").click();
+  await settle();
+  const put = page.requests.filter((each) => each.method === "PUT").pop();
+  check("and a save after building a whole roster does not stamp the map as edited",
+    put !== undefined && put.body.provenance.edited === false,
+    show(put && put.body.provenance));
+  check("the spawn hints are still exactly the two the author drew",
+    put !== undefined && show(put.body.features) === show(ROSTER_MAP.features),
+    show(put && put.body.features));
+
+  /* 6. A different map is a different roster: leaving one behind would put
+   *    the last fight's combatants on a map that never heard of them. */
+  await page.drop(copy(FLAT_MAP));
+  scene = await sceneNow();
+  check("opening another map empties the roster",
+    scene.combatants.length === 0, show(scene.combatants));
+});
+
+/* Its own suite rather than a trailing case, for the reason the landing page's
+ * offline check is: a page opened from disk that reached for CONFIG would throw
+ * at the first null, and a suite that throws takes its remaining cases with it. */
+await suite("editor.html: opened from disk, with no server",
+  "the page sandbox in makePage()", async () => {
+  const page = makeEditorPage({ config: null });
+  await page.drop(copy(ROSTER_MAP));
+
+  check("with no injected config the page issues no request at all",
+    page.requests.length === 0, show(page.requests));
+  check("and the content panel says why it has nothing to report",
+    page.element("content-status").textContent.indexOf("no server attached") === 0,
+    page.element("content-status").textContent);
+  check("Play stands down: there is no engine to run a fight against",
+    page.element("mode-play").disabled === true,
+    show(page.element("mode-play").disabled));
+  check("and every control that needs the API is down with it",
+    ["btn-content-load", "btn-content-refresh", "btn-catalog-search"].every(
+      (id) => page.element(id).disabled === true),
+    show(["btn-content-load", "btn-content-refresh", "btn-catalog-search"].map(
+      (id) => page.element(id).disabled)));
+
+  page.element("mode-play").click();
+  await flush();
+  check("clicking Play anyway changes nothing and asks for no driver",
+    page.element("play-panel").hidden === true && driverTag(page) === null
+      && page.requests.length === 0,
+    show([page.element("play-panel").hidden, page.requests.length]));
+
+  /* The half that still works with no server at all, which is the point of the
+   * serverless mode: a described combatant needs no catalog to look anything
+   * up, and the map's own spawn hints still say where the author meant people
+   * to stand. */
+  page.element("roster-team").value = "party";
+  page.element("btn-roster-add").click();
+  check("a combatant can still be described by hand, with the four keys a spec needs",
+    show(JSON.parse(page.element("roster-spec").value))
+      === show({ name: "new combatant", team: "party", ac: 10, max_hp: 1 }),
+    page.element("roster-spec").value);
+  page.element("btn-roster-spawn").click();
+  check("and the map's own spawn hints still place it",
+    page.element("roster-list").textContent.indexOf("[1,1]") !== -1,
+    page.element("roster-list").textContent);
+  check("and the document is still exactly the one that was opened",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 200));
+});
+
+/* --- play.js -------------------------------------------------------------
+ * The extracted play driver, driven the way editor.html drives it: handed a
+ * root element, a scene, a request function, the renderer, the canvas, a hit
+ * test and two output channels, and nothing else. Most of what follows builds
+ * that context here rather than through the page, because that *is* the seam —
+ * the editor suites above already check, handle by handle, that the page hands
+ * over exactly these. The last suite closes the loop through the real page.
+ *
+ * The fake engine below answers the five routes the driver calls. It is a stub
+ * and says so: the shapes are the ones `service/encounters.py` and
+ * `Encounter.brief_of` in `model/encounter.py` actually return, but nothing
+ * here runs a rule. What these cases can see is what the *driver* decided —
+ * which request it made, what it drew, what it posted, and what it said — and
+ * that is the whole of what a driver is.
+ *
+ * A stub's one real hazard is agreeing with the driver about a shape the engine
+ * has never sent, which has bitten this file twice — `type` for an event's
+ * `kind`, and a flat `combatants` list with a `health_band` on it for a brief
+ * that answers `you`, `allies` and `enemies`. So the brief below is *derived*
+ * rather than typed: one cast, filtered through the allowlist the model
+ * publishes, with the distance and the band computed the way the engine
+ * computes them. The key sets it produces were checked against a real
+ * `encounter.brief` answer — see the comment on BRIEF_ENEMY_KEYS.
+ */
+
+/* An element the driver built, found by walking the subtree it owns. Never
+ * document.getElementById: the stub DOM invents an element on a miss, so a
+ * lookup by id would answer with a different object than the one the driver
+ * appended and every assertion after it would read a blank. */
+function findById(element, id) {
+  if (element.id === id) { return element; }
+  for (const child of element.children) {
+    const hit = findById(child, id);
+    if (hit) { return hit; }
+  }
+  return null;
+}
+
+/* The ten kinds as the shipped route table declares them. Written here only so
+ * a case can substitute a *different* set and prove the bar was built from
+ * whatever the contract answered — the driver must never have seen this list. */
+const DECLARED_KINDS = [
+  "attack", "cast", "move", "dash", "disengage", "dodge",
+  "use_item", "interact", "stand", "surrender",
+];
+
+/* Three, and the third one earns its place twice over. `allies` is a whole
+ * branch of the brief's shape, and a two-creature fight with one opponent in it
+ * never enters it — a driver that dropped `allies` on the floor would draw the
+ * same picture. And Brand rolls *above* the seat that reads him, so the rail a
+ * player is shown cannot be the order the brief happens to list its keys in. */
+const PLAY_SCENE = {
+  combatants: [
+    { name: "Brand", team: "party", ac: 14, max_hp: 9, position: [10, 5] },
+    { name: "Thora", team: "party", ac: 15, max_hp: 12, position: [5, 5] },
+    { name: "Grub", team: "monsters", ac: 13, max_hp: 7, position: [30, 20] },
+  ],
+  map: ROSTER_MAP,
+};
+
+const PLAY_TURN_STATE = {
+  movement_left: 30, action_used: false, attacks_left: 1,
+  interaction_used: false, bonus_action_used: false,
+};
+
+/* Shaped as encounter.state answers: every creature reported whole, in the
+ * order they act. This is the one cast in this file; the brief below is a
+ * projection of it rather than a second set of creatures. */
+function gmCombatants() {
+  return [
+    { name: "Brand", team: "party", position: [10, 5], hp: 9, max_hp: 9, ac: 14,
+      initiative: 20, conditions: [], present: true, conscious: true, dying: false,
+      dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Quarterstaff"], spells: [], items: {},
+      spell_slots: {} },
+    { name: "Thora", team: "party", position: [5, 5], hp: 12, max_hp: 12, ac: 15,
+      initiative: 18, conditions: [], present: true, conscious: true, dying: false,
+      dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Longsword"], spells: ["magic missile"],
+      items: {}, spell_slots: {} },
+    { name: "Grub", team: "monsters", position: [30, 20], hp: 3, max_hp: 7, ac: 13,
+      initiative: 9, conditions: ["prone"], present: true, conscious: true,
+      dying: false, dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Scimitar"], spells: [], items: {},
+      spell_slots: {} },
+  ];
+}
+
+/* Every key `ENEMY_VISIBLE_KEYS` admits in `model/encounter.py`, which is what
+ * `Encounter.brief_of` filters the other side down to. Written as a *filter*
+ * rather than as a second hand-typed creature, because a hand-typed enemy is a
+ * place for a field to survive in this file that the shipped engine strips —
+ * and this stub's previous enemy carried a `health_band` no engine has ever
+ * sent. Checked against a real answer: an `encounter.brief` taken over a
+ * three-creature fight returns exactly these keys on an enemy, plus the
+ * `distance` and `health` added below. */
+const BRIEF_ENEMY_KEYS = [
+  "name", "team", "position", "level", "elevation", "facing", "present",
+  "arrival_round", "conditions", "conscious", "dying", "dead", "stable",
+  "surrendered", "dodging", "disengaged", "initiative", "concentrating_on",
+];
+
+/* 5-5-5, which is the rule this stub's map declares: a diagonal step costs what
+ * a straight one costs, so the distance between two squares is the larger of
+ * the two offsets. Positions are feet on a five-foot grid, so the same
+ * arithmetic gives feet directly. */
+const feetApart = (from, to) => Math.max(
+  Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]));
+
+/* `health_band()` in `model/encounter.py`, over the same thresholds and to the
+ * vocabulary `HEALTH_BANDS` publishes. Reproduced as a function rather than
+ * typed beside each creature, so a stub enemy's band stays consistent with the
+ * hit points the brief is hiding — a band typed by hand is how a stub starts
+ * saying what the engine cannot. This one said "unhurt" for a release, which is
+ * not a band the engine has ever had a word for. */
+function healthBand(each) {
+  if (each.dead) { return "dead"; }
+  if (!each.conscious) { return "down"; }
+  const share = each.hp / each.max_hp;
+  if (share >= 1) { return "unharmed"; }
+  if (share >= 0.5) { return "hurt"; }
+  if (share >= 0.25) { return "badly hurt"; }
+  return "barely standing";
+}
+
+/* `Encounter.brief_of` for one seat, performed rather than transcribed: the
+ * asker comes back whole under `you`, their own side whole under `allies` with
+ * a distance added, and the other side filtered to BRIEF_ENEMY_KEYS with a
+ * distance and a health band in place of the sheet.
+ *
+ * Four things this shape does *not* carry, each of them a key the flat state
+ * has and the brief deliberately drops. `combatants`: the cast is sorted into
+ * sides, and a driver still reading the flat list draws nothing. `order`: it
+ * would name every creature in the fight, the undetected one included, so a
+ * seat's rail has to be rebuilt from the initiatives it can see.
+ * `movement_rule` and `ongoing_effects`: neither is classified, so neither is
+ * served. `turn_state` is present only on the asker's own turn, and `your_turn`
+ * is the fight's own answer to whether it is. */
+function briefFor(seat, everyone, round, turn) {
+  const you = everyone.find((each) => each.name === seat) || everyone[0];
+  const brief = {
+    as: seat,
+    round,
+    /* Nulled rather than named when an unseen creature is acting. Everyone in
+     * this stub's fight is visible to everyone else, so it is always the name —
+     * but the driver must not read this field as "not my turn" either way,
+     * which is what `your_turn` is for. */
+    turn,
+    your_turn: turn === seat,
+    over: false,
+    winner: null,
+    you: copy(you),
+    allies: [],
+    enemies: [],
+    map: { name: "muster yard", width: 8, height: 6, movement_rule: "5-5-5",
+      features: {} },
+  };
+  everyone.forEach((each) => {
+    if (each.name === seat) { return; }
+    const distance = feetApart(you.position, each.position);
+    if (each.team === you.team) {
+      brief.allies.push(Object.assign(copy(each), { distance }));
+      return;
+    }
+    const seen = {};
+    BRIEF_ENEMY_KEYS.forEach((key) => {
+      if (key in each) { seen[key] = copy(each[key]); }
+    });
+    brief.enemies.push(Object.assign(seen, { distance, health: healthBand(each) }));
+  });
+  if (brief.your_turn) { brief.turn_state = PLAY_TURN_STATE; }
+  return brief;
+}
+
+function playEngine(options) {
+  const settings = options || {};
+  const engine = {
+    id: "enc-play-1",
+    head: 1,
+    round: 1,
+    turn: settings.turn || "Thora",
+    kinds: settings.kinds || DECLARED_KINDS,
+    /* (url, body) -> a problem detail, or null to let the call through. The
+     * engine's refusals are the driver's to repeat word for word, so a case
+     * that wants to see one puts the words in here. */
+    refuse: settings.refuse || (() => null),
+    posted: [],
+    seen: [],
+  };
+  /* The GM's door: one flat list, every creature whole, and the running order
+   * named outright. `order` is the cast's own order, derived rather than typed
+   * beside it — a rail built from a hand-written order agrees with a list that
+   * was never rolled. */
+  engine.gmState = () => ({
+    round: engine.round, turn: engine.turn, movement_rule: "5-5-5",
+    over: false, winner: null,
+    order: gmCombatants().map((each) => each.name),
+    map: { name: "muster yard", width: 8, height: 6, movement_rule: "5-5-5",
+      features: {} },
+    turn_state: PLAY_TURN_STATE,
+    ongoing_effects: [],
+    combatants: gmCombatants(),
+  });
+  engine.briefOf = (seat) => briefFor(
+    seat, gmCombatants(), engine.round, engine.turn);
+  engine.etag = () => "head-" + engine.head;
+  engine.reply = (url, init) => {
+    const target = String(url);
+    const method = (init || {}).method || "GET";
+    const body = (init || {}).body ? JSON.parse(init.body) : null;
+    engine.seen.push(method + " " + target);
+    const detail = engine.refuse(target, body);
+    if (detail) { return { status: 400, body: { detail, title: "Bad Request" } }; }
+    /* Route on the path and read the chair off the query, because `as=` is now
+     * declared on the writes as well as on the read: routing on the whole URL
+     * would stop recognising `/actions` the moment a player's chair posted one.
+     * And a write that names a chair is answered that chair's brief, which is
+     * what service/encounters.py does since it stopped handing a player the
+     * fight whole. */
+    const route = target.split("?")[0];
+    const chair = /[?&]as=([^&]+)/.exec(target);
+    const answered = () => (chair
+      ? engine.briefOf(decodeURIComponent(chair[1]))
+      : engine.gmState());
+    if (target.indexOf("/openapi.json") !== -1) {
+      return { status: 200, body: { openapi: "3.1.1", paths: {
+        "/api/v1/encounters": { post: { operationId: "encounterCreate" } },
+        "/api/v1/encounters/{id}/actions": { post: {
+          operationId: "encounterAct",
+          requestBody: { content: { "application/json": { schema: {
+            type: "object",
+            properties: { kind: { type: "string", enum: engine.kinds } },
+          } } } },
+        } },
+      } } };
+    }
+    if (method === "POST" && /\/encounters$/.test(route)) {
+      engine.created = body;
+      engine.createdUrl = target;
+      return { status: 201, etag: engine.etag(),
+        body: { encounter_id: engine.id, seed: 20260805, state: answered() } };
+    }
+    if (method === "POST" && /\/actions$/.test(route)) {
+      engine.posted.push({ url: target, body, headers: (init || {}).headers || {} });
+      engine.head += 1;
+      /* The event shape the engine actually answers with: `kind` names what
+       * happened, and `detail` is absent from a chair's copy because
+       * Encounter.brief_events omits the GM's sentence rather than emptying it.
+       * This stub said `type` for a release and play.js read `type`, so the two
+       * agreed with each other and with nothing that ships — which is how "2
+       * events · undefined, undefined" reached the panel with this file green. */
+      return { status: 200, etag: engine.etag(),
+        body: { events: [
+          { kind: "attack", actor: engine.turn, target: "Grub", seq: 4, round: 1,
+            turn: engine.turn, data: { hit: true } },
+          { kind: "damage", actor: "", target: "Grub", seq: 5, round: 1,
+            turn: engine.turn, data: { amount: 6 } },
+        ], state: answered() } };
+    }
+    if (method === "POST" && /\/advance$/.test(route)) {
+      engine.posted.push({ url: target, body, headers: (init || {}).headers || {} });
+      engine.head += 1;
+      engine.turn = engine.turn === "Thora" ? "Grub" : "Thora";
+      return { status: 200, etag: engine.etag(),
+        body: { events: [], state: answered() } };
+    }
+    return { status: 200, etag: engine.etag(), body: answered() };
+  };
+  return engine;
+}
+
+/* The driver in a box: the context editor.html would build, assembled here so
+ * a case can read every channel the driver writes to. */
+function playHarness(options) {
+  const settings = options || {};
+  const engine = settings.engine || playEngine(settings);
+  const page = makePage({
+    canvasIds: ["map"],
+    config: { token: "harness", apiBase: "/api", version: "test" },
+    manualAnimationFrames: !!settings.manualAnimationFrames,
+  });
+  page.reply = engine.reply;
+  page.run(playSrc);
+  const driver = page.sandbox.FiveePlay;
+  if (!driver) { throw new Error("play.js defined no FiveePlay global in this context"); }
+  const view = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
+  const canvas = page.element("map");
+  const root = page.element("play-root");
+  const harness = { page, engine, driver, view, canvas, root, tokens: null, status: null };
+  /* editor.html's own request(), reproduced: prepend the injected apiBase,
+   * parse whatever came back, and never reject. */
+  const request = (method, path, body, headers) => {
+    const sent = Object.assign({ "X-Fivee-Editor-Token": "harness" }, headers || {});
+    const sending = { method, headers: sent };
+    if (body !== undefined) { sending.body = JSON.stringify(body); }
+    return page.sandbox.fetch("/api" + path, sending).then((response) =>
+      response.text().then((text) => {
+        let parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch (error) { parsed = null; }
+        return { status: response.status, headers: response.headers, json: parsed };
+      }));
+  };
+  harness.scene = settings.scene || copy(PLAY_SCENE);
+  harness.sceneBytes = JSON.stringify(harness.scene);
+  harness.context = {
+    root,
+    scene: harness.scene,
+    request,
+    renderer: page.renderer,
+    canvas,
+    view,
+    cellAt: (clientX, clientY) => page.renderer.cellAt(view, clientX, clientY),
+    setStatus: (text, cls) => { harness.status = { text: String(text), cls: cls || "" }; },
+    setTokens: (tokens) => { harness.tokens = tokens; },
+  };
+  harness.find = (id) => findById(root, id);
+  harness.text = (id) => {
+    const found = harness.find(id);
+    return found === null ? null : found.textContent;
+  };
+  harness.press = (id) => {
+    const found = harness.find(id);
+    if (!found) { throw new Error("the driver built no #" + id); }
+    found.click();
+  };
+  harness.actionButton = (kind) => (harness.find("play-actions") || { children: [] })
+    .children.find((each) => each.dataset.kind === kind) || null;
+  harness.kindsOffered = () => (harness.find("play-actions") || { children: [] })
+    .children.map((each) => each.dataset.kind);
+  /* A click on the battlefield, in squares — the same event a browser fires
+   * after a pointerup that did not drag. */
+  harness.clickCell = (x, y) => canvas.dispatch("click", {
+    clientX: x * view.scale + view.scale / 2,
+    clientY: y * view.scale + view.scale / 2,
+    button: 0,
+  });
+  harness.urls = () => page.requests.map((each) => each.method + " " + each.url);
+  harness.start = async () => { driver.start(harness.context); await flush(); };
+  harness.begin = async () => { harness.press("play-start"); await flush(); };
+  return harness;
+}
+
+await suite("play.js: the driver takes its whole world as an argument",
+  "the play sandbox in playHarness()", async () => {
+  const play = playHarness();
+  check("play.js defines FiveePlay and the two calls the seam names",
+    typeof play.driver.start === "function" && typeof play.driver.stop === "function",
+    show([typeof play.driver.start, typeof play.driver.stop]));
+
+  await play.start();
+  check("starting renders into the root it was handed and nowhere else",
+    play.root.children.length > 0 && play.page.documentStub.body.children.length === 0,
+    show([play.root.children.length, play.page.documentStub.body.children.length]));
+  check("and asks the served contract what an action may be, before any fight",
+    play.engine.seen.some((each) => each.indexOf("/openapi.json") !== -1),
+    show(play.engine.seen));
+  check("but starts no encounter until somebody presses Play",
+    play.engine.created === undefined, show(play.engine.seen));
+
+  /* The seats are the scene's own cast, so a chair can be taken before the
+   * first round rather than only once the engine has answered. */
+  const seats = play.find("play-seat").children.map((each) => each.value);
+  check("the chair picker offers the whole table and every combatant in the scene",
+    show(seats) === show(["", "Brand", "Thora", "Grub"]), show(seats));
+
+  await play.begin();
+  check("Play posts the scene to encounter.create",
+    play.engine.created !== undefined
+      && show(play.engine.created.combatants) === show(PLAY_SCENE.combatants),
+    show(play.engine.created));
+  check("and the scene it was handed is byte-identical afterwards",
+    JSON.stringify(play.scene) === play.sceneBytes,
+    JSON.stringify(play.scene).slice(0, 200));
+  /* `play-note-line` and not `play-note`: the second is editor.html's own, and
+   * a driver that reused the id would be two elements answering to one name. */
+  check("the seed the engine chose is reported, so the fight can be run again",
+    String(play.text("play-note-line")).indexOf("20260805") !== -1,
+    play.text("play-note-line"));
+
+  play.driver.stop();
+  check("stopping empties the panel it owns",
+    play.root.children.length === 0, show(play.root.children.length));
+  check("and the scene is still byte-identical across Play and back",
+    JSON.stringify(play.scene) === play.sceneBytes,
+    JSON.stringify(play.scene).slice(0, 200));
+});
+
+await suite("play.js: the fight, from the chair that runs it",
+  "the play sandbox in playHarness()", async () => {
+  const play = playHarness();
+  await play.start();
+  await play.begin();
+
+  /* 1. The battlefield, drawn through the channel the renderer already has. */
+  const tokens = play.tokens || [];
+  check("every combatant reaches the renderer as a token",
+    tokens.length === 3, show(tokens));
+  check("positioned in squares, from a state that reports feet",
+    show(tokens.map((each) => each.at)) === show([[2, 1], [1, 1], [6, 4]]),
+    show(tokens.map((each) => each.at)));
+  check("carrying the team, so the picture reads as two sides",
+    show(tokens.map((each) => each.team)) === show(["party", "party", "monsters"]),
+    show(tokens.map((each) => each.team)));
+  check("and the hit-point ring, which this chair is entitled to for everyone",
+    tokens.every((each) => typeof each.hpFraction === "number"),
+    show(tokens.map((each) => each.hpFraction)));
+
+  /* 2. The rail and the budget, read off `order` and `turn_state`. The order is
+   *    the engine's own and is asserted against it rather than against a list
+   *    written here: this chair is *told* the running order, and the case that
+   *    matters is that it prints the one it was told. */
+  const rail = play.find("play-order").children.map((each) => each.textContent);
+  const declared = play.engine.gmState().order;
+  check("the initiative rail is the order the engine rolled, in that order",
+    rail.length === declared.length
+      && declared.every((name, index) => rail[index].indexOf(name) === 0),
+    show([rail, declared]));
+  const current = play.find("play-order").children.filter(
+    (each) => each.classList.contains("play-current"));
+  check("and marks whose turn it is rather than leaving a reader to count",
+    current.length === 1 && current[0].textContent.indexOf(play.engine.turn) === 0,
+    show([rail, play.engine.turn]));
+  const budget = play.text("play-budget");
+  check("the budget line comes from turn_state, in the numbers it reported",
+    budget.indexOf("30") !== -1 && budget.indexOf("1") !== -1, budget);
+
+  /* 3. The bar, built from the contract and from nothing kept here. */
+  check("the action bar offers exactly the kinds the served contract declared",
+    show(play.kindsOffered()) === show(DECLARED_KINDS), show(play.kindsOffered()));
+
+  /* 4. Click to move — squares on the canvas, feet in the request. */
+  play.actionButton("move").click();
+  check("choosing a move asks for a square rather than posting a bare move",
+    play.engine.posted.length === 0
+      && String(play.text("play-hint")).indexOf("square") !== -1,
+    play.text("play-hint"));
+  play.clickCell(4, 3);
+  await flush();
+  const moved = play.engine.posted[0];
+  check("the square clicked is posted as a position in feet",
+    moved !== undefined && moved.body.kind === "move"
+      && show(moved.body.to_position) === show([20, 15]),
+    show(moved && moved.body));
+  check("and the version the driver read rides along as If-Match",
+    moved !== undefined && moved.headers["If-Match"] === "head-1",
+    show(moved && moved.headers));
+
+  /* 5. Click to target. */
+  play.actionButton("attack").click();
+  play.clickCell(6, 4);
+  await flush();
+  const struck = play.engine.posted[1];
+  check("choosing a creature's square targets that creature by name",
+    struck !== undefined && struck.body.kind === "attack" && struck.body.target === "Grub",
+    show(struck && struck.body));
+  check("and the attack option comes from the actor's own state, not invented here",
+    struck !== undefined && struck.body.attack === "Longsword",
+    show(struck && struck.body));
+
+  /* 6. Ending the turn. */
+  play.press("play-advance");
+  await flush();
+  const advanced = play.engine.posted[2];
+  check("End turn is encounter.advance and nothing else",
+    advanced !== undefined && /\/advance$/.test(advanced.url), show(advanced && advanced.url));
+  check("and the driver re-reads the fight afterwards, rather than trusting itself",
+    play.text("play-round").indexOf("Grub") !== -1, play.text("play-round"));
+
+  /* 7. What just happened, read off the answer to the write. The events an
+   *    engine sends name the thing that happened in `kind`; this line read
+   *    `each.type` for a release, so every post the panel acknowledged said
+   *    "2 events · undefined, undefined". Nothing caught it because the stub
+   *    above answered with `type` too — two halves of one repo agreeing on a
+   *    field name the shipped engine has never emitted. */
+  play.actionButton("attack").click();
+  play.clickCell(6, 4);
+  await flush();
+  check("the readout after a write names what happened, off the events' own kind",
+    play.status !== null && play.status.text === "2 events · attack, damage",
+    show(play.status));
+  /* And it names only what a player's chair is served. `detail` is the GM's
+   * sentence — "Scimitar: 19 vs AC 15, hit" — and Encounter.brief_events omits
+   * it from a briefed answer outright, so a readout built from it would be
+   * blank in the one seat this panel exists for. */
+  check("and nothing from the sentence the projection withholds",
+    play.status.text.indexOf("undefined") === -1
+      && play.status.text.indexOf("AC") === -1,
+    show(play.status));
+
+  /* 8. A refusal is the engine's own words, because nothing here knows the rule
+   *    that produced it. */
+  play.engine.refuse = (url) => (/\/actions$/.test(url)
+    ? "Thora has already taken an action this turn" : null);
+  play.actionButton("dodge").click();
+  await flush();
+  check("a refused action is reported in the engine's own sentence",
+    play.status !== null && play.status.cls === "error"
+      && play.status.text.indexOf("already taken an action this turn") !== -1,
+    show(play.status));
+});
+
+await suite("play.js: the player's chair", "the play sandbox in playHarness()", async () => {
+  const play = playHarness();
+  await play.start();
+  await play.begin();
+  const before = play.engine.seen.length;
+
+  const seat = play.find("play-seat");
+  seat.value = "Thora";
+  seat.dispatch("change", {});
+  await flush();
+
+  const since = play.engine.seen.slice(before);
+  check("taking a seat reads that seat's brief, naming the chair in as=",
+    since.some((each) => each.indexOf("/brief?as=Thora") !== -1), show(since));
+  check("and never asks for the GM's state again — not once, on any turn",
+    !since.some((each) => /^GET \/api\/encounters\/[^/?]+$/.test(each)), show(since));
+
+  /* The brief sorts the fight into `you`, `allies` and `enemies`, and all three
+   * are drawn: a driver that read only its own key would put one token on the
+   * map and a driver that dropped `allies` would lose half the party. The
+   * order here is the brief's own — the asker, then their side, then the
+   * other — which is deliberately *not* the order the rail below prints. */
+  const tokens = play.tokens || [];
+  check("the brief still draws the whole visible battlefield",
+    tokens.length === 3, show(tokens));
+  check("an ally comes back whole, ring and all, because a table shares numbers",
+    tokens[0].hpFraction === 12 / 12 && tokens[1].hpFraction === 9 / 9,
+    show(tokens.map((each) => each.hpFraction)));
+  check("but an opponent gets no hit-point ring, because it was sent no number",
+    tokens[2].hpFraction === undefined,
+    show(tokens.map((each) => each.hpFraction)));
+  const rail = play.find("play-order").children.map((each) => each.textContent);
+  /* A brief carries no `order` — it would name the creature this seat has not
+   * detected — so the rail is rebuilt from the initiatives the seat can see.
+   * Brand rolled above Thora and the brief lists Thora first, so a rail printed
+   * in the order the keys arrived would put the asker at the top. */
+  check("the rail is initiative order and not the order the brief listed its keys",
+    show(rail.map((each) => each.split(" ")[0])) === show(["Brand", "Thora", "Grub"]),
+    show(rail));
+  /* Found by name and not by index, so a rail that came out in the wrong order
+   * fails the case above and only that one. An index here would make every row
+   * assertion below a second, blurrier ordering check. */
+  const rowFor = (name) => rail.find((each) => each.indexOf(name) === 0) || "";
+  check("an ally's own numbers are on it, unredacted",
+    rowFor("Brand").indexOf("9/9 hp") !== -1, show(rail));
+  check("and an opponent's condition is words, not a fraction anyone can invert",
+    rowFor("Grub").indexOf("badly hurt") !== -1 && rowFor("Grub").indexOf("7") === -1,
+    show(rail));
+  check("with the distance the brief measured, which is what the bar's reach is",
+    rowFor("Grub").indexOf("25 ft") !== -1, show(rail));
+
+  check("on this creature's own turn the bar is live",
+    play.actionButton("dodge").disabled === false,
+    show(play.kindsOffered().map((kind) => play.actionButton(kind).disabled)));
+
+  /* The writes carry the chair as well as the reads, and that is the half this
+   * driver used to be missing. A player's own post was answered with the fight
+   * whole — every opponent's hit points, AC and weapons — and this file's only
+   * defence was to discard what it had already been handed. Naming the chair in
+   * `as=` moves the decision back into the engine, where a response somebody
+   * reads with devtools is redacted before it is sent. */
+  play.actionButton("dodge").click();
+  await flush();
+  const acted = play.engine.posted[play.engine.posted.length - 1];
+  check("an action posted from this chair names it in as=, so the answer is briefed",
+    acted !== undefined && acted.url.indexOf("/actions?as=Thora") !== -1,
+    show(acted && acted.url));
+
+  play.press("play-advance");
+  await flush();
+  const ended = play.engine.posted[play.engine.posted.length - 1];
+  check("and so does ending the turn, which is the other write a player makes",
+    ended !== undefined && ended.url.indexOf("/advance?as=Thora") !== -1,
+    show(ended && ended.url));
+  check("once the turn has passed the bar stands down",
+    play.actionButton("dodge").disabled === true
+      && String(play.text("play-hint")).indexOf("Grub") !== -1,
+    show([play.actionButton("dodge").disabled, play.text("play-hint")]));
+  check("and End turn with it, because ending a turn is taking one",
+    play.find("play-advance").disabled === true,
+    show(play.find("play-advance").disabled));
+
+  const everything = play.engine.seen;
+  check("and across the whole session this chair asked for encounter.state never",
+    !everything.slice(before).some(
+      (each) => /^GET \/api\/encounters\/[^/?]+$/.test(each)),
+    show(everything));
+  check("nor posted a write without saying whose chair it was",
+    !everything.slice(before).some(
+      (each) => /^POST /.test(each) && each.indexOf("as=") === -1),
+    show(everything.slice(before)));
+
+  /* A chair can be taken before the first round, because the seat picker is
+   * filled from the scene's own cast. So encounter.create is a write a player
+   * makes too, and the fight it starts must arrive already briefed — otherwise
+   * the very first answer of the session is the one that hands the whole
+   * roster over. */
+  const seated = playHarness();
+  await seated.start();
+  const picker = seated.find("play-seat");
+  picker.value = "Thora";
+  picker.dispatch("change", {});
+  await flush();
+  await seated.begin();
+  check("starting the fight from a chair names it in as= as well",
+    typeof seated.engine.createdUrl === "string"
+      && seated.engine.createdUrl.indexOf("/encounters?as=Thora") !== -1,
+    show(seated.engine.createdUrl));
+});
+
+await suite("play.js: the dice, and whose hand they are in",
+  "the play sandbox in playHarness()", async () => {
+  const play = playHarness({ manualAnimationFrames: true });
+  await play.start();
+  await play.begin();
+
+  /* 1. The default is the engine rolling, and an omitted face is how that is
+   *    said — a null would be a face the caller reported. */
+  play.actionButton("dodge").click();
+  await flush();
+  check("by default the engine rolls, and no face is sent at all",
+    play.engine.posted[0] !== undefined
+      && !("natural" in play.engine.posted[0].body),
+    show(play.engine.posted[0] && play.engine.posted[0].body));
+
+  /* 2. Rolling it yourself: the die tumbles, and only then is anything sent. */
+  const own = play.find("play-roll-own");
+  own.checked = true;
+  own.dispatch("change", {});
+  play.actionButton("dodge").click();
+  await flush();
+  check("with the dice in your hand nothing is posted while the die is still turning",
+    play.engine.posted.length === 1, show(play.engine.posted.length));
+  const faces = [];
+  for (let i = 0; i < 12; i += 1) {
+    play.page.frame(i * 20);
+    faces.push(play.text("play-die"));
+  }
+  check("and the die really turns rather than showing one number for a while",
+    new Set(faces).size > 1, show(faces));
+  check("still nothing posted, because the face is not known yet",
+    play.engine.posted.length === 1, show(play.engine.posted.length));
+
+  play.page.frame(5000);
+  await flush();
+  const rolled = play.engine.posted[1];
+  const shown = play.text("play-die");
+  check("when it settles the face it shows is the face that was sent",
+    rolled !== undefined && String(rolled.body.natural) === String(shown),
+    show([shown, rolled && rolled.body.natural]));
+  check("and the number is a d20 face, not a frame counter",
+    Number(shown) >= 1 && Number(shown) <= 20, shown);
+
+  /* 3. A face rolled on a real die, typed in. Sent exactly as written: a client
+   *    that checked the range would be a second copy of the engine's rule, and
+   *    would be the one that had to be right. */
+  play.find("play-face").value = "21";
+  play.actionButton("dodge").click();
+  await flush();
+  const typed = play.engine.posted[2];
+  check("a typed face is sent as typed, unexamined",
+    typed !== undefined && show(typed.body.natural) === show(21),
+    show(typed && typed.body));
+  check("and shown on the die, so the panel and the audit log say the same thing",
+    play.text("play-die") === "21", play.text("play-die"));
+
+  /* 4. Two faces, which is what advantage is rolled with. */
+  play.find("play-face").value = "17, 4";
+  play.actionButton("dodge").click();
+  await flush();
+  const pair = play.engine.posted[3];
+  check("two typed faces travel as the pair the contract accepts",
+    pair !== undefined && show(pair.body.natural) === show([17, 4]),
+    show(pair && pair.body));
+
+  /* 5. The refusals, verbatim. Both of these are the engine's to make. */
+  play.engine.refuse = () => "a d20 face is between 1 and 20, not 21";
+  play.find("play-face").value = "21";
+  play.actionButton("dodge").click();
+  await flush();
+  check("an out-of-range face is refused in the engine's own words",
+    play.status.text.indexOf("a d20 face is between 1 and 20, not 21") !== -1,
+    show(play.status));
+  play.engine.refuse = () => "this roll takes one face, not 2; advantage and "
+    + "disadvantage are rolled with two dice and a flat roll with one";
+  play.find("play-face").value = "17, 4";
+  play.actionButton("dodge").click();
+  await flush();
+  check("and so is the wrong number of them",
+    play.status.text.indexOf("this roll takes one face, not 2") !== -1,
+    show(play.status));
+
+  /* 6. A death save is the same channel: advance carries the face too. */
+  play.engine.refuse = () => null;
+  play.find("play-face").value = "11";
+  play.press("play-advance");
+  await flush();
+  const ended = play.engine.posted[play.engine.posted.length - 1];
+  check("ending a turn carries the face as well, for the death save that may be due",
+    /\/advance$/.test(ended.url) && show(ended.body.natural) === show(11),
+    show(ended.body));
+});
+
+await suite("play.js: the contract is what stocks the bar",
+  "the play sandbox in playHarness()", async () => {
+  /* Three kinds this engine has never had, one of them a name no version of
+   * ActionKind ever carried. A driver with a list of its own renders ten
+   * buttons here and this case names it. */
+  const play = playHarness({ kinds: ["dodge", "parry", "yield"] });
+  await play.start();
+  await play.begin();
+  check("the bar is exactly what the served contract answered, in its order",
+    show(play.kindsOffered()) === show(["dodge", "parry", "yield"]),
+    show(play.kindsOffered()));
+  play.actionButton("parry").click();
+  await flush();
+  check("and a kind this driver has never heard of is posted, not swallowed",
+    play.engine.posted[0] !== undefined && play.engine.posted[0].body.kind === "parry",
+    show(play.engine.posted[0] && play.engine.posted[0].body));
+
+  const bare = playHarness({ engine: (() => {
+    const engine = playEngine();
+    const inner = engine.reply;
+    engine.reply = (url, init) => (String(url).indexOf("/openapi.json") !== -1
+      ? { status: 500, body: { detail: "the contract could not be read" } }
+      : inner(url, init));
+    return engine;
+  })() });
+  await bare.start();
+  await bare.begin();
+  check("a contract that did not answer leaves an empty bar and says why",
+    bare.kindsOffered().length === 0
+      && String(bare.text("play-hint")).indexOf("contract") !== -1,
+    show([bare.kindsOffered(), bare.text("play-hint")]));
+});
+
+/* The look, driven rather than read. tests/test_web_assets.py owns the
+ * stylesheet as *source* — injected once, no external reference, no colour of
+ * its own — and this suite owns the half that source cannot answer: that the
+ * sheet reaches a document at all, and that every hook it keys on is a class or
+ * an attribute the driver actually sets. A rule for `.is-armed` is decoration
+ * until something wears it. */
+await suite("play.js: the look it brings with it", "the play sandbox in playHarness()",
+  async () => {
+  const play = playHarness({ manualAnimationFrames: true });
+  await play.start();
+
+  const head = play.page.documentStub.head;
+  check("the driver injects its own stylesheet, into the head and not the panel",
+    head.children.length === 1 && head.children[0].tagName === "STYLE"
+      && head.children[0].id === "play-style",
+    show(head.children.map((each) => each.tagName + "#" + each.id)));
+  check("and still renders into the root it was handed and nowhere else",
+    play.page.documentStub.body.children.length === 0,
+    show(play.page.documentStub.body.children.length));
+  const sheet = head.children[0].textContent;
+  check("the sheet is not empty and names no host off this origin",
+    sheet.length > 0 && !/https?:|\/\/[a-z]|url\(/i.test(sheet),
+    show(sheet.slice(0, 120)));
+
+  play.driver.stop();
+  check("stopping gives the root back unmarked, so Edit is not styled by Play",
+    play.root.classList.contains("fivee-play") === false,
+    show(play.root.classList.set));
+  await play.start();
+  check("and re-entering Play injects no second copy of the sheet",
+    head.children.length === 1, show(head.children.length));
+  check("but does mark the root again, because the rules are scoped to it",
+    play.root.classList.contains("fivee-play"), show(play.root.classList.set));
+
+  await play.begin();
+
+  /* 1. The budget: five facts, each its own element carrying its own state.
+   *    The words are unchanged — an element adds a state beside the engine's
+   *    numbers, it does not restate them. */
+  const budget = play.find("play-budget");
+  const said = budget.textContent;
+  check("the budget still says every word turn_state reported",
+    ["30 ft of movement left", "1 attacks left", "action available",
+      "bonus action available", "interaction available"].every(
+      (phrase) => said.indexOf(phrase) !== -1), said);
+  const gauges = budget.children.filter((each) => each.className === "play-gauge");
+  check("movement is a count of squares, drawn as one pip each",
+    gauges.length === 2
+      && gauges[0].children[1].children.length === 30 / 5
+      && gauges[0].children[1].children.every(
+        (pip) => pip.className.indexOf("play-pip-move") !== -1),
+    show(gauges.map((each) => each.children[1].children.length)));
+  check("and attacks are a second count in a second shape, not the same dots",
+    gauges[1].children[1].children.length === 1
+      && gauges[1].children[1].children[0].className.indexOf("play-pip-attack") !== -1,
+    show(gauges[1].children[1].children.map((pip) => pip.className)));
+  const chips = (budget.children[2] || { children: [] }).children;
+  check("and the three that are held or spent each carry that state, not just the word",
+    chips.length === 3 && chips.every((each) => each.dataset.state === "held"),
+    show(chips.map((each) => each.dataset.state)));
+
+  /* 2. The same budget under a different turn_state. Two things fall out, and
+   *    the second is the one the brief cares about: the states flip, and
+   *    the pips *count* rather than *fill*. A proportional bar draws the same
+   *    number of segments whatever the number behind it, so a creature with
+   *    twice the speed drawing twice the pips is the assertion that a bar with
+   *    a denominator would fail — and a denominator is the thing a chair reading
+   *    banded health must never be handed a way to read back. */
+  const atBudget = async (turnState) => {
+    const rig = playHarness();
+    const base = rig.engine.gmState;
+    rig.engine.gmState = () => Object.assign(base(), { turn_state: turnState });
+    await rig.start();
+    await rig.begin();
+    const block = rig.find("play-budget");
+    return {
+      block,
+      gauges: block.children.filter((each) => each.className === "play-gauge"),
+      chips: block.children[2].children,
+    };
+  };
+  const fast = await atBudget({
+    movement_left: 60, action_used: false, attacks_left: 3,
+    interaction_used: false, bonus_action_used: false,
+  });
+  check("twice the movement draws twice the pips, so a pip is a count and not a fill",
+    fast.gauges[0].children[1].children.length === 60 / 5
+      && fast.gauges[1].children[1].children.length === 3,
+    show(fast.gauges.map((each) => each.children[1].children.length)));
+
+  const used = await atBudget({
+    movement_left: 0, action_used: true, attacks_left: 0,
+    interaction_used: true, bonus_action_used: true,
+  });
+  check("a spent turn draws no pips at all rather than an empty track",
+    used.gauges.every((each) => each.children[1].children.length === 0)
+      && used.gauges.every((each) => each.dataset.state === "spent"),
+    show(used.gauges.map((each) => each.dataset.state)));
+  check("and every token reads spent",
+    used.chips.every((each) => each.dataset.state === "spent"),
+    show(used.chips.map((each) => each.dataset.state)));
+
+  /* 3. The bar. CLICK_FOR is a fact about this interface, and the panel says it
+   *    before the press rather than after. */
+  check("a kind that wants a click on the battlefield is marked as wanting one",
+    play.actionButton("move").dataset.wants === "square"
+      && play.actionButton("attack").dataset.wants === "creature",
+    show([play.actionButton("move").dataset.wants,
+      play.actionButton("attack").dataset.wants]));
+  check("and a kind that resolves on the press carries no such mark",
+    play.actionButton("dodge").dataset.wants === undefined,
+    show(play.actionButton("dodge").dataset.wants));
+
+  play.actionButton("move").click();
+  check("choosing one marks that button as the one the battlefield is waiting on",
+    play.actionButton("move").classList.contains("is-armed")
+      && !play.actionButton("attack").classList.contains("is-armed"),
+    show(play.kindsOffered().map(
+      (kind) => play.actionButton(kind).classList.contains("is-armed"))));
+  check("and the hint says the same thing in the same moment",
+    play.find("play-hint").classList.contains("is-armed"),
+    show(play.find("play-hint").classList.set));
+  play.clickCell(4, 3);
+  await flush();
+  check("and both stand down once the click has been spent",
+    !play.actionButton("move").classList.contains("is-armed")
+      && !play.find("play-hint").classList.contains("is-armed"),
+    show([play.actionButton("move").classList.set,
+      play.find("play-hint").classList.set]));
+
+  /* 4. The die. The state the panel shows is the state the driver is in, and
+   *    it lands on the same frame the face is sent — which is the whole reason
+   *    the settled look means anything. */
+  const die = play.find("play-die");
+  const own = play.find("play-roll-own");
+  own.checked = true;
+  own.dispatch("change", {});
+  play.actionButton("dodge").click();
+  await flush();
+  check("the die reports that it is turning, from the frame the tumble begins",
+    die.classList.contains("is-rolling") && !die.classList.contains("is-settled"),
+    show(die.classList.set));
+  const before = play.engine.posted.length;
+  play.page.frame(20);
+  check("and is still turning while nothing has been posted",
+    die.classList.contains("is-rolling") && play.engine.posted.length === before,
+    show([die.classList.set, play.engine.posted.length]));
+  play.page.frame(5000);
+  await flush();
+  const landed = play.engine.posted[play.engine.posted.length - 1];
+  check("when it lands it stops reporting a turn and reports a result",
+    !die.classList.contains("is-rolling") && die.classList.contains("is-settled"),
+    show(die.classList.set));
+  check("and the face it is lit on is the face that was sent",
+    String(landed.body.natural) === String(die.textContent),
+    show([die.textContent, landed.body.natural]));
+  check("one face is set as one face",
+    die.dataset.faces === "one", show(die.dataset.faces));
+
+  play.find("play-face").value = "17, 4";
+  play.actionButton("dodge").click();
+  await flush();
+  check("two faces are marked as a pair, because they do not fit at one face's size",
+    die.dataset.faces === "pair" && die.textContent === "17, 4",
+    show([die.dataset.faces, die.textContent]));
+  check("and a typed face lands lit without tumbling, having not been thrown here",
+    die.classList.contains("is-settled") && !die.classList.contains("is-rolling"),
+    show(die.classList.set));
+
+  /* 5. The rail row stays one text node, which is what makes a health band
+   *    undrawable as a bar rather than merely undrawn. */
+  const rows = play.find("play-order").children;
+  check("an initiative row is text and has no children a bar could hide in",
+    rows.length === 3 && rows.every((each) => each.children.length === 0),
+    show(rows.map((each) => each.children.length)));
+});
+
+await suite("play.js: inside the page that hosts it", "the page sandbox in makePage()",
+  async () => {
+  const engine = playEngine();
+  const page = makeEditorPage({
+    withPlayDriver: true,
+    reply: (url, init) => (String(url).indexOf("/api/content") === 0
+      ? { status: 200, body: CONTENT_STATUS } : engine.reply(url, init)),
+  });
+  await page.drop(copy(ROSTER_MAP));
+  await flush();
+
+  /* A described combatant, placed on the map's own spawn hint — the path that
+   * needs no catalog, so this case is about Play and not about the roster. */
+  page.element("btn-roster-add").click();
+  page.element("roster-spec").value = JSON.stringify(
+    { name: "Thora", team: "party", ac: 15, max_hp: 12 });
+  page.element("btn-roster-apply").click();
+  page.element("btn-roster-spawn").click();
+
+  page.element("mode-play").click();
+  await flush();
+  check("the shipped driver is the one the page found, no tag asked for",
+    driverTag(page) === null && page.element("play-root").children.length > 0,
+    show([driverTag(page) && driverTag(page).src,
+      page.element("play-root").children.length]));
+
+  const start = findById(page.element("play-root"), "play-start");
+  start.click();
+  await flush();
+  check("pressing Play in the page starts the fight the roster describes",
+    engine.created !== undefined && engine.created.combatants.length === 1
+      && engine.created.combatants[0].name === "Thora",
+    show(engine.created));
+  check("and the driver's tokens are what the canvas is drawing",
+    (page.last().overlays.tokens || []).length === 3,
+    show(page.last().overlays.tokens));
+
+  /* The constraint Decision 3 exists for, driven through the page's own canvas.
+   * The Eraser is still selected from Edit — which is what an author who was
+   * painting a moment ago has selected — and [4, 0] is a wall it would happily
+   * turn to floor. A click that moves a creature must not do that, and the
+   * pointer events the editor listens for fire on this canvas whatever mode
+   * the page is in. A cell already carrying the glyph the tool paints would
+   * make this case pass against an editor with no guard at all. */
+  check("the square this case paints over is one the eraser would actually change",
+    ROSTER_MAP.tiles[0].charAt(4) === "#", ROSTER_MAP.tiles[0]);
+  page.tool("erase").click();
+  const before = page.downloaded();
+  const move = findById(page.element("play-root"), "play-actions")
+    .children.find((each) => each.dataset.kind === "move");
+  move.click();
+  const at = { clientX: (4 - page.last().view.x) * page.last().view.scale
+      + page.last().view.scale / 2,
+    clientY: (0 - page.last().view.y) * page.last().view.scale
+      + page.last().view.scale / 2,
+    button: 0, pointerId: 1 };
+  page.element("map").dispatch("pointerdown", at);
+  page.element("map").dispatch("pointerup", at);
+  page.element("map").dispatch("click", at);
+  await flush();
+  check("the click moved a creature",
+    engine.posted.length === 1 && engine.posted[0].body.kind === "move"
+      && show(engine.posted[0].body.to_position) === show([20, 0]),
+    show(engine.posted.map((each) => each.body)));
+  check("and painted nothing: the document is byte-identical through the fight",
+    page.downloaded() === before, String(page.downloaded()).slice(0, 200));
+
+  page.element("mode-edit").click();
+  check("leaving Play empties the driver's panel",
+    page.element("play-root").children.length === 0,
+    show(page.element("play-root").children.length));
+  check("and the document opened is still the document that would be saved",
+    page.downloaded() === ROSTER_MAP_BYTES, String(page.downloaded()).slice(0, 200));
 });
 
 /* --- home.html ------------------------------------------------------------ */

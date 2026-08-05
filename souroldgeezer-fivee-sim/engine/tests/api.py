@@ -35,6 +35,7 @@ from fivee_sim.service import content_ops as _content_ops
 from fivee_sim.service import encounters as _encounters
 from fivee_sim.service import map_ops as _map_ops
 from fivee_sim.service import primitives as _primitives
+from fivee_sim.service import scenes as _scenes
 from fivee_sim.service import sessions as _sessions
 
 #: Every fight, map and registry this process holds, as one object. Saved and
@@ -126,9 +127,10 @@ def encounter_create(
     map: dict[str, Any] | None = None,
     map_id: str | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.create(
-        STATE, combatants, seed, movement_rule, map, map_id, request_id
+        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer
     )
 
 
@@ -188,6 +190,7 @@ def encounter_act(
     facing: str | None = None,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
         STATE,
@@ -212,6 +215,7 @@ def encounter_act(
         facing,
         natural,
         request_id,
+        viewer,
     )
 
 
@@ -219,16 +223,19 @@ def encounter_advance(
     encounter_id: str,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
-    return _encounters.advance(STATE, encounter_id, natural, request_id)
+    return _encounters.advance(STATE, encounter_id, natural, request_id, viewer)
 
 
 def encounter_brief(encounter_id: str, as_name: str) -> dict[str, Any]:
     return _encounters.brief_for(STATE, encounter_id, as_name)
 
 
-def encounter_resume(encounter_id: str) -> dict[str, Any]:
-    return _encounters.resume(STATE, encounter_id)
+def encounter_resume(
+    encounter_id: str, viewer: str | None = None
+) -> dict[str, Any]:
+    return _encounters.resume(STATE, encounter_id, viewer)
 
 
 def encounter_list(status: str = "active") -> dict[str, Any]:
@@ -318,6 +325,29 @@ def map_edit(
 
 def replay_validate(bundle: dict[str, Any]) -> dict[str, Any]:
     return _map_ops.replay_validate(bundle)
+
+
+# --- scenes -------------------------------------------------------------------
+def scene_list() -> dict[str, Any]:
+    return _scenes.list_scenes()
+
+
+def scene_get(scene_id: str) -> dict[str, Any]:
+    return _scenes.load(scene_id)
+
+
+def scene_save(
+    scene_id: str,
+    document: dict[str, Any],
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    return _scenes.save(scene_id, document, expected_sha256=expected_sha256)
+
+
+def scene_validate(
+    document: dict[str, Any], map_ids: list[str] | None = None
+) -> dict[str, Any]:
+    return _scenes.validate(document, map_ids=map_ids)
 
 
 def replay_export(

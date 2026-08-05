@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import re
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,7 +78,7 @@ from ..model.battlemap import MapPlane, SquareClaim
 from ..paths import MAPS_ENV, MAPS_SUBDIR, environment_roots, maps_root
 from ..validation import Diagnostic, Severity
 from . import durable
-from .common import discover_json_files, sha256_of, slugify
+from .common import ID_PATTERN, discover_json_files, sha256_of, slugify
 from .errors import MapEditError, NotFoundError
 
 __all__ = [
@@ -1787,13 +1786,6 @@ def list_maps(roots: Sequence[str | Path] | None = None) -> list[dict[str, Any]]
         )
     listed.sort(key=lambda entry: str(entry["path"]))
     return listed
-
-
-#: What a map id may look like: the :func:`~fivee_sim.service.common.slugify`
-#: alphabet, nothing else. An id outside this grammar cannot name a file under
-#: the maps directory, so it is reported as an unknown map rather than
-#: half-resolved — traversal attempts land here before any directory is read.
-ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 
 def index(root: str | Path) -> dict[str, dict[str, Any]]:

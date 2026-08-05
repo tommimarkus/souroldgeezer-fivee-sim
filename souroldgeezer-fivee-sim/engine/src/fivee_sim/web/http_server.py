@@ -73,6 +73,7 @@ from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import maps as map_service
 from ..service import replay as replay_service
+from ..service import scenes as scene_service
 from ..service.common import slugify
 from ..service.errors import (
     MapEditError,
@@ -932,6 +933,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["map"],
             body["map_id"],
             self._idempotency_key(),
+            request.query["as"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -962,6 +964,13 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
     def _h_encounter_brief(self, request: _Request) -> None:
+        """The same fight, redacted for one seat — and redacted in ``service/``.
+
+        This carries the encounter's ``ETag`` exactly as ``encounter.state``
+        does: the two are the same journal head read two ways, so a player
+        client polling for change and the GM's client polling for change agree
+        about when there was one.
+        """
         self._send_json(
             HTTPStatus.OK,
             encounter_service.brief_for(self.state, request.id, request.query["as"]),
@@ -994,13 +1003,18 @@ class _Handler(BaseHTTPRequestHandler):
             body["facing"],
             body["natural"],
             self._idempotency_key(),
+            request.query["as"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_advance(self, request: _Request) -> None:
         self._check_encounter_version(request.id)
         result = encounter_service.advance(
-            self.state, request.id, request.body["natural"], self._idempotency_key()
+            self.state,
+            request.id,
+            request.body["natural"],
+            self._idempotency_key(),
+            request.query["as"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1022,7 +1036,7 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_resume(self, request: _Request) -> None:
-        result = encounter_service.resume(self.state, request.id)
+        result = encounter_service.resume(self.state, request.id, request.query["as"])
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_finalize(self, request: _Request) -> None:
@@ -1249,6 +1263,52 @@ class _Handler(BaseHTTPRequestHandler):
             HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["sha256"]))}
         )
 
+    # -- scenes: a saved encounter.create body, addressed by id --------------
+    def _h_scene_list(self, request: _Request) -> None:
+        self._send_json(HTTPStatus.OK, scene_service.list_scenes())
+
+    def _h_scene_get(self, request: _Request) -> None:
+        found = scene_service.load(request.id)
+        self._send_json(
+            HTTPStatus.OK, found["document"], headers={"ETag": _etag_of(str(found["sha256"]))}
+        )
+
+    def _h_scene_put(self, request: _Request) -> None:
+        scene_id = request.id
+        if_match = self.headers.get("If-Match")
+        if if_match is None:
+            raise _Problem(
+                HTTPStatus.PRECONDITION_REQUIRED,
+                "If-Match is required: the sha256 ETag from the last GET, or * "
+                "to create a new scene",
+            )
+        expected = _etag_value(if_match)
+        creating = scene_id not in scene_service.index()
+        if creating and expected != "*":
+            raise _Problem(
+                HTTPStatus.CONFLICT,
+                f"there is no saved scene {scene_id!r} to match against; use "
+                f"If-Match: * to create it",
+            )
+        saved = scene_service.save(scene_id, request.body, expected_sha256=expected)
+        self._send_json(
+            HTTPStatus.CREATED if creating else HTTPStatus.OK,
+            saved,
+            headers={"ETag": _etag_of(str(saved["sha256"]))},
+        )
+
+    def _h_scene_validate(self, request: _Request) -> None:
+        # The maps this launch serves, passed in rather than reached for: the
+        # scene service may not import the map layer, and "which maps exist" is
+        # a fact about this server's directory rather than about the process's
+        # working directory.
+        self._send_json(
+            HTTPStatus.OK,
+            scene_service.validate(
+                request.body, map_ids=sorted(map_service.index(self.engine.maps_dir))
+            ),
+        )
+
     # -- replays: read-only, and that asymmetry is the contract --------------
     def _h_replay_list(self, request: _Request) -> None:
         index = self.engine.replay_index()
@@ -1327,6 +1387,10 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "map_get": _Handler._h_map_get,
     "map_put": _Handler._h_map_put,
     "map_edit": _Handler._h_map_edit,
+    "scene_list": _Handler._h_scene_list,
+    "scene_get": _Handler._h_scene_get,
+    "scene_put": _Handler._h_scene_put,
+    "scene_validate": _Handler._h_scene_validate,
     "replay_list": _Handler._h_replay_list,
     "replay_get": _Handler._h_replay_get,
     "replay_validate": _Handler._h_replay_validate,

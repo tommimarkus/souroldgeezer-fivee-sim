@@ -6,7 +6,7 @@ handshake check that went with the MCP server, and it makes the same kind of
 claim the handshake made: not "the units pass" but "the thing a host actually
 runs, runs".
 
-Five properties are checked that the in-process suite structurally cannot:
+Six properties are checked that the in-process suite structurally cannot:
 
 * **The real launcher boots.** Everything here goes through
   ``souroldgeezer-fivee-sim/scripts/fivee.py`` — never ``python -m
@@ -37,6 +37,14 @@ Five properties are checked that the in-process suite structurally cannot:
   other case here begins and ends inside one encounter, so nothing else says
   that what a fight *ended* at is what the next one *starts* from — which is
   the only claim that makes a run of fights an adventure rather than a list.
+* **A saved fight starts.** A scene is written under an id, read back, listed,
+  and then posted to ``encounter.create`` to start the fight it describes — the
+  one thing that makes a scene a scene, since there is deliberately no
+  ``scene.play`` and Play is that post. Whether the *stored* document is an
+  ``encounter.create`` body is asked of ``routes.py``'s own declaration rather
+  than of a list kept here, so the keys it will not take are named by the check
+  instead of assumed by it, and the fight is then swung at once: a scene that
+  round-trips and cannot be played has round-tripped nothing.
 
 Standard library only, and deliberately so: it must run in an environment where
 nothing has been built at all, which since the launcher stopped creating virtual
@@ -107,6 +115,13 @@ EXPECTED_WOLF_HP = 11
 EXPECTED_EVENTS = 11
 EXPECTED_ATTACKS = ["Scimitar", "Bite"]
 
+#: The confidentiality scenario ``encounter.brief`` exists to satisfy, written
+#: out because this script may not import the engine. These seven are the
+#: *scenario* — an opposing creature's own sheet, named as the design brief
+#: names it — not a copy of the projection's bucket, which
+#: ``tests/test_player_brief.py`` derives from the model and holds on its own.
+WITHHELD_FROM_A_PLAYER = ("hp", "max_hp", "ac", "spell_slots", "items", "attacks", "spells")
+
 #: The replay-v2 integrity hashes that two runs of one seeded fight must share.
 #:
 #: ``events`` and ``checkpoints`` are deliberately absent, and this is the one
@@ -158,6 +173,73 @@ EXPECTED_SECOND_ORDER = ["Skeleton", "Scar", "Fang"]
 EXPECTED_SECOND_ROUND = 2
 EXPECTED_SECOND_HP = {"Skeleton": 0, "Scar": 7, "Fang": 6}
 EXPECTED_SECOND_EVENTS = 23
+
+# --- the scene ---------------------------------------------------------------
+#: The third scenario, and the only durable document here that is *input*. An
+#: adventure and a replay are what a fight left behind; a scene is what one is
+#: started from — a stored ``encounter.create`` body with a label to list it by.
+#: So the claim this case makes is that the two agree: a scene read back off
+#: disk starts the fight it describes, over the shipped surface, with nothing
+#: between the two but a projection onto the keys the contract declares.
+#:
+#: Golden for this seed in a scratch root nothing else has touched, which is
+#: also what makes ``enc-1`` the id this fight is allocated and ``the-ford`` the
+#: only map the scene's ``map_id`` could resolve to.
+SCENE_MAP_ID = "the-ford"
+#: Small on purpose: a walled chamber with a strip of floor, big enough to stand
+#: two creatures a square apart and nothing more. The scene names it by id
+#: rather than carrying it inline, which is what the editor does with a map the
+#: server already has — and it is the only reason ``map.put`` is called here.
+SCENE_MAP: dict[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "the ford",
+    "grid": {"width": 6, "height": 4, "cell_feet": 5},
+    "legend": {".": "floor", "#": "wall"},
+    "tiles": ["######", "#....#", "#....#", "######"],
+    "provenance": {
+        "generator": "hand",
+        "seed": 1,
+        "params": {},
+        "edited": False,
+        "source": "hand-authored for the end-to-end gate; 5E-compatible original content",
+    },
+}
+SCENE_ID = "ambush-at-the-ford"
+SCENE_NAME = "Ambush at the Ford"
+SCENE_SEED = 20260808
+#: Positions are feet along the axes rather than cells, so these two stand in
+#: the chamber's second and third columns — a square apart, which is what makes
+#: the opening bite a melee attack rather than a walk.
+SCENE: dict[str, Any] = {
+    "name": SCENE_NAME,
+    "combatants": [
+        {"monster": "Wolf", "label": "Wolf", "team": "party", "position": [5, 5]},
+        {"monster": "Goblin Warrior", "label": "Goblin", "position": [10, 5]},
+    ],
+    "seed": SCENE_SEED,
+    "map_id": SCENE_MAP_ID,
+}
+#: What a stored scene carries that ``encounter.create`` does not declare, and
+#: therefore the whole difference between the two documents. Written out as the
+#: golden value it is: the *set* is derived from ``routes.py`` at run time, and
+#: this is what that derivation is held against, so a key that starts or stops
+#: being an encounter's business turns this red rather than passing quietly.
+SCENE_LABELS = ["name"]
+EXPECTED_SCENE_ORDER = ["Wolf", "Goblin"]
+EXPECTED_SCENE_INITIATIVE = {"Wolf": 20, "Goblin": 4}
+EXPECTED_SCENE_PLACEMENT = {"Wolf": [5, 5], "Goblin": [10, 5]}
+EXPECTED_SCENE_HIT = "Bite: d20 [12] +4 = 16 vs AC 15 -> hit; damage [6] +2 = 8"
+EXPECTED_SCENE_HP = {"Wolf": 11, "Goblin": 2}
+#: An envelope that is wrong in a way only the scene layer can see: the roster is
+#: there and is not a roster. ``encounter.create`` would refuse it too, later and
+#: in its own words, which is the point — this one never gets that far.
+MALFORMED_SCENE_ID = "half-a-thought"
+MALFORMED_SCENE: dict[str, Any] = {
+    "name": "half a thought",
+    "combatants": "the whole tavern",
+}
+MALFORMED_PROBLEM = "'combatants' must be a list of specs"
 
 failures: list[str] = []
 
@@ -667,6 +749,94 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
     return run
 
 
+# --- the scene, saved and then played ----------------------------------------
+def scene_round_trip(engine: Engine) -> dict[str, Any]:
+    """Save a map, save the fight that runs on it, read it back, and play it.
+
+    The map goes first because a scene that names one is a scene whose
+    ``map_id`` has to resolve, and a run that saved neither would validate
+    against a directory it does not describe.
+
+    Nothing here decides whether a case passed; every answer is collected and
+    the reports below read them. Two of the calls are refusals asked for on
+    purpose — a write with no version, and a write from a stale read — because
+    a document two clients can both hold is only as safe as what it says no to.
+    """
+    run: dict[str, Any] = {}
+    status, stored_map, _ = engine.call(
+        "PUT", f"/maps/{SCENE_MAP_ID}", SCENE_MAP, headers={"If-Match": "*"}
+    )
+    if status != 201:
+        raise SmokeError(f"map.put answered {status}: {json.dumps(stored_map)[:300]}")
+    run["map_saved"] = stored_map
+
+    # The same write, sent with no version at all. Refused by the adapter before
+    # the service is reached, so it stores nothing — and if it ever stopped
+    # being refused, the create below would find the id it expects already taken.
+    run["unguarded"] = engine.call("PUT", f"/scenes/{SCENE_ID}", SCENE)[:2]
+
+    status, saved, headers = engine.call(
+        "PUT", f"/scenes/{SCENE_ID}", SCENE, headers={"If-Match": "*"}
+    )
+    if status != 201:
+        raise SmokeError(f"scene.put answered {status}: {json.dumps(saved)[:300]}")
+    run["saved"], run["saved_status"] = saved, status
+    run["saved_etag"] = headers.get("ETag", "")
+
+    status, document, headers = engine.call("GET", f"/scenes/{SCENE_ID}")
+    if status != 200:
+        raise SmokeError(f"scene.get answered {status}: {json.dumps(document)[:300]}")
+    run["document"], run["document_etag"] = document, headers.get("ETag", "")
+
+    # A version that was never this file's. Sent after the read rather than
+    # before it, so the run holds the real one and this one is unambiguously
+    # somebody else's.
+    run["stale"] = engine.call(
+        "PUT", f"/scenes/{SCENE_ID}", SCENE, headers={"If-Match": '"0"'}
+    )[:2]
+    run["listed"] = engine.json_call("GET", "/scenes")
+
+    # Play, and the load-bearing step: a scene is a saved ``encounter.create``
+    # body, so what starts the fight is what came back off the disk. The whole
+    # document goes first — if the two are the same document, that is a 201 and
+    # the projection below is a no-op; if they are not, this is where the
+    # difference is named rather than quietly stepped around.
+    run["posted_whole"] = engine.call("POST", "/encounters", document)[:2]
+    declared = declared_body_keys("encounter.create")
+    posted = {key: value for key, value in document.items() if key in declared}
+    run["declared"] = sorted(declared)
+    run["dropped"] = sorted(set(document) - set(posted))
+    status, created, _ = engine.call("POST", "/encounters", posted)
+    if status != 201:
+        raise SmokeError(
+            f"the stored scene would not start a fight: {status} {json.dumps(created)[:300]}"
+        )
+    run["started"], run["started_status"] = created, status
+    encounter_id = str(created["encounter_id"])
+    run["encounter_id"] = encounter_id
+
+    # One swing, so the round trip is proved live rather than merely stored: a
+    # fight that was created and never acted in has not shown that the roster a
+    # file held is a roster the stepper can resolve.
+    attack, target = attack_plan(created["state"])
+    run["swing"] = engine.json_call(
+        "POST",
+        f"/encounters/{encounter_id}/actions",
+        {"kind": "attack", "attack": attack, "target": target},
+    )
+
+    # And the envelope that is wrong, reported by one operation and refused by
+    # the other. ``scene.validate`` is a report rather than a refusal — it
+    # answers 200 with the problems it found, the shape ``map.validate`` uses —
+    # so the problem+json refusal is ``scene.put``'s, and both are read.
+    run["diagnosed"] = engine.json_call("POST", "/scenes/validate", MALFORMED_SCENE)
+    run["refused"] = engine.call(
+        "PUT", f"/scenes/{MALFORMED_SCENE_ID}", MALFORMED_SCENE, headers={"If-Match": "*"}
+    )[:2]
+    run["listed_after"] = engine.json_call("GET", "/scenes")
+    return run
+
+
 # --- the contract, read from its own source ----------------------------------
 def repository_state() -> list[str]:
     """Every path under the repository's own ``.fivee-sim``, as a sorted list.
@@ -728,6 +898,46 @@ def declared_examples() -> set[str]:
         if len(node.args) >= 3 and isinstance(node.args[2], ast.Constant):
             found.add(str(node.args[2].value))
     return found
+
+
+def declared_body_keys(operation: str) -> set[str]:
+    """The request-body keys one contract operation declares, parsed as source.
+
+    Read the same way the operations are, and for a reason the scene case turns
+    on: *is what a scene stored an ``encounter.create`` body?* is a question
+    about the declaration the server was built from. Answering it from a list
+    kept here would make the check agree with itself — a key added to
+    ``encounter.create`` and not to a scene would be dropped from every fight a
+    scene starts, silently, and the copy would still say the two agreed.
+
+    An operation with no body, or one whose schema declares no ``properties``,
+    yields the empty set; the caller reports that rather than proceeding, since
+    an empty projection is indistinguishable from a parse that found nothing.
+    """
+    tree = ast.parse(ROUTES_SOURCE.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "Route":
+            continue
+        if len(node.args) < 3 or not isinstance(node.args[2], ast.Constant):
+            continue
+        if node.args[2].value != operation:
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "body_schema" or not isinstance(keyword.value, ast.Dict):
+                continue
+            for key, value in zip(keyword.value.keys, keyword.value.values, strict=True):
+                if not isinstance(key, ast.Constant) or key.value != "properties":
+                    continue
+                if not isinstance(value, ast.Dict):
+                    continue
+                return {
+                    str(name.value)
+                    for name in value.keys
+                    if isinstance(name, ast.Constant)
+                }
+    return set()
 
 
 def declared_pages() -> dict[str, tuple[str, str]]:
@@ -875,6 +1085,41 @@ def main() -> int:
             and hp == {"Goblin": EXPECTED_GOBLIN_HP, "Wolf": EXPECTED_WOLF_HP},
             "encounter.state is authoritative about the damage that was taken",
             f"round={state['round']} turn={state['turn']!r} hp={hp}",
+        )
+
+        # The same fight from the other chair. ``tests/test_web_http.py`` owns
+        # this claim against the true wire bytes; what this adds is that the
+        # redaction is in the engine the *launcher* resolved, rather than in a
+        # copy on some sys.path — the reason every other case here is run twice.
+        # The payload is re-serialised rather than read raw, which costs the
+        # check nothing: neither a nested key name nor a weapon's name can be
+        # created or destroyed by json.dumps.
+        seat = primary.json_call(
+            "GET", f"/encounters/{reference['encounter_id']}/brief?as=Wolf"
+        )
+        rendered = json.dumps(seat, sort_keys=True)
+        # Read defensively: a route wired to the wrong service function answers
+        # a payload with none of these keys, and this case has to *report* that
+        # rather than raise on it — a traceback names a dict key, not the
+        # operation whose promise was broken.
+        opposing = list(seat.get("enemies", []))
+        leaked = sorted(
+            key for one in opposing for key in WITHHELD_FROM_A_PLAYER if key in one
+        )
+        # A distinctive string, not a small integer: the goblin's 4 hit points
+        # would collide with a position, an initiative or a round, and an
+        # absence check that can be satisfied by accident is not one.
+        weapon = EXPECTED_ATTACKS[0]
+        report(
+            seat.get("as") == "Wolf"
+            and bool(opposing)
+            and all("health" in one for one in opposing)
+            and not leaked
+            and weapon not in rendered
+            and weapon in json.dumps(state),
+            "encounter.brief briefs the seat and withholds the sheet state reports",
+            f"opposing={[one['name'] for one in opposing]} leaked={leaked} "
+            f"{weapon}_in_brief={weapon in rendered}",
         )
 
         log = reference["log"]
@@ -1116,7 +1361,136 @@ def main() -> int:
             f"active={still_open} finalized={json.dumps(finished)[:200]}",
         )
 
-        # -- 7. the contract cannot drift ------------------------------------
+        # -- 7. a scene: the fight a table saved, read back and played -------
+        staging = Engine("scene")
+        engines.append(staging)
+
+        def saved_fight() -> dict[str, Any]:
+            staging.start(timeout=WARM_TIMEOUT)
+            return scene_round_trip(staging)
+
+        scene = phase(
+            "a scene is saved, read back, and started as a fight over plain HTTP",
+            saved_fight,
+        )
+        stored = scene["saved"]
+        scene_file = Path(str(stored.get("path", "")))
+        report(
+            scene["saved_status"] == 201
+            and stored["saved"] is True
+            and stored["scene_id"] == SCENE_ID
+            and stored["name"] == SCENE_NAME
+            and stored["combatants"] == len(SCENE["combatants"])
+            and stored["warnings"] == []
+            and scene_file.is_file()
+            and str(scene_file).startswith(str(staging.root))
+            and scene["saved_etag"] == f'"{stored["sha256"]}"',
+            "scene.put stores the fight under an id and answers its version as an ETag",
+            json.dumps({key: stored.get(key) for key in ("scene_id", "name", "combatants")})
+            + f" etag={scene['saved_etag']!r} written={scene_file}",
+        )
+        unversioned_status, unversioned_body = scene["unguarded"]
+        report(
+            unversioned_status == 428
+            and "If-Match is required" in str(unversioned_body.get("detail", "")),
+            "a scene write that names no version of it is refused as problem+json",
+            f"status={unversioned_status} body={json.dumps(unversioned_body)[:200]}",
+        )
+        report(
+            scene["document"] == SCENE and scene["document_etag"] == scene["saved_etag"],
+            "scene.get returns the document that was stored, under that same version",
+            f"read back {json.dumps(scene['document'], sort_keys=True)[:200]} at "
+            f"{scene['document_etag']!r}, stored at {scene['saved_etag']!r}",
+        )
+        stale_status, stale_body = scene["stale"]
+        report(
+            stale_status == 409
+            and "has advanced since you read it" in str(stale_body.get("detail", "")),
+            "a scene write from a stale read is refused rather than merged",
+            f"status={stale_status} body={json.dumps(stale_body)[:200]}",
+        )
+        rows = scene["listed"]["scenes"]
+        report(
+            [str(row["id"]) for row in rows] == [SCENE_ID]
+            and rows[0]["name"] == SCENE_NAME
+            and rows[0]["seed"] == SCENE_SEED
+            and rows[0]["map_id"] == SCENE_MAP_ID
+            and rows[0]["combatants"] == len(SCENE["combatants"])
+            and rows[0]["inline_map"] is False,
+            "scene.list names the saved scene, its seed, and the map it runs on",
+            json.dumps(rows)[:250],
+        )
+
+        # The seam the whole design rests on, and the reason this case exists:
+        # a scene is a saved ``encounter.create`` body plus the label it is
+        # listed by. The label is the *only* difference, and that is asserted in
+        # both directions — the whole document is refused and names it, and the
+        # projection onto what the route table declares drops nothing else. A
+        # key that quietly stopped being an encounter's business would widen
+        # ``dropped`` and fail here rather than vanish from every saved fight.
+        whole_status, whole_body = scene["posted_whole"]
+        detail = str(whole_body.get("detail", ""))
+        report(
+            bool(scene["declared"])
+            and scene["dropped"] == SCENE_LABELS
+            and whole_status == 400
+            and "unknown key(s)" in detail
+            and all(repr(label) in detail for label in SCENE_LABELS),
+            "the label a scene is listed by is the only key encounter.create will not take",
+            f"declared={scene['declared']} dropped={scene['dropped']} "
+            f"status={whole_status} detail={detail[:200]}",
+        )
+
+        launched = scene["started"]
+        opening = launched["state"]
+        source = launched.get("map_source") or {}
+        placed = {str(one["name"]): one["position"] for one in opening["combatants"]}
+        rolled = {str(one["name"]): one["initiative"] for one in opening["combatants"]}
+        report(
+            scene["started_status"] == 201
+            and launched["seed"] == SCENE_SEED
+            and source.get("map_id") == SCENE_MAP_ID
+            and source.get("sha256") == scene["map_saved"]["sha256"]
+            and opening["order"] == EXPECTED_SCENE_ORDER
+            and rolled == EXPECTED_SCENE_INITIATIVE
+            and placed == EXPECTED_SCENE_PLACEMENT,
+            "the stored scene starts the fight it describes, on the map it named",
+            f"order={opening['order']} map={source.get('map_id')!r} placed={placed} "
+            f"initiative={rolled}",
+        )
+        swung = scene["swing"]["events"][0]
+        after = {str(one["name"]): one["hp"] for one in scene["swing"]["state"]["combatants"]}
+        report(
+            swung["detail"] == EXPECTED_SCENE_HIT
+            and swung["data"]["hit"] is True
+            and after == EXPECTED_SCENE_HP,
+            "that fight takes its first action, at the seed the scene saved",
+            f"detail={swung['detail']!r} hp={after}",
+        )
+
+        diagnosed = scene["diagnosed"]
+        errors = diagnosed.get("errors", [])
+        report(
+            diagnosed.get("ok") is False
+            and [str(one.get("problem", "")) for one in errors] == [MALFORMED_PROBLEM]
+            and [str(one.get("field", "")) for one in errors] == ["combatants"]
+            and [str(one.get("field", "")) for one in diagnosed.get("warnings", [])] == ["seed"],
+            "scene.validate reports what an envelope got wrong without storing it",
+            json.dumps(diagnosed)[:300],
+        )
+        refused_status, refused_scene = scene["refused"]
+        refusal = str(refused_scene.get("detail", ""))
+        report(
+            refused_status == 400
+            and f"scene {MALFORMED_SCENE_ID!r} cannot be saved" in refusal
+            and MALFORMED_PROBLEM in refusal
+            and [str(row["id"]) for row in scene["listed_after"]["scenes"]] == [SCENE_ID],
+            "a malformed scene is refused as problem+json and never reaches the listing",
+            f"status={refused_status} detail={refusal[:200]} "
+            f"listed={[row['id'] for row in scene['listed_after']['scenes']]}",
+        )
+
+        # -- 8. the contract cannot drift ------------------------------------
         declared = declared_operations()
         index = primary.json_call("GET", "/operations")
         listed = {str(entry["operation"]) for entry in index["operations"]}
@@ -1154,7 +1528,7 @@ def main() -> int:
             f"exit={helped.returncode} unrendered={unrendered}",
         )
 
-        # -- 7b. and the examples that make an object-valued argument callable --
+        # -- 8b. and the examples that make an object-valued argument callable --
         exemplified = declared_examples()
         by_id = {
             str(operation.get("operationId", "")): operation
@@ -1235,7 +1609,7 @@ def main() -> int:
             "the injected config is absent from GET /",
         )
 
-        # -- 8. and it all stops ---------------------------------------------
+        # -- 9. and it all stops ---------------------------------------------
         for engine in engines:
             engine.cleanup()
         report(
