@@ -470,8 +470,9 @@ format rather than by the operation.
 
 The editor is a page the engine serves, so starting it is starting the engine:
 
-- **`fivee serve`** starts one and prints `url` (the editor) and `viewer_url`
-  (the replay viewer), or reports the running one with `already_running` true.
+- **`fivee serve`** starts one and prints `editor_url` (the editor),
+  `viewer_url` (the replay viewer) and `url` (the landing page that links to
+  both), or reports the running one with `already_running` true.
   `fivee stop` shuts it down. Any other `fivee` command starts one too if
   nothing is serving — `serve` exists for when the URL is what you want.
 - **`fivee-sim-server [--maps-dir DIR] [--port N]`** runs it in the foreground
@@ -674,7 +675,7 @@ Small bundles come back inline; larger ones (or any call with `path`) are
 written to `<maps root>/replays/<name>-<seed>.json`. With `embed` true the
 bundle is baked into the replay viewer instead, yielding a single
 self-contained `.html` — open it in any browser, no server required. The
-viewer is also served live at `/viewer` by the editor process, where it takes
+viewer is also served live at `/viewer` by the engine process, where it takes
 a dropped bundle file. JSON and HTML results both report the SHA-256 of the
 exact bytes written, and replacement is atomic.
 

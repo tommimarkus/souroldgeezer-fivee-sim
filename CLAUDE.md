@@ -307,6 +307,16 @@ can pass a table.
 **Every operation reports its seed.** An operation called without one picks a
 seed and returns it, so no result is ever irreproducible.
 
+**Three pages are served, and `/` is the index rather than a tool.** `/editor`
+is the map editor, `/viewer` the replay viewer, and `/` a landing page that
+links to both and renders the operation list it fetches from `GET
+/api/v1/operations`. The editor held `/` while `map_editor_serve` existed to
+open a browser on it; it does not any more, and `fivee serve` reports
+`editor_url` alongside `url` because a caller that hands `url` to someone
+asking for the editor now sends them to the index. The landing page never
+spells an operation into its own markup — the list is whatever the route table
+answered, which is the same reason `routes.py` is the one declaration.
+
 **The browser assets are checked in two halves, and the split is the point.**
 This paragraph used to read "checked as text, not driven … a renderer defect
 ships green. That is deliberate." That posture is reversed, and it was reversed
@@ -316,7 +326,7 @@ array threw mid-resize — after `snapshot()`, after earlier planes had been
 rewritten — leaving a half-resized document that `btn-download` writes to disk
 without the server ever validating it.
 
-So `editor.html`, `viewer.html` and `renderer.js` are now checked twice, and
+So `home.html`, `editor.html`, `viewer.html` and `renderer.js` are now checked twice, and
 each half owns one kind of claim. **Text contracts stay in
 `tests/test_web_assets.py`**: injection slots, balanced tags, the offline
 guarantee — properties of the source, asserted as source. **Behaviour lives in

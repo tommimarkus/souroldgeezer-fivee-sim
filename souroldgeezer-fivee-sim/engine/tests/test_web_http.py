@@ -482,7 +482,7 @@ class TestGuards:
 
 class TestStaticPages:
     def test_the_editor_page_carries_the_config_exactly_once(self, editor: Editor) -> None:
-        response = editor.request("GET", "/", token=False)
+        response = editor.request("GET", "/editor", token=False)
         assert response.status == 200
         assert response.headers["Content-Type"].startswith("text/html")
         assert response.headers["Cache-Control"] == "no-store"
@@ -495,7 +495,33 @@ class TestStaticPages:
         # engine actually serving it, so a stale install is visible in the UI
         # rather than only in a /ping nobody reads. Anchored to the real
         # __version__ so a hardcoded or last-release string fails here.
+        response = editor.request("GET", "/editor", token=False)
+        assert f'version: "{__version__}"' in response.text
+
+    def test_the_root_is_the_landing_page_and_not_the_editor(self, editor: Editor) -> None:
+        """The move, asserted by identity rather than by status.
+
+        Both pages answer 200 with HTML and both carry the injected config, so
+        every weaker assertion here stays green against a server that never
+        moved the editor. What separates them is the editing surface: the
+        landing page has no canvas and none of the editor's controls.
+        """
         response = editor.request("GET", "/", token=False)
+        assert response.status == 200
+        assert response.headers["Content-Type"].startswith("text/html")
+        assert 'id="operations"' in response.text
+        assert 'id="map"' not in response.text
+        assert 'id="btn-download"' not in response.text
+        assert 'href="/editor"' in response.text
+        assert 'href="/viewer"' in response.text
+
+    def test_the_landing_page_is_configured_like_any_served_page(self, editor: Editor) -> None:
+        # It fetches the operations index with the launch token, so it needs
+        # the same injection the other two get — and needs it exactly once.
+        response = editor.request("GET", "/", token=False)
+        assert CONFIG_MARKER not in response.text
+        assert len(CONFIG_RE.findall(response.text)) == 1
+        assert editor.server.token in response.text
         assert f'version: "{__version__}"' in response.text
 
     def test_the_viewer_page_is_configured_and_keeps_its_data_slot(self, editor: Editor) -> None:
@@ -523,7 +549,7 @@ class TestStaticPages:
         stops UI redress — an attacker page framing the real editor, token and
         all, and clicking its real buttons. These two headers do.
         """
-        for path in ("/", "/viewer"):
+        for path in ("/", "/editor", "/viewer"):
             response = editor.request("GET", path, token=False)
             assert response.status == 200, path
             assert response.headers["X-Frame-Options"] == "DENY", path
@@ -531,7 +557,12 @@ class TestStaticPages:
 
     def test_every_response_forbids_content_type_sniffing(self, editor: Editor) -> None:
         """Including the API's, whose problem+json a sniffer could read as HTML."""
-        for path, token in (("/", False), ("/assets/renderer.js", False), ("/api/v1/ping", True)):
+        for path, token in (
+            ("/", False),
+            ("/editor", False),
+            ("/assets/renderer.js", False),
+            ("/api/v1/ping", True),
+        ):
             response = editor.request("GET", path, token=token)
             assert response.headers["X-Content-Type-Options"] == "nosniff", path
 

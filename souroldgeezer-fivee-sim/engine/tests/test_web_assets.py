@@ -45,8 +45,16 @@ import pytest
 from fivee_sim.web.http_server import CONFIG_MARKER
 
 STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
-PAGES = ("editor.html", "viewer.html")
-ASSETS = ("editor.html", "viewer.html", "renderer.js")
+#: Every served HTML page. Claims parametrized over this one are claims about
+#: being a page of this service at all: a doctype, balanced tags, one config
+#: marker, no off-origin reference.
+PAGES = ("editor.html", "viewer.html", "home.html")
+#: The two that draw. The landing page has no canvas and must not load the
+#: renderer, so the drawing claims cannot live on ``PAGES`` — a tuple that
+#: quietly grew a third member would otherwise start asserting the landing page
+#: pulls in a script it has no use for.
+CANVAS_PAGES = ("editor.html", "viewer.html")
+ASSETS = (*PAGES, "renderer.js")
 
 EMBED_SLOT = '<script type="application/json" id="embedded-data">null</script>'
 RENDERER_TAG = '<script src="/assets/renderer.js"></script>'
@@ -65,7 +73,7 @@ _REFERENCE = re.compile(r"""(?:src|href)=\\?["']([^"'\\]+)""")
 #: are local by construction, but the set stays explicit rather than becoming
 #: ``startswith("/")``: a typo'd route should fail here, not 404 in a browser.
 _ALLOWED_REFERENCES = frozenset(
-    {"/assets/renderer.js", "renderer.js", "/", "/viewer"}
+    {"/assets/renderer.js", "renderer.js", "/", "/editor", "/viewer"}
 )
 
 
@@ -87,7 +95,7 @@ class TestInjectionContracts:
         # anywhere would make "replace it exactly once" ambiguous.
         assert 'id="embedded-data"' not in read("editor.html")
 
-    @pytest.mark.parametrize("page", PAGES)
+    @pytest.mark.parametrize("page", CANVAS_PAGES)
     def test_each_page_loads_the_shared_renderer_by_its_served_route(self, page: str) -> None:
         # replay_export(embed=True) inlines the renderer by replacing this
         # exact tag, so it must exist verbatim and exactly once.
@@ -115,7 +123,8 @@ class TestOneServiceTwoPages:
         # `hidden` on the element itself, so the export is correct before a
         # single line of script runs — not un-hidden and then re-hidden.
         assert '<label id="served-replays" hidden>' in source
-        assert '<a id="link-editor" href="/" hidden>' in source
+        assert '<a id="link-home" href="/" hidden>' in source
+        assert '<a id="link-editor" href="/editor" hidden>' in source
 
     def test_the_viewer_reaches_the_network_only_behind_the_config_gate(self) -> None:
         # The offline guarantee, as source: the page's single fetch call sits
@@ -557,6 +566,49 @@ class TestSessionRestore:
         # baseline drives the dirty check that stamps provenance.edited, so a
         # restore that recomputed it would call the restored edits pristine.
         assert "source.baseline" in read("editor.html")
+
+
+class TestLandingPage:
+    """The root page: a signpost to the other two and to the contract.
+
+    Its whole job is to be derived rather than written. The operation list is
+    fetched from ``GET /api/v1/operations`` — the same table ``routes.py``
+    dispatches from — so the assertion that matters here is the *absence* of a
+    hand-written one: a page that spells the operations into its own markup
+    would be a second source of truth, green on the day it shipped and wrong by
+    the next route added.
+    """
+
+    def test_the_landing_page_links_to_each_other_page_exactly_once(self) -> None:
+        source = read("home.html")
+        assert source.count('href="/editor"') == 1
+        assert source.count('href="/viewer"') == 1
+
+    def test_the_landing_page_does_not_spell_out_the_operation_list(self) -> None:
+        # Named operations in the markup are the failure this page is designed
+        # to avoid; the index is rendered from what the server answered.
+        source = read("home.html")
+        for operation in ("encounter.act", "map.generate", "dice.roll"):
+            assert operation not in source, operation
+        assert 'id="operations"' in source
+
+    def test_the_landing_page_reaches_the_network_only_behind_the_config_gate(self) -> None:
+        # The same shape the viewer is held to: one fetch call, reachable only
+        # when the server injected a config. Opened from disk it renders its
+        # links and says so, rather than throwing at an undefined token.
+        source = read("home.html")
+        assert source.count("window.fetch(") == 1
+        assert "if (CONFIG) { loadOperations(); }" in source
+
+    def test_the_landing_page_sends_the_launch_token(self) -> None:
+        # Every /api request needs it; a page that fetched without it would
+        # render an empty index and look like an engine with no operations.
+        assert '"X-Fivee-Editor-Token": CONFIG.token' in read("home.html")
+
+    def test_the_landing_page_has_no_embedded_data_slot(self) -> None:
+        # The slot belongs to the viewer's contract with the replay export;
+        # a second copy would make "replace it exactly once" ambiguous.
+        assert 'id="embedded-data"' not in read("home.html")
 
 
 class TestOfflineGuarantee:

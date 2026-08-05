@@ -95,12 +95,14 @@ map is written, because no flag grammar should try to spell one.
    **The listing carries no hash on purpose**, so the version a write is
    preconditioned on is always one somebody actually read. `--if-match '*'` creates
    a new id, or takes an existing file over deliberately — say so when you do.
-5. **Hand-tuning: `fivee serve`** starts the engine and prints both page URLs —
-   `url` for the map editor, `viewer_url` for the replay viewer (step 8). Hand the
-   user whichever they asked for; the pages link to each other, and each configures
-   its own access token, so there is nothing else to pass along. `fivee stop` shuts
-   both down. If a server is already up, `serve` reports it with `already_running`
-   true rather than starting a second.
+5. **Hand-tuning: `fivee serve`** starts the engine and prints three URLs —
+   `editor_url` for the map editor, `viewer_url` for the replay viewer (step 8),
+   and `url` for the landing page that links to both. Hand the user whichever
+   they asked for, and **`editor_url` when they asked for the editor**: `url` is
+   the index, not the editor. Each page configures its own access token, so there
+   is nothing else to pass along. `fivee stop` shuts them down. If a server is
+   already up, `serve` reports it with `already_running` true rather than
+   starting a second.
 6. **After GUI edits, re-read before writing.** The file is the truth, and every
    operation that names a map by id already reads it fresh — so a render or a fight
    started after their save sees their work with nothing to reload. What is stale is

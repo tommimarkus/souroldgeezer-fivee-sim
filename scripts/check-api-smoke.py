@@ -244,6 +244,30 @@ class Engine:
         except OSError as error:
             raise SmokeError(f"{method} {path} did not reach the server: {error}") from None
 
+    def page(self, path: str, timeout: float = 30.0) -> tuple[int, str, dict[str, str]]:
+        """One served page, fetched the way a browser would: no prefix, no token.
+
+        Deliberately not ``call``: the pages sit outside ``/api/v1`` and outside
+        the token guard, so reaching them through the API helper would prove
+        neither. A browser opening the printed URL sends exactly this.
+        """
+        if self.port is None:
+            raise SmokeError("no server has been started for this root yet")
+        request = urllib.request.Request(  # noqa: S310 - a literal loopback URL
+            f"http://127.0.0.1:{self.port}{path}", method="GET"
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+                return (
+                    response.status,
+                    response.read().decode("utf-8", "replace"),
+                    dict(response.headers),
+                )
+        except urllib.error.HTTPError as error:
+            return error.code, error.read().decode("utf-8", "replace"), dict(error.headers)
+        except OSError as error:
+            raise SmokeError(f"GET {path} did not reach the server: {error}") from None
+
     def json_call(self, method: str, path: str, body: Any = None) -> Any:
         """A request that must succeed, reduced to its payload."""
         status, payload, _ = self.call(method, path, body)
@@ -488,6 +512,33 @@ def declared_operations() -> set[str]:
     return found
 
 
+def declared_pages() -> dict[str, tuple[str, str]]:
+    """The ``PAGES`` table as source: served path -> (filename, content type).
+
+    Read the same way as the operations, and for the same reason — the copy the
+    launcher is serving is the only one worth checking. Deriving it also means a
+    page added or moved is covered here without anyone remembering to add a
+    case.
+    """
+    tree = ast.parse(ROUTES_SOURCE.read_text(encoding="utf-8"))
+    found: dict[str, tuple[str, str]] = {}
+    for node in ast.walk(tree):
+        target = getattr(node, "target", None)
+        if not isinstance(node, ast.AnnAssign) or not isinstance(target, ast.Name):
+            continue
+        if target.id != "PAGES" or not isinstance(node.value, ast.Dict):
+            continue
+        for key, value in zip(node.value.keys, node.value.values, strict=True):
+            if not isinstance(key, ast.Constant) or not isinstance(value, ast.Tuple):
+                continue
+            parts = [
+                element.value for element in value.elts if isinstance(element, ast.Constant)
+            ]
+            if len(parts) >= 2:
+                found[str(key.value)] = (str(parts[0]), str(parts[1]))
+    return found
+
+
 def main() -> int:
     if not LAUNCHER.is_file():
         print(f"launcher not found at {LAUNCHER}")
@@ -691,6 +742,29 @@ def main() -> int:
             helped.returncode == 0 and not unrendered,
             "fivee help renders every operation the server serves",
             f"exit={helped.returncode} unrendered={unrendered}",
+        )
+
+        pages = declared_pages()
+        answered = {}
+        for path, (filename, content_type) in sorted(pages.items()):
+            status, text, headers = primary.page(path)
+            answered[path] = (status, headers.get("Content-Type", ""), text)
+            report(
+                status == 200 and headers.get("Content-Type", "") == content_type,
+                f"GET {path} serves {filename}",
+                f"status={status} content-type={headers.get('Content-Type')!r}",
+            )
+        report(
+            answered.get("/", (0, "", ""))[2] != answered.get("/editor", (0, "", "x"))[2],
+            "the root page and the editor are two different documents",
+            "GET / and GET /editor returned identical bytes",
+        )
+        report(
+            "__FIVEE_EDITOR__" in answered.get("/", (0, "", ""))[2]
+            and primary.token is not None
+            and primary.token in answered.get("/", (0, "", ""))[2],
+            "the landing page is configured with this launch's own token",
+            "the injected config is absent from GET /",
         )
 
         # -- 7. and it all stops ---------------------------------------------

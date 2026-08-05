@@ -725,6 +725,7 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
     _print_json(
         {
             "url": server.url,
+            "editor_url": f"{server.url}editor",
             "viewer_url": f"{server.url}viewer",
             "port": server.port,
             "maps_dir": server.maps_dir,
