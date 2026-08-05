@@ -235,6 +235,22 @@ class TestRulingConditions:
         with pytest.raises(EncounterError, match="no combatant named 'Nobody'"):
             encounter.set_condition("Nobody", Condition.POISONED, applied=True)
 
+    def test_a_ruling_is_refused_by_immunity_and_says_so(self) -> None:
+        # The GM path is the fourth funnel into ``Creature.add_condition``: a
+        # ruling on an immune combatant must be refused exactly as an attack
+        # rider, a spell or an item's condition would be.
+        immune = fighter()
+        immune.condition_immunities = frozenset({Condition.POISONED})
+        encounter = Encounter([immune, make_monster("Wolf")], Random(7))
+
+        encounter.set_condition("Thora", Condition.POISONED, applied=True)
+
+        assert Condition.POISONED not in encounter.creatures["Thora"].conditions
+        applied = next(event for event in encounter.log if event.kind == "effect_apply")
+        assert applied.data["applied"] is False
+        assert applied.data["condition"] == Condition.POISONED
+        assert "immune" in applied.detail
+
 
 class TestAttacking:
     def test_a_hit_reduces_hit_points(self) -> None:
@@ -4484,6 +4500,33 @@ class TestSpellcasting:
             encounter.act(
                 Action(kind=ActionKind.CAST, spell="Shatter", targets=("Wolf",)), rng
             )
+
+    def test_a_condition_spell_is_refused_by_immunity_and_registers_no_effect(
+        self,
+    ) -> None:
+        # The spell path is a second funnel into ``Creature.add_condition``,
+        # separate from the attack rider one ``TestConditionImmunity`` in
+        # ``test_riders.py`` covers: Hold Person must not paralyze a target
+        # that is immune to Paralyzed, and it must not leave an ongoing
+        # effect behind to release later.
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        victim.condition_immunities = frozenset({Condition.PARALYZED})
+        rng = Random(11)
+        encounter = Encounter([wren, victim], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+
+        assert Condition.PARALYZED not in victim.conditions
+        assert encounter.state()["ongoing_effects"] == []
+        refused = next(event for event in events if event.kind == "effect_apply")
+        assert refused.data["applied"] is False
+        assert refused.data["condition"] == Condition.PARALYZED
+        assert "immune" in refused.detail
 
     def test_damage_forces_a_concentration_check(self) -> None:
         rng = Random(4)

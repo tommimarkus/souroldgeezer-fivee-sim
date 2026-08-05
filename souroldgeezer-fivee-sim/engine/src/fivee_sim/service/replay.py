@@ -337,6 +337,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),
+        "condition_immunities": sorted(creature.condition_immunities),
         "items": dict(sorted(creature.items.items())),
         "conditions": sorted(creature.conditions),
         # How the fight left them. Without these a recovered combatant comes

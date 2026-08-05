@@ -152,8 +152,8 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
     "redirect_attack",
     "spells", "spell_slots", "spell_save_dc", "spellcasting_ability",
-    "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
-    "vulnerabilities", "pack_tactics", "undead_fortitude",
+    "spell_attack_bonus", "items", "conditions", "condition_immunities",
+    "immunities", "resistances", "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -825,6 +825,11 @@ def _parse_creature(
         reader.enum_list(key, DamageType)
     reader.string_list("spells")
     reader.string_list("conditions")
+    # A plain string list, never validated against the active condition
+    # table: an immunity is a declarative refusal, not a lookup, so a stat
+    # block can be immune to a condition this engine has no table row for
+    # (SRD 5.2.1's Zombie and Skeleton both print immunity to Exhaustion).
+    reader.string_list("condition_immunities")
     for item_name, count in reader.mapping("items").items():
         if isinstance(count, bool) or not isinstance(count, int) or count < 0:
             reader.fail("items", f"{item_name} quantity must be a whole number of 0 or more")

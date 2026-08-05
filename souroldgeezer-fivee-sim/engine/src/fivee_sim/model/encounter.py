@@ -1714,8 +1714,17 @@ class Encounter:
         target = self.creatures[target_name]
         if applied:
             # ``add_condition`` looks the name up before recording it, so an
-            # unknown condition is refused here rather than carried.
-            target.add_condition(condition)
+            # unknown condition is refused here rather than carried. It is
+            # also the immunity gate: a ruling is a fourth path into it, and
+            # gets no exemption from what an attack, a spell or an item
+            # already cannot do to this target.
+            if not target.add_condition(condition):
+                self._emit(
+                    "effect_apply", "", target_name,
+                    f"{condition} not imposed by ruling — {target_name} is immune",
+                    condition=condition, applied=False, ruling=True,
+                )
+                return
             self._emit(
                 "effect_apply", "", target_name,
                 f"{condition} imposed by ruling",
@@ -4168,17 +4177,33 @@ class Encounter:
         concentration: bool,
         expires_phase: str = "",
         expires_anchor: str = "",
-    ) -> None:
+    ) -> bool:
         """Impose ``condition`` and record what is imposing it.
 
         Registration happens *after* ``add_condition`` so a name the active table
         does not define is refused before anything is written down, and the
         ``stacked`` reading is taken *before*, because it is a statement about the
         creature as it was.
+
+        Returns whether the condition took hold. A target immune to it gets no
+        :class:`OngoingEffect` — there would be nothing for it to later release —
+        and a refusal event instead, so a GM watching ``effect_name`` land on an
+        immune target sees why nothing happened rather than reading it as
+        dropped silently. The spell and item paths call this directly; the
+        attack-rider path (:meth:`_apply_attack_rider`) checks immunity itself
+        first, to skip a saving throw that could never matter, and so never
+        reaches this branch — but the refusal here still fires for it if that
+        pre-check is ever missed, because the true gate is ``add_condition``.
         """
         held_by_ledger = self._holders(target.name, condition)
         already_held = condition in target.conditions
-        target.add_condition(condition)
+        if not target.add_condition(condition):
+            self._emit(
+                "effect_apply", source.name, target.name,
+                f"{effect_name}: {target.name} is immune to {condition}",
+                condition=condition, applied=False,
+            )
+            return False
         self._next_effect_id += 1
         self._effects.append(
             OngoingEffect(
@@ -4193,6 +4218,7 @@ class Encounter:
                 expires_anchor=expires_anchor,
             )
         )
+        return True
 
     def _apply_attack_rider(
         self, actor: Creature, target: Creature, option: AttackOption, rng: Random
@@ -4228,6 +4254,18 @@ class Encounter:
                 "effect_apply", actor.name, target.name,
                 f"{option.name}: {target.name} is {target.size} and the rider "
                 f"reaches {option.on_hit_max_size} or smaller",
+                attack=option.name, condition=condition, applied=False, saved=None,
+            )
+            return
+        # Checked before the save for the same reason the size gate is: a save
+        # an immune target could never fail must not be rolled, or the draw
+        # would move every later roll in the fight. ``add_condition`` is the
+        # actual gate and would refuse this regardless — this only spares the
+        # roll. See the ruling on ``Creature.condition_immunities``.
+        if condition in target.condition_immunities:
+            self._emit(
+                "effect_apply", actor.name, target.name,
+                f"{option.name}: {target.name} is immune to {condition}",
                 attack=option.name, condition=condition, applied=False, saved=None,
             )
             return

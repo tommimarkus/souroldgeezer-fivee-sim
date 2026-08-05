@@ -376,6 +376,23 @@ class Creature:
     resistances: frozenset[DamageType] = frozenset()
     immunities: frozenset[DamageType] = frozenset()
     vulnerabilities: frozenset[DamageType] = frozenset()
+    #: Conditions this creature can never gain — the SRD's "Condition
+    #: Immunities" line, Skeleton and Zombie's Poisoned among 81 SRD stat
+    #: blocks. A plain ``str`` set, for the same reason a condition on the
+    #: creature itself is a plain ``str``: a pack names its own conditions and
+    #: this field must not require an enum member to say one is refused.
+    #:
+    #: :meth:`add_condition` is the one place immunity actually *refuses* a
+    #: condition — every path that imposes one funnels through it, directly or
+    #: by way of ``Encounter._apply_condition``, so there is exactly one gate
+    #: to keep in step. An attack rider's saving throw is the sole exception
+    #: allowed to read this set on its own, and only to decide whether to
+    #: *roll* at all: an immune target can never fail a save it would also
+    #: never fail to be refused for, so rolling one anyway would needlessly
+    #: consume the RNG stream, exactly as the size gate already avoids doing.
+    #: That query changes no outcome ``add_condition`` would not have reached
+    #: on its own — it only spares a roll nobody needed.
+    condition_immunities: frozenset[str] = frozenset()
     #: A point in feet; a scalar is accepted and widened to ``(x, 0)``.
     position: Point | int = (0, 0)
     #: Which of the eight grid directions the creature is looking, or ``None``
@@ -492,6 +509,9 @@ class Creature:
             vulnerabilities=frozenset(
                 DamageType(entry) for entry in record.get("vulnerabilities", [])
             ),
+            condition_immunities=frozenset(
+                str(entry) for entry in record.get("condition_immunities", [])
+            ),
             conditions={str(entry) for entry in record.get("conditions", [])},
             condition_effects=condition_effects,
             position=position,
@@ -560,13 +580,35 @@ class Creature:
         return effect_of(condition, self.condition_effects)
 
     # --- mutation ---------------------------------------------------------
-    def add_condition(self, condition: str) -> None:
+    def add_condition(self, condition: str, *, override_immunity: bool = False) -> bool:
+        """Impose ``condition`` and report whether it took hold.
+
+        The one chokepoint every condition-imposing path funnels through —
+        an attack rider, a spell, an item and a GM ruling all end up here,
+        directly or through :meth:`~fivee_sim.model.encounter.Encounter.
+        _apply_condition`. An immunity refuses outright and is checked
+        *before* the active table is even consulted, so a creature can be
+        immune to a condition the table does not define — SRD 5.2.1's Zombie
+        and Skeleton both print immunity to Exhaustion, which this engine has
+        no table row for, and that immunity must not need one to be legal.
+
+        ``override_immunity`` exists for exactly one caller:
+        :meth:`~fivee_sim.model.creature.Creature.take_damage`, which drops a
+        creature Unconscious (and Prone with it) as a structural consequence
+        of reaching 0 hit points. That is engine machinery rather than an
+        effect being *imposed* on the creature — the same standing the SRD
+        condition table itself holds inside ``STRUCTURAL_CONDITIONS`` — so it
+        is not something an immunity to Unconscious or Prone can refuse.
+        """
+        if not override_immunity and condition in self.condition_immunities:
+            return False
         # Look the effect up first: an unknown name must be refused before it is
         # recorded, or the creature carries a condition nothing can resolve.
         incapacitates = self._effect(condition).incapacitated
         self.conditions.add(condition)
         if incapacitates:
             self.concentrating_on = None
+        return True
 
     def remove_condition(self, condition: str) -> None:
         self.conditions.discard(condition)
@@ -613,8 +655,11 @@ class Creature:
         self.death_save_successes = 0
         self.death_save_failures = 0
         self.concentrating_on = None
-        self.add_condition(Condition.UNCONSCIOUS)
-        self.add_condition(Condition.PRONE)
+        # Structural, not imposed: dropping to 0 hit points is engine
+        # machinery, so immunity to Unconscious or Prone does not stop it —
+        # see the ruling on ``add_condition``.
+        self.add_condition(Condition.UNCONSCIOUS, override_immunity=True)
+        self.add_condition(Condition.PRONE, override_immunity=True)
 
     def heal(self, amount: int) -> None:
         if self.dead or amount <= 0:

@@ -143,6 +143,9 @@
       "immunities": [
         "poison"
       ],
+      "condition_immunities": [
+        "poisoned"
+      ],
       "undead_fortitude": true,
       "attacks": [
         {
@@ -159,10 +162,6 @@
         {
           "code": "unsupported_condition_immunity",
           "feature": "Exhaustion"
-        },
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Poisoned"
         }
       ]
     },
@@ -185,6 +184,9 @@
       },
       "immunities": [
         "poison"
+      ],
+      "condition_immunities": [
+        "poisoned"
       ],
       "vulnerabilities": [
         "bludgeoning"
@@ -213,10 +215,6 @@
         {
           "code": "unsupported_condition_immunity",
           "feature": "Exhaustion"
-        },
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Poisoned"
         },
         {
           "code": "unsupported_passive_perception",

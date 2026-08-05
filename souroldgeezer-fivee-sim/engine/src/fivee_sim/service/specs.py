@@ -187,7 +187,7 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
-    "resistances", "immunities",
+    "resistances", "immunities", "condition_immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
     "provenance", "facing",
     # Carried-over state: the condition a combatant walked out of the *previous*
@@ -447,6 +447,9 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             vulnerabilities=frozenset(
                 _closed(DamageType, entry, "vulnerabilities")
                 for entry in spec.get("vulnerabilities", [])
+            ),
+            condition_immunities=frozenset(
+                str(entry) for entry in spec.get("condition_immunities", [])
             ),
             items={str(k): int(v) for k, v in spec.get("items", {}).items()},
             conditions={str(entry) for entry in spec.get("conditions", [])},

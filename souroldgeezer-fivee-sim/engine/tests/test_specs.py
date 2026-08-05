@@ -131,6 +131,30 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
             api.encounter_create([{**HERO, "hp": 31}, dict(GOBLIN)])
 
 
+class TestConditionImmunitySpec:
+    """``condition_immunities`` on an inline spec — the construction path
+    separate from ``Creature.from_record``, ``creature_from_spec`` builds a
+    combatant straight from an ``encounter.create`` combatant description
+    with no pack record behind it at all.
+    """
+
+    def test_an_inline_spec_carrying_condition_immunities_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec(
+            {**HERO, "condition_immunities": ["poisoned", "frightened"]}, registry
+        )
+
+        assert built.condition_immunities == frozenset({"poisoned", "frightened"})
+
+    def test_condition_immunities_defaults_to_empty(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.condition_immunities == frozenset()
+
+
 SHORTBOW: dict[str, Any] = {
     "name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3",
     "damage_type": "piercing", "kind": "ranged",

@@ -24,6 +24,7 @@ import pytest
 
 from fivee_sim.content import load_packs, make_creature
 from fivee_sim.kernel.actions import AttackKind, RiderExpiry, resolve_attack
+from fivee_sim.kernel.conditions import UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType, Size
 from fivee_sim.model.creature import AttackOption, Creature
@@ -72,6 +73,7 @@ def creature(
     conditions: set[str] | None = None,
     max_hp: int = 60,
     size: Size = Size.MEDIUM,
+    condition_immunities: frozenset[str] = frozenset(),
 ) -> Creature:
     return Creature(
         name=name,
@@ -83,6 +85,7 @@ def creature(
         conditions=conditions or set(),
         position=position,
         size=size,
+        condition_immunities=condition_immunities,
         provenance=FIXTURE,
     )
 
@@ -236,6 +239,96 @@ class TestOnHitConditionRiders:
         assert reaction.data["hit"], "the seed must land the reaction hit"
         assert "poisoned" in runner.conditions
         assert any(event.kind == "effect_apply" for event in events)
+
+
+class TestConditionImmunity:
+    """A stat block immune to a condition never gains it — SRD 5.2.1's Skeleton
+    and Zombie, immune to Poisoned among others.
+
+    Enforcement sits at :meth:`Creature.add_condition`, the one chokepoint
+    every condition-imposing path funnels through: an attack rider, a spell,
+    an item and a GM ruling all reach it — the spell and GM cases live in
+    ``test_encounter.py``, next to the rest of their own paths. This class
+    covers the attack-rider path and the model-level rules that make the
+    chokepoint hold regardless of which path calls it.
+    """
+
+    def test_an_attack_rider_is_refused_by_immunity_and_says_so(self) -> None:
+        attacker = creature("Centipede", team="monsters", attacks=(bite(),))
+        target = creature(
+            "Golem", team="party", position=5,
+            condition_immunities=frozenset({"poisoned"}),
+        )
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        events = bite_and_advance_to_target(encounter, rng, "Centipede", "Golem")
+        assert "poisoned" not in target.conditions
+        assert target.hp < target.max_hp, "the bite must still deal its damage"
+        refused = next(event for event in events if event.kind == "effect_apply")
+        assert refused.data["applied"] is False
+        assert refused.data["condition"] == "poisoned"
+        assert "immune" in refused.detail
+
+    def test_the_same_bite_still_poisons_a_target_without_the_immunity(self) -> None:
+        # The regression pin: refusing the immune target above must not have
+        # disabled the rider for everybody.
+        attacker = creature("Centipede", team="monsters", attacks=(bite(),))
+        target = creature("Thora", team="party", position=5)
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        bite_and_advance_to_target(encounter, rng, "Centipede", "Thora")
+        assert "poisoned" in target.conditions
+
+    def test_immunity_is_settled_before_any_save_is_rolled(self) -> None:
+        """Same RNG-stream proof as the size gate, for the same reason.
+
+        An immune target must not consume a saving throw it can never fail —
+        rolling one would move every later draw, and a save-carrying rider
+        would then behave differently at one seed than an otherwise identical
+        rider with no save at all.
+        """
+
+        def stream_after_a_refused_bite(save_dc: int | None) -> float:
+            attacker = creature(
+                "Centipede", team="monsters", attacks=(bite(save_dc=save_dc),)
+            )
+            target = creature(
+                "Golem", team="party", position=5,
+                condition_immunities=frozenset({"poisoned"}),
+            )
+            encounter, rng = build_encounter([attacker, target], seed=3)
+            bite_and_advance_to_target(encounter, rng, "Centipede", "Golem")
+            assert "poisoned" not in target.conditions
+            return rng.random()
+
+        assert stream_after_a_refused_bite(None) == stream_after_a_refused_bite(15), (
+            "immunity rolled a saving throw it should never have reached"
+        )
+
+    def test_no_ongoing_effect_is_registered_for_a_refused_condition(self) -> None:
+        attacker = creature("Centipede", team="monsters", attacks=(bite(),))
+        target = creature(
+            "Golem", team="party", position=5,
+            condition_immunities=frozenset({"poisoned"}),
+        )
+        encounter, rng = build_encounter([attacker, target], seed=3)
+        bite_and_advance_to_target(encounter, rng, "Centipede", "Golem")
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_immunity_to_an_undefined_condition_is_legal(self) -> None:
+        # SRD 5.2.1's Zombie and Skeleton print immunity to Exhaustion, a
+        # condition this engine has no table row for. Immunity is a
+        # declarative refusal, never a table lookup, so it must not need one.
+        golem = creature(
+            "Golem", team="monsters", condition_immunities=frozenset({"exhaustion"})
+        )
+        assert golem.add_condition("exhaustion") is False
+        assert "exhaustion" not in golem.conditions
+
+    def test_a_condition_the_table_does_not_define_still_raises_when_not_immune(
+        self,
+    ) -> None:
+        golem = creature("Golem", team="monsters")
+        with pytest.raises(UnknownCondition, match="exhaustion"):
+            golem.add_condition("exhaustion")
 
 
 class TestSizeGatedRiders:

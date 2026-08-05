@@ -95,9 +95,18 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
+`condition_immunities`,
 `unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
+
+`condition_immunities` is a plain list of condition names, never validated
+against the active condition table: an immunity is a declarative refusal, not
+a lookup, so a stat block can be immune to a condition this engine has no
+table row for (SRD 5.2.1's Zombie and Skeleton both print immunity to
+Exhaustion, which this engine does not model). A creature carrying one of
+these names never gains that condition from an attack rider, a spell, an item,
+or a GM ruling.
 
 There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
 placement, and reinforcement timing are per-instance — set them when adding a
@@ -281,7 +290,8 @@ consequences the rules engine already knows how to apply:
 `attacked_with_disadvantage`, `attacked_with_advantage_in_melee`,
 `attacked_with_disadvantage_at_range`, `own_attacks_have_advantage`,
 `own_attacks_have_disadvantage`, `own_ability_checks_have_advantage`,
-`own_ability_checks_have_disadvantage`, `cannot_see`, `unseen`,
+`own_ability_checks_have_disadvantage`, `initiative_advantage`,
+`initiative_disadvantage`, `cannot_see`, `unseen`,
 `auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
 `advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
 `melee_hits_are_critical`, `resists_all_damage`.
