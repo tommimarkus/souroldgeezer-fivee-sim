@@ -24,10 +24,19 @@
 
    Two seats read the same fight through two doors. The whole table's chair
    reads encounter.state, which reports everything and is what a person running
-   the fight needs. A player's chair reads encounter.view?as=<name>, which is
-   service/player_view.py's allowlist projection: their own sheet whole, an
-   opponent's condition in plain language, and an undetected creature absent
-   altogether.
+   the fight needs. A player's chair reads encounter.brief?as=<name>, which is
+   the allowlist projection Encounter.brief() carries in model/encounter.py:
+   their own sheet whole, their allies' sheets whole beside it, an opponent
+   reduced to where it is standing and how badly hurt it looks in words, and an
+   undetected creature absent altogether.
+
+   The two doors answer two *shapes*, and the second one is the better of the
+   two to draw from. encounter.state is one flat `combatants` list in initiative
+   order. A brief arrives already sorted into `you`, `allies` and `enemies`, and
+   the enemy entries carry two facts the flat list never had: how far off they
+   are, and a plain-language `health` band where their hit points would be.
+   cast() is the one place that knows both shapes, and it keeps what the brief
+   adds rather than flattening it back into what the other door answers.
 
    This is not a permission system, and nothing here should be read as one.
    `as=` is asserted by the caller and authenticated by nothing — this engine
@@ -41,8 +50,9 @@
 
    A write carries the chair as well as a read. encounter.create, encounter.act
    and encounter.advance each take the same `as=`, so the answer to a player's
-   own post arrives already projected and this file is never handed what it
-   would then have to remember not to draw. It used to be: those three answered
+   own post arrives already projected — in the brief's own shape, not a second
+   redacted one — and this file is never handed what it would then have to
+   remember not to draw. It used to be: those three answered
    the acting fight's *full* state whichever chair posted it, and the driver
    survived that only by reading `events` out of the answer and discarding the
    rest — hiding in the browser, which is inert against anything that reads the
@@ -61,7 +71,7 @@ var FiveePlay = (function () {
      halfway through somebody's fight. */
   var OPENAPI = "/openapi.json";
   var ENCOUNTERS = "/encounters";
-  var VIEW = "/view";
+  var BRIEF = "/brief";
   var ACTIONS = "/actions";
   var ADVANCE = "/advance";
   /* The operationId of the route whose request body declares the action kinds.
@@ -578,7 +588,7 @@ var FiveePlay = (function () {
   /* The whole table reads the authoritative state; a player reads their own
      brief, and never the other. */
   function readPath() {
-    return seat === "" ? encounterPath() : encounterPath() + VIEW + seatQuery();
+    return seat === "" ? encounterPath() : encounterPath() + BRIEF + seatQuery();
   }
   function refresh() {
     return ctx.request("GET", readPath()).then(function (response) {
@@ -619,12 +629,51 @@ var FiveePlay = (function () {
   }
 
   /* --- what this seat may see -------------------------------------------- */
-  function combatants() {
-    return (snapshot && snapshot.combatants) || [];
+  /* The fight's cast, from whichever door it came through, and the one place in
+     this file that knows there are two.
+
+     encounter.state answers a flat `combatants` list. A brief answers `you`,
+     `allies` and `enemies` instead — a shape that carries strictly more than
+     the flat one, because an enemy entry comes with a `distance` and a `health`
+     band in place of the sheet it is not sent. Nothing is stripped on the way
+     through here: every entry is passed on as the engine wrote it, and the
+     readers below take what their own row needs.
+
+     `you` is the discriminator rather than `as`, because `you` is the field the
+     difference is actually about: an answer that carries the asker's own entry
+     as its own key is an answer that has been sorted into sides. */
+  function cast() {
+    if (!snapshot) { return []; }
+    if (snapshot.you) {
+      return [snapshot.you].concat(snapshot.allies || [], snapshot.enemies || []);
+    }
+    return snapshot.combatants || [];
+  }
+  /* Everyone this seat can see, in the order they will act.
+
+     The GM's state names that order outright. A brief does not, and the
+     omission is deliberate rather than an oversight: `order` would name every
+     creature in the fight, the ambusher this seat has not detected included, so
+     publishing it would undo the projection in one key. What a brief does carry
+     is each visible creature's `initiative`, which is a number called out loud
+     at a real table — so the rail this chair is entitled to is rebuilt from it,
+     highest first, and a seat sees the running order of the fight it can see. */
+  function railRows() {
+    var everyone = cast();
+    if (snapshot && snapshot.order) {
+      return snapshot.order.map(function (name) {
+        var found = { name: name };
+        everyone.forEach(function (each) { if (each.name === name) { found = each; } });
+        return found;
+      });
+    }
+    return everyone.slice().sort(function (first, second) {
+      return (second.initiative || 0) - (first.initiative || 0);
+    });
   }
   function creatureAt(cell) {
     var found = null;
-    combatants().forEach(function (each) {
+    cast().forEach(function (each) {
       var at = feetToCell(each.position || [0, 0]);
       if (at[0] === cell[0] && at[1] === cell[1]) { found = each; }
     });
@@ -644,24 +693,34 @@ var FiveePlay = (function () {
   function actor() {
     var turn = snapshot && snapshot.turn;
     var found = null;
-    combatants().forEach(function (each) {
+    cast().forEach(function (each) {
       if (each.name === turn) { found = each; }
     });
     return found;
   }
   /* Whether this chair may act right now. The whole table always may — it
-     speaks for whoever's turn it is. A player may only on their own turn, and
-     only while the engine is still reporting them a turn budget. */
+     speaks for whoever's turn it is.
+
+     A player is answered the question outright: `your_turn` is the brief's own
+     verdict on it, so this reads the published answer rather than re-deriving
+     one. Comparing `turn` to this seat's name gives the same verdict today, and
+     it is worth knowing why it is the same rather than assuming it: a brief
+     nulls `turn` when the creature acting is one this seat cannot see, and the
+     asker is never one of those — so the two agree only because of a rule about
+     a *different* field. Read the field that answers the question.
+
+     The turn budget is the other half, because it is the acting creature's own
+     and arrives only with a turn to spend it on. */
   function mayAct() {
     if (!snapshot || snapshot.over || !encounterId) { return false; }
     if (seat === "") { return true; }
-    return snapshot.turn === seat && !!snapshot.turn_state;
+    return !!snapshot.your_turn && !!snapshot.turn_state;
   }
 
   /* --- drawing ------------------------------------------------------------ */
   function drawTokens() {
     if (!snapshot) { ctx.setTokens(null); return; }
-    ctx.setTokens(combatants().map(function (each) {
+    ctx.setTokens(cast().map(function (each) {
       var token = {
         at: feetToCell(each.position || [0, 0]),
         team: each.team || "",
@@ -671,10 +730,10 @@ var FiveePlay = (function () {
         stable: !!each.stable
       };
       if (each.facing) { token.facing = each.facing; }
-      /* Only where a number was actually sent. A player's brief reports an
-         opponent's condition as a band and no hit points at all, and a ring
-         drawn from a band would be this page inventing the number the brief
-         exists to withhold. */
+      /* Only where a number was actually sent. A brief's `enemies` carry a
+         health band and no hit points at all — its `you` and its `allies` carry
+         both, because a table shares its numbers — and a ring drawn from a band
+         would be this page inventing the number the brief exists to withhold. */
       if (typeof each.hp === "number" && typeof each.max_hp === "number"
         && each.max_hp > 0) {
         token.hpFraction = each.hp / each.max_hp;
@@ -699,28 +758,32 @@ var FiveePlay = (function () {
   function renderOrder() {
     clear(el.order);
     if (!snapshot) { return; }
-    (snapshot.order || []).forEach(function (name) {
-      var creature = null;
-      combatants().forEach(function (each) {
-        if (each.name === name) { creature = each; }
-      });
+    railRows().forEach(function (creature) {
       var row = make("div", null, "play-seat-row");
-      if (name === snapshot.turn) { row.classList.add("play-current"); }
-      var parts = [name];
-      if (creature) {
-        if (typeof creature.initiative === "number") {
-          parts.push("init " + creature.initiative);
-        }
-        /* Whichever the seat was sent, and never both invented: the numbers
-           where this chair has them, the band where it does not. */
-        if (typeof creature.hp === "number" && typeof creature.max_hp === "number") {
-          parts.push(creature.hp + "/" + creature.max_hp + " hp");
-        } else if (creature.health_band) {
-          parts.push(String(creature.health_band));
-        }
-        if ((creature.conditions || []).length) {
-          parts.push(creature.conditions.join(", "));
-        }
+      if (creature.name === snapshot.turn) { row.classList.add("play-current"); }
+      var parts = [String(creature.name)];
+      if (typeof creature.initiative === "number") {
+        parts.push("init " + creature.initiative);
+      }
+      /* Whichever the seat was sent, and never both invented: the numbers
+         where this chair has them — its own row and every ally's — and the
+         band where it does not. The band's own vocabulary is the engine's
+         (model.HEALTH_BANDS), so it is printed and never interpreted: a
+         driver that ranked these words would be keeping a copy of a scale it
+         is deliberately not told the edges of. */
+      if (typeof creature.hp === "number" && typeof creature.max_hp === "number") {
+        parts.push(creature.hp + "/" + creature.max_hp + " hp");
+      } else if (creature.health) {
+        parts.push(String(creature.health));
+      }
+      /* Only a brief measures one, and only for somebody other than you — the
+         reach of every kind on the bar is decided by it, so a chair that has
+         been told it should be able to read it without counting squares. */
+      if (typeof creature.distance === "number") {
+        parts.push(creature.distance + " ft away");
+      }
+      if ((creature.conditions || []).length) {
+        parts.push(creature.conditions.join(", "));
       }
       row.textContent = parts.join(" · ");
       el.order.appendChild(row);
@@ -987,17 +1050,19 @@ var FiveePlay = (function () {
   }
 
   /* The answer to a write, which named this chair in `as=` and so arrives
-     already narrowed to it — events included, since service/player_view.py
-     classifies an event's `data` key by key the way it classifies a creature's
-     fields. Only the events are read from it even so, and the fight re-read:
-     what a seat holds is decided in one place, and the answer to a post is a
-     fight one action old as soon as anybody else acts.
+     already narrowed to it — its `state` in the brief's own shape, and its
+     events with it, since Encounter.brief_events classifies an event's `data`
+     key by key the way brief_of classifies a creature's fields. Only the events
+     are read from it even so, and the fight re-read: what a seat holds is
+     decided in one place, and the answer to a post is a fight one action old as
+     soon as anybody else acts.
 
      `kind` is the field an event calls the thing that happened; this line read
      `each.type` for a release and rendered "2 events · undefined, undefined"
      every time anybody swung. It is also a field a player chair is served —
-     EVENT_ENVELOPE_SHARED names it — which `detail`, the GM's own sentence,
-     deliberately is not, so there is nothing else here worth reaching for. */
+     EVENT_ENVELOPE_VISIBLE_KEYS names it — which `detail`, the GM's own
+     sentence, deliberately is not, so there is nothing else here worth
+     reaching for. */
   function settled(response, fallback) {
     if (response.status !== 200) {
       refusal(response, fallback);

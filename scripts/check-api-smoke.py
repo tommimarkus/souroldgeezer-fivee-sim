@@ -115,11 +115,11 @@ EXPECTED_WOLF_HP = 11
 EXPECTED_EVENTS = 11
 EXPECTED_ATTACKS = ["Scimitar", "Bite"]
 
-#: The confidentiality scenario ``encounter.view`` exists to satisfy, written
+#: The confidentiality scenario ``encounter.brief`` exists to satisfy, written
 #: out because this script may not import the engine. These seven are the
 #: *scenario* — an opposing creature's own sheet, named as the design brief
 #: names it — not a copy of the projection's bucket, which
-#: ``tests/test_player_view.py`` derives from the model and holds on its own.
+#: ``tests/test_player_brief.py`` derives from the model and holds on its own.
 WITHHELD_FROM_A_PLAYER = ("hp", "max_hp", "ac", "spell_slots", "items", "attacks", "spells")
 
 #: The replay-v2 integrity hashes that two runs of one seeded fight must share.
@@ -1095,16 +1095,14 @@ def main() -> int:
         # check nothing: neither a nested key name nor a weapon's name can be
         # created or destroyed by json.dumps.
         seat = primary.json_call(
-            "GET", f"/encounters/{reference['encounter_id']}/view?as=Wolf"
+            "GET", f"/encounters/{reference['encounter_id']}/brief?as=Wolf"
         )
         rendered = json.dumps(seat, sort_keys=True)
         # Read defensively: a route wired to the wrong service function answers
         # a payload with none of these keys, and this case has to *report* that
         # rather than raise on it — a traceback names a dict key, not the
         # operation whose promise was broken.
-        opposing = [
-            one for one in seat.get("combatants", []) if one.get("name") != "Wolf"
-        ]
+        opposing = list(seat.get("enemies", []))
         leaked = sorted(
             key for one in opposing for key in WITHHELD_FROM_A_PLAYER if key in one
         )
@@ -1113,13 +1111,13 @@ def main() -> int:
         # absence check that can be satisfied by accident is not one.
         weapon = EXPECTED_ATTACKS[0]
         report(
-            seat.get("viewer") == "Wolf"
+            seat.get("as") == "Wolf"
             and bool(opposing)
-            and all("health_band" in one for one in opposing)
+            and all("health" in one for one in opposing)
             and not leaked
             and weapon not in rendered
             and weapon in json.dumps(state),
-            "encounter.view briefs the seat and withholds the sheet state reports",
+            "encounter.brief briefs the seat and withholds the sheet state reports",
             f"opposing={[one['name'] for one in opposing]} leaked={leaked} "
             f"{weapon}_in_brief={weapon in rendered}",
         )

@@ -15,7 +15,7 @@ afterwards — and ``map_source`` reports that divergence rather than hiding it.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from copy import deepcopy
 from pathlib import Path
 from random import Random
@@ -25,25 +25,98 @@ from .. import __version__
 from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
-from ..model.encounter import Action, ActionKind, EncounterError
-from . import content_ops, map_ops, player_view, primitives, sessions, specs
+from ..model.encounter import EVENT_LISTS, Action, ActionKind, EncounterError
+from . import content_ops, map_ops, primitives, sessions, specs
 from . import encounter_journal as journal_service
 from . import replay as replay_service
-from .errors import RequestError
+from .errors import NotFoundError, RequestError
 from .sessions import EngineState, Session
 
 __all__ = [
     "act",
     "advance",
+    "brief_for",
     "create",
     "event_log",
     "finalize",
     "list_encounters",
     "note",
     "replay_path",
+    "require_seat",
     "resume",
     "state_of",
 ]
+
+
+def require_seat(names: Collection[str], viewer: str) -> None:
+    """Refuse a name this cast does not hold, in the sentence the whole surface uses.
+
+    One sentence with one owner, because two callers ask this question about two
+    different things. :func:`_briefed` asks it of a *snapshot*, which is every
+    seat there is by the time a fight can be read; :func:`create` asks it of the
+    roster a fight is being *started* from, where the refusal has to land before
+    the encounter is created, journaled and given an id. A client that learns the
+    refusal from one operation has learnt it from all of them — and
+    :meth:`~fivee_sim.model.encounter.Encounter._seats_of` raises the same
+    sentence from the model, which this translates rather than restates.
+
+    ``NotFoundError`` rather than a plain refusal, so every door answers ``404``:
+    a seat is a thing that is or is not in this fight, and ``GET .../brief`` and
+    ``POST .../actions`` disagreeing about its status for one identical sentence
+    would be a surface with two vocabularies.
+    """
+    if viewer not in names:
+        raise NotFoundError(f"no combatant named {viewer!r} in this encounter")
+
+
+def _briefed(
+    session: Session, result: dict[str, Any], viewer: str | None
+) -> dict[str, Any]:
+    """One operation's answer, with the fight in it narrowed to a seat.
+
+    :meth:`~fivee_sim.model.encounter.Encounter.brief` was this projection's only
+    door for a release, and every operation that *changed* a fight answered
+    whichever seat posted it with the GM's whole snapshot. A player's client
+    could only hide what it had already been given, which is the failure the
+    projection exists to avoid — inert against devtools, a proxy, or an
+    extension. So the four operations that answer with a ``state`` pass it
+    through here.
+
+    ``None`` is *no chair asked*, and returns the result unchanged. That is the
+    whole of the additive promise: the CLI and the skills name no seat and get
+    back, byte for byte, the answer they always got.
+
+    **The projected ``state`` is the brief's shape, not a redacted snapshot.**
+    One projection, one shape: the brief is what the model can actually compute —
+    total cover is a relationship between two creatures and a map, and no
+    snapshot carries it — so a flat redacted ``state`` would be a second
+    projection, with a second classification to keep in step and a weaker filter
+    than this one. A caller that wants the flat shape omits ``as`` and is
+    answered exactly as before.
+
+    **The result is rebuilt, never edited.** The dictionary handed in is the one
+    the journal recorded and the one an idempotent retry replays, so projecting
+    it in place would rewrite a fight's own audit record into one player's brief
+    and answer the GM's next retry with it.
+
+    **``state`` and the events are narrowed together**, against one cast, so that
+    a creature the ``state`` omits is not named by an event beside it. What is
+    *not* narrowed is everything else in the answer: ``encounter_id``, ``seed``,
+    a content warning, a recovery warning. None of them is anybody's sheet.
+    """
+    if viewer is None:
+        return result
+    snapshot: dict[str, Any] = result["state"]
+    require_seat([str(one["name"]) for one in snapshot["combatants"]], viewer)
+    encounter = session.encounter
+    briefed: dict[str, Any] = {
+        **result, "state": encounter.brief_of(snapshot, viewer)
+    }
+    for key in EVENT_LISTS:
+        found = result.get(key)
+        if isinstance(found, list):
+            briefed[key] = encounter.brief_events(found, snapshot, viewer)
+    return briefed
 
 
 def replay_path(encounter_id: str) -> Path:
@@ -109,7 +182,7 @@ def create(
     if request_id is not None:
         existing = creation_request(state, request_id)
         if existing is not None:
-            return player_view.briefed(creation_response(state, *existing), viewer)
+            return _briefed(existing[1], creation_response(state, *existing), viewer)
     used = specs.checked_seed(seed)
     rng = Random(used)
     content = sessions.active_content(state)
@@ -130,7 +203,7 @@ def create(
     # with an orphan encounter standing behind it. The roster is the authority
     # on who is in this fight, and it is already built.
     if viewer is not None:
-        player_view.require_seat({one.name for one in built_combatants}, viewer)
+        require_seat({one.name for one in built_combatants}, viewer)
     encounter_id = sessions.new_encounter_id(state)
     session = Session(
         encounter=encounter, rng=rng, seed=used,
@@ -203,16 +276,21 @@ def create(
             "configured content failed to load; this fight uses the bundled slice "
             "only. See content_status."
         )
-    return player_view.briefed(result, viewer)
+    return _briefed(session, result, viewer)
 
 
 def brief_for(state: EngineState, encounter_id: str, as_name: str) -> dict[str, Any]:
-    """One combatant's own view of the fight — see :meth:`Encounter.brief`."""
+    """One combatant's own view of the fight — see :meth:`Encounter.brief`.
+
+    The model's refusal is translated rather than restated, and to the same
+    ``404`` :func:`require_seat` raises: an unknown seat is an unknown seat
+    whether it was named on a read or on a write.
+    """
     session = sessions.session_for(state, encounter_id)
     try:
         return session.encounter.brief(as_name)
     except EncounterError as error:
-        raise RequestError(str(error)) from error
+        raise NotFoundError(str(error)) from error
 
 
 def state_of(state: EngineState, encounter_id: str) -> dict[str, Any]:
@@ -448,7 +526,7 @@ def act(
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return player_view.briefed(cached, viewer)
+        return _briefed(session, cached, viewer)
     arguments: dict[str, Any] = {
         "kind": kind,
         "target": target,
@@ -530,7 +608,7 @@ def act(
         status="success",
         result=result,
     )
-    return player_view.briefed(result, viewer)
+    return _briefed(session, result, viewer)
 
 
 def execute_advance(
@@ -562,7 +640,7 @@ def advance(
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return player_view.briefed(cached, viewer)
+        return _briefed(session, cached, viewer)
     # Recorded for the reason ``act`` records its own: a death save the caller
     # rolled is an input, and a resume that re-rolled it would recover a fight
     # where somebody died who did not.
@@ -600,7 +678,7 @@ def advance(
         status="success",
         result=result,
     )
-    return player_view.briefed(result, viewer)
+    return _briefed(session, result, viewer)
 
 
 def resume(
@@ -627,7 +705,7 @@ def resume(
     }
     if warning is not None:
         result["recovery_warning"] = warning
-    return player_view.briefed(result, viewer)
+    return _briefed(session, result, viewer)
 
 
 def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any]:

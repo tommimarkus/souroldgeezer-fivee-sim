@@ -31,7 +31,7 @@ from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
-from fivee_sim.model.encounter import ActionKind
+from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import maps as map_service
 from fivee_sim.service.common import sha256_of
@@ -2252,11 +2252,11 @@ def briefing_brawl() -> list[dict[str, Any]]:
     ]
 
 
-class TestThePlayerViewOverHttp:
-    """``encounter.view`` is the seat's brief, and its promise is byte-level.
+class TestThePlayerBriefOverHttp:
+    """``encounter.brief`` is the seat's view, and its promise is byte-level.
 
-    The unit cases in ``tests/test_player_view.py`` own the classification; what
-    is checked here is the thing a client actually receives. The assertions
+    The unit cases in ``tests/test_player_brief.py`` own the classification;
+    what is checked here is the thing a client actually receives. The assertions
     read ``response.body`` rather than the parsed dictionary because the leak
     being guarded against is a nested one — a withheld value surviving inside
     some summary a key check never looks at.
@@ -2275,10 +2275,12 @@ class TestThePlayerViewOverHttp:
     ) -> None:
         encounter_id = self.create(editor)
 
-        brief = editor.request("GET", f"/api/v1/encounters/{encounter_id}/view?as=Thora")
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
 
         assert brief.status == 200
-        assert brief.json()["viewer"] == "Thora"
+        assert brief.json()["as"] == "Thora"
         state = editor.request("GET", f"/api/v1/encounters/{encounter_id}")
         assert brief.headers["ETag"] == state.headers["ETag"]
 
@@ -2287,7 +2289,9 @@ class TestThePlayerViewOverHttp:
     ) -> None:
         encounter_id = self.create(editor)
 
-        brief = editor.request("GET", f"/api/v1/encounters/{encounter_id}/view?as=Thora")
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
 
         gm = editor.request("GET", f"/api/v1/encounters/{encounter_id}").body
         for secret in (
@@ -2306,24 +2310,30 @@ class TestThePlayerViewOverHttp:
     ) -> None:
         encounter_id = self.create(editor)
 
-        brief = editor.request("GET", f"/api/v1/encounters/{encounter_id}/view?as=Thora")
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        )
 
         gm = editor.request("GET", f"/api/v1/encounters/{encounter_id}").body
         assert BRIEFING_AMBUSHER.encode("utf-8") in gm
         assert BRIEFING_AMBUSHER.encode("utf-8") not in brief.body
 
-    def test_the_viewers_own_side_arrives_whole(self, editor: Editor) -> None:
+    def test_the_askers_own_sheet_arrives_whole_and_the_foe_gets_a_band(
+        self, editor: Editor
+    ) -> None:
         encounter_id = self.create(editor)
 
         brief = editor.request(
-            "GET", f"/api/v1/encounters/{encounter_id}/view?as=Thora"
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
         ).json()
 
-        seat = next(one for one in brief["combatants"] if one["name"] == "Thora")
+        seat = brief["you"]
         assert seat["hp"] == HERO["max_hp"]
         assert seat["ac"] == HERO["ac"]
         assert seat["attacks"] == ["Longsword"]
-        assert seat["health_band"] == "unhurt"
+        foe = next(one for one in brief["enemies"] if one["name"] == "Grelk")
+        assert foe["health"] in HEALTH_BANDS
+        assert "hp" not in foe and "ac" not in foe
 
     def test_a_seat_the_fight_does_not_hold_is_404_and_names_no_one_else(
         self, editor: Editor
@@ -2331,7 +2341,7 @@ class TestThePlayerViewOverHttp:
         encounter_id = self.create(editor)
 
         refused = editor.request(
-            "GET", f"/api/v1/encounters/{encounter_id}/view?as=Nobody"
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Nobody"
         )
 
         problem = assert_problem(refused, 404, "no combatant named 'Nobody'")
@@ -2342,15 +2352,15 @@ class TestThePlayerViewOverHttp:
     def test_the_seat_must_be_named_at_all(self, editor: Editor) -> None:
         encounter_id = self.create(editor)
 
-        refused = editor.request("GET", f"/api/v1/encounters/{encounter_id}/view")
+        refused = editor.request("GET", f"/api/v1/encounters/{encounter_id}/brief")
 
         assert_problem(refused, 400, "query parameter 'as' is required")
 
 
-class TestThePlayerViewOnTheWrites:
+class TestThePlayerBriefOnTheWrites:
     """``as=`` on the four operations that answer a caller with a fight's state.
 
-    ``encounter.view`` was this projection's only door for a release, and every
+    ``encounter.brief`` was this projection's only door for a release, and every
     *mutating* operation answered the seat that posted it with the GM's whole
     snapshot: an opponent's exact hit points, AC, items and weapons, in the body
     of the player's own action. ``web/static/play.js`` survived that by reading
@@ -2358,10 +2368,11 @@ class TestThePlayerViewOnTheWrites:
     which is the failure mode this projection was written to avoid, and which is
     inert against devtools, a proxy or an extension.
 
-    So the four routes take the same ``as=`` ``encounter.view`` does, the same
-    projection narrows what they answer, and the same 404 refuses a name the
-    fight does not hold. These cases read ``response.body`` for the reason the
-    class above does: the leak being guarded against is a nested one.
+    So the four routes take the same ``as=`` ``encounter.brief`` does, they
+    answer with the same projection in the same shape, and the same 404 refuses
+    a name the fight does not hold. These cases read ``response.body`` for the
+    reason the class above does: the leak being guarded against is a nested
+    one.
 
     **The parameter is optional, and its absence is a promise.** The CLI, the
     ``encounter-sim`` skill and the ``playtest`` skill all read ``state`` from
@@ -2438,7 +2449,11 @@ class TestThePlayerViewOnTheWrites:
     ) -> None:
         """This is that seat's brief, and holds no byte of anyone else's sheet."""
         assert response.status in (200, 201), response.body
-        assert response.json()["state"]["viewer"] == seat
+        # The brief's own shape, not a relabelled snapshot: one projection
+        # answers the read and the write, so a client has one thing to render.
+        state = response.json()["state"]
+        assert state["as"] == seat
+        assert "combatants" not in state and "ongoing_effects" not in state
         for secret in self.secrets_of(editor, encounter_id):
             assert secret.encode("utf-8") not in response.body, secret
 
@@ -2452,7 +2467,7 @@ class TestThePlayerViewOnTheWrites:
         """
         assert response.status in (200, 201), response.body
         state = response.json()["state"]
-        assert "viewer" not in state
+        assert "as" not in state
         hurt = next(
             one for one in state["combatants"] if one["name"] == BRIEFING_DUMMY
         )
@@ -2604,7 +2619,7 @@ class TestThePlayerViewOnTheWrites:
             refused = editor.request(method, path, json_body=body)
 
             problem = assert_problem(refused, 404, "no combatant named 'Nobody'")
-            # The refusal is not the disclosure, exactly as ``encounter.view``'s
+            # The refusal is not the disclosure, exactly as ``encounter.brief``'s
             # is not: listing the cast would name the creature it withholds.
             assert BRIEFING_AMBUSHER not in json.dumps(problem), path
 

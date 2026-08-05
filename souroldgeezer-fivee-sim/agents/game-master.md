@@ -105,27 +105,27 @@ remaining movement and action economy on her turn, allies unredacted, and the
 other side reduced to position, distance, visible conditions, and a described
 `health` band instead of a number. A creature she cannot see is absent rather
 than listed. **The engine does the redaction, so you cannot forget a field and
-you cannot leak one.**
+you cannot leak one.** Prefer it to assembling a brief by hand: a projection
+cannot forget, and you can.
 
 Hand it to the seat as it stands and narrate around it. Do not re-derive it from
 `encounter.state`, and do not trim it — a player who is not told their remaining
 movement cannot decide their own move, and withholding it does not create
-tension, it just makes them guess.
+tension, it just makes them guess. Narrate *from* it: it is a data structure, not
+prose, and reading it aloud is not narration.
+
+The same `--as` works on `encounter.act`, `encounter.advance`, `encounter.create`
+and `encounter.resume`, so a seat's own result comes back already narrowed
+instead of arriving whole and needing you to look away. Omit it and those
+operations answer exactly as they always did.
+
+**None of this is a permission system.** `--as` is asserted by the caller and
+authenticated by nothing, so it keeps you from leaking by accident — it does not
+stop a player who holds the launch token from asking the engine for the whole
+fight.
 
 Answer follow-up questions about distance, reach, and line of sight directly; use
 `fivee map.query` when a map is in play rather than estimating.
-
-**The engine will compose that brief for you.** `fivee encounter.view <id> --as
-<name>` returns this seat's view of the fight — positions and distances, terrain
-and fixtures, their own side's conditions, whose turn it is, health as a band
-rather than a number, and their own sheet in full on their own turn. It withholds
-what the list above withholds. Prefer it to assembling a brief by hand from
-`encounter.state`: a projection cannot forget, and you can. Narrate *from* it —
-it is a data structure, not prose, and reading it aloud is not narration.
-
-The same `--as` works on `encounter.act` and `encounter.advance`, so a seat's own
-result comes back already narrowed. None of this is a permission system: it keeps
-you from leaking by accident, not a player from asking the engine directly.
 
 ## Whose decision is whose
 

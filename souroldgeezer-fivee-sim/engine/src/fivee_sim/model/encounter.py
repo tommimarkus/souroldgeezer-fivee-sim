@@ -15,7 +15,7 @@ All provenance: SRD 5.2.1 (see NOTICE).
 from __future__ import annotations
 
 import heapq
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from random import Random
@@ -182,8 +182,13 @@ class Action:
 #: like a field that was considered and withheld. Requiring a deliberate
 #: classification is what makes a new secret impossible to add by accident.
 ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
-    # Where it is and whether it is really there.
-    "name", "team", "position", "level", "facing", "present", "arrival_round",
+    # Where it is and whether it is really there. ``elevation`` is the ground
+    # under its feet, which is the room's fact rather than the creature's, and
+    # ``arrival_round`` is safe only because an unarrived creature is omitted
+    # from the brief entirely — by the time an entry carries one, the round it
+    # names has already happened.
+    "name", "team", "position", "level", "elevation", "facing", "present",
+    "arrival_round",
     # What anybody at the table can see about its state.
     "conditions", "conscious", "dying", "dead", "stable", "surrendered",
     "dodging", "disengaged",
@@ -207,15 +212,185 @@ ENEMY_WITHHELD_KEYS: frozenset[str] = frozenset({
 })
 
 
+#: The battle map's own block, classified in the same two-set shape and for the
+#: same reason. It was handed to :meth:`Encounter.brief` **whole** for a
+#: release, so every fixture's ability-check DC reached the player who asked for
+#: one — and "DCs before a roll" is the first entry on the Withhold list in
+#: ``agents/game-master.md``, which is the specification the brief implements.
+#: An allowlist that stops one level above the payload is a denylist wearing the
+#: other one's name.
+MAP_VISIBLE_KEYS: frozenset[str] = frozenset({
+    "name", "width", "height", "movement_rule", "elevation", "levels", "features",
+})
+
+#: Empty, and written out so a reader can see it is empty *by decision*. The map
+#: block carries no creature and no secret of its own; everything in it a player
+#: may not have is one level further down, in the fixtures.
+MAP_WITHHELD_KEYS: frozenset[str] = frozenset()
+
+#: One fixture as the room shows it: where it is, what it is, which storey,
+#: whether it stands open, and whether working it costs your action — the last
+#: because a player choosing a turn is owed what their options cost.
+FEATURE_VISIBLE_KEYS: frozenset[str] = frozenset({
+    "square", "kind", "level", "open", "costs_action",
+})
+
+#: What a fixture *does elsewhere* and what it *takes*, which is the module's to
+#: reveal and not the map file's to publish. ``check`` is a DC before a roll
+#: outright; ``affects``, ``requires``, ``blocked_by``, ``linked_to`` and
+#: ``trigger`` are the mechanism behind it, and a party handed the wiring has
+#: been handed the puzzle. What they keep is every fixture's ``open`` state,
+#: which is the thing the room actually shows them.
+FEATURE_WITHHELD_KEYS: frozenset[str] = frozenset({
+    "check", "affects", "requires", "blocked_by", "linked_to", "trigger",
+})
+
+
+#: Which keys of an operation's answer carry events. ``events`` is what ``act``
+#: and ``advance`` reply with. ``log`` is ``create``'s, and it is not merely the
+#: opening pair a fresh fight has: an idempotent retry answers with the *whole*
+#: log of a fight already in progress, so a projection that narrowed only
+#: ``events`` would hand that over.
+EVENT_LISTS: tuple[str, ...] = ("events", "log")
+
+#: An event's own fields, minus ``data``'s contents. ``actor``, ``target`` and
+#: ``turn`` are here because the *key* survives rather than its contents passing
+#: unread — each is held against the cast in :meth:`Encounter.brief_events` —
+#: and ``data`` for the same reason.
+EVENT_ENVELOPE_VISIBLE_KEYS: frozenset[str] = frozenset({
+    "kind", "actor", "target", "seq", "round", "turn", "data",
+})
+
+#: The one field no seat is served, whichever side the event belongs to.
+#: ``detail`` is the GM's rendered sentence — "Longsword: d20 [15] +5 = 20 vs
+#: AC 16 -> hit" — free-form prose that names the AC a swing was rolled against,
+#: the DC a check was made against, and the spell behind an effect. Prose cannot
+#: be classified key by key, so there is no honest way to serve part of it, and
+#: it is **omitted rather than emptied**: ``""`` would say *nothing happened*,
+#: where an absent key says *this seat is not served this*, which is true.
+EVENT_ENVELOPE_WITHHELD_KEYS: frozenset[str] = frozenset({"detail"})
+
+#: What the table watched happen, inside an event's ``data``. The line drawn
+#: here is the one :data:`ENEMY_VISIBLE_KEYS` draws one payload over: an
+#: *observation* is public and a *sheet* is not.
+#:
+#: Three of these are judgement calls worth naming.
+#:
+#: ``hit`` is here and ``total`` is not. At a real table a player learns whether
+#: a blow landed the moment it lands, so withholding it would be a payload that
+#: lies about the round. What the number would add is arithmetic: a hit at 19
+#: says the target's AC is at most 19 and a miss at 18 says it is at least 19,
+#: and a few rounds of those brackets it exactly — which is why ``total`` goes
+#: only to the side that rolled it, where it discloses nothing the roller did
+#: not already know.
+#:
+#: ``amount`` is here and ``hp`` is not, and that is the same line one step
+#: over. The damage that landed is the roll everyone watched; a player tracking
+#: their own damage against a health band is doing at the table exactly what a
+#: table lets them do. What is refused is the *sheet's* numbers, which turn that
+#: estimate into the answer.
+#:
+#: ``damage_type`` is here and ``damage`` is not. A wound's element is the most
+#: visible thing about it and the ``damage`` event does not carry it, so
+#: withholding it would leave a party unable to say what is hurting them.
+#: ``damage`` can go because it is never the only account — every point that
+#: lands is reported again as ``amount`` — and keeping it back keeps an
+#: attachment's *formula*, which ``attach`` sends through this key as ``"1d4"``,
+#: off the wire.
+EVENT_VISIBLE_KEYS: frozenset[str] = frozenset({
+    # the fight's own clock and cast
+    "round", "attacker", "original_target", "redirected_target", "targets",
+    # where things are and how they got there
+    "position", "level", "origin", "destination", "squares", "from_level",
+    "to_level", "movement_mode", "completed", "cost", "center",
+    "original_position", "redirected_position",
+    # what the table watched land
+    "hit", "critical", "amount", "damage_type", "total_drained", "affected",
+    "applied", "saved", "success", "condition", "expiry",
+    # the ground, and what is between two creatures
+    "cover", "total_cover", "out_of_range", "underwater", "underwater_auto_miss",
+    # the action economy, which is spent in the open
+    "as_bonus_action", "action_cost",
+    # a fixture, as the room shows it
+    "feature", "open", "automatic",
+    # concentration holds or it drops, and the effect ending says so anyway
+    "held", "started",
+    # the round a reinforcement landed in, which is the round they landed in:
+    # ``_arrive_for_round`` emits this only once the creature is present, so it
+    # is never in the future. One key, one answer — it is
+    # :data:`ENEMY_VISIBLE_KEYS` on the creature for the same reason.
+    "arrival_round",
+})
+
+#: The other half: an event's own side's rolls, resources and repertoire — the
+#: same sheet :data:`ENEMY_WITHHELD_KEYS` covers, arriving one event at a time.
+#:
+#: ``natural`` with ``total`` is the roller's attack bonus by subtraction, which
+#: is a number off the sheet however it is spelled; ``advantage`` says which
+#: circumstance produced the roll. ``attack`` and ``spell`` name one entry of
+#: the ``attacks`` and ``spells`` lists that are already withheld — a table
+#: watches a swing and learns that a heavy blade came down, not the catalogue
+#: key — and ``item``, ``remaining``, ``slot_level``, ``successes`` and
+#: ``failures`` are the resources those lists are spent from. ``movement_left``
+#: is ``turn_state``, which the brief already reports on your own turn alone.
+EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
+    "hp", "max_hp", "natural", "total", "advantage", "attack", "spell",
+    "slot_level", "item", "remaining", "successes", "failures", "movement_left",
+    "damage", "bonus_damage", "advantage_bonus_damage", "advantage_bonus_reason",
+    "detach_after_damage",
+    # and the sharper half below, which no seat is served at all
+    "dc", "check", "linked", "triggered_by", "planned_destination",
+    "planned_to_level",
+})
+
+#: The subset of :data:`EVENT_WITHHELD_KEYS` withheld from *every* seat,
+#: including the side whose event it is. The two-set classification above stays
+#: total — this names a line inside its second half rather than a third bucket.
+#:
+#: ``dc`` and ``check`` are a difficulty class and the sentence that quotes one,
+#: the first entry on the Withhold list, and ``check`` is already
+#: :data:`FEATURE_WITHHELD_KEYS` one payload up. ``linked`` and ``triggered_by``
+#: are the map's wiring, withheld there for the same reason: a party handed the
+#: pairing has been handed the puzzle, and they can still watch both fixtures'
+#: ``open`` states move. ``planned_destination`` and ``planned_to_level`` are
+#: the square a cut-short move was *making for* — intent rather than
+#: observation, which the battlefield never shows and which the mover already
+#: knows, having asked for it.
+EVENT_NEVER_KEYS: frozenset[str] = frozenset({
+    "dc", "check", "linked", "triggered_by", "planned_destination",
+    "planned_to_level",
+})
+
+
+#: Added to an opponent's entry by the brief and carried by no creature in the
+#: snapshot: how far off they are, and how they look. Named so the classification
+#: test can hold the projected entry against a set rather than against a list
+#: written out twice.
+ENEMY_DERIVED_KEYS: frozenset[str] = frozenset({"distance", "health"})
+
 #: What replaces an enemy's hit points: the thing a game master says out loud.
 #: Bands rather than a fraction, because a fraction is a hit-point total that
 #: needs one division to recover. Our own descriptive vocabulary, not a rules
 #: term — nothing in the engine keys off these strings.
+#:
+#: Upper bound of each band as a share of maximum hit points, best first. The
+#: bounds live here and are never published — a client told both the band and
+#: its edges is a client one subtraction away from a range, and a client told
+#: ``max_hp`` as well has the number.
 _HEALTH_BANDS: tuple[tuple[float, str], ...] = (
     (1.0, "unharmed"),
     (0.5, "hurt"),
     (0.25, "badly hurt"),
     (0.0, "barely standing"),
+)
+
+#: Every band :func:`health_band` will ever report, worst first. Plain language
+#: on purpose: these are the words a game master says out loud, and none of them
+#: is a number wearing a hat. ``dead`` and ``down`` are their own words rather
+#: than the bottom of the scale, because a creature at zero is a different fact
+#: from a wounded one and the table can see which it is anyway.
+HEALTH_BANDS: tuple[str, ...] = (
+    "dead", "down", *(described for _, described in reversed(_HEALTH_BANDS))
 )
 
 
@@ -477,6 +652,154 @@ def _dependency_order(features: Mapping[str, MapFeature]) -> tuple[str, ...]:
         rendered = " -> ".join(cycle or ())
         raise EncounterError(f"trigger cycle: {rendered}")
     return tuple(ordered)
+
+
+# --- the player's brief ------------------------------------------------------
+# Free functions rather than methods, because every one of them is a function of
+# a snapshot and nothing else. What the brief needs from the live fight is one
+# thing only — whether a wall stands between two creatures — and that is
+# :meth:`Encounter.unseen_by`'s to answer.
+def health_band(entry: Mapping[str, Any]) -> str:
+    """How a creature looks, for somebody who cannot read its sheet.
+
+    Deliberately lossy, and lossy in a way no arithmetic undoes: the ratio, the
+    band's own bounds and the creature's ``max_hp`` are withheld together,
+    because publishing any one of them turns the band back into a number.
+    """
+    if entry["dead"]:
+        return "dead"
+    if not entry["conscious"]:
+        return "down"
+    max_hp = int(entry["max_hp"])
+    if max_hp <= 0:
+        return "unharmed"
+    share = int(entry["hp"]) / max_hp
+    for threshold, described in _HEALTH_BANDS:
+        if share >= threshold:
+            return described
+    return "barely standing"
+
+
+def _point_of(value: Any) -> Point:
+    """A snapshot's position as a point in feet.
+
+    The payload carries ``[x, y]`` because :meth:`Encounter._creature_state`
+    writes it through ``list``; the grid wants a tuple. A bare integer still
+    means feet along the x-axis, which is what :func:`as_point` has always
+    widened.
+    """
+    if isinstance(value, Sequence) and not isinstance(value, str) and len(value) == 2:
+        return (int(value[0]), int(value[1]))
+    return as_point(int(value))
+
+
+def _briefed_map(block: Mapping[str, Any]) -> dict[str, Any]:
+    """The battlefield, minus each fixture's wiring and its DC.
+
+    Walks the payload's own keys rather than the bucket's, so an unclassified
+    key falls out here rather than being renamed into existence.
+    """
+    briefed = {key: value for key, value in block.items() if key in MAP_VISIBLE_KEYS}
+    fixtures = briefed.get("features")
+    if isinstance(fixtures, Mapping):
+        briefed["features"] = {
+            name: {
+                key: value for key, value in one.items() if key in FEATURE_VISIBLE_KEYS
+            }
+            for name, one in fixtures.items()
+        }
+    return briefed
+
+
+def _mentions(value: Any, names: Collection[str]) -> bool:
+    """Whether any of ``names`` appears as a string anywhere inside ``value``.
+
+    Compared whole rather than as a substring, so a visible ``Grelka`` is not
+    mistaken for an unseen ``Grelk``. It can afford to be exact because the one
+    field that would have carried a name inside prose — ``detail`` — is gone by
+    the time this runs.
+    """
+    if isinstance(value, str):
+        return value in names
+    if isinstance(value, Mapping):
+        return any(
+            _mentions(key, names) or _mentions(one, names) for key, one in value.items()
+        )
+    if isinstance(value, Sequence):
+        return any(_mentions(one, names) for one in value)
+    return False
+
+
+def _side_of(raw: Mapping[str, Any], seats: Mapping[str, Mapping[str, Any]]) -> str | None:
+    """Whose event this is: the actor's side, or the target's when there is no actor.
+
+    One decision per event rather than one per key, and the order matters. An
+    ``attack`` names the swinger first, so the roll, the weapon and the damage
+    breakdown go to the side that made them and not to the side they landed on —
+    which is what stops a foe's swing at your ally publishing the foe's attack
+    bonus. A ``damage`` event carries no actor at all: it is emitted *about* the
+    creature that took the hit, so its ``hp`` and ``max_hp`` are that creature's
+    and reach only their own side.
+    """
+    for key in ("actor", "target"):
+        name = raw.get(key)
+        if name:
+            entry = seats.get(str(name))
+            return None if entry is None else str(entry["team"])
+    return None
+
+
+def _briefed_event(
+    raw: Mapping[str, Any], *, own: bool, unseen: Collection[str]
+) -> dict[str, Any] | None:
+    """One event as this seat may see it, or ``None`` if it may not see it at all.
+
+    Built by walking the event's own keys for the reason :func:`_briefed_map`
+    walks the map's: an unclassified key falls out here rather than being
+    renamed into existence.
+
+    **An event that still names a creature this seat cannot see is dropped
+    whole**, and that check is deliberately made on the *projected* entry rather
+    than on ``actor`` and ``target`` alone. Several ``data`` keys carry creature
+    names — ``targets``, ``attacker``, ``original_target``, ``redirected_target``
+    — and a further list of "keys that are names" would be one more thing to keep
+    in step with the model. Sweeping the finished entry needs no such list and
+    cannot miss the name a key added tomorrow carries. It is a second guard over
+    an allowlist, not a denylist standing in for one: nothing reaches this point
+    that :data:`EVENT_VISIBLE_KEYS` did not already admit.
+
+    Dropping, rather than blanking the name, is the answer the brief's
+    ``enemies`` list already gives — an ambusher reported with a blank name has
+    still been revealed. It leaves a gap in ``seq``, which is existence without
+    identity and the same residual a nulled ``turn`` leaves.
+
+    ``turn`` is the one name held against the cast rather than dropped for,
+    because it is a stamp and not the event's subject: it is nulled exactly as
+    :meth:`Encounter.brief_of` nulls the snapshot's ``turn``, so that ``round 2
+    begins`` still reaches a table whose next combatant has not arrived.
+
+    ``arrival`` needs no exemption and gets none. ``_arrive_for_round`` marks
+    the creature present *before* it emits, so by the time this runs they are in
+    the visible cast and the general rule admits the event on its own.
+    """
+    entry = {
+        key: value for key, value in raw.items() if key in EVENT_ENVELOPE_VISIBLE_KEYS
+    }
+    permitted = (
+        (EVENT_VISIBLE_KEYS | EVENT_WITHHELD_KEYS) - EVENT_NEVER_KEYS
+        if own
+        else EVENT_VISIBLE_KEYS
+    )
+    data = entry.get("data")
+    if isinstance(data, Mapping):
+        entry["data"] = {
+            key: value for key, value in data.items() if key in permitted
+        }
+    if entry.get("turn") in unseen:
+        entry["turn"] = None
+    if _mentions(entry, unseen):
+        return None
+    return entry
 
 
 class Encounter:
@@ -1139,20 +1462,6 @@ class Encounter:
             if c.team != actor.team and c.combat_active and c.level in visible_levels
         ]
 
-    def health_band(self, creature: Creature) -> str:
-        """How a creature looks, for somebody who cannot read its sheet."""
-        if creature.dead:
-            return "dead"
-        if not creature.conscious:
-            return "down"
-        if creature.max_hp <= 0:
-            return "unharmed"
-        share = creature.hp / creature.max_hp
-        for threshold, described in _HEALTH_BANDS:
-            if share >= threshold:
-                return described
-        return "barely standing"
-
     def brief(self, as_name: str) -> dict[str, Any]:
         """The fight as one combatant is entitled to know it.
 
@@ -1170,60 +1479,172 @@ class Encounter:
         A creature the asker cannot see is **absent rather than redacted**, since
         "something is over there and you cannot see it" is itself a fact they do
         not have.
+
+        **This is a projection, not an access control, and the difference
+        matters.** ``as_name`` is asserted by the caller and authenticated by
+        nothing — the engine has one per-launch token and no per-seat credential
+        — so a client that can ask for this brief can equally ask for
+        :meth:`state` and get the whole fight. What it buys is a payload a
+        *cooperating* client can render without holding secrets it must remember
+        not to draw, which is the failure client-side hiding actually has. It is
+        not a boundary against a client that does not want to cooperate, and
+        nothing here should be cited as one.
         """
-        if as_name not in self.creatures:
-            known = ", ".join(sorted(self.creatures))
-            raise EncounterError(
-                f"no combatant named {as_name!r} in this encounter; there is: {known}"
-            )
-        asker = self.creatures[as_name]
+        return self.brief_of(self.state(), as_name)
+
+    def unseen_by(self, snapshot: Mapping[str, Any], as_name: str) -> frozenset[str]:
+        """Everyone in this fight the seat may not be told about.
+
+        Two reasons a creature lands here, and they are different in kind. One is
+        a fact the snapshot carries: a reinforcement rolled into initiative but
+        not yet on the battlefield. The other is a *relationship* the snapshot
+        cannot carry — total cover is a question about two creatures and a map,
+        not a field on either — so it is asked of the live encounter. That is why
+        the brief is a method here rather than a function of ``state()`` output
+        somewhere downstream: nothing but the fight can answer it.
+
+        Cover is asked about the other side only. An ally behind a sealed wall is
+        still reported, because a party at a real table is talking to each other.
+
+        The asker is never here. A seat is always reported to the person sitting
+        in it, including on the round before they arrive.
+        """
+        seats = self._seats_of(snapshot, as_name)
+        side = seats[as_name]["team"]
+        hidden = set()
+        for name, one in seats.items():
+            if name == as_name:
+                continue
+            if not one.get("present", True):
+                hidden.add(name)
+            elif (
+                one["team"] != side
+                and self.cover_between(as_name, name) is CoverGrade.TOTAL
+            ):
+                hidden.add(name)
+        return frozenset(hidden)
+
+    def brief_of(self, snapshot: Mapping[str, Any], as_name: str) -> dict[str, Any]:
+        """:meth:`brief`, over a snapshot this encounter produced.
+
+        Taking the snapshot rather than reading the fight directly is what lets
+        one projection answer both doors. ``encounter.brief`` hands it
+        :meth:`state`; the operations that *write* hand it the very snapshot they
+        were about to answer with, so a chair posting an action is narrowed
+        without a second renderer and without a second shape.
+
+        It also means a ``map_source`` — a path on the host's filesystem, which
+        ``service.encounters.resume`` staples onto its snapshot — cannot arrive
+        by accident. Nothing is copied from the top of the snapshot; every key
+        below is named.
+
+        One thing is read from the live fight rather than from the argument, and
+        :meth:`unseen_by` says why: total cover is not in any snapshot. For an
+        idempotent retry, whose recorded answer is a snapshot one action old,
+        that is the fight as it stands deciding who may be named in an answer
+        about the fight as it was — the narrower reading of the two.
+        """
+        seats = self._seats_of(snapshot, as_name)
+        asker = seats[as_name]
+        unseen = self.unseen_by(snapshot, as_name)
+        turn = snapshot["turn"]
         payload: dict[str, Any] = {
             "as": as_name,
-            "round": self.round,
-            "turn": self.current_name,
-            "your_turn": self.current_name == as_name,
-            "over": self.over,
-            "winner": self.winner,
-            "you": self._creature_state(asker),
+            "round": snapshot["round"],
+            # Nulled rather than named when an unseen creature is acting:
+            # identity is withheld and existence is not, which is what a table
+            # learns when the GM rolls behind a screen. Reporting the name would
+            # undo every other filter here in one key.
+            "turn": None if turn in unseen else turn,
+            "your_turn": turn == as_name,
+            "over": snapshot["over"],
+            "winner": snapshot["winner"],
+            "you": dict(asker),
             "allies": [],
             "enemies": [],
         }
-        # The asker's own budget, and only on their own turn: `_turn` belongs to
-        # whoever is acting, so reporting it otherwise would describe somebody
-        # else's remaining movement as though it were yours.
+        # The asker's own budget, and only on their own turn: the turn state
+        # belongs to whoever is acting, so reporting it otherwise would describe
+        # somebody else's remaining movement as though it were yours.
         if payload["your_turn"]:
-            payload["turn_state"] = {
-                "movement_left": self._turn.movement_left,
-                "action_used": self._turn.action_used,
-                "attacks_left": self._turn.attacks_left,
-                "interaction_used": self._turn.interaction_used,
-                "bonus_action_used": self._turn.bonus_action_used,
-            }
-        if self.battle_map is not None:
-            payload["map"] = self._map_state()
+            payload["turn_state"] = dict(snapshot["turn_state"])
+        block = snapshot.get("map")
+        if isinstance(block, Mapping):
+            payload["map"] = _briefed_map(block)
 
-        for name in self.order:
-            if name == as_name:
+        rule = DiagonalRule(snapshot["movement_rule"])
+        origin = _point_of(asker["position"])
+        for name in snapshot["order"]:
+            if name == as_name or name in unseen:
                 continue
-            other = self.creatures[name]
-            if not other.arrived:
+            other = seats[name]
+            distance = distance_feet(origin, _point_of(other["position"]), rule)
+            if other["team"] == asker["team"]:
+                payload["allies"].append(dict(other) | {"distance": distance})
                 continue
-            distance = distance_feet(
-                as_point(asker.position), as_point(other.position), self.movement_rule
-            )
-            if other.team == asker.team:
-                payload["allies"].append(
-                    self._creature_state(other) | {"distance": distance}
-                )
-                continue
-            if self.cover_between(as_name, name) is CoverGrade.TOTAL:
-                continue
-            seen = self._creature_state(other)
             payload["enemies"].append(
-                {key: value for key, value in seen.items() if key in ENEMY_VISIBLE_KEYS}
-                | {"distance": distance, "health": self.health_band(other)}
+                {
+                    key: value
+                    for key, value in other.items()
+                    if key in ENEMY_VISIBLE_KEYS
+                }
+                | {"distance": distance, "health": health_band(other)}
             )
         return payload
+
+    def brief_events(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        snapshot: Mapping[str, Any],
+        as_name: str,
+    ) -> list[dict[str, Any]]:
+        """One operation's account of what just happened, narrowed to a seat.
+
+        :meth:`brief` serves no events, so for a release the four operations that
+        do answered a seat with the fight's own account of itself, unredacted.
+        The brief said a foe was "hurt" and the ``damage`` event beside it said
+        6594/7700; an ``attack`` event's ``total`` bracketed the AC it was rolled
+        against; ``use_item`` reported an item's remaining charges. An event is
+        therefore classified exactly as a creature is.
+
+        **The cast is the same cast**, because it is computed the same way from
+        the same snapshot: a creature :meth:`brief_of` omitted must not be named
+        by an event served beside it, or the payload that redacted them reveals
+        them.
+        """
+        seats = self._seats_of(snapshot, as_name)
+        side = seats[as_name]["team"]
+        unseen = self.unseen_by(snapshot, as_name)
+        briefed: list[dict[str, Any]] = []
+        for raw in events:
+            entry = _briefed_event(
+                raw, own=_side_of(raw, seats) == side, unseen=unseen
+            )
+            if entry is not None:
+                briefed.append(entry)
+        return briefed
+
+    def _seats_of(
+        self, snapshot: Mapping[str, Any], as_name: str
+    ) -> dict[str, Mapping[str, Any]]:
+        """This fight's cast by name, refusing a seat it does not hold.
+
+        The refusal is not politeness: a projection keyed on team membership
+        answers an unknown name with a brief in which every creature is an
+        opponent — well formed, plausible, and a lie about who asked.
+
+        It deliberately does **not** list the cast, and that is a change from the
+        sentence this used to raise. Naming everybody handed a player-chair
+        client the very names the projection exists to withhold, ambushers
+        included: a refusal that discloses is the leak wearing an error's
+        clothes.
+        """
+        seats: dict[str, Mapping[str, Any]] = {
+            str(one["name"]): one for one in snapshot["combatants"]
+        }
+        if as_name not in seats:
+            raise EncounterError(f"no combatant named {as_name!r} in this encounter")
+        return seats
 
     def state(self) -> dict[str, Any]:
         return {

@@ -1147,12 +1147,20 @@ class TestPlayDriver:
         source = read("play.js")
         assert f'"{api_path("encounter.create")}"' in source
         assert f'"{api_path("server.openapi")}"' in source
-        for operation in ("encounter.view", "encounter.act", "encounter.advance"):
-            # The tail past the path parameter — "/view", "/actions",
-            # "/advance" — which is what the driver appends to an encounter's
-            # own path once it has an id to put in it.
+        for operation in ("encounter.act", "encounter.advance"):
+            # The tail past the path parameter — "/actions", "/advance" — which
+            # is what the driver appends to an encounter's own path once it has
+            # an id to put in it.
             tail = api_path(operation).rsplit("}", 1)[-1]
             assert f'"{tail}"' in source, operation
+
+    def test_the_driver_reads_a_seats_brief_from_the_route_that_serves_it(self) -> None:
+        # Split out of the case above rather than dropped from it, because the
+        # claim is still the claim: a route the driver calls and the table does
+        # not declare is a 404 in a browser mid-fight. What changed is that this
+        # one is *known* broken, and a silent removal would have hidden it.
+        tail = api_path("encounter.brief").rsplit("}", 1)[-1]
+        assert f'"{tail}"' in read("play.js")
 
     def test_the_action_kinds_are_read_out_of_the_served_contract(self) -> None:
         # Not a list kept here. The driver fetches the OpenAPI document this
@@ -1354,7 +1362,7 @@ class TestPlayDriverLook:
             assert f"budget.{field.name}" in body, field.name
 
     def test_a_health_band_cannot_become_a_bar(self) -> None:
-        # The structural half of what player_view.py's bands are for. An
+        # The structural half of what ``Encounter.brief``'s bands are for. An
         # opponent's row is one text node — the driver writes `textContent` and
         # appends nothing into it — so there is no element in a rail row for a
         # proportion to be drawn in, whatever a future stylesheet tried. The

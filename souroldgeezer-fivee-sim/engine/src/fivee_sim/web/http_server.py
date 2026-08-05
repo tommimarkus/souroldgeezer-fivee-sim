@@ -72,7 +72,6 @@ from ..service import catalog as catalog_service
 from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import maps as map_service
-from ..service import player_view as player_view_service
 from ..service import replay as replay_service
 from ..service import scenes as scene_service
 from ..service.common import slugify
@@ -939,20 +938,6 @@ class _Handler(BaseHTTPRequestHandler):
         result = encounter_service.state_of(self.state, request.id)
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
-    def _h_encounter_view(self, request: _Request) -> None:
-        """The same fight, redacted for one seat — and redacted in ``service/``.
-
-        This carries the encounter's ``ETag`` exactly as ``encounter.state``
-        does: the two are the same journal head read two ways, so a player
-        client polling for change and the GM's client polling for change agree
-        about when there was one.
-        """
-        self._send_json(
-            HTTPStatus.OK,
-            player_view_service.view_of(self.state, request.id, request.query["as"]),
-            headers=self._encounter_etag(request.id),
-        )
-
     def _h_encounter_log(self, request: _Request) -> None:
         query = request.query
         self._send_json(
@@ -968,6 +953,13 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
     def _h_encounter_brief(self, request: _Request) -> None:
+        """The same fight, redacted for one seat — and redacted in ``service/``.
+
+        This carries the encounter's ``ETag`` exactly as ``encounter.state``
+        does: the two are the same journal head read two ways, so a player
+        client polling for change and the GM's client polling for change agree
+        about when there was one.
+        """
         self._send_json(
             HTTPStatus.OK,
             encounter_service.brief_for(self.state, request.id, request.query["as"]),
@@ -1351,7 +1343,6 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_list": _Handler._h_encounter_list,
     "encounter_create": _Handler._h_encounter_create,
     "encounter_state": _Handler._h_encounter_state,
-    "encounter_view": _Handler._h_encounter_view,
     "encounter_log": _Handler._h_encounter_log,
     "encounter_brief": _Handler._h_encounter_brief,
     "encounter_act": _Handler._h_encounter_act,

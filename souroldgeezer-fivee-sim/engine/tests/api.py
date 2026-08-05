@@ -34,7 +34,6 @@ from fivee_sim.service import catalog as _catalog
 from fivee_sim.service import content_ops as _content_ops
 from fivee_sim.service import encounters as _encounters
 from fivee_sim.service import map_ops as _map_ops
-from fivee_sim.service import player_view as _player_view
 from fivee_sim.service import primitives as _primitives
 from fivee_sim.service import scenes as _scenes
 from fivee_sim.service import sessions as _sessions
@@ -128,18 +127,15 @@ def encounter_create(
     map: dict[str, Any] | None = None,
     map_id: str | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.create(
-        STATE, combatants, seed, movement_rule, map, map_id, request_id
+        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer
     )
 
 
 def encounter_state(encounter_id: str) -> dict[str, Any]:
     return _encounters.state_of(STATE, encounter_id)
-
-
-def encounter_view(encounter_id: str, viewer: str) -> dict[str, Any]:
-    return _player_view.view_of(STATE, encounter_id, viewer)
 
 
 def encounter_note(
@@ -182,6 +178,7 @@ def encounter_act(
     facing: str | None = None,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
         STATE,
@@ -206,6 +203,7 @@ def encounter_act(
         facing,
         natural,
         request_id,
+        viewer,
     )
 
 
@@ -213,16 +211,19 @@ def encounter_advance(
     encounter_id: str,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
-    return _encounters.advance(STATE, encounter_id, natural, request_id)
+    return _encounters.advance(STATE, encounter_id, natural, request_id, viewer)
 
 
 def encounter_brief(encounter_id: str, as_name: str) -> dict[str, Any]:
     return _encounters.brief_for(STATE, encounter_id, as_name)
 
 
-def encounter_resume(encounter_id: str) -> dict[str, Any]:
-    return _encounters.resume(STATE, encounter_id)
+def encounter_resume(
+    encounter_id: str, viewer: str | None = None
+) -> dict[str, Any]:
+    return _encounters.resume(STATE, encounter_id, viewer)
 
 
 def encounter_list(status: str = "active") -> dict[str, Any]:

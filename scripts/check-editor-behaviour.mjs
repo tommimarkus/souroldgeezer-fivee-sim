@@ -3642,10 +3642,19 @@ await suite("editor.html: opened from disk, with no server",
  *
  * The fake engine below answers the five routes the driver calls. It is a stub
  * and says so: the shapes are the ones `service/encounters.py` and
- * `service/player_view.py` actually return, but nothing here runs a rule. What
- * these cases can see is what the *driver* decided — which request it made,
- * what it drew, what it posted, and what it said — and that is the whole of
- * what a driver is.
+ * `Encounter.brief_of` in `model/encounter.py` actually return, but nothing
+ * here runs a rule. What these cases can see is what the *driver* decided —
+ * which request it made, what it drew, what it posted, and what it said — and
+ * that is the whole of what a driver is.
+ *
+ * A stub's one real hazard is agreeing with the driver about a shape the engine
+ * has never sent, which has bitten this file twice — `type` for an event's
+ * `kind`, and a flat `combatants` list with a `health_band` on it for a brief
+ * that answers `you`, `allies` and `enemies`. So the brief below is *derived*
+ * rather than typed: one cast, filtered through the allowlist the model
+ * publishes, with the distance and the band computed the way the engine
+ * computes them. The key sets it produces were checked against a real
+ * `encounter.brief` answer — see the comment on BRIEF_ENEMY_KEYS.
  */
 
 /* An element the driver built, found by walking the subtree it owns. Never
@@ -3669,8 +3678,14 @@ const DECLARED_KINDS = [
   "use_item", "interact", "stand", "surrender",
 ];
 
+/* Three, and the third one earns its place twice over. `allies` is a whole
+ * branch of the brief's shape, and a two-creature fight with one opponent in it
+ * never enters it — a driver that dropped `allies` on the floor would draw the
+ * same picture. And Brand rolls *above* the seat that reads him, so the rail a
+ * player is shown cannot be the order the brief happens to list its keys in. */
 const PLAY_SCENE = {
   combatants: [
+    { name: "Brand", team: "party", ac: 14, max_hp: 9, position: [10, 5] },
     { name: "Thora", team: "party", ac: 15, max_hp: 12, position: [5, 5] },
     { name: "Grub", team: "monsters", ac: 13, max_hp: 7, position: [30, 20] },
   ],
@@ -3682,35 +3697,116 @@ const PLAY_TURN_STATE = {
   interaction_used: false, bonus_action_used: false,
 };
 
-/* Shaped as encounter.state answers: every creature reported whole. */
+/* Shaped as encounter.state answers: every creature reported whole, in the
+ * order they act. This is the one cast in this file; the brief below is a
+ * projection of it rather than a second set of creatures. */
 function gmCombatants() {
   return [
+    { name: "Brand", team: "party", position: [10, 5], hp: 9, max_hp: 9, ac: 14,
+      initiative: 20, conditions: [], present: true, conscious: true, dying: false,
+      dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Quarterstaff"], spells: [], items: {},
+      spell_slots: {} },
     { name: "Thora", team: "party", position: [5, 5], hp: 12, max_hp: 12, ac: 15,
       initiative: 18, conditions: [], present: true, conscious: true, dying: false,
-      dead: false, stable: false, dodging: false, disengaged: false, level: 0,
-      attacks: ["Longsword"], spells: ["magic missile"], items: {}, spell_slots: {} },
+      dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Longsword"], spells: ["magic missile"],
+      items: {}, spell_slots: {} },
     { name: "Grub", team: "monsters", position: [30, 20], hp: 3, max_hp: 7, ac: 13,
       initiative: 9, conditions: ["prone"], present: true, conscious: true,
-      dying: false, dead: false, stable: false, dodging: false, disengaged: false,
-      level: 0, attacks: ["Scimitar"], spells: [], items: {}, spell_slots: {} },
+      dying: false, dead: false, stable: false, surrendered: false, dodging: false,
+      disengaged: false, level: 0, elevation: 0, arrival_round: 1,
+      concentrating_on: null, attacks: ["Scimitar"], spells: [], items: {},
+      spell_slots: {} },
   ];
 }
 
-/* Shaped as player_view.project() answers for Thora's chair: her own sheet
- * whole, the goblin's hit points replaced by a band, and no `ac` on it at all.
- * `turn_state` is present only on her own turn, exactly as STATE_OWN says. */
-function thoraCombatants() {
-  return [
-    { name: "Thora", team: "party", position: [5, 5], hp: 12, max_hp: 12, ac: 15,
-      initiative: 18, conditions: [], present: true, conscious: true, dying: false,
-      dead: false, stable: false, dodging: false, disengaged: false, level: 0,
-      attacks: ["Longsword"], spells: ["magic missile"], items: {}, spell_slots: {},
-      health_band: "unhurt", distance: 0 },
-    { name: "Grub", team: "monsters", position: [30, 20], initiative: 9,
-      conditions: ["prone"], present: true, conscious: true, dying: false,
-      dead: false, stable: false, dodging: false, disengaged: false, level: 0,
-      health_band: "badly hurt", distance: 25 },
-  ];
+/* Every key `ENEMY_VISIBLE_KEYS` admits in `model/encounter.py`, which is what
+ * `Encounter.brief_of` filters the other side down to. Written as a *filter*
+ * rather than as a second hand-typed creature, because a hand-typed enemy is a
+ * place for a field to survive in this file that the shipped engine strips —
+ * and this stub's previous enemy carried a `health_band` no engine has ever
+ * sent. Checked against a real answer: an `encounter.brief` taken over a
+ * three-creature fight returns exactly these keys on an enemy, plus the
+ * `distance` and `health` added below. */
+const BRIEF_ENEMY_KEYS = [
+  "name", "team", "position", "level", "elevation", "facing", "present",
+  "arrival_round", "conditions", "conscious", "dying", "dead", "stable",
+  "surrendered", "dodging", "disengaged", "initiative", "concentrating_on",
+];
+
+/* 5-5-5, which is the rule this stub's map declares: a diagonal step costs what
+ * a straight one costs, so the distance between two squares is the larger of
+ * the two offsets. Positions are feet on a five-foot grid, so the same
+ * arithmetic gives feet directly. */
+const feetApart = (from, to) => Math.max(
+  Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]));
+
+/* `health_band()` in `model/encounter.py`, over the same thresholds and to the
+ * vocabulary `HEALTH_BANDS` publishes. Reproduced as a function rather than
+ * typed beside each creature, so a stub enemy's band stays consistent with the
+ * hit points the brief is hiding — a band typed by hand is how a stub starts
+ * saying what the engine cannot. This one said "unhurt" for a release, which is
+ * not a band the engine has ever had a word for. */
+function healthBand(each) {
+  if (each.dead) { return "dead"; }
+  if (!each.conscious) { return "down"; }
+  const share = each.hp / each.max_hp;
+  if (share >= 1) { return "unharmed"; }
+  if (share >= 0.5) { return "hurt"; }
+  if (share >= 0.25) { return "badly hurt"; }
+  return "barely standing";
+}
+
+/* `Encounter.brief_of` for one seat, performed rather than transcribed: the
+ * asker comes back whole under `you`, their own side whole under `allies` with
+ * a distance added, and the other side filtered to BRIEF_ENEMY_KEYS with a
+ * distance and a health band in place of the sheet.
+ *
+ * Four things this shape does *not* carry, each of them a key the flat state
+ * has and the brief deliberately drops. `combatants`: the cast is sorted into
+ * sides, and a driver still reading the flat list draws nothing. `order`: it
+ * would name every creature in the fight, the undetected one included, so a
+ * seat's rail has to be rebuilt from the initiatives it can see.
+ * `movement_rule` and `ongoing_effects`: neither is classified, so neither is
+ * served. `turn_state` is present only on the asker's own turn, and `your_turn`
+ * is the fight's own answer to whether it is. */
+function briefFor(seat, everyone, round, turn) {
+  const you = everyone.find((each) => each.name === seat) || everyone[0];
+  const brief = {
+    as: seat,
+    round,
+    /* Nulled rather than named when an unseen creature is acting. Everyone in
+     * this stub's fight is visible to everyone else, so it is always the name —
+     * but the driver must not read this field as "not my turn" either way,
+     * which is what `your_turn` is for. */
+    turn,
+    your_turn: turn === seat,
+    over: false,
+    winner: null,
+    you: copy(you),
+    allies: [],
+    enemies: [],
+    map: { name: "muster yard", width: 8, height: 6, movement_rule: "5-5-5",
+      features: {} },
+  };
+  everyone.forEach((each) => {
+    if (each.name === seat) { return; }
+    const distance = feetApart(you.position, each.position);
+    if (each.team === you.team) {
+      brief.allies.push(Object.assign(copy(each), { distance }));
+      return;
+    }
+    const seen = {};
+    BRIEF_ENEMY_KEYS.forEach((key) => {
+      if (key in each) { seen[key] = copy(each[key]); }
+    });
+    brief.enemies.push(Object.assign(seen, { distance, health: healthBand(each) }));
+  });
+  if (brief.your_turn) { brief.turn_state = PLAY_TURN_STATE; }
+  return brief;
 }
 
 function playEngine(options) {
@@ -3728,24 +3824,22 @@ function playEngine(options) {
     posted: [],
     seen: [],
   };
-  const shared = () => ({
+  /* The GM's door: one flat list, every creature whole, and the running order
+   * named outright. `order` is the cast's own order, derived rather than typed
+   * beside it — a rail built from a hand-written order agrees with a list that
+   * was never rolled. */
+  engine.gmState = () => ({
     round: engine.round, turn: engine.turn, movement_rule: "5-5-5",
-    over: false, winner: null, order: ["Thora", "Grub"],
+    over: false, winner: null,
+    order: gmCombatants().map((each) => each.name),
     map: { name: "muster yard", width: 8, height: 6, movement_rule: "5-5-5",
       features: {} },
-  });
-  engine.gmState = () => Object.assign(shared(), {
     turn_state: PLAY_TURN_STATE,
     ongoing_effects: [],
     combatants: gmCombatants(),
   });
-  engine.viewOf = (seat) => {
-    const view = Object.assign(shared(), {
-      viewer: seat, combatants: thoraCombatants(),
-    });
-    if (engine.turn === seat) { view.turn_state = PLAY_TURN_STATE; }
-    return view;
-  };
+  engine.briefOf = (seat) => briefFor(
+    seat, gmCombatants(), engine.round, engine.turn);
   engine.etag = () => "head-" + engine.head;
   engine.reply = (url, init) => {
     const target = String(url);
@@ -3763,7 +3857,7 @@ function playEngine(options) {
     const route = target.split("?")[0];
     const chair = /[?&]as=([^&]+)/.exec(target);
     const answered = () => (chair
-      ? engine.viewOf(decodeURIComponent(chair[1]))
+      ? engine.briefOf(decodeURIComponent(chair[1]))
       : engine.gmState());
     if (target.indexOf("/openapi.json") !== -1) {
       return { status: 200, body: { openapi: "3.1.1", paths: {
@@ -3788,7 +3882,7 @@ function playEngine(options) {
       engine.head += 1;
       /* The event shape the engine actually answers with: `kind` names what
        * happened, and `detail` is absent from a chair's copy because
-       * service/player_view.py omits the GM's sentence rather than emptying it.
+       * Encounter.brief_events omits the GM's sentence rather than emptying it.
        * This stub said `type` for a release and play.js read `type`, so the two
        * agreed with each other and with nothing that ships — which is how "2
        * events · undefined, undefined" reached the panel with this file green. */
@@ -3904,7 +3998,7 @@ await suite("play.js: the driver takes its whole world as an argument",
    * first round rather than only once the engine has answered. */
   const seats = play.find("play-seat").children.map((each) => each.value);
   check("the chair picker offers the whole table and every combatant in the scene",
-    show(seats) === show(["", "Thora", "Grub"]), show(seats));
+    show(seats) === show(["", "Brand", "Thora", "Grub"]), show(seats));
 
   await play.begin();
   check("Play posts the scene to encounter.create",
@@ -3937,26 +4031,32 @@ await suite("play.js: the fight, from the chair that runs it",
   /* 1. The battlefield, drawn through the channel the renderer already has. */
   const tokens = play.tokens || [];
   check("every combatant reaches the renderer as a token",
-    tokens.length === 2, show(tokens));
+    tokens.length === 3, show(tokens));
   check("positioned in squares, from a state that reports feet",
-    show(tokens.map((each) => each.at)) === show([[1, 1], [6, 4]]),
+    show(tokens.map((each) => each.at)) === show([[2, 1], [1, 1], [6, 4]]),
     show(tokens.map((each) => each.at)));
   check("carrying the team, so the picture reads as two sides",
-    show(tokens.map((each) => each.team)) === show(["party", "monsters"]),
+    show(tokens.map((each) => each.team)) === show(["party", "party", "monsters"]),
     show(tokens.map((each) => each.team)));
   check("and the hit-point ring, which this chair is entitled to for everyone",
     tokens.every((each) => typeof each.hpFraction === "number"),
     show(tokens.map((each) => each.hpFraction)));
 
-  /* 2. The rail and the budget, read off `order` and `turn_state`. */
+  /* 2. The rail and the budget, read off `order` and `turn_state`. The order is
+   *    the engine's own and is asserted against it rather than against a list
+   *    written here: this chair is *told* the running order, and the case that
+   *    matters is that it prints the one it was told. */
   const rail = play.find("play-order").children.map((each) => each.textContent);
+  const declared = play.engine.gmState().order;
   check("the initiative rail is the order the engine rolled, in that order",
-    rail.length === 2 && rail[0].indexOf("Thora") === 0 && rail[1].indexOf("Grub") === 0,
-    show(rail));
+    rail.length === declared.length
+      && declared.every((name, index) => rail[index].indexOf(name) === 0),
+    show([rail, declared]));
+  const current = play.find("play-order").children.filter(
+    (each) => each.classList.contains("play-current"));
   check("and marks whose turn it is rather than leaving a reader to count",
-    play.find("play-order").children[0].classList.contains("play-current")
-      && !play.find("play-order").children[1].classList.contains("play-current"),
-    show(rail));
+    current.length === 1 && current[0].textContent.indexOf(play.engine.turn) === 0,
+    show([rail, play.engine.turn]));
   const budget = play.text("play-budget");
   check("the budget line comes from turn_state, in the numbers it reported",
     budget.indexOf("30") !== -1 && budget.indexOf("1") !== -1, budget);
@@ -4016,9 +4116,9 @@ await suite("play.js: the fight, from the chair that runs it",
     play.status !== null && play.status.text === "2 events · attack, damage",
     show(play.status));
   /* And it names only what a player's chair is served. `detail` is the GM's
-   * sentence — "Scimitar: 19 vs AC 15, hit" — and player_view.py omits it from
-   * a briefed answer outright, so a readout built from it would be blank in the
-   * one seat this panel exists for. */
+   * sentence — "Scimitar: 19 vs AC 15, hit" — and Encounter.brief_events omits
+   * it from a briefed answer outright, so a readout built from it would be
+   * blank in the one seat this panel exists for. */
   check("and nothing from the sentence the projection withholds",
     play.status.text.indexOf("undefined") === -1
       && play.status.text.indexOf("AC") === -1,
@@ -4049,19 +4149,43 @@ await suite("play.js: the player's chair", "the play sandbox in playHarness()", 
 
   const since = play.engine.seen.slice(before);
   check("taking a seat reads that seat's brief, naming the chair in as=",
-    since.some((each) => each.indexOf("/view?as=Thora") !== -1), show(since));
+    since.some((each) => each.indexOf("/brief?as=Thora") !== -1), show(since));
   check("and never asks for the GM's state again — not once, on any turn",
     !since.some((each) => /^GET \/api\/encounters\/[^/?]+$/.test(each)), show(since));
 
+  /* The brief sorts the fight into `you`, `allies` and `enemies`, and all three
+   * are drawn: a driver that read only its own key would put one token on the
+   * map and a driver that dropped `allies` would lose half the party. The
+   * order here is the brief's own — the asker, then their side, then the
+   * other — which is deliberately *not* the order the rail below prints. */
   const tokens = play.tokens || [];
   check("the brief still draws the whole visible battlefield",
-    tokens.length === 2, show(tokens));
+    tokens.length === 3, show(tokens));
+  check("an ally comes back whole, ring and all, because a table shares numbers",
+    tokens[0].hpFraction === 12 / 12 && tokens[1].hpFraction === 9 / 9,
+    show(tokens.map((each) => each.hpFraction)));
   check("but an opponent gets no hit-point ring, because it was sent no number",
-    tokens[0].hpFraction === 12 / 12 && tokens[1].hpFraction === undefined,
+    tokens[2].hpFraction === undefined,
     show(tokens.map((each) => each.hpFraction)));
   const rail = play.find("play-order").children.map((each) => each.textContent);
+  /* A brief carries no `order` — it would name the creature this seat has not
+   * detected — so the rail is rebuilt from the initiatives the seat can see.
+   * Brand rolled above Thora and the brief lists Thora first, so a rail printed
+   * in the order the keys arrived would put the asker at the top. */
+  check("the rail is initiative order and not the order the brief listed its keys",
+    show(rail.map((each) => each.split(" ")[0])) === show(["Brand", "Thora", "Grub"]),
+    show(rail));
+  /* Found by name and not by index, so a rail that came out in the wrong order
+   * fails the case above and only that one. An index here would make every row
+   * assertion below a second, blurrier ordering check. */
+  const rowFor = (name) => rail.find((each) => each.indexOf(name) === 0) || "";
+  check("an ally's own numbers are on it, unredacted",
+    rowFor("Brand").indexOf("9/9 hp") !== -1, show(rail));
   check("and an opponent's condition is words, not a fraction anyone can invert",
-    rail[1].indexOf("badly hurt") !== -1 && rail[1].indexOf("7") === -1, show(rail));
+    rowFor("Grub").indexOf("badly hurt") !== -1 && rowFor("Grub").indexOf("7") === -1,
+    show(rail));
+  check("with the distance the brief measured, which is what the bar's reach is",
+    rowFor("Grub").indexOf("25 ft") !== -1, show(rail));
 
   check("on this creature's own turn the bar is live",
     play.actionButton("dodge").disabled === false,
@@ -4310,7 +4434,7 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
     show(chips.map((each) => each.dataset.state)));
 
   /* 2. The same budget under a different turn_state. Two things fall out, and
-   *    the second is the one player_view.py cares about: the states flip, and
+   *    the second is the one the brief cares about: the states flip, and
    *    the pips *count* rather than *fill*. A proportional bar draws the same
    *    number of segments whatever the number behind it, so a creature with
    *    twice the speed drawing twice the pips is the assertion that a bar with
@@ -4421,7 +4545,7 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
    *    undrawable as a bar rather than merely undrawn. */
   const rows = play.find("play-order").children;
   check("an initiative row is text and has no children a bar could hide in",
-    rows.length === 2 && rows.every((each) => each.children.length === 0),
+    rows.length === 3 && rows.every((each) => each.children.length === 0),
     show(rows.map((each) => each.children.length)));
 });
 
@@ -4459,7 +4583,7 @@ await suite("play.js: inside the page that hosts it", "the page sandbox in makeP
       && engine.created.combatants[0].name === "Thora",
     show(engine.created));
   check("and the driver's tokens are what the canvas is drawing",
-    (page.last().overlays.tokens || []).length === 2,
+    (page.last().overlays.tokens || []).length === 3,
     show(page.last().overlays.tokens));
 
   /* The constraint Decision 3 exists for, driven through the page's own canvas.

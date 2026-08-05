@@ -249,11 +249,11 @@ _IDEMPOTENCY = Param(
 )
 _SINCE = Param("since", "query", {"type": "integer", "default": 0}, description="page offset")
 #: The chair a *write* answers to, and one vocabulary across the surface: it is
-#: spelled exactly as ``encounter.view`` spells it and refused exactly as
-#: ``encounter.view`` refuses it. Optional here where that one is required, and
+#: spelled exactly as ``encounter.brief`` spells it and refused exactly as
+#: ``encounter.brief`` refuses it. Optional here where that one is required, and
 #: the option is the point — omitted, the operation answers the state it always
-#: answered, which is what the CLI and both skills read. Given, its ``state`` is
-#: narrowed by ``service/player_view.py`` before it is serialised, so a player's
+#: answered, which is what the CLI and both skills read. Given, its ``state``
+#: becomes that seat's brief and its events are narrowed with it, so a player's
 #: own action is no longer answered with every opponent's sheet.
 #:
 #: No example, for the reason the required one takes none: the value is the
@@ -668,21 +668,6 @@ ROUTES: tuple[Route, ...] = (
         handler="encounter_state",
     ),
     Route(
-        "GET", f"{API_PREFIX}/encounters/{{id}}/view", "encounter.view",
-        "One encounter as one seat sees it: the player's brief, not the GM's.",
-        params=(
-            _ID,
-            Param(
-                # No example, for the reason a path id takes none: the value is
-                # the caller's own seat, and inventing one would read as a name
-                # this engine knows.
-                "as", "query", {"type": "string"}, required=True,
-                description="the combatant whose chair this is",
-            ),
-        ),
-        handler="encounter_view",
-    ),
-    Route(
         "GET", f"{API_PREFIX}/encounters/{{id}}/log", "encounter.log",
         "The paged event history of an encounter, with the actions that made it.",
         params=(
@@ -696,8 +681,14 @@ ROUTES: tuple[Route, ...] = (
         "One combatant's own view: their sheet whole, the other side redacted.",
         params=(
             _ID,
-            Param("as", "query", {"type": "string"}, required=True,
-                  description="the combatant whose view this is", example="Thora"),
+            Param(
+                # No example, for the reason a path id takes none: the value is
+                # the caller's own seat, and inventing one would read as a name
+                # this engine knows — including one this projection exists to
+                # withhold.
+                "as", "query", {"type": "string"}, required=True,
+                description="the combatant whose chair this is",
+            ),
         ),
         handler="encounter_brief",
     ),

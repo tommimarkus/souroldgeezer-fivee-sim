@@ -254,7 +254,7 @@ a separate layer because they are resolution primitives like the rest.
 
 **`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
-`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `player_view.py`,
+`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`,
 `replay.py`, `scenes.py`, and `uvtt.py`.
 Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
@@ -274,30 +274,56 @@ There is deliberately **no `scene.play`**: Play posts the stored body to
 posted is `name`, a label rather than a fight, and the smoke gate asserts the
 seam is exactly that one key wide in both directions.
 
-**`player_view.py` is an allowlist, and it must stay one.** It projects encounter
-state for one seat, to the brief `agents/game-master.md` already specifies —
-positions, distances, own-side conditions, whose turn it is, health as a
-plain-language band; never exact enemy hit points or AC, never a DC before a roll,
-never a creature that has not arrived. It names what goes **in**. A denylist would
-leak every field added afterwards, and `Encounter._creature_state` is an open,
-growing set — so every key of the model's snapshot, its map block, its fixture
-summaries and its **events** is classified `SHARED`, `OWN` or `NEVER`, and a test
-*derives* the field set from the model — from real snapshot output for the first
-three, and for events by reading every `_emit` call site out of
-`model/encounter.py` with `ast`, because a sampled set is only whatever the
-fixture happened to make happen. A new field lands in no bucket and fails until
-someone decides.
+**The player's brief is an allowlist, and it must stay one.** It lives on
+`Encounter` — `brief`, `brief_of`, `brief_events`, `unseen_by` in
+`model/encounter.py` — rather than in a service module, and the reason is one
+line of it: a creature behind **total cover** is omitted, and total cover is a
+relationship between two creatures and a map that no snapshot carries. A
+projection written over `encounter.state`'s output cannot compute it, which is
+what settled a period when two of these existed side by side. `service/` calls
+into it and translates its refusal; that is all `service/` does with it.
 
-Three leaks have been caught this way and none was in the creature fields.
-Fixture ability-check **DCs** rode in on an unclassified map passthrough. Every
+It projects the fight for one seat, to the brief `agents/game-master.md` already
+specifies — positions, distances, own-side conditions, whose turn it is, health
+as a plain-language band; never exact enemy hit points or AC, never a DC before a
+roll, never a creature that has not arrived or cannot be seen. It names what goes
+**in**. A denylist would leak every field added afterwards, and
+`Encounter._creature_state` is an open, growing set — so every key of a
+creature's entry, the map block, each fixture summary and each **event** belongs
+to exactly one of a `*_VISIBLE_KEYS` / `*_WITHHELD_KEYS` pair. Two sets rather
+than one filter, because an allowlist alone answers "is this shown?" and not "has
+anybody looked at this?", and `tests/test_player_brief.py` *derives* both halves
+from the model — from real payloads for the creature, map and fixture sets, and
+for events by reading every `_emit` call site out of `model/encounter.py` with
+`ast`, because a sampled set is only whatever the fixture happened to make
+happen. A new field lands in no bucket and fails until someone decides.
+
+`EVENT_NEVER_KEYS` is the one refinement: a named subset *inside*
+`EVENT_WITHHELD_KEYS` for the handful no seat is served at all — `dc`, `check`,
+the map's wiring — so that the pair stays total and the sharper rule is still
+written down.
+
+Four leaks have been caught this way and none was in the creature fields.
+Fixture ability-check **DCs** rode in on an unclassified map passthrough. `turn`
+**named the creature acting** even when the brief had just omitted them. Every
 **write** operation answered the acting seat with the whole unredacted snapshot
 until `encounter.create/.act/.advance/.resume` learned the same `as=` seat
-parameter `encounter.view` takes. And then those four narrowed their `state` and
-handed the same response's **events** over whole, where `damage` carries the
-target's exact `hp` and `max_hp` — the brief said "hurt" and the event beside it
-said 6594/7700. An event's `detail` is the one field omitted outright rather than
+parameter the brief takes. And then those four narrowed their `state` and handed
+the same response's **events** over whole, where `damage` carries the target's
+exact `hp` and `max_hp` — the brief said "hurt" and the event beside it said
+6594/7700. An event's `detail` is the one field omitted outright rather than
 classified: it is rendered prose, and prose cannot be allowlisted. Absent `as=`,
 all four answer exactly as they always did.
+
+**A chair-carrying write answers with the brief's own shape**, not a redacted
+snapshot, and that is the whole of "one projection". A second shape would be a
+second classification to keep in step and a weaker filter than this one; a caller
+who wants the flat `state` omits `as=` and gets it byte for byte. The refusal is
+one sentence with one owner and one status — `404`, `no combatant named 'X' in
+this encounter` — from the read and from all four writes, and it deliberately
+**does not list the cast**: a refusal that answers "who is in this fight?" to
+anyone who guesses a wrong name discloses the ambusher the projection works
+hardest to hide.
 
 **It is a projection, not an access control, and nothing may cite it as one.**
 `as=` is caller-asserted; the engine has one per-launch token and no per-seat
