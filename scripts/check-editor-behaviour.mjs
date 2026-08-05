@@ -3694,7 +3694,7 @@ const PLAY_SCENE = {
 
 const PLAY_TURN_STATE = {
   movement_left: 30, action_used: false, attacks_left: 1,
-  interaction_used: false, bonus_action_used: false,
+  interaction_used: false, bonus_action_used: false, loading_used: false,
 };
 
 /* Shaped as encounter.state answers: every creature reported whole, in the
@@ -4415,7 +4415,8 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
   const said = budget.textContent;
   check("the budget still says every word turn_state reported",
     ["30 ft of movement left", "1 attacks left", "action available",
-      "bonus action available", "interaction available"].every(
+      "bonus action available", "interaction available",
+      "loading weapon ready"].every(
       (phrase) => said.indexOf(phrase) !== -1), said);
   const gauges = budget.children.filter((each) => each.className === "play-gauge");
   check("movement is a count of squares, drawn as one pip each",
@@ -4429,8 +4430,8 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
       && gauges[1].children[1].children[0].className.indexOf("play-pip-attack") !== -1,
     show(gauges[1].children[1].children.map((pip) => pip.className)));
   const chips = (budget.children[2] || { children: [] }).children;
-  check("and the three that are held or spent each carry that state, not just the word",
-    chips.length === 3 && chips.every((each) => each.dataset.state === "held"),
+  check("and the four that are held or spent each carry that state, not just the word",
+    chips.length === 4 && chips.every((each) => each.dataset.state === "held"),
     show(chips.map((each) => each.dataset.state)));
 
   /* 2. The same budget under a different turn_state. Two things fall out, and
@@ -4455,7 +4456,7 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
   };
   const fast = await atBudget({
     movement_left: 60, action_used: false, attacks_left: 3,
-    interaction_used: false, bonus_action_used: false,
+    interaction_used: false, bonus_action_used: false, loading_used: false,
   });
   check("twice the movement draws twice the pips, so a pip is a count and not a fill",
     fast.gauges[0].children[1].children.length === 60 / 5
@@ -4464,7 +4465,7 @@ await suite("play.js: the look it brings with it", "the play sandbox in playHarn
 
   const used = await atBudget({
     movement_left: 0, action_used: true, attacks_left: 0,
-    interaction_used: true, bonus_action_used: true,
+    interaction_used: true, bonus_action_used: true, loading_used: true,
   });
   check("a spent turn draws no pips at all rather than an empty track",
     used.gauges.every((each) => each.children[1].children.length === 0)

@@ -480,6 +480,108 @@ class TestAttacking:
         assert f"and {len(names) - MAX_LISTED_COMBATANTS} more" in message
 
 
+class TestAmmunition:
+    """A shot spends a piece of what it fires, and an empty quiver refuses one.
+
+    The quantity in ``Creature.items`` *is* the count, exactly as it is for a
+    potion, so nothing new holds the arrows. What is new is that the refusal
+    **raises** where being out of range or behind total cover only emits: an
+    empty quiver is a fact about the shooter's own sheet, which the caller can
+    read back off ``state()``, while geometry is the engine's to know and worth
+    reporting rather than refusing.
+    """
+
+    def bow(
+        self, *, ammunition: str | None = "Arrow", loading: bool = False
+    ) -> AttackOption:
+        return AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            ammunition=ammunition,
+            loading=loading,
+            provenance=FIXTURE,
+        )
+
+    def duel(
+        self, *, arrows: int = 3, ammunition: str | None = "Arrow"
+    ) -> Encounter:
+        """An archer with a quiver, and something to shoot at 30 feet."""
+        rng = Random(3)
+        shooter = fighter("Sylvi", position=0)
+        shooter.attacks = (self.bow(ammunition=ammunition),)
+        shooter.items = {"Arrow": arrows}
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        encounter = Encounter([shooter, goblin], rng)
+        advance_to(encounter, "Sylvi", rng)
+        return encounter
+
+    def test_an_empty_quiver_refuses_the_shot_and_spends_nothing(self) -> None:
+        # The defender is a Redirect Attack boss with a minion beside it, which
+        # is what makes the *ordering* of the refusal visible rather than a
+        # matter of trust. ``_redirect_attack_target`` is not a query: it swaps
+        # the two creatures' squares and spends the boss's reaction. A refusal
+        # placed after it would charge the defender for a shot that was never
+        # taken, and ``state()`` reports both halves of that bill.
+        rng = Random(3)
+        shooter = fighter("Sylvi", position=0)
+        shooter.attacks = (self.bow(),)
+        shooter.items = {"Arrow": 0}
+        boss = fighter("Snagfinger", team="monsters", position=30)
+        boss.redirect_attack = True
+        minion = fighter("House Goblin", team="monsters", position=35)
+        encounter = Encounter([shooter, boss, minion], rng)
+        advance_to(encounter, "Sylvi", rng)
+        before = encounter.state()
+        undrawn = rng.getstate()
+
+        with pytest.raises(EncounterError, match="no Arrow left to fire Shortbow"):
+            encounter.act(Action(kind=ActionKind.ATTACK, target="Snagfinger"), rng)
+
+        assert encounter.state() == before
+        # And no die was drawn. A refusal that quietly rolled would leave the
+        # next roll of this fight different, which no state comparison can see.
+        assert rng.getstate() == undrawn
+
+        # The reaction really was armed: one arrow later the same swing does
+        # redirect, so the untouched state above is the refusal's doing rather
+        # than a boss who was never going to react.
+        shooter.items["Arrow"] = 1
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Snagfinger"), FixedRandom(4)
+        )
+        assert kinds(events)[0] == "redirect_attack"
+
+    def test_a_shot_spends_one_piece_and_reports_what_is_left(self) -> None:
+        encounter = self.duel(arrows=3)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin"), FixedRandom(20)
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["ammunition_remaining"] == 2
+        assert encounter.creatures["Sylvi"].items == {"Arrow": 2}
+
+    def test_an_attack_that_names_no_ammunition_carries_no_count(self) -> None:
+        # The other half, and the reason the key is conditional: every attack in
+        # the bundled catalog is this one, so an unconditional key would change
+        # the shape of every attack event ever emitted.
+        encounter = self.duel(arrows=3, ammunition=None)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Goblin"), FixedRandom(20)
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert "ammunition_remaining" not in swing.data
+        assert encounter.creatures["Sylvi"].items == {"Arrow": 3}
+
+
 class TestGoingDown:
     def test_reaching_zero_knocks_a_creature_out_rather_than_killing_it(self) -> None:
         rng = Random(3)
@@ -4363,6 +4465,94 @@ class TestTurnLegality:
         encounter.act(Action(kind=ActionKind.DODGE), rng)
         with pytest.raises(EncounterError, match="already taken an action"):
             encounter.act(Action(kind=ActionKind.DASH), rng)
+
+    @staticmethod
+    def _crossbow_duel() -> tuple[Encounter, Random]:
+        """A shooter with a Loading crossbow, a dagger, and two swings a turn.
+
+        Two attacks per action is what makes the Loading gate observable at all:
+        with one swing a turn the weapon's own restriction never binds.
+        """
+        rng = Random(1)
+        shooter = fighter("Sylvi", attacks_per_action=2)
+        shooter.attacks = (
+            AttackOption(
+                name="Light Crossbow",
+                attack_bonus=5,
+                damage=Dice(1, 8, 3),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=80,
+                long_range=320,
+                ammunition="Bolt",
+                loading=True,
+                provenance=FIXTURE,
+            ),
+            AttackOption(
+                name="Dagger",
+                attack_bonus=5,
+                damage=Dice(1, 4, 3),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.MELEE,
+                provenance=FIXTURE,
+            ),
+        )
+        shooter.items = {"Bolt": 5}
+        foe = fighter("Snagfinger", team="monsters", position=5)
+        encounter = Encounter([shooter, foe], rng)
+        advance_to(encounter, "Sylvi", rng)
+        return encounter, rng
+
+    def test_a_second_shot_from_a_loading_weapon_is_refused_this_turn(self) -> None:
+        encounter, _ = self._crossbow_duel()
+        shot = Action(
+            kind=ActionKind.ATTACK, target="Snagfinger", attack="Light Crossbow"
+        )
+        encounter.act(shot, FixedRandom(1))
+
+        with pytest.raises(EncounterError, match="Loading"):
+            encounter.act(shot, FixedRandom(1))
+
+        # Refused before anything is spent: the second swing and the second
+        # bolt are both still there.
+        assert encounter.state()["turn_state"]["attacks_left"] == 1
+        assert encounter.creatures["Sylvi"].items == {"Bolt": 4}
+
+    def test_a_melee_swing_after_a_loading_shot_is_still_legal(self) -> None:
+        # RAW, and the reason the flag is on the turn rather than on the
+        # creature's attacks: Loading caps what the *weapon* can do, not what
+        # the wielder can. A gate written as "one attack after a Loading shot"
+        # would silently delete the second half of every crossbow-and-blade
+        # turn and still look like the rule.
+        encounter, _ = self._crossbow_duel()
+        encounter.act(
+            Action(
+                kind=ActionKind.ATTACK, target="Snagfinger", attack="Light Crossbow"
+            ),
+            FixedRandom(1),
+        )
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Snagfinger", attack="Dagger"),
+            FixedRandom(20),
+        )
+
+        assert "Dagger" in detail_of(events, "attack")
+        assert encounter.state()["turn_state"]["attacks_left"] == 0
+
+    def test_the_loading_gate_lifts_on_the_next_turn(self) -> None:
+        encounter, rng = self._crossbow_duel()
+        shot = Action(
+            kind=ActionKind.ATTACK, target="Snagfinger", attack="Light Crossbow"
+        )
+        encounter.act(shot, FixedRandom(1))
+        encounter.advance(rng)
+        advance_to(encounter, "Sylvi", rng)
+
+        events = encounter.act(shot, FixedRandom(1))
+
+        assert kinds(events) == ["attack"]
+        assert encounter.creatures["Sylvi"].items == {"Bolt": 3}
 
     def test_state_reports_the_authoritative_view(self) -> None:
         rng = Random(1)

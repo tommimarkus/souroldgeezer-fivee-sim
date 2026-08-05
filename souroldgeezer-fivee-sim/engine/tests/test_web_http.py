@@ -3001,6 +3001,64 @@ class TestEncounterActions:
         # action, so a reader of the audit sees the turn that happened.
         assert self.log_of(editor, encounter_id)["total_actions"] == 1
 
+    def test_an_empty_quiver_is_refused_over_the_wire_and_names_both(
+        self, editor: Editor
+    ) -> None:
+        # The model raises rather than emitting for this one, so the refusal
+        # only reaches a caller if ``service.encounters.act`` translates it —
+        # and a message naming neither the ammunition nor the weapon would
+        # leave a player guessing which of two bows is dry.
+        archer: dict[str, Any] = {
+            "name": "Sylvi",
+            "team": "party",
+            "ac": 14,
+            "max_hp": 20,
+            "position": [0, 0],
+            "items": {"Arrow": 0},
+            "attacks": [
+                {
+                    "name": "Shortbow",
+                    "attack_bonus": 5,
+                    "damage": "1d6+3",
+                    "damage_type": "piercing",
+                    "kind": "ranged",
+                    "normal_range": 80,
+                    "long_range": 320,
+                    "ammunition": "Arrow",
+                }
+            ],
+        }
+        created = editor.request(
+            "POST",
+            "/api/v1/encounters",
+            json_body={
+                "combatants": [archer, {**GOBLIN, "position": [15, 0]}],
+                "seed": 11,
+            },
+        )
+        encounter_id = created.json()["encounter_id"]
+        for _ in range(4):
+            state = editor.request(
+                "GET", f"/api/v1/encounters/{encounter_id}"
+            ).json()
+            if state["turn"] == "Sylvi":
+                break
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        else:
+            raise AssertionError("Sylvi never got a turn")
+        recorded = self.log_of(editor, encounter_id)["total_actions"]
+
+        refused = editor.request(
+            "POST",
+            f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "attack", "target": "Goblin", "attack": "Shortbow"},
+        )
+
+        assert_problem(refused, 400, "no Arrow left to fire Shortbow")
+        # Refused rather than recorded: the audit gains nothing from a shot the
+        # rules never let happen.
+        assert self.log_of(editor, encounter_id)["total_actions"] == recorded
+
     def test_a_move_beyond_the_creatures_speed_names_what_it_would_cost(
         self, editor: Editor
     ) -> None:

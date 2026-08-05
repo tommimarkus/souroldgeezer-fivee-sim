@@ -845,6 +845,12 @@ var FiveePlay = (function () {
     tokens.appendChild(chip(
       budget.interaction_used ? "interaction spent" : "interaction available",
       budget.interaction_used));
+    /* A Loading weapon has had its one shot this turn. Shown as a spent chip
+       like the rest, because that is what it is: a swing this creature still
+       has the attacks for and cannot take with that weapon. */
+    tokens.appendChild(chip(
+      budget.loading_used ? "loading weapon fired" : "loading weapon ready",
+      budget.loading_used));
     el.budget.appendChild(tokens);
   }
 
