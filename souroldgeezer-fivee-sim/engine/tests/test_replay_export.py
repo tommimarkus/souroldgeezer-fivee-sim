@@ -594,12 +594,33 @@ def test_a_recovered_fight_exports_a_bundle_that_still_points_its_sight_cones() 
     api.STATE.sessions.clear()
     bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
 
-    exported = next(
-        entry for entry in bundle["latest_state"]["combatants"]
-        if entry["name"] == "Thora"
+    def named(entries: list[dict[str, Any]], name: str) -> dict[str, Any]:
+        return next(entry for entry in entries if entry["name"] == name)
+
+    assert named(bundle["latest_state"]["combatants"], "Thora")["facing"] == "northeast"
+    assert named(bundle["initial"]["combatants"], "Thora")["facing"] == "northeast"
+
+
+def test_the_captured_creation_input_carries_facing_even_when_nobody_set_one() -> None:
+    # The state payload omits `facing` for an untracked creature; this one does
+    # not, and the difference is deliberate — creation input is a fixed set of
+    # keys fed back through `combatants_from_specs`, not a report. Pinned
+    # because it is otherwise unguarded: making the key conditional here breaks
+    # no other test, so nothing would stop the two shapes being quietly merged.
+    encounter_id = str(
+        api.encounter_create(
+            [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=125
+        )["encounter_id"]
     )
-    assert exported["facing"] == "northeast"
-    assert bundle["initial"]["combatants"][0]["facing"] == "northeast"
+    bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+    captured = bundle["initial"]["combatants"]
+    assert all("facing" in entry for entry in captured)
+    assert [entry["facing"] for entry in captured] == [None, None]
+    # ...while the state payload still leaves the key out entirely.
+    assert all(
+        "facing" not in entry for entry in bundle["latest_state"]["combatants"]
+    )
 
 
 def test_a_facing_nobody_named_is_refused_rather_than_silently_dropped() -> None:
