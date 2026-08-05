@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from fivee_sim.analytics.montecarlo import auto_action, simulate_rounds
 from fivee_sim.kernel.actions import AttackKind
+from fivee_sim.kernel.conditions import EFFECTS, ConditionEffect
 from fivee_sim.kernel.dice import Dice
-from fivee_sim.kernel.grid import TERRAIN, MovementMode, TerrainEffect
+from fivee_sim.kernel.grid import TERRAIN, CoverGrade, MovementMode, TerrainEffect
 from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import DamageType
 from fivee_sim.kernel.spells import Spell
@@ -20,7 +21,7 @@ from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 from fivee_sim.service.uvtt import to_uvtt
 
-from .conftest import FIXTURE, FixedRandom, advance_to, fighter
+from .conftest import FIXTURE, FixedRandom, ScriptedRandom, advance_to, fighter
 
 
 def _mapped_encounter(
@@ -49,8 +50,120 @@ def _mapped_encounter(
             "water": TerrainEffect(move_cost_multiplier=2, underwater=True),
             "grain": TerrainEffect(move_cost_multiplier=2),
             "wall": TerrainEffect(passable=False, opaque=True),
+            "fence": TerrainEffect(cover=1),
         },
     )
+
+
+class TestPartialCoverDoesNotConceal:
+    """A screened enemy is still an enemy the brief has to name.
+
+    ``brief`` drops a combatant exactly when cover is ``TOTAL``, so a cover grade
+    that overstates itself does not merely shift an AC — it deletes the target
+    from the only view a player seat is given. In the playtest that produced this
+    file it deleted two of the three goblins a charging character was standing in
+    front of, and the run's central conclusion about the adventure's map was
+    drawn from the gap.
+    """
+
+    def test_a_wall_flanked_by_fences_does_not_conceal_the_enemy(self) -> None:
+        # The pillar-and-hedges shape: every corner line is blocked by something,
+        # only the middle one by the wall, and the goblin is in plain view.
+        watcher = fighter("Thora", position=(2, 7))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, goblin],
+            terrain={(2, 1): "wall", (2, 0): "fence", (2, 2): "fence"},
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.THREE_QUARTERS
+        seen = [enemy["name"] for enemy in encounter.brief("Thora")["enemies"]]
+        assert seen == ["Goblin"]
+
+    def test_allies_beside_a_wall_do_not_conceal_the_enemy(self) -> None:
+        # The same shape by the occupancy route. Bodies grant half cover at most,
+        # so no arrangement of them may add up to concealment — the party's own
+        # people cannot hide the enemy from it.
+        watcher = fighter("Thora", position=(2, 7))
+        left = fighter("Kesh", position=(12, 2))
+        right = fighter("Ilma", position=(12, 12))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, left, right, goblin], terrain={(2, 1): "wall"}
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.THREE_QUARTERS
+        seen = [enemy["name"] for enemy in encounter.brief("Thora")["enemies"]]
+        assert seen == ["Goblin"]
+
+    def test_a_sealed_enemy_is_still_concealed(self) -> None:
+        # The other direction, so the pair cannot both be satisfied by never
+        # concealing anyone: a wall that actually blocks every line still does.
+        watcher = fighter("Thora", position=(2, 7))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, goblin],
+            terrain={(2, y): "wall" for y in range(4)},
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.TOTAL
+        assert encounter.brief("Thora")["enemies"] == []
+
+
+class TestSurpriseIsExpressible:
+    """SRD 5.2.1 surprise, which the engine needed no new mechanic for.
+
+    The playtest reported that surprise could not be expressed and approximated
+    it by hand, costing a goblin its turn. It was modelling the older rule. In
+    5.2.1 (p. 13, p. 189) surprise is Disadvantage on the Initiative roll and
+    nothing else — no lost turn — and a condition carrying
+    ``own_ability_checks_have_disadvantage`` already produces exactly that,
+    because initiative *is* an ability check and rolls through the same
+    advantage computation.
+
+    What was genuinely missing was the way back out: nothing could remove a
+    condition, so a combatant given one at creation carried it for the rest of
+    the fight and took Disadvantage on every later check. That is what
+    ``set_condition`` closes, and it is why these two halves are one test class.
+    """
+
+    TABLE = dict(EFFECTS) | {
+        "surprised": ConditionEffect(own_ability_checks_have_disadvantage=True),
+    }
+
+    def test_a_surprised_combatant_rolls_initiative_with_disadvantage(self) -> None:
+        surprised = fighter("Thora")
+        # The creature reads its own table until the encounter injects one, and
+        # `add_condition` refuses a name that table does not define.
+        surprised.condition_effects = self.TABLE
+        surprised.add_condition("surprised")
+        ready = fighter("Goblin", team="monsters")
+
+        encounter = Encounter(
+            # Thora keeps the 1 of 20/1; the goblin then rolls 10 straight. Both
+            # carry Dexterity 14, so the totals are 1+2 and 10+2 — pinned rather
+            # than compared, because an inequality also holds for a great many
+            # implementations that are not applying Disadvantage at all.
+            [surprised, ready], ScriptedRandom([20, 1, 10]), condition_effects=self.TABLE
+        )
+
+        assert encounter.initiative == {"Thora": 3, "Goblin": 12}
+
+    def test_a_ruling_can_lift_surprise_when_initiative_is_past(self) -> None:
+        # The half that did not exist. Surprise is spent the moment initiative is
+        # rolled, so a condition that could never be lifted would go on taxing
+        # every ability check for the rest of the fight. This pins the lifting
+        # alone; that the condition bites during initiative is the case above.
+        encounter = Encounter(
+            [fighter("Thora"), fighter("Goblin", team="monsters")],
+            FixedRandom(10),
+            condition_effects=self.TABLE,
+        )
+        encounter.set_condition("Thora", "surprised", applied=True)
+
+        encounter.set_condition("Thora", "surprised", applied=False)
+
+        assert encounter.creatures["Thora"].conditions == set()
 
 
 class TestUnderwaterCombat:

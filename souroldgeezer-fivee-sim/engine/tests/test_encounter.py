@@ -17,7 +17,7 @@ import pytest
 
 from fivee_sim.content import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.conditions import Condition, UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import (
     CoverGrade,
@@ -123,6 +123,95 @@ class TestInitiative:
     def test_duplicate_names_are_refused(self) -> None:
         with pytest.raises(EncounterError, match="unique"):
             Encounter([fighter("Same"), fighter("Same", team="b")], Random(1))
+
+
+class TestRulingConditions:
+    """A condition the table imposes, with nothing in the rules to end it.
+
+    Every other condition here arrives from something that models its own
+    ending: a spell holds it under concentration, an attack rider anchors it to
+    a turn boundary, prone ends by standing. A ruling has none of those, so it
+    registers no ongoing effect and lasts until the table lifts it.
+
+    Until this existed a condition was effectively write-once — a combatant
+    could start a fight carrying one and nothing could ever take it off.
+    """
+
+    def test_a_ruling_imposes_and_lifts_a_condition(self) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+
+        encounter.set_condition("Thora", Condition.POISONED, applied=True)
+        assert Condition.POISONED in encounter.creatures["Thora"].conditions
+
+        encounter.set_condition("Thora", Condition.POISONED, applied=False)
+        assert Condition.POISONED not in encounter.creatures["Thora"].conditions
+
+    def test_a_ruling_registers_no_ongoing_effect(self) -> None:
+        # The distinction that makes it a ruling: nothing sustains it, so nothing
+        # can expire it or break it by losing concentration.
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        encounter.set_condition("Thora", Condition.POISONED, applied=True)
+
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_lifting_is_recorded_in_the_log(self) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        encounter.set_condition("Thora", Condition.POISONED, applied=True)
+        encounter.set_condition("Thora", Condition.POISONED, applied=False)
+
+        kinds = [event.kind for event in encounter.log if event.target == "Thora"]
+        assert kinds[-2:] == ["effect_apply", "effect_end"]
+
+    def test_lifting_also_ends_the_spell_effect_sustaining_the_condition(self) -> None:
+        # The branch the class docstring promises and nothing else reaches.
+        # Without it the ledger still holds an effect naming a condition the
+        # creature no longer has, so the spell's grip outlives the ruling meant
+        # to end it — and the next thing to consult the ledger reimposes it.
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        encounter = Encounter([wren, victim], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions
+        assert encounter.state()["ongoing_effects"] != []
+
+        encounter.set_condition("Bandit0", Condition.PARALYZED, applied=False)
+
+        assert Condition.PARALYZED not in victim.conditions
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_lifting_leaves_an_unrelated_effect_alone(self) -> None:
+        # And only that condition: a ruling is a scalpel, not a dispel.
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        encounter = Encounter([wren, victim], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+
+        encounter.set_condition("Bandit0", Condition.POISONED, applied=False)
+
+        assert Condition.PARALYZED in victim.conditions
+        assert encounter.state()["ongoing_effects"] != []
+
+    def test_an_unknown_condition_is_refused(self) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        with pytest.raises(UnknownCondition, match="no condition named 'bewildered'"):
+            encounter.set_condition("Thora", "bewildered", applied=True)
+
+    def test_an_unknown_combatant_is_refused(self) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        with pytest.raises(EncounterError, match="no combatant named 'Nobody'"):
+            encounter.set_condition("Nobody", Condition.POISONED, applied=True)
 
 
 class TestAttacking:

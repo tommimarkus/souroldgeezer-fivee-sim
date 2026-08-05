@@ -300,6 +300,29 @@ _INLINE_MAP: Mapping[str, Any] = {
     ),
 }
 
+#: Bounds on caller-supplied strings, enforced by the dispatcher before the
+#: operation is reached — which is the only place they can do their job. An
+#: audited encounter operation journals its arguments *before* the operation
+#: body validates them, so a length check inside the body has already let the
+#: payload onto the disk; refusing here is what keeps it off.
+#:
+#: A name is an identifier that has to match a loaded creature, condition,
+#: attack, spell, item, or fixture, so the bound only has to sit past anything
+#: a content pack would plausibly name. ``MAX_NOTE_TEXT`` is the note rule the
+#: service already owned; ``tests/test_web_http.py::TestDeclaredBounds`` holds
+#: the two against each other, the same trade ``TestDeclaredEnums`` makes for a
+#: set the map service keeps private.
+MAX_NAME_TEXT = 100
+MAX_NOTE_TEXT = 4000
+#: A filesystem path the caller names. Not journalled, so not part of the rule
+#: above — bounded because an unbounded one reaches path handling regardless,
+#: and no real path is longer than the kernel's own limit.
+MAX_PATH_TEXT = 4096
+
+_NAME_OR_NULL: Mapping[str, Any] = {
+    "type": ["string", "null"], "default": None, "maxLength": MAX_NAME_TEXT
+}
+
 # --- closed sets, derived from whatever module is the authority on them ------
 # A nullable one carries ``None`` in its own enum, because the dispatcher
 # checks the enum on any value actually sent and an explicit null is a value.
@@ -700,24 +723,26 @@ ROUTES: tuple[Route, ...] = (
             "type": "object",
             "properties": {
                 "kind": _ACTION_KIND,
-                "target": {"type": ["string", "null"], "default": None},
-                "attack": {"type": ["string", "null"], "default": None},
-                "item": {"type": ["string", "null"], "default": None},
-                "spell": {"type": ["string", "null"], "default": None},
+                "target": _NAME_OR_NULL,
+                "attack": _NAME_OR_NULL,
+                "item": _NAME_OR_NULL,
+                "spell": _NAME_OR_NULL,
                 "slot_level": {"type": ["integer", "null"], "default": None},
                 "to_position": _POINT,
-                "targets": {"type": ["array", "null"], "items": {"type": "string"},
+                "targets": {"type": ["array", "null"],
+                            "items": {"type": "string", "maxLength": MAX_NAME_TEXT},
                             "default": None},
                 "center": _POINT,
                 "direction": {"type": ["array", "null"], "default": None},
-                "toward": {"type": ["string", "array", "null"], "default": None},
+                "toward": {"type": ["string", "array", "null"], "default": None,
+                           "maxLength": MAX_NAME_TEXT},
                 "path": {"type": ["array", "null"], "default": None},
-                "feature": {"type": ["string", "null"], "default": None},
+                "feature": _NAME_OR_NULL,
                 "set_open": {"type": ["boolean", "null"], "default": None},
                 "to_level": {"type": ["integer", "null"], "default": None},
                 "movement_mode": _MOVEMENT_MODE,
                 "as_bonus_action": {"type": "boolean", "default": False},
-                "facing": {"type": ["string", "null"], "default": None},
+                "facing": _NAME_OR_NULL,
                 "natural": _NATURAL,
             },
             "required": ["kind"],
@@ -743,12 +768,28 @@ ROUTES: tuple[Route, ...] = (
         body_schema={
             "type": "object",
             "properties": {
-                "text": {"type": "string"},
-                "category": {"type": "string", "default": "note"},
+                "text": {"type": "string", "maxLength": MAX_NOTE_TEXT},
+                "category": {"type": "string", "default": "note",
+                             "maxLength": MAX_NAME_TEXT},
             },
             "required": ["text"],
         },
         handler="encounter_note", success=201, errors=(409,),
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/encounters/{{id}}/conditions", "encounter.condition",
+        "Impose or lift a condition on one combatant by the table's ruling.",
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY),
+        body_schema={
+            "type": "object",
+            "properties": {
+                "target": {"type": "string", "maxLength": MAX_NAME_TEXT},
+                "condition": {"type": "string", "maxLength": MAX_NAME_TEXT},
+                "applied": {"type": "boolean", "default": True},
+            },
+            "required": ["target", "condition"],
+        },
+        handler="encounter_condition", errors=(409,),
     ),
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/resume", "encounter.resume",
@@ -771,7 +812,8 @@ ROUTES: tuple[Route, ...] = (
         body_schema={
             "type": "object",
             "properties": {
-                "path": {"type": ["string", "null"], "default": None},
+                "path": {"type": ["string", "null"], "default": None,
+                         "maxLength": MAX_PATH_TEXT},
                 "embed": {"type": "boolean", "default": False},
                 "format_version": {"type": "integer", "default": 2},
             },

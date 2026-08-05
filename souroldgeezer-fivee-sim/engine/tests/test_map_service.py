@@ -396,8 +396,12 @@ class TestElevationEdits:
             edited(document(), {"op": "set_elevation", "rect": [4, 4, 9, 9], "feet": 5})
 
 
-def storeyed() -> MapDocument:
-    """The base document with a gallery over it, reached by a stair at (3, 3)."""
+def storeyed_payload() -> dict[str, Any]:
+    """The raw form of :func:`storeyed`, for callers that need the diagnostics.
+
+    ``parse_document`` discards warnings; ``parse_payload`` returns them, so a
+    test about what a document *warns* has to start from the payload.
+    """
     raw = payload()
     # The doorway stands open, so the ground's one gap in the bottom wall is
     # walkable and the gallery's solid row above it is the only thing blocking.
@@ -416,7 +420,12 @@ def storeyed() -> MapDocument:
             ],
         }
     ]
-    return parse_document(raw, source="storeyed", terrain=TERRAIN)
+    return raw
+
+
+def storeyed() -> MapDocument:
+    """The base document with a gallery over it, reached by a stair at (3, 3)."""
+    return parse_document(storeyed_payload(), source="storeyed", terrain=TERRAIN)
 
 
 class TestLevelEdits:
@@ -547,6 +556,29 @@ class TestConnectorEdits:
         with pytest.raises(MapError, match="whole number"):
             edited(storeyed(), {"op": "add_feature", "feature": {
                 "id": "hatch", "kind": "stairs_up", "at": [1, 1], "to_level": "up"}})
+
+    def test_a_connector_with_no_sight_link_is_warned_about(self) -> None:
+        # A storey you can climb to but cannot see into or out of is a legal map
+        # and almost never an intended one — the climb gets authored and the
+        # sightline forgotten, so whatever waits at the top silently stops
+        # existing. A warning rather than a refusal, because a sealed storey is
+        # sometimes exactly right: a cellar, a locked room, a floor above a
+        # ceiling. The author is told, and decides.
+        raw = storeyed_payload()
+        _document, warnings = service.parse_payload(raw, source="t", terrain=TERRAIN)
+
+        problems = [warning.problem for warning in warnings]
+        assert any("stair-foot" in problem and "sight_to_levels" in problem
+                   for problem in problems), problems
+        assert any("stair-head" in problem for problem in problems), problems
+
+    def test_a_connector_that_declares_a_sight_link_is_not_warned_about(self) -> None:
+        raw = storeyed_payload()
+        raw["features"][-1]["sight_to_levels"] = [1]
+        raw["levels"][0]["features"][0]["sight_to_levels"] = [0]
+        _document, warnings = service.parse_payload(raw, source="t", terrain=TERRAIN)
+
+        assert [w.problem for w in warnings if "sight_to_levels" in w.problem] == []
 
     def test_set_feature_drops_a_connector_by_not_naming_it(self) -> None:
         # Replacement's other half: a key left out is a key removed, so the

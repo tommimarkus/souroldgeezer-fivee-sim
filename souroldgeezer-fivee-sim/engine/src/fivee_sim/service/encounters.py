@@ -22,6 +22,7 @@ from random import Random
 from typing import Any
 
 from .. import __version__
+from ..kernel.conditions import UnknownCondition
 from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
@@ -312,8 +313,8 @@ def note(
         label = category.strip()
         if not written:
             raise RequestError("note text must not be blank")
-        if len(written) > 4000:
-            raise RequestError("note text must be at most 4000 characters")
+        if len(written) > MAX_NOTE_TEXT:
+            raise RequestError(f"note text must be at most {MAX_NOTE_TEXT} characters")
         if not label:
             raise RequestError("note category must not be blank")
         return {
@@ -329,6 +330,61 @@ def note(
         request_id=request_id,
         operation="encounter_note",
         arguments={"text": text, "category": category},
+        execute=execute,
+    )
+
+
+#: How long a note may be. This is the rule for *any* caller, which is why it
+#: stays here rather than moving to the route schema that also enforces it:
+#: ``tests/api.py`` reaches these functions directly, with no adapter in front,
+#: and the HTTP door is not the only door.
+#:
+#: The schema copy in ``web/routes.py`` is not redundant with it. Over HTTP the
+#: bound has to fire in the dispatcher, because ``audited_primitive`` journals an
+#: attempt's arguments before this function runs — a refusal here has already let
+#: the payload onto the disk. ``TestDeclaredBounds`` pins the two equal.
+MAX_NOTE_TEXT = 4000
+
+
+def condition(
+    state: EngineState,
+    encounter_id: str,
+    target: str,
+    condition_name: str,
+    applied: bool = True,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """Impose or lift a condition on one combatant by the table's ruling.
+
+    Journalled like an action rather than like a note, because it changes the
+    fight: a resume that replayed the notes and not this would rebuild a
+    different creature.
+    """
+    session = sessions.session_for(state, encounter_id)
+
+    def execute() -> dict[str, Any]:
+        try:
+            session.encounter.set_condition(target, condition_name, applied=applied)
+        except (EncounterError, UnknownCondition) as error:
+            raise RequestError(str(error)) from error
+        return {
+            "encounter_id": encounter_id,
+            "target": target,
+            "condition": condition_name,
+            "applied": applied,
+            "conditions": sorted(session.encounter.creatures[target].conditions),
+        }
+
+    return primitives.audited_primitive(
+        state,
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="encounter_condition",
+        arguments={
+            "target": target,
+            "condition": condition_name,
+            "applied": applied,
+        },
         execute=execute,
     )
 

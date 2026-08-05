@@ -594,6 +594,20 @@ def recover_session(
             timestamp = str(record["timestamp"])
             session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
             capture_checkpoint(session, timestamp)
+        elif status == "success" and operation == "encounter_condition":
+            # A ruling changes the fight, so recovery has to replay it like an
+            # action. It consumes no randomness and emits into the log, so the
+            # timestamps and checkpoint follow the same shape as the two below.
+            before = len(encounter.log)
+            arguments = record.get("arguments", {})
+            encounter.set_condition(
+                str(arguments["target"]),
+                str(arguments["condition"]),
+                applied=bool(arguments.get("applied", True)),
+            )
+            timestamp = str(record["timestamp"])
+            session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
+            capture_checkpoint(session, timestamp)
         elif status == "success" and operation == "encounter_advance":
             before = len(encounter.log)
             encounter.advance(

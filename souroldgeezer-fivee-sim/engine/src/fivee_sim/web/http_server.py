@@ -545,6 +545,17 @@ class _Handler(BaseHTTPRequestHandler):
                 HTTPStatus.BAD_REQUEST,
                 f"'{name}' must be one of: {', '.join(str(one) for one in allowed)}",
             )
+        # Length is checked *here* rather than in the operation body, and the
+        # difference is not stylistic. An audited operation journals its
+        # arguments before the body ever sees them, so a bound the body enforces
+        # has already let the payload reach the disk. This is the last point
+        # before that write.
+        limit = schema.get("maxLength")
+        if limit is not None and isinstance(value, str) and len(value) > limit:
+            raise _Problem(
+                HTTPStatus.BAD_REQUEST,
+                f"'{name}' must be at most {limit} characters, got {len(value)}",
+            )
         return value
 
     def _parse_query(self, route: Route) -> dict[str, Any]:
@@ -1015,6 +1026,15 @@ class _Handler(BaseHTTPRequestHandler):
         )
         self._send_json(HTTPStatus.CREATED, result, headers=self._encounter_etag(request.id))
 
+    def _h_encounter_condition(self, request: _Request) -> None:
+        body = request.body
+        self._check_encounter_version(request.id)
+        result = encounter_service.condition(
+            self.state, request.id, body["target"], body["condition"],
+            body["applied"], self._idempotency_key(),
+        )
+        self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
+
     def _h_encounter_resume(self, request: _Request) -> None:
         result = encounter_service.resume(self.state, request.id, request.query["as"])
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
@@ -1348,6 +1368,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_act": _Handler._h_encounter_act,
     "encounter_advance": _Handler._h_encounter_advance,
     "encounter_note": _Handler._h_encounter_note,
+    "encounter_condition": _Handler._h_encounter_condition,
     "encounter_resume": _Handler._h_encounter_resume,
     "encounter_finalize": _Handler._h_encounter_finalize,
     "encounter_replay": _Handler._h_encounter_replay,

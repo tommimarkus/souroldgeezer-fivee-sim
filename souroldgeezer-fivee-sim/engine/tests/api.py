@@ -138,6 +138,18 @@ def encounter_state(encounter_id: str) -> dict[str, Any]:
     return _encounters.state_of(STATE, encounter_id)
 
 
+def encounter_condition(
+    encounter_id: str,
+    target: str,
+    condition: str,
+    applied: bool = True,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    return _encounters.condition(
+        STATE, encounter_id, target, condition, applied, request_id
+    )
+
+
 def encounter_note(
     encounter_id: str,
     text: str,

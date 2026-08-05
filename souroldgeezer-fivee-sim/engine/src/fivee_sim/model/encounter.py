@@ -307,6 +307,10 @@ EVENT_VISIBLE_KEYS: frozenset[str] = frozenset({
     # what the table watched land
     "hit", "critical", "amount", "damage_type", "total_drained", "affected",
     "applied", "saved", "success", "condition", "expiry",
+    # a condition the table imposed or lifted by ruling rather than by a rule.
+    # The condition itself is already visible, and a ruling is announced out
+    # loud — it is the one kind of effect whose provenance *is* the table.
+    "ruling",
     # the ground, and what is between two creatures
     "cover", "total_cover", "out_of_range", "underwater", "underwater_auto_miss",
     # the action economy, which is spent in the open
@@ -1645,6 +1649,54 @@ class Encounter:
         if as_name not in seats:
             raise EncounterError(f"no combatant named {as_name!r} in this encounter")
         return seats
+
+    def set_condition(self, target_name: str, condition: str, *, applied: bool) -> None:
+        """Impose or lift a condition by the table's ruling rather than by a rule.
+
+        Every other condition here arrives from something that models its own
+        ending: a spell holds it under concentration, an attack rider anchors it
+        to a turn boundary, prone ends by standing. A ruling has none of those,
+        so it registers **no ongoing effect** and lasts until the table lifts it.
+        Nothing can expire it and no lost concentration breaks it.
+
+        That gap is why this exists. A combatant could be given a condition when
+        the fight was built and then never be rid of it, because the three
+        removal paths all belong to a mechanism that imposed the condition
+        itself. A circumstance the rules name but do not mechanise had no way
+        back out — SRD surprise is Disadvantage on one Initiative roll and
+        nothing afterwards, so the condition carrying it must come off once
+        initiative is past.
+
+        Lifting also clears any ongoing effect sustaining the same condition on
+        the same creature, so a ruling ends a spell's grip rather than being
+        quietly reimposed by the ledger the next time it is consulted.
+        """
+        if target_name not in self.creatures:
+            known = ", ".join(sorted(self.creatures)[:MAX_LISTED_COMBATANTS])
+            raise EncounterError(
+                f"no combatant named {target_name!r} in this encounter; there is: {known}"
+            )
+        target = self.creatures[target_name]
+        if applied:
+            # ``add_condition`` looks the name up before recording it, so an
+            # unknown condition is refused here rather than carried.
+            target.add_condition(condition)
+            self._emit(
+                "effect_apply", "", target_name,
+                f"{condition} imposed by ruling",
+                condition=condition, applied=True, ruling=True,
+            )
+            return
+        self._effects[:] = [
+            effect for effect in self._effects
+            if not (effect.target == target_name and effect.condition == condition)
+        ]
+        target.remove_condition(condition)
+        self._emit(
+            "effect_end", "", target_name,
+            f"{condition} lifted by ruling",
+            condition=condition, ruling=True,
+        )
 
     def state(self) -> dict[str, Any]:
         return {
