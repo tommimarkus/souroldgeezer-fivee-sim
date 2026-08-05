@@ -17,7 +17,8 @@ they described and nothing says so.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from enum import Enum
+from typing import Any, TypeVar
 
 from ..content import ContentRegistry, DataError, make_creature
 from ..kernel.actions import AttackKind, RiderExpiry
@@ -29,6 +30,8 @@ from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind
 from .common import resolve_seed
 from .errors import RequestError
+
+_EnumT = TypeVar("_EnumT", bound=Enum)
 
 __all__ = [
     "DESCRIBED_SPEC_KEYS",
@@ -296,6 +299,24 @@ def parse_carried_flag(value: Any, key: str) -> bool:
     return value
 
 
+def _closed(kind: type[_EnumT], value: Any, key: str) -> _EnumT:
+    """Coerce ``value`` into a closed vocabulary, naming the key when it is not.
+
+    Every one of these used to reach the enum raw, so a caller's typo left as an
+    uncaught ``ValueError`` and the adapter could only render it as a 500
+    ``internal`` — the engine reporting its own failure for the caller's bad
+    request, and naming neither the field nor what would have been accepted.
+    """
+    try:
+        return kind(value)
+    except ValueError as error:
+        allowed = ", ".join(sorted(member.value for member in kind))
+        raise RequestError(
+            f"combatant key {key!r} does not accept {value!r}; "
+            f"valid values: {allowed}"
+        ) from error
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -354,13 +375,13 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
             # route. Size gates attack riders like the Wolf's Prone.
-            size=Size(spec["size"]) if "size" in spec else Size.MEDIUM,
+            size=_closed(Size, spec["size"], "size") if "size" in spec else Size.MEDIUM,
             abilities={
-                Ability(key): int(value)
+                _closed(Ability, key, "abilities"): int(value)
                 for key, value in spec.get("abilities", {}).items()
             },
             save_bonuses={
-                Ability(key): int(value)
+                _closed(Ability, key, "save_bonuses"): int(value)
                 for key, value in spec.get("save_bonuses", {}).items()
             },
             attacks=tuple(attack_from_spec(entry) for entry in spec.get("attacks", [])),
@@ -375,16 +396,21 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             spell_save_dc=int(spec.get("spell_save_dc", 10)),
             spell_attack_bonus=int(spec.get("spell_attack_bonus", 0)),
             spellcasting_ability=(
-                Ability(spec["spellcasting_ability"])
+                _closed(Ability, spec["spellcasting_ability"], "spellcasting_ability")
                 if spec.get("spellcasting_ability") is not None
                 else None
             ),
             resistances=frozenset(
-                DamageType(entry) for entry in spec.get("resistances", [])
+                _closed(DamageType, entry, "resistances")
+                for entry in spec.get("resistances", [])
             ),
-            immunities=frozenset(DamageType(entry) for entry in spec.get("immunities", [])),
+            immunities=frozenset(
+                _closed(DamageType, entry, "immunities")
+                for entry in spec.get("immunities", [])
+            ),
             vulnerabilities=frozenset(
-                DamageType(entry) for entry in spec.get("vulnerabilities", [])
+                _closed(DamageType, entry, "vulnerabilities")
+                for entry in spec.get("vulnerabilities", [])
             ),
             items={str(k): int(v) for k, v in spec.get("items", {}).items()},
             conditions={str(entry) for entry in spec.get("conditions", [])},
@@ -392,7 +418,9 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             position=parse_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),
             arrival_round=int(spec.get("arrival_round", 1)),
-            death_rule=DeathRule(spec.get("death_rule", DeathRule.DEATH_SAVES)),
+            death_rule=_closed(
+                DeathRule, spec.get("death_rule", DeathRule.DEATH_SAVES), "death_rule"
+            ),
             # Carried over from the previous fight. Defaulted to a creature who
             # has not been in one yet, so every spec written before adventures
             # spanned encounters builds the creature it always did.

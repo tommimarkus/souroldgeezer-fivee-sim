@@ -56,7 +56,16 @@ class TestEveryPartyRuns:
 
         result = api.encounter_create([*sheets, opponent], seed=1)
 
-        assert len(result["state"]["combatants"]) == len(sheets) + 1
+        started = {c["name"]: c for c in result["state"]["combatants"]}
+        assert set(started) == {sheet["name"] for sheet in sheets} | {"Bandit"}
+        # The distinguishing values, not just the roster: an unknown key is
+        # refused outright, but a key accepted and quietly dropped would leave
+        # the count and the names both correct.
+        for sheet in sheets:
+            entry = started[sheet["name"]]
+            assert entry["max_hp"] == sheet["max_hp"]
+            assert entry.get("items", {}) == sheet.get("items", {})
+            assert set(entry.get("spells", ())) == set(sheet.get("spells", ()))
 
     def test_every_spell_named_is_one_the_engine_executes(self, party_name: str) -> None:
         known = spellbook()
@@ -109,14 +118,18 @@ class TestEveryPartyRuns:
         # spell without declaring the ability heals its flat dice and looks
         # entirely correct doing it.
         known = spellbook()
-        for sheet in _members(_parties()[party_name]):
-            scaling = [
+        casters = [
+            (sheet["name"], scaling, sheet.get("spellcasting_ability"))
+            for sheet in _members(_parties()[party_name])
+            if (scaling := [
                 name
                 for name in sheet.get("spells", ())
                 if known[name].add_spellcasting_modifier
-            ]
-            if scaling:
-                assert sheet.get("spellcasting_ability"), (
-                    f"{sheet['name']} knows {scaling} but declares no "
-                    f"spellcasting_ability"
-                )
+            ])
+        ]
+
+        # Asserted before the property itself: a guard that only fires when the
+        # population is non-empty passes vacuously the day the last scaling
+        # spell leaves the asset, and would then be a case that cannot fail.
+        assert casters, "no pregen knows a spell whose healing scales"
+        assert [name for name, _, ability in casters if not ability] == []

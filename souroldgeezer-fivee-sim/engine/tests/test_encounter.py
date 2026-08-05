@@ -4787,6 +4787,9 @@ class TestHealingInAFight:
         healed: list[int] = []
         for wisdom in (16, 10):
             ilma = self._cleric(wisdom=wisdom)
+            # Headroom matters: 4 hp of 30 leaves room for 2d8+3 to land in
+            # full, so neither result is capped at max and the difference below
+            # is the modifier rather than the ceiling.
             thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
             fight = Encounter(
                 [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],

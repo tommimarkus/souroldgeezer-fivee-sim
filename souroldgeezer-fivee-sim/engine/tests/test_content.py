@@ -1765,6 +1765,9 @@ class TestSpellcastingModifierSchema:
             builtin="exclude", include_environment=False,
         )
         assert "add_spellcasting_modifier" in fields(diagnostics)
+        # The field name alone does not identify the branch: an unregistered key
+        # is refused by name too, so a rename would satisfy a name-only check.
+        assert any("must be true or false" in problem for problem in problems(diagnostics))
 
     def test_a_creature_declares_which_ability_it_casts_with(
         self, tmp_path: Path
@@ -1806,3 +1809,4 @@ class TestSpellcastingModifierSchema:
             builtin="exclude", include_environment=False,
         )
         assert "spellcasting_ability" in fields(diagnostics)
+        assert any("is not valid; must be one of" in p for p in problems(diagnostics))
