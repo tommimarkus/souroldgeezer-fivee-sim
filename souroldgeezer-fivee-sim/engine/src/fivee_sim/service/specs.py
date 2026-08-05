@@ -307,9 +307,21 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
 def combatants_from_specs(
     specs: list[dict[str, Any]], registry: ContentRegistry
 ) -> list[Creature]:
-    if len(specs) < 2:
+    """Translate every combatant, *then* check there are enough of them.
+
+    Shape before arity, and the order is the whole of it. A caller's first probe
+    at an encounter is one combatant, so counting first meant the least useful
+    answer went to the most common mistake: a spec with no ``ac`` was told "an
+    encounter needs at least two combatants" — the one thing the caller already
+    knew — and had to add a second combatant before the engine would admit which
+    field was missing. An empty list is the single case with nothing to
+    diagnose, and it still gets the count, because there is no spec to complain
+    about.
+    """
+    built = [creature_from_spec(spec, registry) for spec in specs]
+    if len(built) < 2:
         raise RequestError("an encounter needs at least two combatants")
-    return [creature_from_spec(spec, registry) for spec in specs]
+    return built
 
 
 MAP_KEYS = frozenset({
