@@ -1,6 +1,6 @@
 ---
 name: map-forge
-description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving map files and reading them back, launching the interactive browser editor for hand-tuning, putting a fight on a saved map, exporting a finished fight as a shareable replay, or handing a map to another virtual tabletop via Universal VTT export. Drives the souroldgeezer-fivee-sim engine's map and replay operations with the bundled `fivee` command; running the fight itself belongs to the encounter-sim skill.
+description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving map files and reading them back, launching the interactive browser editor for hand-tuning, putting a fight on a saved map, exporting a finished fight as a shareable replay, composing a whole adventure's finalized fights into one replay bundle, or handing a map to another virtual tabletop via Universal VTT export. Drives the souroldgeezer-fivee-sim engine's map and replay operations with the bundled `fivee` command; running the fight itself belongs to the encounter-sim skill.
 ---
 
 # Map Forge
@@ -132,7 +132,9 @@ map is written, because no flag grammar should try to spell one.
    elsewhere; the viewer also checks the nested schema and hashes before rendering.
    Integrity hashes detect alteration but do not authenticate the file's author.
    Request `--format-version 1` only for a legacy consumer. `fivee replay.list` and
-   `fivee replay.get <id>` read what is already written.
+   `fivee replay.get <id>` read what is already written. If the fight is one chapter
+   of an adventure, finalizing it is also the precondition for composing the whole
+   run — see "A whole adventure as one replay" below.
 9. **Hand a map to another virtual tabletop with `fivee map.uvtt`.** It writes the
    map as a Universal VTT JSON file (default `<maps root>/uvtt/<slug>.uvtt`,
    replaced on re-export) carrying wall polylines derived from the terrain, one
@@ -148,6 +150,56 @@ map is written, because no flag grammar should try to spell one.
 
 `fivee map.validate` reports a document's errors and warnings without writing
 anything — worth a call before a `map.put` you expect to be marginal.
+
+## A whole adventure as one replay
+
+Several fights can belong to one **adventure** — an ordered run of encounters that
+carries the party between them, which the encounter-sim skill drives. **`fivee
+adventure.replay <adv-id>`** composes that run into a single bundle: the
+adventure's identity, then every member encounter's finalized replay nested
+verbatim, in order. It reports the chapter count, the encounters, the path, and
+the SHA-256.
+
+```bash
+fivee adventure.list                                  # the runs on disk
+fivee adventure.replay adv-1                          # into the replays root
+fivee adventure.replay adv-1 --path /abs/somewhere.json
+```
+
+Four things to say when you hand one over, because each is something a reader
+will otherwise assume:
+
+- **Every chapter must be finalized first.** The composer reads
+  `encounter.finalize`'s artifact off disk, so a fight that was never finalized —
+  or whose artifact has since been removed — is refused by name, never substituted.
+  Run `fivee encounter.finalize <id>` on each and compose again. The *run* need not
+  be closed: `adventure.finalize` stops new encounters being linked and is not a
+  precondition here.
+- **Nothing is re-derived, and that is correctness rather than economy.** No
+  session starts and no action replays. A fight replayed under whatever kernel is
+  loaded today can end a hit point away from where it was recorded, and because
+  the next chapter's opening state was carried out of the previous one's ending
+  state, the run would stop hanging together while the integrity hashes went on
+  agreeing with themselves. **Chapters freeze at `encounter.finalize`**; composing
+  only stacks them.
+- **It is always a file, never inline.** One realistic v2 bundle already exceeds
+  the ceiling a single export inlines under, and an envelope holds several. Quote
+  the path.
+- **The viewer will not play it and `replay.list` will not list it.** Both filter
+  on the single-encounter replay format, so a composed run comes back with no
+  `viewer_url` and stays absent from the listing even though it lands in the
+  replays root beside ordinary exports. Hand over the path itself. `fivee
+  replay.validate` does understand it, and the composer validates before
+  publishing a byte, so a chapter corrupted on disk is refused rather than shipped
+  inside the run.
+
+Validating one back means sending it as `bundle`, and a run's bundle is far too
+large to fit on a command line — pipe it in rather than substituting it:
+
+```bash
+{ printf '{"bundle":'; cat /abs/somewhere.json; printf '}'; } |
+  fivee replay.validate --json -
+```
 
 ## Seeds and reproducibility
 
