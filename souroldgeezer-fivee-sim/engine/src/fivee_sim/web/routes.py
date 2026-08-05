@@ -228,6 +228,19 @@ _IF_MATCH = Param(
         "ETag, or * to write regardless"
     ),
 )
+#: An adventure's precondition, required rather than optional — the map's rule
+#: rather than the encounter's, because an adventure is a *document* rewritten
+#: whole. An unguarded link would let two callers each be told they linked and
+#: leave one encounter missing from a run that acknowledged it. ``*`` is the
+#: documented escape and means "against whatever version is current".
+_ADVENTURE_IF_MATCH = Param(
+    "If-Match",
+    "header",
+    {"type": "string"},
+    required=True,
+    description="the version from the last GET of this adventure, or * for the current one",
+    example="*",
+)
 _IDEMPOTENCY = Param(
     "Idempotency-Key",
     "header",
@@ -284,6 +297,11 @@ _MAP_KIND: Mapping[str, Any] = {
 }
 _MAP_QUERY: Mapping[str, Any] = {
     "type": "string", "enum": ["distance", "line_of_sight", "path"]
+}
+#: The third of that kind: ``service/adventures.py``'s ``LIST_STATUSES``, which
+#: is public there but still unreachable from here.
+_ADVENTURE_STATUS: Mapping[str, Any] = {
+    "type": "string", "enum": ["active", "finalized", "all"], "default": "active"
 }
 
 
@@ -683,6 +701,67 @@ ROUTES: tuple[Route, ...] = (
             },
         },
         handler="encounter_replay",
+    ),
+    # --- adventures: ordered runs of encounters, carrying the party ---------
+    Route(
+        "GET", f"{API_PREFIX}/adventures", "adventure.list",
+        "Durable adventures, without loading the encounters they name.",
+        params=(
+            # Written out rather than imported: this module may not reach into
+            # ``service/``. ``adventures.LIST_STATUSES`` is the authority, and
+            # ``TestDeclaredEnums`` holds this against it.
+            Param("status", "query", _ADVENTURE_STATUS),
+        ),
+        handler="adventure_list",
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/adventures", "adventure.create",
+        "Start an adventure: an ordered run of encounters sharing a party.",
+        params=(_IDEMPOTENCY,),
+        body_schema={
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+        },
+        handler="adventure_create", success=201,
+    ),
+    Route(
+        "GET", f"{API_PREFIX}/adventures/{{id}}", "adventure.state",
+        "One adventure: its encounters in order, and the version a write must match.",
+        params=(_ID,),
+        handler="adventure_state",
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/adventures/{{id}}/encounters", "adventure.encounter",
+        "Start the next encounter, carrying the last one's cast as it left them.",
+        params=(_ID, _ADVENTURE_IF_MATCH, _IDEMPOTENCY),
+        body_schema={
+            "type": "object",
+            "properties": {
+                # Defaulted rather than required, unlike ``encounter.create``:
+                # a later encounter may be entirely the party the last one left
+                # behind, with nobody new to describe.
+                "combatants": {**_COMBATANTS, "default": []},
+                "carry": {"type": ["array", "null"], "items": {"type": "string"},
+                          "default": None},
+                "recovery": {"type": ["object", "null"], "default": None},
+                "seed": _SEED,
+                "movement_rule": _MOVEMENT_RULE,
+                "map": {"type": ["object", "null"], "default": None},
+                "map_id": {"type": ["string", "null"], "default": None},
+            },
+        },
+        # The first encounter of a run, which is the one a reader meets first
+        # and the only one whose whole roster has to be written out.
+        example={"combatants": _COMBATANTS_EXAMPLE, "seed": 20260805},
+        handler="adventure_encounter", success=201, errors=(409, 428),
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/adventures/{{id}}/finalize", "adventure.finalize",
+        "Close an adventure so no further encounter can be linked to it.",
+        params=(_ID, _ADVENTURE_IF_MATCH),
+        body_schema={"type": "object", "properties": {}},
+        handler="adventure_finalize", errors=(409, 428),
     ),
     # --- maps: files, addressed by id ---------------------------------------
     Route(

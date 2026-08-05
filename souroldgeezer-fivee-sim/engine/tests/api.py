@@ -28,6 +28,7 @@ from __future__ import annotations
 from typing import Any
 
 from fivee_sim.content import ContentRegistry
+from fivee_sim.service import adventures as _adventures
 from fivee_sim.service import analytics as _analytics
 from fivee_sim.service import catalog as _catalog
 from fivee_sim.service import content_ops as _content_ops
@@ -209,6 +210,52 @@ def encounter_list(status: str = "active") -> dict[str, Any]:
 
 def encounter_finalize(encounter_id: str) -> dict[str, Any]:
     return _encounters.finalize(STATE, encounter_id)
+
+
+# --- adventures ---------------------------------------------------------------
+def adventure_create(name: str, request_id: str | None = None) -> dict[str, Any]:
+    return _adventures.create(name, request_id)
+
+
+def adventure_state(adventure_id: str) -> dict[str, Any]:
+    return _adventures.state_of(adventure_id)
+
+
+def adventure_list(status: str = "active") -> dict[str, Any]:
+    return _adventures.list_adventures(status)
+
+
+def adventure_encounter(
+    adventure_id: str,
+    combatants: list[dict[str, Any]] | None = None,
+    carry: list[str] | None = None,
+    recovery: dict[str, Any] | None = None,
+    seed: int | None = None,
+    movement_rule: str = "5-5-5",
+    map: dict[str, Any] | None = None,
+    map_id: str | None = None,
+    request_id: str | None = None,
+    expected_version: str | None = None,
+) -> dict[str, Any]:
+    return _adventures.link_encounter(
+        STATE,
+        adventure_id,
+        combatants,
+        carry,
+        recovery,
+        seed,
+        movement_rule,
+        map,
+        map_id,
+        request_id,
+        expected_version,
+    )
+
+
+def adventure_finalize(
+    adventure_id: str, expected_version: str | None = None
+) -> dict[str, Any]:
+    return _adventures.finalize(adventure_id, expected_version)
 
 
 # --- maps and replays ---------------------------------------------------------
