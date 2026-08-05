@@ -18,10 +18,11 @@ from typing import Any
 import pytest
 
 from fivee_sim import __version__
+from fivee_sim.content import builtin_registry
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.map_document import parse_document
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
-from fivee_sim.service import map_ops
+from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, RequestError
 
@@ -552,6 +553,52 @@ def test_a_combatants_facing_is_accepted_reported_and_carried_into_the_bundle() 
         entry for entry in bundle["latest_state"]["combatants"]
         if entry["name"] == "Goblin"
     )
+
+
+def test_the_journal_captures_every_key_a_combatant_spec_accepts() -> None:
+    # One contract read in two directions. `creature_from_spec` says what a
+    # caller may state about a combatant; `normalized_combatant_payload` says
+    # what gets journalled; and `recover_session` feeds the second straight
+    # back into the first. A key in one set and not the other is state a
+    # recovered fight drops on the floor — and an omitted key is not an
+    # unknown key, so nothing refuses it and nothing else goes red.
+    #
+    # Derived from both declarations rather than listed here: a literal set
+    # would pin each side against a copy of itself, and the two defects this
+    # test exists for — `facing`, then the four carry-over keys — were both
+    # added to one side only while every other case stayed green.
+    creature = specs.creature_from_spec(
+        {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [0, 0]},
+        builtin_registry(),
+    )
+    assert set(replay_service.normalized_combatant_payload(creature)) == (
+        specs.DESCRIBED_SPEC_KEYS
+    )
+
+
+def test_a_fight_recovered_from_its_journal_is_still_stabilised_not_dying() -> None:
+    # The consequence, in the terms the rules care about. `dying` is derived as
+    # `not dead and hp == 0 and not stable`, so losing `stable` alone flips a
+    # stabilised combatant back to dying — the same silent state flip the spec
+    # keys were widened to prevent, arriving by way of the journal instead.
+    hero = dict(REPLAY_HERO) | {
+        "hp": 0, "stable": True, "death_saves": {"successes": 3, "failures": 1},
+    }
+    encounter_id = str(
+        api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=126)["encounter_id"]
+    )
+
+    def thora(state: dict[str, Any]) -> dict[str, Any]:
+        return next(e for e in state["combatants"] if e["name"] == "Thora")
+
+    before = thora(api.encounter_state(encounter_id))
+    api.STATE.sessions.clear()
+    after = thora(api.encounter_resume(encounter_id)["state"])
+
+    assert before["stable"] is True and before["dying"] is False
+    assert after["stable"] is True, "a recovered fight lost the stabilisation"
+    assert after["dying"] is False
+    assert after["death_saves"] == before["death_saves"] == {"successes": 3, "failures": 1}
 
 
 def test_a_facing_survives_the_journal_and_is_still_there_after_recovery() -> None:
