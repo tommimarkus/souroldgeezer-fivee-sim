@@ -2979,6 +2979,7 @@ class Encounter:
             slot_level=slot_level,
             save_dc=actor.spell_save_dc,
             spell_attack_bonus=actor.spell_attack_bonus,
+            spellcasting_modifier=actor.spellcasting_modifier,
             targets=tuple(
                 SpellTarget(
                     name=c.name,

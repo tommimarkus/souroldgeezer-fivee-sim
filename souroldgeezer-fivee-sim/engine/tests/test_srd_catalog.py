@@ -78,11 +78,13 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
         assert packs[chapter]["pack"] == f"srd-5.2.1-catalog-{chapter:02d}-{slug}"
 
     assert {spell["name"] for spell in packs[10]["spells"]} == {
+        "Cure Wounds",
         "Fireball",
         "Guiding Bolt",
         "Hold Person",
         "Shatter",
     }
+    assert {item["name"] for item in packs[13]["items"]} == {"Potion of Healing"}
     assert {creature["name"] for creature in packs[15]["creatures"]} == {
         "Goblin Warrior",
         "Goblin Boss",
@@ -94,11 +96,13 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
 
     links = {
         record["name"]: record["content_ref"]
-        for chapter in (10, 15, 16)
+        for chapter in (10, 13, 15, 16)
         for record in packs[chapter]["catalog"]
         if "content_ref" in record
     }
     assert links == {
+        "Cure Wounds": {"section": "spells", "name": "Cure Wounds"},
+        "Potions of Healing": {"section": "items", "name": "Potion of Healing"},
         "Fireball": {"section": "spells", "name": "Fireball"},
         "Guiding Bolt": {"section": "spells", "name": "Guiding Bolt"},
         "Hold Person": {"section": "spells", "name": "Hold Person"},

@@ -165,7 +165,8 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "size", "abilities", "save_bonuses", "attacks", "attacks_per_action",
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
-    "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
+    "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
+    "resistances", "immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
     "provenance", "facing",
     # Carried-over state: the condition a combatant walked out of the *previous*
@@ -378,6 +379,11 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             spell_slots={int(k): int(v) for k, v in spec.get("spell_slots", {}).items()},
             spell_save_dc=int(spec.get("spell_save_dc", 10)),
             spell_attack_bonus=int(spec.get("spell_attack_bonus", 0)),
+            spellcasting_ability=(
+                Ability(spec["spellcasting_ability"])
+                if spec.get("spellcasting_ability") is not None
+                else None
+            ),
             resistances=frozenset(
                 DamageType(entry) for entry in spec.get("resistances", [])
             ),

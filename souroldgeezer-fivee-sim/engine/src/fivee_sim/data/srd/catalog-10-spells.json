@@ -5,6 +5,22 @@
   "attribution": "See NOTICE.",
   "spells": [
     {
+      "name": "Cure Wounds",
+      "level": 1,
+      "school": "Abjuration",
+      "heal": "2d8",
+      "upcast_heal": "2d8",
+      "add_spellcasting_modifier": true,
+      "range_feet": 5,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_touch_range",
+          "feature": "Touch range modelled as 5 feet"
+        }
+      ]
+    },
+    {
       "name": "Fireball",
       "level": 3,
       "school": "Evocation",
@@ -5364,6 +5380,10 @@
       "id": "853-10-14-63-cure-wounds",
       "kind": "spell",
       "name": "Cure Wounds",
+      "content_ref": {
+        "section": "spells",
+        "name": "Cure Wounds"
+      },
       "source_ids": [
         "853-10-14-63-cure-wounds"
       ],

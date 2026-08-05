@@ -278,6 +278,13 @@ class Creature:
     spell_slots: dict[int, int] = field(default_factory=dict)
     spell_save_dc: int = 10
     spell_attack_bonus: int = 0
+    #: Which ability this creature casts with, for the spells that scale their
+    #: healing by it. ``None`` rather than a default ability: a sheet that never
+    #: said contributes nothing, which is what keeps every pack written before
+    #: this field resolving exactly as it did. The DC and the attack bonus stay
+    #: flat numbers — a stat block prints those, and deriving them would need a
+    #: proficiency bonus no creature here carries.
+    spellcasting_ability: Ability | None = None
     conditions: set[str] = field(default_factory=set)
     concentrating_on: str | None = None
     #: Usable items, name to quantity held. Quantity *is* the charge count.
@@ -390,6 +397,11 @@ class Creature:
             spell_slots={int(k): int(v) for k, v in record.get("spell_slots", {}).items()},
             spell_save_dc=int(record.get("spell_save_dc", 10)),
             spell_attack_bonus=int(record.get("spell_attack_bonus", 0)),
+            spellcasting_ability=(
+                Ability(record["spellcasting_ability"])
+                if record.get("spellcasting_ability") is not None
+                else None
+            ),
             items={str(k): int(v) for k, v in record.get("items", {}).items()},
             immunities=frozenset(
                 DamageType(entry) for entry in record.get("immunities", [])
@@ -421,6 +433,13 @@ class Creature:
         if ability in self.save_bonuses:
             return self.save_bonuses[ability]
         return self.ability_mod(ability)
+
+    @property
+    def spellcasting_modifier(self) -> int:
+        """The modifier a scaling spell adds, or zero for a sheet that named none."""
+        if self.spellcasting_ability is None:
+            return 0
+        return self.ability_mod(self.spellcasting_ability)
 
     @property
     def conscious(self) -> bool:

@@ -382,7 +382,10 @@ or condition-applying item needs a `--target`, and any item used on another
 creature needs to be within 5 ft. Quantity is the charge count, and
 `encounter.state` shows what each combatant has left.
 
-No items ship in the bundled slice — they arrive through a content pack.
+One item ships in the bundled slice: **Potion of Healing** (2d4+2, a Bonus
+Action, self or an ally within 5 ft). Everything else arrives through a content
+pack — the SRD's thrown consumables are not expressible, because an item use
+carries no range and its save DC cannot be derived from the thrower.
 
 A ranged attack may declare the ammunition it fires, drawing from the same
 `items` count rather than a separate one. An empty count refuses the attack —

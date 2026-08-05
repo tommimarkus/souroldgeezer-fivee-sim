@@ -13,7 +13,7 @@ All provenance: SRD 5.2.1 (see NOTICE).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from random import Random
 
@@ -68,6 +68,12 @@ class Spell:
     #: Dice added per slot level above the spell's base level.
     upcast_damage: Dice | None = None
     upcast_heal: Dice | None = None
+    #: Whether the caster's spellcasting ability modifier is added to the healing,
+    #: as SRD 5.2.1 Cure Wounds and Healing Word both are. Opt-in and healing-only:
+    #: this record is shared by everyone who knows the spell, so the modifier
+    #: cannot live in ``heal`` — it arrives at resolution from the caster or not
+    #: at all. A pack transcribing a flat number omits this and keeps that number.
+    add_spellcasting_modifier: bool = False
     shape: SpellShape = SpellShape.SINGLE
     radius: int = 0
     length: int = 0
@@ -198,6 +204,7 @@ def resolve_spell(
     slot_level: int,
     save_dc: int,
     spell_attack_bonus: int = 0,
+    spellcasting_modifier: int = 0,
     targets: Sequence[SpellTarget],
     supplied: Sequence[int] | None = None,
 ) -> SpellResolution:
@@ -207,6 +214,11 @@ def resolve_spell(
     spell's attack roll. A spell that rolls an attack against *several* targets
     rolls a separate d20 for each, so one reported face cannot say which is
     which — that is refused rather than silently spread across all of them.
+
+    ``spellcasting_modifier`` is the caster's own ability modifier, passed in
+    like every other value a roll depends on. It reaches the healing only when
+    the spell asked for it, and never the damage: SRD damage spells print their
+    dice in full, so adding it there would be generous to every one of them.
     """
     if slot_level < spell.level:
         raise ValueError(
@@ -221,6 +233,12 @@ def resolve_spell(
         )
     dice = spell.damage_at(slot_level)
     healing_dice = spell.healing_at(slot_level)
+    if healing_dice is not None and spell.add_spellcasting_modifier:
+        # Folded into the dice rather than added to the total, so the roll
+        # describes itself the way the table reads it: "2d8+3".
+        healing_dice = replace(
+            healing_dice, modifier=healing_dice.modifier + spellcasting_modifier
+        )
 
     if spell.requires_attack_roll:
         results: list[SpellTargetResult] = []
@@ -292,7 +310,7 @@ def resolve_spell(
                 save=save,
                 damage_dealt=dealt,
                 condition_applied=spell.condition if failed else None,
-                healed=healing_roll.total if healing_roll is not None else 0,
+                healed=max(0, healing_roll.total) if healing_roll is not None else 0,
             )
         )
     return SpellResolution(

@@ -43,11 +43,18 @@ DEFAULT_RECORD_LIMIT = 20
 DEFAULT_CHARACTER_LIMIT = 40_000
 CHAPTER_ORDER = (*range(4, 10), 10, 11, 12, 13, 14, 15, 16, 1, 2, 3)
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
-EXECUTABLE_SPELLS = frozenset({"Fireball", "Guiding Bolt", "Hold Person", "Shatter"})
+EXECUTABLE_SPELLS = frozenset(
+    {"Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person", "Shatter"}
+)
 EXECUTABLE_CREATURES = {
     15: frozenset({"Goblin Warrior", "Goblin Boss", "Ogre", "Skeleton", "Zombie"}),
     16: frozenset({"Wolf"}),
 }
+#: Catalog record name to executable item name. Spells and creatures are keyed by
+#: one name each; a potion is not — the SRD prints one "Potions of Healing" entry
+#: covering four rarities, and the engine executes the common tier of it. So the
+#: link cannot be derived from equality the way the other two are.
+EXECUTABLE_ITEM_REFS = {13: {"Potions of Healing": "Potion of Healing"}}
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = (
@@ -92,6 +99,7 @@ def _preserved_executable_sections() -> dict[int, dict[str, list[dict[str, Any]]
     current = _catalog_packs()
     expected = {
         10: ("spells", EXECUTABLE_SPELLS),
+        13: ("items", frozenset(EXECUTABLE_ITEM_REFS[13].values())),
         15: ("creatures", EXECUTABLE_CREATURES[15]),
         16: ("creatures", EXECUTABLE_CREATURES[16]),
     }
@@ -389,6 +397,11 @@ def bootstrap(source_root: Path) -> dict[str, int]:
             }
         elif kind == "spell" and name in EXECUTABLE_SPELLS:
             record["content_ref"] = {"section": "spells", "name": name}
+        elif kind == "magic_item" and name in EXECUTABLE_ITEM_REFS.get(chapter, {}):
+            record["content_ref"] = {
+                "section": "items",
+                "name": EXECUTABLE_ITEM_REFS[chapter][name],
+            }
         packs[chapter]["catalog"].append(record)
 
     section_chapter = {str(entry["id"]): _chapter_number(entry) for entry in sections}

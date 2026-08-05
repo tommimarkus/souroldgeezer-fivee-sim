@@ -283,6 +283,85 @@ class TestConditionSpells:
         assert not _fireball().concentration
 
 
+class TestHealingScalesWithTheCaster:
+    """The one thing a damaging spell never does: read the caster's own ability.
+
+    SRD 5.2.1 Cure Wounds heals ``2d8 plus your spellcasting ability modifier``,
+    so one record heals different amounts in two casters' hands. ``Spell.heal``
+    is a fixed :class:`Dice` shared by everyone who knows the spell, so the
+    modifier has to arrive at resolution or not at all.
+
+    Every case here asserts a *difference* between two resolutions at one seed
+    rather than a total. The dice are then identical in both, so the modifier is
+    the only thing the assertion can be measuring — and a change to the healing
+    dice cannot make a broken modifier pass.
+    """
+
+    def _ally(self) -> tuple[SpellTarget, ...]:
+        return (SpellTarget(name="Ally"),)
+
+    def test_the_casters_modifier_is_added_to_the_healing(self) -> None:
+        cure = spellbook()["Cure Wounds"]
+        without = resolve_spell(
+            Random(7), cure, slot_level=1, save_dc=13, targets=self._ally()
+        )
+        with_mod = resolve_spell(
+            Random(7), cure, slot_level=1, save_dc=13,
+            spellcasting_modifier=3, targets=self._ally(),
+        )
+
+        assert with_mod.results[0].healed == without.results[0].healed + 3
+
+    def test_upcasting_scales_the_dice_but_adds_the_modifier_once(self) -> None:
+        # The modifier is not per slot level. Measured at slot 3, where a
+        # per-level mistake would show up as +12 rather than +4.
+        cure = spellbook()["Cure Wounds"]
+        without = resolve_spell(
+            Random(5), cure, slot_level=3, save_dc=13, targets=self._ally()
+        )
+        with_mod = resolve_spell(
+            Random(5), cure, slot_level=3, save_dc=13,
+            spellcasting_modifier=4, targets=self._ally(),
+        )
+
+        assert with_mod.results[0].healed == without.results[0].healed + 4
+
+    def test_a_spell_that_does_not_declare_it_ignores_the_modifier(self) -> None:
+        # Opt-in, so a pack's healing spell that transcribes a flat number keeps
+        # healing that number whoever casts it.
+        flat = Spell(name="Vale Balm", level=1, heal=Dice.parse("2d4"), range_feet=30)
+        without = resolve_spell(
+            Random(9), flat, slot_level=1, save_dc=13, targets=self._ally()
+        )
+        with_mod = resolve_spell(
+            Random(9), flat, slot_level=1, save_dc=13,
+            spellcasting_modifier=5, targets=self._ally(),
+        )
+
+        assert with_mod.results[0].healed == without.results[0].healed
+
+    def test_a_negative_modifier_never_heals_less_than_the_dice_alone(self) -> None:
+        # A caster with a penalty is unusual but expressible, and healing for a
+        # negative number would drain the target on a low roll.
+        cure = spellbook()["Cure Wounds"]
+        resolution = resolve_spell(
+            Random(4), cure, slot_level=1, save_dc=13,
+            spellcasting_modifier=-20, targets=self._ally(),
+        )
+
+        assert resolution.results[0].healed >= 0
+
+
 class TestBundledData:
     def test_every_bundled_spell_declares_srd_provenance(self) -> None:
         assert all(spell.provenance == "SRD 5.2.1" for spell in spellbook().values())
+
+    def test_cure_wounds_is_touch_range_rather_than_unbounded(self) -> None:
+        # ``range_feet: 0`` means *no range check at all* in the stepper, so a
+        # touch spell that omitted its range would heal across the battlefield.
+        cure = spellbook()["Cure Wounds"]
+
+        assert cure.range_feet == 5
+        assert cure.heal == Dice.parse("2d8")
+        assert cure.upcast_heal == Dice.parse("2d8")
+        assert cure.add_spellcasting_modifier
