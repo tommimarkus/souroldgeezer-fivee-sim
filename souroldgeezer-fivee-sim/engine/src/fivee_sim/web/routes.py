@@ -30,6 +30,33 @@ map whose id happens to be ``render`` is still readable at ``GET
 ``analytics.*`` POST to a collection that returns a *result* resource rather
 than storing one. That is the documented RPC carve-out, not an accident of
 naming, and the OpenAPI description says so.
+
+**A declared ``example`` is what makes an object-valued argument callable.** A
+schema that says ``"type": "object"`` says nothing a caller can act on, and the
+client's help used to synthesise its example from that alone — so
+``encounter.create`` advertised ``--json '{"combatants": []}'`` and the shape of
+a combatant appeared nowhere on any surface an agent reads. Each such route now
+declares one whole body that *runs*, carried into the OpenAPI document's media
+type and read back by ``fivee help``. Two rules keep them worth having:
+``tests/test_web_http.py::TestDeclaredExamples`` sends every one of them to the
+route that declared it and fails on a refusal, and it derives which routes need
+one from the schemas rather than from a list, so an object-valued argument added
+tomorrow is covered today.
+
+**An ``enum`` here is a set some other module is the authority on.** It is
+therefore derived from that module wherever the authority is a public constant —
+``ActionKind``, ``MovementMode``, ``DiagonalRule``, ``BuiltinMode`` — because a
+second copy of a closed set is a copy that drifts in silence. The two the map
+service keeps as private module constants are written out and held against it by
+``TestDeclaredEnums`` instead, which buys the same guarantee at the cost of a
+test. Declaring the set here does more than document it: the dispatcher enforces
+``enum``, so the refusal an agent gets for guessing wrong names every legal
+value, and it names them before the operation is reached.
+
+Those imports are the only ones this module has, and they are the reason it
+still holds no code: ``kernel``, ``model`` and ``content`` are pure, downward,
+and drag in no socket server, which is the property the ``handler`` name below
+exists to protect.
 """
 
 from __future__ import annotations
@@ -39,6 +66,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any
+
+from ..content import BuiltinMode
+from ..kernel.grid import DiagonalRule, MovementMode
+from ..model.encounter import ActionKind
 
 __all__ = [
     "API_PREFIX",
@@ -100,6 +131,12 @@ class Param:
     Schema the OpenAPI document publishes *and* the coercion the dispatcher
     applies, so a query parameter cannot be documented as an integer and read
     as a string.
+
+    ``example`` is a value that makes the call *work*, for the parameters where
+    one exists to be given — ``map.put``'s ``If-Match: *`` is the case it was
+    added for. A path id has no such value and takes none: the help keeps
+    printing a placeholder there, because substituting one is the caller's part
+    and pretending otherwise would be the dishonest kind of example.
     """
 
     name: str
@@ -107,6 +144,7 @@ class Param:
     schema: Mapping[str, Any] = field(default_factory=dict)
     required: bool = False
     description: str = ""
+    example: str | None = None
 
 
 @dataclass(frozen=True, eq=False)
@@ -126,6 +164,11 @@ class Route:
     empty schema means "any JSON": the map documents and replay bundles that
     arrive whole, whose validation belongs to the service layer that owns the
     format.
+
+    ``example`` is one whole request body that this operation answers, declared
+    wherever the schema alone cannot show the shape: an object, an array of
+    objects, or a free body. It is not a fragment and not a sketch — it is sent
+    verbatim by a test, so a stale one fails rather than misleads.
     """
 
     method: str
@@ -134,6 +177,7 @@ class Route:
     summary: str
     params: Sequence[Param] = ()
     body_schema: Mapping[str, Any] | None = None
+    example: Mapping[str, Any] | None = None
     handler: str = ""
     #: The status a successful call answers with.
     success: int = 200
@@ -208,6 +252,96 @@ _POINT: Mapping[str, Any] = {"type": ["array", "integer", "null"], "default": No
 _MAP_SUBJECT: Mapping[str, Any] = {
     "map_id": {"type": ["string", "null"], "default": None},
     "document": {"type": ["object", "null"], "default": None},
+}
+
+# --- closed sets, derived from whatever module is the authority on them ------
+# A nullable one carries ``None`` in its own enum, because the dispatcher
+# checks the enum on any value actually sent and an explicit null is a value.
+_ACTION_KIND: Mapping[str, Any] = {
+    "type": "string", "enum": [kind.value for kind in ActionKind]
+}
+_MOVEMENT_MODE: Mapping[str, Any] = {
+    "type": ["string", "null"],
+    "enum": [*(mode.value for mode in MovementMode), None],
+    "default": None,
+}
+_MOVEMENT_RULE: Mapping[str, Any] = {
+    "type": "string",
+    "enum": [rule.value for rule in DiagonalRule],
+    "default": DiagonalRule.FIVE_FIVE_FIVE.value,
+}
+_BUILTIN_MODE: Mapping[str, Any] = {
+    "type": ["string", "null"],
+    "enum": [*(mode.value for mode in BuiltinMode), None],
+    "default": None,
+}
+#: The two sets whose authority is a private constant of ``service/maps.py``.
+#: Written here and held against it by ``TestDeclaredEnums`` rather than
+#: imported, because reaching through a module's underscore for a documentation
+#: string is a worse coupling than the test that closes the same gap.
+_MAP_KIND: Mapping[str, Any] = {
+    "type": "string", "enum": ["caves", "dungeon", "overland"]
+}
+_MAP_QUERY: Mapping[str, Any] = {
+    "type": "string", "enum": ["distance", "line_of_sight", "path"]
+}
+
+
+# --- example bodies ----------------------------------------------------------
+# One hand-built creature and one drawn from loaded content, because those are
+# the two ways a combatant is ever written and a caller shown only the second
+# would think the first impossible.
+_COMBATANTS_EXAMPLE: list[Mapping[str, Any]] = [
+    {
+        "name": "Thora",
+        "team": "party",
+        "ac": 16,
+        "max_hp": 30,
+        "position": [0, 0],
+        "attacks": [
+            {
+                "name": "Longsword",
+                "attack_bonus": 5,
+                "damage": "1d8+3",
+                "damage_type": "slashing",
+                "kind": "melee",
+            }
+        ],
+    },
+    {"monster": "Goblin Warrior", "team": "monsters", "position": [15, 0]},
+]
+
+#: The smallest document that validates clean: a walled chamber with a floor.
+#: Small on purpose — it is printed on one line by ``fivee help``, five times.
+_MAP_EXAMPLE: Mapping[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "chamber",
+    "grid": {"width": 5, "height": 4, "cell_feet": 5},
+    "legend": {".": "floor", "#": "wall"},
+    "tiles": ["#####", "#...#", "#...#", "#####"],
+    "provenance": {
+        "generator": "hand",
+        "seed": 1,
+        "params": {},
+        "edited": False,
+        "source": "hand-authored example; 5E-compatible original content",
+    },
+}
+
+#: A replay is normally megabytes and written by the exporter, so the example
+#: is the smallest *valid* one instead: a v1 bundle with one creature and one
+#: event, which is what the validator's own required fields add up to.
+_REPLAY_EXAMPLE: Mapping[str, Any] = {
+    "format": "fivee-sim-replay",
+    "format_version": 1,
+    "seed": 7,
+    "initial": {
+        "creatures": [{"name": "Thora", "position": [0, 0], "hp": 30, "max_hp": 30}],
+        "map_open_features": [],
+    },
+    "map": None,
+    "events": [{"kind": "round"}],
 }
 
 
@@ -340,7 +474,7 @@ ROUTES: tuple[Route, ...] = (
             "properties": {
                 "paths": {"type": ["array", "null"], "items": {"type": "string"},
                           "default": None},
-                "builtin": {"type": ["string", "null"], "default": None},
+                "builtin": _BUILTIN_MODE,
             },
         },
         handler="content_validate",
@@ -353,7 +487,7 @@ ROUTES: tuple[Route, ...] = (
             "properties": {
                 "paths": {"type": ["array", "null"], "items": {"type": "string"},
                           "default": None},
-                "builtin": {"type": ["string", "null"], "default": None},
+                "builtin": _BUILTIN_MODE,
                 "add": {"type": "boolean", "default": False},
             },
         },
@@ -370,12 +504,13 @@ ROUTES: tuple[Route, ...] = (
                 "iterations": {"type": "integer", "default": 500},
                 "seed": {"type": "integer", "default": 0},
                 "max_rounds": {"type": "integer", "default": 20},
-                "movement_rule": {"type": "string", "default": "5-5-5"},
+                "movement_rule": _MOVEMENT_RULE,
                 "map": {"type": ["object", "null"], "default": None},
                 "map_id": {"type": ["string", "null"], "default": None},
             },
             "required": ["combatants"],
         },
+        example={"combatants": _COMBATANTS_EXAMPLE, "iterations": 100},
         handler="analytics_rounds",
     ),
     Route(
@@ -392,6 +527,13 @@ ROUTES: tuple[Route, ...] = (
                 "distance": {"type": "integer", "default": 5},
             },
             "required": ["build", "target_ac"],
+        },
+        # One combatant, measured rather than fought: the same spec shape the
+        # fight operations take, which is the point worth showing.
+        example={
+            "build": _COMBATANTS_EXAMPLE[0],
+            "target_ac": 15,
+            "iterations": 100,
         },
         handler="analytics_dpr",
     ),
@@ -433,12 +575,13 @@ ROUTES: tuple[Route, ...] = (
             "properties": {
                 "combatants": _COMBATANTS,
                 "seed": _SEED,
-                "movement_rule": {"type": "string", "default": "5-5-5"},
+                "movement_rule": _MOVEMENT_RULE,
                 "map": {"type": ["object", "null"], "default": None},
                 "map_id": {"type": ["string", "null"], "default": None},
             },
             "required": ["combatants"],
         },
+        example={"combatants": _COMBATANTS_EXAMPLE, "seed": 20260805},
         handler="encounter_create", success=201,
     ),
     Route(
@@ -463,7 +606,7 @@ ROUTES: tuple[Route, ...] = (
         body_schema={
             "type": "object",
             "properties": {
-                "kind": {"type": "string"},
+                "kind": _ACTION_KIND,
                 "target": {"type": ["string", "null"], "default": None},
                 "attack": {"type": ["string", "null"], "default": None},
                 "item": {"type": ["string", "null"], "default": None},
@@ -479,12 +622,17 @@ ROUTES: tuple[Route, ...] = (
                 "feature": {"type": ["string", "null"], "default": None},
                 "set_open": {"type": ["boolean", "null"], "default": None},
                 "to_level": {"type": ["integer", "null"], "default": None},
-                "movement_mode": {"type": ["string", "null"], "default": None},
+                "movement_mode": _MOVEMENT_MODE,
                 "as_bonus_action": {"type": "boolean", "default": False},
                 "facing": {"type": ["string", "null"], "default": None},
             },
             "required": ["kind"],
         },
+        # Deliberately the action that needs nothing else. An attack would read
+        # better and would not run: it needs a target that is in reach of
+        # whichever creature's turn it happens to be, which no declared example
+        # can know. The ten kinds above are what teach the rest.
+        example={"kind": "dodge"},
         handler="encounter_act", errors=(409,),
     ),
     Route(
@@ -548,13 +696,20 @@ ROUTES: tuple[Route, ...] = (
         body_schema={
             "type": "object",
             "properties": {
-                "kind": {"type": "string"},
+                "kind": _MAP_KIND,
                 "params": {"type": ["object", "null"], "default": None},
                 "seed": _SEED,
                 "name": {"type": ["string", "null"], "default": None},
                 "save_as": {"type": ["string", "null"], "default": None},
             },
             "required": ["kind"],
+        },
+        # ``width`` and ``height`` are the two knobs all three generators share;
+        # each kind's own set is named in the refusal an unknown one earns.
+        example={
+            "kind": "dungeon",
+            "params": {"width": 40, "height": 24},
+            "seed": 20260805,
         },
         handler="map_generate",
     ),
@@ -576,6 +731,10 @@ ROUTES: tuple[Route, ...] = (
                 "encounter_id": {"type": ["string", "null"], "default": None},
             },
         },
+        # Inline rather than by ``map_id``, here and in the two below: a saved
+        # id is a placeholder a reader must already have, while the document is
+        # the thing the schema calls "an object" and shows nothing of.
+        example={"document": _MAP_EXAMPLE},
         handler="map_render", errors=(422,),
     ),
     Route(
@@ -585,12 +744,18 @@ ROUTES: tuple[Route, ...] = (
             "type": "object",
             "properties": {
                 **_MAP_SUBJECT,
-                "query": {"type": "string"},
+                "query": _MAP_QUERY,
                 "frm": {"type": ["array", "null"], "default": None},
                 "to": {"type": ["array", "null"], "default": None},
                 "level": {"type": "integer", "default": 0},
             },
             "required": ["query"],
+        },
+        example={
+            "document": _MAP_EXAMPLE,
+            "query": "distance",
+            "frm": [1, 1],
+            "to": [3, 2],
         },
         handler="map_query", errors=(422,),
     ),
@@ -609,12 +774,17 @@ ROUTES: tuple[Route, ...] = (
                                   "default": None},
             },
         },
+        # No ``path``: left out, the export names itself under the maps
+        # directory, so the example writes somewhere that exists on every host
+        # rather than somewhere a reader has to invent.
+        example={"document": _MAP_EXAMPLE},
         handler="map_uvtt", errors=(422,),
     ),
     Route(
         "POST", f"{API_PREFIX}/maps/validate", "map.validate",
         "Report a map document's errors and warnings without saving it.",
         body_schema={},
+        example=_MAP_EXAMPLE,
         handler="map_validate",
     ),
     Route(
@@ -629,8 +799,10 @@ ROUTES: tuple[Route, ...] = (
         params=(_ID, Param(
             "If-Match", "header", {"type": "string"}, required=True,
             description="the sha256 ETag from the last GET, or * to create",
+            example="*",
         )),
         body_schema={},
+        example=_MAP_EXAMPLE,
         handler="map_put", success=200, errors=(409, 422, 428),
     ),
     Route(
@@ -641,6 +813,14 @@ ROUTES: tuple[Route, ...] = (
             "type": "object",
             "properties": {"operations": {"type": "array", "items": {"type": "object"}}},
             "required": ["operations"],
+        },
+        # Every op is an object with an ``op`` key and that op's own arguments;
+        # the fifteen names and what each takes come back in the refusal an
+        # unknown one earns, which is what makes one worked case enough here.
+        example={
+            "operations": [
+                {"op": "paint", "cells": [[2, 2]], "terrain": "wall"},
+            ]
         },
         handler="map_edit", errors=(409, 422),
     ),
@@ -658,6 +838,7 @@ ROUTES: tuple[Route, ...] = (
             "properties": {"bundle": {"type": "object"}},
             "required": ["bundle"],
         },
+        example={"bundle": _REPLAY_EXAMPLE},
         handler="replay_validate",
     ),
     Route(

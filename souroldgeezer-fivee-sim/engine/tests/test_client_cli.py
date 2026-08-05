@@ -35,6 +35,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.client import cli, discovery
+from fivee_sim.model.encounter import ActionKind
 
 #: SIGKILL where there is one, SIGTERM where there is not. Referencing
 #: ``signal.SIGKILL`` directly would raise ``AttributeError`` at import on
@@ -380,10 +381,13 @@ class TestHelp:
         """The example is parsed by the client that printed it, then sent.
 
         An example nobody ever runs is an example that drifts. This one is
-        taken off the page, split, and executed: it must reach the server —
-        whether the engine then likes an empty combatant list is the engine's
-        business, and a usage error would be the client contradicting its own
-        help.
+        taken off the page, split, and executed, and it must come back
+        :data:`cli.EXIT_OK`. That is stronger than it looks: this case used to
+        settle for "not a usage error", which passed against the example the
+        client synthesised from the schema alone —
+        ``--json '{"combatants": []}'``, an empty list the engine then refused.
+        A pasteable example is one the engine *answers*, so nothing weaker will
+        do here.
         """
         assert run("help", "encounter.create") == cli.EXIT_OK
         example = [
@@ -393,7 +397,46 @@ class TestHelp:
         ][-1]
         assert example.startswith("fivee encounter.create --json ")
         payload = example.partition("--json ")[2].strip("'")
-        assert run("encounter.create", "--json", payload) != cli.EXIT_USAGE
+        assert run("encounter.create", "--json", payload) == cli.EXIT_OK
+
+    def test_an_example_shows_the_shape_of_an_object_valued_argument(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """``--combatants`` is a list of *what*? The example is the only answer.
+
+        The types the help prints are the ones the contract publishes, and for
+        a list of objects that is the word "list" and nothing else. So the
+        example has to carry the keys, and this reads them back off the printed
+        page rather than off the route table — the page is what an agent sees.
+        """
+        assert run("help", "encounter.create") == cli.EXIT_OK
+        example = capsys.readouterr().out.rpartition("--json ")[2].strip().strip("'")
+        combatants = json.loads(example)["combatants"]
+        assert len(combatants) >= 2, "one combatant is not a fight"
+        keys = set().union(*(set(one) for one in combatants))
+        assert {"team", "attacks"} <= keys, (
+            "the example is what teaches a hand-built creature's shape; without "
+            "its attacks it teaches nothing a bare {} did not"
+        )
+
+    def test_help_prints_every_legal_value_of_a_closed_set(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """``--kind`` takes ten values and used to print none of them.
+
+        Derived from ``ActionKind`` rather than listed here: this file asserting
+        its own copy of the set would pass against a contract that had drifted
+        from the engine, which is the failure the derivation exists to remove.
+        """
+        assert run("help", "encounter.act") == cli.EXIT_OK
+        rendered = capsys.readouterr().out
+        missing = sorted(
+            kind.value for kind in ActionKind if kind.value not in rendered
+        )
+        assert not missing, (
+            f"`fivee help encounter.act` prints no way to learn these action "
+            f"kinds short of guessing one wrong: {missing}"
+        )
 
     def test_an_unknown_operation_offers_the_near_misses(
         self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]

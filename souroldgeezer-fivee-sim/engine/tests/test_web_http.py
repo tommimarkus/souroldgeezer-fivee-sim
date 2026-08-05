@@ -28,6 +28,11 @@ from typing import Any
 import pytest
 
 from fivee_sim import __version__
+from fivee_sim.content import BuiltinMode
+from fivee_sim.kernel.dice import Advantage
+from fivee_sim.kernel.grid import DiagonalRule, MovementMode
+from fivee_sim.model.encounter import ActionKind
+from fivee_sim.service import maps as map_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
 from fivee_sim.web.http_server import (
@@ -1262,6 +1267,286 @@ class TestTheContract:
             assert entry["body"] == expected_body
 
 
+#: The JSON types that describe themselves. Anything else is a shape a caller
+#: has to be *shown*, which is the whole criterion below.
+SCALAR_TYPES = frozenset({"string", "integer", "number", "boolean", "null"})
+
+
+def type_names(schema: Mapping[str, Any]) -> frozenset[str]:
+    declared = schema.get("type")
+    if declared is None:
+        return frozenset()
+    if isinstance(declared, str):
+        return frozenset({declared})
+    return frozenset(str(name) for name in declared)
+
+
+def is_shapeless(schema: Mapping[str, Any]) -> bool:
+    """True where a property's schema does not spell its own shape out.
+
+    An object says nothing but "object"; an array of objects says nothing but
+    "array". An array of *scalars* does say what it holds, and so needs no
+    example — ``targets`` is a list of creature names and reads as one.
+    """
+    names = type_names(schema)
+    if "object" in names:
+        return True
+    if "array" not in names:
+        return False
+    items = schema.get("items")
+    if not isinstance(items, Mapping):
+        return True
+    return not type_names(items) <= SCALAR_TYPES
+
+
+def routes_needing_an_example() -> list[routes.Route]:
+    """Every contract route whose input includes a shape a schema cannot show.
+
+    Derived from the schemas rather than listed, so a route added with an
+    object-valued argument is covered here the day it lands rather than the day
+    somebody remembers to extend a list.
+    """
+    found: list[routes.Route] = []
+    for route in routes.api_routes():
+        schema = route.body_schema
+        if schema is None:
+            continue
+        # No `properties` is the "any JSON" body — a map document, a replay
+        # bundle. The whole body is the undocumented shape.
+        if "properties" not in schema or any(
+            is_shapeless(one) for one in schema["properties"].values()
+        ):
+            found.append(route)
+    return found
+
+
+class TestDeclaredExamples:
+    """An object-valued argument is undiscoverable unless something shows it.
+
+    ``fivee help <operation>`` used to synthesise its example from the schema
+    alone, which for an object meant ``{}`` and for an array meant ``[]``: the
+    combatant shape, the build shape and the map document appeared nowhere on
+    the surface an agent actually reads. The route table now declares a whole
+    runnable body for each, and these are the three claims that keeps honest —
+    that every such route has one, that it is a body its own route accepts, and
+    that the engine really answers it.
+    """
+
+    def test_every_operation_with_a_shapeless_argument_declares_an_example(self) -> None:
+        needed = routes_needing_an_example()
+        assert needed, (
+            "the criterion matched no route at all, which would make every case "
+            "in this class pass without checking anything"
+        )
+        missing = sorted(route.operation for route in needed if route.example is None)
+        assert not missing, (
+            "these operations take an object, an array of objects, or a whole "
+            "document, so their help has no shape to show unless the route "
+            "declares one: " + ", ".join(missing)
+        )
+
+    def test_no_declared_example_names_an_argument_its_route_does_not_have(self) -> None:
+        offenders: list[str] = []
+        for route in routes.api_routes():
+            if route.example is None:
+                continue
+            schema = route.body_schema or {}
+            if "properties" not in schema:
+                continue  # a free body: the document's own keys are its own
+            unknown = sorted(set(route.example) - set(schema["properties"]))
+            missing = sorted(set(schema.get("required", [])) - set(route.example))
+            if unknown:
+                offenders.append(f"{route.operation} passes unknown key(s) {unknown}")
+            if missing:
+                offenders.append(f"{route.operation} omits required key(s) {missing}")
+        assert not offenders, "\n  ".join(offenders)
+
+    def test_no_declared_example_carries_a_quote_the_help_would_break_on(self) -> None:
+        """``fivee help`` wraps the example in single quotes, so it may hold none.
+
+        A silent one would render an example that a shell splits into pieces —
+        the exact failure a declared example exists to remove.
+        """
+        for route in routes.api_routes():
+            for value in (route.example, *(param.example for param in route.params)):
+                if value is None:
+                    continue
+                assert "'" not in json.dumps(value), route.operation
+
+    def test_every_declared_example_is_a_call_this_engine_answers(
+        self, editor: Editor
+    ) -> None:
+        """The proof, and the only one that counts: each example is sent.
+
+        An example that does not run is worse than the empty one it replaces,
+        because it reads as authoritative. So every declared body goes over the
+        wire to the route that declared it, and a 4xx here is a failure of the
+        declaration rather than of the engine.
+        """
+        creation = next(
+            route for route in routes.api_routes()
+            if route.operation == "encounter.create"
+        )
+        created = editor.request(
+            "POST", "/api/v1/encounters", json_body=creation.example
+        )
+        assert created.status == 201, created.body
+        # A map for `map.edit` to edit, put there directly so the cases below
+        # do not depend on each other's order.
+        editor.put_map("saved-map", payload())
+        subjects = {
+            "encounter.act": created.json()["encounter_id"],
+            "map.put": "example-map",
+            "map.edit": "saved-map",
+        }
+        needed = routes_needing_an_example()
+        templated = {route.operation for route in needed if "{" in route.path}
+        assert templated <= set(subjects), (
+            "no subject id for " + ", ".join(sorted(templated - set(subjects)))
+        )
+        for route in needed:
+            assert route.example is not None
+            path = route.path.replace("{id}", subjects.get(route.operation, ""))
+            headers = {
+                param.name: param.example
+                for param in route.params
+                if param.example is not None
+            }
+            response = editor.request(
+                route.method, path, json_body=route.example, headers=headers
+            )
+            assert response.status < 400, (
+                f"the example {route.operation} declares is refused by the "
+                f"operation that declares it: {response.status} "
+                f"{response.body.decode('utf-8', 'replace')[:400]}"
+            )
+
+    def test_the_openapi_document_publishes_every_declared_example(
+        self, editor: Editor
+    ) -> None:
+        """Declared once, carried by the renderer — the client reads it there.
+
+        ``fivee help`` builds its line out of ``GET /api/v1/openapi.json``, so
+        an example the document drops is an example no caller ever sees.
+        """
+        document = editor.request("GET", "/api/v1/openapi.json").json()
+        for route in routes.api_routes():
+            operation = document["paths"][route.path][route.method.lower()]
+            media = operation.get("requestBody", {}).get("content", {}).get(
+                "application/json", {}
+            )
+            assert media.get("example") == route.example, route.operation
+            published = {
+                one["name"]: one.get("example") for one in operation["parameters"]
+            }
+            for param in route.params:
+                assert published[param.name] == param.example, (
+                    route.operation, param.name
+                )
+
+    def test_the_document_carries_an_example_for_every_shapeless_argument(
+        self, editor: Editor
+    ) -> None:
+        """The finding, restated as a test: the document used to hold zero."""
+        document = editor.request("GET", "/api/v1/openapi.json").json()
+        described = [
+            document["paths"][route.path][route.method.lower()]["requestBody"]
+            ["content"]["application/json"]["example"]
+            for route in routes_needing_an_example()
+        ]
+        assert all(one is not None for one in described)
+        assert len(described) == len(routes_needing_an_example())
+
+
+class TestDeclaredEnums:
+    """A closed set the help does not print is one you learn by guessing wrong.
+
+    Every enum in the route table names a set some other module is the
+    authority on. Three are derived from that authority outright, so drift is
+    impossible; the two the map service keeps as private module constants are
+    written here and held against it, which is the same guarantee arrived at
+    the long way. What is never acceptable is a literal expected set written
+    into this file — that pins the table against itself.
+    """
+
+    def enums_declared(self) -> dict[str, list[Any]]:
+        found: dict[str, list[Any]] = {}
+        for route in routes.api_routes():
+            for param in route.params:
+                if "enum" in param.schema:
+                    found[f"{route.operation}.{param.name}"] = list(param.schema["enum"])
+            for name, schema in (route.body_schema or {}).get("properties", {}).items():
+                if "enum" in schema:
+                    found[f"{route.operation}.{name}"] = list(schema["enum"])
+        return found
+
+    #: Each declared enum against whatever module decides what is accepted.
+    #: Written as a mapping from the *route's* label to the authority's own
+    #: value, so neither side is spelled out twice and either one moving is a
+    #: failure here. ``map.*`` reaches through an underscore deliberately: the
+    #: constants are private, and a test may know that where the published
+    #: contract may not.
+    def authorities(self) -> dict[str, set[Any]]:
+        movement_rules = {rule.value for rule in DiagonalRule}
+        advantages = {state.value for state in Advantage}
+        builtins = {mode.value for mode in BuiltinMode} | {None}
+        return {
+            "encounter.act.kind": {kind.value for kind in ActionKind},
+            "encounter.act.movement_mode": (
+                {mode.value for mode in MovementMode} | {None}
+            ),
+            "encounter.create.movement_rule": movement_rules,
+            "analytics.rounds.movement_rule": movement_rules,
+            "content.validate.builtin": builtins,
+            "content.configure.builtin": builtins,
+            "dice.roll.advantage": advantages,
+            "dice.check.advantage": advantages,
+            "dice.save.advantage": advantages,
+            "map.generate.kind": set(map_service._PARAM_TYPES),
+            "map.query.query": set(map_service._QUERIES),
+        }
+
+    def test_every_declared_enum_is_the_set_its_authority_accepts(self) -> None:
+        declared = self.enums_declared()
+        authorities = self.authorities()
+        assert "encounter.act.kind" in declared, (
+            "the action kinds are the closed set the finding names; without an "
+            "enum here the help prints none of them and this class is vacuous"
+        )
+        unheld = sorted(set(declared) - set(authorities) - {"encounter.list.status"})
+        assert not unheld, (
+            "a closed set declared here with nothing to hold it against is one "
+            "that can drift from the validator in silence. Name its authority "
+            "above, or pin it the way encounter.list.status is: " + ", ".join(unheld)
+        )
+        for label, expected in sorted(authorities.items()):
+            assert label in declared, f"{label} no longer declares an enum"
+            assert set(declared[label]) == expected, label
+
+    def test_the_one_set_with_no_constant_behind_it_is_pinned_to_its_own_refusal(
+        self, editor: Editor
+    ) -> None:
+        """``status`` predates this and its authority is an inline literal.
+
+        There is no constant to derive from, so the engine's own answer is used
+        instead: every declared value is accepted, and a value outside the set
+        is refused with a message that names exactly the declared ones. That is
+        a weaker guarantee than the derivations above — it would not notice the
+        service growing a fourth status the table never heard of — and it is
+        recorded as weaker rather than dressed up.
+        """
+        declared = self.enums_declared()["encounter.list.status"]
+        for value in declared:
+            answered = editor.request("GET", f"/api/v1/encounters?status={value}")
+            assert answered.status == 200, (value, answered.body)
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/encounters?status=archived"),
+            400,
+            "must be one of: ",
+        )
+        assert all(str(value) in problem["detail"] for value in declared)
+
+
 class TestProblemShape:
     def test_a_problem_names_the_request_it_describes(self, editor: Editor) -> None:
         # `instance` is the correlation handle this server offers instead of a
@@ -1922,20 +2207,24 @@ class TestEncounterActions:
     def test_an_unknown_kind_names_every_action_this_engine_takes(
         self, editor: Editor
     ) -> None:
-        # A kind that is text reaches the service and comes back naming the
-        # ten; a kind that is not text is refused by the schema first, so the
-        # two are told apart by their detail rather than the status they share.
+        # The ten are derived from ActionKind rather than written out here: a
+        # literal list would pin the refusal against a second copy of itself.
+        # A kind that is text but not one of them is refused against the closed
+        # set the route declares — which is the same set, and is also what
+        # `fivee help encounter.act` prints. A kind that is not text fails the
+        # type check before the set is ever consulted, so the two are told
+        # apart by their detail rather than by the status they share.
         encounter_id = self.start(editor, [5, 0]).json()["encounter_id"]
-        assert_problem(
+        refusal = assert_problem(
             editor.request(
                 "POST",
                 f"/api/v1/encounters/{encounter_id}/actions",
                 json_body={"kind": "yodel"},
             ),
             400,
-            "kind must be one of: attack, cast, move, dash, disengage, dodge, "
-            "use_item, interact, stand, surrender",
+            "'kind' must be one of: ",
         )
+        assert all(kind.value in refusal["detail"] for kind in ActionKind)
         schema_refusal = assert_problem(
             editor.request(
                 "POST",
@@ -1945,7 +2234,7 @@ class TestEncounterActions:
             400,
             "'kind' must be text",
         )
-        assert "kind must be one of" not in schema_refusal["detail"]
+        assert "must be one of" not in schema_refusal["detail"]
 
     def test_an_action_the_rules_forbid_is_refused_with_the_rule(
         self, editor: Editor

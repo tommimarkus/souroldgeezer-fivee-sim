@@ -16,6 +16,16 @@ routed, or miss one that is. It also means the types a flag is coerced to are
 the types the server publishes: a query parameter cannot be documented as an
 integer here and sent as a string.
 
+The example on that page travels the same way, and it had to start doing so.
+Synthesising it from the schema was adequate while every argument was a scalar
+and useless the moment one was not: ``"type": "object"`` became ``{}``, so
+``encounter.create`` advertised ``--json '{"combatants": []}'`` — a command that
+parses, sends, and comes back refused, having taught nothing about a combatant.
+An operation whose input has a shape now publishes a whole worked body in its
+OpenAPI media type, and :func:`_example` prints that rather than inventing one.
+Closed sets arrive by the same route as ``enum``, which is how ``--kind`` prints
+its ten values without this file knowing what an action is.
+
 **Arguments compose.** ``--flag value`` is derived from the declared parameters,
 ``--json '{...}'`` (or ``--json -`` for stdin) supplies a whole object for the
 nested payloads — a creature spec, a map document — that no flag grammar should
@@ -106,6 +116,10 @@ class Param:
     location: str
     required: bool
     schema: Mapping[str, Any] = field(default_factory=dict)
+    #: A value the contract publishes for this parameter, where one exists that
+    #: makes the call work — ``map.put``'s ``If-Match: *``. ``None`` means the
+    #: example prints a placeholder instead, which is right for a resource id.
+    example: str | None = None
 
 
 @dataclass(frozen=True)
@@ -119,6 +133,10 @@ class Operation:
     params: tuple[Param, ...] = ()
     #: The request body schema, or ``None`` where the operation reads no body.
     body: Mapping[str, Any] | None = None
+    #: A whole request body the contract publishes as a worked example, where
+    #: the schema alone cannot show the shape. ``None`` for every operation
+    #: whose arguments are scalars and describe themselves.
+    example: Mapping[str, Any] | None = None
 
     @property
     def properties(self) -> Mapping[str, Any]:
@@ -171,7 +189,12 @@ def _type_names(schema: Mapping[str, Any]) -> tuple[str, ...]:
 def _type_phrase(schema: Mapping[str, Any]) -> str:
     enum = schema.get("enum")
     if isinstance(enum, list) and enum:
-        return "one of: " + ", ".join(str(one) for one in enum)
+        # A nullable closed set carries JSON null among its members, and
+        # ``str(None)`` would print the Python spelling of a value the caller
+        # has to type as ``null``.
+        return "one of: " + ", ".join(
+            _TYPE_WORDS["null"] if one is None else str(one) for one in enum
+        )
     words = [_TYPE_WORDS.get(name, name) for name in _type_names(schema)]
     if not words:
         return "any JSON"
@@ -300,6 +323,9 @@ class Contract:
                 f"document has no such operation; the two have drifted apart"
             )
         body = spec.get("requestBody")
+        media = (
+            {} if body is None else body.get("content", {}).get("application/json", {})
+        )
         return Operation(
             name=name,
             method=method,
@@ -311,12 +337,12 @@ class Contract:
                     location=str(one["in"]),
                     required=bool(one.get("required")),
                     schema=one.get("schema", {}),
+                    example=one.get("example"),
                 )
                 for one in spec.get("parameters", [])
             ),
-            body=None
-            if body is None
-            else body.get("content", {}).get("application/json", {}).get("schema", {}),
+            body=None if body is None else media.get("schema", {}),
+            example=media.get("example"),
         )
 
 
@@ -645,12 +671,24 @@ def render_operation(operation: Operation) -> str:
 
 
 def _example(operation: Operation) -> str:
-    """A line to paste. Placeholders are the argument's name in capitals."""
+    """A line to paste. Placeholders are the argument's name in capitals.
+
+    Where the contract publishes a worked body, that body *is* the example and
+    is printed whole. Where it does not, the line is synthesised from the
+    schema as it always was — which is adequate exactly while every argument is
+    a scalar, and is why an operation taking an object declares one instead: a
+    synthesised ``{"combatants": []}`` is a command that parses, sends, and is
+    then refused, which is worse than no example at all.
+    """
     parts = ["fivee", operation.name]
-    payload: dict[str, Any] = {}
     for param in operation.params:
-        if param.required or param.location == "path":
+        if param.example is not None:
+            parts += [_flag(param.name), _shell_word(param.example)]
+        elif param.required or param.location == "path":
             parts += [_flag(param.name), _placeholder(param.name, param.schema)]
+    if operation.example is not None:
+        return " ".join([*parts, "--json", f"'{json.dumps(operation.example)}'"])
+    payload: dict[str, Any] = {}
     for name in operation.body_required:
         schema = operation.properties.get(name, {})
         names = _type_names(schema)
@@ -665,6 +703,18 @@ def _example(operation: Operation) -> str:
     elif operation.free_body:
         parts += ["--json", "-"]
     return " ".join(parts)
+
+
+def _shell_word(value: str) -> str:
+    """One argument as a shell would need it written.
+
+    Only bare words go through unquoted. ``If-Match: *`` is the reason: pasted
+    naked it is a glob, and the shell would hand the engine a directory listing
+    as the version to write against.
+    """
+    if value and all(character.isalnum() or character in "-_.:/" for character in value):
+        return value
+    return "'" + value.replace("'", "'\\''") + "'"
 
 
 def _placeholder(name: str, schema: Mapping[str, Any]) -> str:

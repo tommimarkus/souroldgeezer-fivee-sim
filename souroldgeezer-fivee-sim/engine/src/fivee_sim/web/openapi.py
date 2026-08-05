@@ -108,6 +108,7 @@ def _parameters(route: Route) -> list[dict[str, Any]]:
             "required": param.required or param.location == "path",
             "schema": dict(param.schema),
             **({"description": param.description} if param.description else {}),
+            **({"example": param.example} if param.example is not None else {}),
         }
         for param in route.params
     ]
@@ -116,10 +117,17 @@ def _parameters(route: Route) -> list[dict[str, Any]]:
 def _operation(route: Route) -> dict[str, Any]:
     body: dict[str, Any] = {}
     if route.body_schema is not None:
+        # OpenAPI 3.1 puts a body example on the Media Type Object and a
+        # parameter's on the Parameter Object, so a declared example lands
+        # where any reader of this document already looks for one — and, more
+        # to the point, where ``fivee help`` reads it back from.
+        media: dict[str, Any] = {"schema": dict(route.body_schema)}
+        if route.example is not None:
+            media["example"] = dict(route.example)
         body = {
             "requestBody": {
                 "required": bool(route.body_schema.get("required")),
-                "content": {"application/json": {"schema": dict(route.body_schema)}},
+                "content": {"application/json": media},
             }
         }
     responses: dict[str, Any] = {}
