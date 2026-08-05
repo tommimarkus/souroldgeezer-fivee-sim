@@ -144,9 +144,13 @@ fivee adventure.encounter adv-1 --if-match '*' --json '{
 }'
 ```
 
-`fivee adventure.state adv-1` lists the run's encounters in order. There is no
-whole-run replay export — link the per-encounter `fivee encounter.replay` bundles
-from the report instead.
+`fivee adventure.state adv-1` lists the run's encounters in order.
+
+When play is done, **`fivee adventure.replay adv-1`** composes the run's
+finalized encounters into one replay bundle on disk — the whole playtest as a
+single shareable artifact, rather than N encounter bundles beside a transcript.
+It composes *frozen* files, so finalize each encounter before asking for it, and
+link the result from the report.
 
 ## 5. Between fights
 

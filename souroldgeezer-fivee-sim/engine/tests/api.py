@@ -269,6 +269,10 @@ def adventure_finalize(
     return _adventures.finalize(adventure_id, expected_version)
 
 
+def adventure_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]:
+    return _adventures.compose_replay(adventure_id, path)
+
+
 # --- maps and replays ---------------------------------------------------------
 def map_generate(
     kind: str,

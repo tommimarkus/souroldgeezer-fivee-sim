@@ -40,9 +40,25 @@ __all__ = [
     "finalize",
     "list_encounters",
     "note",
+    "replay_path",
     "resume",
     "state_of",
 ]
+
+
+def replay_path(encounter_id: str) -> Path:
+    """Where :func:`finalize` freezes this fight's replay bundle.
+
+    One declaration because there are now two readers. ``finalize`` writes it,
+    and ``service/adventures.py`` reads it back as a chapter of the run's own
+    replay — a second spelling of this name in that module would be one more
+    pair of declarations that must agree and nothing holding them together.
+
+    It sits beside the journal rather than under the replays directory on
+    purpose: this file is the *record* of a finished fight, addressed by
+    encounter id, not a shareable export somebody chose a name for.
+    """
+    return journal_service.encounters_root() / f"{encounter_id}.replay.json"
 
 
 def creation_response(
@@ -608,7 +624,7 @@ def finalize(
     session = sessions.session_for(state, encounter_id)
     if session.finalization_result is not None:
         return deepcopy(session.finalization_result)
-    target = journal_service.encounters_root() / f"{encounter_id}.replay.json"
+    target = replay_path(encounter_id)
     exported = map_ops.replay_export(
         state,
         encounter_id,

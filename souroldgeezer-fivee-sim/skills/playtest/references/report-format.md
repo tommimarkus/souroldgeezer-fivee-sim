@@ -94,5 +94,5 @@ Two short lists, in this order:
    section, stated plainly. Agent players probe ambiguity and pacing; they are
    not evidence about fun or tone. One run is one path.
 
-Link the per-encounter `fivee encounter.replay` bundles so a reader can watch any
-fight rather than take the summary's word for it.
+Link the run's `fivee adventure.replay` bundle so a reader can watch the fights
+rather than take the summary's word for them.

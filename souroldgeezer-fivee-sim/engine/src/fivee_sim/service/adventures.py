@@ -30,6 +30,16 @@ the carry-over composes it, so "the party takes a long rest" is whatever the
 caller says it is. That is the same posture ``analytics/scenario.py`` takes
 toward travel — the engine resolves what it can resolve, and does not invent the
 rest.
+
+**A run's replay is composed from frozen files, never re-derived.**
+:func:`compose_replay` reads each member's ``encounter.finalize`` artifact off
+disk and nests it verbatim. It starts no session and replays no action, and that
+is a correctness property rather than an optimisation: a fight replayed under
+whatever kernel is loaded now can end a hit point away from where it ended when
+it was recorded, and with carry-over the *next* chapter's starting state no
+longer follows from the previous one's ending state — while the integrity block
+hashes the inconsistency happily. A member that was never finalized is refused
+by name; a member whose artifact is gone is refused too, never substituted.
 """
 
 from __future__ import annotations
@@ -41,19 +51,23 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from .. import __version__
 from ..paths import encounters_root
 from . import durable, encounters, sessions
-from .common import sha256_of
-from .errors import NotFoundError, RequestError
+from . import replay as replay_service
+from .common import sha256_of, slugify
+from .errors import NotFoundError, ReplayError, RequestError
 from .sessions import EngineState
 
 __all__ = [
     "CARRIED_STATE_KEYS",
+    "DOCUMENT_FIELDS",
     "FORMAT",
     "FORMAT_VERSION",
     "LIST_STATUSES",
     "adventure_path",
     "carry_forward",
+    "compose_replay",
     "create",
     "finalize",
     "link_encounter",
@@ -65,6 +79,13 @@ __all__ = [
 #: directory is refused rather than half-read as an adventure.
 FORMAT = "fivee-sim-adventure"
 FORMAT_VERSION = 1
+
+#: What a stored adventure must say about itself, and what a composed replay
+#: names it by. One declaration with two readers — :func:`_parsed` refuses a
+#: document missing any of them and :func:`compose_replay` carries exactly these
+#: into the envelope — so widening the document widens the envelope rather than
+#: leaving a run's replay silent about something the run records.
+DOCUMENT_FIELDS: tuple[str, ...] = ("id", "name", "created_at", "status")
 
 #: What :func:`list_adventures` filters on, and the authority the route table's
 #: own ``status`` enum is held against. Public rather than an inline literal
@@ -163,10 +184,28 @@ def adventure_path(adventure_id: str) -> Path:
 
 
 def _files() -> list[Path]:
+    """Every adventure document here, and nothing that merely looks like one.
+
+    ``adv-*.json`` is a wider net than an adventure id: ``adv-1.replay.json`` is
+    a *composed replay of* ``adv-1`` and matches the glob. Every reader of this
+    listing would then be wrong about it — ``list_adventures`` reports it as a
+    corrupt adventure, and ``_known`` offers ``adv-1.replay`` to a lost caller as
+    somewhere else to look. Filtered by the same grammar
+    :func:`adventure_path` builds a name with, so what counts as an adventure
+    file is decided in one place, and a stem with a dot in it is not an id this
+    module could ever have produced.
+
+    Encounter journals escape the equivalent trap by extension rather than by
+    grammar: ``list_journals`` globs ``enc-*.jsonl``, which no ``.json`` can
+    match.
+    """
     root = encounters_root()
     if not root.is_dir():
         return []
-    return sorted(root.glob("adv-*.json"))
+    return sorted(
+        path for path in root.glob("adv-*.json")
+        if _SAFE_ID.fullmatch(path.stem) is not None
+    )
 
 
 def _render(document: Mapping[str, Any]) -> str:
@@ -220,7 +259,7 @@ def _parsed(text: str, path: Path) -> dict[str, Any]:
             f"{path} is format_version {payload.get('format_version')!r}; "
             f"this engine reads {FORMAT_VERSION}"
         )
-    for key in ("id", "name", "created_at", "status"):
+    for key in DOCUMENT_FIELDS:
         if not isinstance(payload.get(key), str):
             raise RequestError(f"{path} has no {key!r}")
     if not isinstance(payload.get("members"), list):
@@ -429,6 +468,105 @@ def finalize(adventure_id: str, expected_version: str | None = None) -> dict[str
         adventure_id, document, expected=_precondition(expected_version, version)
     )
     return _response(document, written)
+
+
+def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]:
+    """The whole run as one replay: every member's frozen bundle, in order.
+
+    Pure file work. Each chapter is the artifact ``encounter.finalize`` wrote,
+    read from :func:`~fivee_sim.service.encounters.replay_path` and nested
+    verbatim — no session is started, nothing is replayed, and no fight is
+    re-derived. See this module's docstring for why that is correctness rather
+    than economy.
+
+    The result **always names a file**, never an inline bundle: one realistic v2
+    bundle already exceeds the ceiling ``replay_export`` inlines under, and an
+    envelope holds several. It lands in the replays directory beside ordinary
+    exports unless ``path`` says otherwise — and it is deliberately *not* offered
+    as a viewer link, because ``list_replays`` filters on the replay format and
+    would never find it.
+
+    The envelope goes through
+    :func:`~fivee_sim.service.replay.validate_adventure_replay` before a byte is
+    published, which is also what makes that validator's live caller more than a
+    dispatch: a member artifact somebody corrupted on disk is refused with the
+    diagnostics naming the chapter, rather than published inside a run's replay.
+    """
+    document, _version = _load(adventure_id)
+    members = [dict(member) for member in document["members"]]
+    if not members:
+        raise RequestError(
+            f"adventure {adventure_id!r} has no encounters to compose; "
+            f"link one and finalize it first"
+        )
+    chapters = [
+        {**member, "replay": _frozen_bundle(adventure_id, member)}
+        for member in members
+    ]
+    bundle = replay_service.adventure_replay_bundle(
+        engine_version=__version__,
+        adventure={key: document[key] for key in DOCUMENT_FIELDS},
+        chapters=chapters,
+    )
+    diagnostics = replay_service.validate_adventure_replay(bundle)
+    if diagnostics:
+        raise ReplayError(
+            f"the composed replay of adventure {adventure_id!r} is not playable: "
+            f"{len(diagnostics)} problem(s)",
+            diagnostics,
+        )
+    serialized = replay_service.serialize_bundle(bundle)
+    target = (
+        Path(path).expanduser()
+        if path is not None
+        else replay_service.replays_root()
+        / f"{slugify(str(document['name']))}-{adventure_id}.json"
+    )
+    try:
+        replay_service.atomic_write_text(target, serialized)
+    except OSError as error:
+        raise RequestError(f"cannot write {target}: {error}") from error
+    return {
+        "adventure_id": adventure_id,
+        "format": replay_service.ADVENTURE_FORMAT,
+        "format_version": replay_service.ADVENTURE_FORMAT_VERSION,
+        "chapters": len(chapters),
+        "encounters": [str(chapter["encounter_id"]) for chapter in chapters],
+        "path": str(target),
+        "bytes": len(serialized.encode("utf-8")),
+        "sha256": replay_service.sha256_bytes(serialized.encode("utf-8")),
+    }
+
+
+def _frozen_bundle(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
+    """One member's replay artifact, exactly as ``finalize`` left it.
+
+    An absent file is one refusal rather than two, and deliberately so: the
+    artifact's existence *is* the finalization mark on this side of the engine,
+    so "never finalized" and "finalized, then the file was removed" are
+    indistinguishable from here without re-reading and re-verifying a whole
+    hash-chained journal. The remedy is the same either way — finalize the
+    encounter, which re-exports it — so the message says that and names both the
+    fight and the file it looked for.
+    """
+    encounter_id = str(member["encounter_id"])
+    path = encounters.replay_path(encounter_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise RequestError(
+            f"encounter {encounter_id!r} of adventure {adventure_id!r} has no "
+            f"finalized replay at {path}; finalize it before composing the run"
+        ) from None
+    except (OSError, UnicodeDecodeError) as error:
+        raise RequestError(f"cannot read {path}: {error}") from error
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise RequestError(f"{path} is not valid JSON: {error.msg}") from error
+    if not isinstance(payload, dict):
+        raise RequestError(f"{path} is not a replay bundle")
+    return payload
 
 
 def link_encounter(

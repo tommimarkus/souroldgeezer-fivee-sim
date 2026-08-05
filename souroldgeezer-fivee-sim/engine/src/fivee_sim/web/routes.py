@@ -780,6 +780,18 @@ ROUTES: tuple[Route, ...] = (
         body_schema={"type": "object", "properties": {}},
         handler="adventure_finalize", errors=(409, 428),
     ),
+    # No ``If-Match``: this composes a *new file* out of frozen ones and does
+    # not rewrite the adventure document, so there is no version to guard.
+    Route(
+        "POST", f"{API_PREFIX}/adventures/{{id}}/replay", "adventure.replay",
+        "Compose the run's finalized encounters into one replay bundle on disk.",
+        params=(_ID,),
+        body_schema={
+            "type": "object",
+            "properties": {"path": {"type": ["string", "null"], "default": None}},
+        },
+        handler="adventure_replay", errors=(422,),
+    ),
     # --- maps: files, addressed by id ---------------------------------------
     Route(
         "GET", f"{API_PREFIX}/maps", "map.list",
@@ -928,7 +940,7 @@ ROUTES: tuple[Route, ...] = (
     ),
     Route(
         "POST", f"{API_PREFIX}/replays/validate", "replay.validate",
-        "Validate a v1 or v2 replay and verify every v2 integrity hash.",
+        "Validate a v1 or v2 replay, or an adventure's replay, hashes included.",
         body_schema={
             "type": "object",
             "properties": {"bundle": {"type": "object"}},

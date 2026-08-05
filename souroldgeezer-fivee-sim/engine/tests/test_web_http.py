@@ -2739,6 +2739,64 @@ class TestAdventuresOverHttp:
             "adventure 'adv-1' is finalized",
         )
 
+    def link(self, editor: Editor, seed: int = 5) -> str:
+        linked = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": seed},
+            headers={"If-Match": "*"},
+        )
+        assert linked.status == 201, linked.body
+        return str(linked.json()["encounter_id"])
+
+    def test_composing_the_runs_replay_answers_the_file_it_wrote(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        encounter_id = self.link(editor)
+        finalized = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/finalize", json_body={}
+        )
+        assert finalized.status == 200, finalized.body
+
+        composed = editor.request(
+            "POST", "/api/v1/adventures/adv-1/replay", json_body={}
+        )
+
+        assert composed.status == 200, composed.body
+        body = composed.json()
+        assert body["chapters"] == 1
+        assert body["encounters"] == [encounter_id]
+        written = json.loads(Path(body["path"]).read_text(encoding="utf-8"))
+        assert written["format"] == "fivee-sim-adventure-replay"
+        assert written["chapters"][0]["replay"]["encounter"]["id"] == encounter_id
+        # Written into the replays directory and deliberately not offered as a
+        # replay: the listing filters on the replay format, so a viewer link
+        # handed out for this file would be a link to a 404.
+        assert "viewer_url" not in body
+        assert editor.request("GET", "/api/v1/replays").json() == {"replays": []}
+
+    def test_composing_a_run_whose_fight_is_unfinished_is_400_and_names_it(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        encounter_id = self.link(editor)
+
+        assert_problem(
+            editor.request("POST", "/api/v1/adventures/adv-1/replay", json_body={}),
+            400,
+            f"encounter '{encounter_id}' of adventure 'adv-1' has no finalized replay",
+        )
+
+    def test_composing_a_run_that_has_no_fights_yet_is_400(self, editor: Editor) -> None:
+        self.start(editor)
+
+        assert_problem(
+            editor.request("POST", "/api/v1/adventures/adv-1/replay", json_body={}),
+            400,
+            "adventure 'adv-1' has no encounters to compose",
+        )
+
 
 class TestMapOperationsOverHttp:
     """Maps without sessions: generate, look, keep, and address by id."""
@@ -3006,3 +3064,43 @@ class TestReplayValidation:
             400,
             "'bundle' is required",
         )
+
+    def test_an_adventure_envelope_is_validated_as_an_envelope(
+        self, editor: Editor
+    ) -> None:
+        """One route, two formats, dispatched on what the document says it is.
+
+        Without the dispatch this posts an envelope to a validator that demands
+        ``seed``, ``initial.creatures`` and ``events`` before it reaches its own
+        version check, so the answer would be a wall of diagnostics about fields
+        an adventure replay has never had.
+        """
+        started = editor.request(
+            "POST", "/api/v1/adventures", json_body={"name": "Composed Run"}
+        )
+        assert started.status == 201, started.body
+        linked = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            headers={"If-Match": "*"},
+        )
+        assert linked.status == 201, linked.body
+        editor.request(
+            "POST",
+            f"/api/v1/encounters/{linked.json()['encounter_id']}/finalize",
+            json_body={},
+        )
+        composed = editor.request(
+            "POST", "/api/v1/adventures/adv-1/replay", json_body={}
+        )
+        assert composed.status == 200, composed.body
+        envelope = json.loads(
+            Path(composed.json()["path"]).read_text(encoding="utf-8")
+        )
+
+        answer = editor.request(
+            "POST", "/api/v1/replays/validate", json_body={"bundle": envelope}
+        ).json()
+
+        assert answer == {"valid": True, "error_count": 0, "diagnostics": []}
