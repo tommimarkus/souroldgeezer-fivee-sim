@@ -176,7 +176,7 @@ def _events() -> list[dict[str, Any]]:
             kind="attack",
             actor="Gatehouse Brute",
             target="Arin",
-            detail="Heavy Mace: 13 bludgeoning damage.",
+            detail="Heavy Mace: 20 bludgeoning damage.",
             round=1,
             turn="Gatehouse Brute",
             data={
@@ -186,17 +186,24 @@ def _events() -> list[dict[str, Any]]:
                 "natural": 17,
                 "total": 22,
                 "advantage": "normal",
-                "damage": 13,
+                "damage": 20,
                 "cover": 0,
             },
         ),
         Event(
             kind="damage",
             target="Arin",
-            detail="13 damage, 7/20 hit points left.",
+            detail="20 damage, 0/20 hit points left.",
             round=1,
             turn="Gatehouse Brute",
-            data={"amount": 13, "hp": 7, "max_hp": 20},
+            data={"amount": 20, "hp": 0, "max_hp": 20},
+        ),
+        Event(
+            kind="down",
+            actor="Arin",
+            detail="Arin falls unconscious and is dying.",
+            round=1,
+            turn="Gatehouse Brute",
         ),
         Event(
             kind="move",
@@ -220,6 +227,25 @@ def _events() -> list[dict[str, Any]]:
             },
         ),
         Event(
+            kind="spell_effect",
+            actor="Mira",
+            detail="The flare bursts over the gate, lighting the brute.",
+            round=1,
+            turn="Mira",
+            data={
+                "spell": "Signal Flare",
+                "center": [35, 15],
+                "targets": ["Gatehouse Brute"],
+            },
+        ),
+        Event(
+            kind="stabilised",
+            actor="Arin",
+            detail="Mira steadies Arin: no longer dying.",
+            round=1,
+            turn="Mira",
+        ),
+        Event(
             kind="use_item",
             actor="Mira",
             target="Arin",
@@ -231,10 +257,10 @@ def _events() -> list[dict[str, Any]]:
         Event(
             kind="heal",
             target="Arin",
-            detail="8 hit points restored, 15/20.",
+            detail="8 hit points restored, 8/20.",
             round=1,
             turn="Mira",
-            data={"amount": 8, "hp": 15, "max_hp": 20},
+            data={"amount": 8, "hp": 8, "max_hp": 20},
         ),
         Event(
             kind="interact",
@@ -285,7 +311,7 @@ def _events() -> list[dict[str, Any]]:
             kind="attack",
             actor="Arin",
             target="Gatehouse Brute",
-            detail="Long Blade: 8 slashing damage.",
+            detail="Long Blade: 3 slashing damage.",
             round=2,
             turn="Arin",
             data={
@@ -295,23 +321,132 @@ def _events() -> list[dict[str, Any]]:
                 "natural": 14,
                 "total": 19,
                 "advantage": "normal",
-                "damage": 8,
+                "damage": 3,
                 "cover": 0,
             },
         ),
         Event(
             kind="damage",
             target="Gatehouse Brute",
-            detail="8 damage, 0/18 hit points left.",
+            detail="3 damage, 5/18 hit points left.",
             round=2,
             turn="Arin",
-            data={"amount": 8, "hp": 0, "max_hp": 18},
+            data={"amount": 3, "hp": 5, "max_hp": 18},
+        ),
+        Event(
+            kind="move",
+            actor="Gatehouse Brute",
+            detail="The brute backs out of the gatehouse, leaving Arin's reach.",
+            round=2,
+            turn="Gatehouse Brute",
+            data={"origin": [35, 15], "destination": [45, 15], "cost": 10},
+        ),
+        Event(
+            kind="opportunity_attack",
+            actor="Arin",
+            target="Gatehouse Brute",
+            detail="Opportunity attack — Long Blade: 3 slashing damage.",
+            round=2,
+            turn="Gatehouse Brute",
+            data={
+                "attack": "Long Blade",
+                "hit": True,
+                "critical": False,
+                "natural": 12,
+                "total": 17,
+                "advantage": "normal",
+                "damage": 3,
+                "cover": 0,
+            },
+        ),
+        Event(
+            kind="damage",
+            target="Gatehouse Brute",
+            detail="3 damage, 2/18 hit points left.",
+            round=2,
+            turn="Gatehouse Brute",
+            data={"amount": 3, "hp": 2, "max_hp": 18},
+        ),
+        Event(
+            kind="cast",
+            actor="Mira",
+            target="Gatehouse Brute",
+            detail="Signal Flare (slot 1), cast down from the gallery.",
+            round=2,
+            turn="Mira",
+            data={
+                "spell": "Signal Flare",
+                "slot_level": 1,
+                "targets": ["Gatehouse Brute"],
+            },
+        ),
+        Event(
+            kind="damage",
+            target="Gatehouse Brute",
+            detail="2 damage, 0/18 hit points left.",
+            round=2,
+            turn="Mira",
+            data={"amount": 2, "hp": 0, "max_hp": 18},
         ),
         Event(
             kind="down",
             actor="Gatehouse Brute",
             detail="The gatehouse brute falls unconscious and is dying.",
             round=2,
+            turn="Mira",
+        ),
+        Event(
+            kind="turn_end",
+            actor="Mira",
+            detail="Mira ends her turn watching from the gallery.",
+            round=2,
+            turn="Mira",
+        ),
+        Event(
+            kind="round",
+            detail="Round 3 begins.",
+            round=3,
+            turn="Gatehouse Brute",
+        ),
+        Event(
+            kind="death_save",
+            actor="Gatehouse Brute",
+            detail="Death save: 6 — failure (0 successes / 1 failure).",
+            round=3,
+            turn="Gatehouse Brute",
+            data={"natural": 6, "successes": 0, "failures": 1},
+        ),
+        Event(
+            kind="attack",
+            actor="Arin",
+            target="Gatehouse Brute",
+            detail="Long Blade against a prone, dying target: automatic critical.",
+            round=3,
+            turn="Arin",
+            data={
+                "attack": "Long Blade",
+                "hit": True,
+                "critical": True,
+                "natural": 18,
+                "total": 23,
+                "advantage": "advantage",
+                "damage": 11,
+                "cover": 0,
+            },
+        ),
+        Event(
+            kind="damage",
+            target="Gatehouse Brute",
+            detail="11 damage to a dying creature, 0/18 hit points left.",
+            round=3,
+            turn="Arin",
+            data={"amount": 11, "hp": 0, "max_hp": 18},
+        ),
+        Event(
+            kind="death",
+            actor="Gatehouse Brute",
+            detail="The gatehouse brute dies.",
+            round=3,
             turn="Arin",
         ),
     ]
@@ -417,12 +552,18 @@ def _normalized_combatants() -> list[dict[str, Any]]:
 
 
 def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
+    # Facing is carried by the authoritative state and nowhere else — the viewer
+    # reads it off ``initial.state`` and again off whatever checkpoint a scrub
+    # lands on, which are separate assignments. Every combatant therefore turns
+    # between the two, so a showcase scrub exercises both and the chevrons are
+    # visibly doing something rather than merely present.
     facts: list[dict[str, Any]] = [
         {
             "name": "Arin",
             "team": "party",
             "position": [25, 15] if final else [10, 15],
-            "hp": 15 if final else 20,
+            "facing": "north" if final else "east",
+            "hp": 8 if final else 20,
             "max_hp": 20,
             "ac": 17,
             "level": 0,
@@ -442,6 +583,7 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
             "name": "Mira",
             "team": "party",
             "position": [25, 20] if final else [15, 25],
+            "facing": "south" if final else "north",
             "hp": 12,
             "max_hp": 12,
             "ac": 14,
@@ -455,13 +597,14 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
             "dead": False,
             "stable": False,
             "death_saves": {"successes": 0, "failures": 0},
-            "spell_slots": {"1": 1 if final else 2},
+            "spell_slots": {"1": 0 if final else 2},
             "items": {"Field Restorative": 0 if final else 1},
         },
         {
             "name": "Gatehouse Brute",
             "team": "monsters",
-            "position": [35, 15] if final else [45, 15],
+            "position": [45, 15],
+            "facing": "east" if final else "west",
             "hp": 0 if final else 18,
             "max_hp": 18,
             "ac": 15,
@@ -472,9 +615,9 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
             "reaction_available": True,
             "disengaged": False,
             "conscious": not final,
-            "dead": False,
+            "dead": final,
             "stable": False,
-            "death_saves": {"successes": 0, "failures": 0},
+            "death_saves": {"successes": 0, "failures": 1 if final else 0},
             "spell_slots": {},
             "items": {},
         },
@@ -484,7 +627,7 @@ def _state_combatants(*, final: bool) -> list[dict[str, Any]]:
 
 def _state(*, final: bool) -> dict[str, Any]:
     return {
-        "round": 2 if final else 1,
+        "round": 3 if final else 1,
         "turn": "Arin",
         "order": ["Arin", "Gatehouse Brute", "Mira"],
         "over": final,
@@ -523,9 +666,10 @@ def _actions() -> list[dict[str, Any]]:
                 ("Arin", {"kind": "attack", "target": "Gatehouse Brute"}, 1, 2),
                 ("Arin", {"kind": "interact", "feature": "inner-gate"}, 3, 1),
                 ("Gatehouse Brute", {"kind": "move", "to_position": [35, 15]}, 4, 1),
-                ("Gatehouse Brute", {"kind": "attack", "target": "Arin"}, 5, 2),
-                ("Mira", {"kind": "move", "to_position": [25, 20]}, 7, 1),
-                ("Mira", {"kind": "cast", "spell": "Signal Flare"}, 8, 1),
+                ("Gatehouse Brute", {"kind": "attack", "target": "Arin"}, 5, 3),
+                ("Mira", {"kind": "move", "to_position": [25, 20]}, 8, 1),
+                ("Mira", {"kind": "cast", "spell": "Signal Flare"}, 9, 2),
+                ("Mira", {"kind": "stabilise", "target": "Arin"}, 11, 1),
                 (
                     "Mira",
                     {
@@ -533,14 +677,14 @@ def _actions() -> list[dict[str, Any]]:
                         "item": "Field Restorative",
                         "target": "Arin",
                     },
-                    9,
+                    12,
                     2,
                 ),
-                ("Mira", {"kind": "interact", "feature": "inner-gate"}, 11, 1),
+                ("Mira", {"kind": "interact", "feature": "inner-gate"}, 14, 1),
                 (
                     "Mira",
                     {"kind": "move", "to_position": [25, 20], "to_level": 1},
-                    12,
+                    15,
                     1,
                 ),
             ]
@@ -549,19 +693,64 @@ def _actions() -> list[dict[str, Any]]:
     actions.extend(
         [
             {
-                "index": 10,
+                "index": 11,
                 "round": 1,
                 "actor": "Mira",
                 "action": None,
-                "first_event": 13,
-                "event_count": 3,
+                "first_event": 16,
+                "event_count": 1,
             },
             {
-                "index": 11,
+                "index": 12,
                 "round": 2,
                 "actor": "Arin",
                 "action": {"kind": "attack", "target": "Gatehouse Brute"},
-                "first_event": 16,
+                "first_event": 18,
+                "event_count": 3,
+            },
+            {
+                "index": 13,
+                "round": 2,
+                "actor": "Gatehouse Brute",
+                "action": {"kind": "move", "to_position": [45, 15]},
+                "first_event": 21,
+                "event_count": 1,
+            },
+            {
+                # The reaction the move above provoked, recorded against the
+                # creature that took it rather than the turn it happened on.
+                "index": 14,
+                "round": 2,
+                "actor": "Arin",
+                "action": {
+                    "kind": "opportunity_attack",
+                    "target": "Gatehouse Brute",
+                },
+                "first_event": 22,
+                "event_count": 2,
+            },
+            {
+                "index": 15,
+                "round": 2,
+                "actor": "Mira",
+                "action": {"kind": "cast", "spell": "Signal Flare"},
+                "first_event": 24,
+                "event_count": 4,
+            },
+            {
+                "index": 16,
+                "round": 3,
+                "actor": "Gatehouse Brute",
+                "action": None,
+                "first_event": 29,
+                "event_count": 1,
+            },
+            {
+                "index": 17,
+                "round": 3,
+                "actor": "Arin",
+                "action": {"kind": "attack", "target": "Gatehouse Brute"},
+                "first_event": 30,
                 "event_count": 3,
             },
         ]
@@ -607,8 +796,10 @@ def _attempts() -> list[dict[str, Any]]:
         },
         {
             "index": 2,
-            "timestamp": "2026-08-01T12:00:14Z",
-            "started_at": "2026-08-01T12:00:14Z",
+            # After the move that puts Mira on the gallery — which is the whole
+            # reason the reach check refuses, so it cannot precede it.
+            "timestamp": "2026-08-01T12:00:18Z",
+            "started_at": "2026-08-01T12:00:18Z",
             "operation": "encounter_act",
             "request_id": "sample-refusal",
             "arguments": {"kind": "interact", "feature": "inner-gate"},
@@ -617,8 +808,10 @@ def _attempts() -> list[dict[str, Any]]:
         },
         {
             "index": 3,
-            "timestamp": "2026-08-01T12:00:21Z",
-            "started_at": "2026-08-01T12:00:21Z",
+            # The outcome is written once the fight is over, so it stamps after
+            # the last event rather than in the middle of the log.
+            "timestamp": "2026-08-01T12:00:36Z",
+            "started_at": "2026-08-01T12:00:36Z",
             "operation": "encounter_note",
             "request_id": "sample-outcome",
             "arguments": {
@@ -647,7 +840,7 @@ def sample_bundle() -> dict[str, Any]:
         },
         {
             "index": 1,
-            "timestamp": "2026-08-01T12:00:20Z",
+            "timestamp": "2026-08-01T12:00:35Z",
             "event_count": len(events),
             "state_hash": replay_service.canonical_sha256(latest_state),
             "state": latest_state,
