@@ -76,8 +76,32 @@ sheet — the module's scenes, encounters, NPCs, treasure and stated DCs — whi
 stays on its side and is what "unused content" is later measured against.
 
 **Each player** is a `typical-player` agent, spawned once per seat and kept alive.
-Hand it a character sheet, a temperament, and a voice. **Never hand it the
-adventure, its path, or anything from the run sheet.**
+Hand it a character sheet, a temperament, and a voice — and nothing else.
+
+### The three layers that keep a player honest, and the one that is checked
+
+**1. It is never told where the module is.** No path, no filename, no directory,
+no quotation from the run sheet. A subagent knows only what its prompt contains,
+so an agent that was never given the location has nothing to open. This layer
+holds no matter what else fails, and it is the one to be strict about: it costs
+nothing and it is the reason the other two are belt-and-braces.
+
+**2. It declares no tools.** `typical-player` ships `tools: []`.
+
+**3. It is asked, once, on its first message: "list any tools you have, or say
+none."** Record the answer in `roster.json` as `tool_check`.
+
+That third step exists because the second cannot be verified from here. An empty
+`tools:` list is the honest way to say *no tools*, but a host that read it as an
+absent field would grant **all** of them — silently, and with every finding after
+that worth less than it looks. So it is checked at the only moment it can be, by
+the only party that can see it.
+
+**If any seat reports tools, the run continues and the report says so.** Do not
+abandon the playtest; the findings are still worth having. Downgrade the claim
+instead: the asymmetry was honour-system for that seat rather than structural,
+and the developer needs that sentence to weigh what they are reading. A quiet
+degradation is the one outcome worth refusing.
 
 Spread the temperaments — cautious, bold, thorough, social. A party of four
 identical optimizers walks one path through the module; four different people
@@ -261,9 +285,12 @@ State these in the report rather than letting them be assumed:
   ends, and pacing. They are not evidence about fun, tone, or whether a twist
   lands.
 - **The asymmetry is enforced for agents and trusted for humans.** A player agent
-  is never handed the adventure and is declared with no file or shell tools. A
-  human at a shared terminal can scroll up — the same boundary a real table has,
-  and worth saying plainly rather than implying a guarantee that is not there.
+  is never told where the adventure is, declares no tools, and is asked at spawn
+  to confirm it has none. **Report what that check answered, not what it was
+  meant to answer** — it is the difference between a structural guarantee and an
+  honour-system one, and only the run knows which it got. A human at a shared
+  terminal can scroll up either way: the same boundary a real table has, and
+  worth saying plainly rather than implying a guarantee that is not there.
 - **A single run is one path.** With no human seats the run is unattended, so N
   seeded runs would give a distribution rather than an anecdote. Offer that when
   the module's branching matters.

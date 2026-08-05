@@ -19,9 +19,20 @@ from it.
     {"name": "Kesh",   "kind": "agent", "temperament": "cautious",
      "voice": "quiet, asks one question too many", "sheet": {...}},
     {"name": "Ilma",   "kind": "human", "sheet": {...}}
-  ]
+  ],
+  "tool_check": {"Thora": "none", "Kesh": "none"}
 }
 ```
+
+`tool_check` records what each agent seat answered when asked, on its first
+message, to list any tools it has. It is the only evidence that the declared
+`tools: []` was honoured — an empty list is the honest way to say *no tools*, but
+a host reading it as an absent field would grant all of them, and nothing else
+would ever say so. Anything other than `"none"` goes into the report as a
+downgraded guarantee rather than stopping the run.
+
+Re-ask on resume. A re-spawned agent is a new process and inherits nothing from
+the answer the last one gave.
 
 `kind` is `agent` or `human`, and it is the only thing that changes how a seat is
 asked for a decision. `game_master.kind` may be `human`, in which case there is

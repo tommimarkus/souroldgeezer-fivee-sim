@@ -106,5 +106,17 @@ Two short lists, in this order:
    section, stated plainly. Agent players probe ambiguity and pacing; they are
    not evidence about fun or tone. One run is one path.
 
+State the seat guarantee in that second list, from `roster.json`'s `tool_check`
+rather than from intent — one line, either way:
+
+> Every player seat confirmed it held no tools, and none was told where the
+> module lives. The players' ignorance of the adventure is structural.
+
+> **Kesh reported holding Read and Bash.** That seat's ignorance of the module
+> was honour-system rather than structural for this run; weigh its findings
+> accordingly.
+
+A reader cannot check this themselves, which is exactly why it is written down.
+
 Link the run's `fivee adventure.replay` bundle so a reader can watch the fights
 rather than take the summary's word for them.
