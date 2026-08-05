@@ -21,7 +21,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +29,7 @@ import pytest
 
 from fivee_sim.client import discovery
 from fivee_sim.web.cli import STATE_FILENAME, read_state, state_file_for
-from fivee_sim.web.http_server import API_PREFIX, TOKEN_HEADER
+from fivee_sim.web.http_server import API_PREFIX, SOURCE_ID_ENV, TOKEN_HEADER
 
 from . import api
 from .conftest import mapless_fight
@@ -64,8 +64,18 @@ def _reaped_pid() -> int:
     return child.pid
 
 
-def _spawn_cli(arguments: list[str]) -> subprocess.Popen[str]:
+def _spawn_cli(
+    arguments: list[str], environment: Mapping[str, str | None] | None = None
+) -> subprocess.Popen[str]:
+    """Spawn the real CLI. ``environment`` overrides inherited variables; ``None``
+    as a value unsets one, which is the only way to test an absent variable in a
+    suite that inherits whatever the developer's shell exported."""
     env = dict(os.environ)
+    for name, value in (environment or {}).items():
+        if value is None:
+            env.pop(name, None)
+        else:
+            env[name] = value
     env["PYTHONPATH"] = str(ENGINE_SRC) + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.Popen(
         [sys.executable, "-m", "fivee_sim.web", *arguments],
@@ -84,6 +94,36 @@ def _ping(port: int, token: str) -> dict[str, Any]:
     with urllib.request.urlopen(request, timeout=5) as response:
         answer: dict[str, Any] = json.loads(response.read())
     return answer
+
+
+def _record_and_ping(
+    tmp_path: Path, environment: Mapping[str, str | None]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """One launch under *environment*, answered for twice: on disk, and over HTTP.
+
+    Both are asked of the same process because a launch fact that the record and
+    the ping disagreed about would be worse than one neither carried.
+    """
+    state_path = tmp_path / "state" / "fivee-sim-server.json"
+    process = _spawn_cli(
+        [
+            "--maps-dir", str(tmp_path / "maps"),
+            "--state-file", str(state_path),
+            "--port", "0",
+        ],
+        environment,
+    )
+    try:
+        assert _wait_for(
+            lambda: read_state(state_path) is not None
+        ), "the state file never appeared"
+        state = read_state(state_path)
+        assert state is not None
+        return state, _ping(state["port"], state["token"])
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate(timeout=10)
 
 
 class TestCliLifecycle:
@@ -161,6 +201,53 @@ class TestCliLifecycle:
             if process.poll() is None:
                 process.kill()
                 process.communicate(timeout=10)
+
+    def test_a_launch_reports_the_source_id_it_was_started_with(
+        self, tmp_path: Path
+    ) -> None:
+        """A running server names the source it is running, or nothing can tell it is old.
+
+        The launcher knows the digest of the source it just resolved; only the
+        server knows the digest it was started from months ago. Reported, the
+        two are comparable, and a server outliving its source becomes a fact
+        rather than a symptom someone debugs from the wrong end.
+        """
+        digest = "0" * 63 + "d"
+        state, answer = _record_and_ping(tmp_path, {SOURCE_ID_ENV: digest})
+
+        assert state["source_id"] == digest
+        assert answer["source_id"] == digest
+
+    def test_a_launch_told_no_source_id_still_answers_the_question(
+        self, tmp_path: Path
+    ) -> None:
+        """No id is an empty string, and never a missing key.
+
+        The reader compares two ids, so it needs one to compare: dropping the
+        key would turn "this launch was not started from a tracked source" —
+        the ordinary case, every launch that is not a dev reload — into a
+        ``KeyError`` on the ordinary path.
+        """
+        state, answer = _record_and_ping(tmp_path, {SOURCE_ID_ENV: None})
+
+        assert "source_id" in state, "an unset variable is no id, not an absent field"
+        assert state["source_id"] == ""
+        assert "source_id" in answer, "an unset variable is no id, not an absent field"
+        assert answer["source_id"] == ""
+
+    def test_a_source_id_exported_empty_reads_as_no_id_at_all(
+        self, tmp_path: Path
+    ) -> None:
+        """Blank is unset, the reading every other variable this engine takes.
+
+        A shell that exports one variable from another unset one hands the child
+        an empty string, and a server that treated it as an id would be claiming
+        to be a source no digest can ever match.
+        """
+        state, answer = _record_and_ping(tmp_path, {SOURCE_ID_ENV: ""})
+
+        assert state["source_id"] == ""
+        assert answer["source_id"] == ""
 
 
 class TestServerDiscovery:

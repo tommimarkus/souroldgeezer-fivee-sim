@@ -3,9 +3,9 @@
 Two callers start this server: a developer at a shell, and an agent spawning
 ``python -m fivee_sim.web`` detached. Both find a running one the same way —
 through the **state file**, a small JSON record
-``{pid, port, token, maps_dir, replays_dir, started}`` written *after* the
-socket is bound, next to the maps directory. The helpers that name, read, and
-remove it live here so both sides share one convention rather than two
+``{pid, port, token, maps_dir, replays_dir, source_id, started}`` written
+*after* the socket is bound, next to the maps directory. The helpers that name,
+read, and remove it live here so both sides share one convention rather than two
 almost-identical ones.
 
 Content is not loaded here. The server owns an ``EngineState`` and loads
@@ -119,6 +119,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "token": server.token,
                 "maps_dir": str(maps_dir),
                 "replays_dir": str(replays_dir),
+                # Taken from the server rather than read again here: one read of
+                # the environment is what makes this record and the server's own
+                # ping answer the same source, instead of two answers that agree
+                # only as long as nobody edits one of them.
+                "source_id": server.source_id,
                 "started": datetime.now(UTC).isoformat(timespec="seconds"),
             },
             handle,
