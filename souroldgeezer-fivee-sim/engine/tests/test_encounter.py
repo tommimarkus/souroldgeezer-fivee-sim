@@ -4721,6 +4721,110 @@ class TestAoeShapes2D:
         )
         assert [creature.name for creature in caught] == ["Front"]
 
+
+class TestEmanationAndCylinder:
+    """The one crisp behavioural difference: an emanation excludes its origin,
+    a cylinder includes it. SRD 5.2.1 p.181 (Emanation) and p.180 (Cylinder).
+    """
+
+    def test_a_creature_on_the_origin_square_is_excluded_from_an_emanation(
+        self,
+    ) -> None:
+        # The emanation's origin is the caster's own square — the caster is the
+        # only creature guaranteed to stand there, so it is the one the SRD's
+        # exclusion clause names.
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(position=(0, 0)),
+                make_monster("Goblin Warrior", label="Nearby", position=(1, 0)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = encounter.area_targets(encounter.spellbook["Warm Aura"], "Vesna")
+        names = {creature.name for creature in caught}
+        assert "Vesna" not in names
+        assert "Nearby" in names
+
+    def test_a_creature_on_the_origin_square_is_included_in_a_cylinder(
+        self,
+    ) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(position=(0, 0)),
+                make_monster("Goblin Warrior", label="OnOrigin", position=(30, 0)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = encounter.area_targets(
+            encounter.spellbook["Frost Pillar"], "Vesna", center=(30, 0)
+        )
+        assert [creature.name for creature in caught] == ["OnOrigin"]
+
+    def test_an_emanation_catches_out_to_its_distance_and_no_further(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(position=(0, 0)),
+                # 10 ft radius: two squares away is inside, three is outside.
+                make_monster("Goblin Warrior", label="Inside", position=(10, 0)),
+                make_monster("Goblin Warrior", label="Outside", position=(15, 0)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = encounter.area_targets(encounter.spellbook["Warm Aura"], "Vesna")
+        names = {creature.name for creature in caught}
+        assert "Inside" in names
+        assert "Outside" not in names
+
+    def test_a_cylinder_catches_within_its_base_radius_and_no_further(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [
+                shaper(position=(0, 0)),
+                make_monster("Goblin Warrior", label="Inside", position=(40, 0)),
+                make_monster("Goblin Warrior", label="Outside", position=(45, 0)),
+            ],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        caught = encounter.area_targets(
+            encounter.spellbook["Frost Pillar"], "Vesna", center=(30, 0)
+        )
+        names = {creature.name for creature in caught}
+        assert "Inside" in names
+        assert "Outside" not in names
+
+    def test_an_emanation_needs_no_aim_at_all(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [shaper(position=(0, 0)),
+             make_monster("Goblin Warrior", label="Goblin", position=(5, 0))],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        advance_to(encounter, "Vesna", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Warm Aura", slot_level=1), rng
+        )
+        assert any(event.target == "Goblin" for event in events)
+
+    def test_a_cylinder_needs_a_center(self) -> None:
+        rng = Random(4)
+        encounter = Encounter(
+            [shaper(position=(0, 0)),
+             make_monster("Goblin Warrior", label="Goblin", position=(5, 0))],
+            rng,
+            spellbook=shaped_spellbook(),
+        )
+        with pytest.raises(EncounterError, match="needs 'center'"):
+            encounter.area_targets(encounter.spellbook["Frost Pillar"], "Vesna")
+
+
 class TestSavingThrowAdvantage:
     """A saving throw carries Advantage and Disadvantage the way an attack does.
 

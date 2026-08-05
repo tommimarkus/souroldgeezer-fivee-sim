@@ -1141,7 +1141,8 @@ class TestAreaDeclaration:
         # because it does not know.
         found = problems(self.check(tmp_path, self.blast(shape="ring", radius=20)))
         assert found == [
-            "'ring' is not valid; must be one of: single, sphere, cone, line, cube"
+            "'ring' is not valid; must be one of: single, sphere, cone, line, cube, "
+            "emanation, cylinder"
         ], found
 
 
@@ -1759,6 +1760,21 @@ class TestSpellShapeSchema:
         with pytest.raises(ContentError, match="a sphere needs a radius"):
             load_packs([path], include_environment=False)
 
+    def test_an_emanation_without_a_radius_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "emanation"})
+        with pytest.raises(ContentError, match="an emanation needs a radius"):
+            load_packs([path], include_environment=False)
+
+    def test_a_cylinder_without_a_radius_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "cylinder", "height": 20})
+        with pytest.raises(ContentError, match="a cylinder needs a radius"):
+            load_packs([path], include_environment=False)
+
+    def test_a_cylinder_without_a_height_is_refused(self, tmp_path: Path) -> None:
+        path = self.spell_pack(tmp_path, {"shape": "cylinder", "radius": 10})
+        with pytest.raises(ContentError, match="a cylinder needs a height"):
+            load_packs([path], include_environment=False)
+
     @pytest.mark.parametrize(
         ("record", "checks"),
         [
@@ -1768,8 +1784,15 @@ class TestSpellShapeSchema:
              {"shape": SpellShape.LINE, "length": 30}),
             ({"shape": "cube", "size": 10},
              {"shape": SpellShape.CUBE, "size": 10}),
+            ({"shape": "emanation", "radius": 10},
+             {"shape": SpellShape.EMANATION, "radius": 10}),
+            ({"shape": "cylinder", "radius": 10, "height": 40},
+             {"shape": SpellShape.CYLINDER, "radius": 10, "height": 40}),
         ],
-        ids=["cone-has-a-length", "line-has-a-length", "cube-has-a-size"],
+        ids=[
+            "cone-has-a-length", "line-has-a-length", "cube-has-a-size",
+            "emanation-has-a-radius", "cylinder-has-a-radius-and-height",
+        ],
     )
     def test_each_shape_loads_with_its_measurement(
         self, tmp_path: Path, record: dict[str, Any], checks: dict[str, Any]

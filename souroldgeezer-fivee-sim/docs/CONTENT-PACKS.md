@@ -225,16 +225,32 @@ Older campaign packs may keep using the legacy `unmodelled` string list.
 Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
 `heal`, `half_on_save`, `upcast_damage`, `upcast_heal`,
-`add_spellcasting_modifier`, `shape`, `radius`,
+`add_spellcasting_modifier`, `shape`, `radius`, `length`, `size`, `width`,
+`height`,
 `range_feet` — optional, but a named-target spell that omits it is warned about
 (see below) — `max_targets`, `action_cost` (`action` by default or
 `bonus_action`),
 `condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
 `overrides`.
 
-A spell cannot both require an attack roll and offer a saving throw. Set `radius`
-together with `"shape": "sphere"` for an area spell; an area rolls its damage once
-and compares every creature's save against that single total.
+A spell cannot both require an attack roll and offer a saving throw. `shape` is
+one of `sphere`, `cone`, `line`, `cube`, `emanation`, or `cylinder`, and pairs
+with the measurement that gives it extent: `radius` for a sphere or an
+emanation, `length` for a cone or line (a line also takes `width`, fixed at 5
+ft), `size` for a cube, and both `radius` (its base) and `height` for a
+cylinder. An area rolls its damage once and compares every creature's save
+against that single total.
+
+Emanation and cylinder are SRD 5.2.1's other two area templates (p.181 and
+p.180). The distinction that matters: an **emanation's origin isn't included**
+in its area — SRD 5.2.1 makes this the caster's own square, an opt-in the
+engine does not carry, so it always excludes the caster — while a
+**cylinder's origin is included**, the same as a sphere centred on `center`.
+An emanation therefore needs no `center`, `direction`, or `toward` at all — it
+pours from the caster like a cone or line. A cylinder's `height` is required
+alongside `radius` but never consulted at resolution: the engine's areas are
+2-D, and `height` is stored so the record says what the spell does rather than
+silently dropping it.
 
 An attack-roll spell may set `attack_kind` to `"melee"` or `"ranged"`. It defaults
 to `"ranged"` so packs written before this field existed keep their behaviour. The
@@ -274,8 +290,9 @@ has no range to check.
 It stays a warning rather than a refusal because your existing packs keep loading —
 a spell record has only ever needed `name`, `level` and `provenance`, and that
 promise is not ours to withdraw. An area spell is exempt from the warning
-altogether: its range is measured from its point of origin (a sphere or cube) or
-pours out of the caster (a cone or line) rather than being named on the cast.
+altogether: its range is measured from its point of origin (a sphere, cube, or
+cylinder) or pours out of the caster (a cone, line, or emanation) rather than
+being named on the cast.
 
 `action_cost` mirrors the item field of the same name below: `action` by default,
 or `bonus_action` for the handful of spells SRD 5.2.1 prints with "Casting Time:

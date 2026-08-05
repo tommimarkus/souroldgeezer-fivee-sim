@@ -239,6 +239,10 @@ def shaped_spellbook() -> dict[str, Spell]:
                             **common),
         "Stone Cube": Spell(name="Stone Cube", shape=SpellShape.CUBE, size=10,
                             range_feet=60, **common),
+        "Warm Aura": Spell(name="Warm Aura", shape=SpellShape.EMANATION, radius=10,
+                           **common),
+        "Frost Pillar": Spell(name="Frost Pillar", shape=SpellShape.CYLINDER,
+                              radius=10, height=40, range_feet=60, **common),
     }
 
 
@@ -248,7 +252,7 @@ def shaper(position: int | tuple[int, int] = 0) -> Creature:
         team="party",
         ac=12,
         max_hp=20,
-        spells=("Flame Fan", "Spark Line", "Stone Cube"),
+        spells=("Flame Fan", "Spark Line", "Stone Cube", "Warm Aura", "Frost Pillar"),
         spell_slots={1: 5},
         spell_save_dc=13,
         position=position,

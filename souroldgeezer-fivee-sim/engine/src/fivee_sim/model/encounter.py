@@ -3242,17 +3242,27 @@ class Encounter:
 
         The single membership authority: the stepper resolves a cast through it
         and the auto-play policy values candidate placements through it, so the
-        two can never disagree about who is inside an area. Sphere membership is
-        measured in feet from the centre on an open plane and by template squares
-        on a battle map; cones, lines, and cubes are square templates always,
-        because their published shapes are grid figures.
+        two can never disagree about who is inside an area. Sphere and cylinder
+        membership is measured in feet from the centre on an open plane and by
+        template squares on a battle map; cones, lines, cubes, and emanations
+        are square templates always, because their published shapes are grid
+        figures.
 
         On a battle map, a creature with **total cover** from the effect's point
-        of origin — a sphere's centre, a cube's minimum corner, the caster's own
-        square for a cone or line — is not inside the area at all: the effect
-        cannot reach behind a sealed wall, however the template falls. Range and
-        the caster's own sight to the origin are the caller's checks — this
-        answers only who the effect reaches.
+        of origin — a sphere or cylinder's centre, a cube's minimum corner, the
+        caster's own square for a cone, line, or emanation — is not inside the
+        area at all: the effect cannot reach behind a sealed wall, however the
+        template falls. Range and the caster's own sight to the origin are the
+        caller's checks — this answers only who the effect reaches.
+
+        An emanation pours from the caster like a cone or line and always
+        excludes the caster (SRD 5.2.1: "isn't included in the area of effect
+        unless its creator decides otherwise" — no bundled spell opts otherwise,
+        so there is no way to ask for it yet). A cylinder is centred like a
+        sphere and, unlike an emanation, includes its origin square — that
+        inclusion/exclusion split is the one crisp behavioural difference between
+        the two shapes. A cylinder's ``height`` is not consulted here: the
+        engine's areas are 2-D.
         """
         caster = self.creatures[caster_name]
         caster_square = to_square(as_point(caster.position))
@@ -3303,12 +3313,38 @@ class Encounter:
                     )
                 origin_square = to_square(as_point(center))
                 squares = cube_squares(origin_square, spell.size)
+            case SpellShape.EMANATION:
+                # Pours from the caster's own square like a cone or line, so
+                # there is no separate origin to name — see the docstring above.
+                squares = sphere_squares(
+                    caster_square, spell.radius, rule=self.movement_rule
+                )
+            case SpellShape.CYLINDER:
+                if center is None:
+                    raise EncounterError(f"{spell.name} needs 'center'")
+                centre = as_point(center)
+                if self.battle_map is None:
+                    return [
+                        c for c in self.creatures.values()
+                        if c.arrived and not c.dead
+                        and distance_feet(
+                            as_point(c.position), centre, self.movement_rule
+                        ) <= spell.radius
+                    ]
+                origin_square = to_square(centre)
+                squares = sphere_squares(
+                    origin_square, spell.radius, rule=self.movement_rule
+                )
             case _:
                 raise EncounterError(f"{spell.name} is not an area spell")
         caught = [
             c for c in self.creatures.values()
             if c.arrived and not c.dead and to_square(as_point(c.position)) in squares
         ]
+        if spell.effective_shape is SpellShape.EMANATION:
+            # SRD 5.2.1: the origin "isn't included in the area of effect
+            # unless its creator decides otherwise" — always excluded here.
+            caught = [c for c in caught if c.name != caster_name]
         if self.battle_map is None:
             return caught
         return [
@@ -3363,12 +3399,13 @@ class Encounter:
         aimed at creatures, not at a point.
 
         The branches are range-checked differently, and deliberately. Named targets
-        are checked one at a time, exactly as a single-target spell is. A sphere or
-        cube is checked at its **point of origin** only — those creatures come from
-        the template rather than from the caller, so refusing the whole spell
-        because one creature at the far edge of the blast sits past the range would
-        be wrong — and on a battle map the origin must also be visible. A cone or
-        line pours out of the caster, so there is nothing to range-check at all.
+        are checked one at a time, exactly as a single-target spell is. A sphere,
+        cube, or cylinder is checked at its **point of origin** only — those
+        creatures come from the template rather than from the caller, so refusing
+        the whole spell because one creature at the far edge of the blast sits
+        past the range would be wrong — and on a battle map the origin must also
+        be visible. A cone, line, or emanation pours out of the caster, so there
+        is nothing to range-check at all.
 
         **Consciousness is not a filter.** SRD 5.2.1, "Spells" -> Targets -> Areas of
         Effect: "The area determines what the spell targets." A creature at 0 hit
@@ -3391,11 +3428,18 @@ class Encounter:
             action.center is not None
             or action.direction is not None
             or action.toward is not None
+            # An emanation, like a cone or line, pours from the caster's own
+            # square, so it needs no aim at all — it is always in play once its
+            # spell is cast as an area.
+            or spell.effective_shape is SpellShape.EMANATION
         ):
-            if spell.effective_shape in (SpellShape.SPHERE, SpellShape.CUBE):
+            if spell.effective_shape in (
+                SpellShape.SPHERE, SpellShape.CUBE, SpellShape.CYLINDER
+            ):
                 if action.center is None:
                     what = (
-                        "'center'" if spell.effective_shape is SpellShape.SPHERE
+                        "'center'" if spell.effective_shape
+                        in (SpellShape.SPHERE, SpellShape.CYLINDER)
                         else "'center' (its minimum corner)"
                     )
                     raise EncounterError(f"{spell.name} needs {what}")
@@ -3424,8 +3468,8 @@ class Encounter:
         else:
             raise EncounterError(
                 f"{spell.name} needs 'target', 'targets', or an area aim — "
-                f"'center' for a sphere or cube, 'direction' for a cone, "
-                f"'toward' for a line"
+                f"'center' for a sphere, cube, or cylinder, 'direction' for a "
+                f"cone, 'toward' for a line"
             )
         if spell.is_area:
             # An area is bounded by its template, not by a head count. Every

@@ -169,7 +169,7 @@ _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "damage_type", "heal",
     "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
     "shape", "radius", "length",
-    "size", "width",
+    "size", "width", "height",
     "range_feet", "max_targets", "condition", "concentration", "action_cost",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -1004,6 +1004,7 @@ def _parse_spell(
         length=reader.integer("length", minimum=0),
         size=reader.integer("size", minimum=0),
         width=reader.integer("width", default=5, minimum=5),
+        height=reader.integer("height", minimum=0),
         range_feet=reader.integer("range_feet", minimum=0),
         max_targets=reader.integer("max_targets", default=1, minimum=1),
         condition=reader.string("condition") or None,
@@ -1051,12 +1052,13 @@ def _check_area_declaration(
     """Refuse an area declaration whose shape and measurement disagree.
 
     ``shape`` names the template and one measurement field gives its extent —
-    ``radius`` for a sphere, ``length`` for a cone or line, ``size`` for a cube.
-    Resolution branches on the shape, so a shape without its measurement has no
-    extent at all, and a measurement without its shape is a declaration split
-    against itself. One legacy reading survives: a ``radius`` with no ``shape``
-    resolves as a sphere, because packs predating the other templates wrote
-    exactly that.
+    ``radius`` for a sphere or an emanation, ``length`` for a cone or line,
+    ``size`` for a cube. A cylinder needs both ``radius`` (its base) and
+    ``height``. Resolution branches on the shape, so a shape without its
+    measurement has no extent at all, and a measurement without its shape is a
+    declaration split against itself. One legacy reading survives: a ``radius``
+    with no ``shape`` resolves as a sphere, because packs predating the other
+    templates wrote exactly that.
 
     Checked at parse time rather than in :func:`_cross_reference`, because this is a
     property of one record and the raw ``record`` is what distinguishes an omitted
@@ -1074,6 +1076,13 @@ def _check_area_declaration(
         reader.fail("length", f"a {spell.shape.value} needs a length in feet")
     if spell.shape is SpellShape.CUBE and spell.size <= 0:
         reader.fail("size", "a cube needs a size in feet")
+    if spell.shape is SpellShape.EMANATION and spell.radius <= 0:
+        reader.fail("radius", "an emanation needs a radius in feet")
+    if spell.shape is SpellShape.CYLINDER:
+        if spell.radius <= 0:
+            reader.fail("radius", "a cylinder needs a radius in feet")
+        if spell.height <= 0:
+            reader.fail("height", "a cylinder needs a height in feet")
     if spell.shape is SpellShape.SINGLE and spell.radius:
         if declared is not None:
             reader.fail(

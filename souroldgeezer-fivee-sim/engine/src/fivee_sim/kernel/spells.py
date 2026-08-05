@@ -37,6 +37,18 @@ class SpellShape(StrEnum):
     CONE = "cone"
     LINE = "line"
     CUBE = "cube"
+    #: SRD 5.2.1 p.181: "extends in straight lines from a creature or an object
+    #: in all directions"; its origin is excluded from the area unless its
+    #: creator decides otherwise. This engine centres it on the caster and
+    #: always excludes the caster — no bundled spell needs the "creator decides
+    #: otherwise" opt-in, so there is no field for it yet.
+    EMANATION = "emanation"
+    #: SRD 5.2.1 p.180: "extends in straight lines from a point of origin
+    #: located at the center of the circular top or bottom"; its origin *is*
+    #: included. Declared by a base ``radius`` and a ``height`` (see ``Spell``)
+    #: — the engine's areas are 2-D, so ``height`` is stored and required but
+    #: never consulted by resolution.
+    CYLINDER = "cylinder"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,8 +57,13 @@ class Spell:
 
     The area fields pair with the shape: a sphere has a ``radius``, a cone and a
     line have a ``length`` (and a line a ``width``, fixed at one square), a cube
-    has a ``size``. Content validation enforces the pairing, so a loaded spell
-    always carries the measurement its shape needs.
+    has a ``size``. An emanation reuses ``radius`` for the distance it extends —
+    the same "how far from the origin" reading a sphere's radius already carries,
+    so a second field would say nothing a sphere's doesn't already say. A cylinder
+    also uses ``radius`` for its base and additionally carries ``height``, which
+    resolution never consults (see ``SpellShape.CYLINDER``). Content validation
+    enforces the pairing, so a loaded spell always carries the measurement its
+    shape needs.
     """
 
     name: str
@@ -80,6 +97,11 @@ class Spell:
     length: int = 0
     size: int = 0
     width: int = 5
+    #: A cylinder's height in feet. Required alongside ``radius`` for a
+    #: cylinder (SRD 5.2.1 names both), but the engine's areas are 2-D and
+    #: resolution never reads it — declared explicitly rather than silently
+    #: ignored, per ``SpellShape.CYLINDER``.
+    height: int = 0
     range_feet: int = 0
     max_targets: int = 1
     condition: str | None = None
