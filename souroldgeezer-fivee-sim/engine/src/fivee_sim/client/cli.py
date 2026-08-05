@@ -245,7 +245,13 @@ def _coerce(name: str, schema: Mapping[str, Any], text: str) -> Any:
             raise UsageError(f"{_flag(name)} is not valid JSON: {error}") from None
     if "string" in names:
         return text
-    if "array" in names or "object" in names:
+    # Only when there is no scalar branch left to try. Several arguments admit
+    # a structure *or* a scalar — a point or a bare number of feet, one reported
+    # d20 face or two — and raising here refused the scalar spelling that the
+    # schema, the help text, and the skill all advertise.
+    if ("array" in names or "object" in names) and not (
+        {"boolean", "integer", "number"} & set(names)
+    ):
         raise UsageError(
             f"{_flag(name)} takes {_type_phrase(schema)}; write it as JSON, "
             f"for example {_flag(name)} '[1, 2]'"

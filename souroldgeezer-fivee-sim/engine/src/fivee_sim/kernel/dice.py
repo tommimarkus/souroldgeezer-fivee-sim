@@ -124,6 +124,23 @@ class D20Roll:
         return f"d20 [{kept}] {self.advantage.value} -> {self.natural}"
 
 
+def faces_wanted(advantage: Advantage) -> int:
+    """How many d20s this roll puts on the table: two for either lopsided one."""
+    return 1 if advantage is Advantage.NONE else 2
+
+
+def check_faces(supplied: Sequence[int] | None, advantage: Advantage) -> None:
+    """Refuse unusable reported faces *before* the caller has spent anything.
+
+    :func:`roll_d20` refuses the same faces, but by the time it is reached a
+    turn has usually already been charged for the action — so a caller who
+    mistyped their die would be told no *and* lose the attack, with no way to
+    retry. Callers that spend something before rolling ask this first.
+    """
+    if supplied is not None:
+        _checked_faces(supplied, faces_wanted(advantage))
+
+
 def _checked_faces(supplied: Sequence[int], wanted: int) -> tuple[int, ...]:
     """The faces a caller reported, or a refusal naming what this roll takes."""
     if len(supplied) != wanted:
@@ -157,7 +174,7 @@ def roll_d20(
     buys something a table can feel: one player rolling their own die changes
     their own result and nobody else's.
     """
-    wanted = 1 if advantage is Advantage.NONE else 2
+    wanted = faces_wanted(advantage)
     drawn = tuple(rng.randint(1, 20) for _ in range(wanted))
     rolls = drawn if supplied is None else _checked_faces(supplied, wanted)
     natural = (

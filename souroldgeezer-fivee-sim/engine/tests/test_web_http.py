@@ -2221,11 +2221,14 @@ class TestEncounterActions:
         )
 
         problem = assert_problem(refused, 400, "unknown key(s): 'targetted'")
-        assert (
-            "Valid keys: as_bonus_action, attack, center, direction, facing, feature, "
-            "item, kind, movement_mode, path, set_open, slot_level, spell, target, "
-            "targets, to_level, to_position, toward" in problem["detail"]
-        )
+        # Derived from the route table rather than restated. A literal list
+        # pinned the message against a copy of itself: adding a body key meant
+        # editing this string, which is a test that only ever agrees with
+        # whatever was last typed into it.
+        act_route = next(r for r in routes.ROUTES if r.operation == "encounter.act")
+        assert act_route.body_schema is not None
+        expected = ", ".join(sorted(act_route.body_schema["properties"]))
+        assert f"Valid keys: {expected}" in problem["detail"]
         assert self.log_of(editor, encounter_id)["total_actions"] == 0
 
     def test_a_wrong_typed_field_is_refused_by_the_schema_not_the_engine(

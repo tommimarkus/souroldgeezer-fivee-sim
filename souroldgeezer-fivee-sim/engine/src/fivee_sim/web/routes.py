@@ -298,6 +298,19 @@ _MAP_KIND: Mapping[str, Any] = {
 _MAP_QUERY: Mapping[str, Any] = {
     "type": "string", "enum": ["distance", "line_of_sight", "path"]
 }
+#: A d20 face the caller rolled themselves — one, or two when the roll has
+#: advantage or disadvantage. Shaped like ``_POINT`` on purpose: a bare integer
+#: or a short array is a grammar ``--natural 17`` and ``--natural '[17, 4]'``
+#: already read, so a person at the table types what they see on the dice.
+_NATURAL: Mapping[str, Any] = {
+    "type": ["integer", "array", "null"],
+    "items": {"type": "integer"},
+    "default": None,
+    "description": (
+        "the d20 face you rolled, or both faces with advantage or disadvantage; "
+        "omit to let the engine roll"
+    ),
+}
 #: The third of that kind: ``service/adventures.py``'s ``LIST_STATUSES``, which
 #: is public there but still unreachable from here.
 _ADVENTURE_STATUS: Mapping[str, Any] = {
@@ -399,6 +412,7 @@ ROUTES: tuple[Route, ...] = (
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "label": {"type": ["string", "null"], "default": None},
+                "natural": _NATURAL,
             },
             "required": ["expression"],
         },
@@ -418,6 +432,7 @@ ROUTES: tuple[Route, ...] = (
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "ability": {"type": ["string", "null"], "default": None},
                 "skill": {"type": ["string", "null"], "default": None},
+                "natural": _NATURAL,
             },
             "required": ["modifier", "dc"],
         },
@@ -437,6 +452,7 @@ ROUTES: tuple[Route, ...] = (
                 "seed": _SEED,
                 "encounter_id": {"type": ["string", "null"], "default": None},
                 "ability": {"type": ["string", "null"], "default": None},
+                "natural": _NATURAL,
             },
             "required": ["modifier", "dc"],
         },
@@ -643,6 +659,7 @@ ROUTES: tuple[Route, ...] = (
                 "movement_mode": _MOVEMENT_MODE,
                 "as_bonus_action": {"type": "boolean", "default": False},
                 "facing": {"type": ["string", "null"], "default": None},
+                "natural": _NATURAL,
             },
             "required": ["kind"],
         },

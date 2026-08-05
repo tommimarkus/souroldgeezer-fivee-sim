@@ -39,7 +39,7 @@ from ..kernel.conditions import (
     is_incapacitated,
     speed_is_zero,
 )
-from ..kernel.dice import Advantage, roll_d20, roll_dice
+from ..kernel.dice import Advantage, check_faces, roll_d20, roll_dice
 from ..kernel.grid import (
     FEET_PER_SQUARE,
     TERRAIN,
@@ -158,6 +158,29 @@ class Action:
     #: Named ``facing`` rather than ``direction`` because ``direction`` is taken
     #: on this same dataclass — it aims a cone, and the two are different facts.
     facing: str | None = None
+    #: The d20 faces the actor rolled on their own dice, for a person at the
+    #: table who would rather roll than be rolled for. Empty means the engine
+    #: rolls, which is every other caller and every auto-played batch.
+    #:
+    #: It covers **the actor's own d20 for this action** — a weapon or spell
+    #: attack, and an ability check a fixture asks for. A saving throw somebody
+    #: *else* is forced to make lands inside this same call, so there is nowhere
+    #: for its owner to report a face; those stay the engine's. Death saves are
+    #: rolled by ``advance`` and carry their own.
+    natural: tuple[int, ...] = ()
+
+
+#: The action kinds that can put the *actor's* own d20 on the table, and so the
+#: only ones a reported face means anything for. Two of the three are
+#: conditional — a cast rolls one only when the spell attacks rather than
+#: forcing a save, and an interaction only when the fixture asks for a check —
+#: so each handler refuses its own remaining cases. This set is the cheap part
+#: of that check: the kinds where the answer is never.
+_KINDS_THAT_MAY_ROLL: frozenset[ActionKind] = frozenset({
+    ActionKind.ATTACK,
+    ActionKind.CAST,
+    ActionKind.INTERACT,
+})
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -248,6 +271,11 @@ class ActionRecord:
                 action["targets"] = list(self.action.targets)
             if self.action.path:
                 action["path"] = [list(point) for point in self.action.path]
+            # With the other tuples rather than the scalars above: an empty one
+            # means the engine rolled, and writing `[]` for that would put a
+            # caller-supplied-nothing into every record of every ordinary fight.
+            if self.action.natural:
+                action["natural"] = list(self.action.natural)
         return {
             "index": self.index,
             "round": self.round,
@@ -1487,6 +1515,13 @@ class Encounter:
         if not actor.active:
             held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} is incapacitated ({held}) and cannot act")
+        if action.natural and action.kind not in _KINDS_THAT_MAY_ROLL:
+            # Refused rather than quietly dropped. Somebody rolled a die and
+            # said what it read; an engine that ignored it would be telling them
+            # their roll counted when it did not.
+            raise EncounterError(
+                f"a {action.kind.value} rolls no d20, so there is no face to report"
+            )
 
         match action.kind:
             case ActionKind.ATTACK:
@@ -1681,6 +1716,13 @@ class Encounter:
                        attack=option.name, total_cover=True)
             return
 
+        # Both computed before the attack is charged for. ``check_faces`` refuses
+        # a reported face that this roll cannot use, and a refusal that had
+        # already decremented ``attacks_left`` would cost the swing as well —
+        # leaving a caller who mistyped their die unable to retry it.
+        advantage = self.attack_advantage(actor, target, option)
+        check_faces(action.natural or None, advantage)
+
         self._turn.attacks_left -= 1
         if self._turn.attacks_left == actor.attacks_per_action - 1:
             self._turn.action_used = True
@@ -1691,11 +1733,12 @@ class Encounter:
             attack_bonus=option.attack_bonus,
             target_ac=target.ac + cover_bonus,
             damage=option.damage,
-            advantage=self.attack_advantage(actor, target, option),
+            advantage=advantage,
             forced_critical=self.attack_forced_critical(actor, target),
             resisted=self._resisted_by_target(target, option.damage_type),
             vulnerable=option.damage_type in target.vulnerabilities,
             immune=option.damage_type in target.immunities,
+            supplied=action.natural or None,
             **self._rider_damage_arguments(actor, option, target),
         )
         cover_note = ""
@@ -2150,6 +2193,28 @@ class Encounter:
                 modifier += cover_ac_bonus(grade)
             return modifier
 
+        # Everything about a reported face is settled here, before the action,
+        # the slot, and any held concentration are spent. ``resolve_spell``
+        # refuses the same two cases, but only once all three are already gone —
+        # and a caster who mistyped a die would have paid for a spell that never
+        # resolved.
+        if action.natural:
+            if not spell.requires_attack_roll:
+                raise EncounterError(
+                    f"{spell.name} makes no attack roll, so there is no face to "
+                    "report; its targets roll their own saves and the engine "
+                    "rolls those"
+                )
+            if len(chosen) > 1:
+                raise EncounterError(
+                    f"{spell.name} rolls a separate attack against each of "
+                    f"{len(chosen)} targets, so one reported face cannot say "
+                    "which roll it is; cast at one target, or let the engine roll"
+                )
+            check_faces(
+                action.natural, self.spell_attack_advantage(actor, chosen[0], spell)
+            )
+
         self._turn.action_used = True
         if spell.level > 0:
             actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
@@ -2203,6 +2268,7 @@ class Encounter:
                 )
                 for c in chosen
             ),
+            supplied=action.natural or None,
         )
         detail = f"{spell.name} (slot {slot_level})"
         if resolution.damage_roll is not None:
@@ -2968,6 +3034,20 @@ class Encounter:
                 f"{feature.name} is already {'open' if was_open else 'closed'}"
             )
 
+        check_advantage = compute_ability_check_advantage(
+            conditions=actor.conditions,
+            condition_effects=self.condition_effects,
+        )
+        # Before the action or the free interaction is spent, for the reason
+        # ``_do_attack`` checks before decrementing: a failed check already
+        # costs the turn, and a *refused* one must not.
+        if feature.check is not None:
+            check_faces(action.natural or None, check_advantage)
+        elif action.natural:
+            raise EncounterError(
+                f"{feature.name} asks for no check, so there is no face to report"
+            )
+
         if feature.costs_action:
             self._turn.action_used = True
         else:
@@ -2982,10 +3062,8 @@ class Encounter:
                 rng,
                 modifier=actor.ability_mod(feature.check.ability),
                 dc=feature.check.dc,
-                advantage=compute_ability_check_advantage(
-                    conditions=actor.conditions,
-                    condition_effects=self.condition_effects,
-                ),
+                advantage=check_advantage,
+                supplied=action.natural or None,
             )
             extras.update({"success": test.success, "check": test.describe()})
             if not test.success:
