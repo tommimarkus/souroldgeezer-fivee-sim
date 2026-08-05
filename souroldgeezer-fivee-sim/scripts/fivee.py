@@ -146,9 +146,7 @@ def _ignore_compiled(directory: str, names: list[str]) -> set[str]:
     return ignored
 
 
-def ensure_durable_source(
-    engine_dir: Path, plugin_data: Path, identity: str | None = None
-) -> Path:
+def ensure_durable_source(engine_dir: Path, plugin_data: Path) -> Path:
     """A content-addressed copy of the source under plugin data, made once.
 
     Staging then renaming is what makes this safe without a lock: two callers
@@ -161,14 +159,14 @@ def ensure_durable_source(
     footgun: a pid-derived name is unique only until something calls this twice
     without forking.
 
-    A caller that has already hashed this tree may hand the digest over rather
-    than have it recomputed. Reading the whole source is the cost this design
-    exists to pay once, and paying it a second time in the same launch — which
-    is what a reload-enabled start would otherwise do, since it needs the same
-    digest for its own reasons — gives up part of that for nothing.
+    The identity is computed here and is never an argument. This function names
+    a directory that nothing ever re-verifies — that is the cost content
+    addressing avoids paying on every start — so a caller-supplied name is the
+    one way it could be made to lie, and there is no need to accept one:
+    everything else that wants the digest can read it back off the returned
+    path, because the name *is* the digest.
     """
-    if identity is None:
-        identity = source_identity(engine_dir)
+    identity = source_identity(engine_dir)
     published = plugin_data / "src" / identity
     if published.is_dir():
         return published
@@ -205,13 +203,25 @@ def python_path_for(source_root: Path, inherited: str) -> str:
     return os.pathsep.join([str(source_root)] + entries)
 
 
-def resolve_source_root(
-    engine_dir: Path, plugin_data: Path | None, identity: str | None = None
-) -> Path:
+def resolve_source_root(engine_dir: Path, plugin_data: Path | None) -> Path:
     """Where to import the engine from: the checkout, or a durable copy of it."""
     if plugin_data is None:
         return engine_dir / "src"
-    return ensure_durable_source(engine_dir, plugin_data, identity)
+    return ensure_durable_source(engine_dir, plugin_data)
+
+
+def source_identity_for(engine_dir: Path, plugin_data: Path | None, source_root: Path) -> str:
+    """The digest naming the source that is about to be imported.
+
+    A durable copy is *named* for its content, so that tree has already been
+    hashed and the directory name is the answer — reading it back costs nothing
+    and is the truer of the two, because it identifies the tree actually being
+    imported rather than the one it was copied from. A plain checkout imports
+    itself, and nothing has hashed it, so that is the one path that pays.
+    """
+    if plugin_data is None:
+        return source_identity(engine_dir)
+    return source_root.name
 
 
 def main(argv: list[str], env: dict[str, str]) -> int:
@@ -235,12 +245,12 @@ def main(argv: list[str], env: dict[str, str]) -> int:
             return 1
 
     try:
-        # The id names the *source*, not whichever tree ends up being imported —
-        # a durable copy is a copy of this one — so `engine_dir` is the right
-        # thing to hash either way, and hashing it before the copy is resolved
-        # is what leaves the copy nothing left to compute.
-        identity = source_identity(engine_dir) if reload_requested(env) else None
-        source_root = resolve_source_root(engine_dir, plugin_data, identity)
+        source_root = resolve_source_root(engine_dir, plugin_data)
+        identity = (
+            source_identity_for(engine_dir, plugin_data, source_root)
+            if reload_requested(env)
+            else None
+        )
     except OSError as error:
         note("could not prepare the engine source (" + str(error) + "); nothing run.")
         return 1

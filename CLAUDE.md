@@ -537,7 +537,18 @@ from the process that would be replaced.
 Identity rather than mtimes, for the reason the durable copy is
 content-addressed: `git checkout` back to identical content restarts nothing,
 `touch` restarts nothing, a changed byte restarts once. The whole tree hashes in
-about 3 ms, and only when the flag is set.
+about 3 ms, and only when the flag is set. Nothing hands that digest to
+`ensure_durable_source`, which computes its own: that function names a directory
+it will never re-verify, so a supplied name is the one way its content
+addressing could be made to lie. Everything else reads the digest back off the
+path, because the name *is* the digest.
+
+Two checkouts must not share a maps root while both have reload enabled. The
+state file lives beside the maps directory, so they would rendezvous on one
+server, disagree about what its source should be, and replace each other's on
+every command. Default resolution is per project directory and does not collide;
+an explicit `FIVEE_SIM_MAPS` pointing two differing trees at one root is what
+does.
 
 **Three things about a reload are invisible from a green run.** *Fights survive
 it* — `sessions.session_for` recovers a missing session from its journal,

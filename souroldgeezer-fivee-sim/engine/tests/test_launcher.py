@@ -741,6 +741,32 @@ def test_a_durable_reload_hashes_the_source_exactly_once(
     assert published == [tmp_path / "data" / "src" / hash_source(engine)], published
 
 
+def test_a_durable_reload_names_the_tree_it_actually_imports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The exported id is the name of the directory the engine is imported from.
+
+    Content-addressing makes those one string, and deriving the export from the
+    resolved path rather than from a second hash is what keeps them one. The
+    alternative — handing a digest to ``ensure_durable_source`` to save the
+    second read — would let a caller name a directory that function never
+    re-verifies, which is the single way its content-addressing could be made to
+    lie about what it holds.
+    """
+    module, engine = _plant_plugin(tmp_path / "plugin")
+
+    exported = _drive_main(
+        module,
+        monkeypatch,
+        {"FIVEE_SIM_RELOAD": "1", "PLUGIN_DATA": str(tmp_path / "data")},
+    )
+
+    imported = Path(exported["PYTHONPATH"].split(os.pathsep)[0])
+    assert imported.parent == tmp_path / "data" / "src", imported
+    assert exported["FIVEE_SIM_SOURCE_ID"] == imported.name
+    assert exported["FIVEE_SIM_SOURCE_ID"] == module.source_identity(engine)
+
+
 #: A client that does one thing: spawn a child the way the real one spawns its
 #: server, and report what that child inherited. Planted rather than imported,
 #: because the point is the process boundary and not this interpreter.
