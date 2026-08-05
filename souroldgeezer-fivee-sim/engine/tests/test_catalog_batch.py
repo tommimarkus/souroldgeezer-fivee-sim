@@ -170,6 +170,9 @@ def test_bootstrap_preserves_executable_records_in_their_catalog_chapters(
     creatures_15_before = json.loads(
         (committed / batch_module._catalog_filename(15)).read_text()
     )["creatures"]
+    items_before = json.loads(
+        (committed / batch_module._catalog_filename(13)).read_text()
+    )["items"]
     creatures_16_before = json.loads(
         (committed / batch_module._catalog_filename(16)).read_text()
     )["creatures"]
@@ -194,6 +197,7 @@ def test_bootstrap_preserves_executable_records_in_their_catalog_chapters(
     executable_sections = {
         10: {"spells": spells_before},
         15: {"creatures": creatures_15_before},
+        13: {"items": items_before},
         16: {"creatures": creatures_16_before},
     }
     for chapter in content_module.CATALOG_CHAPTERS:
@@ -214,9 +218,11 @@ def test_bootstrap_preserves_executable_records_in_their_catalog_chapters(
     batch_module.bootstrap(source_root)
 
     chapter_10 = json.loads((output / "catalog-10-spells.json").read_text())
+    chapter_13 = json.loads((output / "catalog-13-magic-items.json").read_text())
     chapter_15 = json.loads((output / "catalog-15-monsters-a-z.json").read_text())
     chapter_16 = json.loads((output / "catalog-16-animals.json").read_text())
     assert chapter_10["spells"] == spells_before
+    assert chapter_13["items"] == items_before
     assert chapter_15["creatures"] == creatures_15_before
     assert chapter_16["creatures"] == creatures_16_before
 

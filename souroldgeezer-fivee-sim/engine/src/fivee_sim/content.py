@@ -146,7 +146,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "size", "abilities", "save_bonuses",
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
     "redirect_attack",
-    "spells", "spell_slots", "spell_save_dc",
+    "spells", "spell_slots", "spell_save_dc", "spellcasting_ability",
     "spell_attack_bonus", "items", "conditions", "immunities", "resistances",
     "vulnerabilities", "pack_tactics", "undead_fortitude",
 }
@@ -161,7 +161,8 @@ _ATTACK_KEYS = frozenset({
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
     "damage_type", "heal",
-    "half_on_save", "upcast_damage", "upcast_heal", "shape", "radius", "length",
+    "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
+    "shape", "radius", "length",
     "size", "width",
     "range_feet", "max_targets", "condition", "concentration",
 }
@@ -806,6 +807,7 @@ def _parse_creature(
     reader.boolean("undead_fortitude")
     reader.integer("spell_save_dc", default=10, minimum=1)
     reader.integer("spell_attack_bonus")
+    reader.enum("spellcasting_ability", Ability)
     reader.string("team")
     reader.string("hit_dice")
     reader.enum_keyed_ints("abilities", Ability)
@@ -942,6 +944,7 @@ def _parse_spell(
         half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
         upcast_heal=reader.dice("upcast_heal"),
+        add_spellcasting_modifier=reader.boolean("add_spellcasting_modifier"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
         length=reader.integer("length", minimum=0),

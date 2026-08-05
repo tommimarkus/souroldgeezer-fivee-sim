@@ -3,8 +3,9 @@
     "Pregenerated parties for a playtest, so a developer with no characters to hand can still run their adventure.",
     "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — and a persona the harness uses when briefing the seat. The two are kept apart because the engine refuses unknown spec keys, so `temperament` and `voice` may never be folded into `sheet`.",
     "The engine models no character building: there are no classes, species, backgrounds, feats, or levels here, and none of these numbers were derived from a class table. They are hand-picked to be ordinary for their tier, and the class-flavoured names are description only.",
-    "Only four spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball — so the casters use those and nothing else. Positions are a loose marching order; the game master places the party for the scene.",
-    "This is our own authored content, not transcribed from any source."
+    "Five spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball, Cure Wounds — so the casters use those and nothing else. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",
+    "Healing is deliberately scarce: one Cure Wounds caster and a potion or two, because a party that cannot be worn down measures nothing about an adventuring day. Potions are a Bonus Action, so carrying one costs a character nothing until it is drunk.",
+    "This is our own authored content, not transcribed from any source. The spell and item names refer to records in the bundled SRD 5.2.1 slice, which carries its own provenance."
   ],
   "parties": {
     "level-1": {
@@ -19,6 +20,7 @@
             "ac": 16,
             "max_hp": 12,
             "position": [0, 0],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 4, "constitution": 3},
             "attacks": [
@@ -36,6 +38,7 @@
             "ac": 14,
             "max_hp": 9,
             "position": [5, 0],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 10, "dexterity": 16, "constitution": 12, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
             "attacks": [
@@ -55,8 +58,9 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 13, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Guiding Bolt"],
+            "spells": ["Guiding Bolt", "Cure Wounds"],
             "spell_slots": {"1": 2},
+            "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
             "spell_attack_bonus": 5,
             "attacks": [
@@ -95,6 +99,7 @@
             "ac": 17,
             "max_hp": 28,
             "position": [0, 0],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 17, "dexterity": 12, "constitution": 15, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 5, "constitution": 4},
             "attacks": [
@@ -112,6 +117,7 @@
             "ac": 15,
             "max_hp": 22,
             "position": [5, 0],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 10, "dexterity": 17, "constitution": 13, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
             "attacks": [
@@ -131,8 +137,9 @@
             "position": [0, 5],
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 16, "charisma": 14},
             "save_bonuses": {"wisdom": 5, "charisma": 4},
-            "spells": ["Guiding Bolt", "Hold Person"],
+            "spells": ["Guiding Bolt", "Hold Person", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 2},
+            "spellcasting_ability": "wisdom",
             "spell_save_dc": 13,
             "spell_attack_bonus": 5,
             "attacks": [
@@ -149,9 +156,11 @@
             "ac": 13,
             "max_hp": 18,
             "position": [5, 5],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 13, "intelligence": 17, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
             "spells": ["Shatter"],
+            "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 2},
             "spell_save_dc": 14,
             "spell_attack_bonus": 6,
@@ -175,6 +184,7 @@
             "ac": 18,
             "max_hp": 44,
             "position": [0, 0],
+            "items": {"Potion of Healing": 2},
             "attacks_per_action": 2,
             "abilities": {"strength": 18, "dexterity": 12, "constitution": 16, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 7, "constitution": 6},
@@ -193,6 +203,7 @@
             "ac": 16,
             "max_hp": 38,
             "position": [5, 0],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 10, "dexterity": 18, "constitution": 14, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 7},
             "attacks": [
@@ -210,10 +221,12 @@
             "ac": 18,
             "max_hp": 38,
             "position": [0, 5],
+            "items": {"Potion of Healing": 2},
             "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 18, "charisma": 14},
             "save_bonuses": {"wisdom": 7, "charisma": 5},
-            "spells": ["Guiding Bolt", "Hold Person"],
+            "spells": ["Guiding Bolt", "Hold Person", "Cure Wounds"],
             "spell_slots": {"1": 4, "2": 3, "3": 2},
+            "spellcasting_ability": "wisdom",
             "spell_save_dc": 15,
             "spell_attack_bonus": 7,
             "attacks": [
@@ -230,9 +243,11 @@
             "ac": 14,
             "max_hp": 30,
             "position": [5, 5],
+            "items": {"Potion of Healing": 1},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 14, "intelligence": 18, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 7, "wisdom": 4},
             "spells": ["Shatter", "Fireball"],
+            "spellcasting_ability": "intelligence",
             "spell_slots": {"1": 4, "2": 3, "3": 2},
             "spell_save_dc": 15,
             "spell_attack_bonus": 7,

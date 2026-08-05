@@ -3,6 +3,25 @@
   "version": "1.0",
   "provenance": "SRD 5.2.1",
   "attribution": "See NOTICE.",
+  "items": [
+    {
+      "name": "Potion of Healing",
+      "use": {
+        "heal": "2d4+2",
+        "action_cost": "bonus_action"
+      },
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_item_rarity_tiers",
+          "feature": "Greater, superior and supreme tiers",
+          "source_ids": [
+            "236-potion-hp-regained"
+          ]
+        }
+      ]
+    }
+  ],
   "catalog": [
     {
       "id": "1362-13-magic-items",
@@ -7437,6 +7456,10 @@
       "id": "1551-13-28-26-potions-of-healing",
       "kind": "magic_item",
       "name": "Potions of Healing",
+      "content_ref": {
+        "section": "items",
+        "name": "Potion of Healing"
+      },
       "source_ids": [
         "1551-13-28-26-potions-of-healing"
       ],

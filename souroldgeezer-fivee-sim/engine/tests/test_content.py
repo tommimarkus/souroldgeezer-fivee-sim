@@ -42,7 +42,7 @@ from fivee_sim.kernel.conditions import (
     compute_ability_check_advantage,
 )
 from fivee_sim.kernel.dice import Advantage
-from fivee_sim.kernel.rules import Size
+from fivee_sim.kernel.rules import Ability, Size
 from fivee_sim.kernel.spells import SpellShape
 from fivee_sim.model.creature import Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
@@ -1715,3 +1715,94 @@ class TestReconfigurationAndLiveFights:
         )
         assert thora["hp"] > 5
         assert thora["items"] == {"Vale Draught": 0}
+
+
+class TestSpellcastingModifierSchema:
+    """``add_spellcasting_modifier`` on a spell, ``spellcasting_ability`` on its caster.
+
+    Two halves of one rule, and each is useless alone: a spell that opts in with
+    nobody declaring an ability heals its flat dice, and an ability nobody's
+    spell asks for changes nothing. They are validated separately because a pack
+    may legitimately ship either half — a caster who knows only damaging spells
+    still has a spellcasting ability.
+    """
+
+    def spell_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "balm.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Balm", "level": 1, "heal": "2d4",
+                "range_feet": 30, "provenance": "test", **fields,
+            }],
+        })
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "acolyte.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Acolyte", "ac": 13, "max_hp": 20,
+                "abilities": {"wisdom": 16}, "spells": ["Vale Balm"],
+                "spell_slots": {"1": 2}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_spell_opts_into_the_modifier(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.spell_pack(tmp_path, add_spellcasting_modifier=True)],
+            builtin="exclude", include_environment=False,
+        )
+        assert registry.spells["Vale Balm"].add_spellcasting_modifier
+
+    def test_omitting_it_leaves_the_healing_flat(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.spell_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        assert not registry.spells["Vale Balm"].add_spellcasting_modifier
+
+    def test_a_non_boolean_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.spell_pack(tmp_path, add_spellcasting_modifier="wisdom")],
+            builtin="exclude", include_environment=False,
+        )
+        assert "add_spellcasting_modifier" in fields(diagnostics)
+
+    def test_a_creature_declares_which_ability_it_casts_with(
+        self, tmp_path: Path
+    ) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, spellcasting_ability="wisdom")],
+            builtin="exclude", include_environment=False,
+        )
+        acolyte = Creature.from_record(
+            registry.creatures["Vale Acolyte"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert acolyte.spellcasting_ability is Ability.WISDOM
+        assert acolyte.spellcasting_modifier == 3
+
+    def test_a_creature_without_one_contributes_no_modifier(
+        self, tmp_path: Path
+    ) -> None:
+        # Not a default of zero on the *ability*: a creature whose sheet never
+        # said adds nothing, which is what keeps every pack written before this
+        # field resolving exactly as it did.
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        acolyte = Creature.from_record(
+            registry.creatures["Vale Acolyte"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert acolyte.spellcasting_ability is None
+        assert acolyte.spellcasting_modifier == 0
+
+    def test_an_ability_that_is_not_one_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, spellcasting_ability="moxie")],
+            builtin="exclude", include_environment=False,
+        )
+        assert "spellcasting_ability" in fields(diagnostics)

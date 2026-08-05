@@ -320,6 +320,14 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "spell_slots": dict(sorted(creature.spell_slots.items())),
         "spell_save_dc": creature.spell_save_dc,
         "spell_attack_bonus": creature.spell_attack_bonus,
+        # Carried like the DC and the attack bonus beside it. A combatant that
+        # arrived in the next fight without this would keep its healing spell
+        # and quietly cast it for the flat dice.
+        "spellcasting_ability": (
+            creature.spellcasting_ability.value
+            if creature.spellcasting_ability is not None
+            else None
+        ),
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),
