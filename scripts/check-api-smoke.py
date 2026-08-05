@@ -6,7 +6,7 @@ handshake check that went with the MCP server, and it makes the same kind of
 claim the handshake made: not "the units pass" but "the thing a host actually
 runs, runs".
 
-Four properties are checked that the in-process suite structurally cannot:
+Five properties are checked that the in-process suite structurally cannot:
 
 * **The real launcher boots.** Everything here goes through
   ``souroldgeezer-fivee-sim/scripts/fivee.py`` — never ``python -m
@@ -31,6 +31,12 @@ Four properties are checked that the in-process suite structurally cannot:
   for one of them is pasted straight back into ``fivee`` and must come back
   zero. An example is the one piece of the contract whose only failure mode is
   being *wrong* rather than missing, so nothing short of running it is a check.
+* **State outlives a fight.** A two-encounter adventure is then run whole: two
+  wolves clear a room, the survivors are carried into the next one, both fights
+  are finalized, and the run is composed into a single replay and closed. Every
+  other case here begins and ends inside one encounter, so nothing else says
+  that what a fight *ended* at is what the next one *starts* from — which is
+  the only claim that makes a run of fights an adventure rather than a list.
 
 Standard library only, and deliberately so: it must run in an environment where
 nothing has been built at all, which since the launcher stopped creating virtual
@@ -112,6 +118,46 @@ EXPECTED_ATTACKS = ["Scimitar", "Bite"]
 #: every action taken, the final state, the map, and the content the fight ran
 #: under: everything the seed is supposed to determine.
 COMPARABLE_HASHES = ("map", "initial", "actions", "latest_state", "content")
+
+# --- the adventure -----------------------------------------------------------
+#: The second scenario, and the only one here that spans more than one fight.
+#: Two seeds, four creatures, and a party that walks out of the first room into
+#: the next one. Everything below is golden for these two seeds in a scratch
+#: root nothing else has touched — which is also what makes ``adv-1``, ``enc-1``
+#: and ``enc-2`` the ids this run is allocated.
+ADVENTURE_NAME = "The Smoke Test Run"
+ADVENTURE_SEEDS = (20260806, 20260807)
+#: Two wolves against two goblins, and then whatever the survivors meet next.
+#: Both fights are run to a conclusion rather than scripted to a fixed number of
+#: swings, because what the second one starts from is what the first one *ended*
+#: at — a fight stopped halfway would carry a party nobody had finished hurting.
+ADVENTURE_ROSTER: list[dict[str, Any]] = [
+    {"monster": "Wolf", "label": "Fang", "team": "party", "position": 0},
+    {"monster": "Wolf", "label": "Scar", "team": "party", "position": 0},
+    {"monster": "Goblin Warrior", "label": "Goblin", "position": 5},
+    {"monster": "Goblin Warrior", "label": "Sneak", "position": 5},
+]
+ADVENTURE_NEWCOMER: list[dict[str, Any]] = [
+    {"monster": "Skeleton", "label": "Skeleton", "position": 5}
+]
+EXPECTED_ADVENTURE_ID = "adv-1"
+EXPECTED_CHAPTER_IDS = ["enc-1", "enc-2"]
+EXPECTED_FIRST_ORDER = ["Goblin", "Fang", "Sneak", "Scar"]
+EXPECTED_FIRST_INITIATIVE = {"Goblin": 16, "Fang": 14, "Sneak": 14, "Scar": 11}
+EXPECTED_FIRST_ROUND = 3
+EXPECTED_FIRST_HP = {"Goblin": 0, "Fang": 6, "Sneak": 0, "Scar": 11}
+EXPECTED_FIRST_EVENTS = 35
+#: Who the first fight leaves standing, and therefore who the second one is
+#: handed. ``Fang`` is the whole point of the run: a party rebuilt from its
+#: creation specs would arrive at ``WOLF_MAX_HP`` instead, so the case below
+#: holds the arriving hit points against the *ending* ones rather than against a
+#: second copy of the number, and refuses to pass on a party nobody hurt.
+EXPECTED_CARRIED = ["Fang", "Scar"]
+WOLF_MAX_HP = 11
+EXPECTED_SECOND_ORDER = ["Skeleton", "Scar", "Fang"]
+EXPECTED_SECOND_ROUND = 2
+EXPECTED_SECOND_HP = {"Skeleton": 0, "Scar": 7, "Fang": 6}
+EXPECTED_SECOND_EVENTS = 23
 
 failures: list[str] = []
 
@@ -274,9 +320,11 @@ class Engine:
         except OSError as error:
             raise SmokeError(f"GET {path} did not reach the server: {error}") from None
 
-    def json_call(self, method: str, path: str, body: Any = None) -> Any:
+    def json_call(
+        self, method: str, path: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> Any:
         """A request that must succeed, reduced to its payload."""
-        status, payload, _ = self.call(method, path, body)
+        status, payload, _ = self.call(method, path, body, headers)
         if not 200 <= status < 300:
             raise SmokeError(f"{method} {path} answered {status}: {json.dumps(payload)[:300]}")
         return payload
@@ -476,6 +524,147 @@ def first_difference(left: str, right: str) -> str:
             start, end = max(0, index - 60), index + 60
             return f"...{left[start:end]}\n       vs ...{right[start:end]}"
     return f"one run is {len(left)} characters, the other {len(right)}"
+
+
+# --- the adventure, run whole ------------------------------------------------
+def swing_plan(state: Mapping[str, Any]) -> tuple[str, str] | None:
+    """What the creature whose turn it is swings, and at which enemy.
+
+    ``attack_plan``'s rule does not survive a fight of four: "whoever else is in
+    the order" would have a wolf biting its own packmate. The plan here is the
+    dumbest one that still finishes a fight — the first conscious enemy in
+    initiative order — and it is deliberately not tactics, because the golden
+    constants pin what this plan produces and cleverness would make a rules
+    change read as a differently clever fight rather than as a wrong one.
+
+    ``None`` when the actor cannot swing: a combatant at 0 hit points still
+    takes turns, and what happens on that turn is a death save the stepper makes
+    when the turn is advanced.
+    """
+    actor = str(state["turn"])
+    by_name = {str(one["name"]): one for one in state["combatants"]}
+    if not by_name[actor]["conscious"]:
+        return None
+    team = by_name[actor]["team"]
+    target = next(
+        (
+            str(name)
+            for name in state["order"]
+            if by_name[str(name)]["team"] != team and by_name[str(name)]["conscious"]
+        ),
+        None,
+    )
+    return None if target is None else (str(by_name[actor]["attacks"][0]), target)
+
+
+def fight_to_a_finish(
+    engine: Engine, encounter_id: str, opening: Mapping[str, Any], limit: int = 40
+) -> dict[str, Any]:
+    """Swing and advance until one side has nobody left; answer the ending state.
+
+    The scripted exchange above stops after two swings, which is all a
+    determinism fingerprint needs. A chapter of an adventure has to actually
+    *end*: ``encounter.finalize`` freezes whatever it finds, and the next
+    chapter starts from exactly that. ``limit`` is a defect guard rather than a
+    policy — a fight still going after it is one that is not going to stop.
+    """
+    base = f"/encounters/{encounter_id}"
+    state: dict[str, Any] = dict(opening)
+    for _turn in range(limit):
+        if state["over"]:
+            return state
+        plan = swing_plan(state)
+        if plan is not None:
+            attack, target = plan
+            state = engine.json_call(
+                "POST", f"{base}/actions", {"kind": "attack", "attack": attack, "target": target}
+            )["state"]
+            if state["over"]:
+                return state
+        state = engine.json_call("POST", f"{base}/advance", {})["state"]
+    raise SmokeError(f"the fight in {encounter_id} had not ended after {limit} turns")
+
+
+def adventure_over_http(engine: Engine) -> dict[str, Any]:
+    """A whole run: start it, link a fight, finish it, link the next, compose, close.
+
+    Every write carries the ``ETag`` the previous one answered with, which is
+    what a client holding a version does: ``If-Match`` is *required* on an
+    adventure rather than optional, because the document is rewritten whole and
+    two callers each told they linked would leave one fight in a run that
+    acknowledged it.
+    """
+    status, created, headers = engine.call("POST", "/adventures", {"name": ADVENTURE_NAME})
+    if status != 201:
+        raise SmokeError(f"adventure.create answered {status}: {json.dumps(created)[:300]}")
+    adventure_id = str(created["id"])
+    base = f"/adventures/{adventure_id}"
+    run: dict[str, Any] = {
+        "created": created,
+        "created_status": status,
+        "adventure_id": adventure_id,
+    }
+
+    version = headers.get("ETag", "")
+    first_body = {"combatants": ADVENTURE_ROSTER, "seed": ADVENTURE_SEEDS[0]}
+    # The same link, sent with no version at all. Refused by the adapter before
+    # the service is reached, so it starts no fight — and if it ever stopped
+    # being refused, the run below would find the ids it expects already taken.
+    run["unguarded"] = engine.call("POST", f"{base}/encounters", first_body)[:2]
+
+    status, first, headers = engine.call(
+        "POST", f"{base}/encounters", first_body, headers={"If-Match": version}
+    )
+    if status != 201:
+        raise SmokeError(f"the first link answered {status}: {json.dumps(first)[:300]}")
+    first_id = str(first["encounter_id"])
+    run["first_link"], run["first_link_status"] = first, status
+    run["first_opening"] = first["encounter"]["state"]
+    run["first_ending"] = fight_to_a_finish(engine, first_id, run["first_opening"])
+    run["first_log"] = engine.json_call("GET", f"/encounters/{first_id}/log")
+    run["first_frozen"] = engine.json_call("POST", f"/encounters/{first_id}/finalize", {})
+
+    # Who comes forward is read from the fight that just ended rather than
+    # written here, so the constants stay a claim about the fight instead of an
+    # instruction to it: whoever the party still has standing walks next door.
+    standing = [
+        str(one["name"])
+        for one in run["first_ending"]["combatants"]
+        if one["team"] == "party" and one["conscious"]
+    ]
+    run["standing"] = standing
+    version = headers.get("ETag", "")
+    status, second, headers = engine.call(
+        "POST",
+        f"{base}/encounters",
+        {"combatants": ADVENTURE_NEWCOMER, "carry": standing, "seed": ADVENTURE_SEEDS[1]},
+        headers={"If-Match": version},
+    )
+    if status != 201:
+        raise SmokeError(f"the second link answered {status}: {json.dumps(second)[:300]}")
+    second_id = str(second["encounter_id"])
+    run["second_link"], run["second_link_status"] = second, status
+    run["arrival"] = second["encounter"]["state"]
+    run["second_ending"] = fight_to_a_finish(engine, second_id, run["arrival"])
+    run["second_log"] = engine.json_call("GET", f"/encounters/{second_id}/log")
+    run["second_frozen"] = engine.json_call("POST", f"/encounters/{second_id}/finalize", {})
+
+    composed = engine.json_call("POST", f"{base}/replay", {})
+    run["composed"] = composed
+    # Read back off the disk it named, because there is nowhere else to read it:
+    # a composition always writes a file and never inlines its envelope, one v2
+    # bundle already exceeding the ceiling an inline export is answered under.
+    run["envelope"] = json.loads(Path(str(composed["path"])).read_text(encoding="utf-8"))
+    run["validated"] = engine.json_call("POST", "/replays/validate", {"bundle": run["envelope"]})
+
+    # Still the version the *second link* answered with: composing a run reads
+    # frozen files and writes a new one, so it must not have moved the document.
+    run["closed"] = engine.json_call(
+        "POST", f"{base}/finalize", {}, headers={"If-Match": headers.get("ETag", "")}
+    )
+    run["listed_active"] = engine.json_call("GET", "/adventures")
+    run["listed_finalized"] = engine.json_call("GET", "/adventures?status=finalized")
+    return run
 
 
 # --- the contract, read from its own source ----------------------------------
@@ -758,7 +947,176 @@ def main() -> int:
             first_difference(reference_print, driven_print),
         )
 
-        # -- 6. the contract cannot drift ------------------------------------
+        # -- 6. a whole adventure: two fights, and the party between them ----
+        adventuring = Engine("adventure")
+        engines.append(adventuring)
+
+        def whole_run() -> dict[str, Any]:
+            adventuring.start(timeout=WARM_TIMEOUT)
+            return adventure_over_http(adventuring)
+
+        run = phase(
+            "an adventure of two linked fights runs end to end over plain HTTP", whole_run
+        )
+        opened = run["created"]
+        report(
+            run["created_status"] == 201
+            and opened["id"] == EXPECTED_ADVENTURE_ID
+            and opened["format"] == "fivee-sim-adventure"
+            and opened["name"] == ADVENTURE_NAME
+            and opened["status"] == "active"
+            and opened["members"] == []
+            and bool(opened["version"]),
+            "adventure.create starts an empty, active run in the scratch root",
+            json.dumps({key: opened.get(key) for key in ("id", "name", "status", "members")}),
+        )
+        refused_status, refused_body = run["unguarded"]
+        report(
+            refused_status == 428
+            and "If-Match is required" in str(refused_body.get("detail", "")),
+            "a link that names no version of the run is refused as problem+json",
+            f"status={refused_status} body={json.dumps(refused_body)[:200]}",
+        )
+
+        first = run["first_link"]
+        opening = run["first_opening"]
+        report(
+            run["first_link_status"] == 201
+            and first["index"] == 0
+            and first["carried"] == []
+            and first["encounter_id"] == EXPECTED_CHAPTER_IDS[0]
+            and first["encounter"]["seed"] == ADVENTURE_SEEDS[0]
+            and opening["order"] == EXPECTED_FIRST_ORDER
+            and {
+                one["name"]: one["initiative"] for one in opening["combatants"]
+            } == EXPECTED_FIRST_INITIATIVE,
+            "the run's first fight is linked at index 0 with nobody carried into it",
+            f"index={first['index']} carried={first['carried']} "
+            f"id={first['encounter_id']!r} order={opening['order']}",
+        )
+        ending = run["first_ending"]
+        ending_hp = {str(one["name"]): one["hp"] for one in ending["combatants"]}
+        report(
+            ending["over"] is True
+            and ending["winner"] == "party"
+            and ending["round"] == EXPECTED_FIRST_ROUND
+            and ending_hp == EXPECTED_FIRST_HP
+            and run["first_log"]["total_events"] == EXPECTED_FIRST_EVENTS,
+            "the first fight runs to the conclusion this seed determines",
+            f"round={ending['round']} winner={ending['winner']!r} hp={ending_hp} "
+            f"events={run['first_log']['total_events']}",
+        )
+        frozen = Path(str(run["first_frozen"]["replay_path"]))
+        report(
+            run["first_frozen"]["status"] == "finalized"
+            and frozen.is_file()
+            and str(frozen).startswith(str(adventuring.root)),
+            "encounter.finalize freezes that fight's replay beside its own journal",
+            json.dumps({key: run["first_frozen"].get(key) for key in ("status", "bytes")})
+            + f" at {frozen}",
+        )
+
+        # The claim that makes a run of fights an adventure rather than two
+        # fights. Held against what the *previous* fight ended at rather than
+        # against a second copy of the number, and refusing to pass on a party
+        # nobody hurt: a roster rebuilt from its creation specs would arrive
+        # whole, which is exactly what a carried one must not do.
+        arrival = run["arrival"]
+        arrived = {
+            str(one["name"]): one["hp"]
+            for one in arrival["combatants"]
+            if str(one["name"]) in EXPECTED_CARRIED
+        }
+        maxima = {
+            str(one["name"]): one["max_hp"]
+            for one in arrival["combatants"]
+            if str(one["name"]) in EXPECTED_CARRIED
+        }
+        walked_out_on = {name: ending_hp[name] for name in EXPECTED_CARRIED if name in ending_hp}
+        report(
+            run["second_link_status"] == 201
+            and run["second_link"]["index"] == 1
+            and run["second_link"]["carried"] == EXPECTED_CARRIED
+            and run["standing"] == EXPECTED_CARRIED
+            and arrived == walked_out_on
+            and maxima == dict.fromkeys(EXPECTED_CARRIED, WOLF_MAX_HP)
+            and min(arrived.values(), default=WOLF_MAX_HP) < WOLF_MAX_HP,
+            "the second fight starts its party where the first left them, not whole",
+            f"carried={run['second_link']['carried']} arrived={arrived} "
+            f"walked out on={walked_out_on} max={maxima}",
+        )
+        second_ending = run["second_ending"]
+        second_hp = {str(one["name"]): one["hp"] for one in second_ending["combatants"]}
+        report(
+            second_ending["over"] is True
+            and second_ending["winner"] == "party"
+            and run["second_link"]["encounter"]["seed"] == ADVENTURE_SEEDS[1]
+            and second_ending["round"] == EXPECTED_SECOND_ROUND
+            and arrival["order"] == EXPECTED_SECOND_ORDER
+            and second_hp == EXPECTED_SECOND_HP
+            and run["second_log"]["total_events"] == EXPECTED_SECOND_EVENTS,
+            "the second fight rolls its own initiative and reaches its own end",
+            f"order={arrival['order']} round={second_ending['round']} hp={second_hp} "
+            f"events={run['second_log']['total_events']}",
+        )
+
+        composed, envelope = run["composed"], run["envelope"]
+        chapters = envelope.get("chapters", [])
+        written = Path(str(composed["path"]))
+        report(
+            composed["format"] == "fivee-sim-adventure-replay"
+            and composed["chapters"] == len(EXPECTED_CHAPTER_IDS)
+            and composed["encounters"] == EXPECTED_CHAPTER_IDS
+            and "bundle" not in composed
+            and written.is_file()
+            and str(written).startswith(str(adventuring.root))
+            # The file names the run it composed, and says so in its own words:
+            # every other case here reads the *result*, which would say all of
+            # this about an envelope that had been written empty.
+            and envelope.get("format") == composed["format"]
+            and envelope.get("adventure", {}).get("id") == EXPECTED_ADVENTURE_ID
+            and envelope.get("adventure", {}).get("name") == ADVENTURE_NAME,
+            "adventure.replay writes the whole run to one file in the scratch root",
+            json.dumps({key: composed.get(key) for key in ("format", "chapters", "encounters")})
+            + f" written={written}",
+        )
+        report(
+            [chapter.get("index") for chapter in chapters] == [0, 1]
+            and [chapter.get("encounter_id") for chapter in chapters] == EXPECTED_CHAPTER_IDS
+            and [chapter.get("carried") for chapter in chapters] == [[], EXPECTED_CARRIED]
+            and [chapter.get("replay", {}).get("format") for chapter in chapters]
+            == ["fivee-sim-replay"] * len(EXPECTED_CHAPTER_IDS)
+            and [len(chapter.get("replay", {}).get("events", [])) for chapter in chapters]
+            == [EXPECTED_FIRST_EVENTS, EXPECTED_SECOND_EVENTS],
+            "its chapters are the two fights it named, in the order the run linked them",
+            json.dumps(
+                [
+                    {key: chapter.get(key) for key in ("index", "encounter_id", "carried")}
+                    for chapter in chapters
+                ]
+            )[:250],
+        )
+        report(
+            run["validated"].get("valid") is True
+            and not run["validated"].get("diagnostics")
+            and run["validated"].get("error_count") == 0,
+            "the composed run verifies its own hashes, and every chapter's with it",
+            json.dumps(run["validated"])[:300],
+        )
+
+        closed = run["closed"]
+        still_open = [str(entry["adventure_id"]) for entry in run["listed_active"]["adventures"]]
+        finished = run["listed_finalized"]["adventures"]
+        report(
+            closed["status"] == "finalized"
+            and EXPECTED_ADVENTURE_ID not in still_open
+            and [str(entry["adventure_id"]) for entry in finished] == [EXPECTED_ADVENTURE_ID]
+            and [entry["encounters"] for entry in finished] == [len(EXPECTED_CHAPTER_IDS)],
+            "adventure.finalize closes the run and the listing moves it across",
+            f"active={still_open} finalized={json.dumps(finished)[:200]}",
+        )
+
+        # -- 7. the contract cannot drift ------------------------------------
         declared = declared_operations()
         index = primary.json_call("GET", "/operations")
         listed = {str(entry["operation"]) for entry in index["operations"]}
@@ -796,7 +1154,7 @@ def main() -> int:
             f"exit={helped.returncode} unrendered={unrendered}",
         )
 
-        # -- 6b. and the examples that make an object-valued argument callable --
+        # -- 7b. and the examples that make an object-valued argument callable --
         exemplified = declared_examples()
         by_id = {
             str(operation.get("operationId", "")): operation
@@ -877,7 +1235,7 @@ def main() -> int:
             "the injected config is absent from GET /",
         )
 
-        # -- 7. and it all stops ---------------------------------------------
+        # -- 8. and it all stops ---------------------------------------------
         for engine in engines:
             engine.cleanup()
         report(
