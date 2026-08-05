@@ -94,7 +94,8 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `blindsight`, `death_rule`, `hit_dice`, `abilities`, `save_bonuses`, `attacks`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
-`spell_attack_bonus`, `items`, `conditions`, `unmodelled_facts`, legacy
+`spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
+`unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
 
@@ -157,7 +158,8 @@ Older campaign packs may keep using the legacy `unmodelled` string list.
 
 Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
-`heal`, `half_on_save`, `upcast_damage`, `upcast_heal`, `shape`, `radius`,
+`heal`, `half_on_save`, `upcast_damage`, `upcast_heal`,
+`add_spellcasting_modifier`, `shape`, `radius`,
 `range_feet`, `max_targets`,
 `condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
 `overrides`.
@@ -176,6 +178,15 @@ melee spell attacks do not.
 `upcast_heal` adds its dice for every slot level above the spell's base level.
 Healing a creature at 0 HP restores it to the fight and the slot is spent by the
 same cast that produced the healing — no parallel item charge is needed.
+
+`add_spellcasting_modifier` adds the **caster's** ability modifier to the
+healing, once, however high the slot. SRD healing spells are written that way —
+Cure Wounds is "2d8 plus your spellcasting ability modifier" — and a shared
+record cannot hold a number that differs per caster, so it arrives at resolution
+instead. It reads `spellcasting_ability` off the creature casting it; a creature
+that names none contributes nothing, which is why the pair is opt-in on both
+sides and why every pack written before it kept its numbers. It never touches
+damage: SRD damage spells print their dice in full.
 
 `max_targets` caps how many creatures may be **named** on one cast, and naming more
 is refused rather than quietly trimmed. It does not apply to an area spell: there,
@@ -385,9 +396,14 @@ policy revives a downed ally and heals one at half HP or below with a healing
 spell or item, respecting action and Bonus Action costs. It does not value other
 item effects, control spells, or long-term resource conservation.
 
-**Bundled items: none.** The category is modelled but the SRD slice ships no items,
-so potions reach a session through a pack. That is a data gap, not a missing
-feature.
+**Bundled items: one.** The SRD slice ships the **Potion of Healing** — 2d4+2, a
+Bonus Action, on the drinker or an ally within 5 ft — and nothing else, because
+it is the one SRD consumable every clause of which this vocabulary can say. The
+thrown ones (Acid, Alchemist's Fire, Holy Water) are each blocked on something
+absent rather than unwritten: an item use has no range, its `save_dc` is a fixed
+number where the SRD derives one from the thrower, and there is no ongoing
+damage. Those are missing features, not a data gap — a pack cannot work around
+them either.
 
 ## Licence note
 

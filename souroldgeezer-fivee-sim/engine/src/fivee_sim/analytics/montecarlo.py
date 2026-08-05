@@ -303,6 +303,10 @@ def _healing_action(
                 if dice is None:
                     continue
                 value = dice.count * (dice.faces + 1) / 2 + dice.modifier
+                if spell.add_spellcasting_modifier:
+                    # Valued the way it will resolve. Left out, a cleric would
+                    # rate its own Cure Wounds below a potion it should beat.
+                    value += actor.spellcasting_modifier
                 choices.append(
                     (
                         value,

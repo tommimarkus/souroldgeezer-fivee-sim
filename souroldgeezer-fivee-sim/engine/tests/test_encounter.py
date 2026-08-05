@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.content import make_monster, spellbook
+from fivee_sim.content import item_effects, make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition, UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
@@ -4750,3 +4750,92 @@ class TestFacing:
         fight.act(Action(kind=ActionKind.DODGE, facing="northwest"), Random(1))
 
         assert thora.facing == "northwest"
+
+
+class TestHealingInAFight:
+    """The path a pregen party takes: a cleric's Cure Wounds and a drunk potion.
+
+    The kernel cases in ``test_spells.py`` pin the arithmetic. What is pinned
+    here is the wiring the arithmetic arrives through — that the *acting
+    creature's* modifier is the one added, that touch range is enforced by the
+    stepper rather than merely recorded on the spell, and that a Bonus Action
+    potion leaves the action in hand.
+    """
+
+    def _cleric(self, name: str = "Ilma", *, position: int | tuple[int, int] = 0,
+                wisdom: int = 16) -> Creature:
+        return Creature(
+            name=name,
+            team="party",
+            ac=15,
+            max_hp=24,
+            speed=30,
+            abilities={Ability.WISDOM: wisdom, Ability.CONSTITUTION: 13},
+            spells=("Cure Wounds",),
+            spell_slots={1: 2},
+            spell_save_dc=13,
+            spell_attack_bonus=5,
+            spellcasting_ability=Ability.WISDOM,
+            position=position,
+            provenance=FIXTURE,
+        )
+
+    def test_a_cast_heals_by_the_acting_creatures_own_modifier(self) -> None:
+        # Two clerics differing only in Wisdom, each healing an identical ally
+        # from the same seed. Reading the wrong creature's modifier — the
+        # target's, say — would make these two totals equal.
+        healed: list[int] = []
+        for wisdom in (16, 10):
+            ilma = self._cleric(wisdom=wisdom)
+            thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
+            fight = Encounter(
+                [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+                Random(3),
+                spellbook=spellbook(),
+            )
+            advance_to(fight, "Ilma", Random(3))
+            fight.act(
+                Action(kind=ActionKind.CAST, spell="Cure Wounds", slot_level=1,
+                       target="Thora"),
+                Random(3),
+            )
+            healed.append(thora.hp - 4)
+
+        assert healed[0] - healed[1] == 3  # +3 Wisdom against +0
+
+    def test_it_will_not_reach_an_ally_across_the_room(self) -> None:
+        ilma = self._cleric(position=(0, 0))
+        thora = fighter("Thora", hp=4, max_hp=30, position=(60, 0))
+        fight = Encounter(
+            [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+            Random(3),
+            spellbook=spellbook(),
+        )
+        advance_to(fight, "Ilma", Random(3))
+
+        with pytest.raises(EncounterError, match="5 ft range"):
+            fight.act(
+                Action(kind=ActionKind.CAST, spell="Cure Wounds", slot_level=1,
+                       target="Thora"),
+                Random(3),
+            )
+
+        assert thora.hp == 4
+        assert ilma.spell_slots[1] == 2  # the refusal cost nothing
+
+    def test_a_potion_is_a_bonus_action_and_leaves_the_attack_in_hand(self) -> None:
+        thora = fighter("Thora", hp=5, max_hp=30, position=(0, 0))
+        thora.items = {"Potion of Healing": 1}
+        goblin = fighter("Goblin", team="monsters", position=(5, 0))
+        fight = Encounter([thora, goblin], Random(3), items=item_effects())
+        advance_to(fight, "Thora", Random(3))
+
+        fight.act(
+            Action(kind=ActionKind.USE_ITEM, item="Potion of Healing",
+                   as_bonus_action=True),
+            Random(3),
+        )
+
+        assert thora.hp >= 5 + 4  # 2d4+2, so at least 4 restored
+        assert thora.items["Potion of Healing"] == 0
+        assert not fight.state()["turn_state"]["action_used"]
