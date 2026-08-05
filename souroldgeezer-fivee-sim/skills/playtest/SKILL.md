@@ -121,10 +121,21 @@ optimised for them tells you how the encounter performs against perfect play,
 which is the one thing `analytics.rounds` already measures for free. What only a
 table can tell you is what happens when four people decide for themselves.
 
-So the brief a seat gets before deciding has to be enough to decide *with*:
-their own remaining movement and speed, action and bonus action still in hand,
-slots by level, item charges, conditions on them, and distances to whatever they
-might care about.
+So every seat gets `fivee encounter.brief <id> --as "<name>"` before it decides —
+its own sheet whole, its remaining movement and action economy, allies
+unredacted, and each enemy it can see as a position, a distance, and a described
+health band rather than a hit-point total. A creature it cannot see is absent
+rather than listed.
+
+**The redaction is the engine's, not the game master's.** That is the point of
+the operation existing: a prose summary has to be re-derived every turn and can
+drop a field or leak one, and neither failure is visible from a transcript. Pass
+the brief through as it stands rather than paraphrasing it.
+
+Seats hold no engine access of their own — that is what keeps an agent player
+unable to go and read the module — so the brief is *delivered* to them, and a
+follow-up question ("how far if I go round the pillar?") is answered by the game
+master from `map.query` the way it would be at a table.
 
 In combat, read whose turn it is from `fivee encounter.state` and map the
 combatant label to its seat. The engine owns turn order; you only route.

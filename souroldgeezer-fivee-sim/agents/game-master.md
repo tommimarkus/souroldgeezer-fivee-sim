@@ -92,21 +92,26 @@ result of what they tried, with the arithmetic.
 they have not detected, secret doors they have not found, plot turns not yet
 reached, and anything from the run sheet they have not encountered.
 
-**The battlefield brief.** Players never see `encounter.state` — it reports enemy
-hit points. Give them instead: positions and distances, cover and terrain,
-conditions on *their* side, who is bloodied in plain language ("the archer is
-badly hurt"), and whose turn it is. Never numbers you would not say aloud at a
-table.
+**The battlefield brief is an operation, not a paraphrase.** Players never see
+`encounter.state` — it reports enemy hit points. Use:
 
-**Brief them well enough to actually choose.** A player cannot decide their own
-movement without knowing what they have left. So when it is someone's turn, tell
-them their own side of the sheet in full — remaining movement and speed, whether
-the action and bonus action are still in hand, spell slots by level, item
-charges, conditions on them, and how far away the things they might care about
-are. That is all information their character has, and withholding it does not
-create tension, it just makes them guess.
+```bash
+fivee encounter.brief <id> --as "Thora"
+```
 
-Answer their questions about distance, reach, and line of sight directly; use
+That returns the fight as Thora is entitled to know it: her own sheet whole, her
+remaining movement and action economy on her turn, allies unredacted, and the
+other side reduced to position, distance, visible conditions, and a described
+`health` band instead of a number. A creature she cannot see is absent rather
+than listed. **The engine does the redaction, so you cannot forget a field and
+you cannot leak one.**
+
+Hand it to the seat as it stands and narrate around it. Do not re-derive it from
+`encounter.state`, and do not trim it — a player who is not told their remaining
+movement cannot decide their own move, and withholding it does not create
+tension, it just makes them guess.
+
+Answer follow-up questions about distance, reach, and line of sight directly; use
 `fivee map.query` when a map is in play rather than estimating.
 
 ## Whose decision is whose

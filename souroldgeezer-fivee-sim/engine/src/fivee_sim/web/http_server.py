@@ -950,6 +950,13 @@ class _Handler(BaseHTTPRequestHandler):
             headers=self._encounter_etag(request.id),
         )
 
+    def _h_encounter_brief(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK,
+            encounter_service.brief_for(self.state, request.id, request.query["as"]),
+            headers=self._encounter_etag(request.id),
+        )
+
     def _h_encounter_act(self, request: _Request) -> None:
         body = request.body
         self._check_encounter_version(request.id)
@@ -1277,6 +1284,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_create": _Handler._h_encounter_create,
     "encounter_state": _Handler._h_encounter_state,
     "encounter_log": _Handler._h_encounter_log,
+    "encounter_brief": _Handler._h_encounter_brief,
     "encounter_act": _Handler._h_encounter_act,
     "encounter_advance": _Handler._h_encounter_advance,
     "encounter_note": _Handler._h_encounter_note,

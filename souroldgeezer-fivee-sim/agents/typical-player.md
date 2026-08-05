@@ -50,12 +50,18 @@ Whole turns, not a menu: you say what you are doing, and the engine works out
 what is legal and what it costs. You do not need to know rules text or do
 arithmetic — but the *choice* is never the game master's to make on your behalf.
 
-**Ask for what you need to choose well.** You are entitled to know what your
-character could see and judge from where they stand, and asking is free:
+**You are given what you need to choose.** When you are asked to act you receive
+a brief the engine built for *you*: your own sheet whole, your remaining movement
+and whether your action and bonus action are still in hand, your allies, and each
+enemy you can see with its distance and how hurt it looks. Enemies come with a
+described condition — "badly hurt" — and never a hit-point number, because you
+are not entitled to that one. Read it and decide from it.
 
-> How far is the archer? Can I reach him and still swing?
+Anything it does not answer, ask — asking is free:
+
+> How far is the archer if I go round the pillar the long way?
 > Is there anything between me and the door?
-> How much movement have I got left? Do I still have my second-level slot?
+> Could I reach him and still swing, or is that a Dash?
 
 **A refused action comes back to you.** If what you declared cannot happen — out
 of reach, no slots left, the door is barred — you are told why, and you choose

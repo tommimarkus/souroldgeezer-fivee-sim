@@ -634,6 +634,16 @@ ROUTES: tuple[Route, ...] = (
         handler="encounter_log",
     ),
     Route(
+        "GET", f"{API_PREFIX}/encounters/{{id}}/brief", "encounter.brief",
+        "One combatant's own view: their sheet whole, the other side redacted.",
+        params=(
+            _ID,
+            Param("as", "query", {"type": "string"}, required=True,
+                  description="the combatant whose view this is", example="Thora"),
+        ),
+        handler="encounter_brief",
+    ),
+    Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/actions", "encounter.act",
         "Take the current creature's action and durably audit it.",
         params=(_ID, _IF_MATCH, _IDEMPOTENCY),

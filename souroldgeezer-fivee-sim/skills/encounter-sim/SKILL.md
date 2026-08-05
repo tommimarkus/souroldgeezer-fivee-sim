@@ -90,6 +90,16 @@ narrating from memory puts it straight back.
 2. **`fivee encounter.state <id>`** to see whose turn it is and what the situation
    is. The id is a bare word — it is the subject of the command, so no flag is
    needed.
+
+   **`fivee encounter.brief <id> --as "<name>"`** is the same fight as *one
+   combatant* is entitled to know it, and is what you show a player. Their own
+   sheet comes back whole, with their remaining movement and action economy on
+   their turn and their allies unredacted; the other side is reduced to position,
+   distance, visible conditions, and a described `health` band — never hit
+   points, AC, slots, or items. A creature they cannot see is absent rather than
+   listed. Which side is redacted follows the asker, so a monster's brief hides
+   the party. Use it whenever somebody at the table should not be reading the
+   referee's view, rather than paraphrasing `encounter.state` and hoping.
 3. **`fivee encounter.act <id> --kind …`** for each action: `attack`, `cast`,
    `use_item`, `move`, `dash`, `disengage`, `dodge`, `stand` (up from Prone — half
    Speed in movement, no action), or `surrender`. A creature whose pack lists Dash

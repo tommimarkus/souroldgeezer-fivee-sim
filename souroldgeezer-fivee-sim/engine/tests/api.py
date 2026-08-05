@@ -211,6 +211,10 @@ def encounter_advance(
     return _encounters.advance(STATE, encounter_id, natural, request_id)
 
 
+def encounter_brief(encounter_id: str, as_name: str) -> dict[str, Any]:
+    return _encounters.brief_for(STATE, encounter_id, as_name)
+
+
 def encounter_resume(encounter_id: str) -> dict[str, Any]:
     return _encounters.resume(STATE, encounter_id)
 

@@ -184,6 +184,15 @@ def create(
     return result
 
 
+def brief_for(state: EngineState, encounter_id: str, as_name: str) -> dict[str, Any]:
+    """One combatant's own view of the fight — see :meth:`Encounter.brief`."""
+    session = sessions.session_for(state, encounter_id)
+    try:
+        return session.encounter.brief(as_name)
+    except EncounterError as error:
+        raise RequestError(str(error)) from error
+
+
 def state_of(state: EngineState, encounter_id: str) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
     snapshot = session.encounter.state()
