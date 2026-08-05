@@ -39,6 +39,7 @@ import hashlib
 import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 #: The floor `engine/pyproject.toml` declares as `requires-python`.
@@ -138,27 +139,51 @@ def _ignore_compiled(directory: str, names: list[str]) -> set[str]:
 def ensure_durable_source(engine_dir: Path, plugin_data: Path) -> Path:
     """A content-addressed copy of the source under plugin data, made once.
 
-    Staging then renaming is what makes this safe without a lock: two launchers
+    Staging then renaming is what makes this safe without a lock: two callers
     racing the same identity each copy into their own staging directory, and the
     loser of the rename discards its copy and uses the winner's — which is
     byte-identical, because the directory name is the hash of the content.
+
+    The staging name comes from `mkdtemp` rather than the pid, so two callers in
+    one process are as safe as two processes. That costs nothing and removes a
+    footgun: a pid-derived name is unique only until something calls this twice
+    without forking.
     """
     identity = source_identity(engine_dir)
     published = plugin_data / "src" / identity
     if published.is_dir():
         return published
 
-    published.parent.mkdir(parents=True, exist_ok=True)
-    staging = published.parent / (".staging-" + identity[:12] + "-" + str(os.getpid()))
-    shutil.rmtree(staging, ignore_errors=True)
-    shutil.copytree(engine_dir / "src", staging, ignore=_ignore_compiled)
+    # 0700 on the directory that holds the copies. Content-addressing names a
+    # directory after its content but never re-verifies it — re-hashing on every
+    # start is exactly the cost this design avoids — so the name is trusted once
+    # published. That is safe while only this user can create entries here, and
+    # this is what keeps that true if plugin data ever lands somewhere shared.
+    published.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=str(published.parent)))
     try:
+        shutil.copytree(engine_dir / "src", staging, ignore=_ignore_compiled, dirs_exist_ok=True)
         os.replace(staging, published)
     except OSError:
         shutil.rmtree(staging, ignore_errors=True)
+        # Losing the rename is ordinary: another caller published this exact
+        # content first. Anything else is a real failure and must surface.
         if not published.is_dir():
             raise
     return published
+
+
+def python_path_for(source_root: Path, inherited: str) -> str:
+    """The `PYTHONPATH` children should inherit: source root first, caller's kept.
+
+    Prepending rather than replacing matters because a caller may have put
+    something on `PYTHONPATH` for reasons of their own, and re-entering does not
+    grow the value without bound.
+    """
+    entries = inherited.split(os.pathsep) if inherited else []
+    if entries and entries[0] == str(source_root):
+        return inherited
+    return os.pathsep.join([str(source_root)] + entries)
 
 
 def resolve_source_root(engine_dir: Path, plugin_data: Path | None) -> Path:
@@ -202,10 +227,7 @@ def main(argv: list[str], env: dict[str, str]) -> int:
     # import succeeds and every operation that needs a server dies in the child
     # with ModuleNotFoundError. Exporting the root is what makes "run from
     # source" hold for the whole process tree rather than just this process.
-    inherited = env.get("PYTHONPATH", "")
-    entries = inherited.split(os.pathsep) if inherited else []
-    if not entries or entries[0] != str(source_root):
-        os.environ["PYTHONPATH"] = os.pathsep.join([str(source_root)] + entries)
+    os.environ["PYTHONPATH"] = python_path_for(source_root, env.get("PYTHONPATH", ""))
 
     # Maps and encounter journals may resolve a default from the working
     # directory when an operation runs, and a process left inside a plugin cache

@@ -15,11 +15,16 @@ copy under plugin data instead.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
+import shutil
+import stat
 import subprocess
 import sys
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import ModuleType
 
@@ -88,6 +93,14 @@ def test_codex_home_supplies_storage_when_no_host_variable_does() -> None:
     resolved = launcher.resolve_plugin_data({"CODEX_HOME": "/home/someone/.codex"})
     assert resolved is not None
     assert resolved.is_relative_to(Path("/home/someone/.codex")), resolved
+
+
+def test_a_host_variable_wins_over_the_codex_fallback() -> None:
+    """`CODEX_HOME` is the last resort, not a peer of the host-supplied variables."""
+    resolved = launcher.resolve_plugin_data(
+        {"CLAUDE_PLUGIN_DATA": "/data/claude", "CODEX_HOME": "/home/someone/.codex"}
+    )
+    assert resolved == Path("/data/claude")
 
 
 def test_a_plain_checkout_has_no_durable_storage() -> None:
@@ -200,6 +213,60 @@ def test_the_copy_leaves_no_temporary_directory_behind(tmp_path: Path) -> None:
     assert siblings == [launcher.source_identity(engine)], siblings
 
 
+def test_concurrent_callers_agree_on_one_copy(tmp_path: Path) -> None:
+    """No lock guards this, so the race is the contract and has to be exercised.
+
+    Every caller must return the same published directory, exactly one copy must
+    exist, and no staging directory may survive the losers of the rename.
+    """
+    engine = _plant_engine(tmp_path / "plugin")
+    data = tmp_path / "data"
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        roots = list(pool.map(lambda _: launcher.ensure_durable_source(engine, data), range(8)))
+
+    assert len(set(roots)) == 1, roots
+    siblings = sorted(child.name for child in (data / "src").iterdir())
+    assert siblings == [launcher.source_identity(engine)], siblings
+
+
+# -- what children inherit ---------------------------------------------------
+
+
+def test_the_source_root_leads_the_python_path(tmp_path: Path) -> None:
+    assert launcher.python_path_for(tmp_path / "src", "") == str(tmp_path / "src")
+
+
+def test_an_inherited_python_path_is_kept_behind_the_source_root(tmp_path: Path) -> None:
+    """A caller may have put something there for reasons of their own."""
+    result = launcher.python_path_for(tmp_path / "src", f"/borrowed{os.pathsep}/other")
+
+    assert result == os.pathsep.join([str(tmp_path / "src"), "/borrowed", "/other"])
+
+
+def test_re_entering_does_not_grow_the_python_path(tmp_path: Path) -> None:
+    """`fivee` shells out to itself in places; the value must not compound."""
+    once = launcher.python_path_for(tmp_path / "src", "/borrowed")
+    twice = launcher.python_path_for(tmp_path / "src", once)
+
+    assert twice == once
+
+
+def test_no_one_else_can_plant_a_copy(tmp_path: Path) -> None:
+    """The directory name is trusted as the content address and never re-verified.
+
+    Re-hashing the tree on every start is the cost this design exists to avoid,
+    so the integrity of a published copy rests on nobody else being able to
+    create one. That holds while the directory holding them is owner-only.
+    """
+    engine = _plant_engine(tmp_path / "plugin")
+    data = tmp_path / "data"
+    root = launcher.ensure_durable_source(engine, data)
+
+    mode = stat.S_IMODE(root.parent.stat().st_mode)
+    assert not mode & (stat.S_IWGRP | stat.S_IWOTH), oct(mode)
+
+
 def test_a_checkout_runs_from_its_own_source(tmp_path: Path) -> None:
     engine = _plant_engine(tmp_path)
     assert launcher.resolve_source_root(engine, None) == engine / "src"
@@ -276,12 +343,45 @@ def test_diagnostics_never_reach_stdout() -> None:
     assert result.stdout == "", result.stdout
 
 
+def _isolated_env(tmp_path: Path) -> dict[str, str]:
+    """An environment whose engine state lives entirely under ``tmp_path``.
+
+    Any call that reaches an operation starts a server, and a server started
+    against the ambient environment writes ``.fivee-sim/`` into whatever
+    directory pytest happens to be in and then outlives the test. Every
+    subprocess case that can reach an operation takes this and stops what it
+    started.
+    """
+    environment = dict(os.environ)
+    environment["FIVEE_SIM_MAPS"] = str(tmp_path / "maps")
+    environment["FIVEE_SIM_REPLAYS"] = str(tmp_path / "replays")
+    environment["FIVEE_SIM_ENCOUNTERS"] = str(tmp_path / "encounters")
+    environment.pop("PYTHONPATH", None)
+    return environment
+
+
+def _call(
+    environment: dict[str, str], *arguments: str, launcher: Path = LAUNCHER_PATH
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [str(HOST_PYTHON), str(launcher), *arguments],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=environment,
+    )
+
+
 @requires_host_python
-def test_arguments_survive_the_launcher() -> None:
+def test_arguments_survive_the_launcher(tmp_path: Path) -> None:
     """A launcher that dropped argv would pass every other case and then answer wrong."""
-    result = _run("definitely-not-an-operation")
-    assert result.stdout == "", result.stdout
-    assert "definitely-not-an-operation" in result.stderr, result.stderr
+    environment = _isolated_env(tmp_path)
+    try:
+        result = _call(environment, "definitely-not-an-operation")
+        assert result.stdout == "", result.stdout
+        assert "definitely-not-an-operation" in result.stderr, result.stderr
+    finally:
+        _call(environment, "stop")
 
 
 @requires_host_python
@@ -334,28 +434,48 @@ def test_a_spawned_server_can_import_the_engine(tmp_path: Path) -> None:
     that needs a server, so nearly every operation. Only an end-to-end call
     catches it; the in-process tests above all pass with this broken.
     """
-    environment = dict(os.environ)
-    environment["FIVEE_SIM_MAPS"] = str(tmp_path / "maps")
-    environment["FIVEE_SIM_REPLAYS"] = str(tmp_path / "replays")
-    environment["FIVEE_SIM_ENCOUNTERS"] = str(tmp_path / "encounters")
-    environment.pop("PYTHONPATH", None)
-
-    def call(*arguments: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [str(HOST_PYTHON), str(LAUNCHER_PATH), *arguments],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            env=environment,
-        )
-
+    environment = _isolated_env(tmp_path)
     try:
-        result = call("dice.roll", "--expression", "2d6+3", "--seed", "20260805", "--compact")
+        result = _call(
+            environment, "dice.roll", "--expression", "2d6+3", "--seed", "20260805", "--compact"
+        )
         assert result.returncode == 0, result.stderr
         payload = json.loads(result.stdout)
         assert payload["seed"] == 20260805, payload
     finally:
-        call("stop")
+        _call(environment, "stop")
+
+
+@requires_host_python
+def test_a_live_server_survives_its_plugin_root_being_retired(tmp_path: Path) -> None:
+    """The whole reason the durable copy exists, exercised rather than reasoned about.
+
+    A host can retire the installed plugin root while a session is mid-fight, and
+    ``web/http_server.py`` reads static assets through ``resources.files(...)`` at
+    *request* time. Running from an editable checkout would serve a 500 here.
+    """
+    installed = tmp_path / "installed"
+    shutil.copytree(
+        PLUGIN_ROOT,
+        installed,
+        ignore=shutil.ignore_patterns(".venv", ".cache", "__pycache__", "*.pyc"),
+    )
+    environment = _isolated_env(tmp_path)
+    environment["PLUGIN_DATA"] = str(tmp_path / "data")
+
+    started = _call(environment, "serve", "--compact", launcher=installed / "scripts" / "fivee.py")
+    assert started.returncode == 0, started.stderr
+    url = json.loads(started.stdout)["url"]
+    try:
+        shutil.rmtree(installed)
+        assert not installed.exists()
+
+        with urllib.request.urlopen(url + "editor", timeout=30) as response:
+            assert response.status == 200
+            body = response.read().decode("utf-8")
+        assert "<title>" in body, body[:200]
+    finally:
+        _call(environment, "stop")
 
 
 def test_the_launcher_is_executable_and_names_an_interpreter() -> None:
@@ -377,11 +497,13 @@ def test_the_launcher_parses_on_the_oldest_interpreter_it_claims() -> None:
     statement. A genuine check needs an old interpreter this suite cannot assume.
     """
     source = LAUNCHER_PATH.read_text(encoding="utf-8")
-    compile(source, str(LAUNCHER_PATH), "exec", dont_inherit=True)
+    tree = ast.parse(source, str(LAUNCHER_PATH))
+
     assert "from __future__ import annotations" in source, (
         "annotations must be postponed so 3.8 can parse modern type syntax"
     )
-    assert "match " not in source.replace("match =", ""), "no match statement"
+    offending = [type(node).__name__ for node in ast.walk(tree) if isinstance(node, ast.Match)]
+    assert offending == [], f"match statements do not parse on 3.8: {offending}"
 
 
 @requires_host_python
