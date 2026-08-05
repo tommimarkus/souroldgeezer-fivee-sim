@@ -2188,7 +2188,11 @@ const OPERATION_INDEX = {
   version: "test",
   base: "/api",
   openapi: "/api/openapi.json",
-  count: 4,
+  /* Deliberately disagreeing with `operations.length`. The page renders the
+   * list it was given, so its own tally must come from that list — with a
+   * truthful count here, "4 operations" would pass just as well against a page
+   * that echoed this field, and the case below would prove nothing. */
+  count: 99,
   operations: [
     { operation: "server.ping", method: "GET", path: "/api/ping", summary: "Liveness." },
     { operation: "server.operations", method: "GET", path: "/api/operations",
@@ -2243,7 +2247,7 @@ await suite("home.html: the landing page", "the page sandbox in makePage()", asy
     show(groups[1].rows[0]));
   check("the count comes from the list rendered, not from the payload's own count",
     served.element("ops-count").textContent === "4 operations",
-    served.element("ops-count").textContent);
+    served.element("ops-count").textContent + " (the payload claims 99)");
   check("and the loading line is gone once there is an index to show",
     served.element("ops-status").hidden === true,
     show([served.element("ops-status").hidden, served.element("ops-status").textContent]));

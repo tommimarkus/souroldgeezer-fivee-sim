@@ -745,6 +745,15 @@ def main() -> int:
         )
 
         pages = declared_pages()
+        # Before walking the table, prove the table was read. `declared_pages`
+        # parses source, and a parse that quietly returns nothing would run
+        # zero page cases and report nothing at all — a gate that covers
+        # nothing looks exactly like a gate that passed.
+        report(
+            {"/", "/editor", "/viewer"} <= set(pages),
+            "the route table declares the three pages this check walks",
+            f"declared: {sorted(pages)}",
+        )
         answered = {}
         for path, (filename, content_type) in sorted(pages.items()):
             status, text, headers = primary.page(path)
@@ -754,15 +763,19 @@ def main() -> int:
                 f"GET {path} serves {filename}",
                 f"status={status} content-type={headers.get('Content-Type')!r}",
             )
+        # Fails closed: an absent page is an empty body, and two empty bodies
+        # must not read as "two different documents".
+        root_body = answered.get("/", (0, "", ""))[2]
+        editor_body = answered.get("/editor", (0, "", ""))[2]
         report(
-            answered.get("/", (0, "", ""))[2] != answered.get("/editor", (0, "", "x"))[2],
+            bool(root_body) and bool(editor_body) and root_body != editor_body,
             "the root page and the editor are two different documents",
-            "GET / and GET /editor returned identical bytes",
+            "identical bytes" if root_body == editor_body else "one of them served nothing",
         )
         report(
-            "__FIVEE_EDITOR__" in answered.get("/", (0, "", ""))[2]
+            "__FIVEE_EDITOR__" in root_body
             and primary.token is not None
-            and primary.token in answered.get("/", (0, "", ""))[2],
+            and primary.token in root_body,
             "the landing page is configured with this launch's own token",
             "the injected config is absent from GET /",
         )

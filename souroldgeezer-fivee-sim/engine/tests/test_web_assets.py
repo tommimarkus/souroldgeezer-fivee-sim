@@ -43,6 +43,7 @@ from pathlib import Path
 import pytest
 
 from fivee_sim.web.http_server import CONFIG_MARKER
+from fivee_sim.web.routes import api_routes
 
 STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
 #: Every served HTML page. Claims parametrized over this one are claims about
@@ -587,9 +588,14 @@ class TestLandingPage:
     def test_the_landing_page_does_not_spell_out_the_operation_list(self) -> None:
         # Named operations in the markup are the failure this page is designed
         # to avoid; the index is rendered from what the server answered.
+        #
+        # Checked against the route table rather than a handful of names typed
+        # here: a sample of three would keep passing while the page hardcoded
+        # the other thirty-six, and would stop meaning anything the moment one
+        # of the three was renamed.
         source = read("home.html")
-        for operation in ("encounter.act", "map.generate", "dice.roll"):
-            assert operation not in source, operation
+        named = sorted(route.operation for route in api_routes() if route.operation in source)
+        assert not named, f"home.html names operations in its own markup: {named}"
         assert 'id="operations"' in source
 
     def test_the_landing_page_reaches_the_network_only_behind_the_config_gate(self) -> None:
