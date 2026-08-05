@@ -80,7 +80,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--state-file",
         default=None,
-        help="where to record {pid, port, token, maps_dir, started} once bound "
+        help="where to record {pid, port, token, maps_dir, replays_dir, source_id, "
+        "started} once bound "
         "(default: fivee-sim-server.json next to the maps directory)",
     )
     args = parser.parse_args(argv)

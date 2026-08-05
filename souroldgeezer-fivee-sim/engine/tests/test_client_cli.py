@@ -530,6 +530,47 @@ class TestSourceReload:
         assert json.loads(captured.out)["total"] == 1
         assert "restarted the engine server" in captured.err, captured.err
 
+    def test_serve_reports_a_replacement_as_one_on_both_of_its_channels(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """``serve`` is the command whose whole job is reporting the server.
+
+        It does not go through the announcement every other command shares, so
+        it gets its own sentence and its own three cases to get wrong — and the
+        one worth getting right is the one where somebody's running engine was
+        thrown away. "started" is true of a replacement and still the wrong
+        thing to tell them.
+
+        ``already_running`` cannot carry this on its own: it is ``False`` for a
+        cold start and ``False`` for a replacement, and only one of those cost
+        the caller a process.
+        """
+        _under(monkeypatch, SOURCE_A)
+        capsys.readouterr()
+        monkeypatch.setenv(SOURCE_ID_ENV, SOURCE_B)
+
+        assert run("serve") == cli.EXIT_OK
+
+        captured = capsys.readouterr()
+        assert "restarted the engine server" in captured.err, captured.err
+        answer = json.loads(captured.out)
+        assert answer["reloaded"] is True
+        assert answer["already_running"] is False
+
+    def test_serve_calls_an_ordinary_start_a_start(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The negative half: nothing was replaced, so nothing says it was."""
+        assert not discovery.state_path_for().exists(), "the workspace was meant to be empty"
+
+        assert run("serve") == cli.EXIT_OK
+
+        captured = capsys.readouterr()
+        assert "restarted" not in captured.err, captured.err
+        assert json.loads(captured.out)["reloaded"] is False
+
 
 class TestHelp:
     """The command list comes from the server, so it cannot go stale."""

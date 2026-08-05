@@ -521,6 +521,39 @@ says so, and `test_a_spawned_server_can_import_the_engine` is the case that
 caught the real defect: `sys.path` does not cross a process boundary, so the
 source root has to be exported, not merely inserted.
 
+**Dev reload is opt-in, and it is the same content hash doing the work.** The
+launcher builds nothing, but a running server still holds the engine it imported
+at startup — so editing `engine/src/` and re-running `fivee` silently tests the
+old build. Export `FIVEE_SIM_RELOAD=1` and the launcher hashes the source it is
+about to run and exports the digest as `FIVEE_SIM_SOURCE_ID`; the server reads it
+once at construction and answers for it on `GET /api/v1/ping`; `ensure_server`
+holds the two against each other and replaces a server that no longer matches.
+Unset is *no opinion* rather than no id, and no answer from a server can override
+it — which is what stops a plain command restarting an engine somebody is
+mid-fight in. The id comes from the ping and never the state file: a record
+outlives its process and says what a launch was asked for, while the answer comes
+from the process that would be replaced.
+
+Identity rather than mtimes, for the reason the durable copy is
+content-addressed: `git checkout` back to identical content restarts nothing,
+`touch` restarts nothing, a changed byte restarts once. The whole tree hashes in
+about 3 ms, and only when the flag is set.
+
+**Three things about a reload are invisible from a green run.** *Fights survive
+it* — `sessions.session_for` recovers a missing session from its journal,
+reseeding the RNG and replaying every recorded action, so a restart mid-fight is
+transparent to the caller. *But the fight is re-derived under the new code*, so a
+kernel edit can leave the recovered state disagreeing with what the journal's
+result records said happened; that is the feature working, and also its sharp
+edge. *A runtime `content.configure` is lost*, because `EngineState.content` is
+in-memory — content named by `FIVEE_SIM_CONTENT` reloads with the process, a pack
+configured by an API call has to be re-issued.
+
+Static assets never needed any of this. `web/http_server.py` reads them per
+request, so an edit to `editor.html` or `renderer.js` is live on the next browser
+reload against a server that is already running — the same request-time read that
+lets a live server survive its plugin root being retired.
+
 ## Conventions
 
 planning-policy: default — before new feature or build work, brainstorm the
