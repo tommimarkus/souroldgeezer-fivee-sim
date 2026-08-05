@@ -265,6 +265,18 @@ class Creature:
     vulnerabilities: frozenset[DamageType] = frozenset()
     #: A point in feet; a scalar is accepted and widened to ``(x, 0)``.
     position: Point | int = (0, 0)
+    #: Which of the eight grid directions the creature is looking, or ``None``
+    #: for a creature whose facing nobody is tracking. A plain ``str`` rather
+    #: than a :class:`~fivee_sim.kernel.grid.Facing` member, for the same reason
+    #: a condition is a plain ``str``: a pack may name one and the model must
+    #: not require an enum member to say it.
+    #:
+    #: ``None`` is the default and stays the default. Facing changes no roll, so
+    #: a creature nobody set one on has no facing to report — defaulting to
+    #: north would add a key to every combatant of every fight for a property
+    #: nobody chose, and would claim a fact about where they are looking that
+    #: nothing established.
+    facing: str | None = None
     #: Which storey of the map the creature stands on. Zero — the ground — for
     #: every fight on a map without storeys, which is nearly all of them. The
     #: level is not part of ``position`` because feet along an axis and a choice

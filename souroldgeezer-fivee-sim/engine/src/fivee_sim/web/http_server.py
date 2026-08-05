@@ -948,6 +948,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["to_level"],
             body["movement_mode"],
             body["as_bonus_action"],
+            body["facing"],
             self._idempotency_key(),
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))

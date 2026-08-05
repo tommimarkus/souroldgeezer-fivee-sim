@@ -522,3 +522,41 @@ class TestMapCapture:
         bundle = api.replay_export(mapless_fight(), format_version=1)["bundle"]
         assert bundle["map"] is None
         assert bundle["initial"]["map_open_features"] == []
+
+
+def test_a_combatants_facing_is_accepted_reported_and_carried_into_the_bundle() -> None:
+    # Three claims in one fight because they are one chain: the spec key sets
+    # must accept it (they refused it outright before facing existed), the state
+    # payload must report it, and the bundle's state slots inherit that payload
+    # wholesale — so a facing a caller authored survives an export with no
+    # separate serialisation to keep in step.
+    hero = dict(REPLAY_HERO)
+    hero["facing"] = "northeast"
+    encounter_id = str(
+        api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=121)["encounter_id"]
+    )
+
+    live = next(
+        entry for entry in api.encounter_state(encounter_id)["combatants"]
+        if entry["name"] == "Thora"
+    )
+    bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+    checkpointed = next(
+        entry for entry in bundle["latest_state"]["combatants"]
+        if entry["name"] == "Thora"
+    )
+
+    assert live["facing"] == "northeast"
+    assert checkpointed["facing"] == "northeast"
+    assert "facing" not in next(
+        entry for entry in bundle["latest_state"]["combatants"]
+        if entry["name"] == "Goblin"
+    )
+
+
+def test_a_facing_nobody_named_is_refused_rather_than_silently_dropped() -> None:
+    hero = dict(REPLAY_HERO)
+    hero["facing"] = "nrothest"
+
+    with pytest.raises(RequestError, match="facing must be one of the eight directions"):
+        api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=122)
