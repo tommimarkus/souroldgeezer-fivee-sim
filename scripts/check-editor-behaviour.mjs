@@ -901,12 +901,22 @@ const tipOf = (chevron) => [chevron.ops[1][1], chevron.ops[1][2]];
 
 /* A sight cone: the wedge along a creature's facing with its apex clipped off
  * at an inner radius — an annular sector — filled in that same facing ink. Two
- * arcs of eight lineTo segments each, joined by a radial at either end: eighteen
- * vertices written the obvious way (moveTo, eight, the radial, eight), and
- * nineteen if the closing radial is drawn rather than left to fill(). The window
- * is stated as a window because those two joins are the one thing an
- * implementation may count either way; what it names is the shape, and nothing
- * else in a frame is a many-sided filled path in this ink.
+ * arcs of eight lineTo segments each, joined by a radial at either end, and the
+ * shape admits exactly two forms: eighteen vertices written the obvious way
+ * (moveTo, eight, the radial, eight) and closed by ctx.closePath(), or nineteen
+ * with that closing radial drawn as a vertex of its own. The window is stated as
+ * a window because that one join is the thing an implementation may count either
+ * way; what it names is the shape, and nothing else in a frame is a many-sided
+ * filled path in this ink.
+ *
+ * It used to admit three, and the third was nobody's intent: eighteen vertices
+ * and no closure at all. A mutation run reached it by deleting ctx.closePath()
+ * and killed no case in the suite. The wash hides that — fill() closes the
+ * subpath for you — but the rim does not, because stroke() leaves the wedge open
+ * along the closing radial, so the shape would ship with one edge missing. Hence
+ * `isClosedPath`, and hence it is written as "closed one way or the other"
+ * rather than as "there is a closePath": the latter would forbid the
+ * nineteen-vertex form this window was widened to allow.
  *
  * The commit is what makes "exactly one cone" a fact rather than a coin flip:
  * the cone commits its path twice, once filled and once stroked along the edge
@@ -918,13 +928,34 @@ const CONE_ARC_SEGMENTS = 8;
 const CONE_MIN_VERTICES = 2 * CONE_ARC_SEGMENTS + 1;
 const CONE_MAX_VERTICES = 2 * CONE_ARC_SEGMENTS + 3;
 const isVertex = (op) => op[0] === "moveTo" || op[0] === "lineTo";
-const hasConeShape = (path) => {
+/* Compared with a tolerance rather than for equality: the two ends of the wedge
+ * are reached by different arithmetic — one straight off the start bearing, the
+ * other after eight additions of the step — and floating point does not promise
+ * they land on the same bits. */
+const CLOSURE_TOLERANCE = 0.01;
+const isClosedPath = (path) => {
+  if (!path.ops.length) { return false; }
+  if (path.ops[path.ops.length - 1][0] === "closePath") { return true; }
+  const points = path.ops.filter(isVertex);
+  if (points.length < 2) { return false; }
+  const first = points[0];
+  const last = points[points.length - 1];
+  return Math.abs(first[1] - last[1]) < CLOSURE_TOLERANCE
+    && Math.abs(first[2] - last[2]) < CLOSURE_TOLERANCE;
+};
+/* The outline without the closure claim. `hasConeShape` rejects an open wedge
+ * and an absent one alike, and this is what tells the two apart in a failure's
+ * detail — without it, deleting the closure would report "the cone is gone". */
+const hasWedgeOutline = (path) => {
   if (path.ink !== FACING_INK) { return false; }
   if (!path.ops.length || path.ops[0][0] !== "moveTo") { return false; }
   if (path.ops.some((op) => !isVertex(op) && op[0] !== "closePath")) { return false; }
   const vertices = path.ops.filter(isVertex).length;
   return vertices >= CONE_MIN_VERTICES && vertices <= CONE_MAX_VERTICES;
 };
+const hasConeShape = (path) => hasWedgeOutline(path) && isClosedPath(path);
+const openWedgesIn = (frame) => frame.paths.filter(
+  (path) => hasWedgeOutline(path) && !isClosedPath(path));
 const isCone = (path) => path.kind === "fill" && hasConeShape(path);
 const isConeEdge = (path) => path.kind === "stroke" && hasConeShape(path);
 const conesIn = (frame) => frame.paths.filter(isCone);
@@ -1069,18 +1100,54 @@ await suite("renderer.js: a token's sight cone", "the renderer sandbox", async (
    * this ink, so a retuned colour would empty all of them, and the two causes
    * are indistinguishable from the frame. */
   const north = draw({ hpFraction: 0.5, facing: "north" });
+  /* Held rather than re-read, because the cases below this one assert on the
+   * same frame and a later `draw` would replace what `page.last()` answers. */
+  const northFrame = page.last();
+  const radii = north.length === 1 ? verticesOf(north[0]).map(away) : [];
+  const nearest = radii.length ? Math.min(...radii) : NaN;
+  const farthest = radii.length ? Math.max(...radii) : NaN;
   check("a token that carries a facing is drawn with one sight cone",
     north.length === 1,
-    "no filled path of " + CONE_MIN_VERTICES + " to " + CONE_MAX_VERTICES + " vertices in "
-    + FACING_INK + ": either the facing ink changed, and FACING_INK in"
-    + " scripts/check-editor-behaviour.mjs is stale, or the cone is gone."
-    + "\n  every path in this frame: " + show(page.last().paths));
+    "no closed filled path of " + CONE_MIN_VERTICES + " to " + CONE_MAX_VERTICES
+    + " vertices in " + FACING_INK + ": either the facing ink changed, and FACING_INK"
+    + " in scripts/check-editor-behaviour.mjs is stale, or the cone is gone, or it is"
+    + " drawn and left open — which the case below tells apart from the other two."
+    + "\n  every path in this frame: " + show(northFrame.paths));
+  /* Closure, named on its own so an open wedge reads as an open wedge rather
+   * than as a missing one. Invisible in the wash, since fill() closes the
+   * subpath for you, and plain in the rim, which stroke() leaves open along the
+   * closing radial. Nothing in this suite saw it until this case existed:
+   * deleting ctx.closePath() from drawSightCone killed no case at all. */
+  check("and the wedge is a closed shape, not an outline left open at the rim",
+    north.length === 1 && openWedgesIn(northFrame).length === 0,
+    show(openWedgesIn(northFrame).map((path) => path.ops)));
   check("and every part of it lies outside the HP ring",
     north.length === 1 && verticesOf(north[0]).every((op) => away(op) > ringEdge),
     show([north.map((cone) => verticesOf(cone).map(away)), ringEdge]));
+  /* Bounded below as well, because "outside the ring" alone is met by a
+   * clearance that exists only in the arithmetic: an inner radius of
+   * `ringEdge + 0.001` passed every case in this suite while the wash lay on
+   * the hit-point ring it is meant to stay clear of. One device pixel is the
+   * smallest gap a canvas can express, so that is the floor asserted — the
+   * renderer leaves max(2, 0.06·s), which is two at this scale. The headroom
+   * between the two numbers is deliberate: what this pins is that the clearance
+   * is visible, not the formula that produces it. */
+  check("and it clears that ring by a visible margin, not by a rounding error",
+    north.length === 1 && nearest >= ringEdge + 1,
+    show([nearest, ringEdge, ringEdge + 1]));
   check("and none of it is drawn past the reach it claims",
     north.length === 1 && verticesOf(north[0]).every((op) => away(op) <= reach + 0.01),
     show([north.map((cone) => verticesOf(cone).map(away)), reach]));
+  /* And bounded below too, for the same reason the clearance is: the upper
+   * bound alone is met by any cone shorter than it claims, and a two-square
+   * reach passed every case in this suite. The outer arc is struck at the reach
+   * exactly, so this is an equality and not a range, and the six squares it
+   * pins are the distance drawSightCone's own comment argues for. Retuning that
+   * distance turns this red on purpose — recalibrate deliberately, the way the
+   * fight constants in scripts/check-api-smoke.py are. */
+  check("and it is drawn out to that reach rather than a stub of it",
+    north.length === 1 && Math.abs(farthest - reach) <= 0.01,
+    show([farthest, reach]));
 
   /* The negative that makes the case above mean anything: a cone drawn for
    * every token would satisfy it while saying nothing about the key. */
