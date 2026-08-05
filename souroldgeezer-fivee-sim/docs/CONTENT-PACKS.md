@@ -147,6 +147,35 @@ yet lets one creature take a Reaction attack with a Loading weapon
 mid-someone-else's-turn; the day it does, per-turn stops being equivalent to
 per-activation and the enforcement will need to move with it.
 
+`thrown: true` is how you write a stat block's **"Melee or Ranged Attack Roll:
++6, reach 5 ft. or range 30/120 ft."** line — the Ogre's Javelin, and the same
+shape on twenty other SRD stat blocks. It is the SRD Thrown weapon property: a
+melee weapon that also enables a ranged attack. Give the attack `"kind":
+"ranged"` with the range it is thrown to, and `reach` for the distance it is
+still held at:
+
+```json
+{
+  "name": "Javelin", "attack_bonus": 6, "damage": "2d6+4",
+  "damage_type": "piercing", "kind": "ranged", "reach": 5,
+  "normal_range": 30, "long_range": 120, "thrown": true,
+  "ammunition": "Javelin"
+}
+```
+
+Inside `reach` the swing resolves as a **melee** attack: no close-combat
+Disadvantage for an adjacent enemy, no long-range band, the melee underwater
+rule rather than the ranged one, and it is the attack an Opportunity Attack
+swings — so a creature carrying nothing but javelins threatens the square
+beside it. Beyond `reach` it is a shot and every ranged rule applies as before.
+
+`ammunition` combines with it the way the weapon does: **a throw spends one, a
+stab spends none** — the javelin only leaves your hand when you throw it — but
+the count is still the javelins you are holding, so a thrower who has thrown
+them all is refused the stab too. Only a `"ranged"` attack may set `thrown`,
+and it needs a `normal_range` or `long_range`, because a thrown weapon with
+nowhere to be thrown is refused at every square but the attacker's own.
+
 `bonus_actions` currently accepts `dash` and `disengage`; callers pass
 `as_bonus_action: true` when using that budget. `surrender_when_last` lets the
 batch policy yield when no capable ally remains. `redirect_attack` spends the

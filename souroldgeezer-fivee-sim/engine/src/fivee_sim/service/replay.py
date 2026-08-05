@@ -284,6 +284,8 @@ def _attack_payload(option: AttackOption) -> dict[str, Any]:
         payload["ammunition"] = option.ammunition
     if option.loading:
         payload["loading"] = True
+    if option.thrown:
+        payload["thrown"] = True
     return payload
 
 

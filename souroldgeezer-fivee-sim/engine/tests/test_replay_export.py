@@ -723,6 +723,7 @@ def test_a_fully_populated_attack_option_round_trips_through_the_journal() -> No
         provenance="Original content",
         ammunition="Arrow",
         loading=True,
+        thrown=True,
     )
     bare = AttackOption(
         name="x", attack_bonus=0, damage=Dice.parse("1d4"), damage_type=DamageType.SLASHING,

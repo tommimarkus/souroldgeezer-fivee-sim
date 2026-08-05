@@ -92,6 +92,44 @@ class AttackOption:
     ``RANGED``. ``loading`` marks the SRD Loading property, the same
     restriction for the same reason: a melee weapon has no magazine and no
     fired-and-reloaded rhythm to gate.
+
+    ``thrown`` is the third rider on ``RANGED``, and it is what SRD 5.2.1's
+    *"**Melee or Ranged** Attack Roll: +6, reach 5 ft. or range 30/120 ft."*
+    line becomes here — the Ogre's Javelin, and the same shape on twenty other
+    stat blocks. It is the Thrown weapon property (catalog
+    ``583-9-4-8-thrown``) written out: the Javelin is listed under *Simple
+    Melee Weapons* with ``Thrown (Range 30/120)``, so it is a melee weapon that
+    *enables* a ranged attack. Within :attr:`reach` the weapon is still in
+    hand and the swing resolves as melee; past it, the weapon is in the air
+    and the swing is a shot. :meth:`resolves_as_melee` is the one place that
+    boundary is decided and every rule that cares reads it there.
+
+    **Why a rider and not a third** :class:`AttackKind` **member.** Three
+    reasons, in the order that decided it.
+
+    First, :class:`AttackKind` is not ours alone: :attr:`Spell.attack_kind` is
+    typed with it and ``content.py`` parses it for spell records. SRD 5.2.1
+    prints no "melee or ranged spell attack", so a ``MELEE_OR_RANGED`` member
+    would be a word in a closed, pack-facing vocabulary that is legal in one
+    consumer and has to be hand-refused in the other — the enum would say a
+    value is fine and a second, separate check would say it is not.
+
+    Second, every existing ``is AttackKind.MELEE`` / ``is AttackKind.RANGED``
+    test is written as a two-valued question, in this module, in
+    ``model/encounter.py`` and in ``analytics/montecarlo.py``. A third member
+    does not fail any of them; it falls silently into whichever branch was
+    written as the ``else``, and mypy does not flag a non-exhaustive ``is``
+    chain. The enum change would have type-checked, run, and been wrong.
+
+    Third, the rider's cost — a second field to keep consistent with ``kind`` —
+    is a cost this class already pays twice, for ``ammunition`` and
+    ``loading``, with the mechanism already in :meth:`__post_init__`. One more
+    clause there is not a new pattern.
+
+    ``kind`` therefore stays ``RANGED``, which is also the safe default if a
+    consumer of this field is ever missed: the option degrades to the plain
+    ranged weapon it was before, rather than to a melee weapon that has lost
+    the ability to be thrown at all.
     """
 
     name: str
@@ -122,6 +160,7 @@ class AttackOption:
     detach_after_damage: int = 0
     ammunition: str | None = None
     loading: bool = False
+    thrown: bool = False
     provenance: str = "SRD 5.2.1"
 
     def __post_init__(self) -> None:
@@ -160,6 +199,20 @@ class AttackOption:
             raise ValueError(
                 f"{self.name}: loading needs kind RANGED — a melee attack has "
                 "no reload rhythm to gate"
+            )
+        if self.thrown and self.kind is not AttackKind.RANGED:
+            raise ValueError(
+                f"{self.name}: thrown needs kind RANGED — it says what happens "
+                "inside reach, and a melee attack is already there"
+            )
+        if self.thrown and not (self.normal_range or self.long_range):
+            # A thrown weapon that cannot be thrown is not merely redundant, it
+            # is broken: ``max_distance`` answers 0 for a ranged option with no
+            # range, so the attack is refused at every square but the
+            # attacker's own — the ``range``/``normal_range`` pregen defect.
+            raise ValueError(
+                f"{self.name}: thrown needs a normal_range or long_range — "
+                "there is nowhere to throw it"
             )
         if self.ammunition is not None and not self.ammunition.strip():
             raise ValueError(f"{self.name}: ammunition must not be blank")
@@ -214,16 +267,43 @@ class AttackOption:
                 if record.get("ammunition") is not None else None
             ),
             loading=bool(record.get("loading", False)),
+            thrown=bool(record.get("thrown", False)),
             provenance=str(record.get("provenance", "SRD 5.2.1")),
         )
 
+    def resolves_as_melee(self, distance: int) -> bool:
+        """Whether a swing at ``distance`` is a melee attack rather than a shot.
+
+        The one place the "Melee or Ranged" boundary is decided. Every rule
+        that treats the two differently — the close-combat penalty, the
+        underwater penalties, the long-range band, whether ammunition is spent
+        — asks this rather than reading :attr:`kind`, so they cannot drift into
+        disagreeing about the same swing.
+        """
+        if self.kind is AttackKind.MELEE:
+            return True
+        return self.thrown and distance <= self.reach
+
+    def melee_capable(self) -> bool:
+        """Whether this option can *ever* resolve as a melee attack.
+
+        Derived from :meth:`resolves_as_melee` rather than restating it: the
+        closest a swing can come is the option's own reach, so if it is not
+        melee there it is melee nowhere. This is the question an Opportunity
+        Attack asks, which is why a javelin-carrying creature threatens the
+        square beside it.
+        """
+        return self.resolves_as_melee(self.reach)
+
     def max_distance(self) -> int:
+        # A thrown option's furthest is its throw, not its reach: it is
+        # ``RANGED`` and answers here exactly as any other ranged option does.
         if self.kind is AttackKind.MELEE:
             return self.reach
         return self.long_range or self.normal_range
 
     def has_long_range_penalty(self, distance: int) -> bool:
-        if self.kind is AttackKind.MELEE:
+        if self.resolves_as_melee(distance):
             return False
         return self.normal_range > 0 and distance > self.normal_range
 

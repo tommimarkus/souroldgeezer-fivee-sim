@@ -38,7 +38,7 @@
             "save_bonuses": {"strength": 4, "constitution": 3},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
             ]
           }
         },
@@ -163,7 +163,7 @@
             "save_bonuses": {"strength": 5, "constitution": 4},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
             ]
           }
         },
@@ -294,7 +294,7 @@
             "save_bonuses": {"strength": 7, "constitution": 6},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 7, "damage": "1d8+4", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
+              {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "reach": 5, "normal_range": 30, "long_range": 120, "thrown": true, "ammunition": "Javelin"}
             ]
           }
         },

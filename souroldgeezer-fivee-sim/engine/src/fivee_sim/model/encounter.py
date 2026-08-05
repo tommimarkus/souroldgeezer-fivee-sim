@@ -2345,14 +2345,33 @@ class Encounter:
                 "already fired one this turn"
             )
 
-    def _fire(self, actor: Creature, option: AttackOption) -> int | None:
+    def _fire(self, actor: Creature, option: AttackOption, distance: int) -> int | None:
         """Spend one piece of what this attack fires; the count left, or ``None``.
 
         Called only where a swing is actually charged for, which is why it is not
         folded into :meth:`_require_loaded`: a refused, out-of-reach or
         totally-covered attack costs the turn nothing and must cost the quiver
         nothing either.
+
+        **A thrown weapon used in melee spends nothing**, and that is a ruling
+        rather than an optimisation. SRD 5.2.1's Thrown property (catalog
+        ``583-9-4-8-thrown``) is what *"enables a ranged attack by throwing the
+        weapon"*: a javelin thrown leaves the hand and lies where it landed, a
+        javelin used to stab does not. So a melee-resolved swing returns before
+        the count is touched and the event carries no ``ammunition_remaining``.
+
+        :meth:`_require_loaded` is deliberately *not* given the same exemption.
+        The count is the javelins held, not a magazine beside them, so a
+        thrower who has thrown all three has nothing left in hand to stab with
+        and is refused. Possession is required either way; only spending is
+        conditional.
+
+        ``loading`` returns early with it, for the same reason and with no
+        SRD case behind it: no printed weapon is both Loading and Thrown, but a
+        stab is not a shot and must not consume the turn's one shot.
         """
+        if option.resolves_as_melee(distance):
+            return None
         if option.loading:
             self._turn.loading_used = True
         if option.ammunition is None:
@@ -2406,7 +2425,7 @@ class Encounter:
         underwater = self._is_underwater(actor)
         if (
             underwater
-            and option.kind is AttackKind.RANGED
+            and not option.resolves_as_melee(distance)
             and option.normal_range > 0
             and distance > option.normal_range
         ):
@@ -2417,7 +2436,7 @@ class Encounter:
             # the one place a shot is charged for outside the ordinary path
             # below, so it has to charge for the ammunition too.
             spent: dict[str, Any] = {}
-            fired = self._fire(actor, option)
+            fired = self._fire(actor, option, distance)
             if fired is not None:
                 spent["ammunition_remaining"] = fired
             self._emit(
@@ -2455,7 +2474,7 @@ class Encounter:
             self._turn.action_used = True
         # Beside the swing it is spent with, and before the roll: a hit and a
         # miss cost the same arrow.
-        fired = self._fire(actor, option)
+        fired = self._fire(actor, option, distance)
 
         cover_bonus = cover_ac_bonus(grade)
         resolution = resolve_attack(
@@ -2614,21 +2633,25 @@ class Encounter:
             extra_disadvantage=(
                 int(self._dodge_benefits(target))
                 + int(
-                    option.kind is AttackKind.RANGED
+                    not option.resolves_as_melee(distance)
                     and self._ranged_close_combat_penalty(actor)
                 )
-                + int(self._underwater_attack_penalty(actor, option))
+                + int(self._underwater_attack_penalty(actor, option, distance))
                 + int(not self._can_see(actor, target))
             ),
             condition_effects=self.condition_effects,
         )
 
     def _underwater_attack_penalty(
-        self, actor: Creature, option: AttackOption
+        self, actor: Creature, option: AttackOption, distance: int
     ) -> bool:
+        # Both branches key off how the swing *resolves*, not off ``kind``: a
+        # javelin at arm's length is a melee attack made underwater and takes
+        # the melee rule (none, here — it is Piercing), while the same javelin
+        # thrown is a ranged one and always takes the penalty.
         if not self._is_underwater(actor):
             return False
-        if option.kind is AttackKind.RANGED:
+        if not option.resolves_as_melee(distance):
             return True
         return actor.swim_speed <= 0 and option.damage_type is not DamageType.PIERCING
 
@@ -3989,9 +4012,15 @@ class Encounter:
         a creature with no melee option at all threatens nothing, but the
         ordinary 5-ft default is returned rather than 0 so a caller that only
         wants to know "how close is close" gets a sane answer either way.
+
+        "Melee option" is :meth:`AttackOption.melee_capable`, not
+        ``kind is MELEE``, so a thrown weapon counts: the SRD grants the
+        Opportunity Attack for "one melee attack with a weapon", and inside its
+        reach a javelin makes exactly that. A creature carrying nothing but
+        javelins threatens the square beside it rather than nothing at all.
         """
         melee = next(
-            (option for option in attacker.attacks if option.kind is AttackKind.MELEE),
+            (option for option in attacker.attacks if option.melee_capable()),
             None,
         )
         return melee.reach if melee is not None else MELEE_THRESHOLD
@@ -3999,8 +4028,11 @@ class Encounter:
     def _opportunity_attack(self, attacker: Creature, mover: Creature, rng: Random) -> None:
         if not self._reaction_available.get(attacker.name, False) or not attacker.active:
             return
+        # The same predicate :meth:`_opportunity_attack_reach` picks with, and
+        # it has to stay the same one: a radius derived from a different option
+        # than the swing is the disagreement T4 removed.
         melee = next(
-            (option for option in attacker.attacks if option.kind is AttackKind.MELEE),
+            (option for option in attacker.attacks if option.melee_capable()),
             None,
         )
         if melee is None:

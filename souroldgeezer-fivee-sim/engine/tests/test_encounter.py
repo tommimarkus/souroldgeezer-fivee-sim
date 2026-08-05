@@ -622,6 +622,233 @@ class TestAmmunition:
         assert encounter.creatures["Sylvi"].items == {"Arrow": 3}
 
 
+class TestThrownWeapons:
+    """SRD 5.2.1 prints one attack that resolves two ways.
+
+    The Ogre's Javelin is *"**Melee or Ranged** Attack Roll: +6, reach 5 ft. or
+    range 30/120 ft."*, and twenty stat blocks carry that shape. It is the
+    Thrown property (catalog ``583-9-4-8-thrown``) written out: the Javelin sits
+    under **Simple Melee Weapons** with ``Thrown (Range 30/120)``, so it is a
+    melee weapon that *enables* a ranged attack rather than a bow that happens
+    to reach.
+
+    The engine's ``kind`` stays ``ranged`` — the mode beyond reach — and
+    ``thrown`` says the same weapon is still in hand inside it. Every case here
+    is about which of the two a given distance picks.
+    """
+
+    def javelin(
+        self,
+        *,
+        thrown: bool = True,
+        reach: int = 5,
+        ammunition: str | None = "Javelin",
+    ) -> AttackOption:
+        return AttackOption(
+            name="Javelin",
+            attack_bonus=6,
+            damage=Dice(2, 6, 4),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            reach=reach,
+            normal_range=30,
+            long_range=120,
+            ammunition=ammunition,
+            thrown=thrown,
+            provenance=FIXTURE,
+        )
+
+    def skirmisher(
+        self, *, position: int | tuple[int, int] = 5, javelins: int = 3, **option: Any
+    ) -> Creature:
+        """A thrower whose *only* attack is the javelin.
+
+        Deliberately not the Ogre: the Ogre also carries a Greatclub, so it
+        would satisfy every "can this creature fight in melee" question through
+        the wrong option and prove nothing about the thrown one.
+        """
+        thrower = fighter("Skirmisher", team="monsters", position=position)
+        thrower.attacks = (self.javelin(**option),)
+        thrower.items = {"Javelin": javelins}
+        return thrower
+
+    def test_the_bundled_ogre_stabs_rather_than_throws_at_five_feet(self) -> None:
+        # The reproduction, against the shipped record rather than a fixture.
+        # Before the change the Ogre threw a javelin at a target it was standing
+        # on top of and ate ``_ranged_close_combat_penalty`` for it:
+        #   Javelin: d20 [13/2] disadvantage -> 2 +6 = 8 vs AC 10 -> miss
+        # RAW it simply makes the attack as a melee one and takes no penalty.
+        rng = Random(6)
+        ogre = make_monster("Ogre", label="Ogre", position=5)
+        encounter = Encounter([fighter(position=0), ogre], rng)
+        advance_to(encounter, "Ogre", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora", attack="Javelin"),
+            FixedRandom(13),
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["advantage"] == "none"
+
+    def test_a_thrown_weapon_past_its_reach_is_still_a_ranged_attack(self) -> None:
+        # The other side of the boundary, and the reason ``kind`` stays
+        # ``ranged``: at 30 ft the throw is a shot, and a shot made with an
+        # enemy breathing down the thrower's neck has Disadvantage. Bram stands
+        # beside the Ogre, not beside the target.
+        rng = Random(6)
+        ogre = make_monster("Ogre", label="Ogre", position=30)
+        bram = fighter("Bram", position=35)
+        encounter = Encounter([fighter(position=0), bram, ogre], rng)
+        advance_to(encounter, "Ogre", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora", attack="Javelin"),
+            FixedRandom(13),
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["advantage"] == "disadvantage"
+
+    def test_a_thrown_weapon_beyond_its_normal_range_takes_the_long_range_penalty(
+        self,
+    ) -> None:
+        # Nobody is adjacent to anyone here, so the only Disadvantage available
+        # is the long-range band — which pins that ``has_long_range_penalty``
+        # still reads for a thrown option beyond its reach.
+        rng = Random(6)
+        ogre = make_monster("Ogre", label="Ogre", position=60)
+        encounter = Encounter([fighter(position=0), ogre], rng)
+        advance_to(encounter, "Ogre", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora", attack="Javelin"),
+            FixedRandom(13),
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["advantage"] == "disadvantage"
+
+    def test_a_thrown_weapon_still_reaches_its_full_range(self) -> None:
+        # ``max_distance()`` must keep answering with the throw and not the
+        # reach: a thrown option that reported 5 ft would be refused at every
+        # range it is printed with.
+        assert self.javelin().max_distance() == 120
+
+    def test_stabbing_with_a_thrown_weapon_spends_nothing(self) -> None:
+        # The ruling: a javelin thrown leaves the hand, a javelin used to stab
+        # does not. So a melee-resolved use spends no ammunition and reports no
+        # count — the same shape as an attack that names no ammunition at all.
+        rng = Random(6)
+        encounter = Encounter([fighter(position=0), self.skirmisher()], rng)
+        advance_to(encounter, "Skirmisher", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora"), FixedRandom(20)
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert "ammunition_remaining" not in swing.data
+        assert encounter.creatures["Skirmisher"].items == {"Javelin": 3}
+
+    def test_throwing_the_same_weapon_does_spend_one(self) -> None:
+        # The control for the case above: the count is untouched by a stab
+        # because the stab is a stab, not because the spend was deleted.
+        rng = Random(6)
+        encounter = Encounter(
+            [fighter(position=0), self.skirmisher(position=30)], rng
+        )
+        advance_to(encounter, "Skirmisher", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora"), FixedRandom(20)
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["ammunition_remaining"] == 2
+        assert encounter.creatures["Skirmisher"].items == {"Javelin": 2}
+
+    def test_a_thrower_with_nothing_left_cannot_stab_either(self) -> None:
+        # The other half of the ruling, and the reason ``_require_loaded`` is
+        # left alone: the count is the javelins held, not a magazine beside
+        # them. Having thrown all three there is nothing in hand to stab with,
+        # so possession is still required even where nothing is spent.
+        rng = Random(6)
+        encounter = Encounter(
+            [fighter(position=0), self.skirmisher(javelins=0)], rng
+        )
+        advance_to(encounter, "Skirmisher", rng)
+        before = encounter.state()
+
+        with pytest.raises(EncounterError, match="no Javelin left to fire Javelin"):
+            encounter.act(Action(kind=ActionKind.ATTACK, target="Thora"), rng)
+
+        assert encounter.state() == before
+
+    def test_a_thrown_weapon_is_the_opportunity_attack_a_thrower_makes(self) -> None:
+        # The T4 seam. ``_opportunity_attack`` swings the first option that can
+        # resolve in melee and the threat radius is derived from that same
+        # option, so a creature carrying nothing but a javelin threatens the
+        # square beside it rather than nothing at all.
+        rng = Random(6)
+        encounter = Encounter([fighter(position=0), self.skirmisher()], rng)
+        advance_to(encounter, "Thora", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+
+        provoked = [e for e in events if e.kind == "opportunity_attack"]
+        assert [e.data["attack"] for e in provoked] == ["Javelin"]
+
+    def test_the_threat_radius_comes_from_the_thrown_option_it_swings(self) -> None:
+        # Same seam, pinned where the two could disagree: a reach-10 thrown
+        # option must provoke on the step out of 10 ft, not out of 5. No SRD
+        # weapon is both Reach and Thrown — this is a fixture built to make the
+        # derivation visible, because at reach 5 the shared default hides it.
+        rng = Random(6)
+        thrower = self.skirmisher(position=(15, 8), reach=10)
+        encounter = Encounter([fighter(position=0), thrower], rng)
+        advance_to(encounter, "Thora", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+
+        assert "opportunity_attack" in kinds(events)
+
+    def test_a_plain_ranged_weapon_threatens_nobody(self) -> None:
+        # The regression pin under the two above: making thrown options
+        # melee-capable must not hand an opportunity attack to every archer.
+        rng = Random(6)
+        archer = self.skirmisher(thrown=False)
+        encounter = Encounter([fighter(position=0), archer], rng)
+        advance_to(encounter, "Thora", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+
+        assert "opportunity_attack" not in kinds(events)
+
+    def test_a_plain_ranged_weapon_in_close_combat_is_unchanged(self) -> None:
+        # And the same pin on the attack roll: the close-combat Disadvantage a
+        # bow eats at 5 ft is exactly the behaviour the thrown branch must not
+        # generalise away.
+        rng = Random(6)
+        archer = self.skirmisher(thrown=False)
+        encounter = Encounter([fighter(position=0), archer], rng)
+        advance_to(encounter, "Skirmisher", rng)
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Thora"), FixedRandom(13)
+        )
+
+        swing = next(event for event in events if event.kind == "attack")
+        assert swing.data["advantage"] == "disadvantage"
+        assert swing.data["ammunition_remaining"] == 2
+
+
 class TestGoingDown:
     def test_reaching_zero_knocks_a_creature_out_rather_than_killing_it(self) -> None:
         rng = Random(3)

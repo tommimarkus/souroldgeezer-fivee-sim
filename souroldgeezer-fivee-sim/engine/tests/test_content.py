@@ -790,6 +790,14 @@ class TestAttackRiderValidation:
         })
         assert any("must not be blank" in p for p in found), found
 
+    def test_thrown_on_a_melee_attack_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"thrown": True})
+        assert any("needs kind ranged" in p for p in found), found
+
+    def test_a_thrown_attack_with_no_range_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"kind": "ranged", "thrown": True})
+        assert any("needs a normal_range or long_range" in p for p in found), found
+
     def test_a_full_rider_attack_round_trips_through_make_creature(
         self, tmp_path: Path
     ) -> None:
@@ -843,6 +851,30 @@ class TestAttackRiderValidation:
         option = archer.attacks[0]
         assert option.ammunition == "Arrow"
         assert option.loading is True
+
+    def test_thrown_reaches_the_attack_option_through_from_record(
+        self, tmp_path: Path
+    ) -> None:
+        # The pack-authoring surface for the SRD's "Melee or Ranged Attack
+        # Roll" line, checked end to end: the key has to survive validation
+        # *and* the record reader, because a key that validates and is then
+        # dropped is the exact shape of the ``range`` defect.
+        path = write_pack(tmp_path, "thrown.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Skirmisher", "ac": 10, "max_hp": 10, "provenance": "test",
+                "attacks": [{
+                    "name": "Javelin", "attack_bonus": 4, "damage": "1d6",
+                    "damage_type": "piercing", "kind": "ranged", "reach": 5,
+                    "normal_range": 30, "long_range": 120, "thrown": True,
+                }],
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        option = make_creature("Skirmisher", registry=registry).attacks[0]
+        assert option.thrown is True
+        assert option.resolves_as_melee(5) is True
+        assert option.resolves_as_melee(10) is False
 
 
 class TestSpellAttackKindSchema:

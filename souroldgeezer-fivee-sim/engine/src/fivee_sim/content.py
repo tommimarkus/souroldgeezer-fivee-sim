@@ -161,7 +161,7 @@ _ATTACK_KEYS = frozenset({
     "advantage_bonus_with_adjacent_ally",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
     "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
-    "detach_after_damage", "ammunition", "loading", "provenance",
+    "detach_after_damage", "ammunition", "loading", "thrown", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
@@ -928,6 +928,7 @@ def _parse_creature(
                 )
         sub.string("ammunition")
         sub.boolean("loading")
+        sub.boolean("thrown")
         attack_kind = attack.get("kind", "melee")
         if attack.get("ammunition") is not None and attack_kind != "ranged":
             sub.fail(
@@ -938,6 +939,24 @@ def _parse_creature(
             sub.fail(
                 "loading",
                 "needs kind ranged — a melee attack has no reload rhythm to gate",
+            )
+        # The two ``AttackOption.__post_init__`` guards on ``thrown``, reported
+        # here first as a diagnostic the pack author can act on. Both are the
+        # SRD's "Melee or Ranged Attack Roll" line: ``thrown`` says what the
+        # swing does inside ``reach``, so it needs a ranged option to qualify
+        # and somewhere to be thrown to.
+        if attack.get("thrown") and attack_kind != "ranged":
+            sub.fail(
+                "thrown",
+                "needs kind ranged — it says what happens inside reach, and a "
+                "melee attack is already there",
+            )
+        if attack.get("thrown") and not (
+            attack.get("normal_range") or attack.get("long_range")
+        ):
+            sub.fail(
+                "thrown",
+                "needs a normal_range or long_range — there is nowhere to throw it",
             )
         ammunition = attack.get("ammunition")
         if isinstance(ammunition, str) and not ammunition.strip():

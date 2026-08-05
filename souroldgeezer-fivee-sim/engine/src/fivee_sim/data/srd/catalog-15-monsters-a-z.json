@@ -256,8 +256,10 @@
           "damage": "2d6+4",
           "damage_type": "piercing",
           "kind": "ranged",
+          "reach": 5,
           "normal_range": 30,
           "long_range": 120,
+          "thrown": true,
           "ammunition": "Javelin"
         }
       ],

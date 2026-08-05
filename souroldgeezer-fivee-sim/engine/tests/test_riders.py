@@ -594,3 +594,33 @@ class TestAttackOptionGuards:
                 long_range=600,
                 ammunition="   ",
             )
+
+    def test_thrown_on_a_melee_attack_is_refused(self) -> None:
+        # ``thrown`` is the third rider that rides on ``kind`` being ranged, and
+        # it is guarded here for the same reason the other two are: the field
+        # only says what happens *inside* reach, and an option already resolving
+        # in melee everywhere has nothing left for it to say.
+        with pytest.raises(ValueError, match="thrown"):
+            AttackOption(
+                name="Handaxe",
+                attack_bonus=4,
+                damage=Dice(1, 6, 0),
+                damage_type=DamageType.SLASHING,
+                thrown=True,
+            )
+
+    def test_a_thrown_attack_with_no_range_is_refused(self) -> None:
+        # A thrown weapon that cannot be thrown is a melee weapon written the
+        # long way round, and it would be *worse* than one: ``max_distance()``
+        # returns 0 for a ranged option with no range, so every attack past the
+        # attacker's own square is refused. That is the ``range``-vs-
+        # ``normal_range`` pregen defect, and this refuses it at construction.
+        with pytest.raises(ValueError, match="thrown"):
+            AttackOption(
+                name="Handaxe",
+                attack_bonus=4,
+                damage=Dice(1, 6, 0),
+                damage_type=DamageType.SLASHING,
+                kind=AttackKind.RANGED,
+                thrown=True,
+            )
