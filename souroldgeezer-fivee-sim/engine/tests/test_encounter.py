@@ -44,6 +44,7 @@ from fivee_sim.model.battlemap import (
 )
 from fivee_sim.model.creature import AttackOption, Creature
 from fivee_sim.model.encounter import (
+    MAX_LISTED_COMBATANTS,
     Action,
     ActionKind,
     Encounter,
@@ -353,6 +354,41 @@ class TestAttacking:
             encounter.act(
                 Action(kind=ActionKind.ATTACK, target="Wolf", attack="Halberd"), rng
             )
+
+    def test_unknown_target_name_is_reported_with_the_combatants(self) -> None:
+        # The sibling above names the attacks the actor has, and the map's
+        # unknown-feature refusal names the features it has. This one used to
+        # stop at "no combatant named 'Bob'", so a caller who mistyped a label —
+        # or guessed at one a lookup spec assigned for them — had nothing to
+        # correct it against and no way to tell a typo from an absent creature.
+        rng = Random(1)
+        encounter = Encounter([fighter(), make_monster("Wolf", position=5)], rng)
+        advance_to(encounter, "Thora", rng)
+        with pytest.raises(
+            EncounterError, match="no combatant named 'Bob'; the fight has: Thora, Wolf"
+        ):
+            encounter.act(Action(kind=ActionKind.ATTACK, target="Bob"), rng)
+
+    def test_a_crowded_fight_names_a_bounded_slice_and_counts_the_rest(self) -> None:
+        # A mass battle's whole roster would bury the name that was actually
+        # wrong, so the list stops at the bound and says how many it left out.
+        # Both halves are derived from the bound rather than written out: a test
+        # that spelled 12 would pin the message against nothing but itself.
+        hero = fighter()
+        crowd = [
+            fighter(f"Extra{index:02d}", team="foes", position=5)
+            for index in range(MAX_LISTED_COMBATANTS + 8)
+        ]
+        encounter = Encounter([hero, *crowd], Random(1))
+        names = sorted(creature.name for creature in [hero, *crowd])
+
+        with pytest.raises(EncounterError, match="no combatant named 'Bob'") as raised:
+            encounter.act(Action(kind=ActionKind.ATTACK, target="Bob"), Random(1))
+
+        message = str(raised.value)
+        assert all(name in message for name in names[:MAX_LISTED_COMBATANTS])
+        assert names[MAX_LISTED_COMBATANTS] not in message
+        assert f"and {len(names) - MAX_LISTED_COMBATANTS} more" in message
 
 
 class TestGoingDown:

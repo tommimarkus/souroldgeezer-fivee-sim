@@ -95,6 +95,11 @@ DEATH_SAVES_TO_STABILISE = 3
 DEATH_SAVES_TO_DIE = 3
 #: Undead Fortitude's save is DC this plus the damage that caused the drop.
 UNDEAD_FORTITUDE_BASE_DC = 5
+#: How many combatant names an unknown-target refusal spells out before it
+#: summarises the remainder. Nothing bounds the size of a fight, and a mass
+#: battle's whole roster in one error line would bury the name that was actually
+#: wrong; a dozen is enough to spot a misspelling against.
+MAX_LISTED_COMBATANTS = 12
 
 
 class ActionKind(StrEnum):
@@ -1574,7 +1579,17 @@ class Encounter:
             raise EncounterError("this action needs a target")
         target = self.creatures.get(name)
         if target is None:
-            raise EncounterError(f"no combatant named {name!r}")
+            # Named, not merely refused. Every sibling lookup in this file answers
+            # with what it *does* have — the actor's attacks, the actor's items,
+            # the map's features — because the caller's next move is to pick one
+            # of them. A bare "no combatant named 'Bob'" left a caller unable to
+            # tell a misspelling from an absent creature, and unable to guess the
+            # label a ``{"creature": ...}`` spec assigned on their behalf.
+            names = sorted(self.creatures)
+            listed = ", ".join(names[:MAX_LISTED_COMBATANTS])
+            if len(names) > MAX_LISTED_COMBATANTS:
+                listed += f", ... and {len(names) - MAX_LISTED_COMBATANTS} more"
+            raise EncounterError(f"no combatant named {name!r}; the fight has: {listed}")
         return target
 
     @staticmethod
