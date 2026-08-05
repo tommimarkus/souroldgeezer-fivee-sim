@@ -3039,6 +3039,12 @@ class Encounter:
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
+                   # Which budget this cost, the same way ``use_item`` reports it: a
+                   # Healing Word and a Cure Wounds are different kinds of turn, and
+                   # a log that renders them identically loses that. Already in
+                   # :data:`EVENT_VISIBLE_KEYS` — an action economy is spent in the
+                   # open at a real table.
+                   action_cost=spell.action_cost.value,
                    center=as_point(action.center) if action.center is not None else None,
                    targets=[c.name for c in chosen])
 

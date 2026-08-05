@@ -5082,6 +5082,30 @@ class TestHealingInAFight:
         assert not fight.state()["turn_state"]["action_used"]
         assert fight.state()["turn_state"]["bonus_action_used"]
 
+    def test_the_cast_event_says_which_budget_it_spent(self) -> None:
+        # `use_item` has carried `action_cost` since items learned to cost a bonus
+        # action; `cast` did not, so a log could show a Healing Word and a Cure
+        # Wounds as the same kind of turn. The key is already in
+        # `EVENT_VISIBLE_KEYS` — the budget is spent in the open at a real table.
+        ilma = self._cleric()
+        ilma.spells = ("Healing Word Test",)
+        thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
+        fight = Encounter(
+            [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+            Random(3),
+            spellbook=self._bonus_action_spellbook(),
+        )
+        advance_to(fight, "Ilma", Random(3))
+
+        events = fight.act(
+            Action(kind=ActionKind.CAST, spell="Healing Word Test", slot_level=1,
+                   target="Thora", as_bonus_action=True),
+            Random(3),
+        )
+
+        cast = next(e for e in events if e.kind == "cast")
+        assert cast.data["action_cost"] == ActionCost.BONUS_ACTION.value
+
     def test_a_bonus_action_spell_refuses_a_second_bonus_action_this_turn(self) -> None:
         ilma = self._cleric()
         ilma.spells = ("Healing Word Test",)
