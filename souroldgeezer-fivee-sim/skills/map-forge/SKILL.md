@@ -185,13 +185,16 @@ will otherwise assume:
 - **It is always a file, never inline.** One realistic v2 bundle already exceeds
   the ceiling a single export inlines under, and an envelope holds several. Quote
   the path.
-- **The viewer will not play it and `replay.list` will not list it.** Both filter
-  on the single-encounter replay format, so a composed run comes back with no
-  `viewer_url` and stays absent from the listing even though it lands in the
-  replays root beside ordinary exports. Hand over the path itself. `fivee
-  replay.validate` does understand it, and the composer validates before
-  publishing a byte, so a chapter corrupted on disk is refused rather than shipped
-  inside the run.
+- **`replay.list` will not list it, and no `viewer_url` comes back.** Both filter
+  on the single-encounter replay format, so a composed run stays absent from the
+  listing and out of the served chooser even though it lands in the replays root
+  beside ordinary exports. So hand over **the path**, not a link — that is the one
+  way a reader reaches it. The viewer page itself does play it: open or drop the
+  file and a **Chapter** picker appears in the header, one entry per fight, and
+  choosing one plays that fight. That works with no server at all, which is just
+  as well, since the chooser will never offer it. `fivee replay.validate`
+  understands it too, and the composer validates before publishing a byte, so a
+  chapter corrupted on disk is refused rather than shipped inside the run.
 
 Validating one back means sending it as `bundle`, and a run's bundle is far too
 large to fit on a command line — pipe it in rather than substituting it:
