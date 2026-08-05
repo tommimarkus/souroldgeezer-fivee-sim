@@ -34,7 +34,17 @@
           "on_hit_max_size": "medium"
         }
       ],
-      "provenance": "SRD 5.2.1"
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_creature_skills",
+          "feature": "Perception +5, Stealth +4"
+        },
+        {
+          "code": "unsupported_passive_perception",
+          "feature": "Passive Perception 15"
+        }
+      ]
     }
   ],
   "catalog": [

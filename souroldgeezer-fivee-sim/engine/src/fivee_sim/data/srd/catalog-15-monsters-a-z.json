@@ -50,6 +50,14 @@
         {
           "code": "unsupported_bonus_action",
           "feature": "Nimble Escape: Hide"
+        },
+        {
+          "code": "unsupported_creature_skills",
+          "feature": "Stealth +6"
+        },
+        {
+          "code": "unsupported_passive_perception",
+          "feature": "Passive Perception 9"
         }
       ]
     },
@@ -101,6 +109,14 @@
         {
           "code": "unsupported_bonus_action",
           "feature": "Nimble Escape: Hide"
+        },
+        {
+          "code": "unsupported_creature_skills",
+          "feature": "Stealth +6"
+        },
+        {
+          "code": "unsupported_passive_perception",
+          "feature": "Passive Perception 9"
         }
       ]
     },
@@ -201,6 +217,10 @@
         {
           "code": "unsupported_condition_immunity",
           "feature": "Poisoned"
+        },
+        {
+          "code": "unsupported_passive_perception",
+          "feature": "Passive Perception 8"
         }
       ]
     },
@@ -237,14 +257,18 @@
           "damage_type": "piercing",
           "kind": "ranged",
           "normal_range": 30,
-          "long_range": 120
+          "long_range": 120,
+          "ammunition": "Javelin"
         }
       ],
+      "items": {
+        "Javelin": 3
+      },
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
         {
-          "code": "unsupported_ammunition_count",
-          "feature": "Javelins: 3"
+          "code": "unsupported_passive_perception",
+          "feature": "Passive Perception 8"
         }
       ]
     }

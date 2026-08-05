@@ -32,8 +32,8 @@ Generated totals for the bundled SRD 5.2.1 structured catalog and the smaller ex
 | State | Catalog records |
 | --- | ---: |
 | reference_only | 2044 |
-| partial | 15 |
-| executable | 3 |
+| partial | 16 |
+| executable | 2 |
 
 ## Loaded executable records
 

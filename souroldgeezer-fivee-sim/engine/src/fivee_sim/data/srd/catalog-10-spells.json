@@ -194,6 +194,10 @@
         {
           "code": "unsupported_upcast_targets",
           "feature": "One additional target per slot level"
+        },
+        {
+          "code": "unsupported_concentration_duration",
+          "feature": "Concentration, up to 1 minute"
         }
       ]
     },
