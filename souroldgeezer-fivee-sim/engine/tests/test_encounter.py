@@ -3404,6 +3404,23 @@ class TestMapFixtures:
         assert elevation["flat"] is False
         assert self.elevation_of(encounter, "Wader") == elevation["min"]
 
+    def test_an_invisible_creature_gets_no_advantage_pulling_a_spike(self) -> None:
+        """SRD 5.2.1 p.184's Invisible Advantage is scoped to Initiative alone.
+
+        It must not leak into an ordinary fixture check. With Advantage wrongly
+        applied here, the roll would keep the 20 (23 total, a clear success)
+        and consume both scripted faces; fixed, only the 1 is drawn (4 total,
+        a clear failure against DC 15).
+        """
+        encounter, rng = self.fight()
+        encounter.creatures["Thora"].add_condition(Condition.INVISIBLE)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="north spike"),
+            ScriptedRandom([1, 20]),
+        )
+        assert events[0].data["success"] is False
+
 
 class TestFixtureTriggers:
     def test_a_true_edge_predicate_at_creation_does_not_fire(self) -> None:

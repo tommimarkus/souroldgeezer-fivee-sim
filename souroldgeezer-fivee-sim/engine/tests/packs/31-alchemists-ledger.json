@@ -380,10 +380,11 @@
     },
     {
       "name": "ledger-fume-blind",
-      "description": "Smoke or flare-glare. Either way, nothing is where it looks.",
+      "description": "Smoke or flare-glare. Either way, nothing is where it looks. Whatever catches them in it catches them unable to react.",
       "effects": {
         "own_attacks_have_disadvantage": true,
-        "attacked_with_disadvantage": true
+        "attacked_with_disadvantage": true,
+        "initiative_disadvantage": true
       },
       "provenance": "Original content — The Alchemist's Ledger"
     },
@@ -395,11 +396,12 @@
     },
     {
       "name": "ledger-quickened",
-      "description": "Everything is very fast and very clear and will not last.",
+      "description": "Everything is very fast and very clear and will not last. Trouble is seen before it arrives.",
       "effects": {
         "own_attacks_have_advantage": true,
         "own_ability_checks_have_advantage": true,
-        "advantage_on_dexterity_saves": true
+        "advantage_on_dexterity_saves": true,
+        "initiative_advantage": true
       },
       "provenance": "Original content — The Alchemist's Ledger"
     },

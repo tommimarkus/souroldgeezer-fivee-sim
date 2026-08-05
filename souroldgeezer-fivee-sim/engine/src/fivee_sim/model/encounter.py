@@ -34,6 +34,7 @@ from ..kernel.conditions import (
     Condition,
     ConditionTable,
     compute_ability_check_advantage,
+    compute_initiative_advantage,
     compute_save_advantage,
     effect_of,
     is_incapacitated,
@@ -913,7 +914,7 @@ class Encounter:
         for creature in combatants:
             roll = roll_d20(
                 rng,
-                compute_ability_check_advantage(
+                compute_initiative_advantage(
                     conditions=creature.conditions,
                     condition_effects=self.condition_effects,
                 ),

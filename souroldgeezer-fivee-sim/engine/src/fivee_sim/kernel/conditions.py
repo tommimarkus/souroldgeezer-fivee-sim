@@ -71,6 +71,15 @@ class ConditionEffect:
     #: The afflicted creature's own ability checks. Initiative is one.
     own_ability_checks_have_advantage: bool = False
     own_ability_checks_have_disadvantage: bool = False
+    #: Initiative-only riders, *additional* to the two flags above rather than a
+    #: substitute for them: Initiative is itself a Dexterity ability check, so a
+    #: condition that grants Advantage or Disadvantage on ability checks generally
+    #: also reaches Initiative, but the reverse must not hold. These exist for the
+    #: clauses that name Initiative specifically and nothing else — Incapacitated's
+    #: and Invisible's Surprise riders — so a clause scoped to Initiative cannot
+    #: leak into every other ability check a creature makes.
+    initiative_advantage: bool = False
+    initiative_disadvantage: bool = False
     #: Sight consequences consumed by stateful model-layer rules. ``cannot_see``
     #: belongs to the observer; ``unseen`` belongs to the possible subject.
     cannot_see: bool = False
@@ -118,12 +127,12 @@ EFFECTS: dict[str, ConditionEffect] = {
     ),
     Condition.INCAPACITATED: ConditionEffect(
         incapacitated=True,
-        own_ability_checks_have_disadvantage=True,  # Surprised.
+        initiative_disadvantage=True,  # Surprised.
     ),
     Condition.INVISIBLE: ConditionEffect(
         attacked_with_disadvantage=True,
         own_attacks_have_advantage=True,
-        own_ability_checks_have_advantage=True,  # Surprise.
+        initiative_advantage=True,  # Surprise.
         unseen=True,
     ),
     Condition.PARALYZED: ConditionEffect(
@@ -211,6 +220,24 @@ def speed_is_zero(conditions: Iterable[str], table: ConditionTable = EFFECTS) ->
     return any(effect.speed_zero for effect in effects_of(conditions, table))
 
 
+def _count_ability_check_sources(
+    *,
+    conditions: Iterable[str],
+    extra_advantage: int,
+    extra_disadvantage: int,
+    condition_effects: ConditionTable,
+) -> tuple[int, int]:
+    advantage_sources = extra_advantage
+    disadvantage_sources = extra_disadvantage
+    for condition in conditions:
+        effect = effect_of(condition, condition_effects)
+        if effect.own_ability_checks_have_advantage:
+            advantage_sources += 1
+        if effect.own_ability_checks_have_disadvantage:
+            disadvantage_sources += 1
+    return advantage_sources, disadvantage_sources
+
+
 def compute_ability_check_advantage(
     *,
     conditions: Iterable[str],
@@ -219,13 +246,45 @@ def compute_ability_check_advantage(
     condition_effects: ConditionTable = EFFECTS,
 ) -> Advantage:
     """Collect every source of Advantage and Disadvantage on an ability check."""
-    advantage_sources = extra_advantage
-    disadvantage_sources = extra_disadvantage
+    advantage_sources, disadvantage_sources = _count_ability_check_sources(
+        conditions=conditions,
+        extra_advantage=extra_advantage,
+        extra_disadvantage=extra_disadvantage,
+        condition_effects=condition_effects,
+    )
+    return resolve_advantage(
+        advantage_sources=advantage_sources,
+        disadvantage_sources=disadvantage_sources,
+    )
+
+
+def compute_initiative_advantage(
+    *,
+    conditions: Iterable[str],
+    extra_advantage: int = 0,
+    extra_disadvantage: int = 0,
+    condition_effects: ConditionTable = EFFECTS,
+) -> Advantage:
+    """Collect Advantage and Disadvantage on an Initiative roll specifically.
+
+    Initiative is a Dexterity ability check, so every general ability-check
+    source counts here too — plus the ``initiative_advantage`` /
+    ``initiative_disadvantage`` riders that name Initiative alone. All sources
+    are tallied together before the SRD combination rule (any Advantage plus
+    any Disadvantage yields neither) is applied once, across the whole set.
+    """
+    conditions = tuple(conditions)
+    advantage_sources, disadvantage_sources = _count_ability_check_sources(
+        conditions=conditions,
+        extra_advantage=extra_advantage,
+        extra_disadvantage=extra_disadvantage,
+        condition_effects=condition_effects,
+    )
     for condition in conditions:
         effect = effect_of(condition, condition_effects)
-        if effect.own_ability_checks_have_advantage:
+        if effect.initiative_advantage:
             advantage_sources += 1
-        if effect.own_ability_checks_have_disadvantage:
+        if effect.initiative_disadvantage:
             disadvantage_sources += 1
     return resolve_advantage(
         advantage_sources=advantage_sources,
