@@ -170,6 +170,55 @@ class Action:
     natural: tuple[int, ...] = ()
 
 
+#: What a combatant may learn about somebody on the *other* side, and what it
+#: may not. Two frozen sets rather than one filter, because the interesting
+#: property is that the classification is **total**: every key
+#: :meth:`Encounter._creature_state` reports belongs to exactly one of them, and
+#: ``tests/test_player_brief.py`` holds both against its real output.
+#:
+#: A single allowlist would have been shorter and worse. It answers "is this
+#: shown?" but not "has anybody looked at this?" — so a field added to the state
+#: payload would default to withheld and simply go missing, which reads exactly
+#: like a field that was considered and withheld. Requiring a deliberate
+#: classification is what makes a new secret impossible to add by accident.
+ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
+    # Where it is and whether it is really there.
+    "name", "team", "position", "level", "facing", "present", "arrival_round",
+    # What anybody at the table can see about its state.
+    "conditions", "conscious", "dying", "dead", "stable", "surrendered",
+    "dodging", "disengaged",
+    # Where it sits in the order. Initiative is called out loud.
+    "initiative",
+    # Visible while it holds, and the reason a caster is worth interrupting.
+    "concentrating_on",
+})
+
+#: The other half: what a stat block says and a table does not get to read.
+ENEMY_WITHHELD_KEYS: frozenset[str] = frozenset({
+    # The numbers the whole redaction exists for.
+    "hp", "max_hp", "ac",
+    # Resources, and therefore what it can still do to you.
+    "spell_slots", "items", "attacks", "spells", "bonus_actions",
+    "reaction_available", "redirect_attack",
+    # Capability a player would have to observe rather than be told.
+    "speeds", "senses", "terrain_cost_overrides", "death_rule",
+    # How close it is to dying, which is the hit-point leak wearing a hat.
+    "death_saves",
+})
+
+
+#: What replaces an enemy's hit points: the thing a game master says out loud.
+#: Bands rather than a fraction, because a fraction is a hit-point total that
+#: needs one division to recover. Our own descriptive vocabulary, not a rules
+#: term — nothing in the engine keys off these strings.
+_HEALTH_BANDS: tuple[tuple[float, str], ...] = (
+    (1.0, "unharmed"),
+    (0.5, "hurt"),
+    (0.25, "badly hurt"),
+    (0.0, "barely standing"),
+)
+
+
 #: The action kinds that can put the *actor's* own d20 on the table, and so the
 #: only ones a reported face means anything for. Two of the three are
 #: conditional — a cast rolls one only when the spell attacks rather than
@@ -1089,6 +1138,92 @@ class Encounter:
             c for c in self.creatures.values()
             if c.team != actor.team and c.combat_active and c.level in visible_levels
         ]
+
+    def health_band(self, creature: Creature) -> str:
+        """How a creature looks, for somebody who cannot read its sheet."""
+        if creature.dead:
+            return "dead"
+        if not creature.conscious:
+            return "down"
+        if creature.max_hp <= 0:
+            return "unharmed"
+        share = creature.hp / creature.max_hp
+        for threshold, described in _HEALTH_BANDS:
+            if share >= threshold:
+                return described
+        return "barely standing"
+
+    def brief(self, as_name: str) -> dict[str, Any]:
+        """The fight as one combatant is entitled to know it.
+
+        :meth:`state` is the referee's view and reports every creature's hit
+        points, AC, slots and items — so handing it to a player hands them the
+        other side's sheet. This is the same fight with the other side reduced to
+        what anybody at the table can see: where it is, how far off, what
+        conditions are on it, and how badly hurt it looks.
+
+        **Your own side is not redacted.** Players share numbers with each other
+        at a real table, so allies come back whole and so does the asker — the
+        boundary is the other side, not other people. Which side that is depends
+        on who asked: a monster's brief redacts the party.
+
+        A creature the asker cannot see is **absent rather than redacted**, since
+        "something is over there and you cannot see it" is itself a fact they do
+        not have.
+        """
+        if as_name not in self.creatures:
+            known = ", ".join(sorted(self.creatures))
+            raise EncounterError(
+                f"no combatant named {as_name!r} in this encounter; there is: {known}"
+            )
+        asker = self.creatures[as_name]
+        payload: dict[str, Any] = {
+            "as": as_name,
+            "round": self.round,
+            "turn": self.current_name,
+            "your_turn": self.current_name == as_name,
+            "over": self.over,
+            "winner": self.winner,
+            "you": self._creature_state(asker),
+            "allies": [],
+            "enemies": [],
+        }
+        # The asker's own budget, and only on their own turn: `_turn` belongs to
+        # whoever is acting, so reporting it otherwise would describe somebody
+        # else's remaining movement as though it were yours.
+        if payload["your_turn"]:
+            payload["turn_state"] = {
+                "movement_left": self._turn.movement_left,
+                "action_used": self._turn.action_used,
+                "attacks_left": self._turn.attacks_left,
+                "interaction_used": self._turn.interaction_used,
+                "bonus_action_used": self._turn.bonus_action_used,
+            }
+        if self.battle_map is not None:
+            payload["map"] = self._map_state()
+
+        for name in self.order:
+            if name == as_name:
+                continue
+            other = self.creatures[name]
+            if not other.arrived:
+                continue
+            distance = distance_feet(
+                as_point(asker.position), as_point(other.position), self.movement_rule
+            )
+            if other.team == asker.team:
+                payload["allies"].append(
+                    self._creature_state(other) | {"distance": distance}
+                )
+                continue
+            if self.cover_between(as_name, name) is CoverGrade.TOTAL:
+                continue
+            seen = self._creature_state(other)
+            payload["enemies"].append(
+                {key: value for key, value in seen.items() if key in ENEMY_VISIBLE_KEYS}
+                | {"distance": distance, "health": self.health_band(other)}
+            )
+        return payload
 
     def state(self) -> dict[str, Any]:
         return {
