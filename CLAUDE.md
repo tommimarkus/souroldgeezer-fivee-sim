@@ -406,16 +406,23 @@ and the only thing that checks the shipped surface the way a host uses it.
 **real launcher** — never `python -m fivee_sim.web`, never the dev venv — runs a
 complete seeded fight over plain HTTP, runs the identical fight in a second
 server and a third time through the `fivee` binary as a subprocess, and requires
-all three to agree. Then it holds `GET /api/v1/operations`, `GET
-/api/v1/openapi.json` and `fivee help` against the route table's own source.
+all three to agree. It then runs a **two-encounter adventure** end to end in a
+fourth server — link, fight, finalize, link again carrying the survivors, fight,
+compose the run with `adventure.replay` — and finally holds `GET
+/api/v1/operations`, `GET /api/v1/openapi.json` and `fivee help` against the
+route table's own source.
 
-Three of those claims exist nowhere else. **Reproducibility across processes**:
+Four of those claims exist nowhere else. **Reproducibility across processes**:
 every other determinism test runs in one interpreter. **That the launcher
 works**: nothing in pytest execs it. **That `/api/v1` is complete**: the client
 is pinned by `tests/test_layering.py` to import nothing of the engine but
 `fivee_sim.paths`, so a fight it can drive end to end is a fight the REST
 surface serves — which is why the command run is the load-bearing one rather
-than a convenience.
+than a convenience. **That state outlives a fight**: the adventure case is the
+only end-to-end proof that a party's ending hit points become the next
+encounter's starting ones, and it asserts the arrival against the previous
+fight's *live* ending state rather than a second copy of the number, so it
+cannot pass on a run that carries nobody.
 
 **Standard library only, and no pytest**, because it has to run against an
 environment where nothing has been built at all — which, since the launcher
