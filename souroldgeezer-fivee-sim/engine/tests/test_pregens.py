@@ -21,6 +21,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.content import item_effects, spellbook
+from fivee_sim.service.specs import attack_from_spec
 
 from . import api
 
@@ -36,6 +37,15 @@ def _parties() -> dict[str, Any]:
 
 def _members(party: dict[str, Any]) -> list[dict[str, Any]]:
     return [member["sheet"] for member in party["members"]]
+
+
+def _ammunition_named_by(sheet: dict[str, Any]) -> set[str]:
+    """The ``items`` entries this sheet's own attacks spend rather than use."""
+    return {
+        str(spec["ammunition"])
+        for spec in sheet.get("attacks", ())
+        if spec.get("ammunition") is not None
+    }
 
 
 PARTY_NAMES = sorted(_parties())
@@ -82,14 +92,137 @@ class TestEveryPartyRuns:
     ) -> None:
         # The load-bearing case. An undefined item is accepted at create and
         # refused at use, so only a check like this one can see it.
-        defined = item_effects()
-        carried = {
+        #
+        # Ammunition is exempt for the reason ``content.py`` exempts it from the
+        # same cross-check: an arrow is *held*, never *used*, and
+        # ``ItemEffect.__post_init__`` refuses a use that does nothing — so it
+        # can never be defined and asking for that would report a fact the
+        # engine does not act on. Derived per sheet from that sheet's own
+        # attacks, so one character's quiver never excuses another's.
+        defined = set(item_effects())
+        undefined: dict[str, list[str]] = {}
+        for sheet in _members(_parties()[party_name]):
+            carried = set(sheet.get("items", {}))
+            spent = _ammunition_named_by(sheet)
+            if loose := sorted(carried - defined - spent):
+                undefined[str(sheet["name"])] = loose
+
+        assert undefined == {}
+
+    def test_the_exemption_does_not_swallow_an_ordinary_item(
+        self, party_name: str
+    ) -> None:
+        # The control on the case above: its exemption is a subtraction, and a
+        # subtraction wide enough to cover everything would pass it on a party
+        # holding nothing but junk. So at least one carried item is held to the
+        # unexempted rule — that it is content the engine can actually resolve.
+        usable = {
             item
             for sheet in _members(_parties()[party_name])
             for item in sheet.get("items", {})
+            if item not in _ammunition_named_by(sheet)
         }
 
-        assert carried <= set(defined), f"undefined: {sorted(carried - set(defined))}"
+        assert usable, "no member carries anything but ammunition"
+        assert usable <= set(item_effects())
+
+    def test_every_attack_that_spends_ammunition_carries_some(
+        self, party_name: str
+    ) -> None:
+        # ``content.py`` reports this for a pack; a sheet posted to
+        # ``encounter.create`` goes nowhere near that validator, so the same
+        # mistake arrives instead as a refusal on the first shot of the fight.
+        empty = [
+            f"{sheet['name']}'s {spec['name']} fires {spec['ammunition']!r}"
+            for sheet in _members(_parties()[party_name])
+            for spec in sheet.get("attacks", ())
+            if spec.get("ammunition") is not None
+            and not sheet.get("items", {}).get(spec["ammunition"], 0) > 0
+        ]
+
+        assert empty == []
+
+    def test_every_ranged_attack_can_reach_further_than_its_own_square(
+        self, party_name: str
+    ) -> None:
+        """The range a fight reads, taken from the built attack and not the JSON.
+
+        ``normal_range`` and ``long_range`` both default to 0 and
+        ``max_distance()`` returns exactly that for a ranged attack, so an
+        attack that declares neither is refused at every distance:
+        ``Shortbow cannot reach (35 ft > 0 ft)``. Every ranged attack these
+        sheets shipped was in that state, because they spelt the key ``range``
+        and nothing was looking.
+
+        Built through ``attack_from_spec`` rather than read off the file, so a
+        key the builder does not read cannot satisfy this the way ``range`` did.
+        """
+        ranged = [
+            (str(sheet["name"]), attack_from_spec(dict(spec)))
+            for sheet in _members(_parties()[party_name])
+            for spec in sheet.get("attacks", ())
+            if spec.get("kind") == "ranged"
+        ]
+
+        # Before the property, not inside a guard around it: every party is
+        # meant to have someone who can shoot, and a party that lost its last
+        # ranged attack must fail here rather than pass by having nothing left
+        # to check.
+        assert ranged, "no member of this party has a ranged attack"
+        assert [name for name, option in ranged if option.max_distance() <= 0] == []
+
+    def test_every_archer_lands_a_shot_across_the_battlefield(
+        self, party_name: str
+    ) -> None:
+        """The range spent in a real fight, not merely kept by the builder.
+
+        The case above proves the attack is *built* with a range; this one
+        proves the fight reads it. Same sheets, posted to the real operation,
+        with a target 35-to-40 ft off — the distances that answered
+        ``Shortbow cannot reach (35 ft > 0 ft)`` before the key was spelt right.
+        """
+        sheets = _members(_parties()[party_name])
+        shooters = {
+            str(sheet["name"]): str(spec["name"])
+            for sheet in sheets
+            for spec in sheet.get("attacks", ())
+            if spec.get("kind") == "ranged"
+        }
+        dummy = {
+            "name": "Target Dummy", "team": "monsters", "ac": 10,
+            "max_hp": 400, "position": [40, 0],
+        }
+        created = api.encounter_create([*sheets, dummy], seed=3)
+        encounter_id = str(created["encounter_id"])
+        state = created["state"]
+
+        # Asserted on what a *resolved* shot carries rather than on the absence
+        # of a refusal: an out-of-range attack emits ``data.out_of_range`` and
+        # no ``hit`` at all, so a check for the refusal flag reads ``None`` on
+        # every event of every other kind and passes whatever happened. Naming
+        # the roll instead means a bow that cannot reach fails here for want of
+        # a hit, and so does a shot that is never taken.
+        rolled: dict[str, str] = {}
+        # One full round is enough for everyone to act once; the bound is a
+        # runaway guard, and the assertion below is what proves it sufficed.
+        for _ in range(len(sheets) * 3):
+            actor = str(state["turn"])
+            if actor in shooters and actor not in rolled:
+                answer = api.encounter_act(
+                    encounter_id, "attack",
+                    attack=shooters[actor], target="Target Dummy",
+                )
+                rolled[actor] = "; ".join(
+                    str(event["detail"])
+                    for event in answer["events"]
+                    if event["kind"] == "attack" and "hit" not in event["data"]
+                )
+            state = api.encounter_advance(encounter_id)["state"]
+            if set(rolled) == set(shooters):
+                break
+
+        assert set(rolled) == set(shooters), "an archer never got a turn to shoot"
+        assert {name: why for name, why in rolled.items() if why} == {}
 
     def test_the_party_can_restore_hit_points_somehow(self, party_name: str) -> None:
         # The party-level property, not a per-character one: who carries the
@@ -104,7 +237,12 @@ class TestEveryPartyRuns:
             for sheet in _members(_parties()[party_name])
             for name in (
                 *(s for s in sheet.get("spells", ()) if heals[s].heal is not None),
-                *(i for i in sheet.get("items", {}) if potions[i].heal is not None),
+                # ``in potions`` before the lookup: a quiver entry is an item
+                # the engine defines no effect for, and it heals nobody.
+                *(
+                    i for i in sheet.get("items", {})
+                    if i in potions and potions[i].heal is not None
+                ),
             )
         ]
 

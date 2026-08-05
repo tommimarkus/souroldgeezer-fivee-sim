@@ -1,10 +1,12 @@
 {
   "about": [
     "Pregenerated parties for a playtest, so a developer with no characters to hand can still run their adventure.",
-    "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — and a persona the harness uses when briefing the seat. The two are kept apart because the engine refuses unknown spec keys, so `temperament` and `voice` may never be folded into `sheet`.",
+    "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — a `gear` list, and a persona the harness uses when briefing the seat. Only `sheet` reaches the engine: it refuses unknown spec keys, so `temperament`, `voice` and `gear` may never be folded into it.",
     "The engine models no character building: there are no classes, species, backgrounds, feats, or levels here, and none of these numbers were derived from a class table. They are hand-picked to be ordinary for their tier, and the class-flavoured names are description only.",
     "Five spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball, Cure Wounds — so the casters use those and nothing else. Cure Wounds adds the caster's spellcasting ability modifier, which is why a healer's sheet names `spellcasting_ability`; a sheet that omits it heals the flat dice. Positions are a loose marching order; the game master places the party for the scene.",
     "Healing is deliberately scarce: one Cure Wounds caster and a potion or two, because a party that cannot be worn down measures nothing about an adventuring day. Potions are a Bonus Action, so carrying one costs a character nothing until it is drunk.",
+    "A ranged attack declares `normal_range` and `long_range` in feet, and those two keys are the only ones the engine reads — an attack that names neither is built with a maximum range of 0 feet and refused at every distance. The bow, crossbow and javelin also name the `ammunition` they spend, and the sheet stocks it: an empty quiver refuses the shot before it is rolled, and the crossbow's `loading` allows one shot per turn.",
+    "`gear` is fiction, not inventory. The engine's `items` map holds only what it can resolve — a potion it defines, or ammunition an attack spends — so rope, torches and a healer's kit live outside the sheet, where the game master adjudicates them. A player who asks to use one gets a ruling, never a roll.",
     "This is our own authored content, not transcribed from any source. The spell and item names refer to records in the bundled SRD 5.2.1 slice, which carries its own provenance."
   ],
   "parties": {
@@ -14,35 +16,57 @@
         {
           "temperament": "bold",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Rope, hempen (50 feet)",
+            "Iron spikes (10)",
+            "Tinderbox",
+            "Torches (5)",
+            "Rations (5 days)",
+            "Waterskin",
+            "Whetstone"
+          ],
           "sheet": {
             "name": "Thora",
             "team": "party",
             "ac": 16,
             "max_hp": 12,
             "position": [0, 0],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Javelin": 3},
             "abilities": {"strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 4, "constitution": 3},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 30}
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
             ]
           }
         },
         {
           "temperament": "cautious",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Thieves' tools",
+            "Quiver",
+            "Crowbar",
+            "Chalk",
+            "Signal whistle",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Kesh",
             "team": "party",
             "ac": 14,
             "max_hp": 9,
             "position": [5, 0],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 16, "constitution": 12, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
               {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
             ]
           }
@@ -50,6 +74,17 @@
         {
           "temperament": "social",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Holy symbol",
+            "Healer's kit",
+            "Blanket",
+            "Candles (5)",
+            "Tinderbox",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Ilma",
             "team": "party",
@@ -71,6 +106,18 @@
         {
           "temperament": "thorough",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Book",
+            "Ink and ink pen",
+            "Parchment (10 sheets)",
+            "Map or scroll case",
+            "Magnifying glass",
+            "Chalk",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Doran",
             "team": "party",
@@ -81,8 +128,9 @@
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
             "attacks": [
               {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
-              {"name": "Light Crossbow", "attack_bonus": 4, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
-            ]
+              {"name": "Light Crossbow", "attack_bonus": 4, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "loading": true, "ammunition": "Bolt"}
+            ],
+            "items": {"Bolt": 20}
           }
         }
       ]
@@ -93,35 +141,57 @@
         {
           "temperament": "bold",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Rope, hempen (50 feet)",
+            "Iron spikes (10)",
+            "Tinderbox",
+            "Torches (5)",
+            "Rations (5 days)",
+            "Waterskin",
+            "Whetstone"
+          ],
           "sheet": {
             "name": "Thora",
             "team": "party",
             "ac": 17,
             "max_hp": 28,
             "position": [0, 0],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Javelin": 3},
             "abilities": {"strength": 17, "dexterity": 12, "constitution": 15, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 5, "constitution": 4},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 30}
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
             ]
           }
         },
         {
           "temperament": "cautious",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Thieves' tools",
+            "Quiver",
+            "Crowbar",
+            "Chalk",
+            "Signal whistle",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Kesh",
             "team": "party",
             "ac": 15,
             "max_hp": 22,
             "position": [5, 0],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 17, "constitution": 13, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 5},
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
               {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
             ]
           }
@@ -129,6 +199,17 @@
         {
           "temperament": "social",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Holy symbol",
+            "Healer's kit",
+            "Blanket",
+            "Candles (5)",
+            "Tinderbox",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Ilma",
             "team": "party",
@@ -150,13 +231,25 @@
         {
           "temperament": "thorough",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Book",
+            "Ink and ink pen",
+            "Parchment (10 sheets)",
+            "Map or scroll case",
+            "Magnifying glass",
+            "Chalk",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Doran",
             "team": "party",
             "ac": 13,
             "max_hp": 18,
             "position": [5, 5],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 13, "intelligence": 17, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 5, "wisdom": 3},
             "spells": ["Shatter"],
@@ -166,7 +259,7 @@
             "spell_attack_bonus": 6,
             "attacks": [
               {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
-              {"name": "Light Crossbow", "attack_bonus": 5, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
+              {"name": "Light Crossbow", "attack_bonus": 5, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "loading": true, "ammunition": "Bolt"}
             ]
           }
         }
@@ -178,36 +271,58 @@
         {
           "temperament": "bold",
           "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Rope, hempen (50 feet)",
+            "Iron spikes (10)",
+            "Tinderbox",
+            "Torches (5)",
+            "Rations (5 days)",
+            "Waterskin",
+            "Whetstone"
+          ],
           "sheet": {
             "name": "Thora",
             "team": "party",
             "ac": 18,
             "max_hp": 44,
             "position": [0, 0],
-            "items": {"Potion of Healing": 2},
+            "items": {"Potion of Healing": 2, "Javelin": 3},
             "attacks_per_action": 2,
             "abilities": {"strength": 18, "dexterity": 12, "constitution": 16, "intelligence": 9, "wisdom": 11, "charisma": 10},
             "save_bonuses": {"strength": 7, "constitution": 6},
             "attacks": [
               {"name": "Longsword", "attack_bonus": 7, "damage": "1d8+4", "damage_type": "slashing", "kind": "melee"},
-              {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "range": 30}
+              {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "normal_range": 30, "long_range": 120, "ammunition": "Javelin"}
             ]
           }
         },
         {
           "temperament": "cautious",
           "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Thieves' tools",
+            "Quiver",
+            "Crowbar",
+            "Chalk",
+            "Signal whistle",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Kesh",
             "team": "party",
             "ac": 16,
             "max_hp": 38,
             "position": [5, 0],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Arrow": 20},
             "abilities": {"strength": 10, "dexterity": 18, "constitution": 14, "intelligence": 13, "wisdom": 12, "charisma": 11},
             "save_bonuses": {"dexterity": 7},
             "attacks": [
-              {"name": "Shortbow", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Shortbow", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "ammunition": "Arrow"},
               {"name": "Dagger", "attack_bonus": 7, "damage": "1d4+4", "damage_type": "piercing", "kind": "melee"}
             ]
           }
@@ -215,6 +330,17 @@
         {
           "temperament": "social",
           "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Holy symbol",
+            "Healer's kit",
+            "Blanket",
+            "Candles (5)",
+            "Tinderbox",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Ilma",
             "team": "party",
@@ -237,13 +363,25 @@
         {
           "temperament": "thorough",
           "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "gear": [
+            "Backpack",
+            "Bedroll",
+            "Book",
+            "Ink and ink pen",
+            "Parchment (10 sheets)",
+            "Map or scroll case",
+            "Magnifying glass",
+            "Chalk",
+            "Rations (5 days)",
+            "Waterskin"
+          ],
           "sheet": {
             "name": "Doran",
             "team": "party",
             "ac": 14,
             "max_hp": 30,
             "position": [5, 5],
-            "items": {"Potion of Healing": 1},
+            "items": {"Potion of Healing": 1, "Bolt": 20},
             "abilities": {"strength": 8, "dexterity": 14, "constitution": 14, "intelligence": 18, "wisdom": 12, "charisma": 10},
             "save_bonuses": {"intelligence": 7, "wisdom": 4},
             "spells": ["Shatter", "Fireball"],
@@ -253,7 +391,7 @@
             "spell_attack_bonus": 7,
             "attacks": [
               {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
-              {"name": "Light Crossbow", "attack_bonus": 6, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
+              {"name": "Light Crossbow", "attack_bonus": 6, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "normal_range": 80, "long_range": 320, "loading": true, "ammunition": "Bolt"}
             ]
           }
         }
