@@ -1087,6 +1087,15 @@ class _Handler(BaseHTTPRequestHandler):
             HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
         )
 
+    def _h_adventure_replay(self, request: _Request) -> None:
+        # No ETag and no viewer link: this writes a new file rather than the
+        # adventure document, and an adventure envelope is not something the
+        # served replay listing can find, so a link would name a 404.
+        self._send_json(
+            HTTPStatus.OK,
+            adventure_service.compose_replay(request.id, request.body["path"]),
+        )
+
     # -- maps: files, addressed by id ----------------------------------------
     def _h_map_list(self, request: _Request) -> None:
         self._send_json(HTTPStatus.OK, map_ops.map_list(self.state))
@@ -1273,6 +1282,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "adventure_state": _Handler._h_adventure_state,
     "adventure_encounter": _Handler._h_adventure_encounter,
     "adventure_finalize": _Handler._h_adventure_finalize,
+    "adventure_replay": _Handler._h_adventure_replay,
     "map_list": _Handler._h_map_list,
     "map_generate": _Handler._h_map_generate,
     "map_render": _Handler._h_map_render,
