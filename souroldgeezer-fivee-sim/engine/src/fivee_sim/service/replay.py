@@ -289,6 +289,19 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),
         "items": dict(sorted(creature.items.items())),
         "conditions": sorted(creature.conditions),
+        # How the fight left them. Without these a recovered combatant comes
+        # back on their feet: `dying` is derived as `not dead and hp == 0 and
+        # not stable`, so dropping `stable` alone turns a stabilised creature
+        # back into a dying one. `hp` above carries the 0; these carry what it
+        # means. Shaped as the state payload reports them, which is the shape
+        # ``parse_death_saves`` accepts.
+        "death_saves": {
+            "successes": creature.death_save_successes,
+            "failures": creature.death_save_failures,
+        },
+        "stable": creature.stable,
+        "dead": creature.dead,
+        "surrendered": creature.surrendered,
         "position": list(as_point(creature.position)),
         "level": creature.level,
         "arrival_round": creature.arrival_round,
