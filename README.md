@@ -40,7 +40,7 @@ to another virtual tabletop as Universal VTT.
 
 | Plugin | Version | Skills | Claude agent |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.56` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.57` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
 
 ## Install
 
