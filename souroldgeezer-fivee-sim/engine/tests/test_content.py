@@ -624,6 +624,58 @@ class TestDiagnostics:
         assert any("Nonexistent Bolt" in p for p in warned)
         assert any("Nonexistent Flask" in p for p in warned)
 
+    def test_an_items_entry_named_by_the_creatures_own_attack_does_not_warn(
+        self, tmp_path: Path
+    ) -> None:
+        # "Arrows" is definitionally not an item: ``ItemEffect.__post_init__``
+        # refuses a use that does nothing, and ammunition has no ``use`` block. So
+        # the old warning — "refers to X, which no loaded pack defines; the engine
+        # will refuse it when the creature tries to use it" — is simply false for a
+        # name the creature's own attack declares as ``ammunition``: the engine
+        # spends it, it never refuses it.
+        path = write_pack(tmp_path, "x.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Archer", "ac": 10, "max_hp": 10, "provenance": "test",
+                "items": {"Arrows": 20},
+                "attacks": [{
+                    "name": "Shortbow", "attack_bonus": 4, "damage": "1d6",
+                    "damage_type": "piercing", "kind": "ranged",
+                    "normal_range": 80, "long_range": 320,
+                    "ammunition": "Arrows",
+                }],
+            }],
+        })
+        diagnostics = validate([path], include_environment=False)
+        assert not problems(diagnostics)
+        warned = problems(diagnostics, Severity.WARNING)
+        assert not any("Arrows" in p for p in warned)
+
+    def test_an_attack_naming_ammunition_the_creature_does_not_carry_warns(
+        self, tmp_path: Path
+    ) -> None:
+        # An authoring mistake worth catching now rather than at the first shot:
+        # the attack names ammunition the creature's own ``items`` never stocks, so
+        # the very first attempt to fire it refuses at use time.
+        path = write_pack(tmp_path, "x.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Archer", "ac": 10, "max_hp": 10, "provenance": "test",
+                "attacks": [{
+                    "name": "Shortbow", "attack_bonus": 4, "damage": "1d6",
+                    "damage_type": "piercing", "kind": "ranged",
+                    "normal_range": 80, "long_range": 320,
+                    "ammunition": "Arrows",
+                }],
+            }],
+        })
+        diagnostics = validate([path], include_environment=False)
+        assert not problems(diagnostics), "still a warning, not a load failure"
+        warned = problems(diagnostics, Severity.WARNING)
+        assert any(
+            "Arrows" in p and "does not carry" in p for p in warned
+        )
+
     def test_the_bundled_packs_validate_clean(self) -> None:
         # The built-in slice goes through this same parser, so a malformed row could
         # never ship unnoticed.

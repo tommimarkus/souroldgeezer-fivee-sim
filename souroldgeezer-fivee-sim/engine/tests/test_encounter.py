@@ -581,6 +581,24 @@ class TestAmmunition:
         assert "ammunition_remaining" not in swing.data
         assert encounter.creatures["Sylvi"].items == {"Arrow": 3}
 
+    def test_use_item_on_an_ammunition_name_refuses_and_spends_nothing(self) -> None:
+        # "Arrow" is not an item, and ``use_item`` saying "not defined by the
+        # loaded content" is true but useless — it invites defining one, which
+        # ``ItemEffect.__post_init__`` refuses because ammunition has no ``use``
+        # block. The refusal has to name what "Arrow" actually is instead.
+        encounter = self.duel(arrows=3)
+        before = encounter.state()
+        undrawn = Random(3)
+        rng = Random(3)
+        undrawn_state = undrawn.getstate()
+
+        with pytest.raises(EncounterError, match="ammunition"):
+            encounter.act(Action(kind=ActionKind.USE_ITEM, item="Arrow"), rng)
+
+        assert encounter.state() == before
+        assert rng.getstate() == undrawn_state
+        assert encounter.creatures["Sylvi"].items == {"Arrow": 3}
+
 
 class TestGoingDown:
     def test_reaching_zero_knocks_a_creature_out_rather_than_killing_it(self) -> None:

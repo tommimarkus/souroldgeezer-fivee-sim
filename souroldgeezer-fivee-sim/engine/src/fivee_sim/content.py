@@ -1589,6 +1589,17 @@ def _cross_reference(
                     "creatures", name,
                     f"attacks[{index}].on_hit_condition", str(rider),
                 )
+        # An items entry the creature's own attacks name as ``ammunition`` is not
+        # an item at all — ``ItemEffect.__post_init__`` refuses a use that does
+        # nothing, and ammunition has no ``use`` block to give it one. So it can
+        # never be "defined" and the items cross-reference below must not ask for
+        # that; it would be reporting a fact the engine does not act on.
+        ammunition_names = {
+            str(attack["ammunition"])
+            for attack in (record.get("attacks", []) or [])
+            if isinstance(attack, dict) and attack.get("ammunition") is not None
+        }
+
         # Warnings, not errors: the encounter refuses these at use time with a clear
         # reason rather than crashing, so a pack meant to be combined with another is
         # still loadable. It is worth saying now, though — the alternative is finding
@@ -1598,19 +1609,45 @@ def _cross_reference(
             (record.get("items", {}) or {}, items, "items"),
         ):
             for entry in referenced:
-                if str(entry) in table:
+                text = str(entry)
+                if text in table or text in ammunition_names:
                     continue
                 diagnostics.append(
                     Diagnostic(
                         source=sources.get(("creatures", name), "unknown"),
                         section="creatures", record=name, field=field_name,
                         problem=(
-                            f"refers to {str(entry)!r}, which no loaded pack defines; "
+                            f"refers to {text!r}, which no loaded pack defines; "
                             f"the engine will refuse it when the creature tries to use it"
                         ),
                         severity=Severity.WARNING,
                     )
                 )
+
+        # The other direction: an attack naming ammunition the creature's own
+        # ``items`` never stocks is an authoring mistake worth catching now — the
+        # first shot will refuse it, since the stepper spends a piece per shot and
+        # refuses an empty quiver. It cannot be folded into the loop above because
+        # it is never an ``items`` entry at all; it is read straight off ``attacks``.
+        held_items = record.get("items", {}) or {}
+        for index, attack in enumerate(record.get("attacks", []) or []):
+            if not isinstance(attack, dict):
+                continue
+            ammo = attack.get("ammunition")
+            if ammo is None or str(ammo) in held_items:
+                continue
+            diagnostics.append(
+                Diagnostic(
+                    source=sources.get(("creatures", name), "unknown"),
+                    section="creatures", record=name,
+                    field=f"attacks[{index}].ammunition",
+                    problem=(
+                        f"names {str(ammo)!r} as ammunition, but this creature does "
+                        f"not carry any {str(ammo)!r} in items; the first shot will refuse"
+                    ),
+                    severity=Severity.WARNING,
+                )
+            )
 
 
 def _build(

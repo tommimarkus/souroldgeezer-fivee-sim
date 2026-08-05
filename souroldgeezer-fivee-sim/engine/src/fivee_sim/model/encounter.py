@@ -2774,6 +2774,14 @@ class Encounter:
     def _do_use_item(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.item is None:
             raise EncounterError("using an item needs 'item'")
+        for attack in actor.attacks:
+            if attack.ammunition is not None and attack.ammunition.casefold() == (
+                action.item.casefold()
+            ):
+                raise EncounterError(
+                    f"{attack.ammunition!r} is ammunition — {actor.name} spends it "
+                    f"automatically when firing {attack.name}, not by using it"
+                )
         name = self._pick_item(actor, action.item)
         effect = self.items.get(name)
         if effect is None:

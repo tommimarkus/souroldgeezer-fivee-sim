@@ -130,6 +130,17 @@ An attachment rider sets `on_hit_attach`, `attached_damage`,
 attacker to the target; the damage repeats automatically at the start of the
 attacker's turns until the source detaches after taking at least the threshold.
 
+`ammunition` names an entry in the wielder's own `items` — the same "quantity
+is the charge count" pool described under `items` below, not a separate
+tally — that this ranged attack spends one of per shot. Only a `"ranged"`
+attack may carry it. `loading` marks a weapon that can fire at most once per
+turn regardless of Extra Attack; the engine enforces that limit per **turn**,
+where SRD 5.2.1's Loading property states it per **activation** (action, Bonus
+Action, or Reaction). Those coincide today only because nothing in the engine
+yet lets one creature take a Reaction attack with a Loading weapon
+mid-someone-else's-turn; the day it does, per-turn stops being equivalent to
+per-activation and the enforcement will need to move with it.
+
 `bonus_actions` currently accepts `dash` and `disengage`; callers pass
 `as_bonus_action: true` when using that budget. `surrender_when_last` lets the
 batch policy yield when no capable ally remains. `redirect_attack` spends the
@@ -285,6 +296,40 @@ charge count** — modelling both would be two ways of saying one thing.
 Use one with `encounter.act --kind use_item --item "Potion of Healing"`. It spends
 its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
 Targeting another creature requires being within 5 ft.
+
+**The same `items` map holds two different kinds of entry, and only one of
+them is "an item" in this section's sense.** A `use_item` entry needs a
+definition here — `name`, `use`, `provenance` — or the engine has nothing to
+resolve. An entry a creature's own `attacks[].ammunition` names needs no
+definition at all: it is spent automatically by the attack that names it, one
+piece per shot, and refused when the count reaches zero. Defining an item
+record for it would not help — ammunition has no `use` block, and an item
+whose `use` does nothing is refused at load — so an ammunition name simply
+never appears among the item definitions, only in `items` counts and in an
+attack's `ammunition` field.
+
+What ammunition does **not** model, deliberately: drawing it is folded into the
+attack roll rather than costing a separate action or the free hand SRD 5.2.1
+requires for a one-handed loading weapon (catalog `576-9-4-1-ammunition`,
+facts `drawing_ammunition_part_of_attack` and
+`one_handed_weapon_loading_requires_free_hand`); the 1-minute post-fight
+search that recovers half of what was fired, rounded down (same record, fact
+`post_fight_recovery`) is not automated — see the adventure `recovery` note
+below; magic ammunition (bonuses, special effects per hit) is not modelled at
+all; and a coating — poison, oil — applied to ammunition has no count of its
+own and is out of scope.
+
+**Post-fight recovery is arithmetic you do, not something the engine
+simulates**, and `adventure.link`'s `recovery` has two sharp edges worth
+knowing before the first use empties somebody's quiver by accident. First,
+`recovery`'s `items` key **replaces** a carried combatant's whole `items` map
+— the merge is shallow, so recovering three arrows by naming only `"Arrow"`
+silently drops every other item that combatant was carrying. Pass the complete
+map back, not a delta. Second, `encounter.state` reports the **ending** count,
+not what was spent, so "half of what was fired" is `(started - ending) // 2`
+added back to the ending count — read the starting count from your own request
+(or the previous fight's `encounter.state` before the shot that started this
+one), not from anywhere the engine keeps it for you.
 
 ### `catalog`
 
