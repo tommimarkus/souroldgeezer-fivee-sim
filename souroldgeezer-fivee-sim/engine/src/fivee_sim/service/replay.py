@@ -292,6 +292,12 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "position": list(as_point(creature.position)),
         "level": creature.level,
         "arrival_round": creature.arrival_round,
+        # Emitted even when unset, unlike the state payload's conditional key.
+        # This is creation input rather than a report: ``recover_session`` feeds
+        # it back through ``combatants_from_specs``, and a key that is absent
+        # here is one the rebuilt fight never hears about. ``parse_facing``
+        # takes ``None`` for untracked, so the round trip is total either way.
+        "facing": creature.facing,
         "provenance": creature.provenance,
     }
 
