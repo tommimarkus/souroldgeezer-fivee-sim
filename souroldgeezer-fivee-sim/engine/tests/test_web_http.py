@@ -21,6 +21,7 @@ import re
 import threading
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,7 @@ from . import api
 from .conftest import mapless_fight
 
 PROBLEM_TYPE = "application/problem+json"
+STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
 CONFIG_RE = re.compile(
     r'window\.__FIVEE_EDITOR__ = \{token: "[^"]+", apiBase: "/api/v1", version: "[^"]+"\};'
 )
@@ -482,7 +484,7 @@ class TestGuards:
 
 class TestStaticPages:
     def test_the_editor_page_carries_the_config_exactly_once(self, editor: Editor) -> None:
-        response = editor.request("GET", "/", token=False)
+        response = editor.request("GET", "/editor", token=False)
         assert response.status == 200
         assert response.headers["Content-Type"].startswith("text/html")
         assert response.headers["Cache-Control"] == "no-store"
@@ -495,7 +497,56 @@ class TestStaticPages:
         # engine actually serving it, so a stale install is visible in the UI
         # rather than only in a /ping nobody reads. Anchored to the real
         # __version__ so a hardcoded or last-release string fails here.
+        response = editor.request("GET", "/editor", token=False)
+        assert f'version: "{__version__}"' in response.text
+
+    def test_the_table_puts_the_index_at_the_root_and_the_editor_below_it(self) -> None:
+        """Where each page lives — the one claim that is about the table itself.
+
+        Its neighbour below checks that the server honours ``routes.PAGES``,
+        which is a different claim and, on its own, a circular one: swap two
+        entries in the table and a server that faithfully serves the swap still
+        passes it. This is the anchor, so "the editor moved off the root" is
+        asserted somewhere that a table edit cannot satisfy by agreeing with
+        itself.
+        """
+        assert routes.PAGES["/"][0] == "home.html"
+        assert routes.PAGES["/editor"][0] == "editor.html"
+        assert routes.PAGES["/viewer"][0] == "viewer.html"
+
+    @pytest.mark.parametrize("path", sorted(routes.PAGES))
+    def test_each_path_serves_the_shipped_file_the_table_names(
+        self, editor: Editor, path: str
+    ) -> None:
+        """Which document each path serves, by identity against the shipped file.
+
+        This is the assertion that pins the editor's move, and it is deliberately
+        an identity rather than a sample of element ids. Both HTML pages answer
+        200 with the same content type and both carry an injected config, so
+        anything weaker stays green against a server that never moved the
+        editor — and an id-sampling version would also have to be re-picked
+        every time either page was reorganised, which is how a check quietly
+        stops discriminating.
+
+        Undoing the injection recovers the file on disk exactly, so the oracle
+        is the shipped byte stream and nothing is typed here by hand. Driven off
+        ``routes.PAGES``, so a page added or moved is covered without a new case.
+        """
+        filename, content_type, injected = routes.PAGES[path]
+        response = editor.request("GET", path, token=False)
+        assert response.status == 200
+        assert response.headers["Content-Type"] == content_type
+        shipped = (STATIC / filename).read_text(encoding="utf-8")
+        recovered = CONFIG_RE.sub(CONFIG_MARKER, response.text) if injected else response.text
+        assert recovered == shipped, f"GET {path} did not serve {filename}"
+
+    def test_the_landing_page_is_configured_like_any_served_page(self, editor: Editor) -> None:
+        # It fetches the operations index with the launch token, so it needs
+        # the same injection the other two get — and needs it exactly once.
         response = editor.request("GET", "/", token=False)
+        assert CONFIG_MARKER not in response.text
+        assert len(CONFIG_RE.findall(response.text)) == 1
+        assert editor.server.token in response.text
         assert f'version: "{__version__}"' in response.text
 
     def test_the_viewer_page_is_configured_and_keeps_its_data_slot(self, editor: Editor) -> None:
@@ -523,7 +574,7 @@ class TestStaticPages:
         stops UI redress — an attacker page framing the real editor, token and
         all, and clicking its real buttons. These two headers do.
         """
-        for path in ("/", "/viewer"):
+        for path in ("/", "/editor", "/viewer"):
             response = editor.request("GET", path, token=False)
             assert response.status == 200, path
             assert response.headers["X-Frame-Options"] == "DENY", path
@@ -531,7 +582,12 @@ class TestStaticPages:
 
     def test_every_response_forbids_content_type_sniffing(self, editor: Editor) -> None:
         """Including the API's, whose problem+json a sniffer could read as HTML."""
-        for path, token in (("/", False), ("/assets/renderer.js", False), ("/api/v1/ping", True)):
+        for path, token in (
+            ("/", False),
+            ("/editor", False),
+            ("/assets/renderer.js", False),
+            ("/api/v1/ping", True),
+        ):
             response = editor.request("GET", path, token=token)
             assert response.headers["X-Content-Type-Options"] == "nosniff", path
 

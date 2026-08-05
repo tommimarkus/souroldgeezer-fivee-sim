@@ -668,7 +668,11 @@ ROUTES: tuple[Route, ...] = (
     ),
     # --- the served pages ---------------------------------------------------
     Route(
-        "GET", "/", "page.editor", "The interactive map editor page.",
+        "GET", "/", "page.home", "The landing page: what this launch serves.",
+        handler="page", contract=False,
+    ),
+    Route(
+        "GET", "/editor", "page.editor", "The interactive map editor page.",
         handler="page", contract=False,
     ),
     Route(
@@ -683,7 +687,8 @@ ROUTES: tuple[Route, ...] = (
 
 #: path -> (file under ``static/``, content type, inject the launch config).
 PAGES: Mapping[str, tuple[str, str, bool]] = {
-    "/": ("editor.html", "text/html; charset=utf-8", True),
+    "/": ("home.html", "text/html; charset=utf-8", True),
+    "/editor": ("editor.html", "text/html; charset=utf-8", True),
     "/viewer": ("viewer.html", "text/html; charset=utf-8", True),
     "/assets/renderer.js": ("renderer.js", "text/javascript; charset=utf-8", False),
 }

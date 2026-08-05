@@ -32,7 +32,8 @@ Worth stating plainly, because it shapes what counts as a vulnerability here.
   a stdio server here that listened on nothing, with the browser editor as the
   one component that opened a socket. The stdio server is gone: every operation
   is served by one localhost HTTP process, started on demand by the `fivee`
-  command, and the editor and replay viewer are two pages that process serves.
+  command, and the landing page, map editor and replay viewer are three pages
+  that process serves.
   So the controls below are not a side surface any more — they are the engine's
   only front door, and they are what a report should aim at.
 - **What those controls are**, listed in the module docstring of

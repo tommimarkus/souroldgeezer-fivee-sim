@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fivee-sim</title>
+<script>
+/*__EDITOR_CONFIG__*/
+</script>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea; --panel: #ebe7de; --edge: #d4cfc2; --text: #2b2925;
+  --muted: #6f6a5e; --accent: #7a5c2e; --error: #a03434;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1f22; --panel: #24272b; --edge: #34383d; --text: #d9d6cf;
+    --muted: #8f8b82; --accent: #c9a86a; --error: #d98181;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-bottom: 1px solid var(--edge); background: var(--panel);
+}
+header h1 { margin: 0; font-size: 15px; letter-spacing: 0.01em; }
+header .spacer { flex: 1; }
+#engine-version, #ops-count { color: var(--muted); white-space: nowrap; }
+main { max-width: 62rem; margin: 0 auto; padding: 16px 14px 40px; }
+h2 {
+  margin: 26px 0 8px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted); font-weight: 600;
+}
+h2:first-of-type { margin-top: 6px; }
+#pages { display: flex; gap: 10px; flex-wrap: wrap; }
+.card {
+  flex: 1 1 15rem; display: block; padding: 11px 13px; text-decoration: none;
+  color: inherit; background: var(--panel); border: 1px solid var(--edge);
+  border-radius: 6px;
+}
+.card:hover { border-color: var(--accent); }
+.card strong { display: block; font-size: 14px; margin-bottom: 3px; }
+.card span { color: var(--muted); }
+#ops-status { color: var(--muted); }
+#ops-status.error { color: var(--error); white-space: pre-wrap; }
+.group { margin: 14px 0 0; }
+.group > h3 {
+  margin: 0 0 4px; font-size: 12px; color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+table { border-collapse: collapse; width: 100%; }
+td { padding: 2px 10px 2px 0; vertical-align: baseline; border: 0; }
+td.op, td.route {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  white-space: nowrap;
+}
+td.route { color: var(--muted); }
+td.summary { width: 99%; }
+footer {
+  max-width: 62rem; margin: 0 auto; padding: 0 14px 24px;
+  color: var(--muted); border-top: 1px solid var(--edge);
+}
+footer p { margin: 10px 0 0; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>5E-compatible simulation engine</h1>
+  <span id="engine-version"></span>
+  <span class="spacer"></span>
+  <a id="link-openapi" hidden>OpenAPI</a>
+</header>
+
+<main>
+  <h2>Pages</h2>
+  <div id="pages">
+    <a class="card" href="/editor">
+      <strong>Map editor</strong>
+      <span>Draw, generate and hand-tune battle maps; save them by id.</span>
+    </a>
+    <a class="card" href="/viewer">
+      <strong>Replay viewer</strong>
+      <span>Step through an exported fight, round by round.</span>
+    </a>
+  </div>
+
+  <h2>Operations <span id="ops-count"></span></h2>
+  <p id="ops-status">Loading&hellip;</p>
+  <div id="operations"></div>
+</main>
+
+<footer>
+  <p>Every operation is also a command: <code>fivee &lt;operation&gt;</code>, and
+  <code>fivee help &lt;operation&gt;</code> for its arguments.</p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  /* The landing page is a signpost, and it is deliberately derived: the list
+     below is whatever GET /operations answered, which is rendered from the
+     same route table the server dispatches from. Nothing here spells an
+     operation name, so this page cannot fall out of date with the contract.
+
+     Like the viewer, it must also survive being opened with no server behind
+     it — so every server-dependent element starts hidden and the single fetch
+     is reachable only when a launch config was injected. */
+  var CONFIG = window.__FIVEE_EDITOR__ || null;
+
+  function byId(id) { return document.getElementById(id); }
+
+  function setStatus(text, cls) {
+    var node = byId("ops-status");
+    node.textContent = text;
+    node.className = cls || "";
+    node.hidden = !text;
+  }
+
+  function cell(row, text, cls) {
+    var td = document.createElement("td");
+    td.textContent = text;
+    if (cls) { td.className = cls; }
+    row.appendChild(td);
+    return td;
+  }
+
+  /* Grouped by the prefix of `group.verb`, in the order the server listed
+     them: the table's own order is curated (the server itself, then dice,
+     then rules outward), and re-sorting here would throw that away. */
+  function render(payload) {
+    var operations = payload.operations || [];
+    var host = byId("operations");
+    var groups = {};
+    var order = [];
+    operations.forEach(function (op) {
+      var name = String(op.operation || "");
+      var group = name.indexOf(".") === -1 ? name : name.slice(0, name.indexOf("."));
+      if (!groups[group]) { groups[group] = []; order.push(group); }
+      groups[group].push(op);
+    });
+    order.forEach(function (group) {
+      var section = document.createElement("div");
+      section.className = "group";
+      var heading = document.createElement("h3");
+      heading.textContent = group;
+      section.appendChild(heading);
+      var table = document.createElement("table");
+      groups[group].forEach(function (op) {
+        var row = document.createElement("tr");
+        cell(row, op.operation, "op");
+        cell(row, op.method + " " + op.path, "route");
+        cell(row, op.summary || "", "summary");
+        table.appendChild(row);
+      });
+      section.appendChild(table);
+      host.appendChild(section);
+    });
+    byId("ops-count").textContent = operations.length + " operations";
+  }
+
+  function loadOperations() {
+    var link = byId("link-openapi");
+    link.href = CONFIG.apiBase + "/openapi.json";
+    link.hidden = false;
+    window.fetch(CONFIG.apiBase + "/operations", {
+      headers: {"X-Fivee-Editor-Token": CONFIG.token}
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var parsed = null;
+        try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
+        return {status: response.status, json: parsed};
+      });
+    }).then(function (result) {
+      if (result.status !== 200 || !result.json) {
+        var detail = (result.json && result.json.detail) || "status " + result.status;
+        setStatus("Could not read the operation index: " + detail, "error");
+        return;
+      }
+      setStatus("");
+      render(result.json);
+    }).catch(function (error) {
+      /* A network-level rejection resolves like any other failure rather than
+         becoming an unhandled rejection: the two page links above still work,
+         so the page stays useful when the server has stopped underneath it. */
+      setStatus(
+        "The engine is not answering (" + error + "). It may have stopped; "
+          + "start it again with `fivee serve`.",
+        "error"
+      );
+    });
+  }
+
+  if (CONFIG) {
+    byId("engine-version").textContent = "engine " + CONFIG.version;
+  } else {
+    setStatus(
+      "Opened without a server, so there is no operation index to show. "
+        + "Start the engine with `fivee serve` and open the URL it prints.",
+      "error"
+    );
+  }
+  if (CONFIG) { loadOperations(); }
+})();
+</script>
+</body>
+</html>

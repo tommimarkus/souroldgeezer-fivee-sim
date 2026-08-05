@@ -114,7 +114,8 @@ footer {
        always-visible control that cannot work is worse than an absent one. -->
   <label id="served-replays" hidden>Replay
     <select id="replay-select" aria-label="replay to play"></select></label>
-  <a id="link-editor" href="/" hidden>Map editor</a>
+  <a id="link-home" href="/" hidden>Home</a>
+  <a id="link-editor" href="/editor" hidden>Map editor</a>
   <button id="btn-open-file">Open replay&#8230;</button>
   <input id="file-input" type="file" accept=".json,application/json" hidden>
 </header>
@@ -1355,6 +1356,7 @@ if (typeof FiveeRenderer === "undefined") {
   }
 
   function connectToServer() {
+    byId("link-home").hidden = false;
     byId("link-editor").hidden = false;
     byId("replay-select").addEventListener("change", function () {
       playServed(byId("replay-select").value);

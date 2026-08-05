@@ -226,6 +226,11 @@ class TestLifecycle:
         first = out(capsys)
         assert first["already_running"] is False
         assert first["url"] == f"http://127.0.0.1:{first['port']}/"
+        # Three URLs, and `url` is the landing page rather than the editor.
+        # The editor used to be the root, so a caller handed `url` to open it;
+        # naming it separately is what stops that habit reaching a browser at
+        # the wrong page and being reported as "the editor is broken".
+        assert first["editor_url"] == f"{first['url']}editor"
         assert first["viewer_url"] == f"{first['url']}viewer"
 
         assert run("serve") == cli.EXIT_OK

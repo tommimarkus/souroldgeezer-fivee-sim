@@ -135,8 +135,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     signal.signal(signal.SIGTERM, _on_sigterm)
 
     print(f"Serving the 5E-compatible engine on {server.url}")
-    print(f"API: {server.url}api/v1/operations — the map editor is the root page.")
-    print("Open it in a browser; the page configures its own access token.")
+    print(f"Pages: {server.url} (index), {server.url}editor, {server.url}viewer")
+    print(f"API: {server.url}api/v1/operations")
+    print("Open the index in a browser; each page configures its own access token.")
     sys.stdout.flush()
     try:
         server.serve_forever()

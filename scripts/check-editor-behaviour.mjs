@@ -181,6 +181,7 @@ function inlineScript(html, source, marker) {
 const rendererSrc = read("renderer.js");
 const editorHtml = read("editor.html");
 const viewerHtml = read("viewer.html");
+const homeHtml = read("home.html");
 const replayInvalidCorpus = JSON.parse(readFileSync(path.join(
   REPO_ROOT, "souroldgeezer-fivee-sim", "engine", "tests", "fixtures",
   "replay-invalid.json"
@@ -205,6 +206,9 @@ const VIEWER_IDS = [
   "btn-play", "btn-back", "btn-forward", "speed", "embedded-data", "level-select",
   "follow-level", "combatant-state",
 ];
+const HOME_IDS = [
+  "operations", "ops-status", "ops-count", "link-openapi", "engine-version",
+];
 const RENDERER_EXPORTS = [
   "render", "fitView", "resizeCanvas", "visibleBounds", "terrainOverridesFor",
 ];
@@ -223,6 +227,7 @@ function checkIds(source, html, ids) {
 }
 checkIds("editor.html", editorHtml, EDITOR_IDS);
 checkIds("viewer.html", viewerHtml, VIEWER_IDS);
+checkIds("home.html", homeHtml, HOME_IDS);
 
 /* --- the stub DOM ---------------------------------------------------------
  * Shared by both pages. Deliberately dumb: it records what the page did to it
@@ -407,7 +412,13 @@ function makePage(options) {
     }
     return elements.get(id);
   };
-  context.canvas = element(options.canvasIds[0]);
+  /* A page need not draw. `makeContext` starts `canvas` null and the landing
+   * page never reads it, so a canvas-less page omits `canvasIds` entirely
+   * rather than passing an empty array and getting an element keyed on
+   * `undefined` — which worked only for as long as nothing looked at it. */
+  if (options.canvasIds && options.canvasIds.length) {
+    context.canvas = element(options.canvasIds[0]);
+  }
 
   const documentStub = new El("document");
   documentStub.getElementById = element;
@@ -2622,6 +2633,143 @@ await suite("editor.html: the resize dialog", "the page sandbox in makePage()", 
   }
   check("no prototype was polluted along the way", ({}).polluted === undefined,
     "Object.prototype carries `polluted`");
+});
+
+/* --- home.html ------------------------------------------------------------ */
+
+const HOME_HIDDEN = hiddenElementIds(homeHtml);
+
+/* The operation index this page is handed. Deliberately *not* in alphabetical
+ * order, and deliberately not the real one: the page must reproduce whatever
+ * order the server listed — the route table's order is curated — so a group
+ * sort would show up here as `alpha` first. Fake names for the same reason the
+ * text contract forbids real ones in the markup: nothing about this page is
+ * allowed to know what the engine's operations are called. */
+const OPERATION_INDEX = {
+  version: "test",
+  base: "/api",
+  openapi: "/api/openapi.json",
+  /* Deliberately disagreeing with `operations.length`. The page renders the
+   * list it was given, so its own tally must come from that list — with a
+   * truthful count here, "4 operations" would pass just as well against a page
+   * that echoed this field, and the case below would prove nothing. */
+  count: 99,
+  operations: [
+    { operation: "server.ping", method: "GET", path: "/api/ping", summary: "Liveness." },
+    { operation: "server.operations", method: "GET", path: "/api/operations",
+      summary: "This index." },
+    { operation: "zebra.stripe", method: "POST", path: "/api/zebras", summary: "Stripe one." },
+    { operation: "alpha.first", method: "GET", path: "/api/alphas", summary: "First." },
+  ],
+};
+
+const homePage = (config, reply) => {
+  const page = makePage({ config, hiddenIds: HOME_HIDDEN });
+  if (reply) { page.reply = reply; }
+  return page;
+};
+const groupsOf = (page) => page.element("operations").children.map((group) => ({
+  name: group.children[0].textContent,
+  rows: group.children[1].children.map((row) => row.children.map((td) => td.textContent)),
+}));
+
+await suite("home.html: the landing page", "the page sandbox in makePage()", async () => {
+  /* 1. Served: one request, carrying the launch token, and the answer becomes
+   *    the page. The token assertion is the one a grep cannot make — the
+   *    header is read off what the stub was actually called with. */
+  let sentHeaders = null;
+  const served = homePage(
+    { token: "launch-token", apiBase: "/api", version: "2026.8.99" },
+    (url, init) => { sentHeaders = (init || {}).headers || null; return { status: 200, body: OPERATION_INDEX }; }
+  );
+  served.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+  await flush();
+
+  check("the landing page asks the server for its operation index, once",
+    served.requests.length === 1 && served.requests[0].url === "/api/operations",
+    show(served.requests));
+  check("and sends the launch token with it",
+    sentHeaders !== null && sentHeaders["X-Fivee-Editor-Token"] === "launch-token",
+    show(sentHeaders));
+  check("the version shown is the one this launch injected, not a baked-in string",
+    served.element("engine-version").textContent === "engine 2026.8.99",
+    served.element("engine-version").textContent);
+
+  const groups = groupsOf(served);
+  check("every operation is rendered, grouped by its prefix",
+    groups.length === 3
+      && groups.reduce((total, group) => total + group.rows.length, 0) === 4,
+    show(groups.map((group) => [group.name, group.rows.length])));
+  check("in the order the server listed them, not sorted",
+    groups.map((group) => group.name).join(",") === "server,zebra,alpha",
+    show(groups.map((group) => group.name)));
+  check("each row carries the operation, its request line, and its summary",
+    show(groups[1].rows[0]) === show(["zebra.stripe", "POST /api/zebras", "Stripe one."]),
+    show(groups[1].rows[0]));
+  check("the count comes from the list rendered, not from the payload's own count",
+    served.element("ops-count").textContent === "4 operations",
+    served.element("ops-count").textContent + " (the payload claims 99)");
+  check("and the loading line is gone once there is an index to show",
+    served.element("ops-status").hidden === true,
+    show([served.element("ops-status").hidden, served.element("ops-status").textContent]));
+  check("the OpenAPI link is revealed and built from the injected api base",
+    served.element("link-openapi").hidden === false
+      && served.element("link-openapi").href === "/api/openapi.json",
+    show([served.element("link-openapi").hidden, served.element("link-openapi").href]));
+
+  /* 2. A refusal reports the server's own words. A status code alone would not
+   *    tell the user that the token is what is wrong. */
+  const refused = homePage(
+    { token: "stale", apiBase: "/api", version: "test" },
+    () => ({ status: 401, body: { detail: "missing or invalid editor token" } })
+  );
+  refused.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+  await flush();
+  check("a refused index reports the server's detail, not just its status",
+    refused.element("ops-status").className === "error"
+      && refused.element("ops-status").textContent.indexOf(
+        "missing or invalid editor token") !== -1,
+    refused.element("ops-status").textContent);
+
+  /* 3. The server stopped underneath the page. A network-level rejection has
+   *    to land as a status line; unhandled, it would leave "Loading…" on
+   *    screen with the reason only in a console nobody has open. */
+  const dropped = homePage({ token: "launch-token", apiBase: "/api", version: "test" });
+  dropped.sandbox.fetch = () => Promise.reject(new Error("connection refused"));
+  dropped.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+  await flush();
+  check("a dropped connection becomes a status line rather than an unhandled rejection",
+    dropped.element("ops-status").className === "error"
+      && dropped.element("ops-status").textContent.indexOf("not answering") !== -1,
+    dropped.element("ops-status").textContent);
+});
+
+/* Deliberately its own suite rather than a fourth case in the one above.
+ * Deleting the page's config gate makes it read through a null CONFIG and
+ * *throw*, and a suite that throws takes its remaining cases with it — so as a
+ * trailing case the guard's own assertion would never run, and the mutation
+ * would be reported against whichever case happened to be next. Alone, the
+ * failure names the guard that was removed. */
+await suite("home.html: opened without a server", "the page sandbox in makePage()", async () => {
+  /* The page still exists offline — both page links are plain markup — but it
+   * must not reach the network, and it must say why the index is missing
+   * rather than sitting on "Loading…" forever. */
+  const offline = homePage(null);
+  offline.run(inlineScript(homeHtml, "home.html", "function loadOperations("));
+  await flush();
+  check("with no injected config the page issues no request at all",
+    offline.requests.length === 0, show(offline.requests));
+  check("and says why the index is absent instead of loading forever",
+    offline.element("ops-status").className === "error"
+      && offline.element("ops-status").textContent.indexOf("fivee serve") !== -1,
+    show([offline.element("ops-status").className,
+      offline.element("ops-status").textContent]));
+  check("and leaves the OpenAPI link hidden, because there is nothing to link to",
+    offline.element("link-openapi").hidden === true,
+    show(offline.element("link-openapi").hidden));
+  check("nothing is rendered into the operation list",
+    offline.element("operations").children.length === 0,
+    show(offline.element("operations").children.length));
 });
 
 /* --- totals --------------------------------------------------------------- */
