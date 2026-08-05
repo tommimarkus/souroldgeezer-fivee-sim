@@ -2873,7 +2873,6 @@ class Encounter:
             )
 
     def _do_cast(self, actor: Creature, action: Action, rng: Random) -> None:
-        self._require_action(actor)
         if action.spell is None:
             raise EncounterError("casting needs a spell name")
         if action.spell not in actor.spells:
@@ -2881,6 +2880,23 @@ class Encounter:
         spell = self.spellbook.get(action.spell)
         if spell is None:
             raise EncounterError(f"unknown spell {action.spell!r}")
+        # Which budget this cast wants, checked here rather than at the top of the
+        # method, because the answer belongs to the spell and the spell is only just
+        # resolved. Same two branches as :meth:`_do_use_item` — SRD 5.2.1 prints
+        # "Casting Time: Bonus Action" on Healing Word and Mass Healing Word, and an
+        # ordinary spell offered the wrong budget is refused rather than quietly
+        # promoted.
+        if spell.action_cost is ActionCost.BONUS_ACTION:
+            if self._turn.bonus_action_used:
+                raise EncounterError(
+                    f"{actor.name} has already used a bonus action this turn"
+                )
+        else:
+            if action.as_bonus_action:
+                raise EncounterError(
+                    f"{spell.name} takes an action, not a bonus action"
+                )
+            self._require_action(actor)
         slot_level = action.slot_level if action.slot_level is not None else spell.level
         # Every reason to refuse is gathered before a single thing is spent. The
         # slot-level check in particular used to live only inside ``resolve_spell``,
@@ -2957,7 +2973,10 @@ class Encounter:
                 action.natural, self.spell_attack_advantage(actor, chosen[0], spell)
             )
 
-        self._turn.action_used = True
+        if spell.action_cost is ActionCost.BONUS_ACTION:
+            self._turn.bonus_action_used = True
+        else:
+            self._turn.action_used = True
         if spell.level > 0:
             actor.spell_slots[slot_level] = actor.spell_slots.get(slot_level, 0) - 1
 
@@ -3021,6 +3040,12 @@ class Encounter:
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
+                   # Which budget this cost, the same way ``use_item`` reports it: a
+                   # Healing Word and a Cure Wounds are different kinds of turn, and
+                   # a log that renders them identically loses that. Already in
+                   # :data:`EVENT_VISIBLE_KEYS` — an action economy is spent in the
+                   # open at a real table.
+                   action_cost=spell.action_cost.value,
                    center=as_point(action.center) if action.center is not None else None,
                    targets=[c.name for c in chosen])
 

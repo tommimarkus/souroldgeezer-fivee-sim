@@ -384,12 +384,19 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
         )
     death_save_successes, death_save_failures = parse_death_saves(spec.get("death_saves"))
     try:
+        name_str = str(spec["name"])
+        max_hp_value = int(spec["max_hp"])
+        hp_value = int(spec.get("hp", -1))
+        if hp_value > max_hp_value:
+            raise RequestError(
+                f"combatant {name_str}: hp {hp_value} cannot exceed max_hp {max_hp_value}"
+            )
         return Creature(
-            name=str(spec["name"]),
+            name=name_str,
             team=str(spec["team"]),
             ac=int(spec["ac"]),
-            max_hp=int(spec["max_hp"]),
-            hp=int(spec.get("hp", -1)),
+            max_hp=max_hp_value,
+            hp=hp_value,
             speed=int(spec.get("speed", 30)),
             climb_speed=int(spec.get("climb_speed", 0)),
             swim_speed=int(spec.get("swim_speed", 0)),

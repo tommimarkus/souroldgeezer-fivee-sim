@@ -525,6 +525,23 @@ class TestLinkingEncounters:
         assert arrived["hp"] == 30
         assert arrived["position"] == [20, 20]
 
+    def test_a_recovery_hp_exceeding_max_hp_is_refused(self) -> None:
+        # SRD 5.2.1 Rules Glossary: "You can't have more Hit Points than your Hit
+        # Point maximum." The recovery door must validate this too.
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=65)
+
+        with pytest.raises(
+            RequestError, match="combatant Thora: hp 500 cannot exceed max_hp"
+        ):
+            api.adventure_encounter(
+                "adv-1",
+                carry=["Thora"],
+                recovery={"Thora": {"hp": 500}},
+                seed=66,
+                combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            )
+
     def test_a_recovery_key_that_is_not_carried_state_is_refused(self) -> None:
         api.adventure_create("The Sunless Citadel")
         api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=65)

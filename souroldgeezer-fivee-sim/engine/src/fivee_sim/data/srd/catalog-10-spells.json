@@ -21,6 +21,115 @@
       ]
     },
     {
+      "name": "Healing Word",
+      "level": 1,
+      "school": "Abjuration",
+      "heal": "2d4",
+      "upcast_heal": "2d4",
+      "add_spellcasting_modifier": true,
+      "range_feet": 60,
+      "action_cost": "bonus_action",
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "name": "Mass Healing Word",
+      "level": 3,
+      "school": "Abjuration",
+      "heal": "2d4",
+      "upcast_heal": "1d4",
+      "add_spellcasting_modifier": true,
+      "range_feet": 60,
+      "max_targets": 6,
+      "action_cost": "bonus_action",
+      "provenance": "SRD 5.2.1"
+    },
+    {
+      "name": "Mass Cure Wounds",
+      "level": 5,
+      "school": "Abjuration",
+      "heal": "5d8",
+      "upcast_heal": "1d8",
+      "add_spellcasting_modifier": true,
+      "range_feet": 60,
+      "max_targets": 6,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_sphere_containment",
+          "feature": "30-foot-radius Sphere origin; modelled as up to six named targets within range"
+        }
+      ]
+    },
+    {
+      "name": "Heal",
+      "level": 6,
+      "school": "Abjuration",
+      "heal": "0d1+70",
+      "upcast_heal": "10d1",
+      "range_feet": 60,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "dice_notation_flat_value",
+          "feature": "70 flat healing has no bare-integer Dice form; encoded as 0d1+70, upcast as 10d1"
+        },
+        {
+          "code": "unsupported_condition_removal",
+          "feature": "Ends the Blinded, Deafened, and Poisoned conditions on the target"
+        }
+      ]
+    },
+    {
+      "name": "Prayer of Healing",
+      "level": 2,
+      "school": "Abjuration",
+      "heal": "2d8",
+      "upcast_heal": "1d8",
+      "range_feet": 30,
+      "max_targets": 5,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_casting_time",
+          "feature": "10-minute casting time; modelled as an ordinary action-cost cast"
+        },
+        {
+          "code": "unsupported_short_rest_benefit",
+          "feature": "Targets also gain the benefits of a Short Rest"
+        },
+        {
+          "code": "unsupported_target_reuse_limit",
+          "feature": "A creature cannot be affected again until it finishes a Long Rest"
+        }
+      ]
+    },
+    {
+      "name": "Regenerate",
+      "level": 7,
+      "school": "Transmutation",
+      "heal": "4d8+15",
+      "range_feet": 5,
+      "provenance": "SRD 5.2.1",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_touch_range",
+          "feature": "Touch range modelled as 5 feet"
+        },
+        {
+          "code": "unsupported_casting_time",
+          "feature": "1-minute casting time; modelled as an ordinary action-cost cast"
+        },
+        {
+          "code": "unsupported_ongoing_healing",
+          "feature": "1 Hit Point regained at the start of each of the target's turns for the duration"
+        },
+        {
+          "code": "unsupported_limb_regrowth",
+          "feature": "Severed body parts regrow after 2 minutes"
+        }
+      ]
+    },
+    {
       "name": "Fireball",
       "level": 3,
       "school": "Evocation",
@@ -10201,7 +10310,13 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "unmodelled_facts": [
+        {
+          "code": "unsupported_action_indirection",
+          "feature": "Casting conjures 10 berries; the healing is a separate Bonus Action to eat one later, not an effect of the cast itself"
+        }
+      ]
     },
     {
       "id": "930-10-16-5-grease",
@@ -10944,7 +11059,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Heal"
+      }
     },
     {
       "id": "943-10-16-18-healing-word",
@@ -10989,7 +11108,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Healing Word"
+      }
     },
     {
       "id": "944-10-16-19-heat-metal",
@@ -13553,7 +13676,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Mass Cure Wounds"
+      }
     },
     {
       "id": "987-10-16-62-mass-heal",
@@ -13643,7 +13770,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Mass Healing Word"
+      }
     },
     {
       "id": "989-10-16-64-mass-suggestion",
@@ -15531,7 +15662,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Prayer of Healing"
+      }
     },
     {
       "id": "1021-10-16-96-prestidigitation",
@@ -16402,7 +16537,11 @@
         }
       },
       "provenance": "SRD 5.2.1",
-      "parent_id": "779-10-13-spell-descriptions"
+      "parent_id": "779-10-13-spell-descriptions",
+      "content_ref": {
+        "section": "spells",
+        "name": "Regenerate"
+      }
     },
     {
       "id": "1036-10-16-111-ray-of-sickness",

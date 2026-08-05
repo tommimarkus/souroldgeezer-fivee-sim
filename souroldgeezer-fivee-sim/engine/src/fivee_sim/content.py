@@ -164,7 +164,7 @@ _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
     "shape", "radius", "length",
     "size", "width",
-    "range_feet", "max_targets", "condition", "concentration",
+    "range_feet", "max_targets", "condition", "concentration", "action_cost",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -971,6 +971,7 @@ def _parse_spell(
         condition=reader.string("condition") or None,
         concentration=reader.boolean("concentration"),
         provenance=provenance,
+        action_cost=reader.enum("action_cost", ActionCost) or ActionCost.ACTION,
     )
     if spell.damage is not None and spell.damage_type is None:
         reader.fail("damage_type", "a spell that deals damage must name a damage type")
@@ -978,6 +979,29 @@ def _parse_spell(
         reader.fail(
             "save_ability",
             "a spell cannot both require an attack roll and offer a saving throw",
+        )
+    # ``range_feet`` defaults to 0, and 0 already means "no range check at all"
+    # (``Encounter._require_in_range``). So an author who omits the field — the
+    # honest transcription of "Range: Touch", which names no number — is
+    # indistinguishable from one deliberately declaring unlimited reach, and Cure
+    # Wounds and Regenerate are both Touch. Exempt for an area spell, whose range
+    # is measured at its point of origin or poured out of the caster rather than
+    # named on the cast.
+    #
+    # A warning rather than a refusal, and the bound is a compatibility promise
+    # rather than taste: a pack this repo has never seen may already omit the
+    # field, and ``test_existing_packs_remain_compatible_and_new_sections_are_optional``
+    # exists to say a campaign's own content keeps loading. Scanning the bundled
+    # catalog and the test corpus cannot speak for that population. Same trade as
+    # the unshaped-radius warning below — the legacy reading survives, and the
+    # record is told to say what it means.
+    if record.get("range_feet") is None and not spell.is_area:
+        reader.warn(
+            "range_feet",
+            "does not say what range it has, so it resolves with no range check "
+            "at all and can be cast at any distance. Declare it — a number of "
+            "feet, 5 for Touch, or 0 for Self — so the record says what the "
+            "spell does",
         )
     _check_area_declaration(reader, record, spell, shape)
     return (spell, dict(record)) if reader.ok else None
@@ -1552,11 +1576,13 @@ def _cross_reference(
     creatures: Mapping[str, dict[str, Any]],
     sources: Mapping[tuple[str, str], str],
     diagnostics: list[Diagnostic],
+    catalog: Mapping[str, CatalogRecord] | None = None,
 ) -> None:
     """Check references that only the merged set can answer.
 
     A spell naming ``condition: "vale-cursed"`` is valid exactly when some pack in
-    the merged set defines it, which no per-file validator can know.
+    the merged set defines it, which no per-file validator can know. A catalog
+    row's ``content_ref`` is the same kind of claim pointing the other way.
     """
     known = sorted(registry_conditions)
     available = ", ".join(known) or "none"
@@ -1651,6 +1677,41 @@ def _cross_reference(
                     severity=Severity.WARNING,
                 )
             )
+
+    # A catalog row's ``content_ref`` is what makes ``catalog.get`` answer "the
+    # engine can run this", so a dangling one ships a broken promise: the payload
+    # still carries the ref while ``sources.executable`` comes back null, pointing a
+    # caller at an executable record that is not there. An error rather than a
+    # warning, unlike the creature references above — those describe a fight that
+    # will refuse cleanly at use time, whereas this one misreports identity, which
+    # is the catalog's whole job.
+    #
+    # The ``section`` is taken literally as the place to look. Nothing ties a row's
+    # ``kind`` to the section it points at, and whether it should is a live question
+    # — it is what made Goodberry (a spell whose healing happens later, by whoever
+    # eats a berry) a judgement call rather than an error.
+    by_section: Mapping[str, Mapping[str, Any]] = {
+        "spells": spells, "items": items, "creatures": creatures,
+        "conditions": registry_conditions,
+    }
+    for row in (catalog or {}).values():
+        ref = row.content_ref
+        if ref is None:
+            continue
+        section_table = by_section.get(ref.section)
+        if section_table is not None and ref.name in section_table:
+            continue
+        diagnostics.append(
+            Diagnostic(
+                source=sources.get(("catalog", row.id), "unknown"),
+                section="catalog", record=row.id, field="content_ref",
+                problem=(
+                    f"points at {ref.name!r} in {ref.section!r}, which no loaded "
+                    f"pack defines; the row would claim an executable record that "
+                    f"is not there"
+                ),
+            )
+        )
 
 
 def _build(
@@ -1761,7 +1822,9 @@ def _build(
         }
         retained.append(name)
 
-    _cross_reference(condition_effects, spells, items, creatures, sources, diagnostics)
+    _cross_reference(
+        condition_effects, spells, items, creatures, sources, diagnostics, catalog
+    )
 
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
     if errors:
