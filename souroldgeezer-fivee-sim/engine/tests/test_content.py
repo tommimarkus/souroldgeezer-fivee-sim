@@ -1108,6 +1108,49 @@ class TestSpellActionCostSchema:
         assert registry.spells["Vale Bolt"].action_cost is ActionCost.ACTION
 
 
+class TestCatalogContentRefMustResolve:
+    """A catalog row's ``content_ref`` has to name a record that exists.
+
+    The field is what makes `catalog.get` say "the engine can run this", so a
+    dangling one is a broken promise rather than a cosmetic slip: the payload
+    still carries the ref while `sources.executable` comes back null, so a caller
+    is pointed at an executable record and finds nothing there. Only the merged
+    set can answer whether the target exists, which is why it belongs beside the
+    condition checks in ``_cross_reference`` rather than in ``_parse_catalog_record``.
+    """
+
+    def check(self, tmp_path: Path, ref: dict[str, Any]) -> list[str]:
+        path = write_pack(tmp_path, "linked.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Real Spell", "level": 1, "range_feet": 30,
+                "provenance": "test",
+            }],
+            "catalog": [{
+                "id": "row-1", "kind": "spell", "name": "Row", "source_ids": ["row-1"],
+                "pages": [42], "fact_status": "complete", "facts": {},
+                "provenance": "test", "content_ref": ref,
+            }],
+        })
+        return problems(validate([path], include_environment=False))
+
+    def test_a_content_ref_naming_no_such_record_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"section": "spells", "name": "Ghost Spell"})
+        assert any("no loaded pack defines" in p for p in found), found
+        assert any("Ghost Spell" in p for p in found), found
+
+    def test_a_content_ref_naming_a_real_record_is_accepted(self, tmp_path: Path) -> None:
+        assert not self.check(tmp_path, {"section": "spells", "name": "Real Spell"})
+
+    def test_the_section_is_where_the_record_is_looked_for(self, tmp_path: Path) -> None:
+        # The name exists — as a *spell* — but the ref says `items`, so it must not
+        # resolve. This is the case that made Goodberry a judgement call: nothing
+        # ties a row's `kind` to the section it points at, so the section has to be
+        # taken literally as the place to look.
+        found = self.check(tmp_path, {"section": "items", "name": "Real Spell"})
+        assert any("no loaded pack defines" in p for p in found), found
+
+
 class TestSpellRangeIsRequired:
     """``range_feet`` is *warned* about, not required, when a named-target spell omits it.
 

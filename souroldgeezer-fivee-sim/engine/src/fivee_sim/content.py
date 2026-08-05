@@ -1576,11 +1576,13 @@ def _cross_reference(
     creatures: Mapping[str, dict[str, Any]],
     sources: Mapping[tuple[str, str], str],
     diagnostics: list[Diagnostic],
+    catalog: Mapping[str, CatalogRecord] | None = None,
 ) -> None:
     """Check references that only the merged set can answer.
 
     A spell naming ``condition: "vale-cursed"`` is valid exactly when some pack in
-    the merged set defines it, which no per-file validator can know.
+    the merged set defines it, which no per-file validator can know. A catalog
+    row's ``content_ref`` is the same kind of claim pointing the other way.
     """
     known = sorted(registry_conditions)
     available = ", ".join(known) or "none"
@@ -1675,6 +1677,41 @@ def _cross_reference(
                     severity=Severity.WARNING,
                 )
             )
+
+    # A catalog row's ``content_ref`` is what makes ``catalog.get`` answer "the
+    # engine can run this", so a dangling one ships a broken promise: the payload
+    # still carries the ref while ``sources.executable`` comes back null, pointing a
+    # caller at an executable record that is not there. An error rather than a
+    # warning, unlike the creature references above — those describe a fight that
+    # will refuse cleanly at use time, whereas this one misreports identity, which
+    # is the catalog's whole job.
+    #
+    # The ``section`` is taken literally as the place to look. Nothing ties a row's
+    # ``kind`` to the section it points at, and whether it should is a live question
+    # — it is what made Goodberry (a spell whose healing happens later, by whoever
+    # eats a berry) a judgement call rather than an error.
+    by_section: Mapping[str, Mapping[str, Any]] = {
+        "spells": spells, "items": items, "creatures": creatures,
+        "conditions": registry_conditions,
+    }
+    for row in (catalog or {}).values():
+        ref = row.content_ref
+        if ref is None:
+            continue
+        section_table = by_section.get(ref.section)
+        if section_table is not None and ref.name in section_table:
+            continue
+        diagnostics.append(
+            Diagnostic(
+                source=sources.get(("catalog", row.id), "unknown"),
+                section="catalog", record=row.id, field="content_ref",
+                problem=(
+                    f"points at {ref.name!r} in {ref.section!r}, which no loaded "
+                    f"pack defines; the row would claim an executable record that "
+                    f"is not there"
+                ),
+            )
+        )
 
 
 def _build(
@@ -1785,7 +1822,9 @@ def _build(
         }
         retained.append(name)
 
-    _cross_reference(condition_effects, spells, items, creatures, sources, diagnostics)
+    _cross_reference(
+        condition_effects, spells, items, creatures, sources, diagnostics, catalog
+    )
 
     errors = [d for d in diagnostics if d.severity is Severity.ERROR]
     if errors:
