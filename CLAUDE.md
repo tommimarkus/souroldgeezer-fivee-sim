@@ -254,8 +254,8 @@ a separate layer because they are resolution primitives like the rest.
 
 **`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
-`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `replay.py`, and
-`uvtt.py`.
+`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `player_view.py`,
+`replay.py`, `scenes.py`, and `uvtt.py`.
 Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
 `ValueError`-family errors. That rule outlived the second adapter it was written
@@ -263,6 +263,49 @@ for, and it is what keeps the one that remains thin. `web/http_server.py` maps t
 more than that and serialisation; `tests/api.py` is the suite's in-process door
 to the same functions and translates nothing at all. An operation body written
 into an adapter belongs here instead.
+
+**A scene is a saved `encounter.create` body, and `scenes.py` validates the
+envelope only.** That bound is the point: whether a combatant spec is legal is
+`encounter.create`'s to say, and a second copy of that rule in `scenes.py` would
+drift the first time a spec field is added. So a scene can be saved that will not
+start — an editor buffer is a draft — and the refusal arrives, in full, at Play.
+There is deliberately **no `scene.play`**: Play posts the stored body to
+`encounter.create`, so one code path starts every fight. The one key that is not
+posted is `name`, a label rather than a fight, and the smoke gate asserts the
+seam is exactly that one key wide in both directions.
+
+**`player_view.py` is an allowlist, and it must stay one.** It projects encounter
+state for one seat, to the brief `agents/game-master.md` already specifies —
+positions, distances, own-side conditions, whose turn it is, health as a
+plain-language band; never exact enemy hit points or AC, never a DC before a roll,
+never a creature that has not arrived. It names what goes **in**. A denylist would
+leak every field added afterwards, and `Encounter._creature_state` is an open,
+growing set — so every key of the model's snapshot, its map block, its fixture
+summaries and its **events** is classified `SHARED`, `OWN` or `NEVER`, and a test
+*derives* the field set from the model — from real snapshot output for the first
+three, and for events by reading every `_emit` call site out of
+`model/encounter.py` with `ast`, because a sampled set is only whatever the
+fixture happened to make happen. A new field lands in no bucket and fails until
+someone decides.
+
+Three leaks have been caught this way and none was in the creature fields.
+Fixture ability-check **DCs** rode in on an unclassified map passthrough. Every
+**write** operation answered the acting seat with the whole unredacted snapshot
+until `encounter.create/.act/.advance/.resume` learned the same `as=` seat
+parameter `encounter.view` takes. And then those four narrowed their `state` and
+handed the same response's **events** over whole, where `damage` carries the
+target's exact `hp` and `max_hp` — the brief said "hurt" and the event beside it
+said 6594/7700. An event's `detail` is the one field omitted outright rather than
+classified: it is rendered prose, and prose cannot be allowlisted. Absent `as=`,
+all four answer exactly as they always did.
+
+**It is a projection, not an access control, and nothing may cite it as one.**
+`as=` is caller-asserted; the engine has one per-launch token and no per-seat
+credential, so a client that can ask for a seat's brief can equally ask for
+`encounter.state`. What it buys is an honest payload — a cooperating client is not
+holding secrets it must remember not to draw — and that is worth having on its own
+terms. It is not a boundary against a client that does not want to cooperate, and
+per-seat credentials are what closing that would take.
 
 **`service/` also owns durable-write concurrency, because it owns the state.**
 Several processes reach these files — every engine server on a host resolves the
@@ -320,9 +363,22 @@ can pass a table.
 seed and returns it, so no result is ever irreproducible.
 
 **Three pages are served, and `/` is the index rather than a tool.** `/editor`
-is the map editor, `/viewer` the replay viewer, and `/` a landing page that
-links to both and renders the operation list it fetches from `GET
-/api/v1/operations`. The editor held `/` while `map_editor_serve` existed to
+is the map editor **and the play surface**, `/viewer` the replay viewer, and `/`
+a landing page that links to both and renders the operation list it fetches from
+`GET /api/v1/operations`.
+
+**`/editor` has two modes, and that is deliberate rather than crowded.** Edit
+authors the scene — terrain, content packs, and a roster placed on squares; Play
+runs it, live, on the same canvas. One window, no export step between them. The
+live loop is **not** in `editor.html`: it is `static/play.js`, namespace
+`FiveePlay`, loaded lazily on first entry to Play and given a context rather than
+reaching for the page — the same shared-asset seam `renderer.js` established.
+**Play never writes the document buffer**, and that is enforced twice, because
+once was not enough: `check-editor-behaviour.mjs` asserts the scene is
+byte-identical across Play→Stop, *and* `editor.html`'s canvas handler refuses in
+Play mode. The second guard is load-bearing — the editor's tools listen on the
+same canvas and registered first, so no `stopPropagation` in the driver can stop
+a selected Brush from painting the map on a click meant to move a creature. The editor held `/` while `map_editor_serve` existed to
 open a browser on it; it does not any more, and `fivee serve` reports
 `editor_url` alongside `url` because a caller that hands `url` to someone
 asking for the editor now sends them to the index. The landing page never
@@ -338,12 +394,14 @@ array threw mid-resize — after `snapshot()`, after earlier planes had been
 rewritten — leaving a half-resized document that `btn-download` writes to disk
 without the server ever validating it.
 
-So `home.html`, `editor.html`, `viewer.html` and `renderer.js` are now checked twice, and
+So `home.html`, `editor.html`, `viewer.html`, `renderer.js` and `play.js` are now
+checked twice, and
 each half owns one kind of claim. **Text contracts stay in
 `tests/test_web_assets.py`**: injection slots, balanced tags, the offline
 guarantee — properties of the source, asserted as source. **Behaviour lives in
 `scripts/check-editor-behaviour.mjs`**, outside pytest. It reads the shipped
-assets — never a copy — runs `renderer.js` in a `node:vm` context, runs each
+assets — never a copy — runs `renderer.js` and `play.js` in a `node:vm` context,
+runs each
 page's own inline script in that context against a stub DOM, and then drops a
 document on the page and clicks its buttons. The assertions read what the fake
 canvas was painted and what the Download button would have written, so the
@@ -408,11 +466,13 @@ complete seeded fight over plain HTTP, runs the identical fight in a second
 server and a third time through the `fivee` binary as a subprocess, and requires
 all three to agree. It then runs a **two-encounter adventure** end to end in a
 fourth server — link, fight, finalize, link again carrying the survivors, fight,
-compose the run with `adventure.replay` — and finally holds `GET
+compose the run with `adventure.replay` — then a **scene round-trip** in a fifth
+(`map.put`, `scene.put`, read back, list, start the fight by posting the stored
+body to `encounter.create`, act once), and finally holds `GET
 /api/v1/operations`, `GET /api/v1/openapi.json` and `fivee help` against the
 route table's own source.
 
-Four of those claims exist nowhere else. **Reproducibility across processes**:
+Five of those claims exist nowhere else. **Reproducibility across processes**:
 every other determinism test runs in one interpreter. **That the launcher
 works**: nothing in pytest execs it. **That `/api/v1` is complete**: the client
 is pinned by `tests/test_layering.py` to import nothing of the engine but
@@ -422,7 +482,12 @@ than a convenience. **That state outlives a fight**: the adventure case is the
 only end-to-end proof that a party's ending hit points become the next
 encounter's starting ones, and it asserts the arrival against the previous
 fight's *live* ending state rather than a second copy of the number, so it
-cannot pass on a run that carries nobody.
+cannot pass on a run that carries nobody. **That a scene is a saved
+`encounter.create` body**: the scene artifact's whole design rests on that claim,
+and this is the only place it is proved against the shipped surface rather than
+asserted — the case posts the stored document whole, watches the refusal name the
+one key that is a label rather than a fight, then posts the derived body and
+starts the encounter.
 
 **Standard library only, and no pytest**, because it has to run against an
 environment where nothing has been built at all — which, since the launcher

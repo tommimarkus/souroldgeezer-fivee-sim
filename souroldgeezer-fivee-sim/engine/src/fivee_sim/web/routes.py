@@ -248,6 +248,22 @@ _IDEMPOTENCY = Param(
     description="replay key: a retry under the same key returns the first result",
 )
 _SINCE = Param("since", "query", {"type": "integer", "default": 0}, description="page offset")
+#: The chair a *write* answers to, and one vocabulary across the surface: it is
+#: spelled exactly as ``encounter.view`` spells it and refused exactly as
+#: ``encounter.view`` refuses it. Optional here where that one is required, and
+#: the option is the point — omitted, the operation answers the state it always
+#: answered, which is what the CLI and both skills read. Given, its ``state`` is
+#: narrowed by ``service/player_view.py`` before it is serialised, so a player's
+#: own action is no longer answered with every opponent's sheet.
+#:
+#: No example, for the reason the required one takes none: the value is the
+#: caller's own seat, and inventing one would read as a name this engine knows.
+_AS_SEAT = Param(
+    "as",
+    "query",
+    {"type": ["string", "null"], "default": None},
+    description="the combatant whose chair this is; omit for the whole fight, as the GM reads it",
+)
 
 
 def _limit(default: int) -> Param:
@@ -265,6 +281,23 @@ _POINT: Mapping[str, Any] = {"type": ["array", "integer", "null"], "default": No
 _MAP_SUBJECT: Mapping[str, Any] = {
     "map_id": {"type": ["string", "null"], "default": None},
     "document": {"type": ["object", "null"], "default": None},
+}
+#: The map a fight is on when it does not name a saved one. Two shapes go here,
+#: and the object says which it is: a whole ``fivee-sim-map`` document declares
+#: itself in ``format``, and anything else is read as the hand-authored
+#: battle-map spec. Written once and shared by the three operations that take
+#: it, because a caller who learns the rule from one of them has learnt it from
+#: all three — and because the editor's Play button posts a document to
+#: ``encounter.create`` while a hand-written fight posts a spec.
+_INLINE_MAP: Mapping[str, Any] = {
+    "type": ["object", "null"],
+    "default": None,
+    "description": (
+        "the map to fight on, inline: either a fivee-sim-map document (the shape "
+        "map.put stores and the editor edits, recognised by its 'format' key) or a "
+        "battle-map spec of width, height, rows and legend. Give this or 'map_id', "
+        "never both; omit both for theatre of the mind"
+    ),
 }
 
 # --- closed sets, derived from whatever module is the authority on them ------
@@ -358,6 +391,16 @@ _MAP_EXAMPLE: Mapping[str, Any] = {
         "edited": False,
         "source": "hand-authored example; 5E-compatible original content",
     },
+}
+
+#: A scene is a saved ``encounter.create`` body, so its example *is* that
+#: operation's — the same roster, the same seed, deliberately not paraphrased.
+#: A reader who sees the two agree has learned the whole idea of a scene, and
+#: has also learned what Play does with one: post it.
+_SCENE_EXAMPLE: Mapping[str, Any] = {
+    "name": "Ambush at the ford",
+    "combatants": _COMBATANTS_EXAMPLE,
+    "seed": 20260805,
 }
 
 #: A replay is normally megabytes and written by the exporter, so the example
@@ -539,7 +582,7 @@ ROUTES: tuple[Route, ...] = (
                 "seed": {"type": "integer", "default": 0},
                 "max_rounds": {"type": "integer", "default": 20},
                 "movement_rule": _MOVEMENT_RULE,
-                "map": {"type": ["object", "null"], "default": None},
+                "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
             },
             "required": ["combatants"],
@@ -603,14 +646,14 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters", "encounter.create",
         "Start an encounter and roll initiative, optionally on a battle map.",
-        params=(_IDEMPOTENCY,),
+        params=(_IDEMPOTENCY, _AS_SEAT),
         body_schema={
             "type": "object",
             "properties": {
                 "combatants": _COMBATANTS,
                 "seed": _SEED,
                 "movement_rule": _MOVEMENT_RULE,
-                "map": {"type": ["object", "null"], "default": None},
+                "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
             },
             "required": ["combatants"],
@@ -625,6 +668,21 @@ ROUTES: tuple[Route, ...] = (
         handler="encounter_state",
     ),
     Route(
+        "GET", f"{API_PREFIX}/encounters/{{id}}/view", "encounter.view",
+        "One encounter as one seat sees it: the player's brief, not the GM's.",
+        params=(
+            _ID,
+            Param(
+                # No example, for the reason a path id takes none: the value is
+                # the caller's own seat, and inventing one would read as a name
+                # this engine knows.
+                "as", "query", {"type": "string"}, required=True,
+                description="the combatant whose chair this is",
+            ),
+        ),
+        handler="encounter_view",
+    ),
+    Route(
         "GET", f"{API_PREFIX}/encounters/{{id}}/log", "encounter.log",
         "The paged event history of an encounter, with the actions that made it.",
         params=(
@@ -636,7 +694,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/actions", "encounter.act",
         "Take the current creature's action and durably audit it.",
-        params=(_ID, _IF_MATCH, _IDEMPOTENCY),
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT),
         body_schema={
             "type": "object",
             "properties": {
@@ -673,7 +731,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/advance", "encounter.advance",
         "End this turn, begin the next, and record the transition.",
-        params=(_ID, _IF_MATCH, _IDEMPOTENCY),
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT),
         body_schema={"type": "object", "properties": {"natural": _NATURAL}},
         handler="encounter_advance", errors=(409,),
     ),
@@ -694,7 +752,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/resume", "encounter.resume",
         "Load an encounter from its verified journal, repairing a partial tail.",
-        params=(_ID,),
+        params=(_ID, _AS_SEAT),
         body_schema={"type": "object", "properties": {}},
         handler="encounter_resume",
     ),
@@ -764,7 +822,7 @@ ROUTES: tuple[Route, ...] = (
                 "recovery": {"type": ["object", "null"], "default": None},
                 "seed": _SEED,
                 "movement_rule": _MOVEMENT_RULE,
-                "map": {"type": ["object", "null"], "default": None},
+                "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
             },
         },
@@ -932,6 +990,41 @@ ROUTES: tuple[Route, ...] = (
         },
         handler="map_edit", errors=(409, 422),
     ),
+    # --- scenes: a saved encounter.create body, addressed by id -------------
+    # Shaped like the map routes above because a scene is the same kind of
+    # thing: one document, rewritten whole, that two servers can both hold.
+    # There is deliberately no ``scene.play``: Play posts the stored body to
+    # ``encounter.create``, so exactly one code path starts a fight.
+    Route(
+        "GET", f"{API_PREFIX}/scenes", "scene.list",
+        "Every saved scene under the scenes directory, keyed by id.",
+        handler="scene_list",
+    ),
+    Route(
+        "POST", f"{API_PREFIX}/scenes/validate", "scene.validate",
+        "Report a scene envelope's errors and warnings without saving it.",
+        body_schema={},
+        example=_SCENE_EXAMPLE,
+        handler="scene_validate",
+    ),
+    Route(
+        "GET", f"{API_PREFIX}/scenes/{{id}}", "scene.get",
+        "One saved scene, with its sha256 as an ETag.",
+        params=(_ID,),
+        handler="scene_get",
+    ),
+    Route(
+        "PUT", f"{API_PREFIX}/scenes/{{id}}", "scene.put",
+        "Write a scene under an id, guarded by If-Match.",
+        params=(_ID, Param(
+            "If-Match", "header", {"type": "string"}, required=True,
+            description="the sha256 ETag from the last GET, or * to create",
+            example="*",
+        )),
+        body_schema={},
+        example=_SCENE_EXAMPLE,
+        handler="scene_put", success=200, errors=(409, 428),
+    ),
     # --- replays: read-only, and that asymmetry is the contract -------------
     Route(
         "GET", f"{API_PREFIX}/replays", "replay.list",
@@ -972,6 +1065,10 @@ ROUTES: tuple[Route, ...] = (
         "GET", "/assets/renderer.js", "page.renderer", "The shared canvas renderer.",
         handler="page", contract=False,
     ),
+    Route(
+        "GET", "/assets/play.js", "page.play", "The extracted Play-mode driver.",
+        handler="page", contract=False,
+    ),
 )
 
 #: path -> (file under ``static/``, content type, inject the launch config).
@@ -980,6 +1077,7 @@ PAGES: Mapping[str, tuple[str, str, bool]] = {
     "/editor": ("editor.html", "text/html; charset=utf-8", True),
     "/viewer": ("viewer.html", "text/html; charset=utf-8", True),
     "/assets/renderer.js": ("renderer.js", "text/javascript; charset=utf-8", False),
+    "/assets/play.js": ("play.js", "text/javascript; charset=utf-8", False),
 }
 
 _COMPILED: tuple[tuple[Route, re.Pattern[str]], ...] = tuple(

@@ -109,6 +109,18 @@ create tension, it just makes them guess.
 Answer their questions about distance, reach, and line of sight directly; use
 `fivee map.query` when a map is in play rather than estimating.
 
+**The engine will compose that brief for you.** `fivee encounter.view <id> --as
+<name>` returns this seat's view of the fight — positions and distances, terrain
+and fixtures, their own side's conditions, whose turn it is, health as a band
+rather than a number, and their own sheet in full on their own turn. It withholds
+what the list above withholds. Prefer it to assembling a brief by hand from
+`encounter.state`: a projection cannot forget, and you can. Narrate *from* it —
+it is a data structure, not prose, and reading it aloud is not narration.
+
+The same `--as` works on `encounter.act` and `encounter.advance`, so a seat's own
+result comes back already narrowed. None of this is a permission system: it keeps
+you from leaking by accident, not a player from asking the engine directly.
+
 ## Whose decision is whose
 
 **You adjudicate. You never choose a player's turn for them.**

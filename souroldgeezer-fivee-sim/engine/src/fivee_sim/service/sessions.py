@@ -52,6 +52,7 @@ from .common import sha256_of
 from .errors import NotFoundError, RequestError
 
 __all__ = [
+    "DOCUMENT_MARKER",
     "Content",
     "EngineState",
     "Session",
@@ -300,10 +301,35 @@ def map_source_of(state: EngineState, session: Session) -> dict[str, Any] | None
     }
 
 
+#: What an inline map calls itself when it is a **document** rather than a
+#: battle-map spec. The document format declares itself in ``format``; a spec
+#: has no such key — ``specs.MAP_KEYS`` is closed and does not contain it — so
+#: the inline value is self-identifying and the dispatch below reads it rather
+#: than asking the caller to declare which shape they sent.
+#:
+#: Presence, never the value. An object claiming a format we do not speak is
+#: judged by the document parser, which answers *must be "fivee-sim-map"*;
+#: matching on the value instead would send it back to the spec parser, whose
+#: only available complaint is that ``format`` is not a spec key — the
+#: unhelpful refusal that hid this whole branch in the first place.
+DOCUMENT_MARKER = "format"
+
+
 def resolve_battle_map(
     state: EngineState, map_spec: dict[str, Any] | None, map_id: str | None
 ) -> tuple[BattleMap | None, dict[str, Any] | None, MapDocument | None]:
-    """The battle map a tool call names — inline spec or saved map file.
+    """The battle map a tool call names — inline map or saved map file.
+
+    An inline ``map`` is either a battle-map **spec** — the ``width``/``height``/
+    ``rows``/``legend`` form a person or a model writes by hand — or a whole
+    ``fivee-sim-map`` **document**, which is what the browser editor's Play
+    button posts when its buffer has never been saved and so has no id to name.
+    :data:`DOCUMENT_MARKER` tells them apart, and a document takes the same road
+    a saved one does: parsed and validated by :mod:`~fivee_sim.service.maps`,
+    then bridged by :func:`~fivee_sim.map_document.to_grid`. Inline is not a
+    laxer door onto the same grid — a malformed buffer raises the same
+    :class:`~fivee_sim.map_document.MapError`, carrying every diagnostic, that a
+    malformed file does.
 
     A saved map also yields the ``map_source`` capture (which map, and the hash
     of the exact document the fight is on) and the document itself, so a caller
@@ -311,10 +337,29 @@ def resolve_battle_map(
     risk snapshotting a different version than it resolved. The capture's shape
     matches :func:`map_source_of`, so a caller reads ``stale`` off either
     result — at capture time it is ``False`` by construction.
+
+    An inline document deliberately gets **no** ``map_source``. That capture
+    answers one question — *has the file changed since the fight started?* — and
+    an inline document has no file to have changed: the id would resolve to
+    nothing and ``stale`` could never become true, so a capture here would be a
+    fabricated provenance rather than a missing one. What a fight needs instead
+    is the map itself, and it gets it: the document comes back as the third
+    result, so :mod:`~fivee_sim.service.encounters` captures it *whole* in the
+    creation journal and a replay is on the map the table played on.
     """
     if map_spec is not None and map_id is not None:
-        raise RequestError("give 'map' (an inline spec) or 'map_id' (a saved map), not both")
+        raise RequestError(
+            "give 'map' (an inline spec or map document) or 'map_id' (a saved map), "
+            "not both"
+        )
     if map_spec is not None:
+        if DOCUMENT_MARKER in map_spec:
+            document, _warnings = map_service.parse_payload(
+                map_spec,
+                source="inline map",
+                terrain=active_registry(state).terrain_effects,
+            )
+            return to_grid(document), None, document
         return specs.battle_map_from_spec(map_spec), None, None
     if map_id is not None:
         document, _path = map_service.load_by_id(

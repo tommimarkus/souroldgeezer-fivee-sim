@@ -103,6 +103,13 @@ map is written, because no flag grammar should try to spell one.
    is nothing else to pass along. `fivee stop` shuts them down. If a server is
    already up, `serve` reports it with `already_running` true rather than
    starting a second.
+
+   The editor page also has a **Play mode**: the user can load content, place a
+   roster on the map they are drawing, and fight on it without leaving the page —
+   as the whole table, or from one creature's seat. Offer it when someone wants to
+   see how a map plays rather than how it looks. Running a fight *for* them is
+   still the encounter-sim skill's job over `fivee`; Play mode is the user driving
+   it themselves.
 6. **After GUI edits, re-read before writing.** The file is the truth, and every
    operation that names a map by id already reads it fresh — so a render or a fight
    started after their save sees their work with nothing to reload. What is stale is

@@ -38,14 +38,17 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import fields
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from fivee_sim.model.encounter import ActionKind, TurnState
 from fivee_sim.web.http_server import CONFIG_MARKER
-from fivee_sim.web.routes import api_routes
+from fivee_sim.web.routes import API_PREFIX, api_routes, operation_id
+from fivee_sim.web.routes import PAGES as SERVED_PAGES
 
 STATIC = Path(str(resources.files("fivee_sim.web"))) / "static"
 #: Every served HTML page. Claims parametrized over this one are claims about
@@ -57,7 +60,12 @@ PAGES = ("editor.html", "viewer.html", "home.html")
 #: quietly grew a third member would otherwise start asserting the landing page
 #: pulls in a script it has no use for.
 CANVAS_PAGES = ("editor.html", "viewer.html")
-ASSETS = (*PAGES, "renderer.js")
+#: Every shipped asset, page or script. ``play.js`` is here rather than in
+#: ``PAGES`` for the reason ``renderer.js`` is: it is a script, not a document,
+#: and the claims parametrized over ``PAGES`` are claims about being a page.
+#: What it *does* inherit is the offline guarantee, which is the one property
+#: every byte this service serves has to have.
+ASSETS = (*PAGES, "renderer.js", "play.js")
 
 EMBED_SLOT = '<script type="application/json" id="embedded-data">null</script>'
 RENDERER_TAG = '<script src="/assets/renderer.js"></script>'
@@ -78,6 +86,26 @@ _REFERENCE = re.compile(r"""(?:src|href)=\\?["']([^"'\\]+)""")
 _ALLOWED_REFERENCES = frozenset(
     {"/assets/renderer.js", "renderer.js", "/", "/editor", "/viewer"}
 )
+#: The play driver's route. It is not in ``_ALLOWED_REFERENCES`` because no
+#: page carries it as a ``src`` attribute: editor.html asks for it only when a
+#: user enters Play, so it appears as a string the page hands to a script
+#: element it builds. Named here so the offline guarantee is stated about it
+#: rather than accidentally skipped by a regex that only reads attributes.
+PLAY_DRIVER_ROUTE = "/assets/play.js"
+
+
+def api_path(operation: str) -> str:
+    """The path a page must call for one operation, less the version prefix.
+
+    Derived from the route table rather than typed into a test: the pages'
+    ``request()`` prepends the injected ``apiBase``, so what a page carries is
+    exactly this remainder — and a route moved under a page that still calls
+    the old one is the failure worth catching.
+    """
+    for route in api_routes():
+        if route.operation == operation:
+            return route.path[len(API_PREFIX) :]
+    raise AssertionError(f"no route declares {operation}")
 
 
 #: The animated-family declaration, loaded the way the invalid-replay corpus is
@@ -91,6 +119,61 @@ ANIMATED_FAMILIES: list[dict[str, Any]] = json.loads(
 
 def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
+
+
+def play_header() -> str:
+    """``play.js``'s opening comment: what the driver says about itself."""
+    source = read("play.js")
+    return source[: source.index("*/")]
+
+
+def play_body() -> str:
+    """``play.js`` past that comment: what it actually does."""
+    source = read("play.js")
+    return source[source.index("*/") :]
+
+
+#: Where the driver's stylesheet starts and stops in its own source. Named once
+#: because three helpers below slice on it, and a renamed constant should move
+#: them together rather than leave two of them reading half a file.
+_STYLE_OPEN = "var STYLE = ["
+_STYLE_CLOSE = '].join("\\n");'
+
+
+def play_stylesheet() -> str:
+    """The CSS ``play.js`` injects, reassembled from its own source.
+
+    The driver carries its stylesheet as an array of lines, so the assertions
+    below read the *strings* and not the JavaScript around them: the comments
+    between the entries are the file's own reasoning and are not served to
+    anybody's browser, and a claim about the sheet that matched a comment would
+    be a claim about nothing.
+    """
+    source = read("play.js")
+    block = source[source.index(_STYLE_OPEN) : source.index(_STYLE_CLOSE)]
+    return "\n".join(re.findall(r'^\s*"(.*?)",?$', block, re.MULTILINE))
+
+
+def play_driver_source() -> str:
+    """``play.js`` with the stylesheet cut out: the driver, less its look.
+
+    What the sheet *keys on* has to be something the driver *does*, and both
+    halves live in one file — so the comparisons below need the two apart, or
+    every selector would find itself and pass.
+    """
+    source = read("play.js")
+    return source[: source.index(_STYLE_OPEN)] + source[source.index(_STYLE_CLOSE) :]
+
+
+def host_palette() -> frozenset[str]:
+    """Every custom property ``editor.html`` declares for the page it serves.
+
+    The driver is a guest and borrows the room's palette; this is the room.
+    Read off the page rather than listed here so a token renamed in one file
+    fails against the other instead of drifting.
+    """
+    source = read("editor.html")
+    return frozenset(re.findall(r"(--[a-z][\w-]*)\s*:", source))
 
 
 def renderer_function(name: str) -> str:
@@ -919,6 +1002,487 @@ class TestEditorFixturePreview:
         ]
         assert 'feature.kind === "door"' in info
         assert "renderDoorControls" in info
+
+
+class TestEditorModes:
+    """One page, two modes, and a live loop that is not in this file.
+
+    ``editor.html`` is already the largest asset here, so the play driver is an
+    *extracted* asset — ``static/play.js``, namespace ``FiveePlay``, beside
+    ``FiveeRenderer``. What this class holds is the seam: the page names the
+    driver's route once, reaches it through exactly one door in each direction,
+    and implements no part of the loop itself. Whether the switch actually
+    switches, and whether Play leaves the document alone, are behaviour claims —
+    ``scripts/check-editor-behaviour.mjs`` owns both.
+    """
+
+    def test_the_editor_carries_the_mode_controls_once_each(self) -> None:
+        # Exactly once apiece: byId() answers with the first of a duplicated
+        # id, so a copy-paste double would wire a mode button to the wrong node
+        # while a bare presence check stayed green.
+        source = read("editor.html")
+        for element_id in ("mode-switch", "mode-edit", "mode-play", "play-panel", "play-root"):
+            assert source.count(f'id="{element_id}"') == 1, element_id
+
+    def test_the_play_panel_ships_hidden(self) -> None:
+        # Correct before a line of script runs, the way the viewer's
+        # served-only controls ship hidden: Edit is what this page *is* when it
+        # loads, and a play panel un-hidden and then re-hidden would flash.
+        assert '<aside id="play-panel" hidden>' in read("editor.html")
+
+    def test_the_panels_play_mode_hides_state_their_own_hidden_rule(self) -> None:
+        # #toolbar sets display:flex, which outranks the browser's default
+        # [hidden] rule — so a toolbar Play mode hid would stay on screen
+        # without this line, exactly as #door-config would. #panel needs no such
+        # line and deliberately has none: it sets no display of its own.
+        assert "#toolbar[hidden] { display: none; }" in read("editor.html")
+
+    def test_the_play_driver_is_named_by_its_served_route_exactly_once(self) -> None:
+        # One declaration, because the page both requests it and names it in
+        # the refusal a user reads when it does not arrive.
+        source = read("editor.html")
+        assert source.count(f'"{PLAY_DRIVER_ROUTE}"') == 1
+        assert "FiveePlay" in source
+
+    def test_the_driver_is_reached_through_one_door_in_each_direction(self) -> None:
+        # The whole of the seam. A second start() call site is a second set of
+        # arguments the driver has to accept; a stop() the page can skip is a
+        # driver still running after the mode was left.
+        source = read("editor.html")
+        assert source.count("playDriver.start(") == 1
+        assert source.count("playDriver.stop(") == 1
+
+    def test_the_editor_implements_no_part_of_the_live_loop(self) -> None:
+        # State fetch, token building, action bar and roll handling belong to
+        # play.js. The page holds the request helper and the canvas, so it
+        # easily could grow a copy — and a copy is a second implementation of
+        # the same fight, free to disagree with the one the server ran.
+        source = read("editor.html")
+        for absent in (api_path("encounter.create"), "/actions", "encounter.act"):
+            assert absent not in source, absent
+
+    def test_play_state_never_enters_the_document_plumbing(self) -> None:
+        # contentOf feeds undo, the dirty check and the save digest. Play mode
+        # writes no document at all — Decision 3's "Stop restores nothing
+        # because nothing was mutated" is only true while this holds.
+        source = read("editor.html")
+        body = source[source.index("function contentOf(") : source.index("function snapshot(")]
+        for leaked in ("roster", "playTokens", "playDriver"):
+            assert leaked not in body, leaked
+
+    def test_the_editor_hands_play_the_clicks_rather_than_editing_under_it(self) -> None:
+        # The driver listens on the same canvas the tools do, and the tools
+        # were registered first — so `stopPropagation` cannot save the
+        # document, and only a guard in the page can. Without this line a
+        # click-to-move in Play with the Brush still selected paints terrain,
+        # which is Decision 3's one hard constraint broken by a stray click.
+        # That the guard *works* is `check-editor-behaviour.mjs`'s to say; that
+        # it is in the handler that would do the damage is this file's, because
+        # `mode === "play"` appears half a dozen times in the page and a bare
+        # search for it passes against an editor with no guard at all.
+        source = read("editor.html")
+        opened = source.index('canvas.addEventListener("pointerdown"')
+        handler = source[opened : source.index('canvas.addEventListener("pointermove"')]
+        assert 'mode === "play"' in handler
+
+
+class TestPlayDriver:
+    """``static/play.js``: the live loop, extracted, and what it may know.
+
+    Decision 3 put the fight's driver beside ``FiveeRenderer`` rather than
+    inside the largest page this service serves. What that buys is only real
+    while the driver stays a *guest* of the page: it is handed its root
+    element, its request helper, its renderer and its canvas, and it reaches
+    for none of them by name. So the claims here are about coupling and about
+    where the driver's facts come from.
+
+    Whether the loop actually runs a fight — the chair switch, the click
+    targeting, the die whose face is the face that was sent — is behaviour, and
+    ``scripts/check-editor-behaviour.mjs`` owns every word of it.
+    """
+
+    def test_the_driver_defines_its_single_namespace(self) -> None:
+        assert "var FiveePlay" in read("play.js")
+
+    def test_the_route_table_serves_the_driver_at_the_route_the_editor_asks_for(
+        self,
+    ) -> None:
+        # The editor names this route once and reaches it with a script tag it
+        # builds; nothing rewrites either string at release. So the page's
+        # constant and the server's table have to be held against each other
+        # somewhere, and the alternative to here is a 404 the first time a user
+        # presses Play.
+        assert PLAY_DRIVER_ROUTE in read("editor.html")
+        assert PLAY_DRIVER_ROUTE in SERVED_PAGES, (
+            f"editor.html asks for {PLAY_DRIVER_ROUTE} and the route table serves "
+            f"{sorted(SERVED_PAGES)}"
+        )
+        filename, content_type, inject = SERVED_PAGES[PLAY_DRIVER_ROUTE]
+        assert filename == "play.js"
+        assert content_type.startswith("text/javascript")
+        # A script is not a page: the launch config is injected into a document
+        # that carries the marker, and the driver is handed its configuration
+        # by the page that loads it.
+        assert inject is False
+
+    def test_the_driver_never_reaches_into_the_page_that_hosts_it(self) -> None:
+        # Every handle it has was passed in. A driver that looked an element up
+        # by id would be a second file agreeing with editor.html's markup by
+        # convention, and the next page to host it would have to reproduce that
+        # markup to work at all. It creates its own elements and keeps its own
+        # references; it finds none.
+        #
+        # Read past the header, which has to name what it does not do — the
+        # same exemption this repository's own guidance takes from the
+        # ip-hygiene tripwire, and for the same reason: a comment calls
+        # nothing.
+        for reached in ("getElementById", "querySelector", "FiveeRenderer"):
+            assert reached not in play_body(), reached
+
+    def test_the_driver_names_every_route_it_calls_as_the_table_declares_it(self) -> None:
+        # Derived, never typed twice: the page's request helper prepends the
+        # injected apiBase, so what the driver carries is exactly the remainder
+        # of each declared path. A route that moves fails here rather than
+        # 404ing in a browser mid-fight.
+        source = read("play.js")
+        assert f'"{api_path("encounter.create")}"' in source
+        assert f'"{api_path("server.openapi")}"' in source
+        for operation in ("encounter.view", "encounter.act", "encounter.advance"):
+            # The tail past the path parameter — "/view", "/actions",
+            # "/advance" — which is what the driver appends to an encounter's
+            # own path once it has an id to put in it.
+            tail = api_path(operation).rsplit("}", 1)[-1]
+            assert f'"{tail}"' in source, operation
+
+    def test_the_action_kinds_are_read_out_of_the_served_contract(self) -> None:
+        # Not a list kept here. The driver fetches the OpenAPI document this
+        # launch serves and reads the enum off `encounter.act`'s own request
+        # body, so a kind added to ActionKind reaches the action bar without
+        # anybody editing this asset.
+        #
+        # Sliced rather than searched whole, the way renderBudget and CLICK_FOR
+        # are below: two file-wide substring hits say only that the strings
+        # exist somewhere, and a `loadKinds` whose body was a hardcoded array
+        # passed exactly that pair of checks with the constant and the enum
+        # read left behind as dead code. What has to hold is a relationship —
+        # this operation's enum is what fills `kinds` — so the assertions are
+        # made inside the one function that fills it.
+        source = play_driver_source()
+        # The id is the route table's, not a string typed twice.
+        assert f'var ACT_OPERATION = "{operation_id("encounter.act")}";' in source
+        body = source[source.index("function loadKinds(") :]
+        body = body[: body.index("\n  }\n")]
+        # The document read is this launch's own contract, and the operation
+        # picked out of it is the one that takes the kinds.
+        assert 'ctx.request("GET", OPENAPI)' in body, body
+        assert "operation.operationId !== ACT_OPERATION" in body, body
+        # And the enum off that operation's request body is what `kinds`
+        # becomes: the read, the variable it lands in, and the assignment that
+        # publishes it are one chain, not three strings in one file.
+        assert 'schema.properties && schema.properties.kind' in body, body
+        assert 'Array.isArray(kind["enum"])' in body, body
+        assert 'found = kind["enum"].slice()' in body, body
+        assert "kinds = found;" in body, body
+        # Nothing in that chain names a kind. A list pasted in here is the
+        # defect the whole test exists to refuse, and it is refused where it
+        # would be written rather than by a count kept somewhere else.
+        pasted = sorted(kind.value for kind in ActionKind if f'"{kind.value}"' in body)
+        assert not pasted, f"loadKinds names kinds instead of reading them: {pasted}"
+
+    def test_the_driver_keeps_no_second_copy_of_those_kinds(self) -> None:
+        # The one table it does keep says which kinds want a click before they
+        # can be posted — a fact about this *interface*, not about the rules —
+        # and every kind it names is in that table. Both sides are derived: the
+        # cast from ActionKind, the table out of the driver's own source. A
+        # kind pasted in anywhere else fails the first assertion; a table that
+        # grew into a copy of the enum fails the second.
+        source = read("play.js")
+        kinds = {kind.value for kind in ActionKind}
+        named = {kind for kind in kinds if f'"{kind}"' in source}
+        block = re.search(r"var CLICK_FOR = \{(.*?)\n  \};", source, re.DOTALL)
+        assert block is not None, "play.js declares no CLICK_FOR table"
+        armed = set(re.findall(r'"([a-z_]+)":', block.group(1)))
+        assert named == armed, f"kinds named outside CLICK_FOR: {sorted(named - armed)}"
+        assert armed < kinds, "CLICK_FOR has become a second copy of the enum"
+
+    def test_the_driver_says_plainly_that_a_chair_is_not_a_permission(self) -> None:
+        # ``as=`` is asserted by the caller and authenticated by nothing, and
+        # the same per-launch token that fetches a player's brief fetches the
+        # GM's state. The projection buys an honest data path and a browser
+        # that never holds what it must remember not to draw. Anything read as
+        # a promise about a determined person is a promise this cannot keep, so
+        # the file has to say so where a reader of it starts.
+        opening = play_header()
+        assert "not a permission system" in opening
+        assert "encounter.state" in opening
+
+
+class TestPlayDriverLook:
+    """The stylesheet ``play.js`` carries, as source.
+
+    The driver's look ships with the driver, because ``editor.html`` styles the
+    shell it lends out and says in its own comment that what fills
+    ``#play-root`` is this file's business. So a second page hosting the driver
+    gets a legible panel rather than a stylesheet to copy — and the claims that
+    keeps honest are claims about the *source*, which is what this class holds.
+
+    Whether the sheet reaches a document, and whether the classes it keys on are
+    ever worn, is behaviour: ``scripts/check-editor-behaviour.mjs`` injects it
+    into a stub head, presses the buttons and reads back the states. What
+    neither half can see is the only thing a stylesheet is really for. There is
+    no browser in this repository — no layout, no cascade, no pixels — so
+    nothing here or there can tell you the panel looks right, only that it is
+    well formed and wired to the page it is standing in.
+    """
+
+    def test_the_driver_injects_its_own_stylesheet_exactly_once(self) -> None:
+        # Once per page, and the guard is the whole of "once": the module is
+        # evaluated when the page loads the driver, so a second entry into Play
+        # must find the sheet already standing rather than stack a second copy
+        # behind it. A single append site is the other half — two would be two
+        # policies about when the look exists.
+        source = play_driver_source()
+        assert source.count("document.head.appendChild") == 1
+        assert source.count("function injectStyle(") == 1
+        body = source[source.index("function injectStyle(") :]
+        body = body[: body.index("\n  }\n")]
+        assert "if (styled) { return; }" in body, body
+
+    def test_the_stylesheet_reaches_nothing_off_this_origin(self) -> None:
+        # The offline guarantee, stated about the sheet rather than inherited
+        # from the file around it. ``ASSETS`` already runs this regex over
+        # play.js whole, which is what catches a URL in the driver's code — but
+        # a stylesheet is where an external reference is *idiomatic*, so the
+        # claim is made where somebody would think to add one.
+        css = play_stylesheet()
+        found = _EXTERNAL.search(css)
+        assert found is None, f"the driver's stylesheet reaches off-origin: {found!r}"
+        assert "url(" not in css, "the driver's stylesheet fetches something"
+        assert "@import" not in css and "@font-face" not in css
+
+    def test_the_stylesheet_declares_no_colour_and_borrows_only_the_hosts(self) -> None:
+        # Both halves of "match the visual language", and the second is what
+        # makes dark mode free. editor.html answers `prefers-color-scheme` by
+        # rewriting its own tokens, so a driver that names no colour follows it
+        # with no second block — and a hex here would be a light-mode value
+        # baked into a page that also renders at night.
+        css = play_stylesheet()
+        literals = re.findall(r"#[0-9a-fA-F]{3,8}\b", css)
+        assert not literals, f"the driver's stylesheet names a colour: {literals}"
+
+        used = set(re.findall(r"var\(\s*(--[\w-]+)", css))
+        # The three tints it mixes for itself, declared on its own root so the
+        # accent wash is derived once rather than restated at every use.
+        own = set(re.findall(r"^\s*(--[\w-]+)\s*:", css, re.MULTILINE))
+        assert own, "the driver mixes no tint of its own"
+        borrowed = used - own
+        assert borrowed, "the driver uses none of the host's palette"
+        unknown = borrowed - host_palette()
+        assert not unknown, f"the driver uses tokens editor.html never declares: {unknown}"
+
+    def test_every_class_the_stylesheet_keys_on_is_one_the_driver_wears(self) -> None:
+        # A rule for a class nothing sets is dead weight that still reads as
+        # intent. Both sides are derived from the one file: the selectors out of
+        # the sheet, the class names out of the driver's own literals.
+        css = play_stylesheet()
+        source = play_driver_source()
+        worn = {
+            token
+            for literal in re.findall(r'"([^"\n]*)"', source)
+            for token in literal.split()
+            if re.fullmatch(r"[a-z][a-z0-9-]*", token) and "-" in token
+        }
+        for keyed in set(re.findall(r"\.([a-z][\w-]*)", css)):
+            # A name the driver builds by concatenation — `"play-pip play-pip-"
+            # + unit` — is worn by its prefix, and the prefix is what a typo
+            # would break.
+            assert keyed in worn or any(
+                keyed.startswith(stem) and keyed != stem for stem in worn
+            ), f"the stylesheet styles .{keyed}, which the driver never wears"
+
+    def test_every_state_attribute_the_stylesheet_reads_is_one_the_driver_writes(
+        self,
+    ) -> None:
+        # The states that carry "spent", "held", "a pair of faces" and "this
+        # kind will ask you to point at something" — the part of the panel a
+        # reader takes in without reading. Name and value both: an attribute
+        # written as `used` and styled as `spent` is a rule that never matches
+        # and a panel that never shows the state.
+        css = play_stylesheet()
+        source = play_driver_source()
+        names = set(re.findall(r"\[data-([a-z]+)", css))
+        assert names, "the stylesheet reads no state at all"
+        for name in names:
+            assert f"dataset.{name}" in source, f"nothing writes data-{name}"
+        for value in set(re.findall(r"\[data-[a-z]+='([^']+)'", css)):
+            assert f'"{value}"' in source, f"nothing ever sets a state of {value!r}"
+
+    def test_every_animation_stands_down_for_a_reader_who_asks_for_less_motion(
+        self,
+    ) -> None:
+        # Derived, so a fourth animation added tomorrow fails here rather than
+        # quietly ignoring the preference. The die still changes its number
+        # under reduced motion and the settled face is still lit — that is the
+        # driver reporting what it is doing, and colour is not movement.
+        css = play_stylesheet()
+        guard = "@media (prefers-reduced-motion: reduce)"
+        assert guard in css
+        before, reduced = css.split(guard, 1)
+        # A keyframe's own steps are not a rule that animates; drop them, or
+        # every `@keyframes` block would nominate itself.
+        before = re.sub(r"@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\}\s*)*\}", "", before)
+        animated: set[str] = set()
+        for selector, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", before):
+            if "animation:" in declarations:
+                animated |= set(re.findall(r"\.([a-z][\w-]*)", selector))
+        assert animated, "nothing in the panel moves, so this test proves nothing"
+        stood_down = set(re.findall(r"\.([a-z][\w-]*)", reduced))
+        assert animated <= stood_down, (
+            f"these keep moving when the reader asked for less: {animated - stood_down}"
+        )
+
+    def test_the_budget_shows_every_field_of_the_turn_budget(self) -> None:
+        # Derived from the model, never listed here: a sixth field added to
+        # TurnState reaches the snapshot through `state()`, and a panel that
+        # showed four of six would be a player deciding a turn on a budget that
+        # is missing a line. What each field *looks* like is the stylesheet's;
+        # that each one is shown at all is this.
+        source = play_driver_source()
+        body = source[source.index("function renderBudget(") :]
+        body = body[: body.index("\n  }\n")]
+        for field in fields(TurnState):
+            assert f"budget.{field.name}" in body, field.name
+
+    def test_a_health_band_cannot_become_a_bar(self) -> None:
+        # The structural half of what player_view.py's bands are for. An
+        # opponent's row is one text node — the driver writes `textContent` and
+        # appends nothing into it — so there is no element in a rail row for a
+        # proportion to be drawn in, whatever a future stylesheet tried. The
+        # band is withheld arithmetic, and a bar is the arithmetic put back.
+        source = play_driver_source()
+        body = source[source.index("function renderOrder(") :]
+        body = body[: body.index("\n  }\n")]
+        assert "row.textContent =" in body
+        assert "row.appendChild" not in body, body
+        # And nothing anywhere sizes an element from a creature's hit points.
+        css = play_stylesheet()
+        assert "health" not in css and "hp" not in css.replace("--", "")
+
+
+class TestEditorContentPanel:
+    """The content and catalog controls, held against the route table.
+
+    Every path here is derived from ``routes.py`` rather than typed twice: the
+    page is a static asset no release step rewrites, so a route that moves under
+    it fails here rather than 404ing in a browser.
+    """
+
+    @pytest.mark.parametrize(
+        "operation", ("content.status", "content.configure", "catalog.search")
+    )
+    def test_the_panel_calls_the_path_the_route_table_declares(self, operation: str) -> None:
+        assert api_path(operation) in read("editor.html")
+
+    def test_the_panels_reuse_the_pages_one_request_helper(self) -> None:
+        # Including its network-rejection branch, which resolves with a status
+        # no caller reads as success rather than leaving the page on an
+        # unhandled rejection. A second fetch call site is a second error
+        # policy, and only one of them would have been thought about.
+        assert read("editor.html").count("fetch(") == 1
+
+    def test_the_editor_carries_the_content_controls_once_each(self) -> None:
+        source = read("editor.html")
+        for element_id in (
+            "content-status",
+            "content-paths",
+            "btn-content-load",
+            "btn-content-refresh",
+            "catalog-query",
+            "btn-catalog-search",
+            "catalog-results",
+        ):
+            assert source.count(f'id="{element_id}"') == 1, element_id
+
+
+class TestEditorRoster:
+    """The roster: the scene's combatants, and the one thing the map never holds.
+
+    ``map_document.py`` is deliberately stateless about creatures. A ``spawn``
+    feature is a *suggested placement* — a note the author left for whoever
+    fills the map — so the roster reads it and never writes back through it.
+    """
+
+    def test_the_editor_carries_the_roster_controls_once_each(self) -> None:
+        source = read("editor.html")
+        for element_id in (
+            "roster-list",
+            "roster-team",
+            "roster-spec",
+            "btn-roster-apply",
+            "btn-roster-remove",
+            "btn-roster-add",
+            "btn-roster-spawn",
+        ):
+            assert source.count(f'id="{element_id}"') == 1, element_id
+        assert source.count('data-tool="place"') == 1
+
+    def test_the_roster_never_enters_the_document_plumbing(self) -> None:
+        # The hard constraint, checked where it would first break: contentOf is
+        # what undo restores, what the dirty check compares and what the save
+        # digests. A roster that reached it would be creature state written into
+        # a map document — and would stamp provenance.edited for placing a
+        # token.
+        source = read("editor.html")
+        body = source[source.index("function contentOf(") : source.index("function snapshot(")]
+        assert "roster" not in body
+        assert "combatants" not in body
+
+    def test_placing_a_combatant_takes_no_undo_snapshot(self) -> None:
+        # snapshot() is the *document's* history. A placement changes no
+        # document, so a snapshot here would push a no-op entry that swallows a
+        # real undo — the same rule the preview toggle is held to.
+        source = read("editor.html")
+        handler = source.index("function placeCombatantAt(")
+        assert "snapshot()" not in source[handler : source.index("\n  }\n", handler)]
+
+    def test_a_spawn_feature_is_read_and_never_written(self) -> None:
+        # Both halves. The hint is found by the document's own kind name, and
+        # the helper that finds it may not assign into a feature: a placement
+        # that stamped a creature onto the hint would make the map document
+        # stateful about creatures, which is the thing this must not do.
+        source = read("editor.html")
+        body = source[source.index("function spawnHints(") :]
+        body = body[: body.index("\n  }\n")]
+        assert 'kind === "spawn"' in body
+        assert not re.search(r"feature\.\w+\s*=[^=]", body), body
+
+    def test_the_scene_names_only_keys_encounter_create_accepts(self) -> None:
+        # Derived from the route's own body schema, never restated here: the
+        # scene is a saved encounter.create body, so a key the operation does
+        # not accept is a scene that cannot start — and `combatants` is
+        # required there, so it is required here.
+        route = next(each for each in api_routes() if each.operation == "encounter.create")
+        schema = route.body_schema or {}
+        accepted = set(schema.get("properties", {}))
+        required = set(schema.get("required", ()))
+
+        source = read("editor.html")
+        body = source[source.index("function sceneOf(") :]
+        body = body[: body.index("\n  }\n")]
+        emitted = set(re.findall(r"scene\.(\w+)\s*=[^=]", body))
+
+        assert emitted, "sceneOf() builds no scene at all"
+        assert emitted <= accepted, f"the scene invents {sorted(emitted - accepted)}"
+        assert required <= emitted, f"the scene omits {sorted(required - emitted)}"
+
+    def test_a_position_is_written_in_feet_like_every_other_payload(self) -> None:
+        # A combatant's position is feet, not squares — specs.py takes "feet
+        # along the x-axis or an [x, y] pair of feet", and viewer.html divides
+        # by cell_feet to get back to a square. A roster that stored squares
+        # would place everybody in the top-left corner of the map.
+        source = read("editor.html")
+        assert "function cellToFeet(" in source
+        assert "function feetToCell(" in source
 
 
 class TestFacingAndCompass:

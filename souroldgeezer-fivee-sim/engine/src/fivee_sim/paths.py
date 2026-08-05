@@ -1,7 +1,7 @@
 """Where the engine reads and writes, resolved in one place.
 
-Maps, replays and encounter journals each answer the same question — *which
-directory* — with the same three-step rule: the surface's own environment
+Maps, replays, scenes and encounter journals each answer the same question —
+*which directory* — with the same three-step rule: the surface's own environment
 variable wins outright, then the project directory, then the current one. That
 rule was written out four times, in :mod:`fivee_sim.service.maps`,
 :mod:`fivee_sim.service.replay`, :mod:`fivee_sim.service.encounter_journal` and
@@ -30,6 +30,8 @@ __all__ = [
     "MAPS_SUBDIR",
     "REPLAYS_ENV",
     "REPLAYS_SUBDIR",
+    "SCENES_ENV",
+    "SCENES_SUBDIR",
     "STATE_FILENAME",
     "encounters_root",
     "environment_replay_roots",
@@ -37,6 +39,7 @@ __all__ = [
     "maps_root",
     "project_root",
     "replays_root",
+    "scenes_root",
     "state_file_for",
 ]
 
@@ -51,6 +54,14 @@ MAPS_SUBDIR = Path(".fivee-sim") / "maps"
 REPLAYS_ENV = "FIVEE_SIM_REPLAYS"
 #: Where replays live inside a project when nothing else is configured.
 REPLAYS_SUBDIR = Path(".fivee-sim") / "replays"
+
+#: Environment variable naming the directory saved scenes are kept in. One
+#: directory rather than a search path, like the encounters below and unlike
+#: maps and replays: a scene is written as often as it is read, and a list of
+#: roots leaves "which one does a write land in" to be guessed.
+SCENES_ENV = "FIVEE_SIM_SCENES"
+#: Where scenes live inside a project when nothing else is configured.
+SCENES_SUBDIR = Path(".fivee-sim") / "scenes"
 
 #: Environment variable naming the directory encounter journals are kept in.
 ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
@@ -95,6 +106,23 @@ def _configured_roots(
     return []
 
 
+def _single_root(
+    variable: str, subdir: Path, env: Mapping[str, str] | None
+) -> Path:
+    """The one directory ``variable`` names, or the project's, or the here-and-now.
+
+    The counterpart of :func:`_configured_roots` for the two surfaces that are
+    written as much as read — scenes and encounter journals. They take one
+    directory rather than a search path, so there is never a question of which
+    entry a write lands in.
+    """
+    environ = os.environ if env is None else env
+    configured = environ.get(variable, "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    return Path(project_root(environ) or Path.cwd()) / subdir
+
+
 def environment_roots(env: Mapping[str, str] | None = None) -> list[str]:
     """Map roots the environment asks for, mirroring the content precedence.
 
@@ -131,15 +159,18 @@ def replays_root(env: Mapping[str, str] | None = None) -> Path:
     return Path.cwd() / REPLAYS_SUBDIR
 
 
+def scenes_root(env: Mapping[str, str] | None = None) -> Path:
+    """Where scenes live: ``FIVEE_SIM_SCENES``, else the project's
+    ``.fivee-sim/scenes``, else the same under the current directory. One
+    directory, not a list, for the reason :data:`SCENES_ENV` gives."""
+    return _single_root(SCENES_ENV, SCENES_SUBDIR, env)
+
+
 def encounters_root(env: Mapping[str, str] | None = None) -> Path:
     """Where encounter journals live: ``FIVEE_SIM_ENCOUNTERS``, else the
     project's ``.fivee-sim/encounters``, else the same under the current
     directory. Unlike maps and replays this names one directory, not a list."""
-    environ = os.environ if env is None else env
-    configured = environ.get(ENCOUNTERS_ENV, "").strip()
-    if configured:
-        return Path(configured).expanduser()
-    return Path(project_root(environ) or Path.cwd()) / ENCOUNTERS_SUBDIR
+    return _single_root(ENCOUNTERS_ENV, ENCOUNTERS_SUBDIR, env)
 
 
 def state_file_for(maps_dir: str | Path) -> Path:

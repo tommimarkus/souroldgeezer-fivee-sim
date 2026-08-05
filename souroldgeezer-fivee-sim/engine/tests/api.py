@@ -34,7 +34,9 @@ from fivee_sim.service import catalog as _catalog
 from fivee_sim.service import content_ops as _content_ops
 from fivee_sim.service import encounters as _encounters
 from fivee_sim.service import map_ops as _map_ops
+from fivee_sim.service import player_view as _player_view
 from fivee_sim.service import primitives as _primitives
+from fivee_sim.service import scenes as _scenes
 from fivee_sim.service import sessions as _sessions
 
 #: Every fight, map and registry this process holds, as one object. Saved and
@@ -134,6 +136,10 @@ def encounter_create(
 
 def encounter_state(encounter_id: str) -> dict[str, Any]:
     return _encounters.state_of(STATE, encounter_id)
+
+
+def encounter_view(encounter_id: str, viewer: str) -> dict[str, Any]:
+    return _player_view.view_of(STATE, encounter_id, viewer)
 
 
 def encounter_note(
@@ -302,6 +308,29 @@ def map_edit(
 
 def replay_validate(bundle: dict[str, Any]) -> dict[str, Any]:
     return _map_ops.replay_validate(bundle)
+
+
+# --- scenes -------------------------------------------------------------------
+def scene_list() -> dict[str, Any]:
+    return _scenes.list_scenes()
+
+
+def scene_get(scene_id: str) -> dict[str, Any]:
+    return _scenes.load(scene_id)
+
+
+def scene_save(
+    scene_id: str,
+    document: dict[str, Any],
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    return _scenes.save(scene_id, document, expected_sha256=expected_sha256)
+
+
+def scene_validate(
+    document: dict[str, Any], map_ids: list[str] | None = None
+) -> dict[str, Any]:
+    return _scenes.validate(document, map_ids=map_ids)
 
 
 def replay_export(

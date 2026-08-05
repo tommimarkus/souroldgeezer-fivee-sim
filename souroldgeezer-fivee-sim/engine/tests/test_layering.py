@@ -16,7 +16,7 @@ rather than trusting the layer names. ``content`` reads the bundled packs with
 raised only because the resource read happens at call time, by which point
 ``content`` is fully initialised. A cycle that survives on timing is a cycle.
 
-Four rules, each the smallest statement of the layer it bounds:
+Five rules, each the smallest statement of the layer it bounds:
 
 * ``fivee_sim.data`` is a **resource package**: it imports nothing from the
   engine at all. This is what breaks the cycle, and it is stronger than "no
@@ -34,6 +34,11 @@ Four rules, each the smallest statement of the layer it bounds:
 * ``fivee_sim.client`` imports only itself and ``fivee_sim.paths``. This one
   points the other way from the three above, and it is the deliverable rather
   than a tidiness rule — see its own test for why.
+* ``fivee_sim.service.scenes`` imports neither ``model`` nor ``kernel``. A scene
+  is a saved request body, not a domain object, and the allowlist below is what
+  keeps it one. This is the only rule naming a single module rather than a
+  package, which is why :func:`_modules_under` answers for a file as well as a
+  directory.
 
 These are `ast` checks, not import-time checks, because an import that only
 happens inside a function still couples the modules and a runtime probe would
@@ -101,8 +106,18 @@ def _imports(path: Path) -> list[tuple[str, int]]:
 
 
 def _modules_under(prefix: str) -> list[Path]:
+    """Every source file a rule covers: a package's tree, or one module's file.
+
+    The single-module case is the scene rule's, and it is why this does not
+    simply ``rglob``: ``fivee_sim.service.scenes`` is a file beside its
+    siblings, and a resolver that only understood directories would score it as
+    no source at all and pass whatever it imported.
+    """
     root = SRC / Path(*prefix.split("."))
-    return sorted(root.rglob("*.py"))
+    if root.is_dir():
+        return sorted(root.rglob("*.py"))
+    module = root.with_suffix(".py")
+    return [module] if module.is_file() else []
 
 
 def _offenders(prefix: str, allowed: tuple[str, ...]) -> list[str]:
@@ -187,6 +202,50 @@ def test_the_client_reaches_the_engine_only_over_http() -> None:
     )
 
 
+#: What a scene service may reach for: where files live, how a file's problems
+#: are reported, and the three transport-neutral helpers in its own layer. An
+#: allowlist rather than a "not model, not kernel" denylist for the reason the
+#: player projection names what it emits — a denylist admits every layer added
+#: after it is written, silently.
+SCENE_ALLOWED = (
+    "fivee_sim.paths",
+    "fivee_sim.validation",
+    "fivee_sim.service.common",
+    "fivee_sim.service.durable",
+    "fivee_sim.service.errors",
+)
+
+
+def test_the_scene_service_holds_a_request_body_and_never_the_domain() -> None:
+    """A scene is a saved ``encounter.create`` body, and that is all it is.
+
+    What it must never become is a second opinion about the fight it describes.
+    ``encounter.create`` owns what a combatant spec is and ``kernel.grid`` owns
+    which movement rules exist; a scene that could reach either would be able to
+    re-decide both, and the copy would drift the first time a spec field is
+    added — which is exactly the duplication the design rejected.
+
+    Reaching for the maps directory is the same trap wearing a different hat:
+    resolving a ``map_id`` here would import the map document, the grid, and the
+    kernel behind them, so the known ids are passed in instead.
+    """
+    scenes = SRC / "fivee_sim" / "service" / "scenes.py"
+    assert scenes.is_file(), "the scene service is gone; this rule guards nothing"
+    assert _imports(scenes), (
+        "scenes.py imports nothing from the engine at all, which would make this "
+        "rule vacuous — has it been emptied?"
+    )
+    offenders = _offenders("fivee_sim.service.scenes", allowed=SCENE_ALLOWED)
+    assert not offenders, (
+        "service/scenes.py stores a request body: an id, a seed, a list of "
+        "combatant specs it does not interpret. An import of model/ or kernel/ "
+        "here — or of a service module that drags them in — makes it a second "
+        "owner of what a fight is, and two owners of one rule is how the copy "
+        "drifts. Pass the value in, the way the known map ids are passed to "
+        "validate():\n  " + "\n  ".join(offenders)
+    )
+
+
 def test_the_suites_own_door_stays_a_door_and_never_becomes_an_adapter() -> None:
     """``tests/api.py`` may only forward. A branch there is a second engine.
 
@@ -229,12 +288,13 @@ def test_the_suites_own_door_stays_a_door_and_never_becomes_an_adapter() -> None
 
 
 def test_every_layer_rule_actually_saw_some_source() -> None:
-    """A resolver that silently matched nothing would make all four vacuous."""
+    """A resolver that silently matched nothing would make all five vacuous."""
     for prefix in (
         "fivee_sim.data",
         "fivee_sim.kernel",
         "fivee_sim.model",
         "fivee_sim.client",
+        "fivee_sim.service.scenes",
     ):
         assert _modules_under(prefix), f"no source files found under {prefix}"
     # And the resolver really does follow relative imports: the kernel's mapgen

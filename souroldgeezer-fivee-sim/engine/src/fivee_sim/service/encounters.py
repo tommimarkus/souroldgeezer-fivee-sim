@@ -26,7 +26,7 @@ from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
 from ..model.encounter import Action, ActionKind, EncounterError
-from . import content_ops, map_ops, primitives, sessions, specs
+from . import content_ops, map_ops, player_view, primitives, sessions, specs
 from . import encounter_journal as journal_service
 from . import replay as replay_service
 from .errors import RequestError
@@ -99,11 +99,17 @@ def create(
     map_spec: dict[str, Any] | None = None,
     map_id: str | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
+    """Start a fight, and answer either the GM or one seat in it.
+
+    ``viewer`` names a combatant in ``combatants``, and narrows the ``state``
+    this returns to what that chair may hold. Omitted, nothing changes.
+    """
     if request_id is not None:
         existing = creation_request(state, request_id)
         if existing is not None:
-            return creation_response(state, *existing)
+            return player_view.briefed(creation_response(state, *existing), viewer)
     used = specs.checked_seed(seed)
     rng = Random(used)
     content = sessions.active_content(state)
@@ -117,6 +123,14 @@ def create(
         )
     except EncounterError as error:
         raise RequestError(str(error)) from error
+    # Before anything durable happens, and that is the whole reason it is here
+    # rather than left to the projection at the end. ``briefed`` would refuse an
+    # unknown seat too — but only after this fight had been created, journaled
+    # and given an id, so a caller who mistyped their own name would get a 404
+    # with an orphan encounter standing behind it. The roster is the authority
+    # on who is in this fight, and it is already built.
+    if viewer is not None:
+        player_view.require_seat({one.name for one in built_combatants}, viewer)
     encounter_id = sessions.new_encounter_id(state)
     session = Session(
         encounter=encounter, rng=rng, seed=used,
@@ -142,7 +156,15 @@ def create(
         # the map afterwards.
         session.map_payload = as_payload(map_document)
     elif battle_map is not None:
-        session.inline_map_payload = replay_service.battle_map_payload(battle_map)
+        # An inline map has no id and no file, so nothing could fetch it again
+        # and it travels by value or not at all — which is also why it gets no
+        # ``map_source``. A document arrived whole and is kept whole; only a
+        # spec, which has no document form, is rendered back out of the battle
+        # map it built, losing whatever ``to_grid`` had no slot for.
+        session.inline_map_payload = (
+            as_payload(map_document) if map_document is not None
+            else replay_service.battle_map_payload(battle_map)
+        )
     state.sessions[encounter_id] = session
     captured_map = session.map_payload or session.inline_map_payload
     try:
@@ -181,7 +203,7 @@ def create(
             "configured content failed to load; this fight uses the bundled slice "
             "only. See content_status."
         )
-    return result
+    return player_view.briefed(result, viewer)
 
 
 def state_of(state: EngineState, encounter_id: str) -> dict[str, Any]:
@@ -406,11 +428,18 @@ def act(
     facing: str | None = None,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
+    """Take the turn, and answer either the GM or one seat in the fight.
+
+    ``viewer`` narrows the returned ``state`` and nothing else. What is
+    journaled and what an idempotent retry replays stay whole: this fight's
+    audit record is the GM's, whichever chair happened to post the action.
+    """
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return cached
+        return player_view.briefed(cached, viewer)
     arguments: dict[str, Any] = {
         "kind": kind,
         "target": target,
@@ -492,7 +521,7 @@ def act(
         status="success",
         result=result,
     )
-    return result
+    return player_view.briefed(result, viewer)
 
 
 def execute_advance(
@@ -515,11 +544,16 @@ def advance(
     encounter_id: str,
     natural: int | list[int] | None = None,
     request_id: str | None = None,
+    viewer: str | None = None,
 ) -> dict[str, Any]:
+    """End this turn and begin the next, answering the GM or one seat.
+
+    ``viewer`` narrows the returned ``state``, on the same terms as :func:`act`.
+    """
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return cached
+        return player_view.briefed(cached, viewer)
     # Recorded for the reason ``act`` records its own: a death save the caller
     # rolled is an input, and a resume that re-rolled it would recover a fight
     # where somebody died who did not.
@@ -557,10 +591,19 @@ def advance(
         status="success",
         result=result,
     )
-    return result
+    return player_view.briefed(result, viewer)
 
 
-def resume(state: EngineState, encounter_id: str) -> dict[str, Any]:
+def resume(
+    state: EngineState, encounter_id: str, viewer: str | None = None
+) -> dict[str, Any]:
+    """Read a fight back from its journal, answering the GM or one seat.
+
+    ``viewer`` narrows the returned ``state``. Worth naming here rather than in
+    :func:`act`: this is the one of the four whose state comes from
+    :func:`state_of` and so carries ``map_source``, which the projection
+    classifies ``NEVER`` and drops with everything else.
+    """
     existing = state.sessions.get(encounter_id)
     warning: dict[str, str] | None = None
     recovered = existing is None
@@ -575,7 +618,7 @@ def resume(state: EngineState, encounter_id: str) -> dict[str, Any]:
     }
     if warning is not None:
         result["recovery_warning"] = warning
-    return result
+    return player_view.briefed(result, viewer)
 
 
 def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any]:

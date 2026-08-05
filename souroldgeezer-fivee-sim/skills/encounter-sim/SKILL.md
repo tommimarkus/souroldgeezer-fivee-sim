@@ -327,6 +327,14 @@ re-create the encounter when the new layout should apply.
 For the full map workflow — generation seeds, the browser editor, and exporting a
 fight as a shareable replay — use the **map-forge** skill.
 
+**If the user would rather drive the fight themselves**, the editor page has a
+Play mode: they place a roster on a map and act turn by turn in the browser,
+either as the whole table or from one creature's seat, rolling their own dice or
+letting the engine roll. Point them at `editor_url` from `fivee serve`. A seat's
+view is narrowed by the engine rather than by the page — but it is a projection,
+not a permission: anyone holding the launch token can still ask for the whole
+fight, so it suits a cooperating table and not an adversarial one.
+
 ## Aiming a spell
 
 `--kind cast` takes `--target` for one creature, `--targets` for several, or an

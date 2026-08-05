@@ -10,7 +10,16 @@ from pathlib import Path
 
 from ..content import contained_json_files
 
-__all__ = ["discover_json_files", "resolve_seed", "sha256_of", "slugify"]
+__all__ = ["ID_PATTERN", "discover_json_files", "resolve_seed", "sha256_of", "slugify"]
+
+#: What an id addressing a file under one of our directories may look like: the
+#: :func:`slugify` alphabet, nothing else. An id outside this grammar cannot
+#: name a file we wrote, so a surface reports it as unknown rather than
+#: half-resolving it — traversal attempts land here before any directory is
+#: read. It lives beside ``slugify`` because it *is* ``slugify``'s output read
+#: back: maps and scenes both address files this way, and a second copy of a
+#: containment grammar is a second chance for one of them to drift wider.
+ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 
 def resolve_seed(seed: int | None) -> int:

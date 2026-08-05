@@ -40,7 +40,7 @@ body {
   font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   display: flex; flex-direction: column;
 }
-button, select, input {
+button, select, input, textarea {
   font: inherit; color: inherit; background: var(--panel);
   border: 1px solid var(--edge); border-radius: 4px; padding: 3px 8px;
 }
@@ -56,24 +56,36 @@ header .spacer { flex: 1; }
 #map-name { min-width: 180px; font-weight: 600; }
 #provenance { color: var(--muted); white-space: nowrap; }
 #mode-note { color: var(--accent); }
+/* Two modes in one window, and the switch that says which. The buttons read as
+   one control, so only the outer corners are rounded. */
+#mode-switch { display: inline-flex; }
+#mode-switch button { border-radius: 0; }
+#mode-switch button:first-child { border-radius: 4px 0 0 4px; }
+#mode-switch button:last-child { border-radius: 0 4px 4px 0; border-left: none; }
 #layout { display: flex; flex: 1; min-height: 0; }
 #toolbar {
   width: 132px; padding: 8px; border-right: 1px solid var(--edge);
   background: var(--panel); display: flex; flex-direction: column; gap: 4px;
   overflow-y: auto;
 }
-#toolbar h3, #panel h3 {
+/* Play hides the authoring columns, and this is what lets it: the id rule
+   above sets display:flex, which outranks the browser's default [hidden] rule.
+   #panel and #play-panel need no such line and deliberately have none — they
+   set no display of their own, so `hidden` already works on them. */
+#toolbar[hidden] { display: none; }
+#toolbar h3, #panel h3, #play-panel h3 {
   margin: 8px 0 2px; font-size: 11px; text-transform: uppercase;
   letter-spacing: 0.06em; color: var(--muted);
 }
-#toolbar h3:first-child { margin-top: 0; }
+#toolbar h3:first-child, #play-panel h3:first-child { margin-top: 0; }
 #toolbar input[type="number"] { width: 100%; }
 #canvas-wrap { flex: 1; position: relative; min-width: 0; }
 #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-#panel {
-  width: 230px; padding: 8px; border-left: 1px solid var(--edge);
+#panel, #play-panel {
+  width: 240px; padding: 8px; border-left: 1px solid var(--edge);
   background: var(--panel); overflow-y: auto;
 }
+#play-note { color: var(--muted); white-space: pre-wrap; }
 #legend-list { display: flex; flex-direction: column; gap: 2px; }
 .legend-row {
   display: flex; align-items: center; gap: 6px; padding: 2px 4px;
@@ -166,6 +178,40 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
 #map-list .dim { color: var(--muted); }
 #gen-params .row input { width: 7em; }
 .hint { color: var(--muted); font-size: 12px; }
+/* The scene-building panels: what content is loaded, what creatures it offers,
+   and the roster being assembled from them. Monospaced like every other block
+   in this column that is read rather than clicked. */
+#content-status, #catalog-results, #roster-list {
+  margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px;
+  white-space: pre-wrap;
+}
+#content-add, #catalog-search, #roster-controls {
+  display: flex; gap: 4px; margin-top: 6px;
+}
+#content-add input, #catalog-search input, #roster-controls input {
+  flex: 1; min-width: 0;
+}
+.catalog-row, .roster-row {
+  display: flex; align-items: center; gap: 6px; padding: 2px 4px;
+  border-radius: 4px; cursor: pointer; border: 1px solid transparent;
+}
+.catalog-row.selected, .roster-row.selected {
+  border-color: var(--accent); background: var(--bg);
+}
+.catalog-row span, .roster-row span {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The team's own colour, resolved by the renderer so a roster row and the
+   token it stands for are the same ink. */
+.roster-swatch {
+  width: 12px; height: 12px; flex: none; border-radius: 3px;
+  border: 1px solid var(--edge);
+}
+#roster-spec {
+  width: 100%; min-height: 7rem; margin-top: 6px; resize: vertical;
+  font-family: ui-monospace, monospace; font-size: 11px;
+}
 </style>
 </head>
 <body>
@@ -173,6 +219,14 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
   <input id="map-name" type="text" placeholder="untitled map" aria-label="map name">
   <span id="provenance"></span>
   <span class="spacer"></span>
+  <!-- One window, two modes. Edit is everything this page has always done;
+       Play runs the scene, and the loop that runs it is an extracted asset. -->
+  <span id="mode-switch">
+    <button id="mode-edit" class="mode active"
+      title="author the map, its content, and the roster">Edit</button>
+    <button id="mode-play" class="mode"
+      title="run the scene; the play driver loads when you ask for it">Play</button>
+  </span>
   <span id="mode-note"></span>
   <!-- The other half of the same launch. Unconditional, unlike the viewer's
        link back: the editor is only ever served, so this route always exists
@@ -208,6 +262,10 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <option value="opening">opening</option>
       <option value="light">light</option>
     </select>
+    <!-- Places a creature in the *roster*, never in the document: the map
+         format is deliberately stateless about creatures. -->
+    <button class="tool" data-tool="place"
+      title="drop the chosen creature on a square">Place</button>
     <button class="tool" data-tool="erase">Eraser</button>
     <button class="tool" data-tool="height">Height</button>
     <input id="height-feet" type="number" step="5" value="10" aria-label="height in feet">
@@ -285,6 +343,46 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
     <div id="fixture-list">&#8212;</div>
     <h3>Cursor</h3>
     <div id="readout">&#8212;</div>
+    <h3>Content</h3>
+    <div id="content-status">&#8212;</div>
+    <div id="content-add">
+      <input id="content-paths" type="text" placeholder="pack path(s)"
+        aria-label="content pack paths">
+      <button id="btn-content-load"
+        title="load these packs alongside what is already loaded">Load</button>
+      <button id="btn-content-refresh"
+        title="re-read what this engine has loaded">Refresh</button>
+    </div>
+    <h3>Creatures</h3>
+    <div id="catalog-search">
+      <input id="catalog-query" type="text" placeholder="search creatures"
+        aria-label="creature search">
+      <button id="btn-catalog-search">Find</button>
+    </div>
+    <div id="catalog-results">&#8212;</div>
+    <h3>Roster</h3>
+    <div id="roster-list">&#8212;</div>
+    <div id="roster-controls">
+      <input id="roster-team" type="text" value="party"
+        aria-label="team for the next placement">
+      <button id="btn-roster-add"
+        title="add a combatant to describe by hand">Add</button>
+      <button id="btn-roster-spawn"
+        title="take the next free spawn hint on this level">At spawn</button>
+      <button id="btn-roster-remove"
+        title="drop the selected combatant">Remove</button>
+    </div>
+    <textarea id="roster-spec" spellcheck="false" aria-label="combatant spec"
+      placeholder="select a combatant to read and edit its spec"></textarea>
+    <button id="btn-roster-apply">Apply spec</button>
+  </aside>
+  <!-- Hidden in the markup, not by a line of script: Edit is what this page is
+       when it loads, and a play panel un-hidden and then re-hidden would
+       flash. What fills #play-root is play.js's business, never this file's. -->
+  <aside id="play-panel" hidden>
+    <h3>Play</h3>
+    <div id="play-note"></div>
+    <div id="play-root"></div>
   </aside>
 </div>
 <footer>
@@ -668,6 +766,19 @@ if (typeof FiveeRenderer === "undefined") {
        every other opener, so it is reset by this line too. */
     previewOn = false;
     previewOpen = Object.create(null);
+    /* The same checklist entry, one layer out: a roster left across an open
+       would stand the last scene's combatants on a map that never heard of
+       them, at squares that may not exist on it. The armed creature goes with
+       it, being a choice about the scene rather than about the catalog. */
+    roster = [];
+    selectedCombatant = -1;
+    pendingCreature = null;
+    /* Cleared here rather than through selectCombatant, which would redraw —
+       and a redraw at this point in the load would paint the new document
+       under the outgoing map's camera. */
+    byId("roster-spec").value = "";
+    renderRoster();
+    renderCatalogResults();
     renderLevels();
     renderStackLegend();
     renderFixtureList();
@@ -1900,6 +2011,305 @@ if (typeof FiveeRenderer === "undefined") {
     setPreview(!previewOn);
   });
 
+  /* --- content, creatures, and the roster -------------------------------- */
+  /* The roster is the `combatants` array of a scene — a saved encounter.create
+     body — and it is the one thing the map document must never hold.
+     map_document.py is deliberately stateless about creatures: a `spawn`
+     feature is a *suggested placement*, a note the author left for whoever
+     fills the map, and nothing in this section writes back through one.
+
+     So nothing here touches doc, calls snapshot(), or moves the baseline — the
+     same discipline the preview lens is under, for a different reason. And like
+     the undo stack, the roster is deliberately not carried across a refresh:
+     the session payload is the map, and this belongs to the scene being
+     assembled on top of it. */
+  var roster = [];
+  var selectedCombatant = -1;
+  var pendingCreature = null;  /* {name, simulation} armed from the search */
+  var catalogResults = [];
+  var CATALOG_LIMIT = 20;
+
+  var FEET_PER_SQUARE = 5;
+  function cellFeet() {
+    return doc && doc.grid && Number.isInteger(doc.grid.cell_feet)
+      ? doc.grid.cell_feet : FEET_PER_SQUARE;
+  }
+  /* A combatant's position is *feet*, never squares: specs.py takes "feet along
+     the x-axis or an [x, y] pair of feet", and the viewer divides by the same
+     number to get a square back. A roster that stored squares would put the
+     whole party in the top-left corner of the map. */
+  function cellToFeet(cell) {
+    return [cell[0] * cellFeet(), cell[1] * cellFeet()];
+  }
+  function feetToCell(point) {
+    return [Math.floor(point[0] / cellFeet()), Math.floor(point[1] / cellFeet())];
+  }
+  /* A spec names itself one of two ways, because encounter.create accepts two
+     shapes: `creature` looks a loaded name up, `name` describes one outright. */
+  function combatantLabel(spec) {
+    return String(spec.name || spec.creature || spec.monster || spec.label || "unnamed");
+  }
+  function placedSquare(spec) {
+    var at = spec.position;
+    return Array.isArray(at) && at.length === 2
+      && Number.isFinite(at[0]) && Number.isFinite(at[1]) ? feetToCell(at) : null;
+  }
+  /* The roster, drawn through the channel the renderer already carries a
+     fight's creatures on — so seeing where a scene stands teaches the renderer
+     nothing new, exactly as previewing a fixture does not. */
+  function rosterTokens() {
+    var tokens = [];
+    roster.forEach(function (spec) {
+      var at = placedSquare(spec);
+      if (at === null) { return; }
+      tokens.push({ at: at, team: spec.team || "",
+        label: combatantLabel(spec).slice(0, 2) });
+    });
+    return tokens;
+  }
+
+  function renderRoster() {
+    var host = byId("roster-list");
+    host.textContent = "";
+    if (selectedCombatant >= roster.length) { selectedCombatant = -1; }
+    byId("btn-roster-remove").disabled = selectedCombatant === -1;
+    byId("btn-roster-apply").disabled = selectedCombatant === -1;
+    if (!roster.length) {
+      host.textContent = doc ? "no combatants placed yet" : "—";
+      return;
+    }
+    roster.forEach(function (spec, index) {
+      var row = document.createElement("div");
+      row.className = "roster-row" + (index === selectedCombatant ? " selected" : "");
+      var swatch = document.createElement("span");
+      swatch.className = "roster-swatch";
+      swatch.style.backgroundColor = R.teamColor(spec.team, R.isDark());
+      var text = document.createElement("span");
+      var at = placedSquare(spec);
+      text.textContent = combatantLabel(spec) + " · " + (spec.team || "no team")
+        + " · " + (at === null ? "unplaced" : "[" + at + "]");
+      row.appendChild(swatch);
+      row.appendChild(text);
+      row.addEventListener("click", function () { selectCombatant(index); });
+      host.appendChild(row);
+    });
+  }
+  function selectCombatant(index) {
+    selectedCombatant = index;
+    byId("roster-spec").value = index === -1
+      ? "" : JSON.stringify(roster[index], null, 2);
+    renderRoster();
+    redraw();
+  }
+
+  /* The one door into the roster from the canvas, and it takes no snapshot():
+     snapshot is the *document's* history, and no document is changing here — a
+     no-op entry pushed onto it would swallow a real undo. */
+  function placeCombatantAt(cell, team) {
+    if (!doc || !inBounds(cell)) { return; }
+    if (pendingCreature !== null) {
+      var chosen = team || byId("roster-team").value.trim() || "party";
+      roster.push({ creature: pendingCreature.name, team: chosen,
+        position: cellToFeet(cell) });
+      /* Said at the moment of placing rather than at the moment of starting:
+         a scene that cannot run is a legitimate draft, but the reason should
+         not wait until encounter.create refuses it. */
+      setStatus(pendingCreature.simulation === "executable"
+        ? "placed " + pendingCreature.name + " on team " + chosen + " at [" + cell + "]"
+        : "placed " + pendingCreature.name + " at [" + cell + "], but the loaded "
+          + "content cannot run it — the fight will refuse this scene until a "
+          + "pack supplies it",
+        pendingCreature.simulation === "executable" ? "" : "error");
+      pendingCreature = null;
+      renderCatalogResults();
+      selectCombatant(roster.length - 1);
+    } else if (selectedCombatant !== -1) {
+      roster[selectedCombatant].position = cellToFeet(cell);
+      setStatus("moved " + combatantLabel(roster[selectedCombatant])
+        + " to [" + cell + "]");
+      selectCombatant(selectedCombatant);
+    } else {
+      setStatus("choose a creature under Creatures, or a roster entry to move, "
+        + "then click a square", "error");
+    }
+  }
+
+  /* The spawn features on the plane being edited, read and never written. */
+  function spawnHints() {
+    return (plane().features || []).filter(function (feature) {
+      return feature && feature.kind === "spawn" && Array.isArray(feature.at);
+    });
+  }
+  function occupiedSquares() {
+    var taken = Object.create(null);
+    roster.forEach(function (spec) {
+      var at = placedSquare(spec);
+      if (at !== null) { taken[at.join(",")] = true; }
+    });
+    return taken;
+  }
+  byId("btn-roster-spawn").addEventListener("click", function () {
+    if (!doc) { return; }
+    var hints = spawnHints();
+    var taken = occupiedSquares();
+    var free = hints.filter(function (hint) {
+      return !taken[hint.at[0] + "," + hint.at[1]];
+    });
+    if (!free.length) {
+      setStatus(hints.length
+        ? "every spawn hint on this level is already taken"
+        : "this level has no spawn hints; pick the Place tool and click a square",
+        "error");
+      return;
+    }
+    /* The hint's own team wins over the panel's, because that is the whole of
+       what the author was suggesting when they wrote one on it. */
+    placeCombatantAt([free[0].at[0], free[0].at[1]], free[0].team);
+  });
+
+  /* The other way in, and the one that needs no server: a described spec, which
+     is what the playtest pregens are. It carries the four keys creature_from_spec
+     insists on and no invented detail beyond them — the spec box below is where
+     the rest is written, and the engine grades the result. */
+  byId("btn-roster-add").addEventListener("click", function () {
+    roster.push({
+      name: "new combatant", team: byId("roster-team").value.trim() || "party",
+      ac: 10, max_hp: 1
+    });
+    pendingCreature = null;
+    renderCatalogResults();
+    setStatus("added a combatant to describe — edit its spec below, then place it");
+    selectCombatant(roster.length - 1);
+  });
+  byId("btn-roster-apply").addEventListener("click", function () {
+    if (selectedCombatant === -1) { return; }
+    var parsed;
+    try { parsed = JSON.parse(byId("roster-spec").value); }
+    catch (error) {
+      setStatus("that spec is not JSON: " + error.message, "error");
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setStatus("a combatant spec is a JSON object", "error");
+      return;
+    }
+    roster[selectedCombatant] = parsed;
+    /* Not validated here, deliberately: what makes a combatant spec legal is
+       encounter.create's to decide, and a second opinion in this page would
+       drift from it the first time a spec key was added. */
+    setStatus("spec applied — the engine grades it when the fight starts");
+    selectCombatant(selectedCombatant);
+  });
+  byId("btn-roster-remove").addEventListener("click", function () {
+    if (selectedCombatant === -1) { return; }
+    var gone = combatantLabel(roster[selectedCombatant]);
+    roster.splice(selectedCombatant, 1);
+    setStatus("removed " + gone + " from the roster");
+    selectCombatant(-1);
+  });
+
+  function renderContentStatus(payload) {
+    var host = byId("content-status");
+    if (!payload || typeof payload !== "object") { host.textContent = "—"; return; }
+    var lines = ["generation " + payload.generation + " · builtin "
+      + payload.builtin];
+    var counts = payload.counts || {};
+    var named = Object.keys(counts).sort().map(function (section) {
+      return section + " " + counts[section];
+    });
+    if (named.length) { lines.push(named.join(" · ")); }
+    (payload.packs || []).forEach(function (pack) {
+      /* A bundled pack has no path, and an empty one printed as nothing reads
+         as a pack from nowhere. */
+      lines.push(pack.pack + " " + pack.version + " — " + (pack.path || "built in"));
+    });
+    (payload.warnings || []).forEach(function (warning) {
+      lines.push("warning: " + (warning.problem || warning.name || ""));
+    });
+    host.textContent = lines.join("\n");
+  }
+  function refreshContent() {
+    return request("GET", "/content").then(function (response) {
+      if (response.status !== 200) {
+        byId("content-status").textContent = "content unavailable";
+        return;
+      }
+      renderContentStatus(response.json);
+    });
+  }
+  byId("btn-content-refresh").addEventListener("click", function () { refreshContent(); });
+  byId("btn-content-load").addEventListener("click", function () {
+    var paths = byId("content-paths").value.split(",").map(function (part) {
+      return part.trim();
+    }).filter(function (part) { return part; });
+    if (!paths.length) {
+      setStatus("name at least one content pack path to load", "error");
+      return;
+    }
+    /* `add`, not a replacement: this box is what a session is adding, and
+       content.configure's own default would drop whatever the launch
+       configured. */
+    request("POST", "/content/configuration", { paths: paths, add: true })
+      .then(function (response) {
+        if (response.status !== 200) {
+          setStatus("the server refused those packs: "
+            + (response.json && response.json.detail), "error");
+          return;
+        }
+        renderContentStatus(response.json);
+        setStatus("content generation " + response.json.generation
+          + " — a fight already running keeps the content it started with", "ok");
+      });
+  });
+
+  function renderCatalogResults() {
+    var host = byId("catalog-results");
+    host.textContent = "";
+    if (!catalogResults.length) { host.textContent = "—"; return; }
+    catalogResults.forEach(function (entry) {
+      var row = document.createElement("div");
+      row.className = "catalog-row"
+        + (pendingCreature && pendingCreature.name === entry.name ? " selected" : "");
+      var text = document.createElement("span");
+      /* Named as a spec would have to name it, because that is what choosing
+         one writes. Anything the loaded content cannot actually run says so
+         here, where it is being chosen. */
+      text.textContent = entry.name
+        + (entry.simulation === "executable" ? "" : " · reference only");
+      row.title = entry.source ? entry.name + " — " + entry.source : entry.name;
+      row.appendChild(text);
+      row.addEventListener("click", function () {
+        pendingCreature = { name: entry.name, simulation: entry.simulation };
+        setStatus("chose " + entry.name
+          + " — pick the Place tool and click a square, or take a spawn hint");
+        renderCatalogResults();
+        selectCombatant(-1);
+      });
+      host.appendChild(row);
+    });
+  }
+  byId("btn-catalog-search").addEventListener("click", function () {
+    var query = byId("catalog-query").value.trim();
+    if (!query) {
+      setStatus("type something to search the catalog for", "error");
+      return;
+    }
+    request("GET", "/catalog/search?query=" + encodeURIComponent(query)
+      + "&kind=creature&limit=" + CATALOG_LIMIT).then(function (response) {
+      if (response.status !== 200) {
+        setStatus("the catalog search failed: "
+          + (response.json && response.json.detail), "error");
+        return;
+      }
+      catalogResults = (response.json && response.json.results) || [];
+      renderCatalogResults();
+      setStatus(catalogResults.length
+        ? catalogResults.length + " of " + response.json.total
+          + " match '" + query + "'"
+        : "nothing in the loaded catalog matches '" + query + "'");
+    });
+  });
+
   /* --- canvas ----------------------------------------------------------- */
   var framePending = false;
   function redraw() {
@@ -1952,6 +2362,12 @@ if (typeof FiveeRenderer === "undefined") {
         overlays.featureStates = previewOpen;
         overlays.terrainOverrides = R.terrainOverridesFor(renderable(), previewOpen);
       }
+      /* Whose creatures these are is the mode, and nothing else: the roster
+         while a scene is being assembled, the driver's own while a fight is
+         being run. Neither is ever part of the document — the map format is
+         stateless about creatures, and Play mutates nothing at all. */
+      var tokens = mode === "play" ? playTokens : rosterTokens();
+      if (tokens && tokens.length) { overlays.tokens = tokens; }
       R.render(ctx, renderable(), view, overlays);
     });
   }
@@ -1963,9 +2379,17 @@ if (typeof FiveeRenderer === "undefined") {
 
   canvas.addEventListener("pointerdown", function (event) {
     if (!doc) { return; }
+    var panning = tool === "pan" || event.button === 1 || event.button === 2;
+    /* In Play the clicks belong to the driver, and every branch below except
+       the camera writes the document. The guard has to be here rather than in
+       play.js: both listen on this one canvas and this one was registered
+       first, so nothing the driver does to its own event can stop a brush
+       stroke that has already happened. Leaving Play with the Brush still
+       selected is not an exotic case — it is what every author who was
+       painting a moment ago has selected. */
+    if (mode === "play" && !panning) { return; }
     canvas.setPointerCapture(event.pointerId);
     var cell = eventCell(event);
-    var panning = tool === "pan" || event.button === 1 || event.button === 2;
     if (panning) {
       drag = { kind: "pan", lastX: event.clientX, lastY: event.clientY,
         moved: false, cell: cell };
@@ -2006,6 +2430,10 @@ if (typeof FiveeRenderer === "undefined") {
       if (inBounds(cell)) { cycleDoor(cell); }
     } else if (tool === "feature") {
       if (inBounds(cell)) { placeOrRemoveFeature(cell); }
+    } else if (tool === "place") {
+      /* The roster, never the document: this tool is the only one in the bar
+         that changes nothing the Save button would write. */
+      if (inBounds(cell)) { placeCombatantAt(cell); }
     }
   });
 
@@ -2621,6 +3049,139 @@ if (typeof FiveeRenderer === "undefined") {
     });
   });
 
+  /* --- Edit and Play, and the driver that is not in this file ------------ */
+  /* One window, two modes. Edit is everything above. Play runs the scene, and
+     the loop that runs it — state fetch, token building, the action bar, roll
+     handling — is an extracted asset: this page is already the largest one
+     served, and holding a second whole application in it would be the same
+     mistake twice.
+
+     The seam, and the whole of it:
+
+         FiveePlay.start(context)   on entering Play
+         FiveePlay.stop()           on leaving it
+
+     where `context` carries
+
+         root       the element the driver owns and renders into
+         scene      a deep copy of {combatants, map | map_id} — an
+                    encounter.create body, never the buffer this page holds
+         request    (method, path, body, headers) -> Promise of
+                    {status, headers, json}, this page's own helper, network
+                    refusals already turned into a status no branch reads as
+                    success
+         renderer   FiveeRenderer
+         canvas     the canvas the map is drawn on
+         view       the live camera, so Play opens where Edit was looking
+         cellAt     (clientX, clientY) -> [x, y] in map squares
+         setStatus  (text, className) -> void, the footer line
+         setTokens  (tokens) -> void, the renderer's own token overlay; a null
+                    or empty list clears it
+
+     Play writes no document. Nothing below calls snapshot(), assigns into doc,
+     or moves the baseline, which is why Stop restores nothing: nothing was
+     mutated. */
+  var PLAY_DRIVER_SRC = "/assets/play.js";
+  var mode = "edit";
+  var playTokens = null;
+  var playDriver = null;
+  var playDriverLoad = null;   /* the load: asked for once, and only when asked */
+
+  function loadPlayDriver() {
+    if (playDriverLoad !== null) { return playDriverLoad; }
+    playDriverLoad = new Promise(function (resolve) {
+      /* Already here — served with the page, or inlined by an export. */
+      if (typeof FiveePlay !== "undefined") { resolve(FiveePlay); return; }
+      var tag = document.createElement("script");
+      tag.src = PLAY_DRIVER_SRC;
+      tag.addEventListener("load", function () {
+        resolve(typeof FiveePlay === "undefined" ? null : FiveePlay);
+      });
+      /* Resolved rather than rejected, for the reason request() resolves a
+         refused connection: a driver that never arrives is a mode that cannot
+         run, which the panel says in words, and not an unhandled rejection the
+         rest of the page has to survive. */
+      tag.addEventListener("error", function () { resolve(null); });
+      document.body.appendChild(tag);
+    });
+    return playDriverLoad;
+  }
+
+  /* A scene is a saved encounter.create body and nothing else. Deep-copied on
+     the way out: the driver may do as it likes with what it is handed, and none
+     of it may reach the document this page is holding. */
+  function sceneOf() {
+    var scene = {};
+    scene.combatants = JSON.parse(JSON.stringify(roster));
+    if (doc) {
+      /* Exactly one of the two, which is what the envelope requires. A map the
+         server already has is named; one that exists only on this page travels
+         whole, because no id would find it. */
+      if (mapId && etag !== null) { scene.map_id = mapId; }
+      else { scene.map = JSON.parse(JSON.stringify(doc)); }
+    }
+    return scene;
+  }
+  function setPlayTokens(tokens) {
+    playTokens = Array.isArray(tokens) && tokens.length ? tokens : null;
+    redraw();
+  }
+  function playContext() {
+    return {
+      root: byId("play-root"),
+      scene: sceneOf(),
+      request: request,
+      renderer: R,
+      canvas: canvas,
+      view: view,
+      cellAt: function (clientX, clientY) {
+        var box = canvas.getBoundingClientRect();
+        return R.cellAt(view, clientX - box.left, clientY - box.top);
+      },
+      setStatus: setStatus,
+      setTokens: setPlayTokens
+    };
+  }
+
+  function applyMode() {
+    byId("mode-edit").classList.toggle("active", mode === "edit");
+    byId("mode-play").classList.toggle("active", mode === "play");
+    byId("toolbar").hidden = mode === "play";
+    byId("panel").hidden = mode === "play";
+    byId("play-panel").hidden = mode !== "play";
+  }
+  function enterPlay() {
+    byId("play-note").textContent = "loading the play driver…";
+    loadPlayDriver().then(function (driver) {
+      /* Left again before it arrived: whatever it is, it is not wanted now. */
+      if (mode !== "play") { return; }
+      if (!driver || typeof driver.start !== "function") {
+        byId("play-note").textContent = "the play driver (" + PLAY_DRIVER_SRC
+          + ") did not load, so there is nothing here to run the scene. "
+          + "Edit mode is unaffected.";
+        return;
+      }
+      playDriver = driver;
+      byId("play-note").textContent = "";
+      playDriver.start(playContext());
+    });
+  }
+  function leavePlay() {
+    setPlayTokens(null);
+    if (playDriver && typeof playDriver.stop === "function") { playDriver.stop(); }
+  }
+  function setMode(next) {
+    /* Play needs a server to run a fight against, so the button stands down
+       without one — and the guard is here as well as there, because the two are
+       wired independently. */
+    if (next === mode || !CONFIG) { return; }
+    mode = next;
+    applyMode();
+    if (mode === "play") { enterPlay(); } else { leavePlay(); }
+  }
+  byId("mode-edit").addEventListener("click", function () { setMode("edit"); });
+  byId("mode-play").addEventListener("click", function () { setMode("play"); });
+
   /* --- modes ------------------------------------------------------------ */
   window.addEventListener("resize", redraw);
   /* Before the mode branch: a restored document needs no API, so it comes back
@@ -2633,16 +3194,35 @@ if (typeof FiveeRenderer === "undefined") {
      it already says so, so the corner stays empty rather than guessing. */
   byId("version-note").textContent = CONFIG && CONFIG.version
     ? "engine " + CONFIG.version : "";
+  /* Edit, said by the page rather than assumed from the markup: the columns and
+     the switch have to agree before anything is clicked. */
+  applyMode();
+  renderRoster();
+  renderCatalogResults();
   var restored = restoreSession();
   if (!CONFIG) {
     /* Opened from disk with no server behind it: editing, file open, and
-       download still work; everything that needs the API is off. */
+       download still work; everything that needs the API is off — Play
+       included, which has no engine to run a fight against. */
     byId("mode-note").textContent =
       "serverless — file open and download only";
-    ["btn-open", "btn-generate", "btn-validate", "btn-save"].forEach(function (id) {
+    ["btn-open", "btn-generate", "btn-validate", "btn-save", "mode-play",
+      "btn-content-load", "btn-content-refresh", "btn-catalog-search"
+    ].forEach(function (id) {
       byId(id).disabled = true;
     });
+    /* Said, rather than left as the dash the markup ships: a blank panel beside
+       a disabled Load button reads as an engine with nothing loaded, which is a
+       different and much more alarming claim than "nobody here can tell you". */
+    byId("content-status").textContent =
+      "no server attached, so this page cannot say what content is loaded";
+    byId("catalog-results").textContent =
+      "no server attached — describe a combatant with Add instead";
   } else {
+    /* What content this engine has loaded, asked for at boot: the panel is
+       always on screen in Edit, and one that opened on "press refresh" would
+       be a control standing in for an answer already available. */
+    refreshContent();
     request("GET", "/ping").then(function (response) {
       if (response.json && response.json.ok && !restored) {
         /* The version is not repeated here: the footer's corner carries it
