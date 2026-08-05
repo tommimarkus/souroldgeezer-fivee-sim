@@ -140,16 +140,20 @@ class TestSurpriseIsExpressible:
         ready = fighter("Goblin", team="monsters")
 
         encounter = Encounter(
-            # Thora keeps the 1 of 20/1; the goblin then rolls 10 straight.
+            # Thora keeps the 1 of 20/1; the goblin then rolls 10 straight. Both
+            # carry Dexterity 14, so the totals are 1+2 and 10+2 — pinned rather
+            # than compared, because an inequality also holds for a great many
+            # implementations that are not applying Disadvantage at all.
             [surprised, ready], ScriptedRandom([20, 1, 10]), condition_effects=self.TABLE
         )
 
-        assert encounter.initiative["Thora"] < encounter.initiative["Goblin"]
+        assert encounter.initiative == {"Thora": 3, "Goblin": 12}
 
-    def test_surprise_comes_off_once_initiative_is_past(self) -> None:
+    def test_a_ruling_can_lift_surprise_when_initiative_is_past(self) -> None:
         # The half that did not exist. Surprise is spent the moment initiative is
         # rolled, so a condition that could never be lifted would go on taxing
-        # every ability check for the rest of the fight.
+        # every ability check for the rest of the fight. This pins the lifting
+        # alone; that the condition bites during initiative is the case above.
         encounter = Encounter(
             [fighter("Thora"), fighter("Goblin", team="monsters")],
             FixedRandom(10),

@@ -162,6 +162,47 @@ class TestRulingConditions:
         kinds = [event.kind for event in encounter.log if event.target == "Thora"]
         assert kinds[-2:] == ["effect_apply", "effect_end"]
 
+    def test_lifting_also_ends_the_spell_effect_sustaining_the_condition(self) -> None:
+        # The branch the class docstring promises and nothing else reaches.
+        # Without it the ledger still holds an effect naming a condition the
+        # creature no longer has, so the spell's grip outlives the ruling meant
+        # to end it — and the next thing to consult the ledger reimposes it.
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        encounter = Encounter([wren, victim], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions
+        assert encounter.state()["ongoing_effects"] != []
+
+        encounter.set_condition("Bandit0", Condition.PARALYZED, applied=False)
+
+        assert Condition.PARALYZED not in victim.conditions
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_lifting_leaves_an_unrelated_effect_alone(self) -> None:
+        # And only that condition: a ruling is a scalpel, not a dispel.
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 6
+        rng = Random(11)
+        encounter = Encounter([wren, victim], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+
+        encounter.set_condition("Bandit0", Condition.POISONED, applied=False)
+
+        assert Condition.PARALYZED in victim.conditions
+        assert encounter.state()["ongoing_effects"] != []
+
     def test_an_unknown_condition_is_refused(self) -> None:
         encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
         with pytest.raises(UnknownCondition, match="no condition named 'bewildered'"):

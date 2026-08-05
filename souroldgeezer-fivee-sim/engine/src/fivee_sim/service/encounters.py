@@ -213,8 +213,8 @@ def note(
         label = category.strip()
         if not written:
             raise RequestError("note text must not be blank")
-        if len(written) > 4000:
-            raise RequestError("note text must be at most 4000 characters")
+        if len(written) > MAX_NOTE_TEXT:
+            raise RequestError(f"note text must be at most {MAX_NOTE_TEXT} characters")
         if not label:
             raise RequestError("note category must not be blank")
         return {
@@ -232,6 +232,18 @@ def note(
         arguments={"text": text, "category": category},
         execute=execute,
     )
+
+
+#: How long a note may be. This is the rule for *any* caller, which is why it
+#: stays here rather than moving to the route schema that also enforces it:
+#: ``tests/api.py`` reaches these functions directly, with no adapter in front,
+#: and the HTTP door is not the only door.
+#:
+#: The schema copy in ``web/routes.py`` is not redundant with it. Over HTTP the
+#: bound has to fire in the dispatcher, because ``audited_primitive`` journals an
+#: attempt's arguments before this function runs — a refusal here has already let
+#: the payload onto the disk. ``TestDeclaredBounds`` pins the two equal.
+MAX_NOTE_TEXT = 4000
 
 
 def condition(

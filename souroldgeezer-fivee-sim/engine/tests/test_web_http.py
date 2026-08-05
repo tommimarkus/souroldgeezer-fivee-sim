@@ -33,6 +33,7 @@ from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
 from fivee_sim.model.encounter import ActionKind
 from fivee_sim.service import adventures as adventure_service
+from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
@@ -1524,6 +1525,54 @@ class TestDeclaredExamples:
         )
 
 
+class TestDeclaredBounds:
+    """A length bound the dispatcher enforces and the service also owns.
+
+    Same trade as ``TestDeclaredEnums`` below and for the same reason: the route
+    table may not import ``service/``, so the note bound is written in both
+    places and held equal here rather than derived. Neither number is written
+    into this file — that would pin each declaration against a literal instead
+    of against the other, and both could drift together.
+
+    The duplication is not redundancy. ``audited_primitive`` journals an
+    attempt's arguments *before* the operation body runs, so only the schema copy
+    can refuse an oversized payload before it reaches the disk; and only the
+    service copy guards ``tests/api.py``, which calls these functions with no
+    adapter in front of them.
+    """
+
+    def test_the_note_bound_is_the_same_number_on_both_sides(self) -> None:
+        route = routes.find("POST", f"{routes.API_PREFIX}/encounters/enc-1/notes")
+        assert route is not None
+        schema = route[0].body_schema or {}
+        declared = schema["properties"]["text"]["maxLength"]
+        assert declared == encounters_service.MAX_NOTE_TEXT
+
+    def test_every_journalled_string_argument_is_bounded(self) -> None:
+        # Derived from the table rather than listed: an audited operation added
+        # tomorrow with an unbounded string is caught without editing this test.
+        # Free-form bodies (``{}``) validate in the service and are exempt.
+        unbounded: list[str] = []
+        for route in routes.api_routes():
+            if "/encounters/" not in route.path or route.method != "POST":
+                continue
+            for name, schema in (route.body_schema or {}).get("properties", {}).items():
+                types = schema.get("type")
+                types = [types] if isinstance(types, str) else list(types or [])
+                if "string" not in types:
+                    continue
+                # An ``enum`` is already a bound, and one the dispatcher applies
+                # in the same pass: a value outside a closed set is refused
+                # whatever its length, so it cannot reach the journal either.
+                if "enum" in schema or "maxLength" in schema:
+                    continue
+                unbounded.append(f"{route.operation}.{name}")
+        assert unbounded == [], (
+            "these journalled string arguments reach the durable journal before "
+            f"any length check: {unbounded}"
+        )
+
+
 class TestDeclaredEnums:
     """A closed set the help does not print is one you learn by guessing wrong.
 
@@ -1999,6 +2048,67 @@ class TestEncountersOverHttp:
             ),
             400,
             "note text must not be blank",
+        )
+
+    def attempts(self, editor: Editor, encounter_id: str) -> list[dict[str, Any]]:
+        exported = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/replay",
+            json_body={"format_version": 2},
+        )
+        assert exported.status == 200
+        return list(exported.json()["bundle"]["attempts"])
+
+    def test_an_oversized_name_is_refused_before_anything_is_journalled(
+        self, editor: Editor
+    ) -> None:
+        # The journal records an attempt's arguments *before* the operation body
+        # validates them, so a refusal that happens in the body has already
+        # written whatever it was handed. Bounding the field in the route schema
+        # is what moves the refusal to the other side of that write; a check
+        # inside the service cannot, however early it runs.
+        encounter_id = self.create(editor).json()["encounter_id"]
+        before = len(self.attempts(editor, encounter_id))
+
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/conditions",
+                json_body={"target": "Thora", "condition": "x" * 5000},
+            ),
+            400,
+            "'condition' must be at most",
+        )
+
+        assert len(self.attempts(editor, encounter_id)) == before
+
+    def test_a_refusal_from_the_operation_body_is_still_journalled(
+        self, editor: Editor
+    ) -> None:
+        # The contrast that gives the test above its meaning: a name of legal
+        # length but no such combatant is refused by the body, and that attempt
+        # *is* recorded — as it should be, since it is a real call against a real
+        # fight. Only unbounded input is kept off the disk.
+        encounter_id = self.create(editor).json()["encounter_id"]
+
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/conditions",
+                json_body={"target": "Nobody", "condition": "poisoned"},
+            ),
+            400,
+            "no combatant named 'Nobody'",
+        )
+
+        assert self.attempts(editor, encounter_id)[-1]["status"] == "refused"
+
+    def test_an_oversized_note_is_refused_by_the_schema(self, editor: Editor) -> None:
+        encounter_id = self.create(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/notes",
+                json_body={"text": "x" * 5000},
+            ),
+            400,
+            "'text' must be at most",
         )
 
     def test_an_unknown_encounter_is_404_and_names_the_active_ones(

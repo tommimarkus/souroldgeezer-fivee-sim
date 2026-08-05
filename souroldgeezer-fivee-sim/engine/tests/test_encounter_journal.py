@@ -29,6 +29,12 @@ def records(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
+def _conditions_of(state: dict[str, object], name: str) -> list[str]:
+    combatants = state["combatants"]
+    assert isinstance(combatants, list)
+    return list(next(c for c in combatants if c["name"] == name)["conditions"])
+
+
 def test_creation_and_each_attempt_and_result_are_durably_hash_chained(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -128,18 +134,24 @@ def test_a_ruling_condition_survives_the_journal_and_replays_on_resume() -> None
     encounter_id = mapless_fight(seed=131)
     api.encounter_condition(encounter_id, "Thora", "poisoned", request_id="ruling-1")
     before = api.encounter_state(encounter_id)
+    # State equality alone cannot tell a faithful replay from a ruling that
+    # never applied: both sides would be conditionless and equal. Pin that the
+    # condition is actually there before asking whether it survives.
+    assert _conditions_of(before, "Thora") == ["poisoned"]
     api.STATE.sessions.clear()
 
     recovered = api.encounter_resume(encounter_id)
 
     assert recovered["recovered"] is True
     assert recovered["state"] == before
+    assert _conditions_of(recovered["state"], "Thora") == ["poisoned"]
 
 
 def test_a_lifted_ruling_condition_replays_as_lifted() -> None:
     # The other half: replaying only the apply would leave the condition on.
     encounter_id = mapless_fight(seed=137)
     api.encounter_condition(encounter_id, "Thora", "poisoned", request_id="ruling-on")
+    assert _conditions_of(api.encounter_state(encounter_id), "Thora") == ["poisoned"]
     api.encounter_condition(
         encounter_id, "Thora", "poisoned", applied=False, request_id="ruling-off"
     )
@@ -149,8 +161,7 @@ def test_a_lifted_ruling_condition_replays_as_lifted() -> None:
     recovered = api.encounter_resume(encounter_id)
 
     assert recovered["state"] == before
-    thora = next(c for c in recovered["state"]["combatants"] if c["name"] == "Thora")
-    assert thora["conditions"] == []
+    assert _conditions_of(recovered["state"], "Thora") == []
 
 
 def test_a_bonus_action_survives_the_journal_and_replays_on_resume() -> None:

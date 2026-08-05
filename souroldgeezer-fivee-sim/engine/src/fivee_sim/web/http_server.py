@@ -544,6 +544,17 @@ class _Handler(BaseHTTPRequestHandler):
                 HTTPStatus.BAD_REQUEST,
                 f"'{name}' must be one of: {', '.join(str(one) for one in allowed)}",
             )
+        # Length is checked *here* rather than in the operation body, and the
+        # difference is not stylistic. An audited operation journals its
+        # arguments before the body ever sees them, so a bound the body enforces
+        # has already let the payload reach the disk. This is the last point
+        # before that write.
+        limit = schema.get("maxLength")
+        if limit is not None and isinstance(value, str) and len(value) > limit:
+            raise _Problem(
+                HTTPStatus.BAD_REQUEST,
+                f"'{name}' must be at most {limit} characters, got {len(value)}",
+            )
         return value
 
     def _parse_query(self, route: Route) -> dict[str, Any]:
