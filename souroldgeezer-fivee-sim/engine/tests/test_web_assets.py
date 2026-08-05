@@ -171,6 +171,50 @@ class TestOneServiceTwoPages:
         assert "loadBundle(answer.json, id);" in read("viewer.html")
 
 
+class TestViewerAdventureChapters:
+    """An adventure's replay nests whole fights, and the viewer picks between them.
+
+    The picker is *not* a served-only control, and that is the distinction this
+    class exists to hold. ``list_replays`` filters on the replay format, so an
+    adventure envelope is never in the served listing and only ever arrives as a
+    file opened, dropped, or embedded — which means the chapter picker has to
+    work with no server at all. It ships hidden like the served controls do, for
+    a different reason: an ordinary replay has no chapters to offer.
+
+    What the page deliberately does *not* do is validate the envelope. Each
+    chapter is handed to the same ``loadBundle`` a file goes through, so a
+    chapter is graded by the v2 validator this page already carries; the
+    envelope's own integrity block is Python's to check. Whether the picker
+    actually switches fights is a behaviour claim —
+    ``scripts/check-editor-behaviour.mjs`` owns it.
+    """
+
+    def test_the_viewer_ships_its_chapter_picker_hidden(self) -> None:
+        source = read("viewer.html")
+        assert '<label id="adventure-chapters" hidden>' in source
+        assert source.count('id="chapter-select"') == 1
+
+    def test_the_adventure_format_is_named_once(self) -> None:
+        # One declaration, for the reason every discriminator in this repo is
+        # one: a page that spells the format twice can come to disagree with
+        # itself about what it is holding.
+        source = read("viewer.html")
+        assert source.count('"fivee-sim-adventure-replay"') == 1
+
+    def test_every_chapter_reaches_the_one_bundle_load_path(self) -> None:
+        # The same claim `test_the_served_viewer_reuses_the_one_bundle_load_path`
+        # makes about the served source: a chapter must not get its own loader,
+        # or the validation and the level wiring drift apart per source.
+        assert "loadBundle(chapter.replay," in read("viewer.html")
+
+    def test_the_chapter_picker_needs_no_server(self) -> None:
+        # It sits above the served half's gate, so an exported file that happens
+        # to be an adventure is still navigable offline. The existing
+        # `window.fetch(` count is what stops this growing a network path.
+        source = read("viewer.html")
+        assert source.index("function loadAdventure(") < source.index("function apiGet(")
+
+
 class TestViewerFeatureVisibility:
     # The one place the two pages deliberately disagree about what to draw.
     # Presence only, like every assertion in this file — see the module

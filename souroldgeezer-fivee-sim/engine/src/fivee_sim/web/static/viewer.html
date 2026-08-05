@@ -114,6 +114,14 @@ footer {
        rather than at boot, for the reason the served-only controls below ship
        `hidden` — a standalone export has to be right before any script runs. -->
   <label><input id="sight-cones" type="checkbox" checked> Sight cones</label>
+  <!-- Above the spacer, and that placement is the point: unlike the two
+       server-only controls below it, this one has to work with no server at
+       all. `list_replays` filters on the replay format, so an adventure's
+       composed replay is never in the served listing and only ever arrives as
+       a file opened, dropped, or embedded. It ships `hidden` for its own
+       reason — an ordinary replay has no chapters to offer. -->
+  <label id="adventure-chapters" hidden>Chapter
+    <select id="chapter-select" aria-label="adventure chapter"></select></label>
   <span class="spacer"></span>
   <!-- Both revealed only when this page is served: a standalone export has no
        server to list replays from and no editor to link back to, and an
@@ -1274,7 +1282,7 @@ if (typeof FiveeRenderer === "undefined") {
         window.alert(file.name + " is not JSON: " + error.message);
         return;
       }
-      loadBundle(payload, file.name);
+      openPayload(payload, file.name);
     });
   }
   document.addEventListener("dragover", function (event) { event.preventDefault(); });
@@ -1291,6 +1299,72 @@ if (typeof FiveeRenderer === "undefined") {
     else if (event.key === " ") { event.preventDefault(); byId("btn-play").click(); }
   });
   window.addEventListener("resize", redraw);
+
+  /* --- an adventure: whole fights, nested as chapters --------------------- */
+  /* A run of encounters composes into one file whose chapters are the very
+     bundles `encounter.finalize` froze. This half picks between them and does
+     nothing else — each chapter is handed to the same loadBundle a lone file
+     goes through, so a chapter is graded by the validator above rather than by
+     a second one written here. The *envelope* is deliberately not validated:
+     its integrity block is the engine's to check, and duplicating that here
+     would be a second implementation of a hash contract with nothing holding
+     the two together. What this page owes a reader is a refusal that names the
+     chapter, not a verdict on the file. */
+  var ADVENTURE_FORMAT = "fivee-sim-adventure-replay";
+  var chapters = [];
+
+  function isAdventure(payload) {
+    return !!payload && typeof payload === "object"
+      && payload.format === ADVENTURE_FORMAT;
+  }
+
+  function playChapter(index) {
+    var chapter = chapters[index];
+    if (!chapter || !chapter.replay || typeof chapter.replay !== "object") {
+      window.alert("chapter " + (index + 1) + " carries no replay bundle.");
+      return;
+    }
+    /* The source name is what a refusal will be spoken as, so it says which
+       chapter rather than which file: a reader looking at one bad fight in a
+       run of six needs the ordinal, and the file name is the same for all. */
+    loadBundle(chapter.replay, "chapter " + (index + 1));
+  }
+
+  function loadAdventure(payload, sourceName) {
+    var listed = Array.isArray(payload.chapters) ? payload.chapters : [];
+    if (!listed.length) {
+      window.alert((sourceName || "that") + " is an adventure with no chapters.");
+      return;
+    }
+    chapters = listed;
+    var select = byId("chapter-select");
+    select.textContent = "";
+    listed.forEach(function (chapter, index) {
+      var option = document.createElement("option");
+      option.value = String(index);
+      var fight = (chapter.replay && chapter.replay.name) || "";
+      option.textContent = (index + 1) + ". " + (fight ? fight + " · " : "")
+        + (chapter.encounter_id || "");
+      select.appendChild(option);
+    });
+    select.value = "0";
+    byId("adventure-chapters").hidden = false;
+    playChapter(0);
+  }
+
+  /* Every way a document arrives comes through here, so the dispatch on what
+     it is happens once. A page that decided per entry point would be a page
+     where a dropped adventure worked and an embedded one did not. */
+  function openPayload(payload, sourceName) {
+    if (isAdventure(payload)) { loadAdventure(payload, sourceName); return; }
+    chapters = [];
+    byId("adventure-chapters").hidden = true;
+    loadBundle(payload, sourceName);
+  }
+
+  byId("chapter-select").addEventListener("change", function () {
+    playChapter(Number(byId("chapter-select").value));
+  });
 
   /* --- the served half -------------------------------------------------- */
   /* Everything below runs only when window.__FIVEE_EDITOR__ is present, which
@@ -1395,7 +1469,7 @@ if (typeof FiveeRenderer === "undefined") {
   try {
     embedded = JSON.parse(document.getElementById("embedded-data").textContent);
   } catch (error) { embedded = null; }
-  if (embedded !== null) { loadBundle(embedded, "embedded replay"); }
+  if (embedded !== null) { openPayload(embedded, "embedded replay"); }
   else if (window.__FIVEE_EDITOR__) { connectToServer(); }
 })();
 </script>
