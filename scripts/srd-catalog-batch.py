@@ -44,7 +44,11 @@ DEFAULT_CHARACTER_LIMIT = 40_000
 CHAPTER_ORDER = (*range(4, 10), 10, 11, 12, 13, 14, 15, 16, 1, 2, 3)
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 EXECUTABLE_SPELLS = frozenset(
-    {"Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person", "Shatter"}
+    {
+        "Cure Wounds", "Fireball", "Guiding Bolt", "Hold Person", "Shatter",
+        "Healing Word", "Mass Healing Word", "Mass Cure Wounds", "Heal",
+        "Prayer of Healing", "Regenerate",
+    }
 )
 EXECUTABLE_CREATURES = {
     15: frozenset({"Goblin Warrior", "Goblin Boss", "Ogre", "Skeleton", "Zombie"}),

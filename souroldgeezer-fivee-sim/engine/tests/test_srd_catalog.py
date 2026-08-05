@@ -83,6 +83,12 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
         "Guiding Bolt",
         "Hold Person",
         "Shatter",
+        "Healing Word",
+        "Mass Healing Word",
+        "Mass Cure Wounds",
+        "Heal",
+        "Prayer of Healing",
+        "Regenerate",
     }
     assert {item["name"] for item in packs[13]["items"]} == {"Potion of Healing"}
     assert {creature["name"] for creature in packs[15]["creatures"]} == {
@@ -107,6 +113,12 @@ def test_bundled_catalog_layout_names_chapters_and_owns_executable_records() -> 
         "Guiding Bolt": {"section": "spells", "name": "Guiding Bolt"},
         "Hold Person": {"section": "spells", "name": "Hold Person"},
         "Shatter": {"section": "spells", "name": "Shatter"},
+        "Healing Word": {"section": "spells", "name": "Healing Word"},
+        "Mass Healing Word": {"section": "spells", "name": "Mass Healing Word"},
+        "Mass Cure Wounds": {"section": "spells", "name": "Mass Cure Wounds"},
+        "Heal": {"section": "spells", "name": "Heal"},
+        "Prayer of Healing": {"section": "spells", "name": "Prayer of Healing"},
+        "Regenerate": {"section": "spells", "name": "Regenerate"},
         "Goblin Warrior": {"section": "creatures", "name": "Goblin Warrior"},
         "Goblin Boss": {"section": "creatures", "name": "Goblin Boss"},
         "Ogre": {"section": "creatures", "name": "Ogre"},
