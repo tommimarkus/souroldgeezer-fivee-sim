@@ -1478,6 +1478,60 @@ class TestCustomConditions:
         held = next(c for c in state["combatants"] if c["name"] == "A")
         assert "vale-cursed" in held["conditions"]
 
+    def test_a_pack_condition_that_conceals_reads_exactly_like_the_SRD_one(
+        self, tmp_path: Path
+    ) -> None:
+        """``unseen`` is the whole of Invisible's "Attacks Affected" clause.
+
+        SRD 5.2.1, Invisible: "Attack rolls against you have Disadvantage, and
+        your attack rolls have Advantage. If a creature can somehow see you, you
+        don't gain this benefit against that creature." The withdrawal is a
+        relationship the kernel table cannot state, so the model derives both
+        halves from sight — and a pack that hides a creature by declaring
+        ``unseen`` must therefore get the same four answers the bundled
+        condition gets, withdrawal included. A pack forced to also set
+        ``attacked_with_disadvantage`` to be hidden would be getting the
+        unconditional half back.
+        """
+        payload = {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "vale-shrouded", "provenance": "test",
+                "effects": {"unseen": True},
+            }],
+        }
+        path = write_pack(tmp_path, "shrouded.json", payload)
+        registry = load_packs([path], include_environment=False)
+        seer = make_creature("Goblin Warrior", registry=registry, label="Seer", team="a")
+        seer.blindsight = 60
+        sighted = make_creature(
+            "Goblin Warrior", registry=registry, label="Sighted", team="a"
+        )
+        sighted.position = 5
+        for pack_hidden in (True, False):
+            ghost = make_creature(
+                "Goblin Warrior", registry=registry, label="Ghost", team="b"
+            )
+            ghost.add_condition("vale-shrouded" if pack_hidden else Condition.INVISIBLE)
+            encounter = Encounter(
+                [ghost, seer, sighted], Random(5),
+                condition_effects=registry.condition_effects,
+            )
+            swing = seer.attacks[0]
+            note = "pack" if pack_hidden else "SRD"
+            assert encounter.attack_advantage(
+                seer, ghost, swing
+            ) is Advantage.NONE, note
+            assert encounter.attack_advantage(
+                sighted, ghost, swing
+            ) is Advantage.DISADVANTAGE, note
+            assert encounter.attack_advantage(
+                ghost, seer, ghost.attacks[0]
+            ) is Advantage.NONE, note
+            assert encounter.attack_advantage(
+                ghost, sighted, ghost.attacks[0]
+            ) is Advantage.ADVANTAGE, note
+
     def test_a_custom_condition_reaches_the_incapacitated_check(
         self, tmp_path: Path
     ) -> None:

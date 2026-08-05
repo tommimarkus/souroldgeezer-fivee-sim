@@ -502,6 +502,175 @@ class TestAttacking:
         assert f"and {len(names) - MAX_LISTED_COMBATANTS} more" in message
 
 
+class TestInvisibleStopsHelpingAgainstAnObserverThatSees:
+    """SRD 5.2.1, Invisible, "Attacks Affected", the sentence that was missing.
+
+    "Attack rolls against you have Disadvantage, and your attack rolls have
+    Advantage. **If a creature can somehow see you, you don't gain this benefit
+    against that creature.**"
+
+    The withdrawal is a relationship between two creatures — and, once a map is
+    involved, between them and the light and cover on it — so no per-condition
+    row in the kernel table can state it. What states it is
+    :meth:`Encounter._can_see`, which already answers ``True`` for an observer
+    with Blindsight in range and ``False`` for an unseen subject. These cases
+    pin that the withdrawal is per-observer rather than global: the same
+    Invisible creature is a harder target for one enemy and an ordinary one for
+    the enemy standing beside it.
+
+    Blindsight is the observer used throughout because it is the sight the SRD
+    itself offers as the way a creature "can somehow see you" — the Rules
+    Glossary entry says a creature with it "can see within a specific range
+    without eyes", and the condition's Concealed clause is what it defeats.
+    """
+
+    def sighted_fight(self) -> tuple[Encounter, Creature, Creature, Creature]:
+        """One Invisible creature, one enemy with Blindsight, one without.
+
+        Both enemies stand on the same square at the same distance, so nothing
+        but sight separates the two answers.
+        """
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=5)
+        seer.blindsight = 60
+        blind_to_it = fighter("Sighted", team="foes", position=5)
+        encounter = Encounter([ghost, seer, blind_to_it], Random(3))
+        return encounter, ghost, seer, blind_to_it
+
+    def test_blindsight_within_range_denies_the_target_its_disadvantage(self) -> None:
+        # The defect: an attacker that can see the Invisible creature was still
+        # taking Disadvantage, because the condition row asserted it outright.
+        encounter, ghost, seer, _ = self.sighted_fight()
+        assert seer.distance_to(ghost, encounter.movement_rule) <= seer.blindsight
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.NONE
+
+    def test_the_enemy_beside_it_without_blindsight_still_takes_disadvantage(
+        self,
+    ) -> None:
+        # "you don't gain this benefit against **that creature**" — withdrawn for
+        # the one that sees, not for the fight. Same encounter, same square, same
+        # distance: only sight differs.
+        encounter, ghost, _, blind_to_it = self.sighted_fight()
+        assert encounter.attack_advantage(
+            blind_to_it, ghost, blind_to_it.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+    def test_the_invisible_creature_gains_no_advantage_against_what_sees_it(
+        self,
+    ) -> None:
+        encounter, ghost, seer, _ = self.sighted_fight()
+        assert encounter.attack_advantage(
+            ghost, seer, ghost.attacks[0]
+        ) is Advantage.NONE
+
+    def test_it_keeps_its_advantage_against_the_enemy_that_cannot(self) -> None:
+        encounter, ghost, _, blind_to_it = self.sighted_fight()
+        assert encounter.attack_advantage(
+            ghost, blind_to_it, ghost.attacks[0]
+        ) is Advantage.ADVANTAGE
+
+    def test_blindsight_beyond_its_range_sees_nothing(self) -> None:
+        # The range is what makes Blindsight a sight rather than a flag, so the
+        # withdrawal has to stop with it: step outside and the ordinary pair
+        # comes back, in both directions.
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        short_sighted = fighter("Seer", team="foes", position=30)
+        short_sighted.blindsight = 10
+        encounter = Encounter([ghost, short_sighted], Random(3))
+        assert encounter.attack_advantage(
+            short_sighted, ghost, short_sighted.attacks[0]
+        ) is Advantage.DISADVANTAGE
+        assert encounter.attack_advantage(
+            ghost, short_sighted, ghost.attacks[0]
+        ) is Advantage.ADVANTAGE
+
+    def test_the_cast_path_reads_the_withdrawal_the_same_way(self) -> None:
+        # The drift guard the neighbouring TestSpellAttackAdvantage states: no
+        # source of Advantage distinguishes a spell attack from a swing, so the
+        # two methods have to land on the same answer against the same pair.
+        encounter, ghost, seer, blind_to_it = self.sighted_fight()
+        bolt = Spell(
+            name="Unseen Bolt",
+            level=1,
+            requires_attack_roll=True,
+            attack_kind=AttackKind.MELEE,  # No point-blank penalty to confound it.
+            damage=Dice(1, 8),
+            damage_type=DamageType.FORCE,
+            range_feet=5,
+            provenance=FIXTURE,
+        )
+        assert encounter.spell_attack_advantage(
+            seer, ghost, bolt
+        ) is Advantage.NONE
+        assert encounter.spell_attack_advantage(
+            blind_to_it, ghost, bolt
+        ) is Advantage.DISADVANTAGE
+        assert encounter.spell_attack_advantage(
+            ghost, seer, bolt
+        ) is Advantage.NONE
+        assert encounter.spell_attack_advantage(
+            ghost, blind_to_it, bolt
+        ) is Advantage.ADVANTAGE
+
+    def opportunity_attack(
+        self, *, mover_invisible: bool, attacker_invisible: bool,
+        blindsight_on: str | None,
+    ) -> Event | None:
+        """Walk out of a goblin's reach and return the Opportunity Attack, if any."""
+        rng = Random(6)
+        thora = fighter()
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=5)
+        if mover_invisible:
+            thora.add_condition(Condition.INVISIBLE)
+        if attacker_invisible:
+            goblin.add_condition(Condition.INVISIBLE)
+        if blindsight_on == "mover":
+            thora.blindsight = 60
+        elif blindsight_on == "attacker":
+            goblin.blindsight = 60
+        encounter = Encounter([thora, goblin], rng)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=30), FixedRandom(20)
+        )
+        attacks = [event for event in events if event.kind == "opportunity_attack"]
+        return attacks[0] if attacks else None
+
+    def test_an_invisible_mover_seen_by_blindsight_is_struck_at_neither(self) -> None:
+        # The Opportunity Attack is already gated on "a creature that you can
+        # see", so an attacker that cannot see the mover never swings at all —
+        # which means the *only* reachable swing against an Invisible mover is
+        # one whose attacker can see it, and the SRD withdraws the Disadvantage
+        # in exactly that case. This is where the swing used to read
+        # "disadvantage" for an attacker demonstrably looking straight at it.
+        event = self.opportunity_attack(
+            mover_invisible=True, attacker_invisible=False, blindsight_on="attacker"
+        )
+        assert event is not None
+        assert event.data["advantage"] == Advantage.NONE.value
+
+    def test_an_invisible_attacker_keeps_its_advantage_on_the_reaction(self) -> None:
+        # The other half at the same call site, and the one a careless removal
+        # of the condition flags would silently drop: the mover cannot see the
+        # goblin, so the benefit is not withdrawn.
+        event = self.opportunity_attack(
+            mover_invisible=False, attacker_invisible=True, blindsight_on=None
+        )
+        assert event is not None
+        assert event.data["advantage"] == Advantage.ADVANTAGE.value
+
+    def test_a_mover_with_blindsight_takes_that_advantage_away(self) -> None:
+        event = self.opportunity_attack(
+            mover_invisible=False, attacker_invisible=True, blindsight_on="mover"
+        )
+        assert event is not None
+        assert event.data["advantage"] == Advantage.NONE.value
+
+
 class TestAmmunition:
     """A shot spends a piece of what it fires, and an empty quiver refuses one.
 

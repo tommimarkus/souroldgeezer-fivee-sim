@@ -129,9 +129,15 @@ EFFECTS: dict[str, ConditionEffect] = {
         incapacitated=True,
         initiative_disadvantage=True,  # Surprised.
     ),
+    # Invisible's "Attacks Affected" clause is deliberately *not* two flags here.
+    # It ends "If a creature can somehow see you, you don't gain this benefit
+    # against that creature", and a row in this table knows one condition and no
+    # creatures — it cannot ask whether the attacker sees the target. So the whole
+    # clause is derived from ``unseen`` by ``Encounter._sight_advantage``, which
+    # can. The flags stayed set here for a while as well, which meant the rule was
+    # stated twice and the unconditional copy was wrong against anything with
+    # Blindsight; Advantage never stacking is the only reason that was invisible.
     Condition.INVISIBLE: ConditionEffect(
-        attacked_with_disadvantage=True,
-        own_attacks_have_advantage=True,
         initiative_advantage=True,  # Surprise.
         unseen=True,
     ),

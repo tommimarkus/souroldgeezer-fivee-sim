@@ -291,10 +291,23 @@ a map fixture. The standalone `check` tool takes only a caller-supplied modifier
 not a combatant, so it has no creature conditions to read.
 
 `cannot_see` marks a condition that stops its bearer seeing; `unseen` marks one
-that stops others seeing its bearer. The encounter currently consumes those sight
-flags when deciding whether a nearby enemy imposes close-combat Disadvantage on a
-ranged attack. Total cover, another storey, allies, and Incapacitated enemies also
-do not impose that penalty.
+that stops others seeing its bearer. The encounter consumes those sight flags when
+deciding whether a nearby enemy imposes close-combat Disadvantage on a ranged
+attack, whether an Opportunity Attack may be made at all, and — the part worth
+knowing before reaching for the flags above it — **what sight does to an attack
+roll**. An attacker its target cannot see attacks with Advantage; an attacker who
+cannot see its target attacks with Disadvantage. That is the whole of the bundled
+Invisible condition's "Attacks Affected" clause, withdrawal included: a condition
+that declares `unseen` hides its bearer from everything except an observer with
+Blindsight in range, and against that observer the pair simply does not apply.
+
+So a pack that wants Invisible's shape declares `unseen` and stops. Declaring
+`attacked_with_disadvantage` and `own_attacks_have_advantage` as well is a
+different rule, not a louder version of the same one: those two are unconditional
+and no observer's senses withdraw them. Both remain available, because a pack may
+genuinely want that — a curse that makes its bearer easy to hit whether or not
+anyone can see them. Total cover, another storey, allies, and Incapacitated
+enemies also do not impose the close-combat penalty.
 
 Failing a save and being bad at one are different flags on purpose.
 `auto_fail_dexterity_saves` decides the outcome; `disadvantage_on_dexterity_saves`

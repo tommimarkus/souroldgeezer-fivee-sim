@@ -2621,6 +2621,7 @@ class Encounter:
         is driving, so both ask this one function instead.
         """
         distance = actor.distance_to(target, self.movement_rule)
+        unseen_advantage, unseen_disadvantage = self._sight_advantage(actor, target)
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
@@ -2628,7 +2629,7 @@ class Encounter:
             long_range_penalty=option.has_long_range_penalty(distance),
             extra_advantage=(
                 int(self._pack_tactics_applies(actor, target))
-                + int(not self._can_see(target, actor))
+                + unseen_advantage
             ),
             extra_disadvantage=(
                 int(self._dodge_benefits(target))
@@ -2637,7 +2638,7 @@ class Encounter:
                     and self._ranged_close_combat_penalty(actor)
                 )
                 + int(self._underwater_attack_penalty(actor, option, distance))
-                + int(not self._can_see(actor, target))
+                + unseen_disadvantage
             ),
             condition_effects=self.condition_effects,
         )
@@ -2654,6 +2655,37 @@ class Encounter:
         if not option.resolves_as_melee(distance):
             return True
         return actor.swim_speed <= 0 and option.damage_type is not DamageType.PIERCING
+
+    def _sight_advantage(
+        self, actor: Creature, target: Creature
+    ) -> tuple[int, int]:
+        """What sight alone contributes to an attack roll: ``(advantage, disadvantage)``.
+
+        **This is where the Invisible condition's "Attacks Affected" clause lives**,
+        and it lives here whole rather than half here and half in the kernel table.
+        SRD 5.2.1, Invisible: "Attack rolls against you have Disadvantage, and your
+        attack rolls have Advantage. If a creature can somehow see you, you don't
+        gain this benefit against that creature." That last sentence is a
+        relationship between two creatures — and, on a map, between them and the
+        light and cover around them — so :mod:`~fivee_sim.kernel.conditions` cannot
+        state it: a row there knows one condition and no creatures at all.
+
+        The bundled row therefore sets ``unseen`` and stops. It used to *also* set
+        ``attacked_with_disadvantage`` and ``own_attacks_have_advantage``, which
+        said the same thing a second time and said it unconditionally; the two
+        copies disagreed for any attacker with Blindsight in range, and only the
+        2024 combination rule — where Advantage never stacks — kept the
+        disagreement out of sight everywhere else. One rule, one owner, and this is
+        the owner because :meth:`_can_see` is the thing that can answer it.
+
+        Both flags remain declarable by a content pack, because a pack may want the
+        unconditional shape. A pack that wants Invisible's shape declares ``unseen``
+        and gets the withdrawal for free, exactly as the bundled condition does.
+        """
+        return (
+            int(not self._can_see(target, actor)),
+            int(not self._can_see(actor, target)),
+        )
 
     def _can_see(self, observer: Creature, subject: Creature) -> bool:
         """Whether ``observer`` can see ``subject`` for a rule that requires sight."""
@@ -2769,18 +2801,30 @@ class Encounter:
 
         Pack Tactics rides along for the same reason the call is shared: the
         trait names "an attack roll", and a spell attack is one.
+
+        :meth:`_sight_advantage` rides along for a sharper version of the same
+        reason. It was the one source this method assembled differently, and the
+        paragraph above is the promise that broke: a Blinded caster read the same
+        either way only because Blinded's own kernel flag happened to agree with
+        the sight term the swing path added and this one did not. Once Invisible's
+        withdrawal moved into that term, a spell attack on an Invisible target
+        would have read Advantage where a swing read Disadvantage.
         """
+        unseen_advantage, unseen_disadvantage = self._sight_advantage(actor, target)
         return compute_attack_advantage(
             attacker_conditions=actor.conditions,
             target_conditions=target.conditions,
             distance=actor.distance_to(target, self.movement_rule),
-            extra_advantage=1 if self._pack_tactics_applies(actor, target) else 0,
+            extra_advantage=(
+                int(self._pack_tactics_applies(actor, target)) + unseen_advantage
+            ),
             extra_disadvantage=(
                 int(self._dodge_benefits(target))
                 + int(
                     spell.attack_kind is AttackKind.RANGED
                     and self._ranged_close_combat_penalty(actor)
                 )
+                + unseen_disadvantage
             ),
             condition_effects=self.condition_effects,
         )
@@ -4045,14 +4089,31 @@ class Encounter:
         if not self._can_see(attacker, mover):
             return
         self._reaction_available[attacker.name] = False
+        # The third call site of the sight pair, and the reason it is a method
+        # rather than three copies of one expression: an Invisible *attacker*
+        # takes its Advantage from here, and the SRD withdraws it "against that
+        # creature" — a mover with Blindsight on the attacker gets neither.
+        #
+        # The disadvantage half is structurally zero here and is passed anyway,
+        # because the guard that makes it so is above rather than in this
+        # expression: an attacker who cannot see the mover does not swing at
+        # all, so the only reachable swing against an Invisible mover is one
+        # the SRD has already withdrawn the Disadvantage from. Recomputing it
+        # rather than writing 0 keeps that a consequence of the gate instead of
+        # a constant somebody has to re-derive when the gate changes.
+        unseen_advantage, unseen_disadvantage = self._sight_advantage(attacker, mover)
         advantage = compute_attack_advantage(
             attacker_conditions=attacker.conditions,
             target_conditions=mover.conditions,
             distance=melee.reach,
             # An opportunity attack is an attack roll, so Pack Tactics reads
             # here too — against the mover wherever the walk has taken it.
-            extra_advantage=1 if self._pack_tactics_applies(attacker, mover) else 0,
-            extra_disadvantage=1 if self._dodge_benefits(mover) else 0,
+            extra_advantage=(
+                int(self._pack_tactics_applies(attacker, mover)) + unseen_advantage
+            ),
+            extra_disadvantage=(
+                int(self._dodge_benefits(mover)) + unseen_disadvantage
+            ),
             condition_effects=self.condition_effects,
         )
         resolution = resolve_attack(
