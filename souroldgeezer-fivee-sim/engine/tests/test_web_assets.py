@@ -207,12 +207,21 @@ class TestViewerAdventureChapters:
         # or the validation and the level wiring drift apart per source.
         assert "loadBundle(chapter.replay," in read("viewer.html")
 
-    def test_the_chapter_picker_needs_no_server(self) -> None:
-        # It sits above the served half's gate, so an exported file that happens
-        # to be an adventure is still navigable offline. The existing
-        # `window.fetch(` count is what stops this growing a network path.
+    def test_every_offline_entry_point_dispatches_on_the_format(self) -> None:
+        # Both ways a document arrives without a server go through the one
+        # dispatch. Two entry points that must agree, which is exactly the shape
+        # that drifts: reverting either to `loadBundle` would leave a viewer
+        # where a dropped adventure worked and an embedded one did not.
+        #
+        # Deliberately *not* an assertion about where `loadAdventure` sits in
+        # the file. Source order proves nothing here — function declarations
+        # hoist, so a `loadAdventure` that called the server would sit above
+        # `apiGet` quite happily. That no request is issued is a behaviour claim
+        # `check-editor-behaviour.mjs` makes on every one of its cases, and the
+        # `window.fetch(` count above is what holds this page to one call site.
         source = read("viewer.html")
-        assert source.index("function loadAdventure(") < source.index("function apiGet(")
+        assert "openPayload(payload, file.name);" in source
+        assert 'openPayload(embedded, "embedded replay");' in source
 
 
 class TestViewerFeatureVisibility:

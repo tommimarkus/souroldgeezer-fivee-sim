@@ -2187,12 +2187,16 @@ function adventureEnvelope(chapters) {
       id: "adv-1", name: "the sunken road", created_at: "2026-08-05T00:00:00Z",
       status: "finalized",
     },
+    /* Copied, never nested by reference. A case that breaks a chapter on
+       purpose — there is one below — would otherwise be breaking the caller's
+       own bundle, and the next envelope built from it would carry the damage
+       into a case that never asked for it. */
     chapters: chapters.map((replay, index) => ({
       index,
       encounter_id: "enc-" + (index + 1),
       linked_at: "2026-08-05T00:0" + index + ":00Z",
       carried: index ? ["Hero"] : [],
-      replay,
+      replay: copy(replay),
     })),
   };
   /* Composed the way the service composes it, hashes included — not because
