@@ -36,9 +36,11 @@ longer true of the repository, only of this file.
 
 from __future__ import annotations
 
+import json
 import re
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -75,6 +77,15 @@ _REFERENCE = re.compile(r"""(?:src|href)=\\?["']([^"'\\]+)""")
 #: ``startswith("/")``: a typo'd route should fail here, not 404 in a browser.
 _ALLOWED_REFERENCES = frozenset(
     {"/assets/renderer.js", "renderer.js", "/", "/editor", "/viewer"}
+)
+
+
+#: The animated-family declaration, loaded the way the invalid-replay corpus is
+#: in ``test_replay_validation.py`` — beside the module that asserts on it.
+ANIMATED_FAMILIES: list[dict[str, Any]] = json.loads(
+    (Path(__file__).parent / "fixtures" / "animated-event-families.json").read_text(
+        encoding="utf-8"
+    )
 )
 
 
@@ -997,6 +1008,77 @@ class TestFacingAndCompass:
         source = read("viewer.html")
         fold = source[source.index("function fold(") : source.index("function stateAt")]
         assert "facing" not in fold
+
+
+class TestAnimatedEventFamilies:
+    """The declaration of what the viewer animates, held against the viewer.
+
+    ``tests/fixtures/animated-event-families.json`` is read by three checks, and
+    each closes one direction. ``check-editor-behaviour.mjs`` proves the page
+    really animates every family listed, so the file cannot over-claim.
+    ``test_replay_sample.py`` requires the showcase to put every listed family on
+    screen, so the demo cannot drift. Neither notices a family the *viewer*
+    gains, which is what this class is for: a kind added to the dispatch and not
+    to the declaration fails here, and goes on failing until the sample shows it.
+
+    This is a source property — which of two functions names which strings — so
+    it belongs on the text side of the division this module's docstring draws.
+    """
+
+    def viewer_dispatch(self) -> set[str]:
+        """Every event kind the viewer's two per-kind dispatches name.
+
+        ``fold`` applies an event to token state and ``eventMarks`` paints the
+        pulse; a kind either page-visible way counts. Sliced by function rather
+        than searched whole-file, because ``event.kind`` is also read for the
+        ticker and the camera, where naming a kind implies no animation at all.
+        """
+        source = read("viewer.html")
+        fold = source[source.index("function fold(") : source.index("function stateAt")]
+        marks = source[
+            source.index("function eventMarks()") : source.index("function renderFrame")
+        ]
+        flash = source[source.index("var FLASH_KINDS") :].split(";", 1)[0]
+        return (
+            set(re.findall(r'kind === "([a-z_]+)"', fold + marks))
+            | set(re.findall(r"([a-z_]+):\s*1", flash))
+        )
+
+    def test_the_declaration_names_every_kind_the_viewer_dispatches_on(self) -> None:
+        declared = {family["kind"] for family in ANIMATED_FAMILIES}
+
+        undeclared = sorted(self.viewer_dispatch() - declared)
+
+        assert undeclared == [], (
+            f"viewer.html animates {undeclared}, which the shared declaration does "
+            "not list — add it there, then to the showcase that has to demonstrate it"
+        )
+
+    def test_the_declaration_invents_no_kind_the_viewer_ignores(self) -> None:
+        declared = {family["kind"] for family in ANIMATED_FAMILIES}
+
+        phantom = sorted(declared - self.viewer_dispatch())
+
+        assert phantom == [], (
+            f"the shared declaration lists {phantom}, which viewer.html dispatches "
+            "on nowhere; the showcase would be demonstrating nothing for it"
+        )
+
+    def test_every_declared_family_states_how_it_is_observable(self) -> None:
+        # A family with no observable is one the node harness would loop over
+        # and assert nothing about — the shape of hole this declaration exists
+        # to close, so it is refused here rather than passing quietly there.
+        silent = sorted(
+            family["kind"]
+            for family in ANIMATED_FAMILIES
+            if not family.get("pulse")
+            and not {"changes", "becomes", "panel"} & family.keys()
+        )
+
+        assert silent == [], (
+            f"{silent} declare no pulse and no observable change, so nothing can "
+            "check the viewer does anything at all for them"
+        )
 
 
 class TestPagesParse:
