@@ -66,6 +66,7 @@ from urllib.parse import parse_qsl, quote, unquote
 
 from .. import __version__
 from ..map_document import validate_document
+from ..service import adventures as adventure_service
 from ..service import analytics as analytics_service
 from ..service import catalog as catalog_service
 from ..service import content_ops, map_ops, primitives, sessions
@@ -1010,6 +1011,82 @@ class _Handler(BaseHTTPRequestHandler):
             ),
         )
 
+    # -- adventures: ordered runs of encounters ------------------------------
+    def _adventure_precondition(self) -> str | None:
+        """The version this write is guarded by, refusing a caller who sent none.
+
+        ``map.put``'s discipline rather than the encounter's, because an
+        adventure is the same kind of thing a map is: one document, rewritten
+        whole, that two servers can both be holding. ``*`` is the escape and
+        becomes ``None`` — the service layer reads that as *guard me with the
+        version you just read*, which is still a guard.
+        """
+        raw = self.headers.get("If-Match")
+        if raw is None:
+            raise _Problem(
+                HTTPStatus.PRECONDITION_REQUIRED,
+                "If-Match is required: the version from the last GET of this "
+                "adventure, or * to write against the current one",
+            )
+        expected = _etag_value(raw)
+        return None if expected == "*" else expected
+
+    def _h_adventure_list(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK, adventure_service.list_adventures(request.query["status"])
+        )
+
+    def _h_adventure_create(self, request: _Request) -> None:
+        result = adventure_service.create(request.body["name"], self._idempotency_key())
+        adventure_id = str(result["id"])
+        self._send_json(
+            HTTPStatus.CREATED,
+            result,
+            headers={
+                "Location": f"{API_PREFIX}/adventures/{quote(adventure_id, safe='')}",
+                "ETag": _etag_of(str(result["version"])),
+            },
+        )
+
+    def _h_adventure_state(self, request: _Request) -> None:
+        result = adventure_service.state_of(request.id)
+        self._send_json(
+            HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
+        )
+
+    def _h_adventure_encounter(self, request: _Request) -> None:
+        body = request.body
+        expected = self._adventure_precondition()
+        result = adventure_service.link_encounter(
+            self.state,
+            request.id,
+            body["combatants"],
+            body["carry"],
+            body["recovery"],
+            body["seed"],
+            body["movement_rule"],
+            body["map"],
+            body["map_id"],
+            self._idempotency_key(),
+            expected,
+        )
+        encounter_id = str(result["encounter_id"])
+        self._send_json(
+            HTTPStatus.CREATED,
+            result,
+            headers={
+                "Location": f"{API_PREFIX}/encounters/{quote(encounter_id, safe='')}",
+                "ETag": _etag_of(str(result["version"])),
+            },
+        )
+
+    def _h_adventure_finalize(self, request: _Request) -> None:
+        expected = self._adventure_precondition()
+        result = adventure_service.finalize(request.id, expected)
+        self._send_json(
+            HTTPStatus.OK, result, headers={"ETag": _etag_of(str(result["version"]))}
+        )
+
     # -- maps: files, addressed by id ----------------------------------------
     def _h_map_list(self, request: _Request) -> None:
         self._send_json(HTTPStatus.OK, map_ops.map_list(self.state))
@@ -1191,6 +1268,11 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "encounter_resume": _Handler._h_encounter_resume,
     "encounter_finalize": _Handler._h_encounter_finalize,
     "encounter_replay": _Handler._h_encounter_replay,
+    "adventure_list": _Handler._h_adventure_list,
+    "adventure_create": _Handler._h_adventure_create,
+    "adventure_state": _Handler._h_adventure_state,
+    "adventure_encounter": _Handler._h_adventure_encounter,
+    "adventure_finalize": _Handler._h_adventure_finalize,
     "map_list": _Handler._h_map_list,
     "map_generate": _Handler._h_map_generate,
     "map_render": _Handler._h_map_render,

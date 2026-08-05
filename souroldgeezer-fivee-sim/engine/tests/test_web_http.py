@@ -32,6 +32,7 @@ from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
 from fivee_sim.model.encounter import ActionKind
+from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import maps as map_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
@@ -1436,8 +1437,16 @@ class TestDeclaredExamples:
         # A map for `map.edit` to edit, put there directly so the cases below
         # do not depend on each other's order.
         editor.put_map("saved-map", payload())
+        # An empty adventure for `adventure.encounter` to start its first fight
+        # in: the example carries a whole roster, which is exactly what a run
+        # with nothing to carry forward from needs.
+        adventure = editor.request(
+            "POST", "/api/v1/adventures", json_body={"name": "Declared Examples"}
+        )
+        assert adventure.status == 201, adventure.body
         subjects = {
             "encounter.act": created.json()["encounter_id"],
+            "adventure.encounter": adventure.json()["id"],
             "map.put": "example-map",
             "map.edit": "saved-map",
         }
@@ -1520,10 +1529,12 @@ class TestDeclaredEnums:
 
     Every enum in the route table names a set some other module is the
     authority on. Three are derived from that authority outright, so drift is
-    impossible; the two the map service keeps as private module constants are
-    written here and held against it, which is the same guarantee arrived at
-    the long way. What is never acceptable is a literal expected set written
-    into this file — that pins the table against itself.
+    impossible; the two the map service keeps as private module constants and
+    the adventure service's ``LIST_STATUSES`` are written into the contract and
+    held against the constant here, which is the same guarantee arrived at the
+    long way — the route table may not import ``service/``. What is never
+    acceptable is a literal expected set written into this file: that pins the
+    table against itself.
     """
 
     def enums_declared(self) -> dict[str, list[Any]]:
@@ -1553,6 +1564,8 @@ class TestDeclaredEnums:
                 {mode.value for mode in MovementMode} | {None}
             ),
             "encounter.create.movement_rule": movement_rules,
+            "adventure.encounter.movement_rule": movement_rules,
+            "adventure.list.status": set(adventure_service.LIST_STATUSES),
             "analytics.rounds.movement_rule": movement_rules,
             "content.validate.builtin": builtins,
             "content.configure.builtin": builtins,
@@ -2554,6 +2567,174 @@ class TestIdempotencyKey:
         # No seed was given, so a re-roll would pick a new one; equality here is
         # the recorded result coming back rather than a coincidence.
         assert again == first
+
+
+class TestAdventuresOverHttp:
+    """The adventure is a guarded document, so its adapter is map.put's, not act's.
+
+    An encounter's ``If-Match`` is optional — one agent driving one fight is
+    taking the engine's word for where it is. An adventure is a *document* two
+    servers rewrite whole, so the precondition is required and its absence is a
+    428, exactly as it is for a map.
+    """
+
+    def start(self, editor: Editor, name: str = "The Sunless Citadel") -> Response:
+        return editor.request("POST", "/api/v1/adventures", json_body={"name": name})
+
+    def test_starting_one_answers_201_with_where_to_find_it(self, editor: Editor) -> None:
+        response = self.start(editor)
+
+        assert response.status == 201, response.body
+        body = response.json()
+        assert body["id"] == "adv-1"
+        assert body["status"] == "active"
+        assert body["members"] == []
+        assert response.headers["Location"] == "/api/v1/adventures/adv-1"
+        assert response.headers["ETag"] == f'"{body["version"]}"'
+
+    def test_reading_one_carries_its_version_as_an_etag(self, editor: Editor) -> None:
+        created = self.start(editor)
+
+        read = editor.request("GET", "/api/v1/adventures/adv-1")
+
+        assert read.status == 200
+        assert read.json()["name"] == "The Sunless Citadel"
+        assert read.headers["ETag"] == created.headers["ETag"]
+
+    def test_an_unknown_adventure_is_404_and_names_what_is_there(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        assert_problem(
+            editor.request("GET", "/api/v1/adventures/adv-9"),
+            404,
+            "no adventure 'adv-9'; adventures here: adv-1",
+        )
+
+    def test_linking_an_encounter_without_if_match_is_428(self, editor: Editor) -> None:
+        self.start(editor)
+
+        assert_problem(
+            editor.request(
+                "POST",
+                "/api/v1/adventures/adv-1/encounters",
+                json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            ),
+            428,
+            "If-Match is required",
+        )
+
+    def test_linking_with_a_star_precondition_starts_the_fight(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        linked = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            headers={"If-Match": "*"},
+        )
+
+        assert linked.status == 201, linked.body
+        body = linked.json()
+        assert body["index"] == 0
+        assert body["encounter"]["seed"] == 5
+        assert linked.headers["Location"] == (
+            f"/api/v1/encounters/{body['encounter_id']}"
+        )
+        assert linked.headers["ETag"] == f'"{body["version"]}"'
+
+    def test_linking_from_a_version_the_run_has_moved_past_is_409(
+        self, editor: Editor
+    ) -> None:
+        stale = self.start(editor).headers["ETag"]
+        first = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/encounters",
+            json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+            headers={"If-Match": "*"},
+        )
+        assert first.status == 201, first.body
+
+        assert_problem(
+            editor.request(
+                "POST",
+                "/api/v1/adventures/adv-1/encounters",
+                json_body={"combatants": [HERO, GOBLIN], "seed": 6},
+                headers={"If-Match": stale},
+            ),
+            409,
+            "the adventure 'adv-1' has advanced since you read it",
+        )
+        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 1
+
+    def test_the_listing_shows_the_run_and_its_status_filter_is_the_encounters_one(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.start(editor, "Tomb of Horrors")
+        finalized = editor.request(
+            "POST",
+            "/api/v1/adventures/adv-2/finalize",
+            json_body={},
+            headers={"If-Match": "*"},
+        )
+        assert finalized.status == 200, finalized.body
+
+        active = editor.request("GET", "/api/v1/adventures").json()
+        closed = editor.request("GET", "/api/v1/adventures?status=finalized").json()
+
+        assert [entry["adventure_id"] for entry in active["adventures"]] == ["adv-1"]
+        assert [entry["adventure_id"] for entry in closed["adventures"]] == ["adv-2"]
+
+    def test_an_unknown_status_filter_names_the_three_that_work(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            editor.request("GET", "/api/v1/adventures?status=halfway"),
+            400,
+            "'status' must be one of: active, finalized, all",
+        )
+
+    def test_a_retried_link_under_one_idempotency_key_links_once(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        body = {"combatants": [HERO, GOBLIN], "seed": 5}
+        headers = {"If-Match": "*", "Idempotency-Key": "link-1"}
+
+        first = editor.request(
+            "POST", "/api/v1/adventures/adv-1/encounters", json_body=body, headers=headers
+        )
+        again = editor.request(
+            "POST", "/api/v1/adventures/adv-1/encounters", json_body=body, headers=headers
+        )
+
+        assert first.status == 201 and again.status == 201, again.body
+        assert again.json()["encounter_id"] == first.json()["encounter_id"]
+        assert len(editor.request("GET", "/api/v1/adventures/adv-1").json()["members"]) == 1
+
+    def test_a_finalized_run_refuses_a_further_encounter(self, editor: Editor) -> None:
+        self.start(editor)
+        editor.request(
+            "POST",
+            "/api/v1/adventures/adv-1/finalize",
+            json_body={},
+            headers={"If-Match": "*"},
+        )
+
+        assert_problem(
+            editor.request(
+                "POST",
+                "/api/v1/adventures/adv-1/encounters",
+                json_body={"combatants": [HERO, GOBLIN], "seed": 5},
+                headers={"If-Match": "*"},
+            ),
+            400,
+            "adventure 'adv-1' is finalized",
+        )
 
 
 class TestMapOperationsOverHttp:
