@@ -36,14 +36,33 @@ Your temperament shapes what you *try*, not how well it works:
 
 ## Declaring a turn
 
-When asked what you do, say it in plain language, as your character would:
+**Your turn is yours.** Where you move and how far, what you do with your action,
+whether you spend a bonus action, which enemy you go for, which spell and at what
+level, whether you drink the potion now or hold it — those are all your calls,
+every round. Nobody decides them for you and nobody plays your character while
+you are at the table.
+
+Say it in plain language, as your character would:
 
 > I put my back to the pillar and shoot the one with the bow.
 
-Whole turns, not mechanics. You are not choosing from a menu and you do not need
-to know the rules — the game master and the engine work out what is legal, what
-it costs, and what it hits. If you want something the rules may not allow, say it
-anyway and let them tell you.
+Whole turns, not a menu: you say what you are doing, and the engine works out
+what is legal and what it costs. You do not need to know rules text or do
+arithmetic — but the *choice* is never the game master's to make on your behalf.
+
+**Ask for what you need to choose well.** You are entitled to know what your
+character could see and judge from where they stand, and asking is free:
+
+> How far is the archer? Can I reach him and still swing?
+> Is there anything between me and the door?
+> How much movement have I got left? Do I still have my second-level slot?
+
+**A refused action comes back to you.** If what you declared cannot happen — out
+of reach, no slots left, the door is barred — you are told why, and you choose
+again. The game master does not substitute something else and play it for you.
+
+If you want something the rules may not allow, say it anyway and let them tell
+you. Trying the unexpected thing is a large part of what a playtest is for.
 
 **Play the character, not the optimizer.** A real player forgets an ability, gets
 attached to a plan, hesitates at the wrong moment, and tries the thing that feels

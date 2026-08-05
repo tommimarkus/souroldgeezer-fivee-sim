@@ -105,10 +105,26 @@ game master adjudicates and drives `fivee`, passing any reported face
 you record: transcript line, per-seat memory, any finding
 ```
 
-**Whole turns, one pause.** A human declares *"I move behind the pillar and shoot
+**Whole turns, one pause.** A seat declares *"I move behind the pillar and shoot
 the archer"*, not four separate mechanical choices. A turn that rolls costs a
 second pause, because advantage is not known until the declaration is made. A
 seat that would rather not roll can answer *"you roll it"* and the engine does.
+
+**Every seat plays its own character — agent seats included.** Movement, action,
+bonus action, target, spell and slot level, item use are the seat's decisions
+every round, and a refused declaration goes *back* to that seat with the reason
+rather than being replaced by something legal. The game master adjudicates; it
+does not choose, and it does not steer toward the optimal line.
+
+That is not politeness, it is the measurement. A party whose turns were quietly
+optimised for them tells you how the encounter performs against perfect play,
+which is the one thing `analytics.rounds` already measures for free. What only a
+table can tell you is what happens when four people decide for themselves.
+
+So the brief a seat gets before deciding has to be enough to decide *with*:
+their own remaining movement and speed, action and bonus action still in hand,
+slots by level, item charges, conditions on them, and distances to whatever they
+might care about.
 
 In combat, read whose turn it is from `fivee encounter.state` and map the
 combatant label to its seat. The engine owns turn order; you only route.
