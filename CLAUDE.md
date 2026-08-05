@@ -373,7 +373,10 @@ call that omits either.
 
 ```bash
 cd souroldgeezer-fivee-sim/engine
-uv run ruff check .              # E,F,W,I,UP,B — line length 100
+# The launcher lives outside this project directory, so name it: ruff lints the
+# paths it is given, and `.` alone would silently skip it. mypy reaches it from
+# `files` in pyproject.toml, but only when run from here.
+uv run ruff check . ../scripts/fivee.py   # E,F,W,I,UP,B — line length 100
 uv run mypy                      # strict, configured in pyproject.toml
 uv run pytest
 

@@ -540,12 +540,35 @@ def declared_pages() -> dict[str, tuple[str, str]]:
     return found
 
 
+def interpreter_already_has_the_engine() -> bool:
+    """Whether this interpreter can import ``fivee_sim`` without the launcher's help.
+
+    The launcher's whole job is putting the engine on the import path, so an
+    interpreter that already has it makes every case below pass against a
+    launcher that resolved nothing — the same false green that a subprocess test
+    using the development venv would give. Run this with a plain ``python3``.
+    """
+    probe = subprocess.run(  # noqa: S603 - this interpreter, one fixed argument
+        [sys.executable, "-c", "import fivee_sim"],
+        capture_output=True,
+        check=False,
+    )
+    return probe.returncode == 0
+
+
 def main() -> int:
     if not LAUNCHER.is_file():
         print(f"launcher not found at {LAUNCHER}")
         return 1
     if not ROUTES_SOURCE.is_file():
         print(f"route table not found at {ROUTES_SOURCE}")
+        return 1
+    if interpreter_already_has_the_engine():
+        print(
+            f"{sys.executable} already imports fivee_sim, so this check would pass\n"
+            "whether or not the launcher resolves the engine. Run it with a plain\n"
+            "python3, not from the development virtual environment."
+        )
         return 1
 
     engines: list[Engine] = []
