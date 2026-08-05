@@ -70,6 +70,26 @@ RUFFIAN: dict[str, Any] = {
 }
 
 
+#: Keys a spec accepts *and* the state payload reports, that are deliberately
+#: not carried. Written out so shrinking ``CARRIED_STATE_KEYS`` is a decision
+#: somebody has to record here rather than a silent loss of state: the derived
+#: case below subtracts the carried set from the real overlap and holds the
+#: remainder against exactly this.
+NOT_CARRIED: frozenset[str] = frozenset({
+    # Facts about the creature that a fight cannot change. Carrying them would
+    # be a no-op; the capture already has them, and has them right.
+    "name", "team", "ac", "max_hp", "death_rule", "terrain_cost_overrides",
+    "bonus_actions", "redirect_attack", "spells",
+    # Reset rather than carried: whoever walks into the next fight is there when
+    # it starts, however late they joined the last one.
+    "arrival_round",
+    # One name, two shapes. The state payload *names* a combatant's attacks; a
+    # spec *describes* them, and overlaying one onto the other would hand
+    # `attack_from_spec` a list of strings.
+    "attacks",
+})
+
+
 def combatant(state: dict[str, Any], name: str) -> dict[str, Any]:
     return next(entry for entry in state["combatants"] if entry["name"] == name)
 
@@ -141,6 +161,29 @@ class TestCarryForward:
             adventures.CARRIED_STATE_KEYS - set(live)
         )
 
+    def test_no_state_a_spec_could_carry_is_dropped_without_saying_so(self) -> None:
+        # The guard the two subset cases above cannot give. Both of them stay
+        # green when a key is *removed* from the carried set — a smaller set is
+        # still a subset of everything — so neither notices state quietly
+        # ceasing to cross between fights. This one subtracts the carried set
+        # from the real overlap of "what a spec accepts" and "what the state
+        # reports", and holds the remainder against the exclusions written at
+        # the top of this file with their reasons.
+        hero = dict(BRAWLER) | {"facing": "north"}
+        encounter_id = str(
+            api.encounter_create(
+                [hero, dict(RUFFIAN)],
+                seed=52,
+                map={"width": 6, "height": 6, "default_terrain": "normal"},
+            )["encounter_id"]
+        )
+        _normalized, live = shapes(encounter_id, "Thora")
+
+        overlap = specs.DESCRIBED_SPEC_KEYS & set(live)
+
+        assert overlap, "the two shapes share no keys at all; this case is vacuous"
+        assert overlap - adventures.CARRIED_STATE_KEYS == NOT_CARRIED
+
     def test_a_stabilised_combatant_walks_into_the_next_fight_stable(self) -> None:
         # Asserted through `dying`, which is derived as `not dead and hp == 0
         # and not stable` — the raw flag is only interesting because of what it
@@ -182,6 +225,48 @@ class TestCarryForward:
         assert arrived["dying"] is True, (
             "losing `stable` must flip `dying`, or the case above proves nothing"
         )
+
+    def test_a_fight_that_takes_somebodys_stabilisation_away_carries_that(self) -> None:
+        # The case the two above cannot make, and the one that proves the
+        # overlay does any work at all: both of them start the fight with
+        # `stable` already set, so the captured creation input and the ending
+        # state agree and a join that ignored the state entirely would pass.
+        # Here the *fight* moves it — a hit on a creature at 0 hit points is a
+        # critical, which clears `stable` and books two failures — so the
+        # capture says stabilised and only the state knows better.
+        #
+        # Three combatants because two would not do: a fight ends the moment one
+        # side has nobody conscious, so Wren is what keeps it running long
+        # enough for Bram to reach the floor.
+        down = dict(BRAWLER) | {"hp": 0, "stable": True}
+        medic = dict(BRAWLER) | {"name": "Wren", "position": [0, 5]}
+        first = str(
+            api.encounter_create([down, medic, RUFFIAN], seed=43)["encounter_id"]
+        )
+        for _ in range(8):
+            if combatant(api.encounter_state(first), "Thora")["stable"] is False:
+                break
+            if api.encounter_state(first)["turn"] == "Bram":
+                api.encounter_act(first, "attack", target="Thora")
+            api.encounter_advance(first)
+        else:  # pragma: no cover - a fixture that stopped working, not a branch
+            raise AssertionError("nobody ever knocked Thora off her stabilisation")
+
+        normalized, live = shapes(first, "Thora")
+        carried = adventures.carry_forward(normalized, live)
+        second = str(
+            api.encounter_create(
+                [carried, dict(medic), dict(RUFFIAN)], seed=44
+            )["encounter_id"]
+        )
+        arrived = combatant(api.encounter_state(second), "Thora")
+
+        assert normalized["stable"] is True, "the capture must still say stabilised"
+        assert live["stable"] is False and live["death_saves"]["failures"] > 0
+        assert carried["stable"] is False
+        assert arrived["stable"] is False
+        assert arrived["dying"] is True
+        assert arrived["death_saves"] == live["death_saves"]
 
     def test_a_killed_combatant_carries_its_death_rather_than_getting_up(self) -> None:
         dead = dict(BRAWLER) | {"hp": 0, "dead": True}
