@@ -307,27 +307,64 @@ function makeElementClass(contextOf) {
   };
 }
 
-/* The fake 2D context. Every drawing call is a no-op except fillRect, which is
- * how "the picture changed" is observed: the colour a square was painted, and
- * the alpha it was painted at.
+/* The fake 2D context. Two observation channels, and the split matters.
  *
- * Alpha is recorded because the context outlives the frame. A glyph that sets
- * globalAlpha inside a save()/restore() pair and loses the restore leaves every
- * later fill — this frame and every frame after it, since render() never resets
- * alpha — painted at the value it borrowed. Reading fillStyle alone cannot see
- * that: the colour string is unchanged and the whole map just goes faint. */
-function makeContext(fills) {
+ * `fills` records fillRect: the colour a square was painted, and the alpha it
+ * was painted at. Alpha is recorded because the context outlives the frame. A
+ * glyph that sets globalAlpha inside a save()/restore() pair and loses the
+ * restore leaves every later fill — this frame and every frame after it, since
+ * render() never resets alpha — painted at the value it borrowed. Reading
+ * fillStyle alone cannot see that: the colour string is unchanged and the whole
+ * map just goes faint.
+ *
+ * `paths` records the other way this renderer draws: build a path with
+ * beginPath/moveTo/lineTo/arc, then commit it with fill() or stroke(). Until
+ * this existed, every such glyph was invisible here — the door's swing arc was
+ * the documented example, and a case asserting it would have passed with the
+ * arc deleted. A committed path carries the ops that built it and the style at
+ * the moment of commit, because a path stroked in the wrong ink or at a
+ * borrowed alpha is as wrong as one never drawn.
+ *
+ * What this still does not see: geometry. Nothing here rasterises, so a chevron
+ * pointing the wrong way is a path whose *coordinates* a case must judge for
+ * itself. The recorder hands over the numbers; it does not know what they mean. */
+function makeContext(fills, paths) {
   const state = {
     fillStyle: "", strokeStyle: "", lineWidth: 1, font: "",
     textAlign: "", textBaseline: "", globalAlpha: 1, lineCap: "", lineJoin: "",
     canvas: null,
   };
   const saved = [];
+  let building = [];
+  const commit = (kind) => {
+    /* A commit with no path behind it is a no-op, not a record: fill() after a
+     * bare rect() is legal canvas and says nothing about a glyph. */
+    if (!building.length) { return; }
+    paths.push({
+      kind,
+      ops: building.slice(),
+      ink: kind === "fill" ? state.fillStyle : state.strokeStyle,
+      alpha: state.globalAlpha,
+      lineWidth: state.lineWidth,
+    });
+  };
   return new Proxy(state, {
     get(target, prop) {
       if (prop === "fillRect") {
         return (x, y, w, h) => fills.push([x, y, w, h, target.fillStyle, target.globalAlpha]);
       }
+      /* Path construction: recorded verbatim, in call order, so a case can read
+       * the shape a glyph actually described. */
+      if (prop === "beginPath") { return () => { building = []; }; }
+      if (prop === "moveTo") { return (x, y) => building.push(["moveTo", x, y]); }
+      if (prop === "lineTo") { return (x, y) => building.push(["lineTo", x, y]); }
+      if (prop === "closePath") { return () => building.push(["closePath"]); }
+      if (prop === "arc") {
+        return (x, y, r, from, to, ccw) =>
+          building.push(["arc", x, y, r, from, to, Boolean(ccw)]);
+      }
+      if (prop === "fill") { return () => commit("fill"); }
+      if (prop === "stroke") { return () => commit("stroke"); }
       /* save/restore are the two no-ops with state behind them: a glyph that
        * borrows alpha or a line cap has to give it back. */
       if (prop === "save") {
@@ -354,7 +391,8 @@ function makeContext(fills) {
  * painted, and the blobs the page tried to hand the user. */
 function makePage(options) {
   const fills = [];
-  const context = makeContext(fills);
+  const paths = [];
+  const context = makeContext(fills, paths);
   const El = makeElementClass(() => context);
   const elements = new Map();
   const canvasIds = new Set(options.canvasIds || []);
@@ -395,7 +433,7 @@ function makePage(options) {
   let nextAnimationFrame = 1;
   let immediateFrameTime = 0;
   const page = {
-    fills, context, element, elements, documentStub, requests, blobs, alerts,
+    fills, paths, context, element, elements, documentStub, requests, blobs, alerts,
     renders: [],
     reply: () => ({ status: 200, body: {} }),
   };
@@ -473,8 +511,11 @@ function makePage(options) {
   const realRender = renderer.render;
   renderer.render = function (ctx, doc, view, overlays) {
     fills.length = 0;
+    paths.length = 0;
     realRender(ctx, doc, view, overlays);
-    page.renders.push({ doc, view, overlays, fills: fills.slice() });
+    page.renders.push({
+      doc, view, overlays, fills: fills.slice(), paths: paths.slice(),
+    });
   };
   page.renderer = renderer;
 
@@ -634,8 +675,10 @@ await suite("renderer.js: the override channel", "the renderer sandbox", async (
  *
  * The leaf is a fillRect, so the fake canvas can see it — this is a claim about
  * what the page *decided* to paint, which is the kind this harness can make.
- * The swing arc drawn beside it is not: `arc` and `stroke` are no-ops here, and
- * no case below pretends otherwise. */
+ * The swing arc beside it is a stroked path, and it used to be invisible here;
+ * the recorder now captures path construction and its commit, so the arc has a
+ * case of its own below. That case is also the recorder's self-check: delete
+ * the `ctx.arc(...)` in drawSwing and it is the one that goes red. */
 
 const DOOR_INK = "#6b4f2a";  /* the leaf's light-theme ink; the matchMedia stub says light */
 const DOOR_VIEW = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
@@ -746,6 +789,48 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
   const faint = page.last().fills.filter((fill) => fill[5] !== 1);
   check("a door that swings hands the context back at full opacity",
     faint.length === 0, "painted under a borrowed alpha: " + show(faint.slice(0, 3)));
+
+  /* 6. The arc itself, which no case could see until the recorder learned to
+   *    capture paths. This is the recorder's own self-check as much as the
+   *    door's: delete the ctx.arc() in drawSwing and only these go red. */
+  R.render(page.context, doorDoc("horizontal", "open"), DOOR_VIEW, {});
+  const arcs = page.last().paths.filter(
+    (path) => path.kind === "stroke" && path.ops.some((op) => op[0] === "arc"));
+  check("an open door strokes a swing arc, and it is drawn as an arc",
+    arcs.length === 1, show(page.last().paths));
+  /* The centre is the hinge, which sits mid-edge on the jamb the leaf hangs
+   * from — not the square's corner and not its centre. Asserted as "on this
+   * square, in its west half" rather than as the exact pixel: the recorder
+   * hands over coordinates, and pinning the inset would pin the leaf's
+   * thickness to this case for no gain. */
+  const arcAt = arcs.length === 1 ? arcs[0].ops[0] : null;
+  check("the arc is struck about the hinge, at the leaf's own ink",
+    arcAt !== null && arcs[0].ink === DOOR_INK
+      && arcAt[1] >= px && arcAt[1] < px + DOOR_VIEW.scale / 2
+      && near(arcAt[2], py + DOOR_VIEW.scale / 2),
+    show(arcs));
+  check("and it is the faint one — the arc is what borrows the alpha",
+    arcs.length === 1 && arcs[0].alpha < 1, show(arcs));
+
+  /* Both orientations, because they are separate branches in drawFeature: a
+   * case naming only one leaves the other free to stroke an arc a shut door has
+   * no business drawing. Found by mutation — the first version of this case
+   * checked "horizontal" alone and survived an arc added to the vertical
+   * branch. */
+  const shutArcs = (orientation) => {
+    R.render(page.context, doorDoc(orientation, "closed"), DOOR_VIEW, {});
+    return page.last().paths.filter((path) => path.ops.some((op) => op[0] === "arc"));
+  };
+  /* Each rendered once and held: calling shutArcs() again for the failure
+   * detail would report a *different* frame than the one that failed, and this
+   * suite exists to catch renders that are not idempotent (case 5 above turns
+   * on exactly that). */
+  const shutArcsH = shutArcs("horizontal");
+  const shutArcsV = shutArcs("vertical");
+  check("a closed door strokes no arc: there is nothing to show swinging",
+    shutArcsH.length === 0, show(shutArcsH));
+  check("and a closed vertical door strokes none either",
+    shutArcsV.length === 0, show(shutArcsV));
 });
 
 /* --- viewer.html ---------------------------------------------------------- */
