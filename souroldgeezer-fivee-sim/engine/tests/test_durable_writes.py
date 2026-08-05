@@ -13,11 +13,12 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
 
-from fivee_sim.service import adventures, durable, encounter_journal
+from fivee_sim.service import adventures, durable, encounter_journal, sessions
 from fivee_sim.service.errors import RequestError, StaleWriteError
 
 from . import api
@@ -474,3 +475,117 @@ class TestLockLifecycle:
 
         with pytest.raises(OSError):
             os.fstat(leaked[0])
+
+
+#: Every child builds the same fight at the same moment. The id each is handed
+#: has to be its own, and nothing but the filesystem is shared between them.
+_CREATOR = """
+import os, sys, json, time
+os.environ["FIVEE_SIM_ENCOUNTERS"] = {root!r}
+os.environ["FIVEE_SIM_MAPS"] = {root!r}
+os.environ["FIVEE_SIM_REPLAYS"] = {root!r}
+from fivee_sim.service import sessions, encounters
+COMBATANTS = [
+    {{"name": "A", "team": "party", "ac": 10, "max_hp": 5, "position": [0, 0],
+      "attacks": [{{"name": "F", "attack_bonus": 2, "damage": "1d4",
+                   "damage_type": "bludgeoning", "kind": "melee"}}]}},
+    {{"name": "B", "team": "monsters", "ac": 10, "max_hp": 5, "position": [3, 0],
+      "attacks": [{{"name": "F", "attack_bonus": 2, "damage": "1d4",
+                   "damage_type": "bludgeoning", "kind": "melee"}}]}},
+]
+gate = {gate!r}
+state = sessions.EngineState()
+while not os.path.exists(gate):      # every child warm before any child allocates
+    time.sleep(0.005)
+made, failed = [], []
+for round_index in range({rounds}):
+    try:
+        made.append(str(encounters.create(state, COMBATANTS, seed=11)["encounter_id"]))
+    except Exception as error:
+        failed.append(type(error).__name__ + ": " + str(error)[:80])
+print(json.dumps({{"made": made, "failed": failed}}))
+"""
+
+
+def _run_creators(
+    root: Path, gate: Path, children: int, rounds: int
+) -> tuple[list[str], list[str]]:
+    code = _CREATOR.format(root=str(root), gate=str(gate), rounds=rounds)
+    running = [
+        subprocess.Popen(
+            [sys.executable, "-c", code],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(children)
+    ]
+    time.sleep(2.0)  # let every interpreter finish importing before the gate opens
+    gate.write_text("go")
+    made: list[str] = []
+    failed: list[str] = []
+    for process in running:
+        stdout, stderr = process.communicate(timeout=180)
+        assert process.returncode == 0, f"creator died: {stderr}"
+        answer = json.loads(stdout)
+        made.extend(answer["made"])
+        failed.extend(answer["failed"])
+    return made, failed
+
+
+class TestEncounterIdsAcrossProcesses:
+    """``new_encounter_id`` allocates against a directory several engines share.
+
+    Every server on a host resolves the same encounters root, so the counter in
+    one process's ``EngineState`` says nothing about what another has taken.
+    """
+
+    def test_two_allocators_that_have_written_nothing_never_agree(self) -> None:
+        # The narrowest statement of the defect, and the cheapest. Between
+        # allocating an id and journalling the creation record, `create` builds
+        # an initial state and deep-copies a content snapshot — so two engines
+        # really are both sitting here, each holding an id and no evidence of it.
+        first = sessions.new_encounter_id(sessions.EngineState())
+        second = sessions.new_encounter_id(sessions.EngineState())
+
+        assert first != second, (
+            "two engines that have written nothing were handed the same id; "
+            "allocation has to claim, not merely look"
+        )
+
+    def test_concurrent_creators_each_get_their_own_encounter(
+        self, tmp_path: Path
+    ) -> None:
+        # The claim under contention. Six processes, three fights each: the ids
+        # must be eighteen distinct names and not one call may be refused —
+        # a refusal here is a caller told "someone else got there first" about
+        # a fight nobody else was creating.
+        root = tmp_path / "shared"
+        root.mkdir()
+
+        made, failed = _run_creators(root, tmp_path / "GO", children=6, rounds=3)
+
+        assert failed == [], f"creating a fresh encounter was refused: {failed}"
+        assert len(made) == 18
+        assert len(set(made)) == 18, (
+            f"ids collided across processes: "
+            f"{sorted(name for name in made if made.count(name) > 1)}"
+        )
+
+    def test_a_claimed_id_is_not_handed_out_again_after_a_crash(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A process that claims an id and dies before journalling leaves the
+        # claim behind. That is the safe direction — the id is spent, not
+        # reused — and an empty journal must stay invisible rather than
+        # surfacing as a corrupt fight.
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(tmp_path))
+        claimed = sessions.new_encounter_id(sessions.EngineState())
+
+        again = sessions.new_encounter_id(sessions.EngineState())
+
+        assert again != claimed
+        listed = api.encounter_list(status="all")["encounters"]
+        assert all(entry["encounter_id"] != claimed for entry in listed), (
+            "an id claimed but never journalled is showing up as an encounter"
+        )
