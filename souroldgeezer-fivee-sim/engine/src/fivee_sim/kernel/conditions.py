@@ -118,10 +118,12 @@ EFFECTS: dict[str, ConditionEffect] = {
     ),
     Condition.INCAPACITATED: ConditionEffect(
         incapacitated=True,
+        own_ability_checks_have_disadvantage=True,  # Surprised.
     ),
     Condition.INVISIBLE: ConditionEffect(
         attacked_with_disadvantage=True,
         own_attacks_have_advantage=True,
+        own_ability_checks_have_advantage=True,  # Surprise.
         unseen=True,
     ),
     Condition.PARALYZED: ConditionEffect(

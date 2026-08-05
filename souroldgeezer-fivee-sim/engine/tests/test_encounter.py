@@ -107,6 +107,28 @@ class TestInitiative:
         )
         assert encounter.initiative == {"Thora": 3, "Observer": 12}
 
+    def test_an_incapacitated_creature_rolls_initiative_with_disadvantage(self) -> None:
+        incapacitated = fighter()
+        incapacitated.add_condition(Condition.INCAPACITATED)
+        observer = fighter("Observer", team="foes")
+        encounter = Encounter(
+            [incapacitated, observer],
+            # Incapacitated keeps 1 from 20/1; Observer then rolls 10 normally.
+            ScriptedRandom([20, 1, 10]),
+        )
+        assert encounter.initiative == {"Thora": 3, "Observer": 12}
+
+    def test_an_invisible_creature_rolls_initiative_with_advantage(self) -> None:
+        invisible = fighter()
+        invisible.add_condition(Condition.INVISIBLE)
+        observer = fighter("Observer", team="foes")
+        encounter = Encounter(
+            [invisible, observer],
+            # Invisible keeps 20 from 1/20; Observer then rolls 10 normally.
+            ScriptedRandom([1, 20, 10]),
+        )
+        assert encounter.initiative == {"Thora": 22, "Observer": 12}
+
     def test_ties_break_on_name_when_dexterity_matches(self) -> None:
         # A forced generator gives everyone the same d20, and identical Dexterity
         # leaves only the name to separate them — never randomness.
