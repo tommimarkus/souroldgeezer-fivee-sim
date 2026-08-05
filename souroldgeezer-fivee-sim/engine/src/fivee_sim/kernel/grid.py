@@ -417,9 +417,27 @@ def cover_between(
     A blocker can only grant what it carries: creatures grant half cover at
     most, and a half-cover screen stays half cover however many lines it
     blocks — the corner count is capped by the strongest contributing grade.
-    With walls granting ``TOTAL``, the result is ``TOTAL`` exactly when
-    :func:`has_line_of_sight` is false, which a test pins. The attacker's and
-    target's own squares never block.
+
+    **Total cover is decided by sight, not by the count**, and that separation is
+    the load-bearing part. Concealment means no line reaches the target at all,
+    which is exactly :func:`has_line_of_sight` asked about the squares that grant
+    total cover — so it is asked, rather than inferred from four blocked lines.
+    Inferring it let one wall speak for a fence beside it: a pillar with hedges
+    to either side blocked all four lines, the strongest of them was the wall,
+    and the answer came back ``TOTAL`` for an obstacle you can see straight past.
+
+    A count cannot be repaired into answering this, because a line and its
+    blockers are not in correspondence. :func:`_line_blockers` blocks an
+    axis-aligned segment only where *both* sides of the gridline block — the seam
+    inside a solid wall — so a wall below the seam and a fence above it block the
+    line jointly while sight passes between them, and the flat set of blockers no
+    longer says which pairing did it. Grading such a line by its strongest member
+    reads the wall and misses that the pair is only as solid as the fence.
+
+    The count therefore decides ``NONE``/``HALF``/``THREE_QUARTERS`` only, and
+    ``TOTAL`` is equivalent to lost sight **by construction** rather than by an
+    invariant a test has to police. The attacker's and target's own squares never
+    block.
     """
     if attacker == target:
         return CoverGrade.NONE
@@ -428,21 +446,36 @@ def cover_between(
     def blocks(square: Square) -> bool:
         return cover_of(square) > 0 or square in occupied
 
-    best = CoverGrade.TOTAL
+    def seals(square: Square) -> bool:
+        return cover_of(square) >= int(CoverGrade.TOTAL)
+
+    if not has_line_of_sight(attacker, target, opaque=seals):
+        return CoverGrade.TOTAL
+
+    def granted_by(square: Square) -> CoverGrade:
+        granted = min(cover_of(square), int(CoverGrade.TOTAL))
+        if square in occupied:
+            granted = max(granted, int(CoverGrade.HALF))
+        return CoverGrade(granted)
+
+    # Sight reaches the target, so whatever the lines add up to it is not
+    # concealment: every corner's grade is held below ``TOTAL``.
+    best = CoverGrade.THREE_QUARTERS
     for start in _corners(attacker):
-        blocked = 0
-        strongest = CoverGrade.NONE
-        for end in _corners(target):
-            blockers = _line_blockers(start, end, blocks, exempt)
-            if not blockers:
-                continue
-            blocked += 1
-            for square in blockers:
-                granted = min(cover_of(square), int(CoverGrade.TOTAL))
-                if square in occupied:
-                    granted = max(granted, int(CoverGrade.HALF))
-                strongest = max(strongest, CoverGrade(granted))
-        grade = min(_COUNT_GRADE[blocked], strongest) if blocked else CoverGrade.NONE
+        lines = [
+            max(
+                (granted_by(square)
+                 for square in _line_blockers(start, end, blocks, exempt)),
+                default=CoverGrade.NONE,
+            )
+            for end in _corners(target)
+        ]
+        blocked = sum(1 for grade in lines if grade is not CoverGrade.NONE)
+        grade = (
+            min(_COUNT_GRADE[blocked], max(lines), CoverGrade.THREE_QUARTERS)
+            if blocked
+            else CoverGrade.NONE
+        )
         best = min(best, grade)
         if best is CoverGrade.NONE:
             break

@@ -203,18 +203,53 @@ class TestCover:
         )
         assert grade is CoverGrade.HALF
 
-    def test_total_cover_coincides_exactly_with_lost_sight(self) -> None:
-        # The invariant: with walls — where opacity and full cover coincide —
-        # TOTAL is equivalent to has_line_of_sight being false.
+    def test_a_wall_beside_a_soft_screen_does_not_add_up_to_total(self) -> None:
+        # A pillar you can see past, with half cover to either side of it. Every
+        # corner line is blocked by *something*, but only the middle one is
+        # blocked by the wall — so the count reaches four while the target stays
+        # in plain view. Grading the count by the strongest blocker found
+        # anywhere, rather than per line, called this TOTAL and deleted the
+        # target from every caller that filters on it.
+        grade = cover_between(
+            (0, 0), (4, 0), cover_of=cover_from(frozenset({(2, 0)}), {(2, -1): 1, (2, 1): 1})
+        )
+        assert has_line_of_sight((0, 0), (4, 0), opaque=opaque_from(frozenset({(2, 0)})))
+        assert grade is CoverGrade.THREE_QUARTERS
+
+    def test_creatures_beside_a_wall_do_not_add_up_to_total(self) -> None:
+        # The same defect by the occupancy route: bodies can only ever grant
+        # half cover, so a pillar flanked by two of them is not total either.
+        grade = cover_between(
+            (0, 0), (4, 0),
+            cover_of=cover_from(frozenset({(2, 0)})),
+            occupied=frozenset({(2, -1), (2, 1)}),
+        )
+        assert grade is CoverGrade.THREE_QUARTERS
+
+    @pytest.mark.parametrize("doorway_cover", [0, 1, 2])
+    def test_total_cover_coincides_exactly_with_lost_sight(self, doorway_cover: int) -> None:
+        # The invariant: TOTAL is equivalent to has_line_of_sight being false.
+        #
+        # Pinned across *mixed* blockers, not walls alone. Walls-only was the
+        # original fixture and it is exactly why the defect above survived — an
+        # equivalence quantified over every blocker arrangement is not pinned by
+        # a fixture that varies only one of them.
+        #
+        # Where the soft cover sits is the whole test. Scattered anywhere off
+        # the corner lines it changes no answer and the parameters are decoration;
+        # standing **in the doorway** it is the one arrangement that can drive the
+        # blocked-line count to four while sight still reaches through — so only
+        # opacity may decide TOTAL. ``0`` keeps the historical open-door case.
         box = frozenset({(4, 4), (5, 4), (6, 4), (4, 5), (6, 5), (4, 6), (5, 6), (6, 6)})
         with_door = box - {(6, 5)}
+        soft = {(6, 5): doorway_cover} if doorway_cover else {}
         for walls in (box, with_door):
             for attacker in [(0, 0), (0, 5), (5, 0), (8, 8), (5, 2), (8, 5)]:
                 total = cover_between(
-                    attacker, (5, 5), cover_of=cover_from(walls)
+                    attacker, (5, 5), cover_of=cover_from(walls, soft)
                 ) is CoverGrade.TOTAL
                 sees = has_line_of_sight(attacker, (5, 5), opaque=opaque_from(walls))
-                assert total == (not sees), (walls is box, attacker)
+                assert total == (not sees), (walls is box, attacker, doorway_cover)
 
     def test_the_ac_bonus_ladder(self) -> None:
         assert cover_ac_bonus(CoverGrade.NONE) == 0

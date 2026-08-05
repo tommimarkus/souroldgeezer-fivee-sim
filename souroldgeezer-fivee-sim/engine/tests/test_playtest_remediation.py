@@ -10,7 +10,7 @@ from __future__ import annotations
 from fivee_sim.analytics.montecarlo import auto_action, simulate_rounds
 from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.dice import Dice
-from fivee_sim.kernel.grid import TERRAIN, MovementMode, TerrainEffect
+from fivee_sim.kernel.grid import TERRAIN, CoverGrade, MovementMode, TerrainEffect
 from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import DamageType
 from fivee_sim.kernel.spells import Spell
@@ -49,8 +49,64 @@ def _mapped_encounter(
             "water": TerrainEffect(move_cost_multiplier=2, underwater=True),
             "grain": TerrainEffect(move_cost_multiplier=2),
             "wall": TerrainEffect(passable=False, opaque=True),
+            "fence": TerrainEffect(cover=1),
         },
     )
+
+
+class TestPartialCoverDoesNotConceal:
+    """A screened enemy is still an enemy the brief has to name.
+
+    ``brief`` drops a combatant exactly when cover is ``TOTAL``, so a cover grade
+    that overstates itself does not merely shift an AC — it deletes the target
+    from the only view a player seat is given. In the playtest that produced this
+    file it deleted two of the three goblins a charging character was standing in
+    front of, and the run's central conclusion about the adventure's map was
+    drawn from the gap.
+    """
+
+    def test_a_wall_flanked_by_fences_does_not_conceal_the_enemy(self) -> None:
+        # The pillar-and-hedges shape: every corner line is blocked by something,
+        # only the middle one by the wall, and the goblin is in plain view.
+        watcher = fighter("Thora", position=(2, 7))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, goblin],
+            terrain={(2, 1): "wall", (2, 0): "fence", (2, 2): "fence"},
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.THREE_QUARTERS
+        seen = [enemy["name"] for enemy in encounter.brief("Thora")["enemies"]]
+        assert seen == ["Goblin"]
+
+    def test_allies_beside_a_wall_do_not_conceal_the_enemy(self) -> None:
+        # The same shape by the occupancy route. Bodies grant half cover at most,
+        # so no arrangement of them may add up to concealment — the party's own
+        # people cannot hide the enemy from it.
+        watcher = fighter("Thora", position=(2, 7))
+        left = fighter("Kesh", position=(12, 2))
+        right = fighter("Ilma", position=(12, 12))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, left, right, goblin], terrain={(2, 1): "wall"}
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.THREE_QUARTERS
+        seen = [enemy["name"] for enemy in encounter.brief("Thora")["enemies"]]
+        assert seen == ["Goblin"]
+
+    def test_a_sealed_enemy_is_still_concealed(self) -> None:
+        # The other direction, so the pair cannot both be satisfied by never
+        # concealing anyone: a wall that actually blocks every line still does.
+        watcher = fighter("Thora", position=(2, 7))
+        goblin = fighter("Goblin", team="monsters", position=(22, 7))
+        encounter = _mapped_encounter(
+            [watcher, goblin],
+            terrain={(2, y): "wall" for y in range(4)},
+        )
+
+        assert encounter.cover_between("Thora", "Goblin") is CoverGrade.TOTAL
+        assert encounter.brief("Thora")["enemies"] == []
 
 
 class TestUnderwaterCombat:
