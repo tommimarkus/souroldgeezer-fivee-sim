@@ -78,15 +78,32 @@ stays on its side and is what "unused content" is later measured against.
 **Each player** is a `typical-player` agent, spawned once per seat and kept alive.
 Hand it a character sheet, a temperament, and a voice — and nothing else.
 
-**Each seat declares its own model and reasoning effort, and a player is
-deliberately not run hot.** The game master is the judgment seat — it holds the
-module, adjudicates what the module did not say, and its findings are the
-deliverable — so it runs at the top tier. A player is asked to decide a turn the
-way somebody at a table decides one, and a seat reasoning harder plays *closer to
-optimal*, which is the one thing this run must not measure. Leave those settings
-alone unless you have a reason: spawning a seat on a different model is possible
-and its effort is not, so an override changes half the setting and silently
-inherits the rest.
+**Each seat declares its own model and reasoning effort**, and a player's is the
+setting worth understanding rather than tuning by instinct. There are two things
+you might want less of from a player seat, and they pull opposite ways:
+
+- **Optimal play** — the thing this run must not measure, because
+  `analytics.rounds` already measures it, and better. **The prose does that job**:
+  the seat is told to play the character and not the optimizer, and that holds at
+  any effort.
+- **Predictable play** — a seat that always takes the obvious action. **That is
+  the failure to avoid**, because *Adjudication notes* — where the module did not
+  say — is the report's highest-value section, and it only fills up when somebody
+  tries what the module did not anticipate. Four seats all reaching for the modal
+  action walk one path through the module, which is exactly what spreading
+  temperaments exists to prevent.
+
+So a player runs at the middle tier rather than the bottom: enough to consider
+what this particular person would do, including the odd thing, without becoming a
+solver. The game master runs at the top tier — it holds the module, adjudicates,
+and its findings are the deliverable.
+
+**Watch the report rather than trusting the setting.** A run whose *Adjudication
+notes* section is nearly empty is the signal that the seats are not probing;
+that is when to raise a player seat, and over-clever tactical play — visible in
+the transcript — is when to lower it. Note that spawning a seat on a different
+model is possible and changing its effort is not, so an override moves half the
+setting and silently inherits the rest.
 
 ### The three layers that keep a player honest, and the one that is checked
 
