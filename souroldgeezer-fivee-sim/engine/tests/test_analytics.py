@@ -17,6 +17,7 @@ import pytest
 from fivee_sim.analytics.expectation import attack_damage_expectation
 from fivee_sim.analytics.montecarlo import (
     MAX_ACTIONS_PER_TURN,
+    _attack_options,
     _spell_options,
     auto_action,
     run_encounter,
@@ -29,12 +30,20 @@ from fivee_sim.kernel.actions import AttackKind
 from fivee_sim.kernel.conditions import Condition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
+from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.model.battlemap import BattleMap
 from fivee_sim.model.creature import AttackOption, Creature, DeathRule
-from fivee_sim.model.encounter import ActionKind, Encounter
+from fivee_sim.model.encounter import Action, ActionKind, Encounter
 
-from .conftest import advance_to, caster, fighter, shaped_spellbook, shaper
+from .conftest import (
+    FixedRandom,
+    advance_to,
+    caster,
+    fighter,
+    shaped_spellbook,
+    shaper,
+)
 
 SEED = 20260730
 
@@ -319,6 +328,147 @@ class TestSimulateDprStaysReproducible:
         # ``Stats.as_dict`` reports the mean rounded to three decimals, so this
         # agrees to within that rounding rather than exactly.
         assert batch["damage"]["mean"] == pytest.approx(sum(singles) / 6, abs=1e-3)
+
+
+def archer(
+    *, arrows: int = 1, position: int | tuple[int, int] = 0, max_hp: int = 30
+) -> Creature:
+    """A build with a ranged option that spends ammunition and a melee fallback."""
+    build = fighter("Robin", position=position, max_hp=max_hp)
+    build.attacks = (
+        AttackOption(
+            name="Shortbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=80,
+            long_range=320,
+            ammunition="Arrow",
+            provenance=FIXTURE,
+        ),
+        AttackOption(
+            name="Dagger",
+            attack_bonus=5,
+            damage=Dice(1, 4, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.MELEE,
+            provenance=FIXTURE,
+        ),
+    )
+    build.items = {"Arrow": arrows}
+    return build
+
+
+class TestAmmunitionAwarePolicy:
+    """A quiver running dry must not silently end the archer's fight.
+
+    ``_attack_options`` used to filter proposed swings on reach and cover only,
+    so a policy offered the same refused shot every turn, the stepper's
+    ``EncounterError`` broke that turn's action loop, and the archer stood
+    still for the rest of the encounter rather than drawing the dagger it also
+    carries. ``_threat_range`` had the matching gap: it fed ``_closing_move``
+    and ``_closing_dash`` an unfiltered 320 ft — the empty bow's own range — so
+    neither ever saw a reason to close, and the archer never moved either.
+    """
+
+    def test_a_dry_quiver_sends_the_archer_to_melee_rather_than_standing_still(
+        self,
+    ) -> None:
+        rng = Random(SEED)
+        robin = archer(arrows=1)
+        target = fighter("Target", team="monsters", max_hp=200, position=100)
+        encounter = Encounter([robin, target], rng)
+        advance_to(encounter, "Robin", rng)
+
+        run_encounter(encounter, rng, max_rounds=20)
+
+        melee_swings = [
+            event
+            for event in encounter.log
+            if event.kind == "attack" and event.data.get("attack") == "Dagger"
+        ]
+        assert melee_swings, (
+            "the archer never drew the dagger after its one arrow was spent"
+        )
+        assert robin.position != (0, 0), "the archer never moved toward its target"
+
+    def test_a_dry_ranged_option_is_not_proposed_again(self) -> None:
+        rng = Random(SEED)
+        robin = archer(arrows=1, position=0)
+        target = fighter("Target", team="monsters", max_hp=200, position=100)
+        encounter = Encounter([robin, target], rng)
+        advance_to(encounter, "Robin", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Target"), FixedRandom(20))
+        assert robin.items["Arrow"] == 0
+
+        options = _attack_options(
+            encounter, robin, [target], encounter.state()["turn_state"]
+        )
+
+        assert all(option.action.attack != "Shortbow" for option in options)
+
+
+class TestLoadingAwarePolicy:
+    """A Loading weapon already fired this turn must not be proposed a second time."""
+
+    def crossbow(self) -> AttackOption:
+        return AttackOption(
+            name="Hand Crossbow",
+            attack_bonus=5,
+            damage=Dice(1, 6, 3),
+            damage_type=DamageType.PIERCING,
+            kind=AttackKind.RANGED,
+            normal_range=30,
+            long_range=120,
+            loading=True,
+            provenance=FIXTURE,
+        )
+
+    def test_a_loading_weapon_already_fired_this_turn_is_not_reproposed(self) -> None:
+        rng = Random(SEED)
+        shooter = fighter("Vex", position=0)
+        shooter.attacks = (self.crossbow(),)
+        target = fighter("Target", team="monsters", position=20)
+        encounter = Encounter([shooter, target], rng)
+        advance_to(encounter, "Vex", rng)
+        encounter.act(Action(kind=ActionKind.ATTACK, target="Target"), FixedRandom(20))
+        turn = encounter.state()["turn_state"]
+        assert turn["loading_used"] is True
+
+        options = _attack_options(encounter, shooter, [target], turn)
+
+        assert options == []
+
+
+class TestItemsSpentExcludesAmmunition:
+    """``items_spent`` is a resource-consumption metric, and arrows are not the
+    resource it was built to report: a shot fired is not a decision the way
+    quaffing a potion is, and 20 arrows would swamp the one potion beside them.
+    Ammunition gets its own metric, ``ammunition_spent``, derived from the
+    combatants' own attacks rather than a hardcoded name.
+    """
+
+    def test_items_spent_counts_potions_not_arrows(self) -> None:
+        def combatants() -> list[Creature]:
+            robin = archer(arrows=20, max_hp=6)
+            robin.items = {"Arrow": 20, "Potion": 1}
+            foe = fighter("Goblin", team="monsters", position=15, max_hp=500)
+            return [robin, foe]
+
+        result = simulate_rounds(
+            combatants,
+            iterations=10,
+            seed=SEED,
+            max_rounds=10,
+            items={"Potion": ItemEffect(heal=Dice(2, 4, 2), provenance=FIXTURE)},
+        )
+
+        party = result["teams"]["party"]
+        # At most the one potion the archer carried — the bug summed every
+        # arrow fired into the same figure.
+        assert party["items_spent"]["max"] <= 1
+        assert party["ammunition_spent"]["max"] >= 1
 
 
 class TestSummarise:

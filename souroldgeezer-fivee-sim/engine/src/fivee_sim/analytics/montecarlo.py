@@ -48,7 +48,7 @@ from ..kernel.grid import (
 from ..kernel.items import ActionCost, ItemEffect
 from ..kernel.spells import Spell, SpellShape
 from ..model.battlemap import BattleMap
-from ..model.creature import Creature
+from ..model.creature import AttackOption, Creature
 from ..model.encounter import Action, ActionKind, Encounter, EncounterError
 from .expectation import attack_damage_expectation, save_damage_expectation
 
@@ -56,6 +56,18 @@ from .expectation import attack_damage_expectation, save_damage_expectation
 MAX_ACTIONS_PER_TURN = 12
 
 CombatantFactory = Callable[[], Sequence[Creature]]
+
+
+def _ammunition_names(creature: Creature) -> set[str]:
+    """Item names ``creature`` fires rather than drinks, worn, or wields.
+
+    Derived from the creature's own attacks — never a hardcoded list — so a
+    pack's own ammunition splits out of ``items_spent`` exactly as the bundled
+    Arrow and Bolt do.
+    """
+    return {
+        option.ammunition for option in creature.attacks if option.ammunition is not None
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,7 +188,7 @@ def auto_action(encounter: Encounter) -> Action | None:
     # Multiattack already under way does not.
     attack_started = turn["attacks_left"] < actor.attacks_per_action
     if turn["attacks_left"] > 0 and (attack_started or not turn["action_used"]):
-        options.extend(_attack_options(encounter, actor, enemies))
+        options.extend(_attack_options(encounter, actor, enemies, turn))
     if not turn["action_used"]:
         options.extend(_spell_options(encounter, actor, enemies))
 
@@ -190,17 +202,37 @@ def auto_action(encounter: Encounter) -> Action | None:
     return _closing_dash(encounter, actor, enemies, turn)
 
 
+def _loaded(actor: Creature, option: AttackOption, turn: dict[str, Any]) -> bool:
+    """Whether the stepper would let ``actor`` make this attack right now.
+
+    Mirrors the two refusals :meth:`Encounter._require_loaded` raises —
+    an empty magazine and a Loading weapon already fired this turn — so
+    neither the valuation in :func:`_attack_options` nor the reach the
+    closing moves chase in :func:`_threat_range` ever counts on an attack
+    the stepper would refuse.
+    """
+    if option.ammunition is not None and actor.items.get(option.ammunition, 0) <= 0:
+        return False
+    return not (option.loading and turn["loading_used"])
+
+
 def _attack_options(
-    encounter: Encounter, actor: Creature, enemies: Sequence[Creature]
+    encounter: Encounter, actor: Creature, enemies: Sequence[Creature], turn: dict[str, Any]
 ) -> list[_Option]:
     """Every attack the actor could make right now, valued.
 
     Cover comes from :meth:`Encounter.cover_between` — the stepper's own
     authority — so a target the stepper would refuse (total cover) is never
-    proposed, and a screened one is valued at its actual, raised AC.
+    proposed, and a screened one is valued at its actual, raised AC. An
+    attack the stepper would refuse for want of ammunition or a spent Loading
+    shot is filtered the same way, by :func:`_loaded` — otherwise the policy
+    keeps proposing a refused shot, the stepper's ``EncounterError`` breaks
+    the turn's action loop, and the actor silently stops acting.
     """
     options: list[_Option] = []
     for option in actor.attacks:
+        if not _loaded(actor, option, turn):
+            continue
         reach = option.max_distance()
         for target in enemies:
             if actor.distance_to(target, encounter.movement_rule) > reach:
@@ -641,7 +673,7 @@ def _closing_move(
     """Step toward the nearest enemy, if the actor has any way to threaten one."""
     if turn["movement_left"] <= 0:
         return None
-    desired = _threat_range(encounter, actor)
+    desired = _threat_range(encounter, actor, turn)
     if desired is None:
         return None
     if encounter.battle_map is not None:
@@ -682,7 +714,7 @@ def _closing_dash(
     its action remains available if the extra move reaches an attack.  A second
     Dash with the action remains legal and useful on a longer approach.
     """
-    desired = _threat_range(encounter, actor)
+    desired = _threat_range(encounter, actor, turn)
     if desired is None:
         return None
     movement_mode: MovementMode | None = None
@@ -894,14 +926,20 @@ def _closing_move_mapped(
     return None
 
 
-def _threat_range(encounter: Encounter, actor: Creature) -> int | None:
+def _threat_range(encounter: Encounter, actor: Creature, turn: dict[str, Any]) -> int | None:
     """Furthest the actor can threaten from, or ``None`` if closing gains it nothing.
 
     ``None`` covers both having no way to hurt anyone and holding a spell with no
     range limit — the engine treats a falsy ``range_feet`` as unbounded, so there is
-    nothing to close to.
+    nothing to close to. An attack the stepper would refuse — an empty quiver, or a
+    Loading weapon already fired this turn — is left out of the reaches the same way
+    :func:`_attack_options` leaves it out of the valuation: unfiltered, a dry archer's
+    empty bow still reported its printed range, so nothing ever looked worth closing
+    the distance for.
     """
-    reaches = [option.max_distance() for option in actor.attacks]
+    reaches = [
+        option.max_distance() for option in actor.attacks if _loaded(actor, option, turn)
+    ]
     for name in actor.spells:
         spell = encounter.spellbook.get(name)
         if spell is None or spell.damage is None:
@@ -983,6 +1021,12 @@ def simulate_rounds(
     ``wins`` counts ``"none"`` only for a mutual wipe, where the last combatants on
     both sides fall together. A fight still going at ``max_rounds`` is counted in
     ``timed_out`` instead.
+
+    ``items_spent`` excludes ammunition — a name any combatant's own attacks
+    declare as ``ammunition`` — and reports it separately as
+    ``ammunition_spent``. Firing a shot is not the same kind of decision as
+    quaffing a potion, and a quiver of twenty would otherwise swamp the one
+    healing item beside it in the same figure.
     """
     if iterations < 1:
         raise ValueError(f"iterations must be at least 1: {iterations}")
@@ -997,7 +1041,20 @@ def simulate_rounds(
             creature.name: sum(creature.spell_slots.values()) for creature in combatants
         }
         initial_items = {
-            creature.name: sum(creature.items.values()) for creature in combatants
+            creature.name: sum(
+                quantity
+                for name, quantity in creature.items.items()
+                if name not in _ammunition_names(creature)
+            )
+            for creature in combatants
+        }
+        initial_ammunition = {
+            creature.name: sum(
+                quantity
+                for name, quantity in creature.items.items()
+                if name in _ammunition_names(creature)
+            )
+            for creature in combatants
         }
         encounter = Encounter(
             combatants,
@@ -1028,6 +1085,7 @@ def simulate_rounds(
                     "defeated": [],
                     "spell_slots_spent": [],
                     "items_spent": [],
+                    "ammunition_spent": [],
                 },
             )
             metrics["hp_remaining"].append(float(hp))
@@ -1046,7 +1104,25 @@ def simulate_rounds(
             metrics["items_spent"].append(
                 float(
                     sum(
-                        initial_items[creature.name] - sum(creature.items.values())
+                        initial_items[creature.name]
+                        - sum(
+                            quantity
+                            for name, quantity in creature.items.items()
+                            if name not in _ammunition_names(creature)
+                        )
+                        for creature in members
+                    )
+                )
+            )
+            metrics["ammunition_spent"].append(
+                float(
+                    sum(
+                        initial_ammunition[creature.name]
+                        - sum(
+                            quantity
+                            for name, quantity in creature.items.items()
+                            if name in _ammunition_names(creature)
+                        )
                         for creature in members
                     )
                 )
@@ -1102,6 +1178,14 @@ def simulate_dpr(
     is enough: the origin goes on the far side of the target. The returned
     ``actions`` breakdown reports what the build actually did, so a case like that
     reads as "cast nothing" rather than as a mysteriously small number.
+
+    A ranged attack that names ``ammunition`` is charged for it exactly as live
+    play is: the factory's own ``items`` decide the count, and a finite quiver
+    runs dry mid-run like any other. Pass one and the resulting damage measures
+    the quiver, not the build — the same ``actions`` breakdown will show the
+    fallback (melee, or nothing) the policy reached for once the ammunition
+    ran out. An unlimited build wants a quiver large enough that ``rounds``
+    never exhausts it.
     """
     if iterations < 1:
         raise ValueError(f"iterations must be at least 1: {iterations}")
