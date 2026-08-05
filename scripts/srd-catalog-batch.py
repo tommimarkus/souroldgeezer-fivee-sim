@@ -4,7 +4,7 @@
 The extraction is contributor evidence, never a runtime input.  This utility
 requires its official PDF hash and reconciles committed IDs before it emits or
 merges anything.  Review packets may contain source prose, so they default to
-``/tmp`` and are never written below the repository.
+the machine's temporary directory and are never written below the repository.
 """
 
 from __future__ import annotations
@@ -142,10 +142,24 @@ def _evidence_path(source_root: Path, relative: object) -> Path:
 
 
 def _review_output(path: Path) -> Path:
-    """Keep source-bearing review packets in the machine-local temporary tree."""
+    """Keep source-bearing review packets in the machine-local temporary tree.
+
+    The root is whatever ``tempfile`` resolves, not a literal ``/tmp``: a
+    sandboxed host may mount ``/tmp`` read-only and hand the process its own
+    ``TMPDIR``, and a packet that cannot be written is a check that cannot run.
+
+    That makes the root caller-controlled, so the guarantee this guard actually
+    owes — a packet never lands below the repository, where it could be
+    committed — is checked on its own terms rather than inferred from ``/tmp``.
+    """
     resolved = path.resolve()
-    if not resolved.is_relative_to(Path("/tmp").resolve()):
-        raise BatchError("review packets must be written under /tmp")
+    temporary_root = Path(tempfile.gettempdir()).resolve()
+    if not resolved.is_relative_to(temporary_root):
+        raise BatchError(
+            f"review packets must be written under the temporary directory {temporary_root}"
+        )
+    if resolved.is_relative_to(REPO_ROOT):
+        raise BatchError("review packets must never be written below the repository")
     return resolved
 
 
@@ -157,7 +171,7 @@ def _validate_pack_payloads(packs: dict[int, dict[str, Any]]) -> None:
     from fivee_sim.content import ContentError, _builtin_condition_payload, load_packs
 
     try:
-        with tempfile.TemporaryDirectory(prefix="fivee-srd-review-", dir="/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="fivee-srd-review-") as raw:
             scratch = Path(raw)
             (scratch / "conditions.json").write_text(
                 json.dumps(_builtin_condition_payload(), indent=2, ensure_ascii=False)
@@ -640,7 +654,11 @@ def _parser() -> argparse.ArgumentParser:
     subparsers.add_parser("validate", help="reconcile committed coverage with the source")
     subparsers.add_parser("bootstrap", help="regenerate metadata-only chapter skeletons")
     packet = subparsers.add_parser("packet", help="emit the next bounded review packet")
-    packet.add_argument("--output", type=Path, default=Path("/tmp/srd-catalog-batch.json"))
+    packet.add_argument(
+        "--output",
+        type=Path,
+        default=Path(tempfile.gettempdir()) / "srd-catalog-batch.json",
+    )
     packet.add_argument("--max-records", type=int, default=DEFAULT_RECORD_LIMIT)
     packet.add_argument("--max-characters", type=int, default=DEFAULT_CHARACTER_LIMIT)
     merge = subparsers.add_parser("merge", help="merge a reviewed facts packet")
