@@ -374,7 +374,13 @@ function makePage(options) {
     }
     return elements.get(id);
   };
-  context.canvas = element(options.canvasIds[0]);
+  /* A page need not draw. `makeContext` starts `canvas` null and the landing
+   * page never reads it, so a canvas-less page omits `canvasIds` entirely
+   * rather than passing an empty array and getting an element keyed on
+   * `undefined` — which worked only for as long as nothing looked at it. */
+  if (options.canvasIds && options.canvasIds.length) {
+    context.canvas = element(options.canvasIds[0]);
+  }
 
   const documentStub = new El("document");
   documentStub.getElementById = element;
@@ -2203,7 +2209,7 @@ const OPERATION_INDEX = {
 };
 
 const homePage = (config, reply) => {
-  const page = makePage({ canvasIds: [], config, hiddenIds: HOME_HIDDEN });
+  const page = makePage({ config, hiddenIds: HOME_HIDDEN });
   if (reply) { page.reply = reply; }
   return page;
 };
