@@ -1,6 +1,6 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, linking several fights into an adventure that carries the party's hit points, conditions, slots and items from one into the next, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
 ---
 
 # Encounter Simulation
@@ -149,6 +149,90 @@ content, successful actions, refused attempts, timestamps, full state checkpoint
 and integrity hashes. `replay.validate` and the viewer verify the nested schema
 and hashes; the hashes detect alteration but are not author signatures. Use
 `--format-version 1` only for a legacy consumer.
+
+## Running an adventure: fights in a row
+
+An **adventure** is an ordered run of encounters that carries the party between
+them — chapter two opens with the hit points, conditions, spell slots, and items
+chapter one left everybody holding. It is a durable document beside the encounter
+journals, not a session, so a run survives a restart the way a fight does.
+
+Six operations, and the shape is create → link a fight per chapter → finalize.
+
+1. **`fivee adventure.create --name "The Sunken Bell"`** returns the new run's id
+   — `adv-1` — and its `version`.
+2. **`fivee adventure.encounter <adv-id> --if-match <version>`** starts the run's
+   next fight. It answers with the `encounter_id`, who was carried, the updated
+   adventure, and everything `encounter.create` would have returned; drive that
+   fight exactly as above, `encounter.act` and `encounter.advance` until it is over.
+3. **`fivee adventure.state <adv-id>`** lists the members in order and reports the
+   version the next write must match. **`fivee adventure.list`** names every run on
+   disk — `--status active` by default, or `finalized`, or `all`.
+4. **`fivee adventure.finalize <adv-id> --if-match <version>`** closes the run.
+   After it, linking another encounter is refused with *is finalized; start
+   another one to keep playing*.
+
+**`--if-match` is required on both writing calls**, unlike an encounter's, because
+an adventure is a document rewritten whole: two unguarded links would each be told
+they succeeded and one fight would be missing from a run that acknowledged it.
+Read the version from `adventure.state` — it is in the body and on stderr as the
+`etag` line — and pass it. A version that has moved on is refused with *has
+advanced since you read it*; re-read and reapply rather than retrying.
+`--if-match '*'` writes against whatever is current, so use it deliberately and
+say when you have. Give a link a stable `--idempotency-key` if it may be retried:
+the key is recorded on the adventure *and* handed to the encounter it creates, so
+a retry re-finds the same fight instead of starting a second one.
+
+### Who walks into the next fight
+
+The first chapter has nothing to carry, so its `combatants` are the whole roster,
+written exactly as `encounter.create` takes them. Every later chapter carries the
+previous fight's cast forward:
+
+```bash
+fivee adventure.encounter adv-1 --if-match <version> --seed 20260806 --json '{
+  "carry": ["Thora"],
+  "recovery": {"Thora": {"hp": 30, "conditions": []}},
+  "combatants": [{"monster": "Goblin Warrior", "label": "Goblin B",
+                  "team": "monsters", "position": [10, 0]}]
+}'
+```
+
+- **`carry` names who comes forward**, in the order they should be built. Each
+  arrives as their original stat block overlaid with how the last fight left them
+  — hit points, conditions, death saves, stable/dead/surrendered, spell slots,
+  items, position — and with `arrival_round` reset to 1, because somebody who
+  joined the last fight late is present from the start of this one. Initiative and
+  concentration are deliberately *not* carried: both belonged to the fight that
+  ended.
+- **Omitted, `carry` is everybody that fight had — the dead included.** That is
+  the honest default rather than a survivor filter, and it has a sharp edge: carry
+  a fight whose only monster died and the next encounter opens with a corpse on one
+  side and is over before anyone acts. Name the survivors you actually mean.
+  `"carry": []` starts a fresh roster inside the same run and does not consult the
+  previous fight at all.
+- **`combatants` are the new arrivals**, appended after the carried ones — and a
+  chapter needs two combatants like any other encounter, so carrying one survivor
+  and adding nobody is refused.
+- **`carry` on a run's first chapter is refused** — there is no encounter to carry
+  from yet, so give `combatants`. A name the previous fight never had is refused
+  too, and the refusal lists the names it did have.
+
+**`recovery` is your statement about the interlude, not a rest the engine
+simulated.** There are no hit dice, no slot-recovery table, and no rest rules
+anywhere in this engine. `recovery` maps a carried combatant's name to a partial
+delta over the same keys the carry-over uses — `hp`, `conditions`, `death_saves`,
+`stable`, `dead`, `surrendered`, `spell_slots`, `items`, `position`, `level`,
+`facing` — applied to their ending state before it composes. So say plainly what
+you granted ("a long rest, so: back to 30 and slots restored") rather than
+implying the engine worked it out. A key outside that set is refused and lists the
+valid ones; a name that is not being carried is refused rather than quietly doing
+nothing.
+
+**`fivee adventure.replay <adv-id>`** composes the run's finalized encounters into
+one bundle on disk. Every member must have been through `encounter.finalize`
+first, and nothing is re-derived — see the **map-forge** skill, which owns
+replays, for what that bundle is and is not.
 
 ## Fighting on a map
 
@@ -343,8 +427,10 @@ when a roll matters.
 
 `fivee analytics.scenario-timing` handles one narrow route-level check outside
 combat: fixed distance and Speed (optionally dashing and starting late) against an
-authored response delay. It reports travel rounds and the lead or deficit. It does
-not carry campaign state or decide which events reinforce which encounter.
+authored response delay. It reports travel rounds and the lead or deficit, and
+nothing beyond that: it holds no state of its own between calls and does not
+decide which events reinforce which encounter. Carrying a party from one fight
+into the next is an adventure's job — see "Running an adventure" above.
 
 `fivee rules.lookup --topic <name>` is the exact-name view of loaded executable
 conditions, spells, creatures, and items, each naming the pack it came from in
@@ -428,6 +514,11 @@ State these when they bear on a ruling rather than papering over them:
   other fourteen conditions only. Do not apply exhaustion effects by hand — say it
   is unsupported. A pack could define an exhaustion-like condition, but only out of
   the effects the engine already applies; it cannot invent a new kind of effect.
+- **Resting is not modelled, and an adventure does not change that.** A run carries
+  the party's ending state forward and stops there; there are no hit dice, no
+  short/long rest, and no slot-recovery table. Whatever `recovery` says happened
+  between two chapters is something you asserted, so attribute it to yourself
+  rather than to the engine.
 - **Character building is still absent.** Classes, species, backgrounds, feats, and
   levelling are not modelled and packs do not add them; a pack extends the
   categories the engine already has.
