@@ -337,9 +337,16 @@ EVENT_VISIBLE_KEYS: frozenset[str] = frozenset({
 #: key — and ``item``, ``remaining``, ``slot_level``, ``successes`` and
 #: ``failures`` are the resources those lists are spent from. ``movement_left``
 #: is ``turn_state``, which the brief already reports on your own turn alone.
+#:
+#: ``ammunition_remaining`` is here for the same reason as ``remaining``, which
+#: it is: a quiver is a line on the shooter's own sheet, held in the very
+#: ``items`` dictionary :data:`ENEMY_WITHHELD_KEYS` already keeps back. A table
+#: watches an arrow leave the bow; it does not get to count what is left in the
+#: ambusher's quiver.
 EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
     "hp", "max_hp", "natural", "total", "advantage", "attack", "spell",
     "slot_level", "item", "remaining", "successes", "failures", "movement_left",
+    "ammunition_remaining",
     "damage", "bonus_damage", "advantage_bonus_damage", "advantage_bonus_reason",
     "detach_after_damage",
     # and the sharper half below, which no seat is served at all
@@ -520,11 +527,38 @@ class EncounterError(ValueError):
 
 @dataclass(slots=True)
 class TurnState:
+    """What is left of the acting creature's turn, and what it has already used.
+
+    Rebuilt from nothing at every turn boundary, which is why a gate that lasts
+    exactly one turn — ``loading_used`` — belongs here rather than on the
+    creature: nothing has to remember to clear it.
+    """
+
     movement_left: int = 0
     action_used: bool = False
     attacks_left: int = 0
     interaction_used: bool = False
     bonus_action_used: bool = False
+    #: A Loading weapon has been fired this turn. See :meth:`Encounter._do_attack`
+    #: for why the SRD's per-activation cap is approximated per turn.
+    loading_used: bool = False
+
+    def as_dict(self) -> dict[str, Any]:
+        """The turn budget as ``state`` publishes it.
+
+        One writer rather than a literal at each reporting site, for the reason
+        :meth:`ActionRecord.as_dict` gives one field up: a key added to the
+        dataclass and to only one of the hand-written copies is a payload that
+        disagrees with itself depending on which door the caller came through.
+        """
+        return {
+            "movement_left": self.movement_left,
+            "action_used": self.action_used,
+            "attacks_left": self.attacks_left,
+            "interaction_used": self.interaction_used,
+            "bonus_action_used": self.bonus_action_used,
+            "loading_used": self.loading_used,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -1706,13 +1740,7 @@ class Encounter:
             "over": self.over,
             "winner": self.winner,
             "order": list(self.order),
-            "turn_state": {
-                "movement_left": self._turn.movement_left,
-                "action_used": self._turn.action_used,
-                "attacks_left": self._turn.attacks_left,
-                "interaction_used": self._turn.interaction_used,
-                "bonus_action_used": self._turn.bonus_action_used,
-            },
+            "turn_state": self._turn.as_dict(),
             "map": self._map_state(),
             "ongoing_effects": [
                 {
@@ -2288,7 +2316,69 @@ class Encounter:
         available = ", ".join(option.name for option in actor.attacks)
         raise EncounterError(f"{actor.name} has no attack {wanted!r}; has: {available}")
 
+    def _require_loaded(self, actor: Creature, option: AttackOption) -> None:
+        """Refuse a shot the weapon cannot take, before anything at all is spent.
+
+        Both refusals *raise*, where being out of reach or behind total cover
+        only emits. That line is deliberate and it is about who can see the
+        reason: geometry is the engine's to know — a caller cannot work out from
+        a snapshot that a pillar is in the way — while an empty quiver is a
+        number on the shooter's own sheet, already published as
+        ``state()["combatants"][…]["items"]``. So the first is reported and the
+        second is refused, in the shape of the spell-slot refusal, which likewise
+        raises before the slot or the action is spent.
+
+        The ammunition name is matched exactly rather than case-folded, unlike
+        :meth:`_pick_item`'s caller-supplied string: nothing here came from a
+        caller. Both halves are authored — the attack names the entry and the
+        stat block carries it — so a mismatch is a content defect, and one that
+        refuses every shot loudly rather than firing a phantom arrow.
+        """
+        if option.ammunition is not None and actor.items.get(option.ammunition, 0) <= 0:
+            raise EncounterError(
+                f"{actor.name} has no {option.ammunition} left to fire {option.name}"
+            )
+        if option.loading and self._turn.loading_used:
+            raise EncounterError(
+                f"{option.name} has the Loading property and {actor.name} has "
+                "already fired one this turn"
+            )
+
+    def _fire(self, actor: Creature, option: AttackOption) -> int | None:
+        """Spend one piece of what this attack fires; the count left, or ``None``.
+
+        Called only where a swing is actually charged for, which is why it is not
+        folded into :meth:`_require_loaded`: a refused, out-of-reach or
+        totally-covered attack costs the turn nothing and must cost the quiver
+        nothing either.
+        """
+        if option.loading:
+            self._turn.loading_used = True
+        if option.ammunition is None:
+            return None
+        remaining = actor.items[option.ammunition] - 1
+        actor.items[option.ammunition] = remaining
+        return remaining
+
     def _do_attack(self, actor: Creature, action: Action, rng: Random) -> None:
+        """One attack, from the turn's budget through to the damage it deals.
+
+        **Loading is approximated per turn.** SRD 5.2.1, "Equipment" ->
+        "Weapon Properties", Loading, caps the weapon at one attack per
+        *activation* — an action, a Bonus Action or a Reaction — and the catalog
+        records those three (``580-9-4-5-loading``). This gate is per turn, which
+        is behaviourally identical under everything this stepper does today:
+        nothing here consults ``as_bonus_action`` when attacking, and the only
+        reaction attack is :meth:`_opportunity_attack`, which picks a melee
+        option and so can never be a Loading one. Give the stepper a Bonus Action
+        attack or a ranged reaction and the two readings part company — that is
+        the moment to move the flag off :class:`TurnState` and onto whatever
+        represents the activation.
+
+        A melee swing after a Loading shot stays legal, and that is not an
+        oversight: the property restricts the weapon, not the wielder, so a
+        crossbow-then-blade turn is exactly what the rule allows.
+        """
         target = self._resolve_target(action.target)
         self._require_targetable(target)
         if self._turn.attacks_left <= 0:
@@ -2299,6 +2389,11 @@ class Encounter:
             # yet rather than checking action_used alone.
             raise EncounterError(f"{actor.name} has already taken an action this turn")
         option = self._pick_attack(actor, action.attack)
+        # Before ``_redirect_attack_target``, which is not the query it reads as:
+        # it swaps two creatures' squares, spends the defender's reaction and
+        # emits. A refusal after it would bill the defender for a shot that was
+        # never taken.
+        self._require_loaded(actor, option)
         target = self._redirect_attack_target(actor, target)
         distance = actor.distance_to(target, self.movement_rule)
         reach = option.max_distance()
@@ -2317,6 +2412,13 @@ class Encounter:
             self._turn.attacks_left -= 1
             if self._turn.attacks_left == actor.attacks_per_action - 1:
                 self._turn.action_used = True
+            # An arrow loosed into the water is an arrow gone. This branch is
+            # the one place a shot is charged for outside the ordinary path
+            # below, so it has to charge for the ammunition too.
+            spent: dict[str, Any] = {}
+            fired = self._fire(actor, option)
+            if fired is not None:
+                spent["ammunition_remaining"] = fired
             self._emit(
                 "attack",
                 actor.name,
@@ -2327,6 +2429,7 @@ class Encounter:
                 underwater=True,
                 underwater_auto_miss=True,
                 damage=0,
+                **spent,
             )
             return
         # Total cover refuses the attack before it is spent, exactly as being out
@@ -2349,6 +2452,9 @@ class Encounter:
         self._turn.attacks_left -= 1
         if self._turn.attacks_left == actor.attacks_per_action - 1:
             self._turn.action_used = True
+        # Beside the swing it is spent with, and before the roll: a hit and a
+        # miss cost the same arrow.
+        fired = self._fire(actor, option)
 
         cover_bonus = cover_ac_bonus(grade)
         resolution = resolve_attack(
@@ -2374,6 +2480,10 @@ class Encounter:
             extras["advantage_bonus_reason"] = resolution.advantage_damage_reason
         if resolution.bonus_damage is not None:
             extras["bonus_damage"] = resolution.bonus_damage_dealt
+        # Only when the attack names ammunition, so no other attack event in the
+        # engine changes shape for a rule it does not use.
+        if fired is not None:
+            extras["ammunition_remaining"] = fired
         self._emit("attack", actor.name, target.name,
                    f"{option.name}: {resolution.describe()}{cover_note}",
                    attack=option.name,
@@ -2664,6 +2774,14 @@ class Encounter:
     def _do_use_item(self, actor: Creature, action: Action, rng: Random) -> None:
         if action.item is None:
             raise EncounterError("using an item needs 'item'")
+        for attack in actor.attacks:
+            if attack.ammunition is not None and attack.ammunition.casefold() == (
+                action.item.casefold()
+            ):
+                raise EncounterError(
+                    f"{attack.ammunition!r} is ammunition — {actor.name} spends it "
+                    f"automatically when firing {attack.name}, not by using it"
+                )
         name = self._pick_item(actor, action.item)
         effect = self.items.get(name)
         if effect is None:

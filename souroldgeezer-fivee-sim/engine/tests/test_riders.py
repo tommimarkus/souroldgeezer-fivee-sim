@@ -23,7 +23,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.content import load_packs, make_creature
-from fivee_sim.kernel.actions import RiderExpiry, resolve_attack
+from fivee_sim.kernel.actions import AttackKind, RiderExpiry, resolve_attack
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType, Size
 from fivee_sim.model.creature import AttackOption, Creature
@@ -558,4 +558,37 @@ class TestAttackOptionGuards:
                 damage_type=DamageType.PIERCING,
                 on_hit_condition="poisoned",
                 on_hit_save_ability=Ability.CONSTITUTION,
+            )
+
+    def test_ammunition_on_a_melee_attack_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="ammunition"):
+            AttackOption(
+                name="Claw",
+                attack_bonus=4,
+                damage=Dice(1, 4, 0),
+                damage_type=DamageType.SLASHING,
+                ammunition="Arrow",
+            )
+
+    def test_loading_on_a_melee_attack_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="loading"):
+            AttackOption(
+                name="Claw",
+                attack_bonus=4,
+                damage=Dice(1, 4, 0),
+                damage_type=DamageType.SLASHING,
+                loading=True,
+            )
+
+    def test_a_blank_ammunition_name_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="ammunition"):
+            AttackOption(
+                name="Longbow",
+                attack_bonus=4,
+                damage=Dice(1, 8, 0),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=150,
+                long_range=600,
+                ammunition="   ",
             )

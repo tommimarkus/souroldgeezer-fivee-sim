@@ -156,7 +156,7 @@ _ATTACK_KEYS = frozenset({
     "advantage_bonus_with_adjacent_ally",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
     "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
-    "detach_after_damage", "provenance",
+    "detach_after_damage", "ammunition", "loading", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
@@ -917,6 +917,22 @@ def _parse_creature(
                 sub.fail(
                     "on_hit_save_ability", "required when on_hit_save_dc is present"
                 )
+        sub.string("ammunition")
+        sub.boolean("loading")
+        attack_kind = attack.get("kind", "melee")
+        if attack.get("ammunition") is not None and attack_kind != "ranged":
+            sub.fail(
+                "ammunition",
+                "needs kind ranged — a melee attack spends nothing to swing",
+            )
+        if attack.get("loading") and attack_kind != "ranged":
+            sub.fail(
+                "loading",
+                "needs kind ranged — a melee attack has no reload rhythm to gate",
+            )
+        ammunition = attack.get("ammunition")
+        if isinstance(ammunition, str) and not ammunition.strip():
+            sub.fail("ammunition", "must not be blank")
         if not sub.ok:
             reader.ok = False
 
@@ -1576,6 +1592,17 @@ def _cross_reference(
                     "creatures", name,
                     f"attacks[{index}].on_hit_condition", str(rider),
                 )
+        # An items entry the creature's own attacks name as ``ammunition`` is not
+        # an item at all — ``ItemEffect.__post_init__`` refuses a use that does
+        # nothing, and ammunition has no ``use`` block to give it one. So it can
+        # never be "defined" and the items cross-reference below must not ask for
+        # that; it would be reporting a fact the engine does not act on.
+        ammunition_names = {
+            str(attack["ammunition"])
+            for attack in (record.get("attacks", []) or [])
+            if isinstance(attack, dict) and attack.get("ammunition") is not None
+        }
+
         # Warnings, not errors: the encounter refuses these at use time with a clear
         # reason rather than crashing, so a pack meant to be combined with another is
         # still loadable. It is worth saying now, though — the alternative is finding
@@ -1585,19 +1612,45 @@ def _cross_reference(
             (record.get("items", {}) or {}, items, "items"),
         ):
             for entry in referenced:
-                if str(entry) in table:
+                text = str(entry)
+                if text in table or text in ammunition_names:
                     continue
                 diagnostics.append(
                     Diagnostic(
                         source=sources.get(("creatures", name), "unknown"),
                         section="creatures", record=name, field=field_name,
                         problem=(
-                            f"refers to {str(entry)!r}, which no loaded pack defines; "
+                            f"refers to {text!r}, which no loaded pack defines; "
                             f"the engine will refuse it when the creature tries to use it"
                         ),
                         severity=Severity.WARNING,
                     )
                 )
+
+        # The other direction: an attack naming ammunition the creature's own
+        # ``items`` never stocks is an authoring mistake worth catching now — the
+        # first shot will refuse it, since the stepper spends a piece per shot and
+        # refuses an empty quiver. It cannot be folded into the loop above because
+        # it is never an ``items`` entry at all; it is read straight off ``attacks``.
+        held_items = record.get("items", {}) or {}
+        for index, attack in enumerate(record.get("attacks", []) or []):
+            if not isinstance(attack, dict):
+                continue
+            ammo = attack.get("ammunition")
+            if ammo is None or str(ammo) in held_items:
+                continue
+            diagnostics.append(
+                Diagnostic(
+                    source=sources.get(("creatures", name), "unknown"),
+                    section="creatures", record=name,
+                    field=f"attacks[{index}].ammunition",
+                    problem=(
+                        f"names {str(ammo)!r} as ammunition, but this creature does "
+                        f"not carry any {str(ammo)!r} in items; the first shot will refuse"
+                    ),
+                    severity=Severity.WARNING,
+                )
+            )
 
 
 def _build(

@@ -211,6 +211,40 @@ class TestUnderwaterCombat:
         attack = next(event for event in events if event.kind == "attack")
         assert attack.data["advantage"] == "none"
 
+    def test_the_underwater_auto_miss_still_spends_a_piece_of_ammunition(self) -> None:
+        # The branch that returns early and *is* still a shot: it decrements the
+        # turn's attacks before emitting, so it has to spend the arrow too. Left
+        # out, a submerged archer would empty a quiver that never went down —
+        # and it is the one attack path that never reaches the ordinary charge.
+        shooter = fighter("Harrow", position=(2, 2))
+        shooter.attacks = (
+            AttackOption(
+                name="Shortbow",
+                attack_bonus=5,
+                damage=Dice(1, 6, 3),
+                damage_type=DamageType.PIERCING,
+                kind=AttackKind.RANGED,
+                normal_range=5,
+                long_range=20,
+                ammunition="Arrow",
+                provenance=FIXTURE,
+            ),
+        )
+        shooter.items = {"Arrow": 2}
+        target = fighter("Marauder", team="monsters", position=(17, 2))
+        encounter = _mapped_encounter([shooter, target], terrain={(0, 0): "water"})
+        advance_to(encounter, "Harrow", FixedRandom(10))
+
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Marauder", attack="Shortbow"),
+            FixedRandom(20),
+        )
+
+        attack = next(event for event in events if event.kind == "attack")
+        assert attack.data["underwater_auto_miss"] is True
+        assert attack.data["ammunition_remaining"] == 1
+        assert shooter.items == {"Arrow": 1}
+
     def test_fire_damage_is_resisted_by_an_underwater_target(self) -> None:
         attacker = fighter("Harrow", position=(2, 2))
         attacker.attacks = (
@@ -659,6 +693,7 @@ class TestHealingAndActionEconomy:
             "attacks_left": 0,
             "interaction_used": False,
             "bonus_action_used": True,
+            "loading_used": False,
         }
         assert any(event.kind == "attack" for event in events)
 

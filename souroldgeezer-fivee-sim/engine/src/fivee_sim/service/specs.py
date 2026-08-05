@@ -141,6 +141,11 @@ def attack_from_spec(spec: dict[str, Any]) -> AttackOption:
                 if spec.get("attached_damage_type") is not None else None
             ),
             detach_after_damage=int(spec.get("detach_after_damage", 0)),
+            ammunition=(
+                str(spec["ammunition"])
+                if spec.get("ammunition") is not None else None
+            ),
+            loading=bool(spec.get("loading", False)),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:

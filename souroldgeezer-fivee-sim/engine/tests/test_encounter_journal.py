@@ -18,7 +18,12 @@ from fivee_sim.service import sessions as sessions_service
 from fivee_sim.service.errors import RequestError
 
 from . import api
-from .conftest import REPLAY_GOBLIN, REPLAY_HERO, mapless_fight
+from .conftest import (
+    REPLAY_GOBLIN,
+    REPLAY_HERO,
+    advance_encounter_to,
+    mapless_fight,
+)
 
 
 def journal_path(root: Path, encounter_id: str) -> Path:
@@ -33,6 +38,12 @@ def _conditions_of(state: dict[str, object], name: str) -> list[str]:
     combatants = state["combatants"]
     assert isinstance(combatants, list)
     return list(next(c for c in combatants if c["name"] == name)["conditions"])
+
+
+def _items_of(state: dict[str, object], name: str) -> dict[str, int]:
+    combatants = state["combatants"]
+    assert isinstance(combatants, list)
+    return dict(next(c for c in combatants if c["name"] == name)["items"])
 
 
 def test_creation_and_each_attempt_and_result_are_durably_hash_chained(
@@ -243,6 +254,48 @@ def test_an_attempt_interrupted_before_its_result_is_audited_and_safe_to_retry()
     assert api.encounter_state(encounter_id) != before
     assert retried["state"]["turn"] == api.encounter_state(encounter_id)["turn"]
     assert api.encounter_log(encounter_id)["total_actions"] == 1
+
+
+def test_a_recovered_fight_reproduces_the_ammunition_the_shot_spent() -> None:
+    # A quiver is only ever *derived*: nothing writes the count to the journal,
+    # so recovery reproduces it by replaying the shot through the stepper. That
+    # makes the arrow a live check on the whole chain — the creation payload
+    # carrying ``ammunition`` and ``items``, ``attack_from_spec`` reading them
+    # back, and the stepper spending one on the replayed action. Any link
+    # missing and the recovered archer stands there with a full quiver.
+    archer = {
+        "name": "Sylvi",
+        "team": "party",
+        "ac": 14,
+        "max_hp": 20,
+        "position": [0, 0],
+        "items": {"Arrow": 3},
+        "attacks": [
+            {
+                "name": "Shortbow",
+                "attack_bonus": 5,
+                "damage": "1d6+3",
+                "damage_type": "piercing",
+                "kind": "ranged",
+                "normal_range": 80,
+                "long_range": 320,
+                "ammunition": "Arrow",
+            }
+        ],
+    }
+    encounter_id = str(
+        api.encounter_create([archer, dict(REPLAY_GOBLIN)], seed=137)["encounter_id"]
+    )
+    advance_encounter_to(encounter_id, "Sylvi")
+    api.encounter_act(encounter_id, "attack", target="Goblin", attack="Shortbow")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert _items_of(before, "Sylvi") == {"Arrow": 2}
+    assert _items_of(recovered["state"], "Sylvi") == {"Arrow": 2}
+    assert recovered["state"] == before
 
 
 def test_recovery_uses_captured_content_when_the_live_registry_has_changed() -> None:

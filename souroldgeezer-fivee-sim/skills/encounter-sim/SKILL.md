@@ -387,6 +387,11 @@ Action, self or an ally within 5 ft). Everything else arrives through a content
 pack — the SRD's thrown consumables are not expressible, because an item use
 carries no range and its save DC cannot be derived from the thrower.
 
+A ranged attack may declare the ammunition it fires, drawing from the same
+`items` count rather than a separate one. An empty count refuses the attack —
+"no Arrow left to fire Shortbow" — rather than firing anyway; the attack event
+reports what is left. Ammunition is spent by the attack, never by `use_item`.
+
 ## Narrating well
 
 Report what the engine actually rolled. Players trust a fight they can audit:
