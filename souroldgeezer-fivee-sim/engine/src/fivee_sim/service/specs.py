@@ -43,6 +43,8 @@ __all__ = [
     "combatants_from_specs",
     "creature_from_spec",
     "parse_advantage",
+    "parse_carried_flag",
+    "parse_death_saves",
     "parse_map_dimension",
     "parse_movement_rule",
     "parse_point",
@@ -161,7 +163,21 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
     "provenance", "facing",
+    # Carried-over state: the condition a combatant walked out of the *previous*
+    # fight in. Every one of these is reported by ``Encounter.state()`` and was,
+    # until adventures spanned more than one encounter, reportable and not
+    # settable — so a party that ended a fight with someone stabilised at 0 hit
+    # points started the next one with everybody upright.
+    #
+    # Named and shaped exactly as the state payload emits them, ``death_saves``
+    # object included, because a caller who has to reshape what they were handed
+    # before handing it back is a caller who will reshape it wrong.
+    "death_saves", "stable", "dead", "surrendered",
 })
+
+#: The two counters a ``death_saves`` object carries, as ``Encounter.state()``
+#: spells them.
+_DEATH_SAVE_KEYS = frozenset({"successes", "failures"})
 
 
 #: The eight names a facing may take, as plain strings — the model keeps facing
@@ -204,6 +220,55 @@ def parse_facing(value: Any) -> str | None:
     return named
 
 
+def parse_death_saves(value: Any) -> tuple[int, int]:
+    """The successes and failures a combatant arrives already holding.
+
+    Shaped ``{"successes": N, "failures": N}`` — what ``Encounter.state()``
+    reports — so carrying a combatant from one fight to the next means handing
+    the reported object straight back rather than unpacking it into two keys.
+
+    Refused rather than coerced, for :func:`parse_facing`'s reason and with more
+    at stake: a malformed count taken as ``0`` would put a creature two failures
+    from death back at three away from it, and nothing would say so. There is
+    deliberately no *upper* bound — a critical hit adds two failures at once, so
+    a fight can and does report four of them.
+    """
+    if value is None:
+        return (0, 0)
+    if not isinstance(value, Mapping):
+        raise RequestError(
+            f"death_saves must be an object of successes and failures, got {value!r}"
+        )
+    for key in sorted(set(value) - _DEATH_SAVE_KEYS):
+        raise RequestError(
+            f"unknown death_saves key {key!r}. Valid keys: "
+            f"{', '.join(sorted(_DEATH_SAVE_KEYS))}"
+        )
+    counts: list[int] = []
+    for key in ("successes", "failures"):
+        count = value.get(key, 0)
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise RequestError(
+                f"death_saves {key} must be a whole number of 0 or more, got {count!r}"
+            )
+        counts.append(count)
+    return (counts[0], counts[1])
+
+
+def parse_carried_flag(value: Any, key: str) -> bool:
+    """One of the carried-over true/false states, refused rather than coerced.
+
+    ``bool(...)`` is what the description branch does with a stat-block trait,
+    and it is the wrong tool for these three. ``bool("false")`` is ``True``, so
+    the one word a caller might reach for to say *not stable* would be read as
+    *stable* — and ``stable`` is the flag that decides whether a creature at 0
+    hit points is bleeding out or merely down.
+    """
+    if not isinstance(value, bool):
+        raise RequestError(f"{key} must be true or false, got {value!r}")
+    return value
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -241,6 +306,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             "bonus_actions must contain only dash or disengage; got: "
             + ", ".join(unsupported_bonus_actions)
         )
+    death_save_successes, death_save_failures = parse_death_saves(spec.get("death_saves"))
     try:
         return Creature(
             name=str(spec["name"]),
@@ -295,6 +361,14 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             level=int(spec.get("level", 0)),
             arrival_round=int(spec.get("arrival_round", 1)),
             death_rule=DeathRule(spec.get("death_rule", DeathRule.DEATH_SAVES)),
+            # Carried over from the previous fight. Defaulted to a creature who
+            # has not been in one yet, so every spec written before adventures
+            # spanned encounters builds the creature it always did.
+            death_save_successes=death_save_successes,
+            death_save_failures=death_save_failures,
+            stable=parse_carried_flag(spec.get("stable", False), "stable"),
+            dead=parse_carried_flag(spec.get("dead", False), "dead"),
+            surrendered=parse_carried_flag(spec.get("surrendered", False), "surrendered"),
             provenance=str(spec.get("provenance", "caller-supplied")),
         )
     except KeyError as error:
