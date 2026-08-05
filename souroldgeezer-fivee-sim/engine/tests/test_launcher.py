@@ -446,6 +446,68 @@ def test_a_spawned_server_can_import_the_engine(tmp_path: Path) -> None:
         _call(environment, "stop")
 
 
+_ignore_build_artefacts = shutil.ignore_patterns(".venv", ".cache", "__pycache__", "*.pyc")
+
+
+#: Workspace furniture, not plugin content. The development container bind-mounts
+#: ``/dev/null`` over these and the sandbox denies reading them (CLAUDE.md
+#: § Environment hazards); a real install carries none of them.
+_WORKSPACE_ONLY = frozenset({".claude", ".claude-local", ".mcp.json", ".worktrees"})
+
+
+def _ignore_artefacts_and_dev_mounts(directory: str, entries: list[str]) -> set[str]:
+    """Build artefacts, workspace furniture, and anything mounted as a device.
+
+    ``copytree`` fails the *whole* copy on a single unreadable entry, and this
+    workspace grows and drops such entries while sessions come and go — so
+    without this the test passes or fails on which checkout ran it and what else
+    was live at the time, neither of which is a property of the code under test.
+
+    Both mechanisms are covered because they are separate: the entry may be a
+    character device, or it may be an ordinary file the sandbox refuses to read.
+    The name set catches what CLAUDE.md documents; the mode check catches a mount
+    the container adds later without telling anyone.
+    """
+    ignored = set(_ignore_build_artefacts(directory, entries))
+    ignored.update(entry for entry in entries if entry in _WORKSPACE_ONLY)
+    for entry in entries:
+        try:
+            mode = os.lstat(os.path.join(directory, entry)).st_mode
+        except OSError:
+            ignored.add(entry)
+            continue
+        if not stat.S_ISDIR(mode) and not stat.S_ISREG(mode):
+            ignored.add(entry)
+        elif not os.access(os.path.join(directory, entry), os.R_OK):
+            ignored.add(entry)
+    return ignored
+
+
+def test_the_plugin_copy_skips_what_it_cannot_read(tmp_path: Path) -> None:
+    """The copy must survive workspace furniture, or it reports the container's mood.
+
+    Reproduces both hazards this workspace actually produces: an entry the sandbox
+    refuses to read, and the `.claude/` tree the container mounts over. Without the
+    ignore callable ``copytree`` aborts the entire copy on either one.
+    """
+    source = tmp_path / "plugin"
+    (source / "scripts").mkdir(parents=True)
+    (source / "scripts" / "fivee.py").write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+    (source / ".claude").mkdir()
+    (source / ".claude" / "settings.json").write_text("{}", encoding="utf-8")
+    unreadable = source / "unreadable.json"
+    unreadable.write_text("{}", encoding="utf-8")
+    unreadable.chmod(0o000)
+
+    with pytest.raises(shutil.Error):
+        shutil.copytree(source, tmp_path / "naive", ignore=_ignore_build_artefacts)
+
+    shutil.copytree(source, tmp_path / "installed", ignore=_ignore_artefacts_and_dev_mounts)
+    assert (tmp_path / "installed" / "scripts" / "fivee.py").is_file()
+    assert not (tmp_path / "installed" / ".claude").exists()
+    assert not (tmp_path / "installed" / "unreadable.json").exists()
+
+
 @requires_host_python
 def test_a_live_server_survives_its_plugin_root_being_retired(tmp_path: Path) -> None:
     """The whole reason the durable copy exists, exercised rather than reasoned about.
@@ -455,11 +517,7 @@ def test_a_live_server_survives_its_plugin_root_being_retired(tmp_path: Path) ->
     *request* time. Running from an editable checkout would serve a 500 here.
     """
     installed = tmp_path / "installed"
-    shutil.copytree(
-        PLUGIN_ROOT,
-        installed,
-        ignore=shutil.ignore_patterns(".venv", ".cache", "__pycache__", "*.pyc"),
-    )
+    shutil.copytree(PLUGIN_ROOT, installed, ignore=_ignore_artefacts_and_dev_mounts)
     environment = _isolated_env(tmp_path)
     environment["PLUGIN_DATA"] = str(tmp_path / "data")
 
