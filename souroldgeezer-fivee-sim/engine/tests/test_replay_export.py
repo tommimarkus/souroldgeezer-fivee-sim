@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import fields
 from pathlib import Path
 from typing import Any
 
@@ -19,9 +20,13 @@ import pytest
 
 from fivee_sim import __version__
 from fivee_sim.content import builtin_registry
+from fivee_sim.kernel.actions import AttackKind, RiderExpiry
+from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import TERRAIN
+from fivee_sim.kernel.rules import Ability, DamageType, Size
 from fivee_sim.map_document import parse_document
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.model.creature import AttackOption
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, RequestError
@@ -676,3 +681,68 @@ def test_a_facing_nobody_named_is_refused_rather_than_silently_dropped() -> None
 
     with pytest.raises(RequestError, match="facing must be one of the eight directions"):
         api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=122)
+
+
+def test_a_fully_populated_attack_option_round_trips_through_the_journal() -> None:
+    # Nothing else in the suite pins these three hand-written mirrors of
+    # AttackOption together: the dataclass, `_attack_payload`'s dict, and
+    # `attack_from_spec`'s reader. `attack_from_spec` reads every key with
+    # `.get`, so a field the payload carries but the reader forgets is
+    # SILENTLY DROPPED rather than refused, and `test_the_journal_captures_
+    # every_key_a_combatant_spec_accepts` above only compares top-level
+    # combatant keys — `attacks` passes whatever its contents are.
+    #
+    # The field set is derived from `dataclasses.fields(AttackOption)`, never
+    # hardcoded here, so a field added to the dataclass and forgotten in
+    # either mirror is caught two ways: the loop below refuses to let this
+    # option's build leave that field at its default (a silent no-op would
+    # round-trip trivially), and the round trip itself must reproduce every
+    # field the build did set.
+    option = AttackOption(
+        name="Longbow",
+        attack_bonus=6,
+        damage=Dice.parse("1d8+3"),
+        damage_type=DamageType.PIERCING,
+        kind=AttackKind.RANGED,
+        reach=10,
+        normal_range=150,
+        long_range=600,
+        bonus_damage=Dice.parse("1d4"),
+        bonus_damage_type=DamageType.FIRE,
+        advantage_bonus_damage=Dice.parse("1d6"),
+        advantage_bonus_with_adjacent_ally=True,
+        on_hit_condition="poisoned",
+        on_hit_save_ability=Ability.CONSTITUTION,
+        on_hit_save_dc=13,
+        on_hit_expiry=RiderExpiry.START_OF_ATTACKER_NEXT_TURN,
+        on_hit_max_size=Size.LARGE,
+        on_hit_attach=True,
+        attached_damage=Dice.parse("1d4"),
+        attached_damage_type=DamageType.NECROTIC,
+        detach_after_damage=10,
+        provenance="Original content",
+        ammunition="Arrow",
+        loading=True,
+    )
+    bare = AttackOption(
+        name="x", attack_bonus=0, damage=Dice.parse("1d4"), damage_type=DamageType.SLASHING,
+    )
+    # Fields whose every legal value is indistinguishable from the bare
+    # default above would pass the coverage loop by accident rather than by
+    # this test actually exercising them — there are none today, and a field
+    # landing here later needs a comment saying why it cannot have one.
+    FIELDS_WITH_NO_DISTINCT_VALUE: frozenset[str] = frozenset()
+    for attack_field in fields(AttackOption):
+        if attack_field.name in FIELDS_WITH_NO_DISTINCT_VALUE:
+            continue
+        built = getattr(option, attack_field.name)
+        default = getattr(bare, attack_field.name)
+        assert built != default, (
+            f"{attack_field.name} is still at its default in this test's "
+            "fully-populated AttackOption — give it a distinct value, or add it "
+            "to FIELDS_WITH_NO_DISTINCT_VALUE with a comment saying why it can't"
+        )
+
+    payload = replay_service._attack_payload(option)
+    round_tripped = specs.attack_from_spec(payload)
+    assert round_tripped == option

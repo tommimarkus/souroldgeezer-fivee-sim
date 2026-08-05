@@ -156,7 +156,7 @@ _ATTACK_KEYS = frozenset({
     "advantage_bonus_with_adjacent_ally",
     "on_hit_condition", "on_hit_save_ability", "on_hit_save_dc", "on_hit_expiry",
     "on_hit_max_size", "on_hit_attach", "attached_damage", "attached_damage_type",
-    "detach_after_damage", "provenance",
+    "detach_after_damage", "ammunition", "loading", "provenance",
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
@@ -915,6 +915,22 @@ def _parse_creature(
                 sub.fail(
                     "on_hit_save_ability", "required when on_hit_save_dc is present"
                 )
+        sub.string("ammunition")
+        sub.boolean("loading")
+        attack_kind = attack.get("kind", "melee")
+        if attack.get("ammunition") is not None and attack_kind != "ranged":
+            sub.fail(
+                "ammunition",
+                "needs kind ranged — a melee attack spends nothing to swing",
+            )
+        if attack.get("loading") and attack_kind != "ranged":
+            sub.fail(
+                "loading",
+                "needs kind ranged — a melee attack has no reload rhythm to gate",
+            )
+        ammunition = attack.get("ammunition")
+        if isinstance(ammunition, str) and not ammunition.strip():
+            sub.fail("ammunition", "must not be blank")
         if not sub.ok:
             reader.ok = False
 

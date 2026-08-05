@@ -85,6 +85,13 @@ class AttackOption:
     Wolf's "if the target is a Medium or smaller creature, it has the Prone
     condition". Unset means the rider is ungated, which is what every other
     printed form in this engine is.
+
+    ``ammunition`` names an entry in the wielder's :attr:`Creature.items` that
+    firing this attack spends — the longbow's "twenty arrows", not a property
+    of the roll itself, which is why it is only legal alongside :attr:`kind`
+    ``RANGED``. ``loading`` marks the SRD Loading property, the same
+    restriction for the same reason: a melee weapon has no magazine and no
+    fired-and-reloaded rhythm to gate.
     """
 
     name: str
@@ -113,6 +120,8 @@ class AttackOption:
     attached_damage: Dice | None = None
     attached_damage_type: DamageType | None = None
     detach_after_damage: int = 0
+    ammunition: str | None = None
+    loading: bool = False
     provenance: str = "SRD 5.2.1"
 
     def __post_init__(self) -> None:
@@ -142,6 +151,18 @@ class AttackOption:
                 f"{self.name}: on_hit_attach needs attached_damage and "
                 "attached_damage_type"
             )
+        if self.ammunition is not None and self.kind is not AttackKind.RANGED:
+            raise ValueError(
+                f"{self.name}: ammunition needs kind RANGED — a melee attack "
+                "spends nothing to swing"
+            )
+        if self.loading and self.kind is not AttackKind.RANGED:
+            raise ValueError(
+                f"{self.name}: loading needs kind RANGED — a melee attack has "
+                "no reload rhythm to gate"
+            )
+        if self.ammunition is not None and not self.ammunition.strip():
+            raise ValueError(f"{self.name}: ammunition must not be blank")
 
     @classmethod
     def from_record(cls, record: Mapping[str, Any]) -> AttackOption:
@@ -188,6 +209,11 @@ class AttackOption:
                 if record.get("attached_damage_type") is not None else None
             ),
             detach_after_damage=int(record.get("detach_after_damage", 0)),
+            ammunition=(
+                str(record["ammunition"])
+                if record.get("ammunition") is not None else None
+            ),
+            loading=bool(record.get("loading", False)),
             provenance=str(record.get("provenance", "SRD 5.2.1")),
         )
 

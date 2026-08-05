@@ -693,6 +693,21 @@ class TestAttackRiderValidation:
         found = self.check(tmp_path, {"advantage_bonus_dmg": "1d4"})
         assert any("unknown key" in p for p in found)
 
+    def test_ammunition_on_a_melee_attack_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"ammunition": "Arrow"})
+        assert any("needs kind ranged" in p for p in found), found
+
+    def test_loading_on_a_melee_attack_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {"loading": True})
+        assert any("needs kind ranged" in p for p in found), found
+
+    def test_a_blank_ammunition_name_is_refused(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {
+            "kind": "ranged", "normal_range": 150, "long_range": 600,
+            "ammunition": "   ",
+        })
+        assert any("must not be blank" in p for p in found), found
+
     def test_a_full_rider_attack_round_trips_through_make_creature(
         self, tmp_path: Path
     ) -> None:
@@ -725,6 +740,27 @@ class TestAttackRiderValidation:
         assert option.on_hit_save_ability is Ability.CONSTITUTION
         assert option.on_hit_save_dc == 11
         assert option.on_hit_expiry is RiderExpiry.START_OF_ATTACKER_NEXT_TURN
+
+    def test_ammunition_and_loading_reach_the_attack_option_through_from_record(
+        self, tmp_path: Path
+    ) -> None:
+        path = write_pack(tmp_path, "riders.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Archer", "ac": 10, "max_hp": 10, "provenance": "test",
+                "attacks": [{
+                    "name": "Longbow", "attack_bonus": 4, "damage": "1d8",
+                    "damage_type": "piercing", "kind": "ranged",
+                    "normal_range": 150, "long_range": 600,
+                    "ammunition": "Arrow", "loading": True,
+                }],
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        archer = make_creature("Archer", registry=registry)
+        option = archer.attacks[0]
+        assert option.ammunition == "Arrow"
+        assert option.loading is True
 
 
 class TestSpellAttackKindSchema:

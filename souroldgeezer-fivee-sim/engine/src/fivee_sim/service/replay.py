@@ -280,6 +280,10 @@ def _attack_payload(option: AttackOption) -> dict[str, Any]:
         payload["attached_damage_type"] = option.attached_damage_type.value
         if option.detach_after_damage:
             payload["detach_after_damage"] = option.detach_after_damage
+    if option.ammunition is not None:
+        payload["ammunition"] = option.ammunition
+    if option.loading:
+        payload["loading"] = True
     return payload
 
 
