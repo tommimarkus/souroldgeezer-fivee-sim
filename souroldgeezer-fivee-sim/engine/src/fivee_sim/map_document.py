@@ -1314,9 +1314,25 @@ def _check_connectors(
 
     Deferred to a second pass because a connector on the ground may lead to a
     storey the parser has not read yet.
+
+    A connector carrying no ``sight_to_levels`` is *warned* about rather than
+    refused. Cross-storey cover is unconditionally total, so a climb with no
+    sight link seals the storey it reaches: nobody at the top can be seen or
+    shot from below, and vice versa. That is occasionally what an author wants —
+    a cellar, a locked room, a floor under a solid ceiling — and it is much more
+    often the key they forgot, which silently deletes whatever waits up there.
+    A map that means it says so by declaring the link; the rest get told.
     """
     for index in sorted(document_levels):
         for feature in document_levels[index].features:
+            if feature.to_level is not None and not feature.sight_to_levels:
+                reader.warn(
+                    "features",
+                    f"feature '{feature.id}' leads to level {feature.to_level} but "
+                    "declares no sight_to_levels, so no line of sight crosses between "
+                    "the two storeys there — anything on the far side can neither see "
+                    "nor be seen. Declare sight_to_levels if that is not intended.",
+                )
             if feature.to_level is not None:
                 if feature.to_level == index:
                     reader.fail(
