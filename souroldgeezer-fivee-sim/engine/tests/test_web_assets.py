@@ -1064,6 +1064,33 @@ class TestAnimatedEventFamilies:
             "on nowhere; the showcase would be demonstrating nothing for it"
         )
 
+    def test_every_declared_family_spells_its_keys_exactly(self) -> None:
+        # The node loop reads each observable behind its own `if`, so a typo'd
+        # key is not an error there — it is an assertion that silently does not
+        # run, while `pulse` alone keeps the observability test below happy. A
+        # closed key set is what makes a misspelling fail instead of shrink the
+        # coverage. Widening it is a deliberate act: add the reader in
+        # check-editor-behaviour.mjs in the same change.
+        allowed = {"name", "kind", "pulse", "changes", "becomes", "panel", "event", "initial"}
+        required = {"name", "kind", "event"}
+
+        unknown = sorted(
+            f"{family.get('kind', '?')}.{key}"
+            for family in ANIMATED_FAMILIES
+            for key in family.keys() - allowed
+        )
+        incomplete = sorted(
+            f"{family.get('kind', '?')} is missing {sorted(required - family.keys())}"
+            for family in ANIMATED_FAMILIES
+            if required - family.keys()
+        )
+
+        assert unknown == [], (
+            f"{unknown} is not a key any consumer reads — a misspelt observable "
+            "reads as absent and quietly asserts nothing"
+        )
+        assert incomplete == [], incomplete
+
     def test_every_declared_family_states_how_it_is_observable(self) -> None:
         # A family with no observable is one the node harness would loop over
         # and assert nothing about — the shape of hole this declaration exists

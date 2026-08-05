@@ -109,6 +109,64 @@ def test_the_showcase_demonstrates_replay_v2_audit_and_state() -> None:
     assert bundle["integrity"]["algorithm"] == "sha256"
 
 
+def test_the_showcase_state_agrees_with_the_fight_it_records() -> None:
+    """The authored final state is reconciled against the authored event log.
+
+    `_events()` and `_state_combatants()` are two hand-written fictions, and
+    nothing else compares them: `validate_replay` hashes `latest_state` and the
+    checkpoints but never folds the events to see whether they arrive there. So
+    an edit to one half alone would leave a showcase whose checkpoint
+    contradicts its own log, with every other test green — the same shape of
+    unnoticed drift the hard-coded family list used to have.
+
+    The expectation is derived from the events rather than restated, so it is
+    the *relationship* being pinned, not a second copy of the constants.
+    """
+    bundle = replay_sample.sample_bundle()
+    events = bundle["events"]
+    final = {
+        combatant["name"]: combatant for combatant in bundle["latest_state"]["combatants"]
+    }
+
+    for name, combatant in final.items():
+        hp_changes = [
+            event
+            for event in events
+            if event["kind"] in {"damage", "heal"} and event.get("target") == name
+        ]
+        if hp_changes:
+            assert combatant["hp"] == hp_changes[-1]["data"]["hp"], (
+                f"{name} ends on {combatant['hp']} hp, but the last hit-point event "
+                f"in the log leaves them on {hp_changes[-1]['data']['hp']}"
+            )
+
+        saves = [
+            event
+            for event in events
+            if event["kind"] == "death_save" and event.get("actor") == name
+        ]
+        expected_saves = (
+            {
+                "successes": saves[-1]["data"]["successes"],
+                "failures": saves[-1]["data"]["failures"],
+            }
+            if saves
+            else {"successes": 0, "failures": 0}
+        )
+        assert combatant["death_saves"] == expected_saves, (
+            f"{name}'s recorded death saves disagree with the log's last "
+            f"death_save event"
+        )
+
+        died = any(
+            event["kind"] == "death" and event.get("actor") == name for event in events
+        )
+        assert combatant["dead"] is died, (
+            f"{name} is dead={combatant['dead']} in the final state but the log "
+            f"{'does' if died else 'does not'} record a death for them"
+        )
+
+
 def test_the_showcase_ends_in_a_recorded_party_victory() -> None:
     bundle = replay_sample.sample_bundle()
 
