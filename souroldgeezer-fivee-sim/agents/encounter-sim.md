@@ -13,8 +13,8 @@ When invoked:
 2. Use [`../skills/encounter-sim/SKILL.md`](../skills/encounter-sim/SKILL.md) as
    the source of truth.
 3. **Find the command once, then reuse it.** `fivee` if it is on `PATH`;
-   otherwise the plugin's `scripts/fivee.sh`, which the skill locates relative to
-   its own announced directory. There is nothing to start: every call finds the
+   otherwise `python3` on the plugin's `scripts/fivee.py`, which the skill
+   locates relative to its own announced directory. There is nothing to start: every call finds the
    engine's local server or starts one. `fivee help` and
    `fivee help <operation>` come from the running server, so consult them rather
    than guessing an argument.

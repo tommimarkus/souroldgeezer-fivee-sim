@@ -46,7 +46,10 @@ select = ["E", "F", "W", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src", "tests"]
+# The launcher lives outside this project directory because it must be runnable
+# before anything here is built, but it is still shipped Python and is held to
+# the same standard as the engine it starts.
+files = ["src", "tests", "../scripts/fivee.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
