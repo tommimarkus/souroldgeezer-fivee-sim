@@ -28,7 +28,7 @@ from fivee_sim.kernel.grid import (
     square_center,
     to_square,
 )
-from fivee_sim.kernel.items import ItemEffect
+from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell
 from fivee_sim.model.battlemap import (
@@ -5050,3 +5050,76 @@ class TestHealingInAFight:
         assert thora.hp >= 5 + 4  # 2d4+2, so at least 4 restored
         assert thora.items["Potion of Healing"] == 0
         assert not fight.state()["turn_state"]["action_used"]
+
+    def _bonus_action_spellbook(self) -> dict[str, Spell]:
+        """A stand-in for Healing Word, "Casting Time: Bonus Action" in SRD 5.2.1."""
+        return {
+            "Healing Word Test": Spell(
+                name="Healing Word Test", level=1, heal=Dice(2, 4, 0),
+                add_spellcasting_modifier=True, range_feet=60,
+                action_cost=ActionCost.BONUS_ACTION, provenance=FIXTURE,
+            ),
+        }
+
+    def test_a_bonus_action_spell_leaves_the_action_in_hand(self) -> None:
+        ilma = self._cleric()
+        ilma.spells = ("Healing Word Test",)
+        thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
+        fight = Encounter(
+            [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+            Random(3),
+            spellbook=self._bonus_action_spellbook(),
+        )
+        advance_to(fight, "Ilma", Random(3))
+
+        fight.act(
+            Action(kind=ActionKind.CAST, spell="Healing Word Test", slot_level=1,
+                   target="Thora", as_bonus_action=True),
+            Random(3),
+        )
+
+        assert thora.hp > 4
+        assert not fight.state()["turn_state"]["action_used"]
+        assert fight.state()["turn_state"]["bonus_action_used"]
+
+    def test_a_bonus_action_spell_refuses_a_second_bonus_action_this_turn(self) -> None:
+        ilma = self._cleric()
+        ilma.spells = ("Healing Word Test",)
+        thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
+        fight = Encounter(
+            [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+            Random(3),
+            spellbook=self._bonus_action_spellbook(),
+        )
+        advance_to(fight, "Ilma", Random(3))
+        fight._turn.bonus_action_used = True
+
+        with pytest.raises(EncounterError, match="already used a bonus action this turn"):
+            fight.act(
+                Action(kind=ActionKind.CAST, spell="Healing Word Test", slot_level=1,
+                       target="Thora", as_bonus_action=True),
+                Random(3),
+            )
+
+        assert thora.hp == 4  # the refusal cost nothing
+        assert ilma.spell_slots[1] == 2
+
+    def test_an_action_cost_spell_refuses_being_cast_as_a_bonus_action(self) -> None:
+        ilma = self._cleric()
+        thora = fighter("Thora", hp=4, max_hp=30, position=(5, 0))
+        fight = Encounter(
+            [ilma, thora, fighter("Goblin", team="monsters", position=(100, 0))],
+            Random(3),
+            spellbook=spellbook(),
+        )
+        advance_to(fight, "Ilma", Random(3))
+
+        with pytest.raises(EncounterError, match="takes an action, not a bonus action"):
+            fight.act(
+                Action(kind=ActionKind.CAST, spell="Cure Wounds", slot_level=1,
+                       target="Thora", as_bonus_action=True),
+                Random(3),
+            )
+
+        assert thora.hp == 4
+        assert ilma.spell_slots[1] == 2

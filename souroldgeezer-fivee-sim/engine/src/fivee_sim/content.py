@@ -164,7 +164,7 @@ _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
     "shape", "radius", "length",
     "size", "width",
-    "range_feet", "max_targets", "condition", "concentration",
+    "range_feet", "max_targets", "condition", "concentration", "action_cost",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -971,6 +971,7 @@ def _parse_spell(
         condition=reader.string("condition") or None,
         concentration=reader.boolean("concentration"),
         provenance=provenance,
+        action_cost=reader.enum("action_cost", ActionCost) or ActionCost.ACTION,
     )
     if spell.damage is not None and spell.damage_type is None:
         reader.fail("damage_type", "a spell that deals damage must name a damage type")
@@ -978,6 +979,29 @@ def _parse_spell(
         reader.fail(
             "save_ability",
             "a spell cannot both require an attack roll and offer a saving throw",
+        )
+    # ``range_feet`` defaults to 0, and 0 already means "no range check at all"
+    # (``Encounter._require_in_range``). So an author who omits the field — the
+    # honest transcription of "Range: Touch", which names no number — is
+    # indistinguishable from one deliberately declaring unlimited reach, and Cure
+    # Wounds and Regenerate are both Touch. Exempt for an area spell, whose range
+    # is measured at its point of origin or poured out of the caster rather than
+    # named on the cast.
+    #
+    # A warning rather than a refusal, and the bound is a compatibility promise
+    # rather than taste: a pack this repo has never seen may already omit the
+    # field, and ``test_existing_packs_remain_compatible_and_new_sections_are_optional``
+    # exists to say a campaign's own content keeps loading. Scanning the bundled
+    # catalog and the test corpus cannot speak for that population. Same trade as
+    # the unshaped-radius warning below — the legacy reading survives, and the
+    # record is told to say what it means.
+    if record.get("range_feet") is None and not spell.is_area:
+        reader.warn(
+            "range_feet",
+            "does not say what range it has, so it resolves with no range check "
+            "at all and can be cast at any distance. Declare it — a number of "
+            "feet, 5 for Touch, or 0 for Self — so the record says what the "
+            "spell does",
         )
     _check_area_declaration(reader, record, spell, shape)
     return (spell, dict(record)) if reader.ok else None

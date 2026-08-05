@@ -218,6 +218,7 @@ class TestPlaytestFieldsSchema:
             "spells": [{
                 "name": "Restore", "level": 1, "heal": "1d8+3",
                 "upcast_heal": "1d8", "range_feet": 5,
+                "action_cost": "bonus_action",
                 "provenance": "test",
             }],
             "terrain": [{
@@ -251,6 +252,7 @@ class TestPlaytestFieldsSchema:
         assert attack.detach_after_damage == 5
         assert registry.spells["Restore"].heal == Dice(1, 8, 3)
         assert registry.spells["Restore"].upcast_heal == Dice(1, 8)
+        assert registry.spells["Restore"].action_cost is ActionCost.BONUS_ACTION
         assert registry.terrain_effects["deep-water"].underwater is True
         assert registry.items["Second Wind"].action_cost is ActionCost.BONUS_ACTION
 
@@ -504,7 +506,7 @@ class TestDiagnostics:
             "pack": "x", "provenance": "test",
             "spells": [{
                 "name": "Hex", "level": 1, "condition": "vale-cursed",
-                "save_ability": "wisdom", "provenance": "test",
+                "save_ability": "wisdom", "range_feet": 30, "provenance": "test",
             }],
         })
         assert any("which no loaded pack defines" in p for p in found)
@@ -523,7 +525,7 @@ class TestDiagnostics:
             "pack": "s", "provenance": "test",
             "spells": [{
                 "name": "Hex", "level": 1, "condition": "vale-cursed",
-                "save_ability": "wisdom", "provenance": "test",
+                "save_ability": "wisdom", "range_feet": 30, "provenance": "test",
             }],
         })
         assert not problems(validate([conditions, spells], include_environment=False))
@@ -1083,6 +1085,110 @@ class TestAreaDeclaration:
         ], found
 
 
+class TestSpellActionCostSchema:
+    """A spell's casting time defaults to an action, as SRD 5.2.1 prints most.
+
+    Healing Word and Mass Healing Word are the two most-cast exceptions: SRD
+    5.2.1 prints both as "Casting Time: Bonus Action". Mirrors
+    ``ItemEffect.action_cost`` (``kernel/items.py``), which solved the same
+    problem for items first.
+    """
+
+    def test_an_omitted_action_cost_defaults_to_action(self, tmp_path: Path) -> None:
+        from fivee_sim.kernel.items import ActionCost
+
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Bolt", "level": 1, "damage": "1d10",
+                "damage_type": "force", "range_feet": 60, "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Bolt"].action_cost is ActionCost.ACTION
+
+
+class TestSpellRangeIsRequired:
+    """``range_feet`` is *warned* about, not required, when a named-target spell omits it.
+
+    ``0`` already means "resolve with no range check at all" (see
+    ``Encounter._require_in_range``), so a record that simply omits the field is
+    indistinguishable from one deliberately declaring an unlimited range — Cure
+    Wounds and Regenerate are both Range: Touch, and the honest transcription of
+    "Touch" is to omit the field, which produces exactly that trap.
+
+    A warning rather than a refusal, because refusing is a breaking change to the
+    pack format that this suite already forbids:
+    ``test_existing_packs_remain_compatible_and_new_sections_are_optional`` loads a
+    minimal legacy spell carrying only a name, level and provenance. A campaign's
+    own packs are outside this repo by design, so the fact that no *bundled* or
+    *test-corpus* record omits the field says nothing about the packs a user
+    already has on disk — and that is the population the promise is to.
+
+    An area spell is exempt: its range is measured from its point of origin or
+    poured out of the caster, so the field means something different there.
+    """
+
+    def check(self, tmp_path: Path, spell: dict[str, Any]) -> list[Any]:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test", "spells": [spell],
+        })
+        return validate([path], include_environment=False)
+
+    def test_a_single_target_spell_omitting_range_feet_is_warned_about(
+        self, tmp_path: Path
+    ) -> None:
+        spell = {
+            "name": "Vale Touch", "level": 1, "heal": "1d8+3", "provenance": "test",
+        }
+        diagnostics = self.check(tmp_path, spell)
+        # A warning, so the severity has to be named: `fields`/`problems` filter on
+        # ERROR by default, and reading the default here would have asserted the
+        # absence of an error rather than the presence of the advice.
+        assert fields(diagnostics, Severity.WARNING) == ["range_feet"], diagnostics
+        assert not problems(diagnostics), "advice must not be an error"
+        found = problems(diagnostics, Severity.WARNING)
+        assert any("no range check" in p for p in found), found
+        assert any("5 for Touch" in p for p in found), found
+        assert any("0 for Self" in p for p in found), found
+
+    def test_the_warning_does_not_stop_the_pack_loading(self, tmp_path: Path) -> None:
+        # The compatibility half of the rule above, asserted rather than implied:
+        # the diagnostic is advice, and a pack written before the advice existed
+        # still resolves — with the unlimited range that earned the warning.
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Touch", "level": 1, "heal": "1d8+3",
+                "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Touch"].range_feet == 0
+
+    def test_range_feet_zero_is_accepted_as_a_deliberate_no_check(
+        self, tmp_path: Path
+    ) -> None:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Ward", "level": 1, "heal": "1d8+3",
+                "range_feet": 0, "provenance": "test",
+            }],
+        })
+        assert not problems(validate([path], include_environment=False))
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Ward"].range_feet == 0
+
+    def test_an_area_spell_omitting_range_feet_is_exempt(self, tmp_path: Path) -> None:
+        found = self.check(tmp_path, {
+            "name": "Vale Burst", "level": 3, "save_ability": "dexterity",
+            "damage": "6d6", "damage_type": "fire", "shape": "sphere", "radius": 20,
+            "provenance": "test",
+        })
+        assert not found, found
+
+
 class TestPathSafety:
     def test_a_missing_path_is_reported(self, tmp_path: Path) -> None:
         found = problems(validate([tmp_path / "nope.json"], include_environment=False))
@@ -1549,7 +1655,7 @@ class TestHalfDamageOnSaveIsOptedInto:
             "pack": "flames", "provenance": "test",
             "spells": [{
                 "name": "Test Flame", "provenance": "test", "level": 0,
-                "save_ability": "dexterity", "damage": "1d8",
+                "save_ability": "dexterity", "damage": "1d8", "range_feet": 60,
                 "damage_type": "radiant", **record,
             }],
         })

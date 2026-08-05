@@ -19,6 +19,7 @@ from random import Random
 
 from .actions import AttackKind
 from .dice import Advantage, Dice, DiceError, DiceRoll, roll_dice
+from .items import ActionCost
 from .rules import (
     Ability,
     AttackRoll,
@@ -84,6 +85,10 @@ class Spell:
     condition: str | None = None
     concentration: bool = False
     provenance: str = "SRD 5.2.1"
+    #: Almost every spell is cast with an action; Healing Word and Mass Healing
+    #: Word are SRD 5.2.1's "Casting Time: Bonus Action" exceptions. Mirrors
+    #: ``ItemEffect.action_cost``, which solved the same problem for items first.
+    action_cost: ActionCost = ActionCost.ACTION
 
     @property
     def is_area(self) -> bool:

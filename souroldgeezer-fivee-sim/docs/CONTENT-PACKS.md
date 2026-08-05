@@ -171,7 +171,9 @@ Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
 `heal`, `half_on_save`, `upcast_damage`, `upcast_heal`,
 `add_spellcasting_modifier`, `shape`, `radius`,
-`range_feet`, `max_targets`,
+`range_feet` — optional, but a named-target spell that omits it is warned about
+(see below) — `max_targets`, `action_cost` (`action` by default or
+`bonus_action`),
 `condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
 `overrides`.
 
@@ -204,6 +206,27 @@ is refused rather than quietly trimmed. It does not apply to an area spell: ther
 the radius decides who is caught, and the cap is ignored. That is why every bundled
 area spell can leave `max_targets` at its default of 1 without shrinking to a single
 creature.
+
+`range_feet` is worth declaring even though nothing forces you to. `0` already
+means "resolve with no range check at all", so a record that leaves the field out
+is indistinguishable from one deliberately declaring unlimited reach — and Cure
+Wounds and Regenerate are both Range: Touch, where the honest transcription of
+"Touch" is to name no number at all. Omit it on a named-target spell and you get a
+spell castable across the entire map, so validation warns: write the printed range
+in feet, `5` for Touch, or `0` if the spell targets only the caster or genuinely
+has no range to check.
+
+It stays a warning rather than a refusal because your existing packs keep loading —
+a spell record has only ever needed `name`, `level` and `provenance`, and that
+promise is not ours to withdraw. An area spell is exempt from the warning
+altogether: its range is measured from its point of origin (a sphere or cube) or
+pours out of the caster (a cone or line) rather than being named on the cast.
+
+`action_cost` mirrors the item field of the same name below: `action` by default,
+or `bonus_action` for the handful of spells SRD 5.2.1 prints with "Casting Time:
+Bonus Action" — Healing Word and Mass Healing Word among them. It spends the
+matching budget regardless of `as_bonus_action`; that flag only ever refuses an
+ordinary spell cast as a bonus action, the same way an item's does.
 
 ### `conditions`
 
