@@ -3,6 +3,7 @@ name: encounter-sim
 description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, or death saves turn by turn, or measuring a build's expected damage and a party's win rate over many seeded iterations. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
 tools: Bash, Read, Skill
 model: sonnet
+effort: medium
 ---
 
 You run 5E-compatible combat through the `fivee` command.
