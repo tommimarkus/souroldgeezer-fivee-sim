@@ -454,6 +454,30 @@ record, and `fivee catalog.table <id>` for a paged printed table.
 category, progress, and support totals; the catalog operations are the detailed
 authority.
 
+## Conditions the table imposes
+
+`fivee encounter.condition --id <id> --target <name> --condition <name>` imposes a
+condition by your ruling, and `--applied false` lifts one. A ruling registers no
+ongoing effect: nothing expires it and no lost concentration breaks it, so it
+lasts until you take it off. Lifting also ends any spell effect sustaining the
+same condition on that creature.
+
+**Surprise is the case this exists for, and it needs no special support.** In SRD
+5.2.1 surprise is Disadvantage on the Initiative roll and *nothing else* — there
+is no lost turn. Initiative is an ability check, so a condition carrying
+`own_ability_checks_have_disadvantage` produces it exactly:
+
+```json
+{"conditions": {"surprised": {"effects": {"own_ability_checks_have_disadvantage": true}}}}
+```
+
+Give it to the surprised combatants in `encounter.create`, then **lift it once
+initiative is rolled** — surprise is spent at that moment, and a condition left on
+would tax every later ability check.
+
+Do not model surprise by skipping a creature's first turn. That is the older
+rule, and doing it by hand costs a combatant an action the current rules give it.
+
 ## What is actually loaded
 
 **Do not assume the bundled slice is what is loaded.** A campaign can add its own
