@@ -50,6 +50,7 @@ Errors are RFC 9457 ``application/problem+json``: every problem carries
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import sys
 import threading
@@ -89,6 +90,7 @@ __all__ = [
     "API_PREFIX",
     "CONFIG_MARKER",
     "MAX_BODY_BYTES",
+    "SOURCE_ID_ENV",
     "TOKEN_HEADER",
     "EngineServer",
 ]
@@ -104,6 +106,11 @@ MAX_BODY_BYTES = 8 * 1024 * 1024
 #: page is served with this replaced by ``window.__FIVEE_EDITOR__ = {...};``;
 #: a page without the marker is served untouched.
 CONFIG_MARKER = "/*__EDITOR_CONFIG__*/"
+#: Environment variable naming the engine source this launch was started from,
+#: as a sha256 hex digest. The launcher exports it only when it is watching the
+#: source for changes; an ordinary launch leaves it unset, which is no id at all
+#: rather than an error.
+SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
 
 #: JSON type names to the phrase a refusal uses for them.
 _TYPE_WORDS: Mapping[str, str] = {
@@ -223,6 +230,12 @@ class EngineServer:
     resolve under. There is no separate terrain table any more, and there must
     not be — a content reconfiguration over this API has to move what map
     validation sees too, and a second copy is a second thing to forget.
+
+    :attr:`source_id` is the engine source this launch runs, as the launcher
+    named it in :data:`SOURCE_ID_ENV`, and ``""`` when it named nothing. A
+    caller that knows the digest of the source on disk can read a mismatch as
+    *this server is not running what you are editing*; ``""`` says only that
+    nobody is tracking, which is a different answer and has to stay one.
     """
 
     def __init__(
@@ -247,6 +260,13 @@ class EngineServer:
             else replay_service.replays_root()
         )
         self.token = token if token else secrets.token_urlsafe(16)
+        # Read here rather than per request, for the same reason the token is
+        # settled here: it is a fact about the launch, and the process cannot
+        # come to be running different source than it started with. One read is
+        # also what lets the launcher's state file and every ping name the same
+        # source without either having to trust the other's environment. Unset
+        # and exported-empty land on "" together, so neither is a special case.
+        self.source_id = os.environ.get(SOURCE_ID_ENV, "")
         self.log = log if log is not None else sys.stderr
         self.state = EngineState(maps_dir=self.maps_dir)
         self._httpd = _EngineHTTPServer(("127.0.0.1", port), _Handler)
@@ -687,6 +707,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "api": API_PREFIX,
                 "maps_dir": str(self.engine.maps_dir),
                 "replays_dir": str(self.engine.replays_dir),
+                "source_id": self.engine.source_id,
             },
         )
 

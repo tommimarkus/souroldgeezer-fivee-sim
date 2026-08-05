@@ -96,6 +96,16 @@ def resolve_plugin_data(env: dict[str, str]) -> Path | None:
     return None
 
 
+def reload_requested(env: dict[str, str]) -> bool:
+    """Whether this launch was asked to notice its source changing under it.
+
+    Opt-in, and read the way `resolve_plugin_data` reads the host variables: a
+    variable exported empty is *unset*. A host that clears a variable rather
+    than unsetting it must not turn a shipped install into a watching one.
+    """
+    return bool(env.get("FIVEE_SIM_RELOAD", "").strip())
+
+
 def _source_files(source_dir: Path) -> list[Path]:
     """Every file the identity covers, in one stable order."""
     found = []
@@ -136,7 +146,9 @@ def _ignore_compiled(directory: str, names: list[str]) -> set[str]:
     return ignored
 
 
-def ensure_durable_source(engine_dir: Path, plugin_data: Path) -> Path:
+def ensure_durable_source(
+    engine_dir: Path, plugin_data: Path, identity: str | None = None
+) -> Path:
     """A content-addressed copy of the source under plugin data, made once.
 
     Staging then renaming is what makes this safe without a lock: two callers
@@ -148,8 +160,15 @@ def ensure_durable_source(engine_dir: Path, plugin_data: Path) -> Path:
     one process are as safe as two processes. That costs nothing and removes a
     footgun: a pid-derived name is unique only until something calls this twice
     without forking.
+
+    A caller that has already hashed this tree may hand the digest over rather
+    than have it recomputed. Reading the whole source is the cost this design
+    exists to pay once, and paying it a second time in the same launch — which
+    is what a reload-enabled start would otherwise do, since it needs the same
+    digest for its own reasons — gives up part of that for nothing.
     """
-    identity = source_identity(engine_dir)
+    if identity is None:
+        identity = source_identity(engine_dir)
     published = plugin_data / "src" / identity
     if published.is_dir():
         return published
@@ -186,11 +205,13 @@ def python_path_for(source_root: Path, inherited: str) -> str:
     return os.pathsep.join([str(source_root)] + entries)
 
 
-def resolve_source_root(engine_dir: Path, plugin_data: Path | None) -> Path:
+def resolve_source_root(
+    engine_dir: Path, plugin_data: Path | None, identity: str | None = None
+) -> Path:
     """Where to import the engine from: the checkout, or a durable copy of it."""
     if plugin_data is None:
         return engine_dir / "src"
-    return ensure_durable_source(engine_dir, plugin_data)
+    return ensure_durable_source(engine_dir, plugin_data, identity)
 
 
 def main(argv: list[str], env: dict[str, str]) -> int:
@@ -214,7 +235,12 @@ def main(argv: list[str], env: dict[str, str]) -> int:
             return 1
 
     try:
-        source_root = resolve_source_root(engine_dir, plugin_data)
+        # The id names the *source*, not whichever tree ends up being imported —
+        # a durable copy is a copy of this one — so `engine_dir` is the right
+        # thing to hash either way, and hashing it before the copy is resolved
+        # is what leaves the copy nothing left to compute.
+        identity = source_identity(engine_dir) if reload_requested(env) else None
+        source_root = resolve_source_root(engine_dir, plugin_data, identity)
     except OSError as error:
         note("could not prepare the engine source (" + str(error) + "); nothing run.")
         return 1
@@ -228,6 +254,14 @@ def main(argv: list[str], env: dict[str, str]) -> int:
     # with ModuleNotFoundError. Exporting the root is what makes "run from
     # source" hold for the whole process tree rather than just this process.
     os.environ["PYTHONPATH"] = python_path_for(source_root, env.get("PYTHONPATH", ""))
+
+    # The same boundary as the line above, and exported for the same reason: the
+    # server the client spawns is a fresh interpreter that inherits this
+    # environment and nothing else, and it is the process that has to know which
+    # source it is running. Left in a local, or written into `env` — which is a
+    # copy of the environment, not the environment — this reaches nobody.
+    if identity is not None:
+        os.environ["FIVEE_SIM_SOURCE_ID"] = identity
 
     # Maps and encounter journals may resolve a default from the working
     # directory when an operation runs, and a process left inside a plugin cache

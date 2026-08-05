@@ -699,9 +699,29 @@ def _note(message: str) -> None:
     sys.stderr.write(f"fivee: {message}\n")
 
 
-def _announce(server: Server) -> Server:
+def _lifecycle_note(server: Server) -> str | None:
+    """How this server came to be answering, or ``None`` when nothing happened.
+
+    A reload is a start *and* an end, and the end is the half worth saying:
+    somebody's running engine was replaced, which is the difference between a
+    command that looks slow and a command that threw away a fight. It replaces
+    the start line rather than joining it, because two lines about one server
+    read as two servers.
+
+    One sentence, written once, because ``serve`` needs the same three cases and
+    a second copy of them is how ``serve`` came to call a replacement a start.
+    """
+    if server.reloaded:
+        return f"restarted the engine server at {server.url}; it was running older source"
     if server.spawned:
-        _note(f"started the engine server at {server.url}")
+        return f"started the engine server at {server.url}"
+    return None
+
+
+def _announce(server: Server) -> Server:
+    message = _lifecycle_note(server)
+    if message is not None:
+        _note(message)
     return server
 
 
@@ -719,9 +739,7 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
     if parsed.flags or parsed.positional:
         raise UsageError("serve takes only --port")
     server = ensure_server(port=port)
-    _note(
-        f"{'started' if server.spawned else 'already serving'} at {server.url}"
-    )
+    _note(_lifecycle_note(server) or f"already serving at {server.url}")
     _print_json(
         {
             "url": server.url,
@@ -731,6 +749,11 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
             "maps_dir": server.maps_dir,
             "replays_dir": server.replays_dir,
             "already_running": not server.spawned,
+            # Distinct from the line above, and not derivable from it:
+            # `already_running` is False for a cold start and False for a
+            # replacement, and only one of those cost the caller a process and
+            # whatever it was holding.
+            "reloaded": server.reloaded,
         },
         options,
     )
