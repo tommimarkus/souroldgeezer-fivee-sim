@@ -15,13 +15,16 @@ before feeding it back is a caller who will get the reshaping wrong.
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from fivee_sim.content import ContentRegistry, builtin
+from fivee_sim.service import specs
 from fivee_sim.service.errors import RequestError
-from fivee_sim.service.specs import creature_from_spec
+from fivee_sim.service.specs import ATTACK_SPEC_KEYS, creature_from_spec
 
 from . import api
 
@@ -100,6 +103,108 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
             "Thora",
             "Goblin",
         }
+
+
+SHORTBOW: dict[str, Any] = {
+    "name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3",
+    "damage_type": "piercing", "kind": "ranged",
+}
+
+
+class TestAnAttackSpecIsCheckedLikeTheCombatantAroundIt:
+    """``reject_unknown_keys`` guarded the combatant and stopped at its attacks.
+
+    An attack is a spec with sixteen optional keys and the same ``.get``-with-a-
+    default reads throughout, so it had the same failure the combatant guard was
+    written for and none of the protection.
+    """
+
+    def test_an_unknown_key_inside_an_attack_names_the_key(self) -> None:
+        """``range`` is the key that cost real content.
+
+        The bundled pregen sheets wrote it on every bow, javelin and crossbow
+        they ship; the builder reads ``normal_range``. So every one of those
+        attacks was constructed with a maximum range of **0 ft** and refused at
+        every distance a fight can contain — for as long as the sheets have
+        existed, silently, because the combatant around the attack was checked
+        and the attack was not.
+        """
+        with pytest.raises(RequestError, match="unknown attack key 'range'"):
+            api.encounter_create(
+                [{**HERO, "attacks": [{**SHORTBOW, "range": 80}]}, dict(GOBLIN)]
+            )
+
+    def test_the_refusal_is_told_apart_from_the_combatant_one(self) -> None:
+        # Both refusals now exist and they name different things. A shared
+        # message would send someone hunting for 'range' among the combatant
+        # keys, where it is just as absent and not the answer.
+        with pytest.raises(RequestError, match="unknown combatant key 'range'"):
+            api.encounter_create([{**HERO, "range": 80}, dict(GOBLIN)])
+
+    def test_the_correctly_spelt_ranges_reach_the_built_attack(
+        self, registry: ContentRegistry
+    ) -> None:
+        # The floor under both refusals: a guard that refused every range key
+        # would pass the two cases above and leave the bow exactly as broken.
+        built = creature_from_spec(
+            {**HERO, "attacks": [{**SHORTBOW, "normal_range": 80, "long_range": 320}]},
+            registry,
+        )
+        option = built.attacks[0]
+
+        assert (option.normal_range, option.long_range) == (80, 320)
+        # The value the fight actually reads. It was 0, which is why a shortbow
+        # answered "cannot reach (35 ft > 0 ft)" to a target 35 ft away.
+        assert option.max_distance() == 320
+
+    def test_the_allowed_keys_are_the_keys_the_builder_reads(self) -> None:
+        """``ATTACK_SPEC_KEYS`` comes from the dataclass; the builder is separate.
+
+        Deriving the set from :class:`AttackOption` removes one hand-kept list
+        and creates the room for another mismatch: a field added to the record
+        but never read out of the spec would be *accepted* and then silently
+        defaulted — the same defect ``range`` was, one level along. So the two
+        are held against each other here, by reading the builder's own source
+        rather than by calling it, because only a source read sees a key that
+        no fixture happens to set.
+        """
+        source = ast.parse(Path(specs.__file__).read_text(encoding="utf-8"))
+        builder = next(
+            node for node in ast.walk(source)
+            if isinstance(node, ast.FunctionDef) and node.name == "attack_from_spec"
+        )
+        read: set[str] = set()
+        for node in ast.walk(builder):
+            # ``spec["x"]`` — a required key.
+            if (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.value, ast.Name) and node.value.id == "spec"
+                and isinstance(node.slice, ast.Constant)
+            ):
+                read.add(str(node.slice.value))
+            # ``spec.get("x", ...)`` — an optional one.
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute) and node.func.attr == "get"
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "spec"
+                and node.args and isinstance(node.args[0], ast.Constant)
+            ):
+                read.add(str(node.args[0].value))
+
+        assert read, "the builder's spec reads could not be found"
+        assert read == set(ATTACK_SPEC_KEYS)
+
+    def test_an_attack_that_declares_no_range_is_still_accepted(
+        self, registry: ContentRegistry
+    ) -> None:
+        # Not tightened into a requirement. A melee attack names no range at
+        # all, and a ranged one that omits it is a content mistake this layer
+        # has no standing to call — ``tests/test_pregens.py`` is where the
+        # shipped sheets are held to declaring one.
+        built = creature_from_spec({**HERO, "attacks": [dict(SHORTBOW)]}, registry)
+
+        assert built.attacks[0].max_distance() == 0
 
 
 def _combatant(created: dict[str, Any], name: str) -> dict[str, Any]:

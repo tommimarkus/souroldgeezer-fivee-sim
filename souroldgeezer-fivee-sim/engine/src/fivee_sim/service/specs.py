@@ -17,6 +17,7 @@ they described and nothing says so.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import fields
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -34,6 +35,7 @@ from .errors import RequestError
 _EnumT = TypeVar("_EnumT", bound=Enum)
 
 __all__ = [
+    "ATTACK_SPEC_KEYS",
     "DESCRIBED_SPEC_KEYS",
     "FEATURE_KEYS",
     "LOOKUP_SPEC_KEYS",
@@ -93,7 +95,22 @@ def parse_point(value: int | list[int], what: str) -> Point | int:
     raise RequestError(f"{what} must be feet along the x-axis or an [x, y] pair of feet")
 
 
+#: Every key an attack spec may carry, derived from the record it builds rather
+#: than listed here. A hand-kept copy is what let ``range`` sit on the bundled
+#: pregen sheets unread: two lists drift, and the one nobody runs drifts first.
+#: ``tests/test_specs.py`` holds this against the keys ``attack_from_spec``
+#: actually reads, so a field added to :class:`AttackOption` and forgotten here
+#: fails rather than becoming a key that is accepted and dropped.
+ATTACK_SPEC_KEYS = frozenset(field.name for field in fields(AttackOption))
+
+
 def attack_from_spec(spec: dict[str, Any]) -> AttackOption:
+    # The combatant around this attack has had its keys checked since the
+    # ``fly_speed`` stirge; the attack inside it had not, and carries sixteen
+    # optional keys read with ``.get`` and a default. ``range`` for
+    # ``normal_range`` cost every shipped pregen its ranged weapon — built with
+    # a maximum range of 0 ft, refused at every distance, silently.
+    reject_unknown_keys(spec, ATTACK_SPEC_KEYS, noun="attack")
     bonus_type = spec.get("bonus_damage_type")
     save_ability = spec.get("on_hit_save_ability")
     max_size = spec.get("on_hit_max_size")
@@ -194,8 +211,10 @@ _DEATH_SAVE_KEYS = frozenset({"successes", "failures"})
 _FACING_NAMES = frozenset(str(member) for member in Facing)
 
 
-def reject_unknown_keys(spec: dict[str, Any], allowed: frozenset[str]) -> None:
-    """Refuse a combatant key nothing reads, the way every other spec already does.
+def reject_unknown_keys(
+    spec: dict[str, Any], allowed: frozenset[str], *, noun: str = "combatant"
+) -> None:
+    """Refuse a key nothing reads, the way every other spec already does.
 
     ``content.py`` refuses an unknown pack key and ``_map_from_spec`` an unknown
     map key, both for one reason: a key read with ``.get`` and a default cannot
@@ -203,10 +222,14 @@ def reject_unknown_keys(spec: dict[str, Any], allowed: frozenset[str]) -> None:
     one they described and nothing says so. An inline ``fly_speed`` produced a
     stirge that walked 10 feet with no flight and no warning; ``speeed`` would have
     produced the default 30 just as quietly.
+
+    ``noun`` names the spec being checked. It matters because the two shapes
+    nest: ``range`` is absent from the combatant keys *and* from the attack
+    keys, so one shared message would send a reader hunting the wrong list.
     """
     for key in sorted(set(spec) - allowed):
         raise RequestError(
-            f"unknown combatant key {key!r}. Valid keys: {', '.join(sorted(allowed))}"
+            f"unknown {noun} key {key!r}. Valid keys: {', '.join(sorted(allowed))}"
         )
 
 
