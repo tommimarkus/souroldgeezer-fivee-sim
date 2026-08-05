@@ -254,7 +254,7 @@ a separate layer because they are resolution primitives like the rest.
 
 **`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
-`durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `replay.py`, and
+`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`, `replay.py`, and
 `uvtt.py`.
 Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain

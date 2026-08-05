@@ -223,6 +223,7 @@ One versioned surface under `/api/v1`, every operation reachable as
 | Group | What it does |
 | --- | --- |
 | `encounter` | start a fight, read its state, act, advance, note, resume, finalize, export a replay |
+| `adventure` | link fights in order, carrying each party's ending state into the next |
 | `map` | generate under a seed, render, query geometry, edit, read and write saved maps, export Universal VTT |
 | `replay` | list, read, and validate replay bundles |
 | `analytics` | Monte Carlo win rates, damage per round, and route-timing checks |
