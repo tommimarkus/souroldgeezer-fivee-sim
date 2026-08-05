@@ -19,7 +19,7 @@ from typing import Any
 
 from ..analytics.scenario import response_window, travel_timing
 from ..content import ContentRegistry
-from ..kernel.dice import Advantage, Dice, roll_d20, roll_dice
+from ..kernel.dice import Advantage, Dice, DiceError, roll_d20, roll_dice
 from ..kernel.grid import TerrainEffect
 from ..kernel.rules import Ability, make_d20_test
 from . import sessions, specs
@@ -53,7 +53,15 @@ def audited_primitive(
     if encounter_id is None:
         if request_id is not None:
             raise RequestError("request_id requires encounter_id")
-        return execute()
+        # Translated here rather than left to escape: an unaudited primitive
+        # takes the same bad expression and the same unusable reported face as
+        # an audited one, and the branch below already turns those into a
+        # refusal. Without this the two paths answer the same mistake with a
+        # 400 and a 500.
+        try:
+            return execute()
+        except DiceError as error:
+            raise RequestError(str(error)) from error
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
@@ -131,14 +139,26 @@ def roll(
     encounter_id: str | None = None,
     request_id: str | None = None,
     label: str | None = None,
+    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         used = specs.checked_seed(seed)
         rng = Random(used)
         dice = Dice.parse(expression)
         chosen = specs.parse_advantage(advantage)
-        if dice.count == 1 and dice.faces == 20 and chosen is not Advantage.NONE:
-            d20 = roll_d20(rng, chosen)
+        faces = specs.parse_natural(natural) or None
+        if faces is not None and not (dice.count == 1 and dice.faces == 20):
+            raise RequestError(
+                f"a reported face is a d20 face, and {dice} is not one d20; "
+                "roll the expression or report a d20"
+            )
+        # One d20 goes through ``roll_d20`` whenever there is something for it
+        # to decide — advantage to resolve, or a reported face to honour.
+        # ``roll_dice`` has no way to take a face, so it would ignore one.
+        if dice.count == 1 and dice.faces == 20 and (
+            chosen is not Advantage.NONE or faces is not None
+        ):
+            d20 = roll_d20(rng, chosen, faces)
             result: dict[str, Any] = {
                 "expression": str(dice),
                 "seed": used,
@@ -167,7 +187,10 @@ def roll(
         encounter_id=encounter_id,
         request_id=request_id,
         operation="roll",
-        arguments={"expression": expression, "advantage": advantage, "seed": seed, "label": label},
+        arguments={
+            "expression": expression, "advantage": advantage, "seed": seed,
+            "label": label, "natural": natural,
+        },
         execute=execute,
     )
 
@@ -182,6 +205,7 @@ def check(
     request_id: str | None = None,
     ability: str | None = None,
     skill: str | None = None,
+    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         if ability is not None:
@@ -190,7 +214,9 @@ def check(
             raise RequestError("skill must not be blank")
         used = specs.checked_seed(seed)
         test = make_d20_test(
-            Random(used), modifier=modifier, dc=dc, advantage=specs.parse_advantage(advantage)
+            Random(used), modifier=modifier, dc=dc,
+            advantage=specs.parse_advantage(advantage),
+            supplied=specs.parse_natural(natural) or None,
         )
         result: dict[str, Any] = {
             "seed": used,
@@ -213,7 +239,7 @@ def check(
         operation="check",
         arguments={
             "modifier": modifier, "dc": dc, "advantage": advantage, "seed": seed,
-            "ability": ability, "skill": skill,
+            "ability": ability, "skill": skill, "natural": natural,
         },
         execute=execute,
     )
@@ -229,6 +255,7 @@ def save(
     encounter_id: str | None = None,
     request_id: str | None = None,
     ability: str | None = None,
+    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     def execute() -> dict[str, Any]:
         if ability is not None:
@@ -240,6 +267,7 @@ def save(
             dc=dc,
             advantage=specs.parse_advantage(advantage),
             auto_fail=auto_fail,
+            supplied=specs.parse_natural(natural) or None,
         )
         result: dict[str, Any] = {
             "seed": used,
@@ -262,6 +290,7 @@ def save(
         arguments={
             "modifier": modifier, "dc": dc, "advantage": advantage,
             "auto_fail": auto_fail, "seed": seed, "ability": ability,
+            "natural": natural,
         },
         execute=execute,
     )

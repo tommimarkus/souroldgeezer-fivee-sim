@@ -40,7 +40,7 @@ to another virtual tabletop as Universal VTT.
 
 | Plugin | Version | Skills | Claude agent |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.52` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.52` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
 
 ## Install
 
@@ -348,6 +348,7 @@ format, the precedence rules, and a worked example.
 |---|---|
 | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | running and narrating a fight — the skill the assistant loads |
 | [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md) | making, editing, and fighting on battle maps |
+| [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | running a written adventure as a table — agent or human seats — and reporting what broke |
 | [MAPS.md](souroldgeezer-fivee-sim/docs/MAPS.md) | the map document field by field, edit operations, the editor, the replay bundle, UVTT |
 | [CONTENT-PACKS.md](souroldgeezer-fivee-sim/docs/CONTENT-PACKS.md) | the content pack format and the rules the loader enforces |
 | [COVERAGE.md](souroldgeezer-fivee-sim/docs/COVERAGE.md) | generated catalog and executable totals |

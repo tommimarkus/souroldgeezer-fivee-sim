@@ -22,6 +22,7 @@ from random import Random
 from typing import Any
 
 from .. import __version__
+from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
 from ..model.encounter import Action, ActionKind, EncounterError
@@ -273,6 +274,7 @@ def execute_act(
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
     facing: str | None = None,
+    natural: int | list[int] | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -366,10 +368,11 @@ def execute_act(
         movement_mode=selected_mode,
         as_bonus_action=as_bonus_action,
         facing=specs.parse_facing(facing),
+        natural=specs.parse_natural(natural),
     )
     try:
         events = session.encounter.act(action, session.rng)
-    except EncounterError as error:
+    except (EncounterError, DiceError) as error:
         raise RequestError(str(error)) from error
     completed_at = sessions.utc_now()
     session.event_timestamps.extend([completed_at] * len(events))
@@ -401,6 +404,7 @@ def act(
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
     facing: str | None = None,
+    natural: int | list[int] | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
@@ -426,6 +430,12 @@ def act(
         "movement_mode": movement_mode,
         "as_bonus_action": as_bonus_action,
         "facing": specs.parse_facing(facing),
+        # Normalised before it is written, like ``facing`` above: a resume reads
+        # this dict back through ``specs.action_from_journal``, so what is
+        # recorded has to be what the action actually ran with. A face left out
+        # here would be re-rolled from the RNG on recovery, and the fight that
+        # came back would disagree with the one the caller was told about.
+        "natural": list(specs.parse_natural(natural)),
     }
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_act", arguments, request_id
@@ -454,6 +464,7 @@ def act(
             movement_mode,
             as_bonus_action,
             facing,
+            natural,
         )
     except (RequestError, EncounterError) as error:
         sessions.attempt_finished(
@@ -484,10 +495,12 @@ def act(
     return result
 
 
-def execute_advance(state: EngineState, encounter_id: str) -> dict[str, Any]:
+def execute_advance(
+    state: EngineState, encounter_id: str, natural: int | list[int] | None = None
+) -> dict[str, Any]:
     """End the current turn and begin the next, rolling any death saves that are due."""
     session = sessions.session_for(state, encounter_id)
-    events = session.encounter.advance(session.rng)
+    events = session.encounter.advance(session.rng, specs.parse_natural(natural))
     completed_at = sessions.utc_now()
     session.event_timestamps.extend([completed_at] * len(events))
     sessions.capture_checkpoint(session, completed_at)
@@ -498,21 +511,27 @@ def execute_advance(state: EngineState, encounter_id: str) -> dict[str, Any]:
 
 
 def advance(
-    state: EngineState, encounter_id: str, request_id: str | None = None
+    state: EngineState,
+    encounter_id: str,
+    natural: int | list[int] | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
         return cached
-    arguments: dict[str, Any] = {}
+    # Recorded for the reason ``act`` records its own: a death save the caller
+    # rolled is an input, and a resume that re-rolled it would recover a fight
+    # where somebody died who did not.
+    arguments: dict[str, Any] = {"natural": list(specs.parse_natural(natural))}
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_advance", arguments, request_id
     )
     try:
         if session.finalized:
             raise RequestError(f"encounter {encounter_id!r} is finalized")
-        result = execute_advance(state, encounter_id)
-    except (RequestError, EncounterError) as error:
+        result = execute_advance(state, encounter_id, natural)
+    except (RequestError, EncounterError, DiceError) as error:
         sessions.attempt_finished(
             state,
             encounter_id,

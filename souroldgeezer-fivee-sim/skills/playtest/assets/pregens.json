@@ -1,0 +1,248 @@
+{
+  "about": [
+    "Pregenerated parties for a playtest, so a developer with no characters to hand can still run their adventure.",
+    "Each member has a `sheet` — an engine combatant spec, accepted as-is by encounter.create and adventure.encounter — and a persona the harness uses when briefing the seat. The two are kept apart because the engine refuses unknown spec keys, so `temperament` and `voice` may never be folded into `sheet`.",
+    "The engine models no character building: there are no classes, species, backgrounds, feats, or levels here, and none of these numbers were derived from a class table. They are hand-picked to be ordinary for their tier, and the class-flavoured names are description only.",
+    "Only four spells are executable in the bundled slice — Guiding Bolt, Shatter, Hold Person, Fireball — so the casters use those and nothing else. Positions are a loose marching order; the game master places the party for the scene.",
+    "This is our own authored content, not transcribed from any source."
+  ],
+  "parties": {
+    "level-1": {
+      "description": "Four fragile people. A single bad round can drop one of them, which is what makes a first-tier adventure worth testing.",
+      "members": [
+        {
+          "temperament": "bold",
+          "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "sheet": {
+            "name": "Thora",
+            "team": "party",
+            "ac": 16,
+            "max_hp": 12,
+            "position": [0, 0],
+            "abilities": {"strength": 16, "dexterity": 12, "constitution": 14, "intelligence": 9, "wisdom": 11, "charisma": 10},
+            "save_bonuses": {"strength": 4, "constitution": 3},
+            "attacks": [
+              {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 30}
+            ]
+          }
+        },
+        {
+          "temperament": "cautious",
+          "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "sheet": {
+            "name": "Kesh",
+            "team": "party",
+            "ac": 14,
+            "max_hp": 9,
+            "position": [5, 0],
+            "abilities": {"strength": 10, "dexterity": 16, "constitution": 12, "intelligence": 13, "wisdom": 12, "charisma": 11},
+            "save_bonuses": {"dexterity": 5},
+            "attacks": [
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "social",
+          "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "sheet": {
+            "name": "Ilma",
+            "team": "party",
+            "ac": 15,
+            "max_hp": 10,
+            "position": [0, 5],
+            "abilities": {"strength": 12, "dexterity": 10, "constitution": 13, "intelligence": 10, "wisdom": 16, "charisma": 14},
+            "save_bonuses": {"wisdom": 5, "charisma": 4},
+            "spells": ["Guiding Bolt"],
+            "spell_slots": {"1": 2},
+            "spell_save_dc": 13,
+            "spell_attack_bonus": 5,
+            "attacks": [
+              {"name": "Mace", "attack_bonus": 3, "damage": "1d6+1", "damage_type": "bludgeoning", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "thorough",
+          "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "sheet": {
+            "name": "Doran",
+            "team": "party",
+            "ac": 12,
+            "max_hp": 8,
+            "position": [5, 5],
+            "abilities": {"strength": 8, "dexterity": 14, "constitution": 12, "intelligence": 16, "wisdom": 12, "charisma": 10},
+            "save_bonuses": {"intelligence": 5, "wisdom": 3},
+            "attacks": [
+              {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
+              {"name": "Light Crossbow", "attack_bonus": 4, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
+            ]
+          }
+        }
+      ]
+    },
+    "level-3": {
+      "description": "The tier where second-level slots arrive, so control and area damage enter the party's options for the first time.",
+      "members": [
+        {
+          "temperament": "bold",
+          "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "sheet": {
+            "name": "Thora",
+            "team": "party",
+            "ac": 17,
+            "max_hp": 28,
+            "position": [0, 0],
+            "abilities": {"strength": 17, "dexterity": 12, "constitution": 15, "intelligence": 9, "wisdom": 11, "charisma": 10},
+            "save_bonuses": {"strength": 5, "constitution": 4},
+            "attacks": [
+              {"name": "Longsword", "attack_bonus": 5, "damage": "1d8+3", "damage_type": "slashing", "kind": "melee"},
+              {"name": "Javelin", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 30}
+            ]
+          }
+        },
+        {
+          "temperament": "cautious",
+          "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "sheet": {
+            "name": "Kesh",
+            "team": "party",
+            "ac": 15,
+            "max_hp": 22,
+            "position": [5, 0],
+            "abilities": {"strength": 10, "dexterity": 17, "constitution": 13, "intelligence": 13, "wisdom": 12, "charisma": 11},
+            "save_bonuses": {"dexterity": 5},
+            "attacks": [
+              {"name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Dagger", "attack_bonus": 5, "damage": "1d4+3", "damage_type": "piercing", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "social",
+          "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "sheet": {
+            "name": "Ilma",
+            "team": "party",
+            "ac": 16,
+            "max_hp": 24,
+            "position": [0, 5],
+            "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 16, "charisma": 14},
+            "save_bonuses": {"wisdom": 5, "charisma": 4},
+            "spells": ["Guiding Bolt", "Hold Person"],
+            "spell_slots": {"1": 4, "2": 2},
+            "spell_save_dc": 13,
+            "spell_attack_bonus": 5,
+            "attacks": [
+              {"name": "Mace", "attack_bonus": 4, "damage": "1d6+1", "damage_type": "bludgeoning", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "thorough",
+          "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "sheet": {
+            "name": "Doran",
+            "team": "party",
+            "ac": 13,
+            "max_hp": 18,
+            "position": [5, 5],
+            "abilities": {"strength": 8, "dexterity": 14, "constitution": 13, "intelligence": 17, "wisdom": 12, "charisma": 10},
+            "save_bonuses": {"intelligence": 5, "wisdom": 3},
+            "spells": ["Shatter"],
+            "spell_slots": {"1": 4, "2": 2},
+            "spell_save_dc": 14,
+            "spell_attack_bonus": 6,
+            "attacks": [
+              {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
+              {"name": "Light Crossbow", "attack_bonus": 5, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
+            ]
+          }
+        }
+      ]
+    },
+    "level-5": {
+      "description": "Third-level slots and a second weapon attack. Fireball arrives here, so an encounter's spacing starts to matter a great deal.",
+      "members": [
+        {
+          "temperament": "bold",
+          "voice": "Blunt and soldierly. Jokes when frightened, which is often, and never admits that is why.",
+          "sheet": {
+            "name": "Thora",
+            "team": "party",
+            "ac": 18,
+            "max_hp": 44,
+            "position": [0, 0],
+            "attacks_per_action": 2,
+            "abilities": {"strength": 18, "dexterity": 12, "constitution": 16, "intelligence": 9, "wisdom": 11, "charisma": 10},
+            "save_bonuses": {"strength": 7, "constitution": 6},
+            "attacks": [
+              {"name": "Longsword", "attack_bonus": 7, "damage": "1d8+4", "damage_type": "slashing", "kind": "melee"},
+              {"name": "Javelin", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "range": 30}
+            ]
+          }
+        },
+        {
+          "temperament": "cautious",
+          "voice": "Quiet. Asks one question more than anybody wants, and is usually right to.",
+          "sheet": {
+            "name": "Kesh",
+            "team": "party",
+            "ac": 16,
+            "max_hp": 38,
+            "position": [5, 0],
+            "abilities": {"strength": 10, "dexterity": 18, "constitution": 14, "intelligence": 13, "wisdom": 12, "charisma": 11},
+            "save_bonuses": {"dexterity": 7},
+            "attacks": [
+              {"name": "Shortbow", "attack_bonus": 7, "damage": "1d6+4", "damage_type": "piercing", "kind": "ranged", "range": 80},
+              {"name": "Dagger", "attack_bonus": 7, "damage": "1d4+4", "damage_type": "piercing", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "social",
+          "voice": "Warm, talks first and fast, treats every stranger as a problem that can be solved by conversation.",
+          "sheet": {
+            "name": "Ilma",
+            "team": "party",
+            "ac": 18,
+            "max_hp": 38,
+            "position": [0, 5],
+            "abilities": {"strength": 12, "dexterity": 10, "constitution": 14, "intelligence": 10, "wisdom": 18, "charisma": 14},
+            "save_bonuses": {"wisdom": 7, "charisma": 5},
+            "spells": ["Guiding Bolt", "Hold Person"],
+            "spell_slots": {"1": 4, "2": 3, "3": 2},
+            "spell_save_dc": 15,
+            "spell_attack_bonus": 7,
+            "attacks": [
+              {"name": "Mace", "attack_bonus": 4, "damage": "1d6+1", "damage_type": "bludgeoning", "kind": "melee"}
+            ]
+          }
+        },
+        {
+          "temperament": "thorough",
+          "voice": "Precise, faintly pedantic, narrates their own searching aloud as though taking notes.",
+          "sheet": {
+            "name": "Doran",
+            "team": "party",
+            "ac": 14,
+            "max_hp": 30,
+            "position": [5, 5],
+            "abilities": {"strength": 8, "dexterity": 14, "constitution": 14, "intelligence": 18, "wisdom": 12, "charisma": 10},
+            "save_bonuses": {"intelligence": 7, "wisdom": 4},
+            "spells": ["Shatter", "Fireball"],
+            "spell_slots": {"1": 4, "2": 3, "3": 2},
+            "spell_save_dc": 15,
+            "spell_attack_bonus": 7,
+            "attacks": [
+              {"name": "Quarterstaff", "attack_bonus": 2, "damage": "1d6-1", "damage_type": "bludgeoning", "kind": "melee"},
+              {"name": "Light Crossbow", "attack_bonus": 6, "damage": "1d8+2", "damage_type": "piercing", "kind": "ranged", "range": 80}
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

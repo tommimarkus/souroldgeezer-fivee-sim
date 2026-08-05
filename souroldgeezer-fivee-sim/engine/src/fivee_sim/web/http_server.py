@@ -738,6 +738,7 @@ class _Handler(BaseHTTPRequestHandler):
                 body["encounter_id"],
                 self._idempotency_key(),
                 body["label"],
+                body["natural"],
             ),
         )
 
@@ -755,6 +756,7 @@ class _Handler(BaseHTTPRequestHandler):
                 self._idempotency_key(),
                 body["ability"],
                 body["skill"],
+                body["natural"],
             ),
         )
 
@@ -772,6 +774,7 @@ class _Handler(BaseHTTPRequestHandler):
                 body["encounter_id"],
                 self._idempotency_key(),
                 body["ability"],
+                body["natural"],
             ),
         )
 
@@ -971,13 +974,16 @@ class _Handler(BaseHTTPRequestHandler):
             body["movement_mode"],
             body["as_bonus_action"],
             body["facing"],
+            body["natural"],
             self._idempotency_key(),
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_advance(self, request: _Request) -> None:
         self._check_encounter_version(request.id)
-        result = encounter_service.advance(self.state, request.id, self._idempotency_key())
+        result = encounter_service.advance(
+            self.state, request.id, request.body["natural"], self._idempotency_key()
+        )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_note(self, request: _Request) -> None:

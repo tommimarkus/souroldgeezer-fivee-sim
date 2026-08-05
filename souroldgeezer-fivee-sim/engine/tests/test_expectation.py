@@ -53,13 +53,19 @@ class TestAttackSignatureParity:
     module's docstring exists to prevent.
     """
 
+    #: The roller draws; the closed form integrates. ``rng`` is where a draw
+    #: comes from and ``supplied`` is a caller replacing one with the face they
+    #: rolled at the table — both describe *this* roll rather than the
+    #: distribution over rolls, so neither has a closed-form counterpart. The
+    #: exemption is safe for the reason the class docstring cares about: nothing
+    #: in analytics supplies a face, so there is no value being silently missed.
+    _ABOUT_ONE_ROLL = frozenset({"rng", "supplied"})
+
     def test_the_closed_form_takes_every_argument_the_roller_does(self) -> None:
         rolled = {
             name: parameter
             for name, parameter in signature(resolve_attack).parameters.items()
-            # The roller draws; the closed form integrates. That is the one
-            # difference between them, and the only one allowed.
-            if name != "rng"
+            if name not in self._ABOUT_ONE_ROLL
         }
         closed = dict(signature(attack_damage_expectation).parameters)
         assert set(closed) == set(rolled)

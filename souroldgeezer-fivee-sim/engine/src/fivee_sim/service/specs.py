@@ -220,6 +220,32 @@ def parse_facing(value: Any) -> str | None:
     return named
 
 
+def parse_natural(value: Any) -> tuple[int, ...]:
+    """The d20 faces a caller rolled themselves, normalised to a tuple.
+
+    One face as a bare integer, two as a list — the same shape ``to_position``
+    takes, because ``--natural 17`` and ``--natural '[17, 4]'`` is a grammar the
+    client already has. ``None`` is *you roll it* and normalises to the empty
+    tuple.
+
+    Range and count belong to the roll rather than to parsing: how many faces a
+    roll takes depends on advantage, which is not known until the action is
+    resolved. So this refuses only what is not a face at all, and
+    :func:`~fivee_sim.kernel.dice.roll_d20` refuses the rest.
+    """
+    if value is None:
+        return ()
+    faces = value if isinstance(value, list | tuple) else [value]
+    parsed: list[int] = []
+    for face in faces:
+        if isinstance(face, bool) or not isinstance(face, int):
+            raise RequestError(
+                f"a reported d20 face must be a whole number, got {face!r}"
+            )
+        parsed.append(face)
+    return tuple(parsed)
+
+
 def parse_death_saves(value: Any) -> tuple[int, int]:
     """The successes and failures a combatant arrives already holding.
 
@@ -620,4 +646,5 @@ def action_from_journal(arguments: Mapping[str, Any]) -> Action:
             else None
         ),
         as_bonus_action=bool(arguments.get("as_bonus_action", False)),
+        natural=tuple(int(face) for face in arguments.get("natural") or ()),
     )

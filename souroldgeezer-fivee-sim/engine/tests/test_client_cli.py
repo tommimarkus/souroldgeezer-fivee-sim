@@ -702,6 +702,44 @@ class TestHelp:
         assert "encounter.act" in message
 
 
+class TestScalarsInSchemasThatAlsoTakeArrays:
+    """A bare scalar for an argument that also accepts a list.
+
+    Several arguments admit both — ``to_position`` and ``center`` take a point
+    *or* a bare number of feet along the x-axis, and ``natural`` takes one
+    reported d20 face or two. The coercion answered the array branch first and
+    raised "write it as JSON" before it ever reached the integer branch, so the
+    bare-number spelling the schema and the skill both advertise was refused by
+    the one surface anybody types into.
+    """
+
+    def test_a_bare_number_is_accepted_where_the_schema_takes_one(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run(
+            "dice.roll", "--expression", "1d20", "--seed", "3", "--natural", "17"
+        ) == cli.EXIT_OK
+        assert out(capsys)["natural"] == 17
+
+    def test_the_list_spelling_still_works_for_the_same_argument(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert run(
+            "dice.roll", "--expression", "1d20", "--seed", "3",
+            "--advantage", "advantage", "--natural", "[3, 18]",
+        ) == cli.EXIT_OK
+        assert out(capsys)["natural"] == 18
+
+    def test_a_word_is_still_refused_by_the_scalar_branch(
+        self, shared: discovery.Server, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        # The guard on the fix: falling through to the integer branch must not
+        # mean falling through to accepting anything.
+        assert run(
+            "dice.roll", "--expression", "1d20", "--natural", "seventeen"
+        ) == cli.EXIT_USAGE
+
+
 class TestInvocation:
     """Both spellings, both ways of giving arguments, and how they compose."""
 

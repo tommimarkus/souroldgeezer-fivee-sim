@@ -551,7 +551,9 @@ def recover_session(
             capture_checkpoint(session, timestamp)
         elif status == "success" and operation == "encounter_advance":
             before = len(encounter.log)
-            encounter.advance(rng)
+            encounter.advance(
+                rng, tuple(int(f) for f in record.get("arguments", {}).get("natural") or ())
+            )
             timestamp = str(record["timestamp"])
             session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
             capture_checkpoint(session, timestamp)
