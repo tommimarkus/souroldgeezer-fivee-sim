@@ -16,6 +16,7 @@ only the arithmetic.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 from pathlib import Path
@@ -184,6 +185,33 @@ class TestLoading:
         assert stalker.name == "Stalker A"
         assert stalker.max_hp == 22
         assert stalker.attacks[0].name == "Claw"
+
+    def test_hit_dice_is_accepted_and_validated_but_never_reaches_the_creature(
+        self, tmp_path: Path
+    ) -> None:
+        """hit_dice is a deliberately unconsumed key, not an oversight.
+
+        It is transcribed straight from the SRD stat block, validated as a string,
+        and then dropped: the engine rolls no hit points and models no rest, so
+        nothing downstream has a use for it. This pins that decision two ways —
+        loading a record carrying it raises nothing, and ``Creature`` is a
+        ``slots=True`` dataclass with no ``hit_dice`` field, so a build that wired
+        the value up (or dropped the key from the allowlist and this record
+        started failing) would show up here: the attribute would either appear or
+        the load would raise, either of which breaks this test.
+        """
+        path = write_pack(tmp_path, "hit-dice.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Dice Bearer", "ac": 10, "max_hp": 10, "provenance": "test",
+                "hit_dice": "3d6",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        creature = make_creature("Dice Bearer", registry=registry, label="Bearer A")
+        assert creature.max_hp == 10
+        assert not hasattr(creature, "hit_dice")
+        assert "hit_dice" not in {f.name for f in dataclasses.fields(creature)}
 
 
 class TestPlaytestFieldsSchema:

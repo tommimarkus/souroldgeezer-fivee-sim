@@ -141,6 +141,11 @@ _COMMON_RECORD_KEYS = frozenset(
     {"name", "provenance", "unmodelled", "unmodelled_facts", "overrides"}
 )
 _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
+    # "hit_dice" is accepted and validated below but no rule consumes it: the
+    # engine rolls no hit points and models no rest, so there is nothing for a
+    # transcribed die expression to feed. It stays in the allowlist because the
+    # value is a faithful part of the SRD stat block and re-deriving it later
+    # would be wasted work, not because anything reads it.
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
     "size", "abilities", "save_bonuses",
@@ -809,6 +814,10 @@ def _parse_creature(
     reader.integer("spell_attack_bonus")
     reader.enum("spellcasting_ability", Ability)
     reader.string("team")
+    # Validated as a faithful transcription and then discarded: no field on
+    # Creature carries it, and Creature.from_record never reads it. See the
+    # allowlist comment above for why that is a deliberate, standing decision
+    # rather than an oversight.
     reader.string("hit_dice")
     reader.enum_keyed_ints("abilities", Ability)
     reader.enum_keyed_ints("save_bonuses", Ability)

@@ -103,6 +103,11 @@ There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
 placement, and reinforcement timing are per-instance — set them when adding a
 combatant to an encounter, not in its reusable stat block.
 
+`hit_dice` is accepted and validated as a string but consumed by no rule: the
+engine rolls no hit points and models no rest, so it is kept as a faithful part
+of the transcription rather than because anything reads it. Write it if you are
+transcribing a stat block; expect no behaviour from it either way.
+
 Attacks carry their own bonus and damage expression rather than deriving them from
 ability scores and proficiency. That is how a stat block presents an attack, and it
 keeps your data a transcription rather than a bet on derivation rules.
