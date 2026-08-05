@@ -6,6 +6,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from types import ModuleType
 
@@ -302,19 +303,96 @@ def test_packet_interleaves_pending_sections_and_tables(
     }
 
 
-def test_packet_refuses_to_write_a_review_copy_below_the_repository(
+def test_packet_refuses_to_write_a_review_copy_outside_the_temporary_directory(
     batch_module: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A path in the checkout is outside the temporary tree, so this is the
+    branch it trips. The repository refusal is a *second* branch, and the test
+    below reaches it with a root that satisfies this one.
+    """
     monkeypatch.setattr(batch_module, "verify_source", lambda _root: {})
     monkeypatch.setattr(batch_module, "validate_committed", lambda _root: {})
 
-    with pytest.raises(batch_module.BatchError, match="under /tmp"):
+    with pytest.raises(batch_module.BatchError, match="temporary directory"):
         batch_module.emit_packet(
-            Path("/tmp/source"),
+            Path(tempfile.gettempdir()) / "source",
             SCRIPT.parent / "review-packet.json",
             record_limit=1,
             character_limit=1,
         )
+
+
+def test_review_packets_follow_the_resolved_temporary_root_not_a_literal_tmp(
+    batch_module: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sandbox may mount ``/tmp`` read-only and hand the process its own root.
+
+    The guard exists to keep source-bearing packets out of the repository, so it
+    has to ask ``tempfile`` where the temporary tree is rather than assume. The
+    root here is deliberately *outside* ``/tmp`` — under it, a guard that still
+    said ``/tmp`` would pass this and prove nothing. Nothing is created: the
+    guard resolves and compares, so the path need not exist.
+    """
+    session_root = Path("/var/tmp/fivee-review-root")
+    monkeypatch.setattr(tempfile, "tempdir", str(session_root))
+
+    accepted = batch_module._review_output(session_root / "packet.json")
+
+    assert accepted == (session_root / "packet.json").resolve()
+
+
+def test_review_packets_stay_out_of_the_repository_even_when_tmpdir_points_into_it(
+    batch_module: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reading the root from the environment must not hand over the repository.
+
+    ``/tmp`` was its own proof that a packet landed outside the checkout. A
+    caller-controlled root is not, so the refusal is checked on its own terms.
+    """
+    inside = batch_module.REPO_ROOT / ".worktrees" / "pretend-tmp"
+    monkeypatch.setattr(tempfile, "tempdir", str(inside))
+
+    with pytest.raises(batch_module.BatchError, match="below the repository"):
+        batch_module._review_output(inside / "packet.json")
+
+
+def test_the_packet_output_default_lives_under_the_resolved_temporary_root(
+    batch_module: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    session_root = tmp_path / "session-tmp"
+    session_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(session_root))
+
+    parsed = batch_module._parser().parse_args(["--source-root", str(tmp_path), "packet"])
+
+    assert parsed.output == session_root / "srd-catalog-batch.json"
+
+
+def test_pack_validation_scratch_follows_the_resolved_temporary_root(
+    batch_module: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The pre-commit schema check writes reviewed payloads to scratch first.
+
+    Pinning where that scratch lands is what keeps this green on a host whose
+    ``/tmp`` is not writable — the failure it replaces was an ``OSError``.
+
+    The root handed to ``load_packs`` is the only observable: the scratch tree
+    is a ``TemporaryDirectory`` and is gone before the call returns, so there is
+    no published side effect left to assert on afterwards.
+    """
+    session_root = tmp_path / "session-tmp"
+    session_root.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(session_root))
+    seen: list[Path] = []
+    monkeypatch.setattr(
+        content_module,
+        "load_packs",
+        lambda roots, **_kwargs: seen.append(Path(roots[0])),
+    )
+
+    batch_module._validate_pack_payloads({})
+
+    assert seen and seen[0].is_relative_to(session_root.resolve())
 
 
 def test_packet_refuses_an_evidence_path_that_escapes_the_extraction(
