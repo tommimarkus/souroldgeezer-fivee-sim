@@ -592,9 +592,13 @@ on load and pinned by coverage regeneration. Enforcement model.
 release-policy: calver `YYYY.0M.build` (`2026.07.1`); the version source is the
 `version` field of `souroldgeezer-fivee-sim/.claude-plugin/plugin.json`, mirrored by the
 strict-semver `souroldgeezer-fivee-sim/.codex-plugin/plugin.json`, the plugin
-table in [README.md](README.md), `engine/pyproject.toml`, and
+table in [README.md](README.md), `engine/pyproject.toml`,
+`engine/uv.lock`'s entry for the workspace package itself, and
 `fivee_sim.__version__` (PEP 440 and semver strip the month's zero-padding in
-their mirrors; `engine/tests/test_version.py` pins all five to one number). Bumping is
+their mirrors; `engine/tests/test_version.py` pins all six to one number).
+`uv.lock` is the one nothing regenerates as part of bumping — only the next `uv
+sync` or `uv run` does — so refresh it deliberately; it went stale across two
+consecutive releases before it was pinned. Bumping is
 automatic and `main`-only: when integration lands plugin-surface changes
 (`souroldgeezer-fivee-sim/**`) on `main`, bump the source and every mirror directly on
 `main` after the repo's documented verification; a new month restarts the build
