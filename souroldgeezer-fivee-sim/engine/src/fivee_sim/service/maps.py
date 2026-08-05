@@ -37,6 +37,7 @@ from typing import Any, NoReturn
 
 from ..kernel.grid import (
     DiagonalRule,
+    Facing,
     Square,
     TerrainTable,
     distance_feet,
@@ -210,6 +211,8 @@ class _PlaneState:
     features: list[dict[str, Any]]
     default_elevation: int
     elevation: dict[Square, int]
+    #: A storey lights itself: a cellar stays dark whatever the sky is doing.
+    ambient_light: str = "bright"
 
 
 @dataclass(slots=True)
@@ -235,6 +238,9 @@ class _EditState:
     # Payload form, like the features: the canonical shape goes back out
     # untouched, and the document's own parser is the one arbiter of it.
     palette: dict[str, Any] = dataclasses.field(default_factory=dict)
+    #: Payload form again, and read from the document rather than from
+    #: ``as_payload``, which omits it when it is grid north.
+    compass: str = Facing.NORTH.value
     target: int = GROUND_LEVEL
 
     @classmethod
@@ -247,6 +253,7 @@ class _EditState:
             height=document.grid.height,
             legend=dict(document.legend),
             palette=dict(payload.get("palette", {})),
+            compass=document.compass.value,
             levels={
                 index: _PlaneState(
                     name=level.name,
@@ -257,6 +264,7 @@ class _EditState:
                     ),
                     default_elevation=level.elevation.default,
                     elevation=dict(level.elevation.squares),
+                    ambient_light=level.ambient_light,
                 )
                 for index, level in document.levels.items()
             },
@@ -312,17 +320,18 @@ class _EditState:
 
 _EDIT_OPS = (
     "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
-    "remove_feature", "resize", "set_elevation", "set_feature", "set_legend",
-    "set_name", "set_palette", "set_terrain", "toggle_door",
+    "remove_feature", "resize", "set_compass", "set_elevation", "set_feature",
+    "set_legend", "set_name", "set_palette", "set_terrain", "toggle_door",
 )
 
 #: The ops that act on one storey and so accept a ``level``. The rest —
-#: ``set_name``, ``set_legend``, ``set_palette``, ``resize`` — are document-wide
-#: by nature, and taking a level would suggest they could be applied to one
-#: floor alone. ``set_feature`` is the fifth, for a different reason: it edits
-#: the feature its record's id names, wherever that feature stands, and taking a
-#: level would be taking the power to rehouse a fixture on another storey — the
-#: exact silent relocation the remove-and-re-add pair it replaces could do.
+#: ``set_name``, ``set_legend``, ``set_palette``, ``set_compass``, ``resize`` —
+#: are document-wide by nature, and taking a level would suggest they could be
+#: applied to one floor alone. ``set_feature`` is the sixth, for a different
+#: reason: it edits the feature its record's id names, wherever that feature
+#: stands, and taking a level would be taking the power to rehouse a fixture on
+#: another storey — the exact silent relocation the remove-and-re-add pair it
+#: replaces could do.
 _LEVELLED_OPS = frozenset({
     "add_feature", "adjust_elevation", "carve_corridor", "line", "paint",
     "remove_feature", "set_elevation", "set_terrain", "toggle_door",
@@ -335,6 +344,7 @@ _OP_KEYS: dict[str, frozenset[str]] = {
     "paint": frozenset({"cells", "terrain"}),
     "remove_feature": frozenset({"id"}),
     "resize": frozenset({"width", "height", "anchor", "fill"}),
+    "set_compass": frozenset({"compass"}),
     "set_elevation": frozenset({"rect", "cells", "feet", "default"}),
     "set_feature": frozenset({"feature"}),
     "set_legend": frozenset({"glyph", "terrain"}),
@@ -360,15 +370,18 @@ _OP_KEYS = {
 #: its own, stays the document's to refuse.
 _FEATURE_FIELDS = frozenset(
     {
-        "id", "kind", "at", "orientation", "hinge", "swing", "state",
+        "id", "kind", "at", "facing", "orientation", "hinge", "swing", "state",
         "linked_to", "team", "to_level",
         "terrain", "elevation", "affects", "requires", "costs_action", "check",
         "trigger",
     }
 )
-#: The keys that need no shaping at all: copied across as written.
+#: The keys that need no shaping at all: copied across as written. ``facing`` is
+#: among them for the reason the rest are — which eight names it may take, and
+#: that a door may not carry it at all, is the document's to refuse, and it does
+#: so at the ``parse_document`` every edit ends in.
 _PASSED_THROUGH = (
-    "hinge", "swing", "linked_to", "to_level", "terrain", "elevation",
+    "facing", "hinge", "swing", "linked_to", "to_level", "terrain", "elevation",
     "requires", "trigger", "costs_action", "check",
 )
 #: Said on every ``set_feature`` refusal a merge-shaped call trips, because the
@@ -994,6 +1007,22 @@ def _op_set_name(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable
     state.name = name
 
 
+def _op_set_compass(state: _EditState, op: Mapping[str, Any], terrain: TerrainTable) -> None:
+    """Turn the rose. It moves no geometry, and re-aims no door.
+
+    Grid north stays −y whatever this says — a horizontal door still hinges west
+    or east — so this op writes one presentational field and nothing else.
+    """
+    compass = op.get("compass")
+    names = tuple(facing.value for facing in Facing)
+    if not isinstance(compass, str) or compass not in names:
+        _refuse(
+            f"'compass' says where true north lies and must be one of: "
+            f"{', '.join(names)}; got {compass!r}"
+        )
+    state.compass = compass
+
+
 _HANDLERS: dict[str, Any] = {
     "add_feature": _op_add_feature,
     "adjust_elevation": _op_adjust_elevation,
@@ -1002,6 +1031,7 @@ _HANDLERS: dict[str, Any] = {
     "paint": _op_paint,
     "remove_feature": _op_remove_feature,
     "resize": _op_resize,
+    "set_compass": _op_set_compass,
     "set_elevation": _op_set_elevation,
     "set_feature": _op_set_feature,
     "set_legend": _op_set_legend,
@@ -1010,6 +1040,19 @@ _HANDLERS: dict[str, Any] = {
     "set_terrain": _op_set_terrain,
     "toggle_door": _op_toggle_door,
 }
+
+
+def _light_payload(plane: _PlaneState) -> dict[str, str]:
+    """A plane's ambient light, omitted at the default.
+
+    Written the way ``as_payload`` writes it, so a document that never named one
+    round-trips through an edit byte-identically — and one that *did* keeps it,
+    which it did not before: ``_EditState`` rebuilds the whole payload, so a
+    field it does not carry is reset by every unrelated edit.
+    """
+    if plane.ambient_light == "bright":
+        return {}
+    return {"ambient_light": plane.ambient_light}
 
 
 def _height_payload(plane: _PlaneState) -> dict[str, Any]:
@@ -1080,11 +1123,13 @@ def apply_edits(
             "height": state.height,
             "cell_feet": document.grid.cell_feet,
         },
+        "compass": state.compass,
         "legend": dict(state.legend),
         "palette": dict(state.palette),
         "tiles": ["".join(row) for row in state.levels[GROUND_LEVEL].grid],
         "elevation": _height_payload(state.levels[GROUND_LEVEL]),
         "features": state.levels[GROUND_LEVEL].features,
+        **_light_payload(state.levels[GROUND_LEVEL]),
         "provenance": provenance,
     }
     storeys = [
@@ -1094,6 +1139,7 @@ def apply_edits(
             "tiles": ["".join(row) for row in state.levels[index].grid],
             "elevation": _height_payload(state.levels[index]),
             "features": state.levels[index].features,
+            **_light_payload(state.levels[index]),
         }
         for index in sorted(state.levels)
         if index != GROUND_LEVEL

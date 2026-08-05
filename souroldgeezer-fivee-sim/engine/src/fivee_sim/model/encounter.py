@@ -56,6 +56,7 @@ from ..kernel.grid import (
     cover_ac_bonus,
     cube_squares,
     distance_feet,
+    facing_toward,
     find_path,
     has_line_of_sight,
     line_squares,
@@ -148,6 +149,10 @@ class Action:
     #: Explicit intent for action kinds that can use either budget. Effects with
     #: a fixed cost validate this against their declaration.
     as_bonus_action: bool = False
+    #: Where the actor ends up looking, overriding what a move would derive.
+    #: Named ``facing`` rather than ``direction`` because ``direction`` is taken
+    #: on this same dataclass — it aims a cone, and the two are different facts.
+    facing: str | None = None
 
 
 #: Every kind of event the encounter emits. ``Event.kind`` stays a plain ``str``
@@ -226,7 +231,8 @@ class ActionRecord:
             # how ``to_level`` went missing from every cross-storey move.
             for name in ("target", "attack", "item", "spell", "slot_level",
                          "to_position", "center", "direction", "toward", "feature",
-                         "set_open", "to_level", "movement_mode", "as_bonus_action"):
+                         "set_open", "to_level", "movement_mode", "as_bonus_action",
+                         "facing"):
                 value = getattr(self.action, name)
                 if value is not None:
                     action[name] = (
@@ -1223,6 +1229,10 @@ class Encounter:
             "arrival_round": creature.arrival_round,
             "present": creature.arrived,
             "position": list(as_point(creature.position)),
+            # Omitted when nobody is tracking it, which is what keeps every
+            # existing fight's payload byte-identical — and what the replay
+            # bundle's state slots inherit, since they are this dictionary.
+            **({"facing": creature.facing} if creature.facing is not None else {}),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
@@ -1525,6 +1535,12 @@ class Encounter:
         # inside that record's event span; recording first would leave the events
         # orphaned between one action and the next.
         self._reconcile_concentration()
+        # After the action, so an explicit facing beats whatever a move derived,
+        # and so it applies to actions that derive nothing. Set even on a
+        # creature nobody was tracking: naming a facing on the call *is* the act
+        # of tracking it, which is the one way an untracked creature gains one.
+        if action.facing is not None:
+            actor.facing = action.facing
         self.actions.append(ActionRecord(
             index=len(self.actions), round=self.round, actor=actor.name, action=action,
             first_event=before, event_count=len(self.log) - before,
@@ -2527,6 +2543,29 @@ class Encounter:
                 f"{spell.range_feet} ft range"
             )
 
+    def _face_along(self, actor: Creature, frm: Point, to: Point) -> None:
+        """Turn a facing-tracking creature to look the way its move went.
+
+        Three rules, and each is a decision rather than a convenience.
+
+        A creature with ``facing is None`` stays untracked. Facing is opt-in per
+        combatant, so a first step must not silently enrol one — that would add
+        a key to a payload its caller never asked for.
+
+        A move with **no horizontal displacement leaves the facing alone**: a
+        zero-distance move, a connector ride from the square you already stand
+        on, a flying storey change straight up. The creature did not travel, so
+        it did not turn, and :func:`facing_toward` refuses a bearing from a
+        square to itself rather than inventing north.
+
+        And the bearing is taken over the leg that ended the move, not the whole
+        journey, so a mover that rounded a corner faces the way it was last
+        going rather than back at where it set off.
+        """
+        if actor.facing is None or frm == to:
+            return
+        actor.facing = str(facing_toward(frm, to))
+
     def _do_move(self, actor: Creature, action: Action, rng: Random) -> None:
         """Move on the open plane: straight to the destination, provoking on the way.
 
@@ -2564,6 +2603,7 @@ class Encounter:
 
         if self._disengaged[actor.name]:
             actor.position = destination
+            self._face_along(actor, origin, destination)
             return
         samples = _segment_samples(origin, destination)
         for previous, step in zip(samples, samples[1:], strict=False):
@@ -2585,8 +2625,10 @@ class Encounter:
                 # state — not the move event's declared destination — is the truth.
                 move_event.data["destination"] = as_point(actor.position)
                 move_event.data["completed"] = False
+                self._face_along(actor, origin, as_point(actor.position))
                 return
         actor.position = destination
+        self._face_along(actor, origin, destination)
 
     def _do_move_mapped(self, actor: Creature, action: Action, rng: Random) -> None:
         """Move on the battle map: routed, terrain-costed, provoking on the way.
@@ -2754,7 +2796,13 @@ class Encounter:
                 move_event.data["destination"] = as_point(actor.position)
                 move_event.data["to_level"] = actor.level
                 move_event.data["completed"] = False
+                self._face_along(actor, square_center(previous), square_center(step))
                 return
+        # The walk completed, so the last leg of the route is the leg that ended
+        # it. A route of one square — a connector ride from where you already
+        # stand — has no leg, and _face_along leaves the facing alone.
+        if len(route) >= 2:
+            self._face_along(actor, square_center(route[-2]), square_center(route[-1]))
         # The connector is ridden last, and only by a mover still standing: one
         # dropped on the stairs falls at its foot, on the level it was walking.
         if to_level != level:
@@ -2804,6 +2852,7 @@ class Encounter:
         prior_level = actor.level
         actor.position = destination
         actor.level = to_level
+        self._face_along(actor, origin, destination)
         self._emit(
             "move",
             actor.name,

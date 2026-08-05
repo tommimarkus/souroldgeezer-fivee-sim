@@ -839,6 +839,166 @@ class TestEditorFixturePreview:
         assert "renderDoorControls" in info
 
 
+class TestFacingAndCompass:
+    """One direction vocabulary, three carriers, and one glyph for all of them.
+
+    Text and source ordering only, per the module docstring. Whether a chevron
+    actually points north is a behaviour claim and belongs to
+    ``scripts/check-editor-behaviour.mjs`` — but the *first* test in this class
+    is what makes that harness's direction cases mean anything at all, so it
+    lives here rather than there.
+    """
+
+    FACINGS = (
+        "north",
+        "northeast",
+        "east",
+        "southeast",
+        "south",
+        "southwest",
+        "west",
+        "northwest",
+    )
+
+    def test_the_facing_glyph_is_drawn_in_absolute_coordinates(self) -> None:
+        # Load-bearing for a check this file cannot make. The behaviour harness
+        # records moveTo/lineTo arguments exactly as passed, so a chevron drawn
+        # under a translate/rotate pair would record identical coordinates for
+        # all eight facings — every "it points the right way" case there would
+        # pass against a renderer that ignored the facing entirely. The one
+        # transform this file permits is the devicePixelRatio setTransform in
+        # resizeCanvas, which is why it is counted rather than forbidden.
+        source = read("renderer.js")
+        assert "ctx.rotate(" not in source
+        assert "ctx.translate(" not in source
+        assert source.count("setTransform(") == 1
+
+    def test_the_renderer_spells_grid_north_as_minus_y(self) -> None:
+        # The convention the map format has always assumed and never written
+        # down: a horizontal door swings north or south, meaning -y and +y. A
+        # table that spelled it the other way would silently mirror every
+        # chevron and every rose against the doors already on disk.
+        source = read("renderer.js")
+        assert '"north": [0, -1]' in source
+        assert '"southeast": [1, 1]' in source
+
+    def test_one_chevron_serves_all_three_carriers(self) -> None:
+        # A creature, a map feature, and the map itself. Three glyphs would be
+        # three chances to disagree about what "northeast" looks like. Counted,
+        # so a fourth call site has to be an argued-for change rather than a
+        # quiet one: the definition plus exactly three uses.
+        source = read("renderer.js")
+        assert source.count("function drawChevron(") == 1
+        assert source.count("drawChevron(") == 4
+        assert "token.facing" in source
+        assert "feature.facing" in source
+        assert "doc.compass" in source
+
+    @pytest.mark.parametrize("page", PAGES)
+    def test_only_the_renderer_turns_a_name_into_a_direction(self, page: str) -> None:
+        # The pages offer the names; the renderer alone knows which way each
+        # one points. An offset table in a page is how a drawn chevron and a
+        # drawn rose come to disagree about where northeast is.
+        assert "FACING_UNITS" not in read(page)
+
+    def test_the_editor_carries_the_facing_and_compass_controls_once_each(self) -> None:
+        # Exactly once apiece: byId() answers with the first of a duplicated
+        # id, so a copy-paste double would wire a control to the wrong node
+        # while a bare presence check stayed green.
+        source = read("editor.html")
+        for element_id in ("facing-config", "feature-facing", "map-compass"):
+            assert source.count(f'id="{element_id}"') == 1, element_id
+
+    def test_the_editor_names_the_eight_facings_exactly_once(self) -> None:
+        # Two controls offer them — a feature's facing and the document's
+        # compass — and a second list is how the two come to disagree about
+        # what the format accepts.
+        source = read("editor.html")
+        assert source.count("var FACING_NAMES = [") == 1
+        for name in self.FACINGS:
+            assert f'"{name}"' in source, name
+
+    def test_the_editor_offers_a_door_no_facing_at_all(self) -> None:
+        # The format refuses `facing` on a door, because a door already says
+        # where it points three ways over. A control that offered it a fourth
+        # answer would author documents the server rejects on save.
+        assert (
+            'renderFacingControls(feature.kind === "door" ? null : feature)'
+            in read("editor.html")
+        )
+
+    def test_the_facing_panel_states_its_own_hidden_rule(self) -> None:
+        # The id rule sets display:grid, which outranks the browser's default
+        # [hidden] rule unless the page states the contract explicitly — so
+        # without this line the panel stays on screen for the doors it must
+        # never be offered to, and the guard above would be invisible. The same
+        # failure #empty-note[hidden] exists for in the viewer.
+        assert (
+            "#door-config[hidden], #facing-config[hidden] { display: none; }"
+            in read("editor.html")
+        )
+
+    def test_the_inspector_reports_a_features_facing(self) -> None:
+        # Anchored on the rendered label, like the fixture keys above: the bare
+        # word appears in the control wiring and in the prose around it.
+        source = read("editor.html")
+        info = source[
+            source.index("function renderFeatureInfo(") : source.index(
+                'byId("btn-delete-feature").addEventListener'
+            )
+        ]
+        assert '"facing: "' in info
+
+    def test_the_compass_is_a_property_of_the_document_not_a_storey(self) -> None:
+        # A building does not have one true north per floor. Anchored on the
+        # read handed to the renderer, because `plane().compass` would draw
+        # correctly on the ground and silently stop upstairs.
+        source = read("editor.html")
+        assert "compass: doc.compass" in source
+        assert "plane().compass" not in source
+
+    def test_the_editor_carries_the_compass_through_the_document_plumbing(self) -> None:
+        # contentOf feeds undo, the dirty check and the save digest; a layer
+        # missing from it is one every unrelated edit silently discards.
+        source = read("editor.html")
+        assert "compass: payload.compass" in source
+        assert "doc.compass = previous.compass" in source
+
+    def test_north_is_written_by_being_left_out(self) -> None:
+        # The format's canonical shape, which the server writes: a map whose
+        # true north is the grid's carries no compass at all, so a page that
+        # wrote the key back would make every such document differ from the one
+        # the server would have saved — and stamp provenance.edited for it.
+        assert 'if (chosen === "north") { delete doc.compass; }' in read("editor.html")
+
+    def test_the_viewer_carries_facing_through_both_token_build_sites(self) -> None:
+        # The viewer builds its token model twice, in two functions, from two
+        # different payloads — the bundle's initial state and whatever
+        # authoritative state a scrub lands on. A pass-through added to one of
+        # them looks entirely correct until a replay is scrubbed.
+        source = read("viewer.html")
+        initial = source[
+            source.index("function initialState") : source.index("function applyAuthoritative")
+        ]
+        authoritative = source[
+            source.index("function applyAuthoritative") : source.index("function checkpointAt")
+        ]
+        frame = source[source.index("function renderFrame") : source.index("var framePending")]
+        assert "facing: creature.facing" in initial
+        assert "token.facing = creature.facing" in authoritative
+        assert "facing: token.facing" in frame
+
+    def test_the_viewer_derives_no_facing_of_its_own(self) -> None:
+        # The engine turns a creature to face its move's final step, and that
+        # derived value rides the state the bundle already serialises. A page
+        # that recomputed it from a move event's origin and destination would
+        # be a second implementation of that rule, free to disagree with the
+        # fight it is replaying.
+        source = read("viewer.html")
+        fold = source[source.index("function fold(") : source.index("function stateAt")]
+        assert "facing" not in fold
+
+
 class TestPagesParse:
     @pytest.mark.parametrize("page", PAGES)
     def test_the_page_opens_with_a_doctype(self, page: str) -> None:

@@ -256,6 +256,7 @@ def execute_act(
     to_level: int | None = None,
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
+    facing: str | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -285,8 +286,10 @@ def execute_act(
     square named by ``to_position`` — and it carries you, charging the rise
     between the two floors as a climb. ``movement_mode`` selects walk, climb,
     swim, or fly; the creature must have that speed, and flight does not need a
-    connector. Illegal actions are refused with the
-    reason rather than silently adjusted.
+    connector. ``facing`` sets where the actor ends up looking, overriding what
+    a move would otherwise derive from the leg that ended it; it changes no roll
+    and is refused unless it names one of the eight grid directions. Illegal
+    actions are refused with the reason rather than silently adjusted.
 
     The audited path is :func:`act`; this is the step it wraps, kept separate
     so the attempt and result records can bracket exactly the work that moves
@@ -346,6 +349,7 @@ def execute_act(
         to_level=to_level,
         movement_mode=selected_mode,
         as_bonus_action=as_bonus_action,
+        facing=specs.parse_facing(facing),
     )
     try:
         events = session.encounter.act(action, session.rng)
@@ -380,6 +384,7 @@ def act(
     to_level: int | None = None,
     movement_mode: str | None = None,
     as_bonus_action: bool = False,
+    facing: str | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
@@ -404,6 +409,7 @@ def act(
         "to_level": to_level,
         "movement_mode": movement_mode,
         "as_bonus_action": as_bonus_action,
+        "facing": specs.parse_facing(facing),
     }
     index, started_at = sessions.attempt_started(
         state, encounter_id, session, "encounter_act", arguments, request_id
@@ -431,6 +437,7 @@ def act(
             to_level,
             movement_mode,
             as_bonus_action,
+            facing,
         )
     except (RequestError, EncounterError) as error:
         sessions.attempt_finished(

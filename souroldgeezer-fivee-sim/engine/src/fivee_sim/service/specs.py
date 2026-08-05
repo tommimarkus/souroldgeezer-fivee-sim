@@ -22,7 +22,7 @@ from typing import Any
 from ..content import ContentRegistry, DataError, make_creature
 from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice
-from ..kernel.grid import DiagonalRule, Point
+from ..kernel.grid import DiagonalRule, Facing, MovementMode, Point
 from ..kernel.rules import Ability, DamageType, Size
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature, DeathRule
@@ -150,6 +150,7 @@ def attack_from_spec(spec: dict[str, Any]) -> AttackOption:
 #: silently ignore the AC, which is the very failure this guard exists to stop.
 LOOKUP_SPEC_KEYS = frozenset({
     "creature", "monster", "label", "team", "position", "level", "arrival_round",
+    "facing",
 })
 DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
@@ -159,8 +160,13 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "resistances", "immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
-    "provenance",
+    "provenance", "facing",
 })
+
+
+#: The eight names a facing may take, as plain strings — the model keeps facing
+#: as a ``str`` for the same reason it keeps a condition as one.
+_FACING_NAMES = frozenset(str(member) for member in Facing)
 
 
 def reject_unknown_keys(spec: dict[str, Any], allowed: frozenset[str]) -> None:
@@ -179,6 +185,25 @@ def reject_unknown_keys(spec: dict[str, Any], allowed: frozenset[str]) -> None:
         )
 
 
+def parse_facing(value: Any) -> str | None:
+    """One of the eight grid directions, or ``None`` for untracked.
+
+    Refused rather than coerced: a misspelled facing that silently became
+    ``None`` would leave a creature untracked while its author believed it was
+    looking somewhere, which is the same class of silent drop that
+    :func:`reject_unknown_keys` exists to stop.
+    """
+    if value is None:
+        return None
+    named = str(value)
+    if named not in _FACING_NAMES:
+        raise RequestError(
+            f"facing must be one of the eight directions, got {named!r}. "
+            f"Valid: {', '.join(sorted(_FACING_NAMES))}"
+        )
+    return named
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -192,7 +217,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
         reject_unknown_keys(spec, DESCRIBED_SPEC_KEYS)
     if named is not None:
         try:
-            return make_creature(
+            looked_up = make_creature(
                 str(named),
                 registry=registry,
                 label=spec.get("label"),
@@ -203,6 +228,12 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             )
         except DataError as error:
             raise RequestError(str(error)) from error
+        # Set after construction rather than threaded through make_creature:
+        # facing is scenario placement like position, not a fact the stat block
+        # carries, and content.py builds creatures for callers who have no
+        # scenario at all.
+        looked_up.facing = parse_facing(spec.get("facing"))
+        return looked_up
     bonus_actions = frozenset(str(value) for value in spec.get("bonus_actions", []))
     unsupported_bonus_actions = sorted(bonus_actions - {"dash", "disengage"})
     if unsupported_bonus_actions:
@@ -226,6 +257,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             ),
             darkvision=int(spec.get("darkvision", 0)),
             blindsight=int(spec.get("blindsight", 0)),
+            facing=parse_facing(spec.get("facing")),
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
             # route. Size gates attack riders like the Wolf's Prone.
@@ -489,4 +521,17 @@ def action_from_journal(arguments: Mapping[str, Any]) -> Action:
         feature=arguments.get("feature"),
         set_open=arguments.get("set_open"),
         to_level=arguments.get("to_level"),
+        # The twin of the hand-written tuple in ``Action.as_dict``, and it has
+        # to be kept in step with it: ``encounters.act`` journals both of these,
+        # and a field rebuilt here as its default replays as a *different
+        # action* than the one recorded. Dropping ``as_bonus_action`` turned a
+        # bonus-action Dash back into an ordinary one, so the action that
+        # legitimately followed it was refused and the resume failed outright.
+        facing=arguments.get("facing"),
+        movement_mode=(
+            MovementMode(str(movement_mode))
+            if (movement_mode := arguments.get("movement_mode")) is not None
+            else None
+        ),
+        as_bonus_action=bool(arguments.get("as_bonus_action", False)),
     )

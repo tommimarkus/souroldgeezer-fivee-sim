@@ -69,6 +69,32 @@ class MovementMode(StrEnum):
     FLY = "fly"
 
 
+class Facing(StrEnum):
+    """One of eight directions, shared by everything in the engine that points.
+
+    **Grid-relative, and permanently so.** North is −y here, matching the y-down
+    coordinate system above and the door hinge and swing vocabulary the map
+    format already spells with these words: a horizontal door swings ``north``
+    or ``south``, and that has meant −y and +y since the format existed. Four of
+    these eight names are therefore already load-bearing on disk, which is why
+    this enum contains them rather than introducing a parallel spelling.
+
+    A map document may separately record where *true* north lies, for a compass
+    rose and for narration. That never redefines these names — a file cannot be
+    made to mean that its ``north`` hinge is a different edge — because a format
+    with two meanings of one word cannot be read by anyone, including us.
+    """
+
+    NORTH = "north"
+    NORTHEAST = "northeast"
+    EAST = "east"
+    SOUTHEAST = "southeast"
+    SOUTH = "south"
+    SOUTHWEST = "southwest"
+    WEST = "west"
+    NORTHWEST = "northwest"
+
+
 class CoverGrade(IntEnum):
     NONE = 0
     HALF = 1
@@ -451,6 +477,52 @@ def sphere_squares(
 
 _CARDINALS = frozenset({(1, 0), (-1, 0), (0, 1), (0, -1)})
 _DIAGONALS = frozenset({(1, 1), (1, -1), (-1, 1), (-1, -1)})
+
+#: The unit offset each :class:`Facing` points along. These are exactly the eight
+#: offsets :func:`cone_squares` accepts — pinned by test, because a facing the
+#: cone rasteriser refused would be one a creature could hold and not act on.
+FACING_OFFSETS: Mapping[Facing, tuple[int, int]] = {
+    Facing.NORTH: (0, -1),
+    Facing.NORTHEAST: (1, -1),
+    Facing.EAST: (1, 0),
+    Facing.SOUTHEAST: (1, 1),
+    Facing.SOUTH: (0, 1),
+    Facing.SOUTHWEST: (-1, 1),
+    Facing.WEST: (-1, 0),
+    Facing.NORTHWEST: (-1, -1),
+}
+
+_FACING_BY_OFFSET = {offset: facing for facing, offset in FACING_OFFSETS.items()}
+
+
+def facing_toward(origin: Square, target: Square) -> Facing:
+    """The facing that best matches the bearing from ``origin`` to ``target``.
+
+    Exact integer arithmetic, like the rest of this module: a diagonal wins when
+    the bearing is nearer 45° than either axis, and that boundary sits at 22.5°,
+    where the shorter leg is exactly ``sqrt(2) - 1`` times the longer. Squaring
+    both sides keeps the comparison in integers — and because ``sqrt(2)`` is
+    irrational, **no integer bearing can land on the boundary**, so the snap is
+    total and there is no tie to break. That is a property worth knowing rather
+    than a coincidence: it is why this function has no rounding policy to
+    document and no caller has to care which way a tie would have gone.
+
+    A square has no bearing to itself, and that is refused rather than defaulted
+    — a creature whose move ended where it began has not turned, and handing it
+    ``north`` would invent a fact.
+    """
+    dx = target[0] - origin[0]
+    dy = target[1] - origin[1]
+    if dx == 0 and dy == 0:
+        raise ValueError(f"no bearing from {origin!r} to itself")
+    across, down = abs(dx), abs(dy)
+    shorter, longer = (across, down) if across < down else (down, across)
+    if (shorter + longer) ** 2 > 2 * longer**2:
+        step = (1 if dx > 0 else -1, 1 if dy > 0 else -1)
+        return _FACING_BY_OFFSET[step]
+    if across > down:
+        return Facing.EAST if dx > 0 else Facing.WEST
+    return Facing.SOUTH if dy > 0 else Facing.NORTH
 
 
 def cone_squares(

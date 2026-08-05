@@ -122,12 +122,16 @@ header .spacer { flex: 1; }
 }
 #readout { font-family: ui-monospace, monospace; color: var(--muted); min-height: 2.6em; }
 #feature-info { font-family: ui-monospace, monospace; white-space: pre-wrap; }
-#door-config {
+/* The two per-feature control panels share one shape, and the `[hidden]` rule
+   is not decoration: an id rule setting `display: grid` outranks the browser's
+   default [hidden] rule, so a panel that did not state this would stay on
+   screen for every feature that has no business showing it. */
+#door-config, #facing-config {
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 8px;
   align-items: center; margin: 8px 0;
 }
-#door-config[hidden] { display: none; }
-#door-config select { min-width: 0; width: 100%; }
+#door-config[hidden], #facing-config[hidden] { display: none; }
+#door-config select, #facing-config select { min-width: 0; width: 100%; }
 /* The scroll lives on the status, not the footer: a long refusal scrolls
    inside its own column and the version stays pinned in the corner. */
 footer {
@@ -216,6 +220,9 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <option value="dim">dim</option>
       <option value="darkness">darkness</option>
     </select>
+    <label for="map-compass">True north</label>
+    <select id="map-compass"
+      title="where true north lies relative to the grid; grid north stays up"></select>
     <button id="btn-stack" title="show the other storeys through this one">Stack</button>
     <button id="btn-preview"
       title="draw the map as if the ticked fixtures stood open">Preview</button>
@@ -260,6 +267,10 @@ dialog .buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top
       <select id="door-swing"></select>
       <label for="door-linked">linked door</label>
       <select id="door-linked"></select>
+    </div>
+    <div id="facing-config" hidden>
+      <label for="feature-facing">facing</label>
+      <select id="feature-facing"></select>
     </div>
     <button id="btn-delete-feature" hidden>Delete feature</button>
     <h3>Ground</h3>
@@ -557,7 +568,11 @@ if (typeof FiveeRenderer === "undefined") {
   function renderable() {
     return { grid: doc.grid, legend: doc.legend, palette: doc.palette,
       tiles: plane().tiles, features: plane().features,
-      ambient_light: plane().ambient_light || "bright" };
+      ambient_light: plane().ambient_light || "bright",
+      /* Document-wide, like the legend and the palette: a building does not
+         have one true north per storey. Passed through undefined when the
+         document states none, which is what makes the renderer draw no rose. */
+      compass: doc.compass };
   }
   /* Every layer the document carries. The page paints ground elevation and
      terrain color now, and keeps both in the server's canonical shape —
@@ -570,7 +585,8 @@ if (typeof FiveeRenderer === "undefined") {
       name: payload.name, grid: payload.grid, legend: payload.legend,
       tiles: payload.tiles, features: payload.features,
       elevation: payload.elevation, levels: payload.levels,
-      palette: payload.palette, ambient_light: payload.ambient_light
+      palette: payload.palette, ambient_light: payload.ambient_light,
+      compass: payload.compass
     });
   }
   function snapshot() {
@@ -594,6 +610,8 @@ if (typeof FiveeRenderer === "undefined") {
     else { doc.levels = previous.levels; }
     if (previous.ambient_light === undefined) { delete doc.ambient_light; }
     else { doc.ambient_light = previous.ambient_light; }
+    if (previous.compass === undefined) { delete doc.compass; }
+    else { doc.compass = previous.compass; }
     if (levelIndices().indexOf(activeLevel) === -1) { activeLevel = 0; }
     renderLevels();
     if (previous.palette === undefined) { delete doc.palette; }
@@ -606,6 +624,7 @@ if (typeof FiveeRenderer === "undefined") {
     rebuildElevationCache();
     byId("elevation-default").value = elevationDefault();
     byId("ambient-light").value = plane().ambient_light || "bright";
+    renderCompassControl();
     byId("map-name").value = doc.name;
     renderLegend();
     redraw();
@@ -658,6 +677,7 @@ if (typeof FiveeRenderer === "undefined") {
     renderElevationLegend();  /* the cache rebuilt before heightsOn was known */
     byId("elevation-default").value = elevationDefault();
     byId("ambient-light").value = plane().ambient_light || "bright";
+    renderCompassControl();
     byId("map-name").value = doc.name;
     var box = canvas.getBoundingClientRect();
     view = R.fitView(doc.grid.width, doc.grid.height, box.width, box.height);
@@ -1119,11 +1139,16 @@ if (typeof FiveeRenderer === "undefined") {
       info.textContent = "none";
       remove.hidden = true;
       renderDoorControls(null);
+      renderFacingControls(null);
       renderFeatureControls(null);
       return;
     }
     var lines = ["id: " + feature.id, "kind: " + feature.kind,
       "at: [" + feature.at + "]"];
+    /* Between `at` and `orientation`, which is where the document writes it:
+       the geometry keys read together, and a panel that ordered them its own
+       way would make a saved file harder to check against what it shows. */
+    if (feature.facing) { lines.push("facing: " + feature.facing); }
     if (feature.orientation) { lines.push("orientation: " + feature.orientation); }
     if (feature.hinge) { lines.push("hinge: " + feature.hinge); }
     if (feature.swing) { lines.push("swing: " + feature.swing); }
@@ -1188,6 +1213,11 @@ if (typeof FiveeRenderer === "undefined") {
     info.textContent = lines.join("\n");
     remove.hidden = false;
     renderDoorControls(feature.kind === "door" ? feature : null);
+    /* The mirror image of the line above, and for the same reason the format
+       refuses the key on a door: a door already says where it points three
+       ways over, and a control offering it a fourth answer would author a
+       document the server will not accept. */
+    renderFacingControls(feature.kind === "door" ? null : feature);
     renderFeatureControls(feature);
   }
   function renderFeatureControls(feature) {
@@ -1259,6 +1289,55 @@ if (typeof FiveeRenderer === "undefined") {
     });
     select.value = value;
   }
+  /* The eight names, once. Two controls offer them — a feature's facing and the
+     document's compass — and a second list is how the two come to disagree
+     about what the format accepts. Grid-relative, permanently: north is up on
+     this canvas whatever the compass says. */
+  var FACING_NAMES = ["north", "northeast", "east", "southeast",
+    "south", "southwest", "west", "northwest"];
+  function facingChoices(none) {
+    var choices = none === null ? [] : [{ value: "", label: none }];
+    return choices.concat(FACING_NAMES.map(function (name) {
+      return { value: name, label: name };
+    }));
+  }
+  function renderFacingControls(feature) {
+    var host = byId("facing-config");
+    host.hidden = feature === null;
+    if (feature === null) { return; }
+    setSelectChoices(byId("feature-facing"), facingChoices("not set"),
+      FACING_NAMES.indexOf(feature.facing) === -1 ? "" : feature.facing);
+  }
+  byId("feature-facing").addEventListener("change", function () {
+    var feature = selectedFeatureId === null ? null : featureById(selectedFeatureId);
+    /* A door cannot reach this control — renderFeatureInfo hides it for one —
+       but the guard is here as well as there, because the two are wired
+       independently and a document the server refuses is the cost of the gap. */
+    if (!feature || feature.kind === "door") { return; }
+    snapshot();
+    var chosen = byId("feature-facing").value;
+    /* Omitted rather than written empty: the format's own canonical shape, so
+       clearing the control leaves the record byte-identical to one that never
+       carried the key. */
+    if (chosen) { feature.facing = chosen; } else { delete feature.facing; }
+    renderFeatureInfo();
+    redraw();
+  });
+  function renderCompassControl() {
+    setSelectChoices(byId("map-compass"), facingChoices(null),
+      doc && FACING_NAMES.indexOf(doc.compass) !== -1 ? doc.compass : "north");
+  }
+  byId("map-compass").addEventListener("change", function () {
+    if (!doc) { return; }
+    snapshot();
+    var chosen = byId("map-compass").value;
+    /* North is the default and is omitted, the way `bright` ambient light is:
+       the server writes the document that way, so a map whose true north is
+       the grid's round-trips byte-identically and draws no rose — there is
+       nothing for one to tell a reader. */
+    if (chosen === "north") { delete doc.compass; } else { doc.compass = chosen; }
+    redraw();
+  });
   function doorAxisBetween(left, right) {
     var dx = Math.abs(left.at[0] - right.at[0]);
     var dy = Math.abs(left.at[1] - right.at[1]);
