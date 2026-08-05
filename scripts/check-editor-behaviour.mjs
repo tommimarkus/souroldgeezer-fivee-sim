@@ -213,7 +213,8 @@ const EDITOR_IDS = [
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
   "btn-play", "btn-back", "btn-forward", "speed", "embedded-data", "level-select",
-  "follow-level", "sight-cones", "combatant-state",
+  "follow-level", "sight-cones", "combatant-state", "adventure-chapters",
+  "chapter-select",
 ];
 const HOME_IDS = [
   "operations", "ops-status", "ops-count", "link-openapi", "engine-version",
@@ -2175,6 +2176,153 @@ await suite("viewer.html: the served replay list", "the page sandbox in makePage
     check("an unknown deep link asks for nothing and draws nothing",
       stale.requests.length === 1 && stale.renders.length === 0,
       show([stale.requests, stale.renders.length]));
+  });
+
+function adventureEnvelope(chapters) {
+  const envelope = {
+    format: "fivee-sim-adventure-replay",
+    format_version: 1,
+    engine_version: "test",
+    adventure: {
+      id: "adv-1", name: "the sunken road", created_at: "2026-08-05T00:00:00Z",
+      status: "finalized",
+    },
+    /* Copied, never nested by reference. A case that breaks a chapter on
+       purpose — there is one below — would otherwise be breaking the caller's
+       own bundle, and the next envelope built from it would carry the damage
+       into a case that never asked for it. */
+    chapters: chapters.map((replay, index) => ({
+      index,
+      encounter_id: "enc-" + (index + 1),
+      linked_at: "2026-08-05T00:0" + index + ":00Z",
+      carried: index ? ["Hero"] : [],
+      replay: copy(replay),
+    })),
+  };
+  /* Composed the way the service composes it, hashes included — not because
+   * the page checks them (it deliberately does not; the envelope is Python's
+   * to grade) but so this fixture cannot quietly drift into a shape the real
+   * exporter would never write. */
+  envelope.integrity = {
+    algorithm: "sha256",
+    adventure: canonicalHash(envelope.adventure),
+    chapters: canonicalHash(envelope.chapters),
+  };
+  return envelope;
+}
+
+await suite("viewer.html: an adventure's chapters", "the page sandbox in makePage()",
+  async () => {
+    /* An adventure's replay nests whole fights. The picker that moves between
+     * them is the one viewer control that must work with *no server*: an
+     * envelope is never in the served listing — `list_replays` filters on the
+     * replay format — so it only ever arrives as a file or the embedded slot.
+     *
+     * So every case below runs with no injected config, and each one asserts
+     * `requests.length === 0` alongside what it is really checking. That is the
+     * claim text cannot make: a grep can see there is no fetch in the chapter
+     * code, but only a run can say the boot block reached it without one. */
+    const first = replayBundle(["door-1"]);
+    const second = replayBundle([]);
+    second.name = "the second stand";
+    second.seed = 88;
+
+    /* 1. Embedded: the first chapter plays and the picker offers them all. */
+    const run = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(adventureEnvelope([first, second])) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    run.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("an embedded adventure plays its first chapter with no request",
+      run.renders.length > 0 && run.requests.length === 0 && run.alerts.length === 0,
+      show([run.renders.length, run.requests, run.alerts]));
+    check("and the title is the fight's, not the run's",
+      run.element("title").textContent === "sluice fight",
+      run.element("title").textContent);
+    check("the chapter picker reveals itself, one option per chapter",
+      run.element("adventure-chapters").hidden === false
+        && run.element("chapter-select").children.length === 2,
+      show([run.element("adventure-chapters").hidden,
+        run.element("chapter-select").children.length]));
+    check("and each option names the fight it will play",
+      /* The length is part of the claim: `every` on an empty picker is true,
+         so without it this case passes against a control with nothing in it. */
+      run.element("chapter-select").children.length === 2
+        && run.element("chapter-select").children.every(
+        (option, index) => option.textContent.indexOf("enc-" + (index + 1)) !== -1),
+      show(run.element("chapter-select").children.map((o) => o.textContent)));
+
+    /* 2. Choosing a later chapter swaps the fight, through the shared loader. */
+    const drawn = run.renders.length;
+    run.element("chapter-select").value = "1";
+    run.element("chapter-select").dispatch("change");
+    await flush();
+    check("choosing a chapter plays that fight instead",
+      run.element("title").textContent === "the second stand"
+        && run.element("seed").textContent === "seed 88",
+      show([run.element("title").textContent, run.element("seed").textContent]));
+    check("and it reached the canvas without asking a server for anything",
+      run.renders.length > drawn && run.requests.length === 0,
+      show([drawn, run.renders.length, run.requests]));
+
+    /* 3. An ordinary replay must not grow a picker with nothing in it. */
+    const plain = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(replayBundle(["door-1"])) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    plain.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("a plain replay leaves the chapter picker hidden",
+      plain.renders.length > 0 && plain.element("adventure-chapters").hidden === true,
+      show([plain.renders.length, plain.element("adventure-chapters").hidden]));
+
+    /* 4. A chapter that is not a playable bundle is refused by the validator
+     *    this page already carries, and refused *by name* — "chapter 2" rather
+     *    than one opaque complaint about the file. */
+    const broken = adventureEnvelope([first, second]);
+    delete broken.chapters[1].replay.events;
+    const refused = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(broken) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    refused.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    refused.element("chapter-select").value = "1";
+    refused.element("chapter-select").dispatch("change");
+    await flush();
+    check("a chapter that is not a playable bundle names itself",
+      refused.alerts.length === 1 && refused.alerts[0].indexOf("chapter 2") !== -1,
+      show(refused.alerts));
+
+    /* 5. An envelope with no chapters at all is a file, not a crash. */
+    const empty = makePage({
+      canvasIds: ["stage"],
+      seed: { "embedded-data": JSON.stringify(adventureEnvelope([])) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    empty.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("an adventure with no chapters says so instead of throwing",
+      empty.alerts.length === 1 && empty.renders.length === 0
+        && empty.element("adventure-chapters").hidden === true,
+      show([empty.alerts, empty.renders.length]));
+
+    /* 6. The same envelope dropped as a file, which is how one actually
+     *    arrives: `adventure.replay` writes a .json nobody has embedded. */
+    const dropped = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" },
+      hiddenIds: VIEWER_HIDDEN });
+    dropped.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    await dropped.drop(adventureEnvelope([first, second]), "the-sunken-road-adv-1.json");
+    check("a dropped adventure file opens the same way an embedded one does",
+      dropped.renders.length > 0
+        && dropped.element("chapter-select").children.length === 2
+        && dropped.requests.length === 0,
+      show([dropped.renders.length, dropped.element("chapter-select").children.length]));
   });
 
 /* --- editor.html ---------------------------------------------------------- */
