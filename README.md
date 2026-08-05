@@ -35,7 +35,7 @@ live play uses.
 
 | Plugin | Version | Skill | Claude agent |
 |---|---:|---|---|
-| `souroldgeezer-fivee-sim` | `2026.08.37` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
+| `souroldgeezer-fivee-sim` | `2026.08.38` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md) |
 
 ## Install
 
