@@ -47,6 +47,22 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
         with pytest.raises(RequestError, match="combatant spec is missing 'ac'"):
             api.encounter_create([{"name": "Thora", "team": "party", "max_hp": 30}])
 
+    def test_a_value_outside_a_closed_vocabulary_names_the_field(self) -> None:
+        """A caller's bad enum value is the caller's error, not the engine's.
+
+        Every one of these reached ``Ability(...)``/``Size(...)`` raw and left as
+        an uncaught ``ValueError``, which the HTTP adapter can only render as a
+        500 ``internal`` — telling the caller the engine broke when in fact the
+        request did, and offering nothing to fix.
+        """
+        for key, bad in (
+            ("spellcasting_ability", "moxie"),
+            ("size", "enormous"),
+            ("death_rule", "explodes"),
+        ):
+            with pytest.raises(RequestError, match=f"combatant key '{key}'"):
+                api.encounter_create([{**HERO, key: bad}, dict(GOBLIN)])
+
     def test_a_lone_combatant_with_an_unreadable_key_names_the_key(self) -> None:
         # The other refusal ``creature_from_spec`` owns, to show the reorder put
         # the whole shape check in front of the count rather than one branch.

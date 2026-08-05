@@ -340,7 +340,7 @@ class TestHealingScalesWithTheCaster:
 
         assert with_mod.results[0].healed == without.results[0].healed
 
-    def test_a_negative_modifier_never_heals_less_than_the_dice_alone(self) -> None:
+    def test_a_negative_modifier_never_heals_a_negative_amount(self) -> None:
         # A caster with a penalty is unusual but expressible, and healing for a
         # negative number would drain the target on a low roll.
         cure = spellbook()["Cure Wounds"]
