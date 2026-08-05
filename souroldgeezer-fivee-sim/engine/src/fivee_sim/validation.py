@@ -158,6 +158,24 @@ class Reader:
             return default
         return value
 
+    def optional_integer(self, key: str, *, minimum: int | None = None) -> int | None:
+        """Like :meth:`integer`, but ``None`` when the key is absent.
+
+        For a field where "not stated" and "stated as zero" are different
+        facts — a printed Initiative bonus, say — and a defaulted ``0`` would
+        erase that distinction.
+        """
+        value = self._record.get(key)
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int):
+            self.fail(key, f"must be a whole number, got {value!r}")
+            return None
+        if minimum is not None and value < minimum:
+            self.fail(key, f"must be at least {minimum}, got {value}")
+            return None
+        return value
+
     def boolean(self, key: str, *, default: bool = False) -> bool:
         value = self._record.get(key)
         if value is None:

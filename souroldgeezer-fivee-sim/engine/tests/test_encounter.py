@@ -138,6 +138,52 @@ class TestInitiative:
         )
         assert encounter.order == ["Alpha", "Bravo"]
 
+    def test_a_printed_initiative_bonus_replaces_the_dexterity_modifier(self) -> None:
+        # SRD 5.2.1, Initiative: the stat block's printed Initiative line is the
+        # authority. Aboleth prints +7 against a −1 Dexterity modifier — this is
+        # that shape, not the bundled six, none of which differ.
+        printed = fighter()
+        printed.initiative_bonus = 7
+        observer = fighter("Observer", team="foes")
+        encounter = Encounter([printed, observer], FixedRandom(10))
+        # Dexterity modifier would have given 12; the printed bonus gives 17.
+        assert encounter.initiative == {"Thora": 17, "Observer": 12}
+
+    def test_a_creature_with_no_printed_bonus_rolls_exactly_as_it_did_before(
+        self,
+    ) -> None:
+        # Regression pin: ``initiative_bonus`` defaults to ``None`` and falls back
+        # to the Dexterity modifier, unchanged.
+        plain = fighter()
+        assert plain.initiative_bonus is None
+        encounter = Encounter([plain, fighter("Observer", team="foes")], FixedRandom(10))
+        assert encounter.initiative == {"Thora": 12, "Observer": 12}
+
+    def test_a_printed_bonus_of_zero_is_honoured_and_not_treated_as_absent(
+        self,
+    ) -> None:
+        # ``0`` is a legitimate printed bonus and must be distinguishable from
+        # "not stated" — fighter's Dexterity modifier is +2, so a fallback would
+        # give 12 rather than the printed 10.
+        zeroed = fighter()
+        zeroed.initiative_bonus = 0
+        encounter = Encounter([zeroed, fighter("Observer", team="foes")], FixedRandom(10))
+        assert encounter.initiative == {"Thora": 10, "Observer": 12}
+
+    def test_the_tie_break_still_reads_dexterity_even_under_a_printed_bonus(
+        self,
+    ) -> None:
+        # The SRD tie-break is Dexterity modifier in its own right, not a
+        # stand-in for the printed bonus — it must keep reading Dexterity even
+        # for a creature whose total came from a printed bonus instead.
+        plain = fighter("Alpha", team="a")  # Dexterity 14, modifier +2.
+        printed = fighter("Bravo", team="b")
+        printed.abilities[Ability.DEXTERITY] = 18  # Modifier +4: would win ties.
+        printed.initiative_bonus = 2  # Ties the total with Alpha's +2 modifier.
+        encounter = Encounter([plain, printed], FixedRandom(10))
+        assert encounter.initiative == {"Alpha": 12, "Bravo": 12}
+        assert encounter.order == ["Bravo", "Alpha"]
+
     def test_an_encounter_needs_two_combatants(self) -> None:
         with pytest.raises(EncounterError, match="at least two"):
             Encounter([fighter()], Random(1))

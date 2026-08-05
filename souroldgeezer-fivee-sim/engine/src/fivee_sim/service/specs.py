@@ -187,6 +187,7 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
+    "initiative_bonus",
     "resistances", "immunities", "condition_immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
     "provenance", "facing",
@@ -434,6 +435,11 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             spellcasting_ability=(
                 _closed(Ability, spec["spellcasting_ability"], "spellcasting_ability")
                 if spec.get("spellcasting_ability") is not None
+                else None
+            ),
+            initiative_bonus=(
+                int(spec["initiative_bonus"])
+                if spec.get("initiative_bonus") is not None
                 else None
             ),
             resistances=frozenset(

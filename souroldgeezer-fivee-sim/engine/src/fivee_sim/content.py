@@ -154,6 +154,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "spells", "spell_slots", "spell_save_dc", "spellcasting_ability",
     "spell_attack_bonus", "items", "conditions", "condition_immunities",
     "immunities", "resistances", "vulnerabilities", "pack_tactics", "undead_fortitude",
+    "initiative_bonus",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -813,6 +814,10 @@ def _parse_creature(
     reader.integer("spell_save_dc", default=10, minimum=1)
     reader.integer("spell_attack_bonus")
     reader.enum("spellcasting_ability", Ability)
+    # ``None`` when absent, not defaulted to 0 like the ordinary integer
+    # fields above: a stat block's printed Initiative bonus and "not printed"
+    # are different facts, and a defaulted 0 would erase that distinction.
+    reader.optional_integer("initiative_bonus")
     reader.string("team")
     # Validated as a faithful transcription and then discarded: no field on
     # Creature carries it, and Creature.from_record never reads it. See the

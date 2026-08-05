@@ -365,6 +365,17 @@ class Creature:
     #: flat numbers — a stat block prints those, and deriving them would need a
     #: proficiency bonus no creature here carries.
     spellcasting_ability: Ability | None = None
+    #: A stat block's printed Initiative bonus, used in place of the Dexterity
+    #: modifier when present. ``None`` rather than a defaulted ``0``, for the
+    #: same reason ``spellcasting_ability`` defaults to ``None`` above: a sheet
+    #: that never said must roll exactly as it always did, and ``0`` is itself
+    #: a legitimate printed bonus that has to stay distinguishable from "not
+    #: stated". SRD 5.2.1, *Initiative*: "Your Initiative score equals 10 plus
+    #: your Dexterity modifier" — a printed exception overrides that formula,
+    #: and 33% of the SRD monster catalog prints one. The tie-break on equal
+    #: totals stays on the Dexterity modifier regardless: that is the SRD's own
+    #: tie-break rule, not a stand-in for this bonus.
+    initiative_bonus: int | None = None
     conditions: set[str] = field(default_factory=set)
     concentrating_on: str | None = None
     #: Usable items, name to quantity held. Quantity *is* the charge count.
@@ -497,6 +508,11 @@ class Creature:
             spellcasting_ability=(
                 Ability(record["spellcasting_ability"])
                 if record.get("spellcasting_ability") is not None
+                else None
+            ),
+            initiative_bonus=(
+                int(record["initiative_bonus"])
+                if record.get("initiative_bonus") is not None
                 else None
             ),
             items={str(k): int(v) for k, v in record.get("items", {}).items()},

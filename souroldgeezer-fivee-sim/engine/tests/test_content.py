@@ -2161,3 +2161,51 @@ class TestSpellcastingModifierSchema:
         )
         assert "spellcasting_ability" in fields(diagnostics)
         assert any("is not valid; must be one of" in p for p in problems(diagnostics))
+
+
+class TestInitiativeBonusSchema:
+    """``initiative_bonus``: a printed Initiative score is the stat block's
+    authority, not the Dexterity modifier — SRD 5.2.1, *Initiative*.
+    """
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "loremaster.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Loremaster", "ac": 13, "max_hp": 20,
+                "abilities": {"dexterity": 8}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_creature_carries_its_printed_initiative_bonus(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, initiative_bonus=7)],
+            builtin="exclude", include_environment=False,
+        )
+        loremaster = Creature.from_record(
+            registry.creatures["Vale Loremaster"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert loremaster.initiative_bonus == 7
+
+    def test_a_creature_without_one_falls_back_to_none(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        loremaster = Creature.from_record(
+            registry.creatures["Vale Loremaster"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert loremaster.initiative_bonus is None
+
+    def test_a_non_integer_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, initiative_bonus="seven")],
+            builtin="exclude", include_environment=False,
+        )
+        assert "initiative_bonus" in fields(diagnostics)
+        assert any("must be a whole number" in p for p in problems(diagnostics))

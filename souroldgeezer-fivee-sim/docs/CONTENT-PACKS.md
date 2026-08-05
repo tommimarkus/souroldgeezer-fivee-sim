@@ -95,10 +95,22 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
-`condition_immunities`,
+`condition_immunities`, `initiative_bonus`,
 `unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
+
+`initiative_bonus` is a stat block's printed Initiative score, used in place of
+the Dexterity modifier when present — SRD 5.2.1, *Initiative*: "Your
+Initiative score equals 10 plus your Dexterity modifier," but the printed line
+on a stat block is that creature's own authority, and it disagrees with the
+modifier on roughly a third of the SRD monster catalog (the Aboleth prints +7
+against a −1 Dexterity modifier; the Balor +14 against +2). Omit it and a
+creature rolls its Dexterity modifier exactly as before — `0` is a legitimate
+printed bonus and is honoured as such rather than treated as "not stated." The
+tie-break on equal initiative totals always reads the Dexterity modifier,
+never this field: that is the SRD's own tie-break rule, not a stand-in for the
+bonus.
 
 `condition_immunities` is a plain list of condition names, never validated
 against the active condition table: an immunity is a declarative refusal, not

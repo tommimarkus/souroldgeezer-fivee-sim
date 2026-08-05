@@ -334,6 +334,10 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
             if creature.spellcasting_ability is not None
             else None
         ),
+        # Carried like the fields above it: a combatant recovered into a new
+        # fight without this would fall back to its Dexterity modifier even
+        # when its stat block prints a different Initiative bonus.
+        "initiative_bonus": creature.initiative_bonus,
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),

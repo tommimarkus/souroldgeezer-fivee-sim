@@ -155,6 +155,24 @@ class TestConditionImmunitySpec:
         assert built.condition_immunities == frozenset()
 
 
+class TestInitiativeBonusSpec:
+    """``initiative_bonus`` on an inline spec: the same separate construction
+    path as ``TestConditionImmunitySpec`` above.
+    """
+
+    def test_an_inline_spec_carrying_initiative_bonus_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "initiative_bonus": 7}, registry)
+
+        assert built.initiative_bonus == 7
+
+    def test_initiative_bonus_defaults_to_none(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.initiative_bonus is None
+
+
 SHORTBOW: dict[str, Any] = {
     "name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3",
     "damage_type": "piercing", "kind": "ranged",

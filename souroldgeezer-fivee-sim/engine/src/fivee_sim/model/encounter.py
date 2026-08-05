@@ -919,11 +919,23 @@ class Encounter:
                     condition_effects=self.condition_effects,
                 ),
             )
-            self.initiative[creature.name] = roll.natural + creature.ability_mod(Ability.DEXTERITY)
+            # A printed Initiative bonus, when the stat block carries one,
+            # replaces the Dexterity modifier outright — SRD 5.2.1,
+            # *Initiative*: the printed line is the authority. ``None`` means
+            # no such line, and the modifier is used exactly as before.
+            modifier = (
+                creature.initiative_bonus
+                if creature.initiative_bonus is not None
+                else creature.ability_mod(Ability.DEXTERITY)
+            )
+            self.initiative[creature.name] = roll.natural + modifier
         self.order: list[str] = sorted(
             names,
             key=lambda name: (
                 -self.initiative[name],
+                # The SRD tie-break in its own right, not a stand-in for the
+                # bonus above: it reads the Dexterity modifier even for a
+                # creature whose total came from a printed Initiative bonus.
                 -self.creatures[name].ability_mod(Ability.DEXTERITY),
                 name,
             ),
