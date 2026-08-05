@@ -180,15 +180,38 @@ def active_registry(state: EngineState) -> ContentRegistry:
 
 
 # --- identity --------------------------------------------------------------
+def _seed_from_disk(state: EngineState) -> None:
+    """Start a fresh engine past whatever the directory already holds.
+
+    Only a starting point, never a guarantee — another process can take the very
+    next id before this one asks for it, which is what ``claim`` is for. Without
+    it a new engine in a busy directory would walk from one, losing a claim per
+    encounter already there.
+    """
+    highest = 0
+    for path in journal_service.list_journals():
+        suffix = path.stem[len("enc-"):]
+        if suffix.isdigit():
+            highest = max(highest, int(suffix))
+    state.next_id = highest
+
+
 def new_encounter_id(state: EngineState) -> str:
+    """Take the next free id, and hold it against every other process.
+
+    The claim is the journal file itself (see ``encounter_journal.claim``), so
+    the id is spent the moment it is handed out rather than when the creation
+    record lands — ``create`` does real work in between, and that gap used to be
+    wide enough for a second engine to be handed the same name.
+    """
+    if state.next_id == 0:
+        _seed_from_disk(state)
     while True:
         state.next_id += 1
         candidate = f"enc-{state.next_id}"
-        try:
-            exists = journal_service.journal_path(candidate).exists()
-        except journal_service.JournalError:
-            exists = False
-        if candidate not in state.sessions and not exists:
+        if candidate in state.sessions:
+            continue
+        if journal_service.claim(candidate):
             return candidate
 
 

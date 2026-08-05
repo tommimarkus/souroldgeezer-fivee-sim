@@ -26,6 +26,7 @@ __all__ = [
     "JournalError",
     "StaleWriteError",
     "append",
+    "claim",
     "encounters_root",
     "journal_path",
     "list_journals",
@@ -44,6 +45,40 @@ def journal_path(encounter_id: str) -> Path:
     if not _SAFE_ID.fullmatch(encounter_id):
         raise JournalError(f"invalid encounter id {encounter_id!r}")
     return encounters_root() / f"{encounter_id}.jsonl"
+
+
+def claim(encounter_id: str) -> bool:
+    """Take this id by creating its journal, or report that someone else has.
+
+    Allocation cannot be a look followed by a decision. Every engine server on a
+    host resolves the same encounters root, and the counter in one process's
+    ``EngineState`` says nothing about what another has taken — so an id that
+    tests free stays free only by luck, and ``create`` holds one across an
+    initial state and a content-snapshot deepcopy before it writes anything.
+
+    ``O_EXCL`` collapses the test and the taking into one syscall, which is the
+    same reason ``atomic_write`` publishes through ``os.replace``: the kernel
+    arbitrates, so there is no window to lose. A caller that loses tries the
+    next name.
+
+    The empty journal left behind *is* the claim, which is why nothing cleans it
+    up on a crash: an id that was handed out once must never be handed out
+    again, and a reader cannot tell a crashed creation from a stolen one. Every
+    read path already tolerates it — ``read`` returns no records, ``list_journals``
+    and ``creation_request`` skip it, and ``recover_session`` refuses it by name.
+    """
+    path = journal_path(encounter_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        # 0o666 rather than 0o600: the umask applies, so a claimed journal has
+        # the permissions `append`'s own ``open(..., "ab")`` would have given it.
+        handle = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+    except FileExistsError:
+        return False
+    except OSError as error:
+        raise JournalError(f"cannot claim {path}: {error}") from error
+    os.close(handle)
+    return True
 
 
 def _canonical_bytes(value: Any) -> bytes:
