@@ -111,6 +111,22 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
         ):
             api.encounter_create([{**HERO, "hp": 500}, dict(GOBLIN)])
 
+    def test_the_refusal_falls_between_full_health_and_one_above_it(self) -> None:
+        # The boundary, both sides, because the interesting mistake here is an
+        # off-by-one rather than a missing check. A `>=` would refuse every
+        # combatant at full health — the commonest spec shape in the repo — and
+        # `hp: 500` above is far too far from the edge to notice. Without this
+        # pair the mutant is still caught, but by two adventure tests whose names
+        # point nowhere near the cause.
+        full = api.encounter_create([{**HERO, "hp": 30}, dict(GOBLIN)], seed=7)
+        assert _combatant(full, "Thora")["hp"] == 30
+
+        with pytest.raises(
+            RequestError,
+            match="combatant Thora: hp 31 cannot exceed max_hp 30",
+        ):
+            api.encounter_create([{**HERO, "hp": 31}, dict(GOBLIN)])
+
 
 def _combatant(created: dict[str, Any], name: str) -> dict[str, Any]:
     """One combatant's slice of a created encounter's reported state."""

@@ -27,6 +27,27 @@ def test_healing_in_excess_of_the_maximum_is_lost() -> None:
     assert victim.hp == 20
 
 
+def test_a_negative_amount_does_not_subtract_hit_points() -> None:
+    """``heal`` must not be a back door into *losing* hit points.
+
+    No SRD sentence states this, which is exactly why it needs a test: there is no
+    rule to remind anyone the guard is load-bearing. Without it a negative amount
+    subtracts directly — 10 becomes 3 — with no death save, no Unconscious, no
+    Prone and ``dying`` still False, because all of that lives in ``take_damage``
+    and this path never goes through it.
+
+    Unreachable from the engine's own callers today, since ``DiceRoll.total``
+    clamps at zero. This pins the boundary for the caller added later.
+
+    ``heal(0)`` is the same guard but has no separately observable consequence —
+    ``min(max_hp, hp + 0)`` is unchanged whether the guard runs or not — so it is
+    deliberately not asserted here rather than added as a test that cannot fail.
+    """
+    victim = fighter("Victim", max_hp=20, hp=10)
+    victim.heal(-7)
+    assert victim.hp == 10
+
+
 def test_a_dead_creature_cannot_be_healed() -> None:
     """SRD 5.2.1 glossary, "Dead": a dead creature "can't regain [hit points]
     unless it is first revived by magic".
