@@ -27,6 +27,7 @@ import stat
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -35,6 +36,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.client import cli, discovery
+from fivee_sim.web.http_server import SOURCE_ID_ENV
 
 #: SIGKILL where there is one, SIGTERM where there is not. Referencing
 #: ``signal.SIGKILL`` directly would raise ``AttributeError`` at import on
@@ -92,6 +94,13 @@ GOBLIN: dict[str, Any] = {
     "position": [5, 0],
 }
 
+#: Two engine sources, named the way the launcher names them: a sha256 hex
+#: digest. Nothing here hashes anything — what these stand in for is *the
+#: launcher resolved different source than last time*, which is a fact about two
+#: strings and not about their contents.
+SOURCE_A = "a" * 64
+SOURCE_B = "b" * 64
+
 
 def _isolate(patch: pytest.MonkeyPatch, root: Path) -> None:
     patch.setenv("FIVEE_SIM_PROJECT_DIR", str(root))
@@ -119,6 +128,38 @@ def _teardown() -> None:
     if state is not None and isinstance(state.get("pid"), int):
         with contextlib.suppress(OSError):
             os.kill(state["pid"], _HARD_KILL)
+
+
+def _under(patch: pytest.MonkeyPatch, source_id: str | None) -> discovery.Server:
+    """A live server with *source_id* named in the environment, or none named.
+
+    One variable does both halves of the job, and that is the mechanism rather
+    than a shortcut: the client reads it to learn what it expects, and a server
+    the client spawns inherits it and reports it back. ``None`` unsets it, which
+    is the only way to test an absent variable in a suite that inherits whatever
+    the developer's shell exported.
+    """
+    if source_id is None:
+        patch.delenv(SOURCE_ID_ENV, raising=False)
+    else:
+        patch.setenv(SOURCE_ID_ENV, source_id)
+    return discovery.ensure_server()
+
+
+def _unreachable(port: int, token: str, timeout: float = 5.0) -> bool:
+    """Whether nothing answers on *port* any more — polled, not sampled once.
+
+    A stopped server closes its socket on the way out, a moment after the record
+    it removes disappears, so a single ping here would be a race dressed as a
+    check. Its *pid* is no use for this: the replaced server was this process's
+    child, and a child nobody has reaped is still a pid the OS answers for.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if discovery.ping(port, token) is None:
+            return True
+        time.sleep(0.05)
+    return False
 
 
 @pytest.fixture(scope="module")
@@ -334,6 +375,160 @@ class TestLifecycle:
         assert finished.returncode == cli.EXIT_OK, finished.stderr
         assert json.loads(finished.stdout)["total"] == 2
         assert finished.stdout.count("\n") == 1, "--compact is one line of JSON"
+
+
+class TestSourceReload:
+    """A server running other engine source is replaced — and only then.
+
+    Every case here reads a **pid**, because the claim is that one process ended
+    and another began. Asserted as a call count instead, a restart would pass
+    against a ``stop`` that stopped nothing and a client that went on talking to
+    the server it believed it had killed.
+
+    The environment variable is imported from the server rather than spelled
+    here: the client keeps its own copy of the name because it may not import
+    :mod:`fivee_sim.web`, and that copy is what is under test. A drifted copy
+    leaves the client expecting nothing at all, which is silent — no reload ever
+    happens and nothing raises — so it is the replacement cases below that
+    notice.
+    """
+
+    def test_a_server_running_the_expected_source_is_left_alone(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        first = _under(monkeypatch, SOURCE_A)
+        assert first.spawned is True and first.reloaded is False
+        assert first.source_id == SOURCE_A, (
+            "the spawned server did not inherit the id, so nothing below can "
+            "distinguish a match from a server that reports nothing"
+        )
+
+        second = _under(monkeypatch, SOURCE_A)
+
+        assert second.pid == first.pid, "same source, so it must be the same process"
+        assert second.spawned is False and second.reloaded is False
+
+    def test_the_source_that_counts_is_the_one_the_server_answers_for(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The record is a file; the ping is the process that would be restarted.
+
+        They agree when both are written by one launch, which is why this makes
+        them disagree — a record is the only half of the pair that anything else
+        can rewrite, and a reader that took its word would stop a server for
+        running source it demonstrably answers to.
+        """
+        state_path = discovery.state_path_for()
+        first = _under(monkeypatch, SOURCE_A)
+        record = discovery.read_state(state_path)
+        assert record is not None and record["source_id"] == SOURCE_A
+        record["source_id"] = SOURCE_B
+        state_path.write_text(json.dumps(record), encoding="utf-8")
+
+        second = _under(monkeypatch, SOURCE_A)
+
+        assert second.pid == first.pid, "the file was believed over the process"
+        assert second.reloaded is False
+        assert second.source_id == SOURCE_A
+
+    def test_a_server_running_other_source_is_replaced_and_the_old_one_stops(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The feature itself, and the property that keeps it from thrashing.
+
+        A fresh server that did not report the source the client expects would
+        be replaced again by the next command, and by the one after that — so
+        the third call reusing the second's process is as much the deliverable
+        as the restart is.
+        """
+        first = _under(monkeypatch, SOURCE_A)
+
+        second = _under(monkeypatch, SOURCE_B)
+
+        assert second.reloaded is True and second.spawned is True
+        assert second.pid != first.pid, "the same process cannot be running new source"
+        assert _unreachable(first.port, first.token), "the replaced server is still serving"
+        assert second.source_id == SOURCE_B
+
+        third = _under(monkeypatch, SOURCE_B)
+        assert third.pid == second.pid and third.reloaded is False
+
+    def test_with_no_source_expected_a_server_reporting_another_is_still_reused(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Off by default, held against the server most likely to trip it.
+
+        This one *does* report an id, and a different one. Nothing in the
+        environment asked about it, so nothing may act on it — a plain
+        ``fivee`` command that restarted the engine somebody was mid-fight in
+        would be the worst outcome this feature could have.
+        """
+        first = _under(monkeypatch, SOURCE_A)
+
+        absent = _under(monkeypatch, None)
+        assert absent.pid == first.pid
+        assert absent.reloaded is False and absent.spawned is False
+
+        # Exported empty is the shape a shell gives when it passes one unset
+        # variable through another, and it means the same as never set.
+        blank = _under(monkeypatch, "")
+        assert blank.pid == first.pid
+        assert blank.reloaded is False and blank.spawned is False
+
+    def test_a_server_naming_no_source_is_replaced_when_one_is_expected(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An untracked server cannot be shown to be current, so it is not kept.
+
+        ``""`` is not a mismatch — it says nobody was tracking when this server
+        started — but a server from before the tracking is exactly the shape of
+        the one a dev reload exists to replace, and the cost of being wrong runs
+        one way only: a needless cold start against editing source that the
+        engine answering never loaded.
+        """
+        first = _under(monkeypatch, None)
+        assert first.source_id == "", "a launch told no id must report no id"
+
+        second = _under(monkeypatch, SOURCE_A)
+
+        assert second.reloaded is True and second.pid != first.pid
+        assert _unreachable(first.port, first.token), "the replaced server is still serving"
+
+    def test_a_cold_start_under_an_expected_source_is_a_start_and_not_a_reload(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Nothing was replaced, because nothing was there.
+
+        Reported as a reload, the first command in a fresh workspace would tell
+        every developer their engine had just been restarted for staleness that
+        never existed.
+        """
+        assert not discovery.state_path_for().exists(), "the workspace was meant to be empty"
+
+        server = _under(monkeypatch, SOURCE_A)
+
+        assert server.spawned is True
+        assert server.reloaded is False
+
+    def test_a_command_that_reloads_says_so_on_stderr_and_still_answers_on_stdout(
+        self, workspace: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The restart is news, and news is prose, and prose is never stdout.
+
+        A caller in ``$(fivee ...)`` is parsing what comes back; a line about
+        the engine's lifecycle mixed into it would break the command that
+        succeeded.
+        """
+        _under(monkeypatch, SOURCE_A)
+        capsys.readouterr()
+        monkeypatch.setenv(SOURCE_ID_ENV, SOURCE_B)
+
+        assert run("dice.roll", "--expression", "1d1", "--seed", "3") == cli.EXIT_OK
+
+        captured = capsys.readouterr()
+        assert json.loads(captured.out)["total"] == 1
+        assert "restarted the engine server" in captured.err, captured.err
 
 
 class TestHelp:

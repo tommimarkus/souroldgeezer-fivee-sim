@@ -700,7 +700,15 @@ def _note(message: str) -> None:
 
 
 def _announce(server: Server) -> Server:
-    if server.spawned:
+    # A reload is a start *and* an end, and the end is the half worth saying:
+    # somebody's running engine was replaced, which is the difference between a
+    # command that looks slow and a command that threw away a fight. Reported
+    # instead of the start line rather than beside it, because "started the
+    # engine server" is what the cold path says and two lines about one server
+    # read as two servers.
+    if server.reloaded:
+        _note(f"restarted the engine server at {server.url}; it was running older source")
+    elif server.spawned:
         _note(f"started the engine server at {server.url}")
     return server
 

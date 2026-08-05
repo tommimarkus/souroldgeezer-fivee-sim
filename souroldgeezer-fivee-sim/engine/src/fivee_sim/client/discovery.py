@@ -12,7 +12,7 @@ after the port it names answers ``GET /api/v1/ping`` with this launch's token.
 A record nobody answers for is removed before spawning, so the fresh server's
 record is the only one anybody can read.
 
-**Two constants are copied here rather than imported**, and that is the
+**Three constants are copied here rather than imported**, and that is the
 constraint working as intended: this package may not import
 :mod:`fivee_sim.web`, because a client that imported the server could do things
 over that import which the REST surface does not expose. :data:`TOKEN_HEADER`
@@ -22,10 +22,20 @@ than silently. :func:`read_state` is duplicated for the same reason, and stays
 tolerant for the same reason the server's copy is: an unreadable record and an
 absent one mean the same thing to every caller.
 
+:data:`SOURCE_ID_ENV` is the third, and it is the one worth watching, because it
+is the copy whose drift is *quiet*. Misspell the header and the first request is
+refused; misspell this and every launch simply expects nothing, no reload ever
+happens, and nothing anywhere raises. So the cases that pin it start real
+servers under a real id rather than checking this name against the other one.
+
 Spawning is ``sys.executable -m fivee_sim.web``, detached in its own session so
 the server outlives the shell that first needed it, with stdout and stderr to a
-log file beside the state file. Nothing is inherited: the parent's stdout may be
-a pipe somebody is reading JSON from.
+log file beside the state file. No *stream* is inherited: the parent's stdout may
+be a pipe somebody is reading JSON from. The environment is, and since the
+reload was added that is load-bearing rather than incidental — a fresh server
+reports the id this process expects because it was handed the same variable, and
+a spawn that scrubbed it would leave every command restarting the engine the
+last one started.
 """
 
 from __future__ import annotations
@@ -37,7 +47,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +56,7 @@ from ..paths import maps_root, state_file_for
 __all__ = [
     "API_PREFIX",
     "PING_TIMEOUT",
+    "SOURCE_ID_ENV",
     "SPAWN_TIMEOUT",
     "STOP_TIMEOUT",
     "TOKEN_HEADER",
@@ -65,6 +76,10 @@ __all__ = [
 TOKEN_HEADER = "X-Fivee-Editor-Token"
 #: The version prefix every operation lives under. Also wire protocol.
 API_PREFIX = "/api/v1"
+#: Names the engine source this run was built from, as a sha256 hex digest. The
+#: launcher exports it only when it was asked to watch the source; an ordinary
+#: run leaves it unset, and unset here means "no opinion" rather than "no id".
+SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
 
 #: How long a liveness ping waits. Short: it is a loopback round trip, and a
 #: server too busy to answer in this long is one a command would rather report
@@ -99,6 +114,16 @@ class Server:
     #: True when *this* call started it, which is what ``fivee serve`` reports
     #: as ``already_running`` and what every other command announces on stderr.
     spawned: bool = False
+    #: The engine source this process is running, as it answered for itself, and
+    #: ``""`` when it was started without one being named. Never read off the
+    #: state file — see :func:`find_running`.
+    source_id: str = ""
+    #: True when this call stopped a server running other source and started
+    #: this one in its place. Always implies :attr:`spawned`: the sibling says a
+    #: process began here, this one says a process also ended here, and a caller
+    #: telling a user "started the engine" when it replaced theirs is reporting
+    #: half of what happened.
+    reloaded: bool = False
 
     @property
     def url(self) -> str:
@@ -161,6 +186,14 @@ def find_running(state_path: str | Path) -> Server | None:
         # serving, and only the second is worth reporting to a user.
         maps_dir=str(answer.get("maps_dir", state.get("maps_dir", ""))),
         replays_dir=str(answer.get("replays_dir", state.get("replays_dir", ""))),
+        # For the source id there is no falling back to the record at all, and
+        # the difference is not fussiness. A record is a file: it outlives the
+        # process, anyone can rewrite it, and it says what a launch was asked
+        # for. This answer came from the process that would be restarted, and
+        # that is the only thing worth holding against the source on disk. So a
+        # record naming an id the ping does not is a file making a claim, and it
+        # reads here as no id — the answer that gets a server replaced.
+        source_id=str(answer.get("source_id", "")),
         pid=pid if isinstance(pid, int) else None,
         spawned=False,
     )
@@ -206,14 +239,7 @@ def spawn(
     while time.monotonic() < deadline:
         found = find_running(path)
         if found is not None:
-            return Server(
-                port=found.port,
-                token=found.token,
-                maps_dir=found.maps_dir,
-                replays_dir=found.replays_dir,
-                pid=found.pid,
-                spawned=True,
-            )
+            return replace(found, spawned=True)
         if process.poll() is not None:
             raise UnreachableError(
                 f"the engine server exited with status {process.returncode} before "
@@ -227,6 +253,27 @@ def spawn(
     )
 
 
+def _runs_other_source(found: Server) -> bool:
+    """Whether *found* is serving source this run was not built from.
+
+    The environment decides whether the question is asked at all. Unset — every
+    launch that is not a dev reload — is not "no id", it is *no opinion*, and no
+    answer from the server can override it: a plain command must never restart
+    an engine somebody is mid-fight in on the strength of a digest nobody asked
+    about. That is the whole of the feature being off by default.
+
+    Asked, an untracked server loses. ``""`` is not a mismatch — it says nobody
+    was tracking when that process started — but "cannot be shown to be current"
+    is the position a server from before the tracking is in, and it is exactly
+    the process a reload exists to replace. The costs are not symmetric either:
+    keeping it means editing source and testing an engine that never loaded it,
+    which is the failure this was built for, and replacing it costs one cold
+    start.
+    """
+    expected = os.environ.get(SOURCE_ID_ENV, "")
+    return bool(expected) and found.source_id != expected
+
+
 def ensure_server(
     *,
     maps_dir: str | Path | None = None,
@@ -234,13 +281,24 @@ def ensure_server(
     port: int | None = None,
     timeout: float = SPAWN_TIMEOUT,
 ) -> Server:
-    """A live server: the one already running, or one started for this call."""
+    """A live server: the one already running, or one started for this call.
+
+    A running server whose source this run does not recognise is stopped and
+    replaced, and comes back marked :attr:`~Server.reloaded` so the caller can
+    say so — see :func:`_runs_other_source` for when that judgement is made and
+    why it defaults to never. The replacement inherits this process's
+    environment, so it reports the id that was expected of the one before it,
+    and the command after this one finds it and leaves it alone.
+    """
     path = Path(state_path) if state_path is not None else state_path_for(maps_dir)
     found = find_running(path)
     if found is not None:
-        return found
+        if not _runs_other_source(found):
+            return found
+        stop(path)
     root = Path(maps_dir).expanduser() if maps_dir is not None else maps_root()
-    return spawn(path, maps_dir=root, port=port, timeout=timeout)
+    fresh = spawn(path, maps_dir=root, port=port, timeout=timeout)
+    return replace(fresh, reloaded=True) if found is not None else fresh
 
 
 def stop(state_path: str | Path, timeout: float = STOP_TIMEOUT) -> dict[str, Any]:
