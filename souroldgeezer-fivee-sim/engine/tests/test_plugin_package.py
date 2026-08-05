@@ -21,7 +21,7 @@ import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
 
-LAUNCHER = "scripts/fivee.sh"
+LAUNCHER = "scripts/fivee.py"
 
 
 def _json(relative_path: str) -> dict[str, Any]:
@@ -75,7 +75,7 @@ def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
     """Both skills tell the reader to fall back to this path, so it must exist.
 
     They locate it relative to the skill directory the harness announces —
-    ``../../scripts/fivee.sh`` from ``skills/<name>/`` — which is this file.
+    ``../../scripts/fivee.py`` from ``skills/<name>/`` — which is this file.
     A rename that missed the skills would leave that instruction pointing at
     nothing, and the reader would find out mid-fight.
     """
@@ -85,7 +85,7 @@ def test_the_launcher_the_skills_name_is_there_and_runnable() -> None:
 
     for skill in ("encounter-sim", "map-forge"):
         text = (PLUGIN_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
-        assert "../../scripts/fivee.sh" in text, skill
+        assert "../../scripts/fivee.py" in text, skill
 
 
 def test_host_manifests_identify_the_same_plugin() -> None:

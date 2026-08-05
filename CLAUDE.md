@@ -39,10 +39,15 @@ fatal: could not create directory of '.git/worktrees/<name>': Read-only file sys
 Run that one command with the sandbox disabled. Everything else — `remove`,
 `prune`, `commit`, `merge`, `rm -rf` — works sandboxed.
 
-A fresh worktree has no `.venv`, and uv's cache is project-relative
-(`cache-dir = ".cache/uv"`), so a new one starts empty and `uv sync` would want
-network it does not have. Point it at the primary checkout's cache instead, and
-keep passing the variable to `uv run` in that worktree:
+A fresh worktree needs no setup to **run** the engine — `python3
+souroldgeezer-fivee-sim/scripts/fivee.py help` works in one immediately, with no
+venv and no network, because the launcher builds nothing.
+
+Running the **tests** is what still needs an environment. A fresh worktree has no
+`.venv`, and uv's cache is project-relative (`cache-dir = ".cache/uv"`), so a new
+one starts empty and `uv sync` would want network it does not have. Point it at
+the primary checkout's cache instead, and keep passing the variable to `uv run`
+in that worktree:
 
 ```bash
 cd .worktrees/<name>/souroldgeezer-fivee-sim/engine
@@ -229,10 +234,17 @@ command demonstrably has is a feature `/api/v1` demonstrably serves, and "the
 REST surface can do everything" stops being a claim a reader has to audit two
 call graphs for.
 
-`souroldgeezer-fivee-sim/scripts/fivee.sh` is the launcher and the plugin's whole
-entry point: it builds or finds the environment and `exec`s the venv's `fivee`
-console script with every argument passed through. Its own diagnostics go to
-`stderr`, because stdout belongs to `fivee` and callers capture it.
+`souroldgeezer-fivee-sim/scripts/fivee.py` is the launcher and the plugin's whole
+entry point: it puts the engine source on `sys.path` and calls the client, with
+every argument passed through. Its own diagnostics go to `stderr`, because stdout
+belongs to `fivee` and callers capture it.
+
+**It builds nothing, and that follows from the empty `dependencies` list above.**
+A virtual environment here would install exactly one thing — this package, whose
+source is already on disk beside the launcher — so `python -m` is the whole
+mechanism, and `uv` is not involved in running anything. It exports `PYTHONPATH`
+as well as setting `sys.path`, because the client spawns its server as a child
+interpreter that inherits the environment and not this process's path.
 
 **Layer boundaries.** `kernel/` holds the primitives — dice, resolution,
 conditions, attacks, spells, items — and knows nothing about creatures; callers pass
@@ -361,7 +373,10 @@ call that omits either.
 
 ```bash
 cd souroldgeezer-fivee-sim/engine
-uv run ruff check .              # E,F,W,I,UP,B — line length 100
+# The launcher lives outside this project directory, so name it: ruff lints the
+# paths it is given, and `.` alone would silently skip it. mypy reaches it from
+# `files` in pyproject.toml, but only when run from here.
+uv run ruff check . ../scripts/fivee.py   # E,F,W,I,UP,B — line length 100
 uv run mypy                      # strict, configured in pyproject.toml
 uv run pytest
 
@@ -370,11 +385,10 @@ uv run python -m fivee_sim.coverage   # regenerate docs/COVERAGE.md
 # From the repo root, against a contributor's verified local extraction.
 python3 scripts/srd-catalog-batch.py --source-root /path/to/extracted validate
 
-# From the repo root: the real launcher, end to end. Builds or finds the
-# environment, starts the engine, prints every operation the server serves.
-bash souroldgeezer-fivee-sim/scripts/fivee.sh help
-bash souroldgeezer-fivee-sim/scripts/fivee.sh stop
-bash scripts/test-launcher-freshness.sh
+# From the repo root: the real launcher, end to end. Starts the engine and
+# prints every operation the server serves. Needs no venv and no uv.
+python3 souroldgeezer-fivee-sim/scripts/fivee.py help
+python3 souroldgeezer-fivee-sim/scripts/fivee.py stop
 
 # The same launcher, checked rather than eyeballed — see below. Stdlib only.
 python3 scripts/check-api-smoke.py
@@ -388,7 +402,7 @@ node scripts/check-editor-behaviour.mjs
 
 **`scripts/check-api-smoke.py` is the repository's automated end-to-end gate**,
 and the only thing that checks the shipped surface the way a host uses it.
-`fivee.sh help` above is a look, not a check; this is the check. It boots the
+`fivee.py help` above is a look, not a check; this is the check. It boots the
 **real launcher** — never `python -m fivee_sim.web`, never the dev venv — runs a
 complete seeded fight over plain HTTP, runs the identical fight in a second
 server and a third time through the `fivee` binary as a subprocess, and requires
@@ -404,10 +418,10 @@ surface serves — which is why the command run is the load-bearing one rather
 than a convenience.
 
 **Standard library only, and no pytest**, because it has to run against an
-environment that has built nothing but the plugin's own `--no-dev` runtime. It
-does not import the engine either: it reads `web/routes.py` with `ast` rather
-than importing it, since an imported copy is not the copy the launcher is
-serving. Every server it starts is pointed at a fresh `tempfile` directory —
+environment where nothing has been built at all — which, since the launcher
+stopped creating virtual environments, is every environment. It does not import
+the engine either: it reads `web/routes.py` with `ast` rather than importing it,
+since an imported copy is not the copy the launcher is serving. Every server it starts is pointed at a fresh `tempfile` directory —
 honouring `TMPDIR`, which is what makes it runnable where `/tmp` is read-only —
 and stopped and removed in a `finally`, because a leaked detached server would
 make the next run lie.
@@ -449,61 +463,63 @@ know about a pack it has never seen.
 `uv`'s cache is redirected to `souroldgeezer-fivee-sim/engine/.cache/uv` because the default
 `~/.cache/uv` is read-only in the sandboxed development environment.
 
-### The virtual environment
+### The virtual environment is a development tool only
 
 `uv` builds it; nothing else should. `uv sync` in the engine directory creates
 `.venv` with the dev group included, which is what `uv run pytest` and `uv run
-mypy` use.
+mypy` use. **Nothing at runtime touches it.** `python3
+souroldgeezer-fivee-sim/scripts/fivee.py help` succeeds with no `.venv` on disk
+and `uv` removed from `PATH` entirely, which is the test of it.
 
-At runtime the launcher **execs the venv's own console script** rather than going
-through `uv run`. That keeps uv out of the spawn path — one process instead of
-two, and uv is needed only when the environment has to be built.
-`bash souroldgeezer-fivee-sim/scripts/fivee.sh help` succeeds with `uv` removed
-from `PATH` entirely once the environment exists, which is the test of it.
+This section used to describe a launcher that built a venv, stamped it, locked
+it, and checked its console script's shebang still resolved. All of that is
+gone, and the reason it could go is one line of `pyproject.toml`: `dependencies`
+is empty, so the environment being built installed exactly one thing — this
+package, whose source the launcher already has a path to. A zero-dependency pure
+Python package needs `python -m`, not an environment. Roughly 950 lines of shell
+went with that realisation.
 
-The launcher syncs with `--no-dev`, so a venv it built has no test tooling. That
-only happens on a cold start; `uv run pytest` re-syncs the dev group
-automatically, so the two uses do not fight.
+**Durability is the part that survived, and it was never about dependencies.**
+`web/http_server.py` reads its static assets through `resources.files(...)` *at
+request time*, so a live server keeps reading from wherever the package lives —
+and the installed plugin root can disappear when another session refreshes the
+host cache. So a host-managed launch runs from a copy.
 
-**A venv is not portable.** Its console scripts hard-code an absolute interpreter
-path in their shebang, so moving or renaming the plugin directory leaves a venv
-that exists and looks executable but cannot start — this bit the rename to
-`souroldgeezer-fivee-sim`. The launcher now detects it by checking the shebang
-still resolves, and rebuilds. If you relocate the repo and something behaves
-oddly, `rm -rf` the venv rather than debugging it.
+Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex supplies neither
+that nor `${PLUGIN_DATA}`, so the launcher derives its plugin-data location from
+`${CODEX_HOME}` alone — never from `${HOME}/.codex`, a guess that would put a
+plain checkout on the host-managed path. An explicit host variable still wins,
+and a variable exported empty counts as unset rather than as the filesystem root.
 
-**A host-managed runtime must outlive the plugin root without outliving its own
-engine build.** Claude Code supplies `${CLAUDE_PLUGIN_DATA}` directly. Codex
-supplies neither that nor `${PLUGIN_DATA}`, so the launcher derives its
-plugin-data location from `${CODEX_HOME}` alone — never from `${HOME}/.codex`, a
-guess that would put a plain checkout on the host-managed path. The host marker
-that used to answer this arrived through the deleted `.mcp.json`. An explicit
-host variable still wins. The installed plugin root can disappear when another
-session refreshes the host cache, so host-managed environments live at
-`$plugin_data/venvs/<engine-build-id>` and are installed with `--no-editable`.
-The build identity covers `pyproject.toml`, `uv.lock`, and every shipped source
-file. A new build is created beside old ones rather than refreshing a venv that a
-live server still uses. Old runtimes are deliberately retained: the launcher
-cannot know which other host process still owns one.
+The copy lives at `$plugin_data/src/<source-id>`, where the id is a SHA-256 over
+`pyproject.toml` and every shipped source file, paths included. Three properties
+fall out of content-addressing it, and each replaced machinery that used to be
+written by hand:
 
-Before exec the launcher also changes into the durable plugin-data directory.
+- **The directory's existence is the freshness check.** No build stamp.
+- **Publishing is one `os.replace`.** Two launchers racing the same id each copy
+  into their own staging directory; the loser discards its copy and uses the
+  winner's, which is byte-identical because the name *is* the content. No lock,
+  no owner token, no dead-owner reclamation.
+- **A new build lands beside a live one** instead of overwriting it. Old copies
+  are deliberately retained: the launcher cannot know which other process is
+  still reading one.
+
+The launcher also changes into the durable plugin-data directory before running.
 That is load-bearing: maps and encounter journals may resolve a default from
 `Path.cwd()` when an operation runs, and a process left inside a retired plugin
-cache would otherwise turn its next journal append into raw `ENOENT`. Explicit project-root,
-content, map, and encounter environment variables continue to win.
+cache would otherwise turn its next journal append into raw `ENOENT`. Explicit
+project-root, content, map, and encounter environment variables continue to win.
 
-Every cold build of the same identity is guarded by an atomic sibling-directory
-lock. Only the lock owner may mutate that venv; a waiter rechecks freshness after
-acquiring it, dead owners are reclaimed, and handled termination releases it.
-Different builds use different environments and locks, so they cannot rewrite one
-another. The warm path does not inspect the lock at all, preserving the one-process
-startup this launcher is designed around. Explicit/development environments keep
-the path-and-input build stamp and fail closed if a stale runtime cannot rebuild.
-
-`bash scripts/test-launcher-freshness.sh` pins those decisions against a fake `uv`.
-Keep the warm-path cases green in particular — an unconditional `uv sync` would fix
-freshness by putting uv back in the spawn path, which is the thing this launcher is
-built to avoid.
+`engine/tests/test_launcher.py` pins all of it. Two cases there are load-bearing
+in a way that is easy to undo by accident: they drive the launcher with the
+**base** interpreter rather than `sys.executable`, because under pytest that is
+the dev venv and the engine is importable there through an editable `.pth` — so
+a subprocess test using it passes whether or not the launcher works.
+`test_the_host_interpreter_does_not_already_have_the_engine` is the guard that
+says so, and `test_a_spawned_server_can_import_the_engine` is the case that
+caught the real defect: `sys.path` does not cross a process boundary, so the
+source root has to be exported, not merely inserted.
 
 ## Conventions
 

@@ -17,13 +17,13 @@ are holding, which is what the guarded write below is about.
 ## Running the command
 
 Everything below is a Bash call. Use `fivee` if it is already on `PATH`; otherwise
-use `scripts/fivee.sh` in this plugin, which is `../../scripts/fivee.sh` from this
-skill's own directory — the one the harness named when it loaded this skill.
-Resolve that against the announced directory and use the absolute path; nothing
-expands a `${...}` placeholder in this prose.
+run `scripts/fivee.py` in this plugin with `python3`, which is
+`../../scripts/fivee.py` from this skill's own directory — the one the harness
+named when it loaded this skill. Resolve that against the announced directory and
+use the absolute path; nothing expands a `${...}` placeholder in this prose.
 
 ```bash
-command -v fivee || echo "<skill dir>/../../scripts/fivee.sh"
+command -v fivee || echo "python3 <skill dir>/../../scripts/fivee.py"
 ```
 
 Nothing has to be started: every command finds the engine's local server or starts

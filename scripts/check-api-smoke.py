@@ -9,9 +9,9 @@ runs, runs".
 Four properties are checked that the in-process suite structurally cannot:
 
 * **The real launcher boots.** Everything here goes through
-  ``souroldgeezer-fivee-sim/scripts/fivee.sh`` — never ``python -m
+  ``souroldgeezer-fivee-sim/scripts/fivee.py`` — never ``python -m
   fivee_sim.web``, never the development venv directly. If the launcher cannot
-  resolve its environment, this check is what says so.
+  resolve the engine source, this check is what says so.
 * **A seeded fight is reproducible across processes.** Two independent servers
   run the same fight at the same seed and must produce identical results, down
   to the integrity hashes of the exported replay. Reproducibility under a seed
@@ -27,10 +27,11 @@ Four properties are checked that the in-process suite structurally cannot:
   and all three are checked against that table's own source here, outside
   pytest.
 
-Standard library only, and deliberately so: it must run in an environment that
-has built nothing but the plugin's own runtime venv. It never imports the
-engine either — importing it would test the copy on ``sys.path`` rather than the
-one the launcher built.
+Standard library only, and deliberately so: it must run in an environment where
+nothing has been built at all, which since the launcher stopped creating virtual
+environments is every environment. It never imports the engine either —
+importing it would test the copy on ``sys.path`` rather than the one the
+launcher resolved.
 
 Every server it starts is pointed at a fresh scratch project root, so a run
 writes nothing into the repository's ``.fivee-sim/``, and every server and
@@ -62,7 +63,7 @@ T = TypeVar("T")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_ROOT = REPO_ROOT / "souroldgeezer-fivee-sim"
-LAUNCHER = PLUGIN_ROOT / "scripts" / "fivee.sh"
+LAUNCHER = PLUGIN_ROOT / "scripts" / "fivee.py"
 ROUTES_SOURCE = PLUGIN_ROOT / "engine" / "src" / "fivee_sim" / "web" / "routes.py"
 
 #: Wire protocol, shared with the server by agreement rather than by import —
@@ -166,7 +167,7 @@ class Engine:
         self, *arguments: str, timeout: float = WARM_TIMEOUT
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(  # noqa: S603 - a fixed script with fixed arguments
-            ["bash", str(LAUNCHER), *arguments],
+            [sys.executable, str(LAUNCHER), *arguments],
             capture_output=True,
             text=True,
             env=self.env,
@@ -539,12 +540,35 @@ def declared_pages() -> dict[str, tuple[str, str]]:
     return found
 
 
+def interpreter_already_has_the_engine() -> bool:
+    """Whether this interpreter can import ``fivee_sim`` without the launcher's help.
+
+    The launcher's whole job is putting the engine on the import path, so an
+    interpreter that already has it makes every case below pass against a
+    launcher that resolved nothing — the same false green that a subprocess test
+    using the development venv would give. Run this with a plain ``python3``.
+    """
+    probe = subprocess.run(  # noqa: S603 - this interpreter, one fixed argument
+        [sys.executable, "-c", "import fivee_sim"],
+        capture_output=True,
+        check=False,
+    )
+    return probe.returncode == 0
+
+
 def main() -> int:
     if not LAUNCHER.is_file():
         print(f"launcher not found at {LAUNCHER}")
         return 1
     if not ROUTES_SOURCE.is_file():
         print(f"route table not found at {ROUTES_SOURCE}")
+        return 1
+    if interpreter_already_has_the_engine():
+        print(
+            f"{sys.executable} already imports fivee_sim, so this check would pass\n"
+            "whether or not the launcher resolves the engine. Run it with a plain\n"
+            "python3, not from the development virtual environment."
+        )
         return 1
 
     engines: list[Engine] = []

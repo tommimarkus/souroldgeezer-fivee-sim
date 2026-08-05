@@ -39,10 +39,10 @@ live play uses.
 
 ## Install
 
-Needs Python 3.11+ and [`uv`](https://docs.astral.sh/uv/). The bundled launcher
-builds its own `uv`-managed environment on first run, so there is nothing to
-install globally — and the engine itself has no runtime dependencies, so that
-environment is this package and a Python interpreter.
+Needs Python 3.11+, and nothing else. The engine has no runtime dependencies, so
+there is nothing to install and no environment to build: the launcher puts the
+bundled source on `sys.path` and runs it. [`uv`](https://docs.astral.sh/uv/) is
+needed only to work *on* this repository — see [CLAUDE.md](CLAUDE.md).
 
 The marketplace is not published yet, so point either host at a clone.
 
@@ -55,16 +55,18 @@ codex plugin add souroldgeezer-fivee-sim@souroldgeezer-tabletop
 
 Start a new Codex session after installation so the bundled skills are loaded.
 
-Codex keeps this plugin's generated runtime under
-`${CODEX_HOME:-$HOME/.codex}/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop`,
-outside the versioned plugin cache. The launcher deliberately builds a fresh
-environment there instead of moving any cache-local `engine/.venv`, which may be
-partial after an interrupted refresh. To force a clean rebuild, close sessions
-using the plugin, remove the runtime location's `venv` directory, and start a new
-session; the launcher recreates it on demand. Explicit `UV_PROJECT_ENVIRONMENT`,
-`UV_CACHE_DIR`, `PLUGIN_DATA`, and `CLAUDE_PLUGIN_DATA` settings still take
-precedence. A direct checkout without a plugin host continues to use
-`engine/.venv`.
+Codex keeps this plugin's durable data under
+`${CODEX_HOME}/plugins/data/souroldgeezer-fivee-sim-souroldgeezer-tabletop`, outside
+the versioned plugin cache. The launcher copies the engine source there, into a
+directory named after a hash of that source, and runs from the copy — because a
+running server reads its static assets from wherever the package lives, and the
+host may retire the plugin cache while a session is still using it. An upgrade
+therefore lands beside a live copy rather than replacing it, and old copies are
+kept on purpose. To reclaim space, close sessions using the plugin and remove
+directories under the runtime location's `src`; the launcher recreates what it
+needs on demand. Explicit `PLUGIN_DATA` and `CLAUDE_PLUGIN_DATA` settings still
+take precedence. A direct checkout without a plugin host runs straight from
+`engine/src` and copies nothing.
 
 Once published, use the repository source instead of the local path:
 
@@ -96,10 +98,10 @@ Once it is published, the same thing is two commands:
 /plugin install souroldgeezer-fivee-sim@souroldgeezer-tabletop
 ```
 
-From a clone, `bash souroldgeezer-fivee-sim/scripts/fivee.sh help` verifies the
-whole path independently of either host: it builds the environment if it has to,
-starts the engine, and prints every operation the running server serves. Stop it
-again with `bash souroldgeezer-fivee-sim/scripts/fivee.sh stop`.
+From a clone, `python3 souroldgeezer-fivee-sim/scripts/fivee.py help` verifies the
+whole path independently of either host: it starts the engine and prints every
+operation the running server serves. Stop it again with
+`python3 souroldgeezer-fivee-sim/scripts/fivee.py stop`.
 
 `python3 scripts/check-api-smoke.py` does the same thing without a human reading
 the output. It boots the real launcher, runs a complete seeded fight over HTTP,

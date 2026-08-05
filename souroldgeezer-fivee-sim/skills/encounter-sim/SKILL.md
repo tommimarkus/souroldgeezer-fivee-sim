@@ -14,14 +14,14 @@ campaign may load its own content as well — see "What is actually loaded" belo
 ## Running the command
 
 Everything below is a Bash call. Use `fivee` if it is already on `PATH`;
-otherwise use `scripts/fivee.sh` in this plugin, which is `../../scripts/fivee.sh`
-from this skill's own directory — the one the harness named when it loaded this
-skill. Resolve that against the announced directory and use the absolute path;
-nothing expands a `${...}` placeholder in this prose. Check once, then keep using
-whichever answered:
+otherwise run `scripts/fivee.py` in this plugin with `python3`, which is
+`../../scripts/fivee.py` from this skill's own directory — the one the harness
+named when it loaded this skill. Resolve that against the announced directory and
+use the absolute path; nothing expands a `${...}` placeholder in this prose. Check
+once, then keep using whichever answered:
 
 ```bash
-command -v fivee || echo "<skill dir>/../../scripts/fivee.sh"
+command -v fivee || echo "python3 <skill dir>/../../scripts/fivee.py"
 ```
 
 Either way there is nothing to start first. Every command finds the engine's
