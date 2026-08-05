@@ -22,6 +22,7 @@ from random import Random
 from typing import Any
 
 from .. import __version__
+from ..kernel.conditions import UnknownCondition
 from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
@@ -229,6 +230,49 @@ def note(
         request_id=request_id,
         operation="encounter_note",
         arguments={"text": text, "category": category},
+        execute=execute,
+    )
+
+
+def condition(
+    state: EngineState,
+    encounter_id: str,
+    target: str,
+    condition_name: str,
+    applied: bool = True,
+    request_id: str | None = None,
+) -> dict[str, Any]:
+    """Impose or lift a condition on one combatant by the table's ruling.
+
+    Journalled like an action rather than like a note, because it changes the
+    fight: a resume that replayed the notes and not this would rebuild a
+    different creature.
+    """
+    session = sessions.session_for(state, encounter_id)
+
+    def execute() -> dict[str, Any]:
+        try:
+            session.encounter.set_condition(target, condition_name, applied=applied)
+        except (EncounterError, UnknownCondition) as error:
+            raise RequestError(str(error)) from error
+        return {
+            "encounter_id": encounter_id,
+            "target": target,
+            "condition": condition_name,
+            "applied": applied,
+            "conditions": sorted(session.encounter.creatures[target].conditions),
+        }
+
+    return primitives.audited_primitive(
+        state,
+        encounter_id=encounter_id,
+        request_id=request_id,
+        operation="encounter_condition",
+        arguments={
+            "target": target,
+            "condition": condition_name,
+            "applied": applied,
+        },
         execute=execute,
     )
 

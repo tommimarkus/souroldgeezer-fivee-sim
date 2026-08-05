@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fivee_sim.analytics.montecarlo import auto_action, simulate_rounds
 from fivee_sim.kernel.actions import AttackKind
+from fivee_sim.kernel.conditions import EFFECTS, ConditionEffect
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import TERRAIN, CoverGrade, MovementMode, TerrainEffect
 from fivee_sim.kernel.items import ActionCost, ItemEffect
@@ -20,7 +21,7 @@ from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 from fivee_sim.service.uvtt import to_uvtt
 
-from .conftest import FIXTURE, FixedRandom, advance_to, fighter
+from .conftest import FIXTURE, FixedRandom, ScriptedRandom, advance_to, fighter
 
 
 def _mapped_encounter(
@@ -107,6 +108,58 @@ class TestPartialCoverDoesNotConceal:
 
         assert encounter.cover_between("Thora", "Goblin") is CoverGrade.TOTAL
         assert encounter.brief("Thora")["enemies"] == []
+
+
+class TestSurpriseIsExpressible:
+    """SRD 5.2.1 surprise, which the engine needed no new mechanic for.
+
+    The playtest reported that surprise could not be expressed and approximated
+    it by hand, costing a goblin its turn. It was modelling the older rule. In
+    5.2.1 (p. 13, p. 189) surprise is Disadvantage on the Initiative roll and
+    nothing else — no lost turn — and a condition carrying
+    ``own_ability_checks_have_disadvantage`` already produces exactly that,
+    because initiative *is* an ability check and rolls through the same
+    advantage computation.
+
+    What was genuinely missing was the way back out: nothing could remove a
+    condition, so a combatant given one at creation carried it for the rest of
+    the fight and took Disadvantage on every later check. That is what
+    ``set_condition`` closes, and it is why these two halves are one test class.
+    """
+
+    TABLE = dict(EFFECTS) | {
+        "surprised": ConditionEffect(own_ability_checks_have_disadvantage=True),
+    }
+
+    def test_a_surprised_combatant_rolls_initiative_with_disadvantage(self) -> None:
+        surprised = fighter("Thora")
+        # The creature reads its own table until the encounter injects one, and
+        # `add_condition` refuses a name that table does not define.
+        surprised.condition_effects = self.TABLE
+        surprised.add_condition("surprised")
+        ready = fighter("Goblin", team="monsters")
+
+        encounter = Encounter(
+            # Thora keeps the 1 of 20/1; the goblin then rolls 10 straight.
+            [surprised, ready], ScriptedRandom([20, 1, 10]), condition_effects=self.TABLE
+        )
+
+        assert encounter.initiative["Thora"] < encounter.initiative["Goblin"]
+
+    def test_surprise_comes_off_once_initiative_is_past(self) -> None:
+        # The half that did not exist. Surprise is spent the moment initiative is
+        # rolled, so a condition that could never be lifted would go on taxing
+        # every ability check for the rest of the fight.
+        encounter = Encounter(
+            [fighter("Thora"), fighter("Goblin", team="monsters")],
+            FixedRandom(10),
+            condition_effects=self.TABLE,
+        )
+        encounter.set_condition("Thora", "surprised", applied=True)
+
+        encounter.set_condition("Thora", "surprised", applied=False)
+
+        assert encounter.creatures["Thora"].conditions == set()
 
 
 class TestUnderwaterCombat:

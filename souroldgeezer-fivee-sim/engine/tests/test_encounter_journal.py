@@ -120,6 +120,39 @@ def test_an_active_encounter_recovers_after_process_memory_is_lost() -> None:
     assert api.encounter_state(encounter_id) == before
 
 
+def test_a_ruling_condition_survives_the_journal_and_replays_on_resume() -> None:
+    # A ruling changes the fight, so recovery has to replay it as it replays an
+    # action. Journalled and not replayed, the resume would quietly hand back a
+    # creature without the condition — the state would look plausible and be
+    # wrong, which is the worst shape a recovery bug can take.
+    encounter_id = mapless_fight(seed=131)
+    api.encounter_condition(encounter_id, "Thora", "poisoned", request_id="ruling-1")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["recovered"] is True
+    assert recovered["state"] == before
+
+
+def test_a_lifted_ruling_condition_replays_as_lifted() -> None:
+    # The other half: replaying only the apply would leave the condition on.
+    encounter_id = mapless_fight(seed=137)
+    api.encounter_condition(encounter_id, "Thora", "poisoned", request_id="ruling-on")
+    api.encounter_condition(
+        encounter_id, "Thora", "poisoned", applied=False, request_id="ruling-off"
+    )
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == before
+    thora = next(c for c in recovered["state"]["combatants"] if c["name"] == "Thora")
+    assert thora["conditions"] == []
+
+
 def test_a_bonus_action_survives_the_journal_and_replays_on_resume() -> None:
     # The read side of the Action round-trip. encounters.act records
     # movement_mode and as_bonus_action in the journal, but action_from_journal

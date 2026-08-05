@@ -702,6 +702,21 @@ ROUTES: tuple[Route, ...] = (
         handler="encounter_note", success=201, errors=(409,),
     ),
     Route(
+        "POST", f"{API_PREFIX}/encounters/{{id}}/conditions", "encounter.condition",
+        "Impose or lift a condition on one combatant by the table's ruling.",
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY),
+        body_schema={
+            "type": "object",
+            "properties": {
+                "target": {"type": "string"},
+                "condition": {"type": "string"},
+                "applied": {"type": "boolean", "default": True},
+            },
+            "required": ["target", "condition"],
+        },
+        handler="encounter_condition", errors=(409,),
+    ),
+    Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/resume", "encounter.resume",
         "Load an encounter from its verified journal, repairing a partial tail.",
         params=(_ID,),
