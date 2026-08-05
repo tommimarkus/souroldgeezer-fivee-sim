@@ -213,7 +213,7 @@ const EDITOR_IDS = [
 const VIEWER_IDS = [
   "stage", "scrub", "ticker", "readout", "title", "seed", "empty-note",
   "btn-play", "btn-back", "btn-forward", "speed", "embedded-data", "level-select",
-  "follow-level", "combatant-state",
+  "follow-level", "sight-cones", "combatant-state",
 ];
 const HOME_IDS = [
   "operations", "ops-status", "ops-count", "link-openapi", "engine-version",
@@ -857,19 +857,25 @@ await suite("renderer.js: the door glyph", "the renderer sandbox", async () => {
  * One vocabulary on three carriers — a creature, a map feature, and the map
  * itself — and every one of them draws as a path rather than a rect, so none of
  * this was observable here until the recorder learned to capture path
- * construction.
+ * construction. A feature and the compass draw a chevron; a creature draws the
+ * sight cone that replaced its own chevron, which is a fill rather than a
+ * stroke and the reason there are two predicates below.
  *
- * What makes these cases mean anything is that renderer.js draws the chevron in
+ * What makes these cases mean anything is that renderer.js draws these glyphs in
  * **absolute coordinates**. The recorder stores moveTo/lineTo arguments as
- * passed, so a glyph drawn under a translate/rotate pair would record the same
- * three points for all eight facings, and every direction case below would pass
- * against a renderer that ignored the facing entirely. tests/test_web_assets.py
- * holds the source to that rule; these cases spend it.
+ * passed, so a glyph drawn under a translate/rotate pair would record the
+ * identical points for all eight facings, and every direction case below would
+ * pass against a renderer that ignored the facing entirely. It is also why the
+ * cone's two arcs are runs of lineTo rather than ctx.arc: an arc struck under a
+ * rotated context records one centre and one pair of angles whatever the facing,
+ * which is the same blind spot one call wider. tests/test_web_assets.py holds
+ * the source to those rules; these cases spend them.
  *
- * The other half is telling this glyph's path from the dozen others a frame
+ * The other half is telling these glyphs' paths from the dozen others a frame
  * contains — the token circle, the HP ring, the dead cross, the door's arc. The
- * facing ink is used by nothing else, and a chevron is exactly three ops, so
- * `chevronsIn` names one shape and not "some path exists". */
+ * facing ink is used by nothing else, a chevron is exactly three ops, and the
+ * cone is the one filled many-sided path drawn in that ink, so `chevronsIn` and
+ * `conesIn` each name one shape and not "some path exists". */
 
 const FACING_INK = "#a8462a";  /* the light-theme facing ink; the stub says light */
 const FACING_VIEW = { x: 0, y: 0, scale: 20, width: 160, height: 120 };
@@ -892,6 +898,90 @@ const chevronsIn = (frame) => inkPaths(frame).filter(
     && path.ops[2][0] === "lineTo"
 );
 const tipOf = (chevron) => [chevron.ops[1][1], chevron.ops[1][2]];
+
+/* A sight cone: the wedge along a creature's facing with its apex clipped off
+ * at an inner radius — an annular sector — filled in that same facing ink. Two
+ * arcs of eight lineTo segments each, joined by a radial at either end, and the
+ * shape admits exactly two forms: eighteen vertices written the obvious way
+ * (moveTo, eight, the radial, eight) and closed by ctx.closePath(), or nineteen
+ * with that closing radial drawn as a vertex of its own. The window is stated as
+ * a window because that one join is the thing an implementation may count either
+ * way; what it names is the shape, and nothing else in a frame is a many-sided
+ * filled path in this ink.
+ *
+ * It used to admit three, and the third was nobody's intent: eighteen vertices
+ * and no closure at all. A mutation run reached it by deleting ctx.closePath()
+ * and killed no case in the suite. The wash hides that — fill() closes the
+ * subpath for you — but the rim does not, because stroke() leaves the wedge open
+ * along the closing radial, so the shape would ship with one edge missing. Hence
+ * `isClosedPath`, and hence it is written as "closed one way or the other"
+ * rather than as "there is a closePath": the latter would forbid the
+ * nineteen-vertex form this window was widened to allow.
+ *
+ * The commit is what makes "exactly one cone" a fact rather than a coin flip:
+ * the cone commits its path twice, once filled and once stroked along the edge
+ * in the same ink, so a predicate that did not name the commit would count every
+ * cone as two. The shape test is therefore shared and the commit named on top of
+ * it — `conesIn` for the wash, `coneEdgesIn` for the rim, which is a claim of
+ * its own and asserted rather than merely tolerated. */
+const CONE_ARC_SEGMENTS = 8;
+const CONE_MIN_VERTICES = 2 * CONE_ARC_SEGMENTS + 1;
+const CONE_MAX_VERTICES = 2 * CONE_ARC_SEGMENTS + 3;
+const isVertex = (op) => op[0] === "moveTo" || op[0] === "lineTo";
+/* Compared with a tolerance rather than for equality: the two ends of the wedge
+ * are reached by different arithmetic — one straight off the start bearing, the
+ * other after eight additions of the step — and floating point does not promise
+ * they land on the same bits. */
+const CLOSURE_TOLERANCE = 0.01;
+const isClosedPath = (path) => {
+  if (!path.ops.length) { return false; }
+  if (path.ops[path.ops.length - 1][0] === "closePath") { return true; }
+  const points = path.ops.filter(isVertex);
+  if (points.length < 2) { return false; }
+  const first = points[0];
+  const last = points[points.length - 1];
+  return Math.abs(first[1] - last[1]) < CLOSURE_TOLERANCE
+    && Math.abs(first[2] - last[2]) < CLOSURE_TOLERANCE;
+};
+/* The outline without the closure claim. `hasConeShape` rejects an open wedge
+ * and an absent one alike, and this is what tells the two apart in a failure's
+ * detail — without it, deleting the closure would report "the cone is gone". */
+const hasWedgeOutline = (path) => {
+  if (path.ink !== FACING_INK) { return false; }
+  if (!path.ops.length || path.ops[0][0] !== "moveTo") { return false; }
+  if (path.ops.some((op) => !isVertex(op) && op[0] !== "closePath")) { return false; }
+  const vertices = path.ops.filter(isVertex).length;
+  return vertices >= CONE_MIN_VERTICES && vertices <= CONE_MAX_VERTICES;
+};
+const hasConeShape = (path) => hasWedgeOutline(path) && isClosedPath(path);
+const openWedgesIn = (frame) => frame.paths.filter(
+  (path) => hasWedgeOutline(path) && !isClosedPath(path));
+const isCone = (path) => path.kind === "fill" && hasConeShape(path);
+const isConeEdge = (path) => path.kind === "stroke" && hasConeShape(path);
+const conesIn = (frame) => frame.paths.filter(isCone);
+const coneEdgesIn = (frame) => frame.paths.filter(isConeEdge);
+const verticesOf = (cone) => cone.ops.filter(isVertex);
+/* The mean of those vertices. The sector is symmetric about the facing, so the
+ * centroid sits on that axis and its bearing from the token's centre is the
+ * direction the cone was aimed — which is the one thing a fixed wedge cannot
+ * fake. */
+const centroidOf = (cone) => {
+  const points = verticesOf(cone);
+  return [
+    points.reduce((sum, op) => sum + op[1], 0) / points.length,
+    points.reduce((sum, op) => sum + op[2], 0) / points.length,
+  ];
+};
+/* Zero has a sign in floating point, and the four cardinal facings land on it:
+ * a north cone's centroid is a rounding error east of the token, which
+ * Math.sign alone would report as east. */
+const bearingSign = (offset) => (Math.abs(offset) < 0.01 ? 0 : Math.sign(offset));
+/* The token's own disc — one arc, filled, in the team colour. No facing glyph
+ * has that signature, which is how a case can say the token was drawn while
+ * saying nothing about the cone. */
+const isDisc = (path) => path.kind === "fill" && path.ink !== FACING_INK
+  && path.ops.length === 1 && path.ops[0][0] === "arc";
+const discsIn = (frame) => frame.paths.filter(isDisc);
 
 function facingDoc(options) {
   const feature = { id: "slit", kind: "opening", at: [FACING_AT[0], FACING_AT[1]] };
@@ -973,7 +1063,15 @@ await suite("renderer.js: a feature's facing", "the renderer sandbox", async () 
     tips.size === 8, show(Array.from(tips)));
 });
 
-await suite("renderer.js: a token's facing", "the renderer sandbox", async () => {
+/* A creature's facing draws as a sight cone: a 90° wedge along the bearing,
+ * translucent, and under every token in the frame. It claims nothing about what
+ * the creature can see — no wall stops it, deliberately, because a
+ * line-of-sight implementation here would be a second and wrong copy of the
+ * engine's own in kernel/grid.py. So these cases check the *drawing*: one shape,
+ * clear of the token's own furniture, aimed by the name, suppressed where a
+ * facing stops being a fact, and painted under the tokens rather than over
+ * them. */
+await suite("renderer.js: a token's sight cone", "the renderer sandbox", async () => {
   const page = makePage({ canvasIds: ["map"] });
   const R = page.renderer;
   const s = FACING_VIEW.scale;
@@ -983,42 +1081,186 @@ await suite("renderer.js: a token's facing", "the renderer sandbox", async () =>
    * edge is half a width further out. "Outside the ring" is measured against
    * that, not against the token's own radius. */
   const ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
+  const reach = s * 6;   /* how far the cone is drawn from the token's centre */
   const away = (point) => Math.sqrt(
     (point[1] - cx) * (point[1] - cx) + (point[2] - cy) * (point[2] - cy));
-  const draw = (token) => {
-    R.render(page.context, facingDoc({ bare: true }), FACING_VIEW,
-      { tokens: [Object.assign({ at: FACING_AT, label: "Hero", team: "party" }, token)] });
-    return chevronsIn(page.last());
+  /* Each token carries its own `at`, so a frame can hold two of them, and the
+   * overlays are merged over the token list — which is how `sightCones: false`
+   * gets in without a second render helper. */
+  const frameFor = (tokens, overlays) => {
+    R.render(page.context, facingDoc({ bare: true }), FACING_VIEW, Object.assign({
+      tokens: tokens.map(
+        (token) => Object.assign({ at: FACING_AT, label: "Hero", team: "party" }, token)),
+    }, overlays || {}));
+    return page.last();
   };
+  const draw = (token) => conesIn(frameFor([token]));
 
+  /* Named rather than thrown, like the feature suite's: three suites filter on
+   * this ink, so a retuned colour would empty all of them, and the two causes
+   * are indistinguishable from the frame. */
   const north = draw({ hpFraction: 0.5, facing: "north" });
-  check("a token that carries a facing is drawn with one chevron",
-    north.length === 1, show(page.last().paths));
+  /* Held rather than re-read, because the cases below this one assert on the
+   * same frame and a later `draw` would replace what `page.last()` answers. */
+  const northFrame = page.last();
+  const radii = north.length === 1 ? verticesOf(north[0]).map(away) : [];
+  const nearest = radii.length ? Math.min(...radii) : NaN;
+  const farthest = radii.length ? Math.max(...radii) : NaN;
+  check("a token that carries a facing is drawn with one sight cone",
+    north.length === 1,
+    "no closed filled path of " + CONE_MIN_VERTICES + " to " + CONE_MAX_VERTICES
+    + " vertices in " + FACING_INK + ": either the facing ink changed, and FACING_INK"
+    + " in scripts/check-editor-behaviour.mjs is stale, or the cone is gone, or it is"
+    + " drawn and left open — which the case below tells apart from the other two."
+    + "\n  every path in this frame: " + show(northFrame.paths));
+  /* Closure, named on its own so an open wedge reads as an open wedge rather
+   * than as a missing one. Invisible in the wash, since fill() closes the
+   * subpath for you, and plain in the rim, which stroke() leaves open along the
+   * closing radial. Nothing in this suite saw it until this case existed:
+   * deleting ctx.closePath() from drawSightCone killed no case at all. */
+  check("and the wedge is a closed shape, not an outline left open at the rim",
+    north.length === 1 && openWedgesIn(northFrame).length === 0,
+    show(openWedgesIn(northFrame).map((path) => path.ops)));
   check("and every part of it lies outside the HP ring",
-    north.length === 1 && north[0].ops.every((op) => away(op) > ringEdge),
-    show([north.map((chevron) => chevron.ops.map(away)), ringEdge]));
-  check("and it points the way the token faces",
-    north.length === 1 && tipOf(north[0])[1] < cy - ringEdge
-      && Math.abs(tipOf(north[0])[0] - cx) < 0.01,
-    show(north));
+    north.length === 1 && verticesOf(north[0]).every((op) => away(op) > ringEdge),
+    show([north.map((cone) => verticesOf(cone).map(away)), ringEdge]));
+  /* Bounded below as well, because "outside the ring" alone is met by a
+   * clearance that exists only in the arithmetic: an inner radius of
+   * `ringEdge + 0.001` passed every case in this suite while the wash lay on
+   * the hit-point ring it is meant to stay clear of. One device pixel is the
+   * smallest gap a canvas can express, so that is the floor asserted — the
+   * renderer leaves max(2, 0.06·s), which is two at this scale. The headroom
+   * between the two numbers is deliberate: what this pins is that the clearance
+   * is visible, not the formula that produces it. */
+  check("and it clears that ring by a visible margin, not by a rounding error",
+    north.length === 1 && nearest >= ringEdge + 1,
+    show([nearest, ringEdge, ringEdge + 1]));
+  check("and none of it is drawn past the reach it claims",
+    north.length === 1 && verticesOf(north[0]).every((op) => away(op) <= reach + 0.01),
+    show([north.map((cone) => verticesOf(cone).map(away)), reach]));
+  /* And bounded below too, for the same reason the clearance is: the upper
+   * bound alone is met by any cone shorter than it claims, and a two-square
+   * reach passed every case in this suite. The outer arc is struck at the reach
+   * exactly, so this is an equality and not a range, and the six squares it
+   * pins are the distance drawSightCone's own comment argues for. Retuning that
+   * distance turns this red on purpose — recalibrate deliberately, the way the
+   * fight constants in scripts/check-api-smoke.py are. */
+  check("and it is drawn out to that reach rather than a stub of it",
+    north.length === 1 && Math.abs(farthest - reach) <= 0.01,
+    show([farthest, reach]));
 
+  /* The negative that makes the case above mean anything: a cone drawn for
+   * every token would satisfy it while saying nothing about the key. */
   check("a token that carries none is drawn without one",
     draw({ hpFraction: 0.5 }).length === 0, show(page.last().paths));
+  /* And the key is read, not merely present: a name outside the eight draws
+   * nothing rather than guessing, and `constructor` is a string a hand-opened
+   * file may carry into an object lookup. */
+  check("a name outside the eight draws no cone at all",
+    draw({ hpFraction: 0.5, facing: "up" }).length === 0, show(page.last().paths));
+  check("and neither does a name off the prototype chain",
+    draw({ hpFraction: 0.5, facing: "constructor" }).length === 0, show(page.last().paths));
   /* The token overlay is the only carrier with a state where the direction
    * stops being a fact: a body is not facing anywhere, and the square already
    * says so with a cross. */
-  check("and a dead one loses its chevron rather than keeping the last bearing",
+  check("and a dead one loses its cone rather than keeping the last bearing",
     draw({ hpFraction: 0, dead: true, facing: "north" }).length === 0,
     show(page.last().paths));
 
-  /* Details are evaluated eagerly, so every one in this file reads through a
-   * chevron that may not be there — a failure that dereferenced the missing
-   * glyph would take the rest of the suite with it and hide its own cause. */
-  const west = draw({ hpFraction: 0.5, facing: "west" });
-  check("a differently facing token aims its chevron differently",
-    west.length === 1 && north.length === 1
-      && tipOf(west[0])[0] < cx - ringEdge && Math.abs(tipOf(west[0])[1] - cy) < 0.01,
-    show([west.map(tipOf), north.map(tipOf)]));
+  /* All eight in one case, because the claim is that the *name* decides the
+   * direction. A renderer that drew a fixed wedge would pass every case above
+   * this one and every case below it. Details are evaluated eagerly, so this
+   * reads through `found[0]` only after its own length test — a failure that
+   * dereferenced a missing cone would take the rest of the suite with it and
+   * hide its own cause. */
+  const misaimed = [];
+  const shapes = new Set();
+  const bearings = [];
+  Object.keys(FACING_STEPS).forEach((name) => {
+    const found = draw({ hpFraction: 0.5, facing: name });
+    if (found.length !== 1) {
+      misaimed.push(name + ": " + found.length + " cones");
+      return;
+    }
+    shapes.add(show(found[0].ops));
+    const middle = centroidOf(found[0]);
+    const offset = [middle[0] - cx, middle[1] - cy];
+    bearings.push(name + " -> " + show(offset.map((value) => Math.round(value))));
+    const step = FACING_STEPS[name];
+    if (bearingSign(offset[0]) !== step[0] || bearingSign(offset[1]) !== step[1]) {
+      misaimed.push(name + " aims toward " + show(offset));
+    }
+  });
+  check("each of the eight names aims the cone its own way",
+    misaimed.length === 0, misaimed.join("; "));
+  check("and no two of them describe the same path",
+    shapes.size === 8, show(bearings));
+
+  /* The caller's opt-out, and the reason the second half of it is asserted: a
+   * renderer that dropped the whole token pass would satisfy "no cone" without
+   * honouring anything at all. */
+  const suppressed = frameFor([{ hpFraction: 0.5, facing: "north" }], { sightCones: false });
+  check("a caller that turns the cones off is drawn none",
+    conesIn(suppressed).length === 0, show(suppressed.paths));
+  check("and the token itself is still drawn",
+    discsIn(suppressed).length === 1, show(suppressed.paths));
+
+  /* Two tokens, because the claim is about the pass rather than about one
+   * glyph: a cone drawn inside drawToken sits under its own token and over the
+   * one beside it, which reads as one creature seeing through another's back.
+   * The discs are identified by their own signature, so this case says nothing
+   * about the cone twice over. */
+  const pair = frameFor([
+    { hpFraction: 0.5, facing: "north" },
+    {
+      at: [FACING_AT[0] + 2, FACING_AT[1]], hpFraction: 0.5, facing: "south",
+      label: "Foe", team: "foes",
+    },
+  ]);
+  const coneAt = pair.paths.map((path, index) => (isCone(path) ? index : -1))
+    .filter((index) => index >= 0);
+  const discAt = pair.paths.map((path, index) => (isDisc(path) ? index : -1))
+    .filter((index) => index >= 0);
+  check("every cone in a frame is committed before every token disc",
+    coneAt.length === 2 && discAt.length === 2
+      && Math.max(...coneAt) < Math.min(...discAt),
+    show([coneAt, discAt]));
+
+  /* The cone is a wash, and the context outlives the frame: a glyph that
+   * borrows globalAlpha and loses the restore leaves everything drawn after it
+   * faint — this frame's tokens, and every frame after it, since render() never
+   * resets alpha. The disc is committed after the cone (the case above), which
+   * is what makes it the witness. */
+  const washed = frameFor([{ hpFraction: 0.5, facing: "north" }]);
+  const cone = conesIn(washed);
+  const discs = discsIn(washed);
+  check("the cone is painted as a wash rather than a solid",
+    cone.length === 1 && cone[0].alpha > 0 && cone[0].alpha < 0.5,
+    show(cone.map((path) => path.alpha)));
+  check("and it hands the context back: the token drawn over it is at full alpha",
+    discs.length === 1 && discs.every((disc) => disc.alpha === 1),
+    show(discs.map((disc) => disc.alpha)));
+
+  /* The rim, which the wash does not imply: at a tenth opacity a cone with no
+   * edge reads as a smudge, and every case above this one is satisfied without
+   * it. It is one path committed twice rather than a second shape in the same
+   * ink — the vertex lists have to match — and it carries the firmer alpha,
+   * which is what keeps the boundary legible where the wash barely registers.
+   * The detail lists every path's commit, ink and alpha, so a rim stroked in
+   * the wrong ink reads off the failure rather than looking like an absent
+   * one. */
+  const edge = coneEdgesIn(washed);
+  check("the cone's edge is stroked in the same ink, not only filled",
+    edge.length === 1,
+    show(washed.paths.map((path) => [path.kind, path.ink, path.alpha])));
+  check("and it traces the fill rather than a second shape",
+    edge.length === 1 && cone.length === 1
+      && show(verticesOf(edge[0])) === show(verticesOf(cone[0])),
+    show([edge.map(verticesOf), cone.map(verticesOf)]));
+  check("and it is drawn firmer than the wash, and still short of opaque",
+    edge.length === 1 && cone.length === 1
+      && edge[0].alpha >= cone[0].alpha * 2 && edge[0].alpha < 1,
+    show([cone.map((path) => path.alpha), edge.map((path) => path.alpha)]));
 });
 
 await suite("renderer.js: the document's compass", "the renderer sandbox", async () => {
@@ -1408,6 +1650,12 @@ await suite("viewer.html: a replay's facing", "the page sandbox in makePage()",
     const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
     page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
     page.element("follow-level").checked = true;
+    /* The markup ships this one `checked`, but the stub DOM does not parse HTML
+     * — it invents an element the first time the page asks for one, and every
+     * invented checkbox starts unchecked. Stated here for the same reason
+     * `follow-level` is, or the cone would be suppressed by the harness and the
+     * case below would fail claiming the viewer never drew one. */
+    page.element("sight-cones").checked = true;
 
     const turning = replayV2();
     turning.initial.state.combatants[0].facing = "east";
@@ -1418,8 +1666,10 @@ await suite("viewer.html: a replay's facing", "the page sandbox in makePage()",
     const tokenNow = () => page.last().overlays.tokens[0];
     check("the facing a bundle's initial state carries reaches the token overlay",
       tokenNow() !== undefined && tokenNow().facing === "east", show(tokenNow()));
+    /* A creature's facing draws as a sight cone; the chevron this case used to
+     * name is the old design, and still the feature and compass glyph. */
     check("and it is drawn, not merely carried",
-      chevronsIn(page.last()).length === 1, show(page.last().paths));
+      conesIn(page.last()).length === 1, show(page.last().paths));
 
     page.element("scrub").value = "1";
     page.element("scrub").dispatch("input");
@@ -1428,12 +1678,33 @@ await suite("viewer.html: a replay's facing", "the page sandbox in makePage()",
 
     /* Every replay written before this key existed, which is all of them: the
      * overlay must carry no facing rather than a default one, or every archived
-     * fight acquires a bearing the engine never recorded. */
+     * fight acquires a bearing the engine never recorded. Asserted as "no path
+     * in the facing ink" rather than as "no chevron", which is what it used to
+     * say: this fixture's map states no compass and gives no feature a facing,
+     * so anything drawn in that ink is the token's, and naming only the glyph
+     * that is no longer drawn would have stopped noticing a cone entirely. */
     await page.drop(replayV2(), "no-facing-v2.json");
     check("a bundle that carries no facing hands the renderer none",
       tokenNow() !== undefined && !tokenNow().facing, show(tokenNow()));
-    check("and nothing is drawn for it",
-      chevronsIn(page.last()).length === 0, show(page.last().paths));
+    check("and nothing is drawn for it — no cone, no chevron",
+      inkPaths(page.last()).length === 0, show(page.last().paths));
+
+    /* The viewer's own suppression, which is a property of the page rather than
+     * of the renderer: the checkbox decides what reaches the overlay. Driven
+     * through a redraw the page already performs, because whether the toggle
+     * itself redraws is wiring this case does not claim — what it claims is
+     * that a frame drawn with the box unticked carries no cone, and that the
+     * creature is still on the map without it. */
+    await page.drop(turning, "facing-v2.json");
+    page.element("sight-cones").checked = false;
+    page.element("sight-cones").dispatch("change");
+    page.element("scrub").value = "0";
+    page.element("scrub").dispatch("input");
+    check("a viewer with its sight cones switched off draws none",
+      conesIn(page.last()).length === 0, show(page.last().paths));
+    check("and the creature is still drawn without one",
+      tokenNow() !== undefined && tokenNow().facing === "east"
+        && discsIn(page.last()).length === 1, show(page.last().paths));
   });
 
 await suite("viewer.html: animated playback", "the manual animation clock in makePage()",

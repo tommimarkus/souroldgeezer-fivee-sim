@@ -388,6 +388,12 @@ var FiveeRenderer = (function () {
      chevron points the right way would pass with the facing ignored. The
      transform this file uses is the DPR one in resizeCanvas and no other.
 
+     The rule binds drawSightCone below for the same reason, and costs it more:
+     the cone's two arcs are runs of lineTo rather than one ctx.arc, because an
+     arc records a centre, a radius and a pair of angles — and struck about a
+     rotated origin those are the identical numbers whichever way the creature
+     is looking. Same blind spot, one call wider.
+
      Saved and restored like drawStairs: the round cap and join are this glyph's
      own, and left behind on the shared context they bead the per-cell overlay
      segments that stroke after it. */
@@ -409,6 +415,82 @@ var FiveeRenderer = (function () {
     ctx.lineTo(backX + uy * arm, backY - ux * arm);
     ctx.stroke();
     ctx.restore();
+  }
+
+  /* --- the sight cone ----------------------------------------------------
+     What a creature's facing draws instead of the chevron a map feature wears:
+     a 90° wedge about the bearing, running from `inner` out to `reach`, washed
+     in and then rimmed along its own outline. An arrowhead sized to a token is
+     a mark you have to go looking for; a creature's facing is read at the scale
+     the fight is played at, and the wedge is what gives it that scale.
+
+     **It claims nothing about what the creature can see.** No wall stops it,
+     and none ever will. Line of sight is decided in kernel/grid.py, and a
+     second implementation here — in a language that cannot call the first, from
+     a document that carries no creature the kernel would recognise — would be a
+     picture free to disagree with the ruling, and it would be believed. This
+     says which way the creature is looking, and stops there.
+
+     The apex is clipped off at `inner` rather than drawn to the centre, so the
+     token under it, its hit-point ring and its initial stay legible through the
+     wash. That makes the shape an annular sector: an inner arc, a radial, an
+     outer arc, and the closing radial fill() supplies.
+
+     One path, committed twice. The rim is not a second shape struck in the same
+     ink — it is the fill's own outline, restated at an alpha that bounds the
+     wedge where a tenth of an opacity barely registers against the ground.
+
+     Straight segments and absolute coordinates, for the reason set out above
+     drawChevron: no ctx.arc, no rotate, no translate. */
+  var CONE_HALF_ANGLE = Math.PI / 4;  /* 90° in all — a bearing, not a beam */
+  /* Eight segments an arc, so a vertex every 11.25°. The chord between two of
+     them sags 0.48% of the radius inside the true curve: half a pixel at the
+     scale a map is usually read at, under three at the tightest zoom this
+     renderer allows, and invisible either way behind a wash this faint. Eight
+     is also few enough that the whole wedge stays eighteen points — a path a
+     reader can count, and the vertex window the behaviour harness names. */
+  var CONE_ARC_SEGMENTS = 8;
+  /* [light, dark]. A tenth is about as faint as a wash can be drawn over the
+     map's own colours and still be seen; the dark theme takes a little more,
+     because its facing ink is the lighter of the two and lies on darker
+     ground. Either way this stays a tint the map reads through, not a fill that
+     hides the terrain a fight is being decided on. */
+  var CONE_FILL_ALPHA = [0.10, 0.14];
+  /* The rim, at better than four times the wash. Firm enough to bound the
+     wedge at a glance — without it a cone this faint reads as a smudge rather
+     than as a shape — and short of the opaque line that would look like a wall
+     drawn across the floor. */
+  var CONE_EDGE_ALPHA = 0.45;
+
+  function drawSightCone(ctx, cx, cy, inner, reach, facing, ink, dark) {
+    var unit = facingUnit(facing);
+    if (!unit) { return; }
+    var from = Math.atan2(unit[1], unit[0]) - CONE_HALF_ANGLE;
+    var step = (2 * CONE_HALF_ANGLE) / CONE_ARC_SEGMENTS;
+    ctx.beginPath();
+    for (var i = 0; i <= CONE_ARC_SEGMENTS; i++) {
+      var near = from + step * i;
+      var nx = cx + Math.cos(near) * inner;
+      var ny = cy + Math.sin(near) * inner;
+      if (i === 0) { ctx.moveTo(nx, ny); } else { ctx.lineTo(nx, ny); }
+    }
+    /* Back down the outer arc from the angle the inner one finished on, so the
+       first point of this run is the radial that joins the two. */
+    for (var j = CONE_ARC_SEGMENTS; j >= 0; j--) {
+      var far = from + step * j;
+      ctx.lineTo(cx + Math.cos(far) * reach, cy + Math.sin(far) * reach);
+    }
+    ctx.closePath();
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = CONE_FILL_ALPHA[dark ? 1 : 0];
+    ctx.fill();
+    /* The same path, not a new one: no beginPath between the two commits. */
+    ctx.strokeStyle = ink;
+    /* `reach` is six squares, so this is 0.06 of a square — the width rule the
+       chevron carries, restated in the one length this function is handed. */
+    ctx.lineWidth = Math.max(1, reach * 0.01);
+    ctx.globalAlpha = CONE_EDGE_ALPHA;
+    ctx.stroke();
   }
 
   /* The document's compass: where *true* north lies relative to the grid. It is
@@ -475,18 +557,10 @@ var FiveeRenderer = (function () {
       ctx.lineWidth = Math.max(1.5, size * 0.07);
       ctx.stroke();
     }
-    /* Outside the HP ring, computed from the ring rather than guessed past it:
-       the ring is stroked on r + max(1.5, 0.07·size) at that same width, so its
-       outer edge is half a width further out again, and the chevron's wings
-       start clear of it at every scale and every fraction of health. Not drawn
-       for the dead — a body is not facing anywhere, and the cross below is what
-       that square has to say. */
-    if (token.facing && !token.dead) {
-      var ringEdge = r + Math.max(1.5, size * 0.07) * 1.5;
-      drawChevron(ctx, cx, cy, ringEdge + Math.max(3, size * 0.16),
-        Math.max(2.5, size * 0.11), token.facing, facingInk(dark),
-        Math.max(1.5, size * 0.06));
-    }
+    /* A creature's facing is not drawn here. It is a sight cone now, and a cone
+       is translucent — drawn from inside this function it would lie over every
+       token committed before it. render() paints them all in a pass of its own,
+       under every token in the frame. */
     if (token.label) {
       ctx.fillStyle = "#fff";
       ctx.font = "bold " + Math.max(8, Math.round(size * 0.42))
@@ -583,8 +657,12 @@ var FiveeRenderer = (function () {
          // glyph — the channel a fixture's effect arrives through. Squares
          // and kinds only: the renderer never learns what decided them
        tokens: [{at: [x, y], label, team, hpFraction, down, dead, stable,
-         facing}]  // facing is one of the eight names, or absent for a
-         // creature whose direction nobody is tracking
+         facing}],  // facing is one of the eight names, or absent for a
+         // creature whose direction nobody is tracking. A facing draws a sight
+         // cone under the tokens — orientation only, occluded by nothing
+       sightCones: bool  // false suppresses those cones. Default on: absent
+         // and true both draw them, so every caller written before the switch
+         // keeps the picture it had
      } */
   function render(ctx, doc, view, overlays) {
     overlays = overlays || {};
@@ -738,6 +816,51 @@ var FiveeRenderer = (function () {
     }
 
     var tokens = overlays.tokens || [];
+
+    /* The sight cones, in a pass of their own and before the first token is
+       drawn. A cone is a wash and a token is not, so a cone struck from inside
+       the loop below would lie over every token already committed — one
+       creature seeing through another's back, and which pair looked wrong would
+       depend on the order the tokens happened to arrive in.
+
+       One save for the whole pass rather than one per cone, like the marks
+       above: a cone borrows globalAlpha, and render() never resets it, so the
+       restore is what keeps the tokens drawn after this at full strength.
+
+       Read as a comparison against false rather than as a truthiness test. The
+       switch is default-on, and every caller that predates it — the editor
+       included, which grows no toggle — hands down an overlays object with no
+       such key; `if (overlays.sightCones)` would quietly take the cones away
+       from all of them. */
+    if (overlays.sightCones !== false) {
+      ctx.save();
+      for (var ci = 0; ci < tokens.length; ci++) {
+        var seer = tokens[ci];
+        /* Nothing for the dead: a body is not facing anywhere, and the cross
+           its token wears is what that square has to say. */
+        if (!seer.facing || seer.dead) { continue; }
+        /* Clear of the token's own furniture, computed from the hit-point ring
+           rather than guessed past it: the ring is stroked on r + max(1.5,
+           0.07·s) at that same width, so its outer edge lies half a width
+           further out again, and the wash begins outside it at every scale and
+           every fraction of health.
+
+           Six squares of reach, because that is a distance a reader measures in
+           squares rather than in pixels: far enough to say where the creature
+           is looking across a room, short enough that a crowded map does not
+           vanish under the wedges. It is not a sight range and does not claim
+           to be one — see drawSightCone. */
+        var ringEdge = s * 0.36 + Math.max(1.5, s * 0.07) * 1.5;
+        drawSightCone(
+          ctx, (seer.at[0] - view.x) * s + s / 2,
+          (seer.at[1] - view.y) * s + s / 2,
+          ringEdge + Math.max(2, s * 0.06), s * 6,
+          seer.facing, facingInk(dark), dark
+        );
+      }
+      ctx.restore();
+    }
+
     for (var ti = 0; ti < tokens.length; ti++) {
       var token = tokens[ti];
       drawToken(ctx, (token.at[0] - view.x) * s, (token.at[1] - view.y) * s,

@@ -108,6 +108,12 @@ footer {
   <span id="seed"></span>
   <label>Storey <select id="level-select" aria-label="visible storey"></select></label>
   <label><input id="follow-level" type="checkbox" checked> Follow action</label>
+  <!-- An orientation aid, not a visibility claim: the wedge says which way a
+       creature is turned and is deliberately not occluded by walls, because
+       only the engine knows what it resolved as seen. Ticked in the markup
+       rather than at boot, for the reason the served-only controls below ship
+       `hidden` — a standalone export has to be right before any script runs. -->
+  <label><input id="sight-cones" type="checkbox" checked> Sight cones</label>
   <span class="spacer"></span>
   <!-- Both revealed only when this page is served: a standalone export has no
        server to list replays from and no editor to link back to, and an
@@ -571,7 +577,8 @@ if (typeof FiveeRenderer === "undefined") {
       tokens: tokens,
       featureStates: state.featureStates,
       terrainOverrides: state.terrainOverrides,
-      marks: eventMarks()
+      marks: eventMarks(),
+      sightCones: byId("sight-cones").checked
     });
   }
 
@@ -1256,6 +1263,9 @@ if (typeof FiveeRenderer === "undefined") {
   });
   byId("follow-level").addEventListener("change", function () {
     followActionLevel();
+  });
+  byId("sight-cones").addEventListener("change", function () {
+    redraw();
   });
   function openFileObject(file) {
     file.text().then(function (text) {

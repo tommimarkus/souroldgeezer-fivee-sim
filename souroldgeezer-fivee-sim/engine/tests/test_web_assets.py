@@ -93,6 +93,24 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
+def renderer_function(name: str) -> str:
+    """One top-level ``renderer.js`` function, sliced out at its own terminator.
+
+    The viewer tests below slice a function by naming the declaration that
+    follows it, which holds while the neighbourhood is stable. The facing work
+    is what moves this neighbourhood — a sight-cone pass is drawn from
+    ``render`` and the chevron branch left ``drawToken`` — so a slice that
+    named a neighbour would quietly start covering a different function. Every
+    top-level declaration in this file's IIFE is indented two spaces and closes
+    on a line that is exactly ``  }``; everything nested inside one closes
+    further in, so the function's own terminator is the anchor that cannot
+    drift.
+    """
+    match = re.search(rf"\n  function {name}\(.*?\n  \}}\n", read("renderer.js"), re.DOTALL)
+    assert match is not None, f"renderer.js declares no top-level {name}()"
+    return match.group(0)
+
+
 class TestInjectionContracts:
     @pytest.mark.parametrize("page", PAGES)
     def test_each_page_carries_the_config_marker_exactly_once(self, page: str) -> None:
@@ -851,7 +869,12 @@ class TestEditorFixturePreview:
 
 
 class TestFacingAndCompass:
-    """One direction vocabulary, three carriers, and one glyph for all of them.
+    """One direction vocabulary, three carriers, and two glyphs drawn from it.
+
+    A map feature and the map's own compass wear the chevron; a creature wears
+    a sight cone, which says the same thing at the scale the thing it describes
+    is played at. One table of eight names feeds both, which is the property
+    this class exists to keep.
 
     Text and source ordering only, per the module docstring. Whether a chevron
     actually points north is a behaviour claim and belongs to
@@ -873,12 +896,16 @@ class TestFacingAndCompass:
 
     def test_the_facing_glyph_is_drawn_in_absolute_coordinates(self) -> None:
         # Load-bearing for a check this file cannot make. The behaviour harness
-        # records moveTo/lineTo arguments exactly as passed, so a chevron drawn
+        # records moveTo/lineTo arguments exactly as passed, so a glyph drawn
         # under a translate/rotate pair would record identical coordinates for
         # all eight facings — every "it points the right way" case there would
-        # pass against a renderer that ignored the facing entirely. The one
-        # transform this file permits is the devicePixelRatio setTransform in
-        # resizeCanvas, which is why it is counted rather than forbidden.
+        # pass against a renderer that ignored the facing entirely. It binds
+        # both glyphs this vocabulary has: the chevron a feature and the
+        # compass wear, and the creature's sight cone, which is a wedge of
+        # straight segments for exactly this reason rather than an arc swept
+        # about a rotated origin. The one transform this file permits is the
+        # devicePixelRatio setTransform in resizeCanvas, which is why it is
+        # counted rather than forbidden.
         source = read("renderer.js")
         assert "ctx.rotate(" not in source
         assert "ctx.translate(" not in source
@@ -893,17 +920,97 @@ class TestFacingAndCompass:
         assert '"north": [0, -1]' in source
         assert '"southeast": [1, 1]' in source
 
-    def test_one_chevron_serves_all_three_carriers(self) -> None:
-        # A creature, a map feature, and the map itself. Three glyphs would be
-        # three chances to disagree about what "northeast" looks like. Counted,
-        # so a fourth call site has to be an argued-for change rather than a
-        # quiet one: the definition plus exactly three uses.
+    def test_one_chevron_serves_both_map_carriers(self) -> None:
+        # A map feature and the map itself. Two glyphs would be two chances to
+        # disagree about what "northeast" looks like. Counted, so a third call
+        # site has to be an argued-for change rather than a quiet one: the
+        # definition plus exactly two uses. A creature is deliberately not one
+        # of them any more — its facing is the sight cone below, and this count
+        # is what would catch a chevron branch left behind beside it.
         source = read("renderer.js")
         assert source.count("function drawChevron(") == 1
-        assert source.count("drawChevron(") == 4
-        assert "token.facing" in source
+        assert source.count("drawChevron(") == 3
         assert "feature.facing" in source
         assert "doc.compass" in source
+
+    def test_a_creatures_facing_is_drawn_as_one_shared_sight_cone(self) -> None:
+        # The glyph a creature's facing gets instead of the chevron, counted
+        # the same way and for the same reason: the definition plus exactly one
+        # call site. A second pass drawing cones of its own — the editor
+        # growing a preview, say — would be a second answer to "which way is
+        # this creature looking", free to disagree with the first.
+        source = read("renderer.js")
+        assert source.count("function drawSightCone(") == 1
+        assert source.count("drawSightCone(") == 2
+        assert "drawSightCone(" in renderer_function("render")
+
+    def test_the_sight_cones_are_painted_before_the_first_token(self) -> None:
+        # A cone is translucent and a token is not, so drawn from inside the
+        # token loop one creature's cone would wash over the creature standing
+        # in it, and which of the two looked wrong would depend on the order
+        # the tokens happened to arrive in. Source order only: that the pass
+        # really lands under every token is a behaviour claim, and the case
+        # that paints two overlapping cones and reads back what the canvas was
+        # asked to draw lives in scripts/check-editor-behaviour.mjs.
+        body = renderer_function("render")
+        assert "drawSightCone(" in body, "render() draws no sight-cone pass at all"
+        assert body.index("drawSightCone(") < body.index("drawToken(")
+
+    def test_a_token_glyph_no_longer_draws_a_facing_of_its_own(self) -> None:
+        # Asserted as absence *inside drawToken* rather than as presence
+        # elsewhere: an old chevron branch left in place would draw both glyphs
+        # for every creature, and every whole-file search for "token.facing"
+        # would stay green while it did. The read moved out with the branch, so
+        # the cone pass in render() is where it must now appear.
+        token = renderer_function("drawToken")
+        body = renderer_function("render")
+        assert ".facing" not in token, "drawToken still reads a facing of its own"
+        assert "drawChevron(" not in token
+        # Matched on the receiver rather than spelled `token.facing`, so the
+        # claim is the contract and not the cone pass's choice of loop
+        # variable: render() has to read a facing off something that is not a
+        # map feature, which is the only thing a cone can be pointed along.
+        creatures = set(re.findall(r"(\w+)\.facing", body)) - {"feature"}
+        assert creatures, "render() reads no creature's facing to point a cone along"
+        # A map feature's facing is untouched by any of this: still read, still
+        # chevroned, in the feature loop it has always been drawn from.
+        assert "feature.facing" in body
+
+    def test_the_sight_cone_is_built_from_straight_segments_only(self) -> None:
+        # Scoped to the function, because drawToken and drawCompass have every
+        # right to their circles. An arc here would be invisible to the
+        # absolute-coordinate direction cases in the behaviour harness, which
+        # read moveTo and lineTo arguments and nothing else — and it would
+        # collide with the door suite's "a closed door strokes no arc"
+        # negative, which counts stroked arc paths across a whole frame and
+        # would start seeing one per facing creature on the map.
+        cone = renderer_function("drawSightCone")
+        assert "ctx.arc(" not in cone
+        assert "ctx.moveTo(" in cone
+        assert "ctx.lineTo(" in cone
+
+    def test_the_overlay_vocabulary_names_the_sight_cone_switch(self) -> None:
+        # The comment above render() is the one declaration of what an overlays
+        # object may carry, and both pages are written from it. A key the
+        # renderer reads and the comment does not name is one the next page
+        # author never learns exists — and this is the block that already has
+        # to be read to find out that `tokens` carries a facing at all.
+        source = read("renderer.js")
+        comment = source[
+            source.index("/* render(ctx, doc, view, overlays)") : source.index(
+                "function render(ctx, doc, view, overlays)"
+            )
+        ]
+        assert "sightCones" in comment
+
+    def test_a_sight_cone_is_drawn_unless_the_caller_switches_it_off(self) -> None:
+        # Default-on, and stated as a comparison against false rather than as a
+        # truthiness test: every caller that predates the switch hands down an
+        # overlays object without the key, and `if (overlays.sightCones)` would
+        # silently stop drawing cones for all of them — the editor included,
+        # which never grows a toggle. Either direction of the comparison says
+        # the same thing; a bare read of the key does not.
+        assert re.search(r"overlays\.sightCones\s*[!=]==\s*false", renderer_function("render"))
 
     @pytest.mark.parametrize("page", PAGES)
     def test_only_the_renderer_turns_a_name_into_a_direction(self, page: str) -> None:
@@ -1008,6 +1115,33 @@ class TestFacingAndCompass:
         source = read("viewer.html")
         fold = source[source.index("function fold(") : source.index("function stateAt")]
         assert "facing" not in fold
+
+    def test_the_viewer_carries_the_sight_cone_toggle_exactly_once(self) -> None:
+        # Exactly once apiece, like every other control in this file: byId()
+        # answers with the first of a duplicated id, so a copy-paste double
+        # would wire the switch to a checkbox the audience is not clicking.
+        # `checked` in the markup rather than set at boot, for the reason the
+        # served-only controls ship `hidden` — a standalone export has to be
+        # correct before a line of script runs.
+        source = read("viewer.html")
+        assert source.count('id="sight-cones"') == 1
+        control = re.search(r'<input[^>]*id="sight-cones"[^>]*>', source)
+        assert control is not None, "the sight-cone toggle is not an <input>"
+        assert 'type="checkbox"' in control.group(0)
+        assert "checked" in control.group(0)
+        assert "Sight cones" in source
+
+    def test_the_viewer_hands_the_sight_cone_switch_to_the_renderer(self) -> None:
+        # The renderer is the only thing that can act on the toggle, so a
+        # checkbox the render call never reads is a control that looks live and
+        # does nothing at all. Anchored inside renderFrame beside the other
+        # overlays, because that is the one call every frame goes through —
+        # wired to a redraw somewhere else, it would take effect on the next
+        # scrub and not on the click.
+        source = read("viewer.html")
+        frame = source[source.index("function renderFrame") : source.index("var framePending")]
+        assert "R.render(" in frame
+        assert "sightCones:" in frame
 
 
 class TestAnimatedEventFamilies:
