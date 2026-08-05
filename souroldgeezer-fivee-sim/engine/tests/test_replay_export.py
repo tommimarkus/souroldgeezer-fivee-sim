@@ -554,6 +554,54 @@ def test_a_combatants_facing_is_accepted_reported_and_carried_into_the_bundle() 
     )
 
 
+def test_a_facing_survives_the_journal_and_is_still_there_after_recovery() -> None:
+    # The test above proves a facing reaches the bundle from a *live* session.
+    # This one closes the other door: `normalized_combatant_payload` is the
+    # creation input the journal keeps, and `recover_session` rebuilds a fight
+    # by feeding it back through `combatants_from_specs`. A key missing from
+    # that payload is a key the rebuilt fight has never heard of, however
+    # faithfully the live path reports it.
+    hero = dict(REPLAY_HERO)
+    hero["facing"] = "northeast"
+    goblin = dict(REPLAY_GOBLIN)
+    goblin["facing"] = "west"
+    encounter_id = str(api.encounter_create([hero, goblin], seed=123)["encounter_id"])
+
+    def facings(combatants: list[dict[str, Any]]) -> dict[str, Any]:
+        return {entry["name"]: entry.get("facing") for entry in combatants}
+
+    before = facings(api.encounter_state(encounter_id)["combatants"])
+    api.STATE.sessions.clear()  # the fight is recovered from its journal alone
+    after = facings(api.encounter_resume(encounter_id)["state"]["combatants"])
+
+    assert before == {"Thora": "northeast", "Goblin": "west"}
+    assert after == before
+
+
+def test_a_recovered_fight_exports_a_bundle_that_still_points_its_sight_cones() -> None:
+    # The consequence, pinned separately from the mechanism. `renderer.js` skips
+    # a seer with no facing — `if (!seer.facing || seer.dead) { continue; }` — so
+    # a bundle that lost facing on the way through the journal renders with every
+    # sight cone silently absent. `encounter.replay` reaches a fight through
+    # `session_for`, which recovers whenever process memory is gone, so this is
+    # the ordinary path after any restart and not an exotic one.
+    hero = dict(REPLAY_HERO)
+    hero["facing"] = "northeast"
+    encounter_id = str(
+        api.encounter_create([hero, dict(REPLAY_GOBLIN)], seed=124)["encounter_id"]
+    )
+
+    api.STATE.sessions.clear()
+    bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+    exported = next(
+        entry for entry in bundle["latest_state"]["combatants"]
+        if entry["name"] == "Thora"
+    )
+    assert exported["facing"] == "northeast"
+    assert bundle["initial"]["combatants"][0]["facing"] == "northeast"
+
+
 def test_a_facing_nobody_named_is_refused_rather_than_silently_dropped() -> None:
     hero = dict(REPLAY_HERO)
     hero["facing"] = "nrothest"
