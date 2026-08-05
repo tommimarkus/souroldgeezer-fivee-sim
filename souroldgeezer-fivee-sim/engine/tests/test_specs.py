@@ -101,6 +101,16 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
             "Goblin",
         }
 
+    def test_hp_above_max_hp_is_refused(self) -> None:
+        # SRD 5.2.1 Rules Glossary: "You can't have more Hit Points than your Hit
+        # Point maximum." The engine refuses it at the spec layer, naming both the
+        # provided hp and the maximum.
+        with pytest.raises(
+            RequestError,
+            match="combatant Thora: hp 500 cannot exceed max_hp 30",
+        ):
+            api.encounter_create([{**HERO, "hp": 500}, dict(GOBLIN)])
+
 
 def _combatant(created: dict[str, Any], name: str) -> dict[str, Any]:
     """One combatant's slice of a created encounter's reported state."""
