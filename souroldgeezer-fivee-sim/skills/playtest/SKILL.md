@@ -78,6 +78,16 @@ stays on its side and is what "unused content" is later measured against.
 **Each player** is a `typical-player` agent, spawned once per seat and kept alive.
 Hand it a character sheet, a temperament, and a voice — and nothing else.
 
+**Each seat declares its own model and reasoning effort, and a player is
+deliberately not run hot.** The game master is the judgment seat — it holds the
+module, adjudicates what the module did not say, and its findings are the
+deliverable — so it runs at the top tier. A player is asked to decide a turn the
+way somebody at a table decides one, and a seat reasoning harder plays *closer to
+optimal*, which is the one thing this run must not measure. Leave those settings
+alone unless you have a reason: spawning a seat on a different model is possible
+and its effort is not, so an override changes half the setting and silently
+inherits the rest.
+
 ### The three layers that keep a player honest, and the one that is checked
 
 **1. It is never told where the module is.** No path, no filename, no directory,
