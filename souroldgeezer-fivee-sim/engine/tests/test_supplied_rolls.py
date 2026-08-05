@@ -43,31 +43,46 @@ def _attack_event(result: dict[str, Any]) -> dict[str, Any]:
 
 
 class TestTheFaceReachesTheRoll:
-    def test_a_supplied_twenty_crits_whatever_the_seed_would_have_rolled(self) -> None:
-        # Asserted across two unrelated seeds, so it cannot pass by coinciding
-        # with the draw either time.
-        for seed in (41, 977):
-            encounter_id = _fight(seed)
-            result = api.encounter_act(
-                encounter_id, "attack", target="Goblin", attack="Longsword", natural=20
-            )
-            assert _attack_event(result)["data"]["critical"] is True
+    # Two unrelated seeds for each case, so none of them can pass by the draw
+    # happening to agree with the reported face.
+    SEEDS = [41, 977]
 
-    def test_a_supplied_one_misses_whatever_the_seed_would_have_rolled(self) -> None:
-        for seed in (41, 977):
-            encounter_id = _fight(seed)
-            result = api.encounter_act(
-                encounter_id, "attack", target="Goblin", attack="Longsword", natural=1
-            )
-            event = _attack_event(result)
-            assert event["data"]["hit"] is False
+    @pytest.mark.parametrize("seed", SEEDS)
+    def test_a_supplied_twenty_crits_whatever_the_seed_would_have_rolled(
+        self, seed: int
+    ) -> None:
+        result = api.encounter_act(
+            _fight(seed), "attack", target="Goblin", attack="Longsword", natural=20
+        )
+        event = _attack_event(result)
+        # The face itself, not only its consequence. A drawn roll crits 1 time in
+        # 20, so `critical` alone would let an engine that ignored the reported
+        # face pass here about one run in four hundred.
+        assert event["data"]["natural"] == 20
+        assert event["data"]["critical"] is True
+
+    @pytest.mark.parametrize("seed", SEEDS)
+    def test_a_supplied_one_misses_whatever_the_seed_would_have_rolled(
+        self, seed: int
+    ) -> None:
+        result = api.encounter_act(
+            _fight(seed), "attack", target="Goblin", attack="Longsword", natural=1
+        )
+        event = _attack_event(result)
+        # `hit is False` on its own is a weak oracle here — +5 against AC 15
+        # misses on any drawn roll under 10, so it would pass more often than
+        # not against an engine that never read the face at all.
+        assert event["data"]["natural"] == 1
+        assert event["data"]["hit"] is False
 
     def test_the_face_the_caller_rolled_is_the_one_narrated_back(self) -> None:
-        encounter_id = _fight()
         result = api.encounter_act(
-            encounter_id, "attack", target="Goblin", attack="Longsword", natural=13
+            _fight(), "attack", target="Goblin", attack="Longsword", natural=13
         )
-        assert "13" in _attack_event(result)["detail"]
+        event = _attack_event(result)
+        assert event["data"]["natural"] == 13
+        # And it reaches the prose a table actually hears, not just the payload.
+        assert "d20 [13]" in event["detail"]
 
 
 class TestTheBoundaryRefuses:
@@ -126,24 +141,26 @@ class TestTheFightRemembersIt:
         assert recovered["recovered"] is True
         assert recovered["state"] == before
 
-    def test_a_supplied_face_and_a_rolled_one_recover_to_different_fights(self) -> None:
-        # The guard on the case above: if resume ignored the face entirely, both
-        # fights would recover to whatever the seed rolls and the assertion
-        # would pass against a journal that records nothing.
-        supplied = _fight()
-        api.encounter_act(supplied, "attack", target="Goblin", attack="Longsword", natural=1)
-        missed = api.encounter_state(supplied)
-
-        landed_id = _fight()
-        api.encounter_act(landed_id, "attack", target="Goblin", attack="Longsword", natural=20)
-        landed = api.encounter_state(landed_id)
-
-        def goblin_hp(state: dict[str, Any]) -> int:
+    def test_two_different_faces_survive_the_journal_as_two_different_fights(
+        self,
+    ) -> None:
+        # The guard on the case above, and it has to *resume* to be one. That
+        # test asserts a recovered fight equals the live one, which a journal
+        # recording no face at all could satisfy by re-rolling both the same
+        # way. These two recover from records that differ only in the reported
+        # face, so a dropped face collapses them together.
+        def recovered_goblin_hp(face: int) -> int:
+            encounter_id = _fight()
+            api.encounter_act(
+                encounter_id, "attack", target="Goblin", attack="Longsword", natural=face
+            )
+            api.STATE.sessions.clear()
+            state = api.encounter_resume(encounter_id)["state"]
             return int(
                 next(c["hp"] for c in state["combatants"] if c["name"] == "Goblin")
             )
 
-        assert goblin_hp(missed) > goblin_hp(landed)
+        assert recovered_goblin_hp(1) > recovered_goblin_hp(20)
 
 
 class TestDeathSaves:

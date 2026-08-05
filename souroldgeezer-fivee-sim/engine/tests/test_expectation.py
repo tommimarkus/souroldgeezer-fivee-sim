@@ -16,10 +16,12 @@ from __future__ import annotations
 
 import statistics
 from inspect import signature
+from pathlib import Path
 from random import Random
 
 import pytest
 
+from fivee_sim.analytics import montecarlo
 from fivee_sim.analytics.expectation import (
     attack_damage_expectation,
     expected_damage,
@@ -69,6 +71,26 @@ class TestAttackSignatureParity:
         }
         closed = dict(signature(attack_damage_expectation).parameters)
         assert set(closed) == set(rolled)
+
+    def test_nothing_in_analytics_supplies_a_face(self) -> None:
+        """The premise the exemption above rests on, checked rather than assumed.
+
+        Exempting ``supplied`` from the parity check is only safe while no batch
+        ever passes one — the moment analytics did, the closed form would be
+        valuing a roll the roller was told the answer to, and the exemption
+        would be hiding exactly the divergence this class exists to catch.
+        """
+        analytics = Path(montecarlo.__file__).parent
+        offenders = [
+            path.name
+            for path in sorted(analytics.glob("*.py"))
+            if "supplied" in path.read_text()
+        ]
+        assert offenders == [], (
+            f"{offenders} passes a supplied d20 face; the `supplied` exemption in "
+            "_ABOUT_ONE_ROLL is no longer safe and the closed form now needs to "
+            "account for it"
+        )
 
     def test_the_two_agree_on_what_each_argument_defaults_to(self) -> None:
         rolled = signature(resolve_attack).parameters
