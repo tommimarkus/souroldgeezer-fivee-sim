@@ -201,8 +201,15 @@ ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
 
 #: The other half: what a stat block says and a table does not get to read.
 ENEMY_WITHHELD_KEYS: frozenset[str] = frozenset({
-    # The numbers the whole redaction exists for.
-    "hp", "max_hp", "ac",
+    # The numbers the whole redaction exists for. `temp_hp` sits beside `hp`
+    # rather than the visible half: it is the same sheet arithmetic wearing a
+    # different name, a second number of exactly the kind a health band
+    # exists to replace. Withholding it does not lie about the fight — the
+    # health band a withheld enemy already gets is computed off raw `hp`, so a
+    # buffered foe is described no more favourably than an unbuffered one at
+    # the same hit points, exactly as an ordinary player at the table would
+    # read them: harder to say "I've done it" about, not literally unharmed.
+    "hp", "max_hp", "temp_hp", "ac",
     # Resources, and therefore what it can still do to you.
     "spell_slots", "items", "attacks", "spells", "bonus_actions",
     "reaction_available", "redirect_attack",
@@ -345,7 +352,10 @@ EVENT_VISIBLE_KEYS: frozenset[str] = frozenset({
 #: watches an arrow leave the bow; it does not get to count what is left in the
 #: ambusher's quiver.
 EVENT_WITHHELD_KEYS: frozenset[str] = frozenset({
-    "hp", "max_hp", "natural", "total", "advantage", "attack", "spell",
+    # `temp_hp` beside `hp` and `max_hp`, for the reason it sits beside them
+    # in `ENEMY_WITHHELD_KEYS`: a running buffer total is the same sheet
+    # number, arriving one grant event at a time instead of on the snapshot.
+    "hp", "max_hp", "temp_hp", "natural", "total", "advantage", "attack", "spell",
     "slot_level", "item", "remaining", "successes", "failures", "movement_left",
     "ammunition_remaining",
     "damage", "bonus_damage", "advantage_bonus_damage", "advantage_bonus_reason",
@@ -427,7 +437,7 @@ EVENT_KINDS: frozenset[str] = frozenset({
     "disengage", "dodge", "down", "effect_apply", "effect_end", "heal", "interact",
     "move", "opportunity_attack", "round", "spell_effect", "stabilised", "stand",
     "attach", "attached_damage", "detach", "surrender", "redirect_attack", "arrival",
-    "turn_end", "turn_start", "undead_fortitude", "use_item",
+    "turn_end", "turn_start", "undead_fortitude", "use_item", "grant_temp_hp",
 })
 
 
@@ -1902,6 +1912,7 @@ class Encounter:
             "team": creature.team,
             "hp": creature.hp,
             "max_hp": creature.max_hp,
+            "temp_hp": creature.temp_hp,
             "ac": creature.ac,
             "speeds": {
                 "walk": creature.speed,
@@ -2989,6 +3000,15 @@ class Encounter:
                        detail=f"{target.hp - before} hit points restored, "
                               f"{target.hp}/{target.max_hp}",
                        amount=target.hp - before, hp=target.hp, max_hp=target.max_hp)
+        if resolution.temp_hp_granted:
+            # Never through ``heal``: a grant is not healing and must not clear
+            # death saves, ``stable``, or Unconscious. See ``Creature.
+            # grant_temp_hp``.
+            target.grant_temp_hp(resolution.temp_hp_granted)
+            self._emit("grant_temp_hp", target=target.name,
+                       detail=f"{resolution.temp_hp_granted} temporary hit points "
+                              f"offered, {target.temp_hp} held",
+                       amount=resolution.temp_hp_granted, temp_hp=target.temp_hp)
         if resolution.damage_dealt:
             self._apply_damage(
                 target, resolution.damage_dealt, rng,
@@ -3171,6 +3191,8 @@ class Encounter:
             detail += f", damage {resolution.damage_roll.describe()}"
         if resolution.healing_roll is not None:
             detail += f", healing {resolution.healing_roll.describe()}"
+        if resolution.temp_hp_roll is not None:
+            detail += f", temp HP {resolution.temp_hp_roll.describe()}"
         self._emit("cast", actor.name, detail=detail,
                    spell=spell.name,
                    slot_level=slot_level,
@@ -3232,6 +3254,20 @@ class Encounter:
                     amount=target.hp - before,
                     hp=target.hp,
                     max_hp=target.max_hp,
+                )
+            if result.temp_hp_granted:
+                # Never through ``heal``, for the same reason ``use_item``
+                # above keeps the two apart: see ``Creature.grant_temp_hp``.
+                target.grant_temp_hp(result.temp_hp_granted)
+                self._emit(
+                    "grant_temp_hp",
+                    actor.name,
+                    target.name,
+                    detail=f"{result.temp_hp_granted} temporary hit points "
+                    f"offered, {target.temp_hp} held",
+                    spell=spell.name,
+                    amount=result.temp_hp_granted,
+                    temp_hp=target.temp_hp,
                 )
             if result.condition_applied is not None and target.conscious:
                 self._apply_condition(
@@ -4539,6 +4575,11 @@ class Encounter:
             # Point instead." It never reaches 0, so none of the drop's machinery
             # runs: no Unconscious, no Prone, no death saves — and the
             # concentration check below still fires, because damage was taken.
+            # Temporary Hit Points are still spent first, exactly as the top of
+            # ``take_damage`` spends them — this branch bypasses that method
+            # entirely, so the buffer has to be consumed here instead.
+            absorbed = min(target.temp_hp, amount)
+            target.temp_hp -= absorbed
             target.hp = 1
         else:
             # ``critical`` only matters for a target already at 0 hit points, where
@@ -4617,17 +4658,27 @@ class Encounter:
         randomness exactly when a replay would consume it. The save itself goes
         through the same machinery as every other save the fight rolls, with
         the target's own advantage and auto-fail circumstances.
+
+        ``amount`` is read through :meth:`Creature.damage_after_temp_hp` before
+        anything else runs, both for the eligibility gate and for the DC:
+        Temporary Hit Points are spent before hit points, so damage a buffer
+        fully absorbs never reduces the target at all, and a save gated on "damage
+        that reduces it to 0" must neither roll for that damage nor be sized by
+        it. A save this target was never going to be asked for is a roll the
+        RNG stream must not spend, the same standing radiant, critical and
+        overkill already hold.
         """
         if not target.undead_fortitude or not target.conscious:
             return None
-        if amount < target.hp or amount - target.hp >= target.max_hp:
+        effective = target.damage_after_temp_hp(amount)
+        if effective < target.hp or effective - target.hp >= target.max_hp:
             return None
         if critical or DamageType.RADIANT in damage_types:
             return None
         return make_d20_test(
             rng,
             modifier=target.save_modifier(Ability.CONSTITUTION),
-            dc=UNDEAD_FORTITUDE_BASE_DC + amount,
+            dc=UNDEAD_FORTITUDE_BASE_DC + effective,
             advantage=self.save_advantage(target, Ability.CONSTITUTION),
             auto_fail=self.auto_fails_save(target, Ability.CONSTITUTION),
         )

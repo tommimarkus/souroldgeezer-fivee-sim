@@ -317,6 +317,32 @@ class TestUndeadFortitude:
         assert shambler.dead
         assert not any(event.kind == "undead_fortitude" for event in events)
 
+    def test_temp_hp_that_fully_absorbs_the_damage_bypasses_the_save(self) -> None:
+        # SRD 5.2.1, Temporary Hit Points: damage the buffer absorbs never
+        # reaches hit points at all, so a save gated on "damage that reduces
+        # the zombie to 0 Hit Points" never applies — and must not roll, for
+        # the same RNG-conservation reason radiant, critical and overkill
+        # skip it above.
+        encounter, shambler, _ = self.duel(strike(), save_bonus=100, hp=5)
+        shambler.temp_hp = 20
+        events = self.strike_shambler(encounter)  # 1d1+7: 8 damage, fully buffered
+        assert shambler.hp == 5
+        assert shambler.temp_hp == 12
+        assert not any(event.kind == "undead_fortitude" for event in events)
+
+    def test_temp_hp_reduces_the_fortitude_dc_to_only_what_reached_hit_points(
+        self,
+    ) -> None:
+        # 8 damage, 3 of it absorbed by the buffer: only 5 reaches hit points,
+        # so the DC is 5 plus 5, not 5 plus the 8 that was dealt.
+        encounter, shambler, _ = self.duel(strike(), save_bonus=100, hp=5)
+        shambler.temp_hp = 3
+        events = self.strike_shambler(encounter)
+        assert shambler.temp_hp == 0
+        assert shambler.hp == 1
+        held = next(event for event in events if event.kind == "undead_fortitude")
+        assert held.data["dc"] == 10
+
     def test_the_dc_reads_the_damage_dealt_after_resistance(self) -> None:
         # 1d1+7 rolls 8; resistance halves it to 4 dealt, so the DC is 9 — the
         # save is against the damage taken, not the damage rolled.

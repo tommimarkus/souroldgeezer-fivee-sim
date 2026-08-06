@@ -28,7 +28,11 @@ FIRE = ItemEffect(
     provenance="test",
 )
 TOXIN = ItemEffect(condition=Condition.POISONED, provenance="test")
-ITEMS = {"Potion of Healing": POTION, "Alchemist's Fire": FIRE, "Vale Toxin": TOXIN}
+WARD = ItemEffect(temp_hp=Dice.parse("2d4+2"), provenance="test")
+ITEMS = {
+    "Potion of Healing": POTION, "Alchemist's Fire": FIRE, "Vale Toxin": TOXIN,
+    "Ward Tonic": WARD,
+}
 
 
 def fighter(**overrides: object) -> Creature:
@@ -62,7 +66,9 @@ class TestItemEffect:
     def test_an_effect_that_does_nothing_is_refused(self) -> None:
         # A pack record with an empty "use" would otherwise register an item that
         # costs an action and has no consequence.
-        with pytest.raises(ItemError, match="heal, deal damage, or apply a condition"):
+        with pytest.raises(
+            ItemError, match="heal, deal damage, grant temporary hit points, or apply a condition"
+        ):
             ItemEffect()
 
     def test_damage_without_a_type_is_refused(self) -> None:
@@ -145,6 +151,14 @@ class TestResolveItemUse:
         assert immune.damage_dealt == 0
         assert immune.damage_roll is not None, "the roll must still happen"
 
+    def test_a_temp_hp_grant_reports_the_rolled_amount_and_no_healing(self) -> None:
+        shield = ItemEffect(temp_hp=Dice.parse("2d4+2"), provenance="test")
+        result = resolve_item_use(Random(4), shield, item="Ward", target="Thora")
+        assert result.temp_hp_roll is not None
+        assert result.temp_hp_granted == result.temp_hp_roll.total
+        assert result.healed == 0
+        assert result.heal_roll is None
+
 
 class TestUseItemAction:
     def build(self, *creatures: Creature, seed: int = 7) -> tuple[Encounter, Random]:
@@ -169,6 +183,26 @@ class TestUseItemAction:
         assert hero.hp > 5
         assert hero.items["Potion of Healing"] == 1
         assert encounter.state()["turn_state"]["action_used"] is True
+
+    def test_a_ward_tonic_grants_temp_hp_to_a_downed_ally_without_waking_them(
+        self,
+    ) -> None:
+        # SRD 5.2.1, Temporary Hit Points: a grant "doesn't restore you to
+        # consciousness" and "doesn't count as healing" — so the drinker stays
+        # Unconscious and no "heal" event fires, only "grant_temp_hp".
+        hero = fighter(hp=0)
+        hero.conditions.add(Condition.UNCONSCIOUS)
+        ally = fighter(name="Ally", items={"Ward Tonic": 1})
+        encounter, rng = self.build(ally, hero, dummy(position=50))
+        self.turn_of(encounter, rng, "Ally")
+        events = encounter.act(
+            Action(kind=ActionKind.USE_ITEM, item="Ward Tonic", target="Thora"), rng
+        )
+        assert hero.temp_hp > 0
+        assert hero.hp == 0
+        assert Condition.UNCONSCIOUS in hero.conditions
+        assert any(event.kind == "grant_temp_hp" for event in events)
+        assert not any(event.kind == "heal" for event in events)
 
     def test_the_quantity_runs_out_and_the_next_use_is_refused(self) -> None:
         hero = fighter(hp=5, items={"Potion of Healing": 1})

@@ -359,6 +359,31 @@ class Creature:
     #: so that still gates it, as does Total Cover.
     truesight: int = 0
     hp: int = -1
+    #: A buffer spent before hit points. SRD 5.2.1, *Temporary Hit Points*:
+    #: "If you have Temporary Hit Points and take damage, those points are
+    #: lost first, and any leftover damage carries over to your Hit Points" —
+    #: and they "last until they're depleted or you finish a Long Rest." This
+    #: engine models no rest, so nothing here clears them on a timer; a
+    #: caller states "the party took a long rest" through
+    #: ``service/adventures.py``'s ``recovery`` delta, the same channel that
+    #: already carries every other rest-shaped fact across an adventure
+    #: boundary.
+    #:
+    #: They are never Hit Points and never healing: "Temporary Hit Points
+    #: can't be added to your Hit Points, healing can't restore them, and
+    #: receiving Temporary Hit Points doesn't count as healing," and a grant
+    #: to a creature at 0 Hit Points "doesn't restore [it] to consciousness."
+    #: Granted only through :meth:`grant_temp_hp`, never :meth:`heal`, which
+    #: clamps to ``max_hp``, clears both death-save counters and ``stable``,
+    #: and lifts Unconscious — every one of those is wrong for a buffer that
+    #: is not healing.
+    #:
+    #: **They Don't Stack** gives the *recipient* the choice of which set to
+    #: keep on receiving more while some remain — a player decision this
+    #: engine has no channel for at grant time. :meth:`grant_temp_hp` takes
+    #: the higher of the two instead, as a deliberate simplification rather
+    #: than the rule itself.
+    temp_hp: int = 0
     #: Size category. Defaults to Medium, which is what every record written
     #: before the field existed means — and what a character is unless its
     #: species says otherwise. Read by the rules that gate on how big a target
@@ -702,15 +727,42 @@ class Creature:
     def remove_condition(self, condition: str) -> None:
         self.conditions.discard(condition)
 
+    def damage_after_temp_hp(self, amount: int) -> int:
+        """How much of ``amount`` would still reach hit points, unspent.
+
+        A read-only preview of the first thing :meth:`take_damage` does,
+        used by :meth:`~fivee_sim.model.encounter.Encounter.
+        _undead_fortitude_save` to decide *whether to roll at all* before
+        any damage is applied: a creature whose buffer would absorb a hit
+        entirely never reaches 0, so a save it can also never be asked to
+        make must not consume randomness, for the same RNG-conservation
+        reason the size and immunity gates beside it already avoid a roll.
+        This does not spend the buffer — only :meth:`take_damage` does that.
+        """
+        return max(0, amount - self.temp_hp)
+
     def take_damage(self, amount: int, *, critical: bool = False) -> None:
         """Apply damage that has already been adjusted for resistance.
+
+        Temporary Hit Points are spent first. SRD 5.2.1, *Temporary Hit
+        Points*, Lose Temporary Hit Points First: "those points are lost
+        first, and any leftover damage carries over to your Hit Points."
+        Only the leftover reaches the two rules below — damage a buffer
+        fully absorbed never happened to hit points at all, so it plays no
+        part in either the drop-to-0 reset or the massive-damage overflow
+        that follows it.
 
         Two different rules meet here and the difference is which side of 0 the
         creature started on.
 
         *Dropping* to 0 knocks the creature out and begins a fresh dying state, so
         its death saves start from nothing. Damage remaining after the drop kills
-        outright if it equals or exceeds the creature's maximum hit points.
+        outright if it equals or exceeds the creature's maximum hit points —
+        and that remainder, ``overflow``, is computed from the post-buffer
+        amount for the same reason: SRD 5.2.1's Instant Death compares "the
+        damage" that carried past 0 against the maximum, and a buffer that
+        absorbed part of the original hit means less of it ever carried past
+        0 in the first place.
 
         Damage taken *while already* at 0 is the other rule: it costs a death
         saving throw failure, two if it came from a critical hit, and the third
@@ -718,6 +770,11 @@ class Creature:
         stable does that — so the drop-to-0 reset must not run a second time.
         """
         if amount <= 0 or self.dead:
+            return
+        absorbed = min(self.temp_hp, amount)
+        self.temp_hp -= absorbed
+        amount -= absorbed
+        if amount <= 0:
             return
         already_down = self.hp == 0
         overflow = amount - self.hp
@@ -760,3 +817,24 @@ class Creature:
             self.death_save_successes = 0
             self.death_save_failures = 0
             self.remove_condition(Condition.UNCONSCIOUS)
+
+    def grant_temp_hp(self, amount: int) -> None:
+        """Grant Temporary Hit Points, never routed through :meth:`heal`.
+
+        SRD 5.2.1, *Temporary Hit Points*, They're Not Hit Points or Healing:
+        "Temporary Hit Points can't be added to your Hit Points, healing
+        can't restore them, and receiving Temporary Hit Points doesn't count
+        as healing... If you have 0 Hit Points, receiving Temporary Hit
+        Points doesn't restore you to consciousness." ``heal`` clamps to
+        ``max_hp``, clears both death-save counters and ``stable``, and
+        lifts Unconscious — every one of those is exactly what this clause
+        forbids, so a grant needs its own method rather than a shared one.
+
+        They Don't Stack: this engine has no player-choice channel at grant
+        time, so it takes the higher of what the creature already carries
+        and what is offered, as a deliberate simplification rather than the
+        SRD's own recipient's-choice rule.
+        """
+        if self.dead or amount <= 0:
+            return
+        self.temp_hp = max(self.temp_hp, amount)

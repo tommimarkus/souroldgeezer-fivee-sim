@@ -176,9 +176,13 @@ Exhaustion, which this engine does not model). A creature carrying one of
 these names never gains that condition from an attack rider, a spell, an item,
 or a GM ruling.
 
-There is deliberately no `hp`, `position`, or `arrival_round`. Starting damage,
-placement, and reinforcement timing are per-instance — set them when adding a
-combatant to an encounter, not in its reusable stat block.
+There is deliberately no `hp`, `temp_hp`, `position`, or `arrival_round`.
+Starting damage, a starting Temporary Hit Points buffer, placement, and
+reinforcement timing are all per-instance — set them when adding a combatant
+to an encounter, not in its reusable stat block. `temp_hp` follows `hp`'s
+precedent rather than `skill_bonuses`': no SRD 5.2.1 stat block prints a
+starting damage buffer any more than it prints a starting hit-point total, so
+it belongs on a combatant spec, not here.
 
 `hit_dice` is accepted and validated as a string but consumed by no rule: the
 engine rolls no hit points and models no rest, so it is kept as a faithful part
@@ -280,7 +284,8 @@ Older campaign packs may keep using the legacy `unmodelled` string list.
 
 Required: `name`, `level`, `provenance`. Optional: `school`,
 `requires_attack_roll`, `attack_kind`, `save_ability`, `damage`, `damage_type`,
-`heal`, `half_on_save`, `upcast_damage`, `upcast_heal`,
+`heal`, `temp_hp`, `half_on_save`, `upcast_damage`, `upcast_heal`,
+`upcast_temp_hp`,
 `add_spellcasting_modifier`, `shape`, `radius`, `length`, `size`, `width`,
 `height`,
 `range_feet` — optional, but a named-target spell that omits it is warned about
@@ -318,6 +323,28 @@ melee spell attacks do not.
 `upcast_heal` adds its dice for every slot level above the spell's base level.
 Healing a creature at 0 HP restores it to the fight and the slot is spent by the
 same cast that produced the healing — no parallel item charge is needed.
+
+`temp_hp` grants Temporary Hit Points, mirroring `heal` exactly — one dice
+expression, rolled once and shared by every chosen target, scaled by
+`upcast_temp_hp` for every slot level above the base like `upcast_heal` scales
+`heal` — but it is a separate field, not a flag on `heal`. SRD 5.2.1,
+*Temporary Hit Points*: they "can't be added to your Hit Points, healing
+can't restore them, and receiving Temporary Hit Points doesn't count as
+healing" — so a shared field would collapse two numbers a stat block or a
+spell can print separately into one, and every existing `heal` record would
+need to keep meaning only healing. `add_spellcasting_modifier` never reaches
+`temp_hp`, only `heal`: no bundled SRD spell scales a temp-HP grant by the
+caster's modifier, and the pairing above is opt-in on both sides for exactly
+that reason. **They Don't Stack** on the *engine's* side of the grant: a
+target already carrying Temporary Hit Points keeps whichever total is higher
+rather than adding the two together. SRD 5.2.1 gives the choice to the
+*recipient* when some remain and more arrive; this engine has no
+player-choice channel at grant time, so "take the higher" is a deliberate
+simplification of that rule, not the rule itself. A grant never restores a
+creature at 0 Hit Points to consciousness, and it is reported as its own
+`grant_temp_hp` event rather than folded into `heal`'s — a log entry that
+read "heal" for something the SRD says is explicitly not healing would be
+the exact confusion the rule is warning about.
 
 `add_spellcasting_modifier` adds the **caster's** ability modifier to the
 healing, once, however high the slot. SRD healing spells are written that way —
@@ -448,14 +475,19 @@ Required: `name`, `use`, `provenance`. Optional: `description`,
 `unmodelled_facts`, legacy `unmodelled`, `overrides`.
 
 An item is a **use with a known effect**, and nothing more. Inside `use`: `heal`,
-`damage` with `damage_type`, `save_ability` with `save_dc` and `half_on_save`, and
-`condition`, plus optional `action_cost` (`action` by default or `bonus_action`).
-At least one of `heal`, `damage`, or `condition` must be present — an
-item that does nothing costs an action for no reason, so it is refused.
+`temp_hp`, `damage` with `damage_type`, `save_ability` with `save_dc` and
+`half_on_save`, and `condition`, plus optional `action_cost` (`action` by
+default or `bonus_action`). At least one of `heal`, `temp_hp`, `damage`, or
+`condition` must be present — an item that does nothing costs an action for no
+reason, so it is refused. `temp_hp` mirrors `heal`'s shape and defaults to the
+user the same way, but is never routed through it — see the `temp_hp` entry
+under `spells` above for why a shared field would be wrong.
 
 ```json
 [
   { "name": "Potion of Healing", "use": { "heal": "2d4+2" },
+    "provenance": "Original content" },
+  { "name": "Ward Tonic", "use": { "temp_hp": "2d4+2" },
     "provenance": "Original content" },
   { "name": "Alchemist's Fire",
     "use": { "damage": "1d4", "damage_type": "fire",
@@ -470,8 +502,9 @@ Give a creature items with `"items": { "Potion of Healing": 2 }`. **Quantity is 
 charge count** — modelling both would be two ways of saying one thing.
 
 Use one with `encounter.act --kind use_item --item "Potion of Healing"`. It spends
-its declared action budget. Healing defaults to the user; damage and conditions need a `target`.
-Targeting another creature requires being within 5 ft.
+its declared action budget. Healing and a temp HP grant default to the user;
+damage and conditions need a `target`. Targeting another creature requires
+being within 5 ft.
 
 **The same `items` map holds two different kinds of entry, and only one of
 them is "an item" in this section's sense.** A `use_item` entry needs a

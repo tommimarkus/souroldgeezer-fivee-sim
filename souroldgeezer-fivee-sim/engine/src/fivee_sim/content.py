@@ -171,8 +171,9 @@ _ATTACK_KEYS = frozenset({
 })
 _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "level", "school", "requires_attack_roll", "attack_kind", "save_ability", "damage",
-    "damage_type", "heal",
-    "half_on_save", "upcast_damage", "upcast_heal", "add_spellcasting_modifier",
+    "damage_type", "heal", "temp_hp",
+    "half_on_save", "upcast_damage", "upcast_heal", "upcast_temp_hp",
+    "add_spellcasting_modifier",
     "shape", "radius", "length",
     "size", "width", "height",
     "range_feet", "max_targets", "condition", "concentration", "action_cost",
@@ -181,7 +182,7 @@ _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _ITEM_KEYS = _COMMON_RECORD_KEYS | {"use", "description"}
 _USE_KEYS = frozenset({
-    "heal", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
+    "heal", "temp_hp", "damage", "damage_type", "save_ability", "save_dc", "half_on_save",
     "condition", "action_cost",
 })
 _CATALOG_KEYS = frozenset({
@@ -1015,9 +1016,11 @@ def _parse_spell(
         damage=reader.dice("damage"),
         damage_type=reader.enum("damage_type", DamageType),
         heal=reader.dice("heal"),
+        temp_hp=reader.dice("temp_hp"),
         half_on_save=reader.boolean("half_on_save", default=False),
         upcast_damage=reader.dice("upcast_damage"),
         upcast_heal=reader.dice("upcast_heal"),
+        upcast_temp_hp=reader.dice("upcast_temp_hp"),
         add_spellcasting_modifier=reader.boolean("add_spellcasting_modifier"),
         shape=shape or SpellShape.SINGLE,
         radius=reader.integer("radius", minimum=0),
@@ -1213,6 +1216,7 @@ def _parse_item(
     sub = _Reader(use, diagnostics, source=source, section="items", name=name)
     sub.unknown_keys(_USE_KEYS)
     heal = sub.dice("heal")
+    temp_hp = sub.dice("temp_hp")
     damage = sub.dice("damage")
     damage_type = sub.enum("damage_type", DamageType)
     save_ability = sub.enum("save_ability", Ability)
@@ -1225,6 +1229,7 @@ def _parse_item(
     try:
         effect = ItemEffect(
             heal=heal,
+            temp_hp=temp_hp,
             damage=damage,
             damage_type=damage_type,
             save_ability=save_ability,

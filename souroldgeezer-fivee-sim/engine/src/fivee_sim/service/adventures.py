@@ -124,8 +124,17 @@ _ABSENT = ""
 #: present from the start of this one. And ``attacks`` is the trap: the state
 #: payload emits it as a list of *names*, so overlaying it would replace a
 #: combatant's whole attack list with strings ``attack_from_spec`` cannot read.
+#:
+#: ``temp_hp`` carries for the same reason ``hp`` does. SRD 5.2.1, *Temporary
+#: Hit Points*: they "last until they're depleted or you finish a Long
+#: Rest," and this engine models no rest of its own — dropping the field at
+#: every chapter boundary regardless would end a buffer the rules say
+#: survives one. A caller stating "they took a long rest" already has the
+#: channel to clear it: ``recovery`` (see :func:`link_encounter`) accepts any
+#: key this set does, ``temp_hp`` included.
 CARRIED_STATE_KEYS: frozenset[str] = frozenset({
     "hp",
+    "temp_hp",
     "conditions",
     "death_saves",
     "stable",

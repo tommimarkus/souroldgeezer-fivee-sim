@@ -181,7 +181,7 @@ LOOKUP_SPEC_KEYS = frozenset({
     "facing",
 })
 DESCRIBED_SPEC_KEYS = frozenset({
-    "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
+    "name", "team", "ac", "max_hp", "hp", "temp_hp", "speed", "climb_speed", "swim_speed",
     "fly_speed", "burrow_speed", "terrain_cost_overrides", "darkvision", "blindsight",
     "tremorsense", "truesight", "death_rule",
     "size", "abilities", "save_bonuses", "skill_bonuses", "attacks", "attacks_per_action",
@@ -400,6 +400,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             ac=int(spec["ac"]),
             max_hp=max_hp_value,
             hp=hp_value,
+            temp_hp=int(spec.get("temp_hp", 0)),
             speed=int(spec.get("speed", 30)),
             climb_speed=int(spec.get("climb_speed", 0)),
             swim_speed=int(spec.get("swim_speed", 0)),

@@ -245,7 +245,8 @@ class TestPlaytestFieldsSchema:
             }],
             "spells": [{
                 "name": "Restore", "level": 1, "heal": "1d8+3",
-                "upcast_heal": "1d8", "range_feet": 5,
+                "upcast_heal": "1d8", "temp_hp": "1d4+1", "upcast_temp_hp": "1d4",
+                "range_feet": 5,
                 "action_cost": "bonus_action",
                 "provenance": "test",
             }],
@@ -256,7 +257,7 @@ class TestPlaytestFieldsSchema:
             }],
             "items": [{
                 "name": "Second Wind", "use": {
-                    "heal": "1d10+1", "action_cost": "bonus_action",
+                    "heal": "1d10+1", "temp_hp": "1d6", "action_cost": "bonus_action",
                 }, "provenance": "test",
             }],
         })
@@ -280,9 +281,12 @@ class TestPlaytestFieldsSchema:
         assert attack.detach_after_damage == 5
         assert registry.spells["Restore"].heal == Dice(1, 8, 3)
         assert registry.spells["Restore"].upcast_heal == Dice(1, 8)
+        assert registry.spells["Restore"].temp_hp == Dice(1, 4, 1)
+        assert registry.spells["Restore"].upcast_temp_hp == Dice(1, 4)
         assert registry.spells["Restore"].action_cost is ActionCost.BONUS_ACTION
         assert registry.terrain_effects["deep-water"].underwater is True
         assert registry.items["Second Wind"].action_cost is ActionCost.BONUS_ACTION
+        assert registry.items["Second Wind"].temp_hp == Dice(1, 6)
 
     def test_an_unknown_bonus_action_is_refused_by_name(self, tmp_path: Path) -> None:
         path = write_pack(tmp_path, "bad-bonus.json", {
@@ -563,7 +567,10 @@ class TestDiagnostics:
             "pack": "x", "provenance": "test",
             "items": [{"name": "Pebble", "use": {}, "provenance": "test"}],
         })
-        assert any("heal, deal damage, or apply a condition" in p for p in found)
+        assert any(
+            "heal, deal damage, grant temporary hit points, or apply a condition" in p
+            for p in found
+        )
 
     def test_several_problems_in_one_record_are_all_reported(self, tmp_path: Path) -> None:
         found = self.check(tmp_path, {

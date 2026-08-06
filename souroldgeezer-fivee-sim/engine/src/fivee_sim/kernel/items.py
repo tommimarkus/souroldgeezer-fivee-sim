@@ -49,6 +49,12 @@ class ItemEffect:
     """
 
     heal: Dice | None = None
+    #: Temporary Hit Points granted on use, resolved once like ``heal``
+    #: rather than routed through it — SRD 5.2.1, *Temporary Hit Points*:
+    #: they are never Hit Points and receiving them is never healing, so a
+    #: shared field would let the two collapse into one number. See
+    #: ``Creature.grant_temp_hp`` for what that separation buys.
+    temp_hp: Dice | None = None
     damage: Dice | None = None
     damage_type: DamageType | None = None
     save_ability: Ability | None = None
@@ -61,8 +67,14 @@ class ItemEffect:
     action_cost: ActionCost = ActionCost.ACTION
 
     def __post_init__(self) -> None:
-        if self.heal is None and self.damage is None and self.condition is None:
-            raise ItemError("an item use must heal, deal damage, or apply a condition")
+        if (
+            self.heal is None and self.damage is None and self.condition is None
+            and self.temp_hp is None
+        ):
+            raise ItemError(
+                "an item use must heal, deal damage, grant temporary hit points, "
+                "or apply a condition"
+            )
         if self.damage is not None and self.damage_type is None:
             raise ItemError("an item that deals damage must name a damage type")
         if self.save_ability is not None and self.save_dc < 1:
@@ -72,9 +84,9 @@ class ItemEffect:
     def targets_others(self) -> bool:
         """Whether the effect is aimed at someone else by default.
 
-        Healing is aimed at the user unless a target is named; damage and
-        conditions are aimed outward. This only chooses the *default* target — the
-        caller may always name one.
+        Healing and a Temporary Hit Points grant are aimed at the user unless a
+        target is named; damage and conditions are aimed outward. This only
+        chooses the *default* target — the caller may always name one.
         """
         return self.damage is not None or self.condition is not None
 
@@ -86,9 +98,11 @@ class ItemUseResolution:
     item: str
     target: str
     heal_roll: DiceRoll | None = None
+    temp_hp_roll: DiceRoll | None = None
     damage_roll: DiceRoll | None = None
     save: D20Test | None = None
     healed: int = 0
+    temp_hp_granted: int = 0
     damage_dealt: int = 0
     condition_applied: str | None = None
 
@@ -96,6 +110,8 @@ class ItemUseResolution:
         parts: list[str] = []
         if self.heal_roll is not None:
             parts.append(f"heals {self.heal_roll.describe()}")
+        if self.temp_hp_roll is not None:
+            parts.append(f"grants {self.temp_hp_roll.describe()} temp HP")
         if self.save is not None:
             saved = "saved" if self.save.success else "failed"
             parts.append(f"{self.save.describe()} -> {saved}")
@@ -127,6 +143,9 @@ def resolve_item_use(
     points is the model layer's job, since only it knows the target.
     """
     heal_roll = roll_dice(effect.heal, rng) if effect.heal is not None else None
+    temp_hp_roll = (
+        roll_dice(effect.temp_hp, rng) if effect.temp_hp is not None else None
+    )
     damage_roll = roll_dice(effect.damage, rng) if effect.damage is not None else None
 
     save: D20Test | None = None
@@ -154,9 +173,11 @@ def resolve_item_use(
         item=item,
         target=target,
         heal_roll=heal_roll,
+        temp_hp_roll=temp_hp_roll,
         damage_roll=damage_roll,
         save=save,
         healed=heal_roll.total if heal_roll is not None else 0,
+        temp_hp_granted=temp_hp_roll.total if temp_hp_roll is not None else 0,
         damage_dealt=dealt,
         condition_applied=effect.condition if failed else None,
     )

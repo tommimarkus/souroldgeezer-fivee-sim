@@ -297,6 +297,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "ac": creature.ac,
         "max_hp": creature.max_hp,
         "hp": creature.hp,
+        "temp_hp": creature.temp_hp,
         "speed": creature.speed,
         "climb_speed": creature.climb_speed,
         "swim_speed": creature.swim_speed,
