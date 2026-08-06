@@ -5,8 +5,10 @@ from __future__ import annotations
 import dataclasses
 import json
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from pathlib import Path
 from threading import Barrier
+from typing import Any
 
 import pytest
 
@@ -135,6 +137,80 @@ def test_an_active_encounter_recovers_after_process_memory_is_lost() -> None:
     assert recovered["recovered"] is True
     assert recovered["state"] == before
     assert api.encounter_state(encounter_id) == before
+
+
+def spec_map() -> dict[str, Any]:
+    """An inline battle-map **spec**, saying as much as a spec can say.
+
+    ``rows``/``legend`` and ``terrain`` are alternatives, so no one spec carries
+    both; every other key in :data:`specs.MAP_KEYS` is here, and the features
+    exercise every key in :data:`specs.FEATURE_KEYS` — including the pair a
+    linked door needs, which is what makes the door hang somewhere rather than
+    nowhere.
+    """
+    return {
+        "name": "gatehouse",
+        "width": 8,
+        "height": 6,
+        "default_terrain": "normal",
+        "rows": [
+            "........",
+            "........",
+            "........",
+            "........",
+            "###..###",
+            "........",
+        ],
+        "legend": {".": "normal", "#": "wall"},
+        "default_elevation": 0,
+        "elevation": [[7, 5, 10]],
+        "features": [
+            {
+                "name": "gate",
+                "square": [6, 1],
+                "kind": "door",
+                "orientation": "vertical",
+                "initially_open": False,
+                "closed_terrain": "door-closed",
+                "open_terrain": "door-open",
+            },
+            {
+                "name": "hall-door-west",
+                "square": [3, 4],
+                "kind": "door",
+                "orientation": "horizontal",
+                "initially_open": False,
+                "linked_to": "hall-door-east",
+            },
+            {
+                "name": "hall-door-east",
+                "square": [4, 4],
+                "kind": "door",
+                "orientation": "horizontal",
+                "initially_open": False,
+                "linked_to": "hall-door-west",
+            },
+        ],
+    }
+
+
+def test_a_fight_created_from_an_inline_map_spec_recovers_from_its_journal() -> None:
+    # The journal captures an inline spec as a map *document*, and recovery
+    # parses that document back. Anything the spec cannot express is therefore
+    # not merely unavailable to the fight — it is missing from the captured
+    # document, and a door with no orientation is a document the parser refuses.
+    # So a spec key the fight never reads can still be the difference between a
+    # fight that survives a dev reload and one that is lost.
+    created = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=149, map=spec_map()
+    )
+    encounter_id = str(created["encounter_id"])
+    before = deepcopy(api.encounter_state(encounter_id)["map"])
+    assert before["features"]["hall-door-west"]["linked_to"] == "hall-door-east"
+
+    api.STATE.sessions.clear()
+
+    assert api.encounter_state(encounter_id)["map"] == before
 
 
 def test_a_ruling_condition_survives_the_journal_and_replays_on_resume() -> None:
@@ -497,6 +573,49 @@ def test_a_recovered_interlude_still_takes_its_next_beat() -> None:
         one for one in after["state"]["combatants"] if one["name"] == "Kettle"
     )
     assert kettle["position"] == [20, 0]
+
+
+def test_a_recovered_interlude_still_stands_on_its_own_map() -> None:
+    """The combination that actually ships: an interlude is a walk somewhere.
+
+    The two cases either side of this one are mapless, and the ground is where
+    an interlude's beats mean anything — a move that pays for terrain, a wall
+    that refuses one. Recovery rebuilds the map from the payload the creation
+    record captured, by the same path a fight uses, so this is the combination
+    rather than a new mechanism; it is here because nothing else drives it and
+    because the beat's own budget is what a recovered move would spend.
+    """
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY],
+            seed=229,
+            mode="exploration",
+            # Dimensions are in squares; positions are in feet. One row deep so
+            # the wall at square 4 is a barrier rather than something to walk
+            # around, which is what makes the refusal below the wall's and not
+            # a movement budget's.
+            map={
+                "name": "mill floor",
+                "width": 30,
+                "height": 1,
+                "default_terrain": "normal",
+                "terrain": [{"kind": "wall", "squares": [[4, 0]]}],
+            },
+        )["encounter_id"]
+    )
+    api.encounter_act(encounter_id, "move", to_position=[10, 0], actor="Kettle")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == before
+    assert recovered["state"]["map"]["name"] == "mill floor"
+    # The ground still refuses what it refused: the wall at [4, 0] stands
+    # between Kettle and the far side, and a recovered chapter that had lost
+    # its map would happily walk through it.
+    with pytest.raises(RequestError, match="no route"):
+        api.encounter_act(encounter_id, "move", to_position=[25, 0], actor="Kettle")
 
 
 def test_a_solo_interlude_recovers_from_a_journal_holding_one_combatant() -> None:

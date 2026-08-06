@@ -71,10 +71,9 @@ from ..map_document import (
     feature_payload,
     parse_document,
     serialize,
-    to_grid,
     validate_document,
 )
-from ..model.battlemap import MapPlane, SquareClaim
+from ..map_types import SquareClaim
 from ..paths import MAPS_ENV, MAPS_SUBDIR, environment_roots, maps_root
 from ..validation import Diagnostic, Severity
 from . import durable
@@ -1155,18 +1154,27 @@ def apply_edits(
 
 # --- what the fixtures make of a square -------------------------------------
 def linked_open_features(
-    plane: MapPlane, open_features: Collection[str]
+    level: MapLevel, open_features: Collection[str]
 ) -> frozenset[str]:
     """Expand either leaf of a linked door pair to their shared live state.
 
-    Unknown names and names belonging to another level stay untouched: an
+    Unknown names and names belonging to another storey stay untouched: an
     encounter owns one map-wide set, while this resolver deliberately knows
-    about one plane. The document and encounter validators guarantee that a
+    about one storey. The document and encounter validators guarantee that a
     link is reciprocal and has exactly two leaves.
+
+    :meth:`~fivee_sim.map_types.MapLevel.fixtures` and not ``features``, which
+    is the same set the battle-map bridge used to hand this. Nothing is lost by
+    it: a link is reciprocal and both leaves must be doors, and a door without a
+    ``state`` is a document the parser refuses — so every leaf of every pair a
+    file can hold is a fixture. What is gained is that a name in
+    ``open_features`` resolves against the same table a fight's own set is drawn
+    from, rather than against annotations no fight can open.
     """
     resolved = set(open_features)
+    fixtures = level.fixtures()
     for feature_id in tuple(resolved):
-        feature = plane.features.get(feature_id)
+        feature = fixtures.get(feature_id)
         if feature is not None and feature.linked_to is not None:
             resolved.add(feature.linked_to)
     return frozenset(resolved)
@@ -1176,12 +1184,12 @@ def linked_open_features(
 class ResolvedLevel:
     """One storey's squares as a given set of open fixtures leaves them.
 
-    The single reader-side answer to "given a plane and which fixtures stand
+    The single reader-side answer to "given a storey and which fixtures stand
     open, what is each square": :func:`query` asks it of the states the document
     authored, :func:`render_ascii` of the states a fight is in,
     :func:`~fivee_sim.service.uvtt.to_uvtt` of the states an export is asked
     for, and they share this so the three cannot answer differently. The claims
-    come from :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, whose own
+    come from :meth:`~fivee_sim.map_types.MapFeatureRecord.claims`, whose own
     docstring names deriving them twice as how answers drift, and
     ``Encounter._adopt_map`` builds the live index from that same call.
 
@@ -1193,6 +1201,13 @@ class ResolvedLevel:
     no precedence to settle there is no document order to consult and no history
     to replay, so a reader cannot disagree with a fight about a square.
 
+    It resolves **the document's own storey** rather than a plane bridged out of
+    it, which is what removed the last whole-map pass from this module: a render
+    used to build every level's sparse terrain mapping and modal default just to
+    ask about the squares in one viewport. An unclaimed square is now read
+    straight off the dense tiles through the legend, which measures no slower
+    than the sparse lookup it replaces and costs nothing to set up.
+
     These mirror ``Encounter``'s composers (``_terrain_at``, ``_elevation_at``)
     minus the encounter-only parts — nobody occupies anything here. A claim
     missing a pair falls through as an unclaimed square does: a fixture that
@@ -1200,26 +1215,30 @@ class ResolvedLevel:
     floods a room leaves the height it finds.
     """
 
-    plane: MapPlane
+    level: MapLevel
+    legend: Mapping[str, str]
     claims: Mapping[Square, SquareClaim]
     open_features: frozenset[str]
 
     @classmethod
-    def of(cls, plane: MapPlane, open_features: Collection[str]) -> ResolvedLevel:
-        """The plane resolved through the fixtures named open.
+    def of(
+        cls, level: MapLevel, legend: Mapping[str, str], open_features: Collection[str]
+    ) -> ResolvedLevel:
+        """The storey resolved through the fixtures named open.
 
-        Names the plane has no fixture for are ignored rather than refused: a
+        Names the storey has no fixture for are ignored rather than refused: a
         fight's set spans every storey, and which floor a fixture stands on is
         not this level's business.
         """
         return cls(
-            plane=plane,
+            level=level,
+            legend=legend,
             claims={
                 square: claim
-                for feature in plane.features.values()
-                for square, claim in feature.claims()
+                for feature in level.fixtures().values()
+                for square, claim in feature.claims(level, legend)
             },
-            open_features=linked_open_features(plane, open_features),
+            open_features=linked_open_features(level, open_features),
         )
 
     def terrain_at(self, square: Square) -> str:
@@ -1227,14 +1246,14 @@ class ResolvedLevel:
         if claim is not None and claim.terrain is not None:
             pair = claim.terrain
             return pair.open if claim.feature in self.open_features else pair.closed
-        return self.plane.terrain.get(square, self.plane.default_terrain)
+        return self.level.terrain_at(square, self.legend)
 
     def height_at(self, square: Square) -> int:
         claim = self.claims.get(square)
         if claim is not None and claim.elevation is not None:
             feet = claim.elevation
             return feet.open if claim.feature in self.open_features else feet.closed
-        return self.plane.elevation.get(square, self.plane.default_elevation)
+        return self.level.elevation.at(square)
 
 
 # --- rendering --------------------------------------------------------------
@@ -1450,7 +1469,7 @@ def render_ascii(
     open_names = None if open is None else frozenset(open)
     live = (
         None if open_names is None
-        else ResolvedLevel.of(to_grid(document).levels[level], open_names)
+        else ResolvedLevel.of(plane, document.legend, open_names)
     )
     glyph_of, order_of = _kind_glyphs(document, live, marks.values())
 
@@ -1568,10 +1587,10 @@ def query(
 ) -> dict[str, Any]:
     """Answer a geometry question over a bare map: distance, sight, or a route.
 
-    Wraps the grid kernel over :func:`~fivee_sim.map_document.to_grid`'s battle
-    map, composing step cost and opacity exactly as an encounter does — except
-    that with no fight in progress, doors count in their recorded *default*
-    state and no square is occupied.
+    Wraps the grid kernel over the document's own storey, composing step cost
+    and opacity exactly as an encounter does — except that with no fight in
+    progress, doors count in their recorded *default* state and no square is
+    occupied.
 
     ``distance`` and ``line_of_sight`` are flat questions and stay flat: height
     reaches the route and nothing else. A ``path`` result therefore carries the
@@ -1580,7 +1599,7 @@ def query(
     """
     if kind not in _QUERIES:
         raise ValueError(f"unknown query {kind!r}; valid queries: {', '.join(_QUERIES)}")
-    _level_or_refuse(document, level)
+    plane = _level_or_refuse(document, level)
     map_w, map_h = document.grid.width, document.grid.height
     for label, square in (("from", frm), ("to", to)):
         if not (0 <= square[0] < map_w and 0 <= square[1] < map_h):
@@ -1592,8 +1611,6 @@ def query(
         result["feet"] = distance_feet(square_center(frm), square_center(to), rule)
         return result
 
-    battle = to_grid(document)
-    plane = battle.levels[level]
     # A fixture stands in the state the document authored rather than one a
     # MapState overlay has moved since, because there is no fight in progress to
     # have moved it — the one difference from what render_ascii asks of the same
@@ -1601,7 +1618,8 @@ def query(
     # (_terrain_at, _elevation_at, _opaque) minus the occupancy.
     live = ResolvedLevel.of(
         plane,
-        [name for name, feature in plane.features.items() if feature.initially_open],
+        document.legend,
+        [name for name, feature in plane.fixtures().items() if feature.state == "open"],
     )
 
     def on_map(square: Square) -> bool:

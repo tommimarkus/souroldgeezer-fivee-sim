@@ -66,8 +66,49 @@ The glyphs ``+`` ``/`` ``<`` ``>`` ``@`` are reserved for renderer overlays
 
 :func:`serialize` writes canonical bytes — stable key order, sorted legend and
 params, LF line endings, trailing newline — so parse → serialize → parse is
-byte-stable and a saved file diffs cleanly. :func:`to_grid` is the single
-bridge to the encounter-facing :class:`~fivee_sim.model.battlemap.BattleMap`.
+byte-stable and a saved file diffs cleanly.
+
+**There is no bridge to a second map model any more.** ``to_grid`` built an
+encounter-facing ``BattleMap`` out of every document, and a fight took that
+rather than this; both are gone. A fight holds the :class:`MapDocument` and asks
+it the questions ``to_grid`` used to precompute, which is why
+:mod:`fivee_sim.map_types` exists and why ``model`` may import it.
+
+**The tree itself lives in** :mod:`fivee_sim.map_types`, and this module is the
+reading of a file into it. The split is not tidiness: a dataclass needs nothing
+from :mod:`fivee_sim.validation`, only the parsing below does, so the types can
+sit in a module that imports the kernel and the standard library alone — and a
+caller that wants to *hold* a map stops dragging the machinery for *reading* one
+in behind it. Every name that moved is re-exported here, so this module is still
+the one door for the format.
+
+**The rules moved with it, and that is the same split applied to behaviour.**
+"each square a fixture governs is governed by exactly one" is a predicate over
+the tree; ``Reader`` and ``Diagnostic`` are how a refusal reaches an author.
+Only the second belongs here. The five ``_check_*`` passes that used to state
+the first are now :data:`~fivee_sim.map_types.DOCUMENT_RULES`, and
+:func:`_render` is all that is left of them — it walks the findings and calls
+``fail`` or ``warn``. **It still accumulates**, which is the half of this module
+the rules deliberately have no opinion about: :class:`MapError` promises every
+diagnostic and not the first, because an author fixing a file wants the list,
+while ``Encounter._adopt_map`` renders the same findings fail-fast because a
+fight either starts or does not.
+
+That was worth doing rather than tidy. Held against each other case by case,
+the two implementations disagreed on five documents — a self-connector, an
+unvalidated ``sight_to_levels``, a fixture requiring itself, a requirement
+cycle, and a trigger naming one fixture twice. ``tests/test_map_rules.py`` runs
+every case through both readers and is what keeps them one.
+
+What stays here is what only a *raw payload* can be asked. ``at`` and overlay
+cells off the grid, ragged ``tiles``, a glyph with no legend entry, an
+``ambient_light`` that is not a light level, and every terrain kind naming
+content that is not loaded are all checked while reading, where ``grid`` and
+``legend`` may be missing entirely and the diagnostic can name the key that is
+wrong. The fight asks those same questions of the built object through
+:func:`~fivee_sim.map_types.plane_findings` and
+:func:`~fivee_sim.map_types.terrain_findings`, because a hand-built document
+never met the parser at all.
 """
 
 from __future__ import annotations
@@ -75,35 +116,50 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
-from collections import Counter, deque
+from collections import Counter
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
 from .kernel.grid import FEET_PER_SQUARE, Facing, Square, TerrainTable
 from .kernel.mapgen import GeneratedMap
 from .kernel.rules import Ability
-from .model.battlemap import (
-    BattleMap,
+from .map_types import (
+    DEFAULT_LEGEND,
+    GROUND_LEVEL,
+    RESERVED_GLYPHS,
     FeatureCheck,
-    FeatureOverlay,
     FeatureTrigger,
     HeightPair,
     LightLevel,
-    LightSource,
-    MapFeature,
-    MapPlane,
+    MapColor,
+    MapDocument,
+    MapElevation,
+    MapFeatureRecord,
+    MapFinding,
+    MapGrid,
+    MapLevel,
+    MapLight,
+    MapOverlayRecord,
+    MapProvenance,
     TerrainPair,
     TriggerMode,
+    allocate_legend,
+    document_findings,
 )
 from .validation import Diagnostic, Reader, Severity
 
+#: Every name below that this module no longer *defines* is re-exported from
+#: :mod:`fivee_sim.map_types`, which is where the document tree and the fixture
+#: vocabulary now live. The format's module stays the one door: a caller that
+#: wants ``MapDocument`` and ``parse_document`` together still asks here.
 __all__ = [
     "DEFAULT_LEGEND",
+    "DOOR_ORIENTATIONS",
     "FORMAT",
     "FORMAT_VERSION",
     "GENERATED_SOURCE",
+    "GROUND_LEVEL",
     "MAX_MAP_BYTES",
     "MAX_MAP_DIM",
     "RESERVED_GLYPHS",
@@ -117,12 +173,12 @@ __all__ = [
     "MapLevel",
     "MapOverlayRecord",
     "MapProvenance",
+    "allocate_legend",
     "as_payload",
     "document_from",
     "feature_payload",
     "parse_document",
     "serialize",
-    "to_grid",
     "validate_document",
 ]
 
@@ -138,26 +194,6 @@ GENERATED_SOURCE = "Generated original content; 5E-compatible"
 #: stalling a session before validation can even locate the problem.
 MAX_MAP_DIM = 512
 MAX_MAP_BYTES = 4 * 1024 * 1024
-
-#: Glyphs the renderers draw *over* the terrain — doors, stairs, spawn marks.
-#: A legend may not claim them, or a rendered map would be ambiguous.
-RESERVED_GLYPHS = frozenset("+/<>@")
-
-#: The glyph table the generators encode with. A document may define its own;
-#: this one is the shared default, and every terrain kind a bundled generator
-#: emits has an entry here.
-DEFAULT_LEGEND: Mapping[str, str] = MappingProxyType(
-    {
-        ".": "floor",
-        "#": "wall",
-        "~": "water",
-        ",": "plain",
-        "T": "forest",
-        "h": "hill",
-        "^": "mountain",
-        "%": "difficult",
-    }
-)
 
 _DOCUMENT_KEYS = frozenset(
     {
@@ -199,13 +235,12 @@ _PAIR_STATES = frozenset({"closed", "open"})
 #: closed is the state a fixture is authored in.
 _PAIR_ORDER = ("closed", "open")
 
-#: The index of the ground plane. It is the one level the file keeps in its
-#: top-level ``tiles``/``elevation``/``features`` keys rather than in ``levels``,
-#: so a document with no storeys is byte-identical to one written before floors
-#: existed.
-GROUND_LEVEL = 0
 _PROVENANCE_KEYS = frozenset({"generator", "seed", "params", "edited", "source"})
-_DOOR_ORIENTATIONS = ("horizontal", "vertical")
+#: How a door may hang. Public because it is the format's vocabulary and the
+#: authoring surfaces have to refuse the same words: ``service/specs.py`` reads
+#: it so an inline map spec and a saved document cannot disagree about what
+#: ``orientation`` may say.
+DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
 _DOOR_HINGES = {
     "horizontal": ("west", "east"),
@@ -226,197 +261,6 @@ class MapError(ValueError):
         super().__init__(
             f"{len(errors)} map error(s):\n" + "\n".join(f"  {d.describe()}" for d in errors)
         )
-
-
-@dataclass(frozen=True, slots=True)
-class MapGrid:
-    """The document's dimensions, in squares, with the cell size spelt out."""
-
-    width: int
-    height: int
-    cell_feet: int = FEET_PER_SQUARE
-
-
-@dataclass(frozen=True, slots=True)
-class MapElevation:
-    """Ground height in feet: a default, and the squares that differ from it.
-
-    Heights are plain feet and may be negative — a pit floor is below the datum
-    the rest of the map sits on. The default instance is a flat map at zero, and
-    it is the one shape :func:`as_payload` leaves out of the document entirely.
-    """
-
-    default: int = 0
-    squares: Mapping[Square, int] = dataclasses.field(default_factory=dict)
-
-    def at(self, square: Square) -> int:
-        return self.squares.get(square, self.default)
-
-
-@dataclass(frozen=True, slots=True)
-class MapColor:
-    """One terrain kind's authored fill, per theme.
-
-    Both values are canonical ``#rrggbb`` in lowercase, whatever the file spelled.
-    A document naming one color parses to a pair whose themes match, and that is
-    the shape :func:`as_payload` writes back as the single color it came from.
-    """
-
-    light: str
-    dark: str
-
-
-@dataclass(frozen=True, slots=True)
-class MapOverlayRecord:
-    """Squares a fixture governs beyond its own, as the document records them.
-
-    Deliberately not the runtime
-    :class:`~fivee_sim.model.battlemap.FeatureOverlay`: the file wants a
-    canonically-sorted list it can write back byte-for-byte, and a fight wants a
-    square-to-kind index it can read inside a pathfinding loop. The flattening
-    between the two is translation, and it lives in :func:`_plane_of` beside the
-    rest of it.
-    """
-
-    cells: tuple[Square, ...]
-    terrain: TerrainPair | None = None
-    elevation: HeightPair | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class MapLight:
-    """An authored light attached to a feature square."""
-
-    bright: int = 0
-    dim: int = 0
-    color: str = "#ffffff"
-
-
-@dataclass(frozen=True, slots=True)
-class MapFeatureRecord:
-    """One feature as the document records it — defaults, not live state.
-
-    ``to_level`` is what makes a stairway more than a drawn glyph: it names the
-    level the feature leads to, and the square it lands on is the one it stands
-    on. A feature without it is an ordinary fixture that goes nowhere.
-
-    ``state`` is what makes a feature something the fight can *operate*, and the
-    seven keys after it are what operating it does and costs: what its own square
-    becomes (``terrain``, ``elevation``), what else changes with it
-    (``affects``), what must already stand open (``requires``), and what the
-    attempt spends and rolls (``costs_action``, ``check``), and what may operate
-    it automatically (``trigger``). All seven are optional and omitted on write,
-    so a file that predates them is unchanged
-    by a round trip.
-
-    ``facing`` is which way it points — an arrow slit out of the corridor, a
-    statue down it — in the eight :class:`~fivee_sim.kernel.grid.Facing` names.
-    Grid-relative like everything else here, and refused on a door, which
-    already answers the question three ways over. A plain ``str``, like a
-    condition: what the eight are is the vocabulary's business, not this
-    record's.
-    """
-
-    id: str
-    kind: str
-    at: Square
-    facing: str | None = None
-    orientation: str | None = None
-    hinge: str | None = None
-    swing: str | None = None
-    state: str | None = None
-    linked_to: str | None = None
-    team: str | None = None
-    to_level: int | None = None
-    sight_to_levels: tuple[int, ...] = ()
-    light: MapLight | None = None
-    terrain: TerrainPair | None = None
-    elevation: HeightPair | None = None
-    affects: tuple[MapOverlayRecord, ...] = ()
-    requires: tuple[str, ...] = ()
-    trigger: FeatureTrigger | None = None
-    costs_action: bool = False
-    check: FeatureCheck | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class MapLevel:
-    """One storey: a full plane of tiles, heights, and fixtures over the grid.
-
-    Every level shares the document's ``grid`` and ``legend`` — floors of one
-    building, not unrelated maps — so only what differs between them lives here.
-    ``elevation.default`` is the level's own datum, which is how a first floor
-    sits ten feet above the ground one without a second concept for it.
-    """
-
-    index: int
-    name: str
-    tiles: tuple[str, ...]
-    features: tuple[MapFeatureRecord, ...]
-    elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
-    ambient_light: str = "bright"
-
-
-@dataclass(frozen=True, slots=True)
-class MapProvenance:
-    """Where the map came from, completely enough to regenerate it.
-
-    ``params`` is fully resolved — defaults included — so the document alone
-    reproduces the map; ``edited`` records that a human or a tool has touched
-    the tiles since, at which point the file, not the generator, is the truth.
-    """
-
-    generator: str
-    seed: int
-    params: Mapping[str, Any]
-    edited: bool
-    source: str
-
-
-@dataclass(frozen=True, slots=True)
-class MapDocument:
-    """One parsed, validated map file. Frozen: every edit builds a new one.
-
-    ``levels`` always holds :data:`GROUND_LEVEL`, and holds only that for a map
-    with no storeys. The ground is reachable as :attr:`ground`, and the three
-    accessors below read it, because that is what a caller asking a map for its
-    tiles has always meant — the storeys are the addition, never a repointing.
-    """
-
-    name: str
-    grid: MapGrid
-    legend: Mapping[str, str]
-    provenance: MapProvenance
-    levels: Mapping[int, MapLevel]
-    #: Terrain colors the document names for itself. Document-wide rather than
-    #: per level, like the legend: a kind that looks one way downstairs and
-    #: another way up is two kinds.
-    palette: Mapping[str, MapColor] = dataclasses.field(default_factory=dict)
-    #: Where *true* north lies, for a compass rose and for narration. It
-    #: redefines nothing: grid north is −y here permanently, because four of
-    #: these eight names are already spent on door hinge and swing and mean −y
-    #: and +y on every map already saved. A document is free to say true north
-    #: is east; its horizontal doors still hinge west or east and swing north or
-    #: south. Document-wide like the legend — a storey of a building does not
-    #: get its own north — and omitted on write when it is the default, so a
-    #: file that predates it round-trips byte-for-byte.
-    compass: Facing = Facing.NORTH
-
-    @property
-    def ground(self) -> MapLevel:
-        return self.levels[GROUND_LEVEL]
-
-    @property
-    def tiles(self) -> tuple[str, ...]:
-        return self.ground.tiles
-
-    @property
-    def features(self) -> tuple[MapFeatureRecord, ...]:
-        return self.ground.features
-
-    @property
-    def elevation(self) -> MapElevation:
-        return self.ground.elevation
 
 
 # --- parsing ---------------------------------------------------------------
@@ -990,7 +834,8 @@ def _parse_features(
 
     That door check stays here, where it can name the door it collided with;
     the wider rule that every square a fixture governs is governed by exactly
-    one is :func:`_check_claims`, a second pass, because an overlay may name a
+    one is :func:`~fivee_sim.map_types.claim_findings`, rendered by
+    :func:`_render` after every level is read, because an overlay may name a
     square a fixture further down the list claims.
     """
     if not isinstance(raw, list):
@@ -1037,10 +882,10 @@ def _parse_features(
         parsed_facing = sub.enum("facing", Facing)
         facing = parsed_facing.value if parsed_facing is not None else None
         orientation = sub.string("orientation") or None
-        if orientation is not None and orientation not in _DOOR_ORIENTATIONS:
+        if orientation is not None and orientation not in DOOR_ORIENTATIONS:
             sub.fail(
                 "orientation",
-                f"must be one of: {', '.join(_DOOR_ORIENTATIONS)}; got {orientation!r}",
+                f"must be one of: {', '.join(DOOR_ORIENTATIONS)}; got {orientation!r}",
             )
         hinge = sub.string("hinge") or None
         swing = sub.string("swing") or None
@@ -1311,338 +1156,22 @@ def _parse_ambient_light(payload: Mapping[str, Any], reader: Reader) -> str:
         return LightLevel.BRIGHT.value
 
 
-def _check_connectors(
-    document_levels: Mapping[int, MapLevel],
-    reader: Reader,
-) -> None:
-    """Every ``to_level`` names a level that exists, and never its own.
+def _render(findings: Iterator[MapFinding], reader: Reader) -> None:
+    """Every finding as a diagnostic, refusals failing and the rest warning.
 
-    Deferred to a second pass because a connector on the ground may lead to a
-    storey the parser has not read yet.
-
-    A connector carrying no ``sight_to_levels`` is *warned* about rather than
-    refused. Cross-storey cover is unconditionally total, so a climb with no
-    sight link seals the storey it reaches: nobody at the top can be seen or
-    shot from below, and vice versa. That is occasionally what an author wants —
-    a cellar, a locked room, a floor under a solid ceiling — and it is much more
-    often the key they forgot, which silently deletes whatever waits up there.
-    A map that means it says so by declaring the link; the rest get told.
+    The whole of the parser's rendering, and it **accumulates**:
+    :class:`MapError` promises every diagnostic and not the first, because an
+    author fixing a file wants the list. ``Encounter._adopt_map`` renders the
+    same findings the opposite way for the opposite reason — see
+    :mod:`fivee_sim.map_types`, which holds the rules neither of us states any
+    more.
     """
-    for index in sorted(document_levels):
-        for feature in document_levels[index].features:
-            if feature.to_level is not None and not feature.sight_to_levels:
-                reader.warn(
-                    "features",
-                    f"feature '{feature.id}' leads to level {feature.to_level} but "
-                    "declares no sight_to_levels, so no line of sight crosses between "
-                    "the two storeys there — anything on the far side can neither see "
-                    "nor be seen. Declare sight_to_levels if that is not intended.",
-                )
-            if feature.to_level is not None:
-                if feature.to_level == index:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' leads to its own level ({index}); "
-                        f"a connector joins two different levels",
-                    )
-                elif feature.to_level not in document_levels:
-                    available = ", ".join(str(i) for i in sorted(document_levels))
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' leads to level {feature.to_level}, but "
-                        f"there is no level {feature.to_level} in this map. Declared: {available}",
-                    )
-            for target in feature.sight_to_levels:
-                if target == index:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' exposes its own level ({index}); "
-                        "a sight link joins different levels",
-                    )
-                elif target not in document_levels:
-                    available = ", ".join(str(i) for i in sorted(document_levels))
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' exposes level {target}, but there is no "
-                        f"level {target} in this map. Declared: {available}",
-                    )
+    for finding in findings:
+        if finding.refusal:
+            reader.fail(finding.path, finding.message)
+        else:
+            reader.warn(finding.path, finding.message)
 
-
-def _claimed_squares(feature: MapFeatureRecord) -> Iterator[Square]:
-    """Every square a fixture decides — the record side of ``MapFeature.claims``.
-
-    The same walk, deliberately: the own square, then every overlay cell. The
-    runtime asks the battle-map feature itself, which does not exist until the
-    document is known good, so the question has to be answerable here too — and
-    the two answers must be the same one.
-    """
-    yield feature.at
-    for overlay in feature.affects:
-        yield from overlay.cells
-
-
-def _check_claims(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
-    """Each square a fixture governs is governed by exactly one, per level.
-
-    A second pass for the same reason as :func:`_check_connectors`: an overlay
-    may name a square a fixture further down the list claims. Enforcing it buys
-    the format its precedence question outright — there is no document order to
-    consult and no history to replay, so a live fight and a stateless
-    ``maps.query`` cannot disagree about what a square is.
-
-    Only a fixture claims anything. A spawn hint and a drawn stairway carry no
-    state, decide nothing, and may share any square they like.
-    """
-    for index in sorted(document_levels):
-        owner: dict[Square, str] = {}
-        for feature in document_levels[index].features:
-            if feature.state is None:
-                continue
-            for square in _claimed_squares(feature):
-                held = owner.get(square)
-                if held is None:
-                    owner[square] = feature.id
-                elif held == feature.id:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' claims square ({square[0]}, {square[1]}) "
-                        f"twice; a fixture decides each square once",
-                    )
-                else:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' claims square ({square[0]}, {square[1]}), "
-                        f"which feature '{held}' already governs; one fixture per square",
-                    )
-
-
-def _reachable(edges: Mapping[str, tuple[str, ...]], start: str) -> set[str]:
-    """Every id reachable from ``start`` by following requirements."""
-    seen: set[str] = set()
-    stack = list(edges.get(start, ()))
-    while stack:
-        node = stack.pop()
-        if node in seen:
-            continue
-        seen.add(node)
-        stack.extend(edges.get(node, ()))
-    return seen
-
-
-def _shortest_cycle(
-    edges: Mapping[str, tuple[str, ...]], start: str, component: set[str]
-) -> tuple[str, ...]:
-    """The shortest path from ``start`` back to itself, ties broken by name."""
-    queue: deque[tuple[str, ...]] = deque([(start,)])
-    seen = {start}
-    while queue:
-        path = queue.popleft()
-        for node in edges.get(path[-1], ()):
-            if node == start:
-                return (*path, start)
-            if node in component and node not in seen:
-                seen.add(node)
-                queue.append((*path, node))
-    return (start, start)  # pragma: no cover - only called where a cycle exists
-
-
-def _requirement_cycles(edges: Mapping[str, tuple[str, ...]]) -> list[tuple[str, ...]]:
-    """One path per requirement cycle, each starting at its smallest id.
-
-    Attaching the report to the lexicographically smallest id in the cycle is
-    what makes it deterministic — which fixture the author edited last does not
-    change what comes back — and reports a cycle once rather than once per
-    fixture caught in it.
-    """
-    reach = {node: _reachable(edges, node) for node in edges}
-    cycles: list[tuple[str, ...]] = []
-    for node in sorted(edges):
-        if node not in reach[node]:
-            continue
-        component = {other for other in reach[node] if node in reach.get(other, set())}
-        if node != min(component):
-            continue
-        cycles.append(_shortest_cycle(edges, node, component))
-    return cycles
-
-
-def _check_requires(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
-    """Every ``requires`` names another fixture that can stand open, and no cycle.
-
-    A second pass beside :func:`_check_connectors` and :func:`_check_claims`,
-    and for the same reason twice over: a prerequisite may be authored after the
-    fixture waiting on it, and may stand on another storey.
-    """
-    states: dict[str, str | None] = {}
-    for index in sorted(document_levels):
-        for feature in document_levels[index].features:
-            states[feature.id] = feature.state
-    declared = ", ".join(sorted(states)) or "none"
-
-    edges: dict[str, tuple[str, ...]] = {}
-    for index in sorted(document_levels):
-        for feature in document_levels[index].features:
-            satisfiable: list[str] = []
-            for required in feature.requires:
-                if required == feature.id:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' requires itself; a prerequisite is "
-                        f"another fixture",
-                    )
-                elif required not in states:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' requires {required!r}, but there is no "
-                        f"feature {required!r} in this map. Declared: {declared}",
-                    )
-                elif states[required] is None:
-                    reader.fail(
-                        "features",
-                        f"feature '{feature.id}' requires {required!r}, which carries no "
-                        f"state and so is never open; only a feature with a state can be "
-                        f"a prerequisite",
-                    )
-                else:
-                    satisfiable.append(required)
-            if satisfiable:
-                edges[feature.id] = tuple(sorted(set(satisfiable)))
-    for path in _requirement_cycles(edges):
-        reader.fail(
-            "features",
-            f"feature '{path[0]}' is in a requirement cycle: {' -> '.join(path)}; "
-            f"nothing in it could ever be opened first",
-        )
-
-
-def _check_triggers(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
-    """Validate trigger references, ordering, and authored maintained state."""
-    catalogue = {
-        feature.id: feature
-        for level in sorted(document_levels)
-        for feature in document_levels[level].features
-    }
-    declared = ", ".join(sorted(catalogue)) or "none"
-    edges: dict[str, tuple[str, ...]] = {}
-    for feature_id in sorted(catalogue):
-        feature = catalogue[feature_id]
-        trigger = feature.trigger
-        if trigger is None:
-            continue
-        satisfiable: list[str] = []
-        condition = dict(trigger.when)
-        for dependency, _ in trigger.when:
-            referenced = catalogue.get(dependency)
-            if referenced is None:
-                reader.fail(
-                    "features",
-                    f"feature '{feature.id}' trigger references {dependency!r}, but "
-                    f"there is no feature {dependency!r} in this map. Declared: {declared}",
-                )
-            elif referenced.state is None:
-                reader.fail(
-                    "features",
-                    f"feature '{feature.id}' trigger references {dependency!r}, which "
-                    "carries no state and so can never satisfy a fixture-state predicate",
-                )
-            else:
-                satisfiable.append(dependency)
-        if satisfiable:
-            edges[feature.id] = tuple(sorted(set(satisfiable)))
-        if trigger.set_open:
-            for required in feature.requires:
-                if condition.get(required) is not True:
-                    reader.fail(
-                        "features",
-                        f"trigger opens feature '{feature.id}' but does not require "
-                        f"{required!r} to be open; automatic opening may not bypass "
-                        "the fixture's physical prerequisites",
-                    )
-        if trigger.mode is TriggerMode.MAINTAINED and len(satisfiable) == len(trigger.when):
-            initially_active = all(
-                (catalogue[name].state == "open") is expected
-                for name, expected in trigger.when
-            )
-            starts_open = feature.state == "open"
-            if initially_active and starts_open is not trigger.set_open:
-                reader.fail(
-                    "features",
-                    f"feature '{feature.id}' maintained trigger is true initially and "
-                    f"sets it {'open' if trigger.set_open else 'closed'}, but its state is "
-                    f"{'open' if starts_open else 'closed'}",
-                )
-    for path in _requirement_cycles(edges):
-        reader.fail(
-            "features",
-            f"feature '{path[0]}' is in a trigger cycle: {' -> '.join(path)}; "
-            "automatic fixture transitions must be acyclic",
-        )
-
-
-def _check_linked_doors(document_levels: Mapping[int, MapLevel], reader: Reader) -> None:
-    """A linked door is one reciprocal, adjacent, interaction-compatible pair."""
-    catalogue = {
-        feature.id: (level, feature)
-        for level in sorted(document_levels)
-        for feature in document_levels[level].features
-    }
-    checked: set[frozenset[str]] = set()
-    for feature_id in sorted(catalogue):
-        level, feature = catalogue[feature_id]
-        if feature.linked_to is None:
-            continue
-        partner_entry = catalogue.get(feature.linked_to)
-        if partner_entry is None:
-            reader.fail(
-                "features",
-                f"door '{feature.id}' links to {feature.linked_to!r}, but this map has no "
-                f"feature with that id",
-            )
-            continue
-        partner_level, partner = partner_entry
-        if partner.kind != "door":
-            reader.fail(
-                "features",
-                f"door '{feature.id}' links to {partner.id!r}, which is not a door",
-            )
-            continue
-        if partner.linked_to != feature.id:
-            reader.fail(
-                "features",
-                f"door '{feature.id}' links to {partner.id!r}; that door must link back "
-                f"to {feature.id!r}",
-            )
-            continue
-        pair = frozenset((feature.id, partner.id))
-        if pair in checked:
-            continue
-        checked.add(pair)
-        if level != partner_level:
-            reader.fail("features", "linked doors must stand on the same level")
-        if feature.orientation != partner.orientation:
-            reader.fail("features", "linked doors must have the same orientation")
-        dx = abs(feature.at[0] - partner.at[0])
-        dy = abs(feature.at[1] - partner.at[1])
-        aligned = (feature.orientation == "horizontal" and (dx, dy) == (1, 0)) or (
-            feature.orientation == "vertical" and (dx, dy) == (0, 1)
-        )
-        if not aligned:
-            reader.fail(
-                "features",
-                "linked doors must be adjacent along their shared orientation",
-            )
-        if feature.state != partner.state:
-            reader.fail("features", "linked doors must have the same state")
-        if feature.trigger != partner.trigger:
-            reader.fail("features", "linked doors must have identical triggers")
-        contract = (feature.requires, feature.costs_action, feature.check)
-        partner_contract = (partner.requires, partner.costs_action, partner.check)
-        if contract != partner_contract:
-            reader.fail(
-                "features",
-                "linked doors must have the same interaction contract: requires, "
-                "costs_action, and check",
-            )
 
 
 def _parse_provenance(
@@ -1743,11 +1272,11 @@ def _parse(
         elevation=elevation if elevation is not None else MapElevation(),
         ambient_light=_parse_ambient_light(payload, reader),
     )
-    _check_connectors(levels, reader)
-    _check_claims(levels, reader)
-    _check_requires(levels, reader)
-    _check_triggers(levels, reader)
-    _check_linked_doors(levels, reader)
+    # Every cross-reference rule, once, from the module that owns them. The
+    # grid may be ``None`` here — a document whose ``grid`` key was unusable is
+    # still walked for everything else it gets wrong — which is why the rules
+    # take it as an optional and why this runs before the bail-out below.
+    _render(document_findings(levels, grid), reader)
     provenance = _parse_provenance(payload, reader, diagnostics, source)
 
     if (
@@ -2054,9 +1583,8 @@ def document_from(
 
     A generator's dense height grid is reduced here rather than in the
     generator: the commonest height becomes the document's datum and only the
-    squares departing from it are written, which is the same choice
-    :func:`to_grid` makes for terrain and for the same reason — the file stays
-    small and a run of flat ground costs nothing to record.
+    squares departing from it are written, so the file stays small and a run of
+    flat ground costs nothing to record.
     """
     glyph_of = {kind: glyph for glyph, kind in DEFAULT_LEGEND.items()}
     tiles: list[str] = []
@@ -2108,138 +1636,4 @@ def document_from(
                 )
             }
         ),
-    )
-
-
-# --- the bridge to the battle map ------------------------------------------
-def _own_terrain(
-    feature: MapFeatureRecord, level: MapLevel, legend: Mapping[str, str]
-) -> TerrainPair:
-    """What a fixture's own square is in each state, when the file does not say.
-
-    A door is what a door has always been — the hardcoded pair, now merely
-    expressible. Anything else is the tile it stands on, in *both* states, so a
-    lever driven into a wall leaves a wall behind it whichever way it is thrown.
-    """
-    if feature.terrain is not None:
-        return feature.terrain
-    if feature.kind == "door":
-        return TerrainPair(closed="door-closed", open="door-open")
-    x, y = feature.at
-    kind = legend[level.tiles[y][x]]
-    return TerrainPair(closed=kind, open=kind)
-
-
-def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
-    """One document level as the encounter-facing plane.
-
-    ``default_terrain`` is the most common kind on *this level's* tiles (ties
-    broken by kind name, so the choice is deterministic); only squares that
-    differ enter the sparse mapping. Each storey chooses its own, because a
-    gallery that is mostly floor should not pay for the ground being mostly
-    wall.
-    """
-    counts: Counter[str] = Counter()
-    for row in level.tiles:
-        for char in row:
-            counts[legend[char]] += 1
-    if counts:
-        default = min(counts, key=lambda kind: (-counts[kind], kind))
-    else:  # pragma: no cover - dimensions are validated to at least 1x1
-        default = "floor"
-
-    terrain: dict[Square, str] = {}
-    for y, row in enumerate(level.tiles):
-        for x, char in enumerate(row):
-            kind = legend[char]
-            if kind != default:
-                terrain[(x, y)] = kind
-
-    features: dict[str, MapFeature] = {}
-    connectors: dict[Square, int] = {}
-    sight_links: dict[Square, frozenset[int]] = {}
-    lights: list[LightSource] = []
-    for feature in level.features:
-        if feature.to_level is not None:
-            connectors[feature.at] = feature.to_level
-        if feature.sight_to_levels:
-            sight_links[feature.at] = frozenset(feature.sight_to_levels)
-        if feature.light is not None:
-            lights.append(
-                LightSource(
-                    square=feature.at,
-                    bright=feature.light.bright,
-                    dim=feature.light.dim,
-                    color=feature.light.color,
-                )
-            )
-        # Carrying a state is what makes a feature one the fight owns — not
-        # being a door. A spawn hint and a drawn stairway have none and stay
-        # document-level; a spike, a lever and a sluice gate have one.
-        if feature.state is None:
-            continue
-        own = _own_terrain(feature, level, legend)
-        features[feature.id] = MapFeature(
-            name=feature.id,
-            square=feature.at,
-            kind=feature.kind,
-            orientation=feature.orientation,
-            closed_terrain=own.closed,
-            open_terrain=own.open,
-            initially_open=feature.state == "open",
-            elevation=feature.elevation,
-            affects=tuple(
-                FeatureOverlay(
-                    squares=overlay.cells,
-                    terrain=overlay.terrain,
-                    elevation=overlay.elevation,
-                )
-                for overlay in feature.affects
-            ),
-            requires=feature.requires,
-            trigger=feature.trigger,
-            costs_action=feature.costs_action,
-            check=feature.check,
-            linked_to=feature.linked_to,
-        )
-    return MapPlane(
-        default_terrain=default,
-        terrain=terrain,
-        default_elevation=level.elevation.default,
-        elevation=dict(level.elevation.squares),
-        features=features,
-        connectors=connectors,
-        sight_links=sight_links,
-        ambient_light=LightLevel(level.ambient_light),
-        lights=tuple(lights),
-    )
-
-
-def to_grid(document: MapDocument) -> BattleMap:
-    """The single bridge from a document to an encounter-facing battle map.
-
-    One :class:`~fivee_sim.model.battlemap.MapPlane` per level, each resolved by
-    :func:`_plane_of`. Ground height crosses as the document already holds it —
-    the level's own default and the squares that depart from it — since there is
-    nothing to infer. Every feature carrying a ``state`` becomes a
-    :class:`MapFeature` row with ``initially_open`` read from that state, and
-    the overlay records flattened into the runtime form beside it.
-
-    A feature carrying ``to_level`` also becomes a connector on its plane, which
-    is the one thing a fight consults a stairway for. A feature carrying neither
-    — a plain stairway drawn for the reader, a spawn hint — stays document-level
-    *on purpose*: the battle map has no slot for it and a fight does not ask;
-    renderers and placement logic read them from the document.
-    """
-    return BattleMap(
-        name=document.name,
-        width=document.grid.width,
-        height=document.grid.height,
-        levels=MappingProxyType(
-            {
-                index: _plane_of(document.levels[index], document.legend)
-                for index in sorted(document.levels)
-            }
-        ),
-        provenance=document.provenance.source,
     )

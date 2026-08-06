@@ -54,7 +54,7 @@ from collections.abc import Collection, Mapping
 from typing import Any
 
 from ..kernel.grid import TerrainTable, terrain_effect_of
-from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel, to_grid
+from ..map_document import GROUND_LEVEL, MapColor, MapDocument, MapLevel
 from .maps import ResolvedLevel, linked_open_features
 
 __all__ = ["MAX_IMAGE_SIDE", "UVTT_FORMAT", "to_uvtt"]
@@ -135,7 +135,6 @@ def _hex_rgb(color: str) -> tuple[int, int, int]:
 def _terrain_kinds(
     document: MapDocument,
     plane: MapLevel,
-    level: int,
     open_features: Collection[str] | None,
 ) -> list[list[str]]:
     """The terrain kind of every square, as the fixtures named open leave it.
@@ -153,14 +152,18 @@ def _terrain_kinds(
     ``door-closed``, which is opaque, so resolving it would seal the very gap
     the portal exists to fill. What a door *reaches past itself* is spared
     nothing: a sluice gate's flooded room is ordinary fixture business.
+
+    ``portalled`` is read off the same table and the same predicate
+    :func:`_portals` emits from, so the squares spared here are exactly the
+    squares that got a portal — one door, one exemption, and no way for the two
+    to fall out of step.
     """
     kinds = [[document.legend[char] for char in row] for row in plane.tiles]
     if open_features is None:
         return kinds
-    battle = to_grid(document).levels[level]
-    live = ResolvedLevel.of(battle, open_features)
+    live = ResolvedLevel.of(plane, document.legend, open_features)
     portalled = {
-        feature.square for feature in battle.features.values() if feature.kind == "door"
+        feature.at for feature in plane.features if feature.kind == "door"
     }
     for y, row in enumerate(kinds):
         for x in range(len(row)):
@@ -401,8 +404,8 @@ def to_uvtt(
 
     open_names = None if open is None else frozenset(open)
     if open_names is not None:
-        open_names = linked_open_features(to_grid(document).levels[level], open_names)
-    kinds = _terrain_kinds(document, plane, level, open_names)
+        open_names = linked_open_features(plane, open_names)
+    kinds = _terrain_kinds(document, plane, open_names)
     walls = [
         [_point(corner[0], corner[1]) for corner in polyline]
         for polyline in _chain_edges(_wall_edges(kinds, terrain))

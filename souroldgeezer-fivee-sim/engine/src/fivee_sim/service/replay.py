@@ -60,7 +60,6 @@ from typing import Any
 
 from ..kernel.grid import as_point
 from ..kernel.rules import Ability
-from ..model.battlemap import BattleMap, FeatureOverlay, MapFeature, MapPlane
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import EncounterMode
 from ..paths import (
@@ -85,7 +84,6 @@ __all__ = [
     "REPLAYS_SUBDIR",
     "adventure_replay_bundle",
     "atomic_write_text",
-    "battle_map_payload",
     "canonical_sha256",
     "embed_in_viewer",
     "environment_replay_roots",
@@ -412,156 +410,6 @@ def replay_bundle(
         },
         "events": [dict(event) for event in events],
     }
-
-
-def _terrain_glyphs(battle_map: BattleMap) -> dict[str, str]:
-    kinds: set[str] = set()
-    for plane in battle_map.levels.values():
-        kinds.add(plane.default_terrain)
-        kinds.update(plane.terrain.values())
-        for feature in plane.features.values():
-            kinds.update((feature.closed_terrain, feature.open_terrain))
-            for overlay in feature.affects:
-                if overlay.terrain is not None:
-                    kinds.update((overlay.terrain.closed, overlay.terrain.open))
-    pool = [
-        char for char in ".#~,:;!?$&*abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        if char not in "+/<>@"
-    ]
-    glyphs: dict[str, str] = {}
-    for index, kind in enumerate(sorted(kinds)):
-        glyphs[kind] = pool[index] if index < len(pool) else chr(0xE000 + index)
-    return glyphs
-
-
-def _elevation_payload(plane: MapPlane) -> dict[str, Any] | None:
-    squares = [
-        [square[0], square[1], feet]
-        for square, feet in sorted(
-            plane.elevation.items(), key=lambda item: (item[0][1], item[0][0])
-        )
-        if feet != plane.default_elevation
-    ]
-    if plane.default_elevation == 0 and not squares:
-        return None
-    return {"default": plane.default_elevation, "squares": squares}
-
-
-def _overlay_payload(overlay: FeatureOverlay) -> dict[str, Any]:
-    payload: dict[str, Any] = {
-        "cells": [[square[0], square[1]] for square in overlay.squares]
-    }
-    if overlay.terrain is not None:
-        payload["terrain"] = {
-            "closed": overlay.terrain.closed,
-            "open": overlay.terrain.open,
-        }
-    if overlay.elevation is not None:
-        payload["elevation"] = {
-            "closed": overlay.elevation.closed,
-            "open": overlay.elevation.open,
-        }
-    return payload
-
-
-def _feature_payload(feature: MapFeature) -> dict[str, Any]:
-    payload: dict[str, Any] = {
-        "id": feature.name,
-        "kind": feature.kind,
-        "at": [feature.square[0], feature.square[1]],
-        "state": "open" if feature.initially_open else "closed",
-        "terrain": {
-            "closed": feature.closed_terrain,
-            "open": feature.open_terrain,
-        },
-    }
-    if feature.orientation is not None:
-        payload["orientation"] = feature.orientation
-    if feature.linked_to is not None:
-        payload["linked_to"] = feature.linked_to
-    if feature.elevation is not None:
-        payload["elevation"] = {
-            "closed": feature.elevation.closed,
-            "open": feature.elevation.open,
-        }
-    if feature.affects:
-        payload["affects"] = [_overlay_payload(overlay) for overlay in feature.affects]
-    if feature.requires:
-        payload["requires"] = list(feature.requires)
-    if feature.trigger is not None:
-        payload["trigger"] = {
-            "when": {
-                name: "open" if expected else "closed"
-                for name, expected in feature.trigger.when
-            },
-            "set": "open" if feature.trigger.set_open else "closed",
-            "mode": feature.trigger.mode.value,
-        }
-    if feature.costs_action:
-        payload["costs_action"] = True
-    if feature.check is not None:
-        payload["check"] = {
-            "ability": feature.check.ability.value,
-            "dc": feature.check.dc,
-        }
-    return payload
-
-
-def battle_map_payload(battle_map: BattleMap) -> dict[str, Any]:
-    """A portable map-document payload for a caller-supplied battle map."""
-    glyph_of = _terrain_glyphs(battle_map)
-    legend = {glyph: kind for kind, glyph in glyph_of.items()}
-
-    def level_payload(index: int, plane: MapPlane) -> dict[str, Any]:
-        rows = []
-        for y in range(battle_map.height):
-            rows.append("".join(
-                glyph_of[plane.terrain.get((x, y), plane.default_terrain)]
-                for x in range(battle_map.width)
-            ))
-        payload: dict[str, Any] = {
-            "tiles": rows,
-            "features": [
-                _feature_payload(feature)
-                for _, feature in sorted(plane.features.items())
-            ],
-        }
-        elevation = _elevation_payload(plane)
-        if elevation is not None:
-            payload["elevation"] = elevation
-        if index != 0:
-            payload["index"] = index
-            payload["name"] = f"level {index}"
-        return payload
-
-    ground = level_payload(0, battle_map.levels[0])
-    payload = {
-        "format": "fivee-sim-map",
-        "format_version": 1,
-        "name": battle_map.name,
-        "grid": {
-            "width": battle_map.width,
-            "height": battle_map.height,
-            "cell_feet": 5,
-        },
-        "legend": legend,
-        **ground,
-        "provenance": {
-            "generator": "inline",
-            "seed": 0,
-            "params": {},
-            "edited": False,
-            "source": "Caller-supplied inline map",
-        },
-    }
-    levels = [
-        level_payload(index, battle_map.levels[index])
-        for index in sorted(battle_map.levels)
-        if index != 0
-    ]
-    if levels:
-        payload["levels"] = levels
-    return payload
 
 
 def replay_bundle_v2(

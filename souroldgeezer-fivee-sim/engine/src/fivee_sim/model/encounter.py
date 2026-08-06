@@ -80,15 +80,19 @@ from ..kernel.rules import (
     make_d20_test,
 )
 from ..kernel.spells import Spell, SpellShape, SpellTarget, resolve_spell
-from .battlemap import (
+from ..map_types import (
     GROUND_LEVEL,
-    BattleMap,
     LightLevel,
-    MapFeature,
-    MapPlane,
-    MapState,
+    MapDocument,
+    MapFeatureRecord,
+    MapFinding,
+    MapLevel,
+    MapLight,
     SquareClaim,
     TriggerMode,
+    document_findings,
+    plane_findings,
+    terrain_findings,
 )
 from .creature import AttackOption, Creature, DeathRule
 
@@ -102,6 +106,25 @@ UNDEAD_FORTITUDE_BASE_DC = 5
 #: battle's whole roster in one error line would bury the name that was actually
 #: wrong; a dozen is enough to spot a misspelling against.
 MAX_LISTED_COMBATANTS = 12
+
+
+@dataclass(slots=True)
+class MapState:
+    """What a fight has changed about its map: which features stand open.
+
+    The one mutable fact a fight owns about its battlefield, and the reason a
+    :class:`~fivee_sim.map_types.MapDocument` can be frozen and shared: an
+    encounter *references* a map and layers this over it, so the same document
+    can back any number of fights at once and a finished one leaves it exactly
+    as it found it.
+
+    It lives here rather than beside the document types because it is not part
+    of what a map *is*. A file records a fixture's default; where it stands
+    right now is encounter state, and encounter state belongs to the module
+    that is the only place combat state changes.
+    """
+
+    open_features: set[str]
 
 
 class EncounterMode(StrEnum):
@@ -271,8 +294,30 @@ FEATURE_VISIBLE_KEYS: frozenset[str] = frozenset({
 #: ``trigger`` are the mechanism behind it, and a party handed the wiring has
 #: been handed the puzzle. What they keep is every fixture's ``open`` state,
 #: which is the thing the room actually shows them.
+#:
+#: The six after them are **decided ahead of the payload**, and that is a
+#: departure worth naming. Every other entry in these pairs is a key
+#: :meth:`Encounter._feature_summary` emits and
+#: ``tests/test_player_brief.py`` reads back off a real fight. These six are
+#: keys a :class:`~fivee_sim.map_types.MapFeatureRecord` *carries* and that
+#: summary does not emit — it did not exist to emit them while a fixture was a
+#: ``MapFeature``, which held none of them. Withheld rather than visible because
+#: withholding is the reversible direction: serving one later is one line and a
+#: reviewer, where a key sitting in the visible half is a disclosure nobody ever
+#: decided on, arriving the day somebody widens the summary. The
+#: double-classification case is what makes that reviewer show up.
+#:
+#: ``team`` is the sharpest of the six and the reason the rest are here with it:
+#: on a spawn hint it answers *which side arrives where*, which is the ambusher
+#: the brief works hardest to keep off the wire. ``to_level`` and
+#: ``sight_to_levels`` are map wiring, which :data:`EVENT_NEVER_KEYS` already
+#: serves to nobody one payload down. ``facing``, ``hinge`` and ``swing`` are
+#: the weakest case — which way a door hangs is arguably just the room — but
+#: nothing asks for them, ``agents/game-master.md`` does not list them, and a
+#: key with no caller is a key to decide when one turns up.
 FEATURE_WITHHELD_KEYS: frozenset[str] = frozenset({
     "check", "affects", "requires", "blocked_by", "linked_to", "trigger",
+    "team", "to_level", "sight_to_levels", "facing", "hinge", "swing",
 })
 
 
@@ -673,39 +718,7 @@ def _segment_samples(origin: Point, destination: Point) -> list[Point]:
     return samples
 
 
-def _trigger_cycle(edges: Mapping[str, tuple[str, ...]]) -> tuple[str, ...] | None:
-    """One deterministic trigger cycle, rotated to its smallest fixture id."""
-    visited: set[str] = set()
-    active: dict[str, int] = {}
-    path: list[str] = []
-
-    def visit(node: str) -> tuple[str, ...] | None:
-        if node in active:
-            cycle = path[active[node] :]
-            smallest = min(range(len(cycle)), key=lambda index: cycle[index])
-            ordered = cycle[smallest:] + cycle[:smallest]
-            return (*ordered, ordered[0])
-        if node in visited:
-            return None
-        active[node] = len(path)
-        path.append(node)
-        for dependency in sorted(edges.get(node, ())):
-            found = visit(dependency)
-            if found is not None:
-                return found
-        path.pop()
-        active.pop(node)
-        visited.add(node)
-        return None
-
-    for start in sorted(edges):
-        found = visit(start)
-        if found is not None:
-            return found
-    return None
-
-
-def _dependency_order(features: Mapping[str, MapFeature]) -> tuple[str, ...]:
+def _dependency_order(features: Mapping[str, MapFeatureRecord]) -> tuple[str, ...]:
     """All fixtures dependency-first, with lexical ties."""
     indegree = {name: 0 for name in features}
     followers: dict[str, set[str]] = {name: set() for name in features}
@@ -729,10 +742,13 @@ def _dependency_order(features: Mapping[str, MapFeature]) -> tuple[str, ...]:
             indegree[target] -= 1
             if indegree[target] == 0:
                 heapq.heappush(ready, target)
-    if len(ordered) != len(features):
-        cycle = _trigger_cycle(edges)
-        rendered = " -> ".join(cycle or ())
-        raise EncounterError(f"trigger cycle: {rendered}")
+    if len(ordered) != len(features):  # pragma: no cover - the rules refuse first
+        # Unreachable: ``map_types.trigger_findings`` refuses every trigger
+        # cycle, with the path spelled out, before ``_adopt_map`` gets here.
+        # Kept as a defence rather than an ``assert`` because the consequence of
+        # being wrong is a fight whose triggers resolve in an arbitrary order.
+        stuck = ", ".join(sorted(set(features) - set(ordered)))
+        raise EncounterError(f"trigger cycle among: {stuck}")
     return tuple(ordered)
 
 
@@ -896,7 +912,7 @@ class Encounter:
         items: Mapping[str, ItemEffect] | None = None,
         condition_effects: ConditionTable | None = None,
         movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
-        battle_map: BattleMap | None = None,
+        map_document: MapDocument | None = None,
         terrain_effects: TerrainTable | None = None,
         mode: EncounterMode = EncounterMode.COMBAT,
     ) -> None:
@@ -942,7 +958,7 @@ class Encounter:
         self.terrain_effects: TerrainTable = (
             dict(terrain_effects) if terrain_effects is not None else TERRAIN
         )
-        self.battle_map = battle_map
+        self.map_document = map_document
         self.map_state: MapState | None = None
         self._trigger_sequence: tuple[str, ...] = ()
         self._trigger_active: dict[str, bool] = {}
@@ -950,8 +966,28 @@ class Encounter:
         # resolvers below sit inside pathfinding loops, so what they need is an
         # index, not a list of features to scan.
         self._feature_squares: dict[tuple[int, Square], SquareClaim] = {}
-        if battle_map is not None:
-            self._adopt_map(battle_map, combatants)
+        # The document's own derivations, materialised once for the same reason.
+        # Each is O(features) to compute and each sits on a per-attack path —
+        # ``_illumination_at`` inside a scan over every enemy, so deriving it per
+        # call would be O(creatures x features) for one swing. What is
+        # deliberately *not* here is a terrain index: the tiles are dense and
+        # ``legend[tiles[y][x]]`` measures no slower than the sparse lookup it
+        # replaced, so building one per encounter would cost a montecarlo batch
+        # a second of setup to save nothing.
+        self._fixtures: dict[str, MapFeatureRecord] = {}
+        self._fixture_level: dict[str, int] = {}
+        # The document's own two tables, held directly rather than reached
+        # through it. ``_terrain_at_level`` and ``_elevation_at`` are the
+        # engine's hottest reads — every step of every route goes through one —
+        # and the two attribute hops they save measured 15 ns a call.
+        self._levels: Mapping[int, MapLevel] = {}
+        self._legend: Mapping[str, str] = {}
+        self._connectors: dict[int, Mapping[Square, int]] = {}
+        self._sight_links: dict[int, Mapping[Square, frozenset[int]]] = {}
+        self._lights: dict[int, tuple[tuple[Square, MapLight], ...]] = {}
+        self._ambient: dict[int, LightLevel] = {}
+        if map_document is not None:
+            self._adopt_map(map_document, combatants)
         # Combatants are handed the encounter's table rather than trusted to carry
         # the right one. Analytics builds its damage-per-round dummy directly, with
         # no route for a caller to pass a table, so without this a fight could hold
@@ -1040,189 +1076,70 @@ class Encounter:
             self._begin_turn(rng)
 
     # --- the battle map ---------------------------------------------------
-    def _adopt_map(self, battle_map: BattleMap, combatants: Sequence[Creature]) -> None:
-        """Validate the map against the terrain table and place the combatants.
+    def _adopt_map(self, document: MapDocument, combatants: Sequence[Creature]) -> None:
+        """Refuse a map the fight cannot run on, then place the combatants on it.
 
-        Everything a map can get wrong is refused here, before the first roll:
-        a terrain kind the captured table does not define, a feature off the map
-        or doubled up on a square, a prerequisite naming nothing, a combatant off
-        the map, inside a wall, or on another combatant. Positions are snapped to
-        the centre of their square — on a grid, the square is the position.
-
-        A ``BattleMap`` can be hand-built with no document behind it, so these
+        A ``MapDocument`` can be hand-built with no file behind it, so these
         refusals are not a second opinion on the parser's — they are the only
-        ones such a map ever meets. **Every square a fixture governs is claimed
-        by exactly one fixture per level**, which is what makes the resolvers
-        below total: there is no precedence question to answer, so a stateless
-        reader of the same map cannot disagree with this fight about what a
-        square is.
+        ones such a map ever meets. What they are *not* any more is a second
+        statement of them. The rules live in :mod:`fivee_sim.map_types` and
+        yield :class:`~fivee_sim.map_types.MapFinding`; this renders the first
+        refusal as an ``EncounterError``, which is a ``ValueError`` and so
+        reaches a caller as problem+json rather than a 500. A finding that is
+        not a refusal — the one advisory about a sealed storey — is dropped:
+        a fight has nowhere to put advice.
+
+        Fail-fast rather than accumulating, deliberately. The parser owes an
+        author every problem in the file at once; a fight owes its caller one
+        reason it will not start.
+
+        Three of the rules are the fight's alone.
+        :func:`~fivee_sim.map_types.plane_findings` and
+        :func:`~fivee_sim.map_types.terrain_findings` are asked here and not by
+        the parser, which puts the same questions to the raw payload where it
+        can name the key that is wrong — see their docstrings. And the last
+        thirty lines below are **combatant placement**, which is an encounter
+        rule and not a map rule: a document is deliberately stateless about
+        creatures, so where a fighter may stand is not something a map file can
+        be right or wrong about. It stays here. Do not finish the job.
+
+        Which storey a fixture stands on, where the connectors and sight links
+        are, and which squares are lit are all read off the document once here
+        rather than per query, because each sits on a per-attack path.
         """
-        if battle_map.width < 1 or battle_map.height < 1:
+        grid = document.grid
+        self._levels = document.levels
+        self._legend = document.legend
+        if grid.width < 1 or grid.height < 1:
             raise EncounterError(
                 f"a battle map needs at least one square; "
-                f"got {battle_map.width}x{battle_map.height}"
+                f"got {grid.width}x{grid.height}"
             )
-        named: set[str] = set()
-        for plane in battle_map.levels.values():
-            named.update({plane.default_terrain, *plane.terrain.values()})
-            for feature in plane.features.values():
-                named.add(feature.closed_terrain)
-                named.add(feature.open_terrain)
-                for overlay in feature.affects:
-                    if overlay.terrain is not None:
-                        named.add(overlay.terrain.closed)
-                        named.add(overlay.terrain.open)
-        unknown = sorted(kind for kind in named if kind not in self.terrain_effects)
-        if unknown:
-            defined = ", ".join(sorted(self.terrain_effects)) or "none"
-            raise EncounterError(
-                f"the map names terrain the loaded content does not define: "
-                f"{', '.join(unknown)}. Defined: {defined}"
-            )
-        for level in sorted(battle_map.levels):
-            plane = battle_map.levels[level]
-            for name, feature in plane.features.items():
-                for square, claim in feature.claims():
-                    if not self._on_map(square):
-                        # The own square and an overlay cell are both off the
-                        # same map, but they are different authoring mistakes.
-                        reach = "sits at" if square == feature.square else "reaches"
-                        raise EncounterError(
-                            f"feature {name!r} {reach} {square}, off the "
-                            f"{battle_map.width}x{battle_map.height} map"
-                        )
-                    other = self._feature_squares.get((level, square))
-                    if other is not None and other.feature == name:
-                        raise EncounterError(
-                            f"feature {name!r} claims square {square} twice"
-                        )
-                    if other is not None:
-                        raise EncounterError(
-                            f"features {other.feature!r} and {name!r} share square {square}"
-                        )
-                    self._feature_squares[(level, square)] = claim
-            for square, target in plane.connectors.items():
-                if target not in battle_map.levels:
-                    raise EncounterError(
-                        f"the connector at {square} on level {level} leads to level "
-                        f"{target}, which this map does not have"
-                    )
-        # A second pass, because a prerequisite may point forward — and across a
-        # floor. ``requires`` is a prerequisite, not a reach: which storey the
-        # thing it names sits on is nobody's business but the fiction's.
-        catalogue = battle_map.features
-        for name, feature in sorted(catalogue.items()):
-            missing = [wanted for wanted in feature.requires if wanted not in catalogue]
-            if missing:
-                available = ", ".join(sorted(catalogue)) or "none"
-                raise EncounterError(
-                    f"feature {name!r} requires "
-                    f"{', '.join(repr(wanted) for wanted in missing)}, which this map "
-                    f"does not have; the map has: {available}"
-                )
-            if feature.linked_to is None:
-                continue
-            partner = catalogue.get(feature.linked_to)
-            if partner is None:
-                raise EncounterError(
-                    f"feature {name!r} links to {feature.linked_to!r}, which this map "
-                    "does not have"
-                )
-            if feature.kind != "door" or partner.kind != "door":
-                raise EncounterError("only doors may be linked")
-            if partner.linked_to != name:
-                raise EncounterError(
-                    f"feature {name!r} links to {partner.name!r}; that door must link "
-                    f"back to {name!r}"
-                )
-            if battle_map.level_of(name) != battle_map.level_of(partner.name):
-                raise EncounterError("linked doors must stand on the same level")
-            dx = abs(feature.square[0] - partner.square[0])
-            dy = abs(feature.square[1] - partner.square[1])
-            if dx + dy != 1:
-                raise EncounterError("linked doors must stand on adjacent squares")
-            if feature.orientation != partner.orientation or feature.orientation not in {
-                "horizontal", "vertical",
-            }:
-                raise EncounterError(
-                    "linked doors must share a horizontal or vertical orientation"
-                )
-            aligned = (feature.orientation == "horizontal" and dx == 1) or (
-                feature.orientation == "vertical" and dy == 1
-            )
-            if not aligned:
-                raise EncounterError(
-                    f"linked doors must be aligned with their {feature.orientation} orientation"
-                )
-            if feature.initially_open != partner.initially_open:
-                raise EncounterError("linked doors must start in the same state")
-            if feature.trigger != partner.trigger:
-                raise EncounterError("linked doors must have identical triggers")
-            contract = (feature.requires, feature.costs_action, feature.check)
-            partner_contract = (partner.requires, partner.costs_action, partner.check)
-            if contract != partner_contract:
-                raise EncounterError(
-                    "linked doors must have the same requires, costs_action, and check"
-                )
+        self._refuse(plane_findings(document.levels, grid, document.legend))
+        self._refuse(document_findings(document.levels, grid))
+        self._refuse(terrain_findings(document, self.terrain_effects))
+
+        # Past the rules, so every read below is of a map already known good:
+        # a fixture is on the grid, its claims do not collide, and the kind
+        # under it resolves. Each of these tables is O(features) to build and
+        # sits on a per-attack path, so they are materialised once.
+        for index in sorted(document.levels):
+            level = document.levels[index]
+            fixtures = level.fixtures()
+            for feature in fixtures.values():
+                for square, claim in feature.claims(level, document.legend):
+                    self._feature_squares[(index, square)] = claim
+            self._fixtures.update(fixtures)
+            self._fixture_level.update(dict.fromkeys(fixtures, index))
+            self._connectors[index] = level.connectors()
+            self._sight_links[index] = level.sight_links()
+            self._lights[index] = level.lights()
+            self._ambient[index] = LightLevel(level.ambient_light)
+
+        catalogue = self._fixtures
         initially_open = {
-            name for name, feature in battle_map.features.items()
-            if feature.initially_open
+            name for name, feature in catalogue.items() if feature.state == "open"
         }
-        for name, feature in sorted(catalogue.items()):
-            trigger = feature.trigger
-            if trigger is None:
-                continue
-            if not trigger.when:
-                raise EncounterError(
-                    f"feature {name!r} trigger must name at least one fixture"
-                )
-            if type(trigger.set_open) is not bool or not isinstance(
-                trigger.mode, TriggerMode
-            ):
-                raise EncounterError(
-                    f"feature {name!r} has a malformed trigger state or mode"
-                )
-            seen_dependencies: set[str] = set()
-            for condition in trigger.when:
-                if not isinstance(condition, tuple) or len(condition) != 2:
-                    raise EncounterError(
-                        f"feature {name!r} has a malformed trigger condition"
-                    )
-                dependency, expected = condition
-                if (
-                    not isinstance(dependency, str)
-                    or not dependency.strip()
-                    or type(expected) is not bool
-                    or dependency in seen_dependencies
-                ):
-                    raise EncounterError(
-                        f"feature {name!r} has a malformed trigger condition"
-                    )
-                seen_dependencies.add(dependency)
-            for dependency, _ in trigger.when:
-                if dependency not in catalogue:
-                    raise EncounterError(
-                        f"feature {name!r} trigger references {dependency!r}, which this "
-                        "map does not have"
-                    )
-            if trigger.set_open:
-                conditions = dict(trigger.when)
-                for required in feature.requires:
-                    if conditions.get(required) is not True:
-                        raise EncounterError(
-                            f"trigger opens feature {name!r} but does not require "
-                            f"{required!r} to be open"
-                        )
-            if (
-                trigger.mode is TriggerMode.MAINTAINED
-                and trigger.active(initially_open)
-                and feature.initially_open is not trigger.set_open
-            ):
-                raise EncounterError(
-                    f"feature {name!r} maintained trigger is true initially and sets "
-                    f"it {'open' if trigger.set_open else 'closed'}, but it starts "
-                    f"{'open' if feature.initially_open else 'closed'}"
-                )
         ordered = _dependency_order(catalogue)
         self.map_state = MapState(open_features=initially_open)
         self._trigger_sequence = tuple(
@@ -1233,10 +1150,15 @@ class Encounter:
             assert trigger is not None
             self._trigger_active[name] = trigger.active(initially_open)
 
+        # Combatant placement, and the reason it did not move out with the rest:
+        # a map document says nothing about creatures, so "off the map, inside a
+        # wall, or standing on somebody" is a question about *this fight* on that
+        # map and not about whether the map is well-formed. A map rule that
+        # refused it would refuse every saved map with a wall on it.
         placed: dict[tuple[int, Square], str] = {}
         for creature in combatants:
-            if creature.level not in battle_map.levels:
-                declared = ", ".join(str(i) for i in sorted(battle_map.levels))
+            if creature.level not in document.levels:
+                declared = ", ".join(str(i) for i in sorted(document.levels))
                 raise EncounterError(
                     f"{creature.name} starts on level {creature.level}, which this map "
                     f"does not have. Levels: {declared}"
@@ -1245,7 +1167,7 @@ class Encounter:
             if not self._on_map(square):
                 raise EncounterError(
                     f"{creature.name} starts at {as_point(creature.position)}, off the "
-                    f"{battle_map.width}x{battle_map.height} map"
+                    f"{grid.width}x{grid.height} map"
                 )
             if self._entry_cost(creature.level, square) is None:
                 raise EncounterError(
@@ -1260,16 +1182,23 @@ class Encounter:
             placed[(creature.level, square)] = creature.name
             creature.position = square_center(square)
 
-    def _on_map(self, square: Square) -> bool:
-        assert self.battle_map is not None
-        return 0 <= square[0] < self.battle_map.width and (
-            0 <= square[1] < self.battle_map.height
-        )
+    @staticmethod
+    def _refuse(findings: Iterable[MapFinding]) -> None:
+        """Raise the first refusal among ``findings``, ignoring the advice.
 
-    def _plane(self, level: int) -> MapPlane:
-        """The storey a query is about. Every map query names one; none assumes."""
-        assert self.battle_map is not None
-        return self.battle_map.levels[level]
+        The whole of the fight's rendering. A generator, so the rules stop being
+        evaluated at the first refusal rather than the whole document being
+        walked for a message nobody will read.
+        """
+        for finding in findings:
+            if finding.refusal:
+                raise EncounterError(finding.message)
+
+
+    def _on_map(self, square: Square) -> bool:
+        assert self.map_document is not None
+        grid = self.map_document.grid
+        return 0 <= square[0] < grid.width and 0 <= square[1] < grid.height
 
     def _is_open(self, feature_name: str) -> bool:
         assert self.map_state is not None
@@ -1285,15 +1214,24 @@ class Encounter:
 
         A claim carrying no terrain pair falls through as an unclaimed square
         does: a fixture that only moves a water level leaves the ground it finds.
+
+        The fall-through reads the document's dense tiles through its legend.
+        **Every caller is on the map before it arrives here** — ``_entry_cost``,
+        ``_step_cost``, ``_opaque`` and ``_cover_of`` each test ``_on_map``
+        first, and the two error paths that name a kind are reached only after
+        one of those has passed — because
+        :meth:`~fivee_sim.map_types.MapLevel.terrain_at` raises rather than
+        answering for a square that is not there. Python would read
+        ``tiles[-1][-1]`` as the far corner with a straight face, which is the
+        wrong answer wearing a right one's clothes.
         """
-        assert self.battle_map is not None and self.map_state is not None
-        plane = self._plane(level)
+        assert self.map_document is not None and self.map_state is not None
         claim = self._feature_squares.get((level, square))
         if claim is not None and claim.terrain is not None:
             if self._is_open(claim.feature):
                 return claim.terrain.open
             return claim.terrain.closed
-        return plane.terrain.get(square, plane.default_terrain)
+        return self._levels[level].terrain_at(square, self._legend)
 
     def _terrain_at(self, square: Square) -> str:
         """The ground plane's terrain. The mapless and single-storey shorthand."""
@@ -1303,7 +1241,7 @@ class Encounter:
         return terrain_effect_of(self._terrain_at_level(level, square), self.terrain_effects)
 
     def _is_underwater(self, creature: Creature) -> bool:
-        if self.battle_map is None:
+        if self.map_document is None:
             return False
         return self._terrain_effect(
             creature.level, to_square(as_point(creature.position))
@@ -1321,14 +1259,18 @@ class Encounter:
         that floods a room also drops what the room sits at, so height moves
         under a fight exactly as terrain does. A claim with no height pair falls
         through — most fixtures change what a square *is* without moving it.
+
+        Ground height stays sparse where terrain went dense, and that is the
+        document's own shape rather than a choice made here: a level records a
+        datum and the squares that depart from it, so an off-map square answers
+        the datum instead of raising, exactly as it did.
         """
-        plane = self._plane(level)
         claim = self._feature_squares.get((level, square))
         if claim is not None and claim.elevation is not None:
             if self._is_open(claim.feature):
                 return claim.elevation.open
             return claim.elevation.closed
-        return plane.elevation.get(square, plane.default_elevation)
+        return self._levels[level].elevation.at(square)
 
     def _entry_cost(self, level: int, square: Square) -> int | None:
         """Feet to enter a square, or ``None`` off the map or into a wall.
@@ -1445,7 +1387,7 @@ class Encounter:
         goal, which is how you walk *to* a creature; ``max_cost`` abandons
         routes over budget.
         """
-        if self.battle_map is None:
+        if self.map_document is None:
             return None
         actor = self.creatures[actor_name]
         level = actor.level
@@ -1465,7 +1407,7 @@ class Encounter:
                 movement_mode=movement_mode,
             ),
             rule=self.movement_rule,
-            bounds=(self.battle_map.width, self.battle_map.height),
+            bounds=(self.map_document.grid.width, self.map_document.grid.height),
             blocked=blocked,
             stop_adjacent=stop_adjacent,
             max_cost=max_cost,
@@ -1483,7 +1425,7 @@ class Encounter:
         action's destination, occupancy, and vertical-distance gates so a
         proposed cross-storey move will not be refused when resolved.
         """
-        if self.battle_map is None or to_level not in self.battle_map.levels:
+        if self.map_document is None or to_level not in self.map_document.levels:
             return None
         actor = self.creatures[actor_name]
         if actor.fly_speed <= 0:
@@ -1508,7 +1450,7 @@ class Encounter:
         policy must weigh cover with the same eyes the stepper resolves it, not
         re-derive it. Without a map there is no cover at all.
         """
-        if self.battle_map is None:
+        if self.map_document is None:
             return CoverGrade.NONE
         attacker = self.creatures[attacker_name]
         return self._cover_from_square(
@@ -1532,11 +1474,11 @@ class Encounter:
         level does to sight; within one, nothing changed.
         """
         # ruling: cross_storey_sight_needs_a_link
-        if self.battle_map is None:
+        if self.map_document is None:
             return CoverGrade.NONE
         target = self.creatures[target_name]
         if target.level != level:
-            visible = self._plane(level).sight_links.get(origin, frozenset())
+            visible = self._sight_links[level].get(origin, frozenset())
             if target.level not in visible:
                 return CoverGrade.TOTAL
         occupied = frozenset(
@@ -1606,9 +1548,9 @@ class Encounter:
         """
         actor = self.creatures[name]
         visible_levels = {actor.level}
-        if self.battle_map is not None:
+        if self.map_document is not None:
             origin = to_square(as_point(actor.position))
-            visible_levels.update(self._plane(actor.level).sight_links.get(origin, ()))
+            visible_levels.update(self._sight_links[actor.level].get(origin, ()))
         return [
             c for c in self.creatures.values()
             if c.team != actor.team and c.combat_active and c.level in visible_levels
@@ -1930,24 +1872,24 @@ class Encounter:
         }
 
     def _map_state(self) -> dict[str, Any] | None:
-        if self.battle_map is None or self.map_state is None:
+        if self.map_document is None or self.map_state is None:
             return None
         return {
-            "name": self.battle_map.name,
-            "width": self.battle_map.width,
-            "height": self.battle_map.height,
+            "name": self.map_document.name,
+            "width": self.map_document.grid.width,
+            "height": self.map_document.grid.height,
             "movement_rule": self.movement_rule.value,
             "elevation": self._elevation_summary(GROUND_LEVEL),
             "levels": [
-                self._level_summary(index) for index in sorted(self.battle_map.levels)
+                self._level_summary(index) for index in sorted(self.map_document.levels)
             ],
             "features": {
                 name: self._feature_summary(name, feature)
-                for name, feature in sorted(self.battle_map.features.items())
+                for name, feature in sorted(self._fixtures.items())
             },
         }
 
-    def _feature_summary(self, name: str, feature: MapFeature) -> dict[str, Any]:
+    def _feature_summary(self, name: str, feature: MapFeatureRecord) -> dict[str, Any]:
         """One fixture, reporting only what it actually carries.
 
         A plain door says the four things a door has always said. Everything
@@ -1955,16 +1897,26 @@ class Encounter:
         wide as it was and the keys that do appear are the ones a caller has to
         act on: what else moves with it, what it waits for, what is still
         missing, what may operate it automatically, and what operating it costs.
+
+        **Written out key by key from a record that carries more**, which is the
+        one thing to keep about it. A ``MapFeatureRecord`` also holds ``team``,
+        ``to_level``, ``sight_to_levels``, ``facing``, ``hinge`` and ``swing``;
+        none is emitted, and each is classified in
+        :data:`FEATURE_WITHHELD_KEYS` so that adding one is a decision somebody
+        makes rather than a field that arrives because the shape widened
+        underneath. ``self._fixtures`` is the other half of that: a spawn hint
+        carries a ``team`` naming which side arrives where, and it is not a
+        fixture, so it is not here at all.
         """
-        assert self.battle_map is not None and self.map_state is not None
+        assert self.map_document is not None and self.map_state is not None
         summary: dict[str, Any] = {
-            "square": list(feature.square),
+            "square": list(feature.at),
             "kind": feature.kind,
-            "level": self.battle_map.level_of(name),
+            "level": self._fixture_level[name],
             "open": name in self.map_state.open_features,
         }
         beyond = sorted(
-            square for overlay in feature.affects for square in overlay.squares
+            square for overlay in feature.affects for square in overlay.cells
         )
         if beyond:
             summary["affects"] = [list(square) for square in beyond]
@@ -1998,18 +1950,17 @@ class Encounter:
 
     def _level_summary(self, level: int) -> dict[str, Any]:
         """One storey: its heights and the squares that lead off it."""
-        plane = self._plane(level)
         return {
             "index": level,
             "elevation": self._elevation_summary(level),
             "connectors": [
                 {"square": [square[0], square[1]], "to_level": target}
-                for square, target in sorted(plane.connectors.items())
+                for square, target in sorted(self._connectors[level].items())
             ],
         }
 
     def _elevation_summary(self, level: int) -> dict[str, Any]:
-        """One plane's ground heights in feet, and what they do — and do not — do.
+        """One storey's ground heights in feet, and what they do — and do not — do.
 
         Live, not authored. The block this sits in already reports every
         fixture's real state, and the creature standing in a flooded room
@@ -2025,18 +1976,19 @@ class Encounter:
         has — and a claimed square never falls back, in either state, so it
         covers the plane exactly as an authored height does.
         """
-        assert self.battle_map is not None
-        plane = self._plane(level)
-        decided: dict[Square, int] = dict(plane.elevation)
+        assert self.map_document is not None
+        elevation = self._levels[level].elevation
+        grid = self.map_document.grid
+        decided: dict[Square, int] = dict(elevation.squares)
         for (claimed_level, square), claim in self._feature_squares.items():
             if claimed_level == level and claim.elevation is not None:
                 decided[square] = self._elevation_at(level, square)
         heights = list(decided.values())
-        covered = len(decided) == (self.battle_map.width * self.battle_map.height)
+        covered = len(decided) == (grid.width * grid.height)
         if not covered:
-            heights.append(plane.default_elevation)
+            heights.append(elevation.default)
         return {
-            "default": plane.default_elevation,
+            "default": elevation.default,
             "min": min(heights),
             "max": max(heights),
             "flat": min(heights) == max(heights),
@@ -2114,7 +2066,7 @@ class Encounter:
         }
         # Only where it means something: a fight on the open plane has no ground
         # to stand on, and reporting 0 feet there would read as a fact.
-        if self.battle_map is not None:
+        if self.map_document is not None:
             state["level"] = creature.level
             state["elevation"] = self._elevation_at(
                 creature.level, to_square(as_point(creature.position))
@@ -3042,14 +2994,23 @@ class Encounter:
         return observer.darkvision > 0 and distance <= observer.darkvision
 
     def _illumination_at(self, creature: Creature) -> LightLevel:
-        if self.battle_map is None:
+        """How well lit the square this creature stands on is.
+
+        The lights are a tuple of ``(square, light)`` pairs read off the storey
+        once at adoption, rather than a runtime type carrying its own square.
+        There was one — ``LightSource`` — and it held nothing a
+        :class:`~fivee_sim.map_types.MapLight` and the square it was found on do
+        not already say, so it went with the rest of the bridge. A pair also
+        keeps what a keyed table would have lost: two features may stand on one
+        square, and both burn.
+        """
+        if self.map_document is None:
             return LightLevel.BRIGHT
-        plane = self._plane(creature.level)
         square = to_square(as_point(creature.position))
-        brightest = plane.ambient_light
-        for light in plane.lights:
+        brightest = self._ambient[creature.level]
+        for at, light in self._lights[creature.level]:
             distance = distance_feet(
-                square_center(light.square), square_center(square), self.movement_rule
+                square_center(at), square_center(square), self.movement_rule
             )
             if light.bright > 0 and distance <= light.bright:
                 return LightLevel.BRIGHT
@@ -3556,7 +3517,7 @@ class Encounter:
         and it must use the same eyes the stepper refuses with. Without a map
         there is nothing to hide behind.
         """
-        if self.battle_map is None:
+        if self.map_document is None:
             return True
         caster = self.creatures[caster_name]
         return has_line_of_sight(
@@ -3612,7 +3573,7 @@ class Encounter:
                 if center is None:
                     raise EncounterError(f"{spell.name} needs 'center'")
                 centre = as_point(center)
-                if self.battle_map is None:
+                if self.map_document is None:
                     return [
                         c for c in self.creatures.values()
                         if c.arrived and not c.dead
@@ -3663,7 +3624,7 @@ class Encounter:
                 if center is None:
                     raise EncounterError(f"{spell.name} needs 'center'")
                 centre = as_point(center)
-                if self.battle_map is None:
+                if self.map_document is None:
                     return [
                         c for c in self.creatures.values()
                         if c.arrived and not c.dead
@@ -3685,7 +3646,7 @@ class Encounter:
             # SRD 5.2.1: the origin "isn't included in the area of effect
             # unless its creator decides otherwise" — always excluded here.
             caught = [c for c in caught if c.name != caster_name]
-        if self.battle_map is None:
+        if self.map_document is None:
             return caught
         return [
             c for c in caught
@@ -3911,7 +3872,7 @@ class Encounter:
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))
             raise EncounterError(f"{actor.name} has speed 0 ({held}) and cannot move")
-        if self.battle_map is not None:
+        if self.map_document is not None:
             self._do_move_mapped(actor, action, rng)
             return
         if action.path:
@@ -3971,7 +3932,7 @@ class Encounter:
         so leaving any threatening enemy's reach on the way provokes — a
         pass-through is not laundered by where the move ends.
         """
-        assert self.battle_map is not None and action.to_position is not None
+        assert self.map_document is not None and action.to_position is not None
         origin = as_point(actor.position)
         origin_sq = to_square(origin)
         dest_sq = to_square(as_point(action.to_position))
@@ -3989,20 +3950,20 @@ class Encounter:
             )
             return
         if to_level != level:
-            if to_level not in self.battle_map.levels:
-                declared = ", ".join(str(i) for i in sorted(self.battle_map.levels))
+            if to_level not in self.map_document.levels:
+                declared = ", ".join(str(i) for i in sorted(self.map_document.levels))
                 raise EncounterError(
                     f"there is no level {to_level} on this map. Levels: {declared}"
                 )
-            if self._plane(level).connectors.get(dest_sq) != to_level:
+            if self._connectors[level].get(dest_sq) != to_level:
                 raise EncounterError(
                     f"there is nothing at {dest_sq} that leads to level {to_level}; "
                     f"a move between storeys ends on a stairway"
                 )
         if not self._on_map(dest_sq):
             raise EncounterError(
-                f"{dest_sq} is off the {self.battle_map.width}x"
-                f"{self.battle_map.height} map"
+                f"{dest_sq} is off the {self.map_document.grid.width}x"
+                f"{self.map_document.grid.height} map"
             )
         if self._entry_cost(level, dest_sq) is None:
             raise EncounterError(
@@ -4153,9 +4114,9 @@ class Encounter:
         mode: MovementMode,
     ) -> None:
         """Fly directly between planes; a connector is unnecessary."""
-        assert self.battle_map is not None
-        if to_level not in self.battle_map.levels:
-            declared = ", ".join(str(i) for i in sorted(self.battle_map.levels))
+        assert self.map_document is not None
+        if to_level not in self.map_document.levels:
+            declared = ", ".join(str(i) for i in sorted(self.map_document.levels))
             raise EncounterError(f"there is no level {to_level} on this map. Levels: {declared}")
         if not self._on_map(dest_sq) or self._entry_cost(to_level, dest_sq) is None:
             raise EncounterError(f"cannot end a flight at {dest_sq} on level {to_level}")
@@ -4203,15 +4164,21 @@ class Encounter:
         Only then is the action or the interaction spent, and only then is any
         check rolled — a failed check spends the budget and moves nothing.
         """
-        if self.battle_map is None or self.map_state is None:
+        if self.map_document is None or self.map_state is None:
             raise EncounterError(
                 "there is no battle map, so there is nothing to interact with"
             )
         if action.feature is None:
             raise EncounterError("interacting needs 'feature'")
-        feature = self.battle_map.features.get(action.feature)
+        # ``self._fixtures``, not the document's features. A spawn hint is not a
+        # thing a fight can work, so it is neither found here nor listed in the
+        # refusal — and that second half matters more than the first: this
+        # message is player-visible, and a map's spawn hints spell out which
+        # side is coming in where. The brief works hard to keep an ambusher off
+        # the wire; a refusal that names one would hand it over.
+        feature = self._fixtures.get(action.feature)
         if feature is None:
-            available = ", ".join(sorted(self.battle_map.features)) or "none"
+            available = ", ".join(sorted(self._fixtures)) or "none"
             raise EncounterError(
                 f"no feature named {action.feature!r}; the map has: {available}"
             )
@@ -4226,28 +4193,28 @@ class Encounter:
         # Reach is a question about a storey, not only about a square. The
         # feature table merges every plane under one set of names, so comparing
         # squares alone let a creature work a hatch directly above its head.
-        level = self.battle_map.level_of(feature.name)
+        level = self._fixture_level[feature.id]
         if level != actor.level:
             raise EncounterError(
-                f"{feature.name} is on level {level}; {actor.name} is on level "
+                f"{feature.id} is on level {level}; {actor.name} is on level "
                 f"{actor.level} and cannot reach it from another storey"
             )
         actor_sq = to_square(as_point(actor.position))
         apart = max(
-            abs(actor_sq[0] - feature.square[0]), abs(actor_sq[1] - feature.square[1])
+            abs(actor_sq[0] - feature.at[0]), abs(actor_sq[1] - feature.at[1])
         )
         if apart > 1:
             raise EncounterError(
-                f"{feature.name} is at {feature.square}, out of reach from "
+                f"{feature.id} is at {feature.at}, out of reach from "
                 f"{actor_sq}; stand on or next to it"
             )
 
-        was_open = feature.name in self.map_state.open_features
+        was_open = feature.id in self.map_state.open_features
         wants_open = (not was_open) if action.set_open is None else action.set_open
         linked = [feature.linked_to] if feature.linked_to is not None else []
-        operated = [feature.name, *linked]
+        operated = [feature.id, *linked]
         for operated_name in operated:
-            operated_feature = self.battle_map.features[operated_name]
+            operated_feature = self._fixtures[operated_name]
             trigger = operated_feature.trigger
             if (
                 trigger is not None
@@ -4256,7 +4223,7 @@ class Encounter:
                 and wants_open is not trigger.set_open
             ):
                 raise EncounterError(
-                    f"{feature.name} is held "
+                    f"{feature.id} is held "
                     f"{'open' if trigger.set_open else 'closed'} by its maintained trigger"
                 )
         # Prerequisites gate *opening* only. Held as an invariant they would also
@@ -4269,12 +4236,12 @@ class Encounter:
             ]
             if unmet:
                 raise EncounterError(
-                    f"{feature.name} will not move until {', '.join(unmet)} "
+                    f"{feature.id} will not move until {', '.join(unmet)} "
                     f"{'is' if len(unmet) == 1 else 'are'} open"
                 )
         if action.set_open is not None and action.set_open == was_open:
             raise EncounterError(
-                f"{feature.name} is already {'open' if was_open else 'closed'}"
+                f"{feature.id} is already {'open' if was_open else 'closed'}"
             )
 
         check_advantage = compute_ability_check_advantage(
@@ -4288,7 +4255,7 @@ class Encounter:
             check_faces(action.natural or None, check_advantage)
         elif action.natural:
             raise EncounterError(
-                f"{feature.name} asks for no check, so there is no face to report"
+                f"{feature.id} asks for no check, so there is no face to report"
             )
 
         if feature.costs_action:
@@ -4317,9 +4284,9 @@ class Encounter:
                 # reading it needs to know nothing about checks.
                 self._emit("interact", actor.name,
                            detail=(
-                               f"fails to {verb} {feature.name} ({test.describe()})"
+                               f"fails to {verb} {feature.id} ({test.describe()})"
                            ),
-                           feature=feature.name, open=was_open, **extras)
+                           feature=feature.id, open=was_open, **extras)
                 return
             note = f" ({test.describe()})"
         else:
@@ -4329,21 +4296,21 @@ class Encounter:
             self.map_state.open_features.update(operated)
         else:
             self.map_state.open_features.difference_update(operated)
-        subjects = feature.name if not linked else f"{feature.name} and {linked[0]}"
+        subjects = feature.id if not linked else f"{feature.id} and {linked[0]}"
         self._emit("interact", actor.name,
                    detail=f"{'opens' if wants_open else 'closes'} {subjects}{note}",
-                   feature=feature.name, open=wants_open, **extras)
-        self._drain_triggers(feature.name, operated)
+                   feature=feature.id, open=wants_open, **extras)
+        self._drain_triggers(feature.id, operated)
 
     def _drain_triggers(self, initiating_feature: str, changed: Sequence[str]) -> None:
         """Apply automatic fixture transitions in deterministic dependency order."""
-        assert self.battle_map is not None and self.map_state is not None
+        assert self.map_document is not None and self.map_state is not None
         revision = 1
         changed_at = {name: revision for name in changed}
         changed_by = {name: initiating_feature for name in changed}
 
         for name in self._trigger_sequence:
-            feature = self.battle_map.features[name]
+            feature = self._fixtures[name]
             trigger = feature.trigger
             assert trigger is not None
             active = trigger.active(self.map_state.open_features)
@@ -5016,7 +4983,7 @@ def build_encounter(
     items: Mapping[str, ItemEffect] | None = None,
     condition_effects: ConditionTable | None = None,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
-    battle_map: BattleMap | None = None,
+    map_document: MapDocument | None = None,
     terrain_effects: TerrainTable | None = None,
 ) -> tuple[Encounter, Random]:
     """Create an encounter and the generator that drives it, from a seed alone."""
@@ -5028,7 +4995,7 @@ def build_encounter(
         items=items,
         condition_effects=condition_effects,
         movement_rule=movement_rule,
-        battle_map=battle_map,
+        map_document=map_document,
         terrain_effects=terrain_effects,
     )
     return encounter, rng

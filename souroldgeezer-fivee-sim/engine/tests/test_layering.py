@@ -2,11 +2,20 @@
 
 CLAUDE.md states the dependency direction as a fact about this tree:
 ``web`` -> ``service`` -> the root tier
-(``content``/``maps``/``validation``/``coverage``) -> ``model`` -> ``kernel``,
-with ``kernel`` importing nothing outside itself. Nothing checked it, and it had
-already drifted: ``fivee_sim/data/__init__.py`` — a package named for the JSON
-files it carries — imported ``content`` (up a layer), ``model`` (across), and six
-``kernel`` modules, which made it the widest-reaching non-adapter module here.
+(``catalog``/``content``/``map_document``/``map_types``/``validation``/``coverage``)
+-> ``model`` -> ``kernel``, with ``kernel`` importing nothing outside itself.
+Nothing checked it, and it had already drifted:
+``fivee_sim/data/__init__.py`` — a package named for the JSON files it carries —
+imported ``content`` (up a layer), ``model`` (across), and six ``kernel``
+modules, which made it the widest-reaching non-adapter module here.
+
+``map_types`` is the one root-tier module the arrow does not describe, and the
+exception is deliberate rather than a second drift: it is the map's *types* with
+no parser in them, so ``model`` may hold a ``MapDocument`` without the file
+machinery arriving behind it. Two tests below pin that carve-out at exactly its
+intended width — ``model`` may import ``map_types``, never ``map_document``; and
+``map_types`` may import nothing but the kernel, which is what makes the first
+rule mean anything.
 
 That drift also closed a **cycle**, which is why this file parses the graph
 rather than trusting the layer names. ``content`` reads the bundled packs with
@@ -24,11 +33,12 @@ Five rules, each the smallest statement of the layer it bounds:
   needs either.
 * ``fivee_sim.kernel`` imports only ``fivee_sim.kernel``. The purity claim the
   rest of the engine's reproducibility rests on.
-* ``fivee_sim.model`` imports only ``fivee_sim.model`` and ``fivee_sim.kernel``.
-  In particular never ``content``: ``model`` owns creatures, so creature
-  *construction* belongs to it, but a registry is content's concept. The
-  construction seam therefore takes the two registry-derived values it cannot
-  compute — the condition table and the provenance fallback — as arguments.
+* ``fivee_sim.model`` imports only ``fivee_sim.model``, ``fivee_sim.kernel`` and
+  ``fivee_sim.map_types``. In particular never ``content``: ``model`` owns
+  creatures, so creature *construction* belongs to it, but a registry is
+  content's concept. The construction seam therefore takes the two
+  registry-derived values it cannot compute — the condition table and the
+  provenance fallback — as arguments.
   ``test_the_model_builds_a_creature_with_no_registry_in_sight`` is the same
   claim proved from the other side: behaviourally, not just structurally.
 * ``fivee_sim.client`` imports only itself and ``fivee_sim.paths``. This one
@@ -155,7 +165,8 @@ def test_the_kernel_imports_nothing_outside_the_kernel() -> None:
 
 def test_the_model_imports_only_itself_and_the_kernel() -> None:
     offenders = _offenders(
-        "fivee_sim.model", allowed=("fivee_sim.model", "fivee_sim.kernel")
+        "fivee_sim.model",
+        allowed=("fivee_sim.model", "fivee_sim.kernel", "fivee_sim.map_types"),
     )
     assert not offenders, (
         "model/ owns creatures and encounter state and sits directly above the "
@@ -163,6 +174,77 @@ def test_the_model_imports_only_itself_and_the_kernel() -> None:
         "(content -> model -> kernel): a ContentRegistry is content's concept, so "
         "construction here takes the values it needs passed in rather than reaching "
         "up for the registry that holds them:\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_the_model_may_hold_a_map_document_but_never_read_one() -> None:
+    """The ``map_types`` entry above is one prefix; the rule is narrower than it.
+
+    ``model`` may name the map's *types* — a fight has to say what a
+    ``MapDocument`` is — but never ``map_document``, which is the parser: a
+    ``Reader``, the ``_check_*`` passes, ``MapError`` and the ``validation``
+    machinery under all three. That is the whole reason the types were split out
+    of it, so writing the allowlist entry down without writing the narrower rule
+    down would leave the carve-out free to widen back into the thing it was made
+    to avoid.
+
+    The vacuity guard matters as much as the assertion. Before ``map_types``
+    existed this rule was true for free, because ``model`` imported neither
+    module; a check that keeps passing after somebody deletes the carve-out is
+    not guarding it.
+    """
+    offenders = [
+        f"{path.relative_to(SRC)}:{line}"
+        for path in _modules_under("fivee_sim.model")
+        for target, line in _imports(path)
+        if target == "fivee_sim.map_document"
+        or target.startswith("fivee_sim.map_document.")
+    ]
+    assert not offenders, (
+        "model/ may import fivee_sim.map_types and not fivee_sim.map_document. "
+        "The types carry no parser; map_document carries the Reader, the "
+        "validation machinery and MapError, and pulling that into a fight is "
+        "exactly what splitting the two prevented. Whatever this needs, either "
+        "it is a type — and belongs in map_types — or it is a file being read, "
+        "and belongs to the layer that owns files:\n  " + "\n  ".join(offenders)
+    )
+    reaches = {
+        target
+        for path in _modules_under("fivee_sim.model")
+        for target, _ in _imports(path)
+    }
+    assert "fivee_sim.map_types" in reaches, (
+        "no model/ module imports fivee_sim.map_types, so the allowlist entry "
+        "that permits it is dead and this rule guards nothing. Either the "
+        "carve-out is still needed — in which case something here uses it — or "
+        "it should come back out of the model allowlist."
+    )
+
+
+def test_the_map_types_carry_no_parser_behind_them() -> None:
+    """What makes ``model`` importing ``map_types`` safe, stated as its own rule.
+
+    The allowlist entry says ``model`` may reach one root-tier module. It is only
+    a narrow permission while that module stays narrow: an import of
+    ``validation`` here — or of anything that imports it — hands the whole parser
+    to every module that names a map, through a door the model allowlist would go
+    on reporting as clean.
+
+    ``kernel`` alone, then. ``map_types`` needs ``Square``, ``FEET_PER_SQUARE``
+    and ``Facing`` from the grid and ``Ability`` for a fixture's check, and
+    nothing else from this package.
+    """
+    assert _modules_under("fivee_sim.map_types"), (
+        "fivee_sim.map_types is gone; the model allowlist entry for it and this "
+        "rule both guard nothing"
+    )
+    offenders = _offenders("fivee_sim.map_types", allowed=("fivee_sim.kernel",))
+    assert not offenders, (
+        "fivee_sim.map_types holds the map's types and imports the kernel and the "
+        "standard library, nothing else. It is what model/ is allowed to reach, "
+        "so an import of validation, content or the model itself here reaches "
+        "straight back through that permission — and the model rule would still "
+        "read as clean while it happened:\n  " + "\n  ".join(offenders)
     )
 
 
@@ -288,11 +370,12 @@ def test_the_suites_own_door_stays_a_door_and_never_becomes_an_adapter() -> None
 
 
 def test_every_layer_rule_actually_saw_some_source() -> None:
-    """A resolver that silently matched nothing would make all five vacuous."""
+    """A resolver that silently matched nothing would make all six vacuous."""
     for prefix in (
         "fivee_sim.data",
         "fivee_sim.kernel",
         "fivee_sim.model",
+        "fivee_sim.map_types",
         "fivee_sim.client",
         "fivee_sim.service.scenes",
     ):

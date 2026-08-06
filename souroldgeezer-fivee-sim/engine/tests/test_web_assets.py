@@ -525,7 +525,7 @@ class TestEditorGroundControls:
     def test_the_override_derivation_is_exported_once_for_both_pages(self) -> None:
         # The editor and the viewer both need "which squares does this
         # document's fixtures decide, given which stand open". Server-side that
-        # derivation is MapFeature.claims(), which names drift as its risk; a
+        # derivation is MapFeatureRecord.claims(), which names drift as its risk; a
         # copy per page would make three.
         source = read("renderer.js")
         assert "function terrainOverridesFor(doc, states)" in source
@@ -668,7 +668,7 @@ class TestViewerFixtureOverlay:
         # The renderer exports the derivation so that the question "which
         # squares does this document's fixtures decide" has one answer, not
         # one per page. A private copy here would make three with
-        # MapFeature.claims(), which is the drift its docstring names.
+        # MapFeatureRecord.claims(), which is the drift its docstring names.
         source = read("viewer.html")
         assert "R.terrainOverridesFor(mapDoc, " in source
         assert "function terrainOverridesFor" not in source
@@ -866,7 +866,7 @@ class TestEditorFixturePreview:
     def test_the_preview_derives_its_squares_through_the_shared_helper(self) -> None:
         # renderer.js exports terrainOverridesFor precisely so neither page
         # re-derives "which square shows what given which fixtures stand
-        # open". Server-side that derivation is MapFeature.claims(), whose
+        # open". Server-side that derivation is MapFeatureRecord.claims(), whose
         # docstring names drift as the risk; a copy here would make three.
         assert "R.terrainOverridesFor(" in read("editor.html")
 

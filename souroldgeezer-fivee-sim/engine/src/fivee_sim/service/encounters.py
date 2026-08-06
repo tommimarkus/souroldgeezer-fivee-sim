@@ -202,7 +202,7 @@ def create(
     used = specs.checked_seed(seed)
     rng = Random(used)
     content = sessions.active_content(state)
-    battle_map, map_source, map_document = sessions.resolve_battle_map(state, map_spec, map_id)
+    resolved = sessions.resolve_battle_map(state, map_spec, map_id)
     try:
         built_combatants = specs.combatants_from_specs(
             combatants, content.registry, mode=chapter
@@ -210,7 +210,7 @@ def create(
         encounter = sessions.new_encounter(
             built_combatants, rng, content.registry,
             movement_rule=specs.parse_movement_rule(movement_rule),
-            battle_map=battle_map,
+            map_document=resolved.document if resolved is not None else None,
             mode=chapter,
         )
     except EncounterError as error:
@@ -240,23 +240,20 @@ def create(
     sessions.capture_checkpoint(session, created_at)
     if encounter.map_state is not None:
         session.initial_open_features = sorted(encounter.map_state.open_features)
-    if map_source is not None and map_document is not None:
-        session.map_id = str(map_source["map_id"])
-        session.map_sha256 = str(map_source["sha256"])
+    if resolved is not None and resolved.source is not None:
+        session.map_id = str(resolved.source["map_id"])
+        session.map_sha256 = str(resolved.source["sha256"])
         # The payload, not a reference to the file: replay_export must see the
         # document as it stood when the fight started, whatever is written to
         # the map afterwards.
-        session.map_payload = as_payload(map_document)
-    elif battle_map is not None:
+        session.map_payload = as_payload(resolved.document)
+    elif resolved is not None:
         # An inline map has no id and no file, so nothing could fetch it again
         # and it travels by value or not at all — which is also why it gets no
-        # ``map_source``. A document arrived whole and is kept whole; only a
-        # spec, which has no document form, is rendered back out of the battle
-        # map it built, losing whatever ``to_grid`` had no slot for.
-        session.inline_map_payload = (
-            as_payload(map_document) if map_document is not None
-            else replay_service.battle_map_payload(battle_map)
-        )
+        # ``map_source``. Whole, and as a document either way: a spec builds one
+        # like every other producer, so there is nothing left here to render back
+        # out of a grid and nothing left for that rendering to lose.
+        session.inline_map_payload = as_payload(resolved.document)
     state.sessions[encounter_id] = session
     captured_map = session.map_payload or session.inline_map_payload
     try:
@@ -286,7 +283,7 @@ def create(
                     else "inline" if session.inline_map_payload is not None
                     else "none"
                 ),
-                "map_source": map_source,
+                "map_source": resolved.source if resolved is not None else None,
                 "map_open_features": session.initial_open_features,
                 "initial_state": session.initial_state,
             },

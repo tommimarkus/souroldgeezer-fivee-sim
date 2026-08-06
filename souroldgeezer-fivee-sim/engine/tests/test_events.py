@@ -18,7 +18,12 @@ from fivee_sim.analytics.montecarlo import run_encounter
 from fivee_sim.content import ContentRegistry, load_packs, make_creature, make_monster, spellbook
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.items import ItemEffect
-from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.map_types import (
+    FeatureTrigger,
+    MapDocument,
+    MapFeatureRecord,
+    TriggerMode,
+)
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import (
     EVENT_KINDS,
@@ -29,7 +34,7 @@ from fivee_sim.model.encounter import (
     build_encounter,
 )
 
-from .conftest import advance_to, caster, fighter
+from .conftest import advance_to, caster, fighter, fixture_provenance
 
 SEED = 20260730
 FIXTURE = "synthetic test fixture, not SRD content"
@@ -388,14 +393,17 @@ class TestReplayFromRecords:
     def test_a_mapped_fight_replays_exactly(self) -> None:
         # The map adds routing, terrain costs, a door, and pass-through
         # opportunity attacks to the record; the contract must hold with the same
-        # BattleMap handed to the reconstruction.
-        from fivee_sim.model.battlemap import BattleMap, MapFeature
-
-        door_map = BattleMap.flat(
+        # document handed to the reconstruction.
+        door_map = MapDocument.flat(
             name="crypt", width=6, height=2,
             terrain={(2, 0): "wall"},
-            features={"door": MapFeature(name="door", square=(2, 1))},
-            provenance=FIXTURE,
+            features=(
+                MapFeatureRecord(
+                    id="door", kind="door", at=(2, 1),
+                    orientation="horizontal", state="closed",
+                ),
+            ),
+            provenance=fixture_provenance(),
         )
 
         def combatants() -> list[Creature]:
@@ -406,7 +414,7 @@ class TestReplayFromRecords:
 
         def build() -> tuple[Encounter, Random]:
             return build_encounter(
-                combatants(), seed=SEED, spellbook=spellbook(), battle_map=door_map
+                combatants(), seed=SEED, spellbook=spellbook(), map_document=door_map
             )
 
         original, rng = build()
@@ -425,26 +433,24 @@ class TestReplayFromRecords:
         ]
 
     def test_automatic_fixture_events_replay_exactly_from_the_direct_action(self) -> None:
-        trigger_map = BattleMap.flat(
+        trigger_map = MapDocument.flat(
             name="trigger hall",
             width=6,
             height=2,
             default_terrain="floor",
-            features={
-                "lever": MapFeature(
-                    name="lever", square=(1, 1), kind="lever",
-                    closed_terrain="floor", open_terrain="floor",
+            features=(
+                MapFeatureRecord(
+                    id="lever", kind="lever", at=(1, 1), state="closed",
                 ),
-                "gate": MapFeature(
-                    name="gate", square=(4, 1), kind="gate",
-                    closed_terrain="floor", open_terrain="floor",
+                MapFeatureRecord(
+                    id="gate", kind="gate", at=(4, 1), state="closed",
                     trigger=FeatureTrigger(
                         when=(("lever", True),), set_open=True,
                         mode=TriggerMode.MAINTAINED,
                     ),
                 ),
-            },
-            provenance=FIXTURE,
+            ),
+            provenance=fixture_provenance(),
         )
 
         def combatants() -> list[Creature]:
@@ -454,7 +460,7 @@ class TestReplayFromRecords:
             ]
 
         def build() -> tuple[Encounter, Random]:
-            return build_encounter(combatants(), seed=SEED, battle_map=trigger_map)
+            return build_encounter(combatants(), seed=SEED, map_document=trigger_map)
 
         original, rng = build()
         advance_to(original, "Thora", rng)

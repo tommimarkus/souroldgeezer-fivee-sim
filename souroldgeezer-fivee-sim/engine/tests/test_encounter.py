@@ -32,14 +32,17 @@ from fivee_sim.kernel.grid import (
 from fivee_sim.kernel.items import ActionCost, ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
 from fivee_sim.kernel.spells import Spell
-from fivee_sim.model.battlemap import (
-    BattleMap,
+from fivee_sim.map_types import (
     FeatureCheck,
-    FeatureOverlay,
     FeatureTrigger,
     HeightPair,
-    MapFeature,
-    MapPlane,
+    MapDocument,
+    MapElevation,
+    MapFeatureRecord,
+    MapGrid,
+    MapLevel,
+    MapOverlayRecord,
+    MapProvenance,
     TerrainPair,
     TriggerMode,
 )
@@ -61,6 +64,7 @@ from .conftest import (
     advance_to,
     caster,
     fighter,
+    fixture_provenance,
     shaped_spellbook,
     shaper,
 )
@@ -924,7 +928,7 @@ class TestAttacking:
         nearby.level = 1
         target = fighter("Target", team="foes", position=15)
         encounter = Encounter(
-            [archer, nearby, target], Random(1), battle_map=tower()
+            [archer, nearby, target], Random(1), map_document=tower()
         )
         assert encounter.cover_between("Nearby", "Archer") is CoverGrade.TOTAL
         assert encounter.attack_advantage(archer, target, bow) is Advantage.NONE
@@ -2533,23 +2537,97 @@ def archer(name: str = "Sylvi", *, position: int | tuple[int, int] = 0,
     )
 
 
+def fixture(
+    name: str,
+    square: Square,
+    *,
+    kind: str = "door",
+    state: str = "closed",
+    **extra: Any,
+) -> MapFeatureRecord:
+    """One fixture record, in the two words these tests keep saying about one.
+
+    A fixture is a feature carrying a ``state``, so ``state`` is what this
+    supplies and what makes every record it builds one the fight owns. The rest
+    of the record's keys pass through: a door that names no ``terrain`` is a
+    door in both states, and anything else that names none takes the tile it
+    stands on — that resolution is ``MapFeatureRecord.own_terrain``'s, and it is
+    deliberately not repeated here.
+    """
+    return MapFeatureRecord(id=name, kind=kind, at=square, state=state, **extra)
+
+
 def strip(
     width: int,
     height: int = 1,
     *,
     terrain: dict[Square, str] | None = None,
     elevation: dict[Square, int] | None = None,
-    features: tuple[MapFeature, ...] = (),
-) -> BattleMap:
-    return BattleMap.flat(
+    features: tuple[MapFeatureRecord, ...] = (),
+) -> MapDocument:
+    return MapDocument.flat(
         name="test map",
         width=width,
         height=height,
         terrain=terrain or {},
         elevation=elevation or {},
-        features={feature.name: feature for feature in features},
-        provenance=FIXTURE,
+        features=features,
+        provenance=fixture_provenance(FIXTURE),
     )
+
+
+#: The one glyph :func:`tower` and its neighbours draw with. A hand-built
+#: document needs a legend that covers its tiles, and these fixtures are one
+#: kind of ground throughout.
+FLOOR_LEGEND = {".": "floor", "#": "wall", "%": "difficult", "~": "water"}
+
+
+def storeys(
+    *levels: MapLevel, width: int = 4, height: int = 1, name: str = "tower"
+) -> MapDocument:
+    """A multi-storey document over one footprint, which ``flat`` cannot build.
+
+    ``MapDocument.flat`` is the one-plane constructor, so every fight here that
+    needs a floor above it builds the document directly — and that is also what
+    makes these fixtures the unvalidated hand-built maps ``_adopt_map`` exists
+    to refuse.
+    """
+    return MapDocument(
+        name=name,
+        grid=MapGrid(width=width, height=height),
+        legend=FLOOR_LEGEND,
+        provenance=fixture_provenance(FIXTURE),
+        levels=MappingProxyType({level.index: level for level in levels}),
+    )
+
+
+def floor(
+    index: int,
+    *,
+    width: int = 4,
+    height: int = 1,
+    terrain: dict[Square, str] | None = None,
+    feet: int = 0,
+    features: tuple[MapFeatureRecord, ...] = (),
+) -> MapLevel:
+    """One storey of :func:`storeys`, all floor but for the squares named."""
+    glyphs = {kind: glyph for glyph, kind in FLOOR_LEGEND.items()}
+    named = terrain or {}
+    return MapLevel(
+        index=index,
+        name=f"level-{index}",
+        tiles=tuple(
+            "".join(glyphs[named.get((x, y), "floor")] for x in range(width))
+            for y in range(height)
+        ),
+        features=features,
+        elevation=MapElevation(default=feet),
+    )
+
+
+def stair(name: str, square: Square, to_level: int) -> MapFeatureRecord:
+    """A drawn stairway that leads somewhere — a connector and no fixture."""
+    return MapFeatureRecord(id=name, kind="stairs_up", at=square, to_level=to_level)
 
 
 def tower(
@@ -2558,28 +2636,16 @@ def tower(
     upper_feet: int = 10,
     ground_terrain: dict[Square, str] | None = None,
     upper_terrain: dict[Square, str] | None = None,
-) -> BattleMap:
+) -> MapDocument:
     """Two 4x1 floors over one footprint, joined by a stair, the upper one raised."""
-    return BattleMap(
-        name="tower",
-        width=4,
-        height=1,
-        levels=MappingProxyType(
-            {
-                0: MapPlane(
-                    default_terrain="floor",
-                    terrain=ground_terrain or {},
-                    connectors={stair_at: 1},
-                ),
-                1: MapPlane(
-                    default_terrain="floor",
-                    terrain=upper_terrain or {},
-                    default_elevation=upper_feet,
-                    connectors={stair_at: 0},
-                ),
-            }
+    return storeys(
+        floor(0, terrain=ground_terrain, features=(stair("stair-up", stair_at, 1),)),
+        floor(
+            1,
+            terrain=upper_terrain,
+            feet=upper_feet,
+            features=(stair("stair-down", stair_at, 0),),
         ),
-        provenance=FIXTURE,
     )
 
 
@@ -2587,7 +2653,7 @@ class TestLevels:
     def test_a_creature_stands_on_the_ground_unless_it_says_otherwise(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         assert [c["level"] for c in encounter.state()["combatants"]] == [0, 0]
 
@@ -2595,7 +2661,7 @@ class TestLevels:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, map_document=tower())
         # Both resolve to the same square; only the level tells them apart. On
         # one plane this pair is refused ("both start in square").
         thora, wolf = encounter.creatures["Thora"], encounter.creatures["Wolf"]
@@ -2606,14 +2672,14 @@ class TestLevels:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, map_document=tower())
         assert encounter.cover_between("Thora", "Wolf") is CoverGrade.TOTAL
 
     def test_an_attack_through_a_floor_finds_no_line(self) -> None:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, map_document=tower())
         advance_to(encounter, "Thora", rng)
         events = encounter.act(
             Action(kind=ActionKind.ATTACK, target="Wolf"), rng
@@ -2625,13 +2691,13 @@ class TestLevels:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, map_document=tower())
         assert encounter.enemies_of("Thora") == []
 
     def test_a_connector_carries_a_mover_up(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         encounter.act(
@@ -2646,7 +2712,7 @@ class TestLevels:
         # 5 ft of horizontal plus 2 ft per foot climbed = 25. Exactly a speed.
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(
@@ -2663,7 +2729,7 @@ class TestLevels:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
-            battle_map=tower(upper_feet=40),
+            map_document=tower(upper_feet=40),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="needs 90 ft"):
@@ -2672,7 +2738,7 @@ class TestLevels:
     def test_a_move_to_a_level_needs_a_connector_on_the_square(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="nothing at .* leads to level 1"):
@@ -2681,7 +2747,7 @@ class TestLevels:
     def test_a_move_to_a_level_the_map_does_not_have_is_refused(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="no level 7"):
@@ -2691,7 +2757,7 @@ class TestLevels:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
-            battle_map=tower(upper_terrain={(2, 0): "wall"}),
+            map_document=tower(upper_terrain={(2, 0): "wall"}),
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
@@ -2702,7 +2768,7 @@ class TestLevels:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(0, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(position=(0, 0)), upstairs], rng, map_document=tower())
         wolf = next(c for c in encounter.state()["combatants"] if c["name"] == "Wolf")
         assert (wolf["level"], wolf["elevation"]) == (1, 10)
 
@@ -2710,7 +2776,7 @@ class TestLevels:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
-            battle_map=tower(upper_terrain={(1, 0): "wall"}),
+            map_document=tower(upper_terrain={(1, 0): "wall"}),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="arrives on impassable 'wall'"):
@@ -2720,7 +2786,7 @@ class TestLevels:
         rng = Random(1)
         upstairs = make_monster("Wolf", position=(5, 0))
         upstairs.level = 1
-        encounter = Encounter([fighter(), upstairs], rng, battle_map=tower())
+        encounter = Encounter([fighter(), upstairs], rng, map_document=tower())
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="on level 1 is occupied by Wolf"):
             encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0), to_level=1), rng)
@@ -2729,28 +2795,30 @@ class TestLevels:
         # A hand-built battle map can carry one; the document parser refuses it
         # earlier, but the map need not have come from a document.
         rng = Random(1)
-        broken = BattleMap(
-            name="broken tower", width=4, height=1,
-            levels=MappingProxyType({
-                0: MapPlane(default_terrain="floor", connectors={(1, 0): 3}),
-            }),
-            provenance=FIXTURE,
+        broken = storeys(
+            floor(0, features=(stair("stair-up", (1, 0), 3),)), name="broken tower"
         )
-        with pytest.raises(EncounterError, match="leads to level 3, which this map does not have"):
+        with pytest.raises(
+            EncounterError,
+            match=(
+                r"feature 'stair-up' leads to level 3, but there is no level 3 in "
+                r"this map\. Declared: 0"
+            ),
+        ):
             Encounter([fighter(), make_monster("Wolf", position=(15, 0))], rng,
-                      battle_map=broken)
+                      map_document=broken)
 
     def test_a_combatant_placed_on_a_level_the_map_lacks_is_refused(self) -> None:
         rng = Random(1)
         stray = make_monster("Wolf", position=(15, 0))
         stray.level = 3
         with pytest.raises(EncounterError, match="level 3"):
-            Encounter([fighter(), stray], rng, battle_map=tower())
+            Encounter([fighter(), stray], rng, map_document=tower())
 
     def test_the_map_summary_lists_every_level(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         levels = encounter.state()["map"]["levels"]
         assert [level["index"] for level in levels] == [0, 1]
@@ -2760,10 +2828,10 @@ class TestLevels:
 class TestMapMovement:
     def test_difficult_terrain_charges_double_for_every_entered_square(self) -> None:
         rng = Random(1)
-        battle_map = strip(6, terrain={(2, 0): "difficult", (3, 0): "difficult"})
+        map_document = strip(6, terrain={(2, 0): "difficult", (3, 0): "difficult"})
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(25, 0))], rng,
-            battle_map=battle_map,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
@@ -2774,10 +2842,10 @@ class TestMapMovement:
 
     def test_a_move_the_terrain_makes_unaffordable_is_refused(self) -> None:
         rng = Random(1)
-        battle_map = strip(7, terrain={(2, 0): "difficult", (3, 0): "difficult"})
+        map_document = strip(7, terrain={(2, 0): "difficult", (3, 0): "difficult"})
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(30, 0))], rng,
-            battle_map=battle_map,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="needs 35 ft"):
@@ -2785,10 +2853,10 @@ class TestMapMovement:
 
     def test_a_wall_forces_the_route_around_it(self) -> None:
         rng = Random(1)
-        battle_map = strip(4, 3, terrain={(1, 0): "wall", (1, 1): "wall"})
+        map_document = strip(4, 3, terrain={(1, 0): "wall", (1, 1): "wall"})
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 10))], rng,
-            battle_map=battle_map,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng)
@@ -2799,10 +2867,10 @@ class TestMapMovement:
 
     def test_a_walled_off_destination_is_refused(self) -> None:
         rng = Random(1)
-        battle_map = strip(4, terrain={(1, 0): "wall"})
+        map_document = strip(4, terrain={(1, 0): "wall"})
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
-            battle_map=battle_map,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="no route"):
@@ -2812,7 +2880,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(10, 0))], rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="occupied by Wolf"):
@@ -2822,7 +2890,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(10, 0))], rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="off the 5x1 map"):
@@ -2837,7 +2905,7 @@ class TestMapMovement:
                 make_monster("Wolf", position=(20, 0)),
             ],
             rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=(15, 0)), rng)
@@ -2853,7 +2921,7 @@ class TestMapMovement:
                 make_monster("Wolf", position=(20, 0)),
             ],
             rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="no route"):
@@ -2863,9 +2931,9 @@ class TestMapMovement:
         # The 1-D endpoint check never caught this: start and end both out of
         # reach, with the walk crossing the goblin's threat on the way.
         rng = Random(6)
-        battle_map = strip(5, 2)
+        map_document = strip(5, 2)
         goblin = make_monster("Goblin Warrior", label="Goblin", position=(10, 5))
-        encounter = Encounter([fighter(), goblin], rng, battle_map=battle_map)
+        encounter = Encounter([fighter(), goblin], rng, map_document=map_document)
         advance_to(encounter, "Thora", rng)
         events = encounter.act(
             Action(kind=ActionKind.MOVE, to_position=(20, 0)), FixedRandom(20)
@@ -2874,9 +2942,9 @@ class TestMapMovement:
 
     def test_disengage_suppresses_the_pass_through_attack(self) -> None:
         rng = Random(6)
-        battle_map = strip(5, 2)
+        map_document = strip(5, 2)
         goblin = make_monster("Goblin Warrior", label="Goblin", position=(10, 5))
-        encounter = Encounter([fighter(), goblin], rng, battle_map=battle_map)
+        encounter = Encounter([fighter(), goblin], rng, map_document=map_document)
         advance_to(encounter, "Thora", rng)
         encounter.act(Action(kind=ActionKind.DISENGAGE), rng)
         events = encounter.act(
@@ -2888,7 +2956,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(20, 0))], rng,
-            battle_map=strip(5, 2),
+            map_document=strip(5, 2),
         )
         advance_to(encounter, "Thora", rng)
         events = encounter.act(
@@ -2907,7 +2975,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(20, 0))], rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="not to an adjacent square"):
@@ -2920,7 +2988,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))], rng,
-            battle_map=strip(4, terrain={(1, 0): "wall"}),
+            map_document=strip(4, terrain={(1, 0): "wall"}),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="impassable 'wall'"):
@@ -2934,7 +3002,7 @@ class TestMapMovement:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(20, 0))], rng,
-            battle_map=strip(5),
+            map_document=strip(5),
         )
         advance_to(encounter, "Thora", rng)
         with pytest.raises(EncounterError, match="ends at"):
@@ -2947,42 +3015,45 @@ class TestMapMovement:
 class TestMapElevation:
     """Ground height on a fight's map: slopes, climbs, and what it does not touch."""
 
-    def fight(self, battle_map: BattleMap, rng: Random, wolf: Point = (25, 10)) -> Encounter:
+    def fight(
+        self, map_document: MapDocument, rng: Random, wolf: Point = (25, 10)
+    ) -> Encounter:
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=wolf)], rng, battle_map=battle_map
+            [fighter(), make_monster("Wolf", position=wolf)], rng,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         return encounter
 
     def moving(
         self,
-        battle_map: BattleMap,
+        map_document: MapDocument,
         to: Point,
         rng: Random,
         wolf: Point = (25, 10),
         **kwargs: Any,
     ) -> dict[str, Any]:
-        encounter = self.fight(battle_map, rng, wolf=wolf)
+        encounter = self.fight(map_document, rng, wolf=wolf)
         events = encounter.act(Action(kind=ActionKind.MOVE, to_position=to, **kwargs), rng)
         return next(event for event in events if event.kind == "move").data
 
     def test_a_slope_is_difficult_terrain(self) -> None:
         # A one-row corridor, so the route cannot decline the grade.
         rng = Random(1)
-        battle_map = strip(6, elevation={(2, 0): 5, (3, 0): 10, (4, 0): 10})
-        move = self.moving(battle_map, (20, 0), rng, wolf=(25, 0))
+        map_document = strip(6, elevation={(2, 0): 5, (3, 0): 10, (4, 0): 10})
+        move = self.moving(map_document, (20, 0), rng, wolf=(25, 0))
         assert move["cost"] == 5 + 10 + 10 + 5  # only the two rises cost double
 
     def test_a_slope_through_rough_going_is_not_doubled_twice(self) -> None:
         # SRD 5.2.1: Difficult Terrain "isn't cumulative" — a slope over
         # undergrowth is the same 10 feet a slope over grass is, not 20.
         rng = Random(1)
-        battle_map = strip(
+        map_document = strip(
             6,
             terrain={(2, 0): "difficult"},
             elevation={(2, 0): 5, (3, 0): 5, (4, 0): 5},
         )
-        move = self.moving(battle_map, (20, 0), rng, wolf=(25, 0))
+        move = self.moving(map_document, (20, 0), rng, wolf=(25, 0))
         assert move["cost"] == 5 + 10 + 5 + 5
 
     def test_a_cliff_costs_the_climb(self) -> None:
@@ -3003,14 +3074,14 @@ class TestMapElevation:
         rng = Random(1)
         # A 20-foot plateau along the top row, walled off head-on but reachable
         # up a ramp that rises five feet a square through row 1.
-        battle_map = strip(
+        map_document = strip(
             6, 2,
             elevation={
                 (2, 0): 20, (3, 0): 20, (4, 0): 20, (5, 0): 20,
                 (2, 1): 5, (3, 1): 10, (4, 1): 15, (5, 1): 20,
             },
         )
-        route = self.fight(battle_map, rng, wolf=(0, 5)).route("Thora", (5, 0))
+        route = self.fight(map_document, rng, wolf=(0, 5)).route("Thora", (5, 0))
         assert route is not None
         walked = set(route.squares)
         assert not walked & {(2, 0), (3, 0)}  # never up the face
@@ -3036,7 +3107,7 @@ class TestMapElevation:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(20, 0))], rng,
-            battle_map=strip(6, elevation={(2, 0): 40}),
+            map_document=strip(6, elevation={(2, 0): 40}),
         )
         assert encounter.cover_between("Thora", "Wolf") is CoverGrade.NONE
 
@@ -3044,7 +3115,7 @@ class TestMapElevation:
         rng = Random(1)
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(20, 0))], rng,
-            battle_map=strip(6, elevation={(4, 0): 25}),
+            map_document=strip(6, elevation={(4, 0): 25}),
         )
         state = encounter.state()
         heights = {c["name"]: c["elevation"] for c in state["combatants"]}
@@ -3064,7 +3135,7 @@ class TestMapPlacement:
             Encounter(
                 [fighter(position=(5, 0)), make_monster("Wolf", position=(15, 0))],
                 Random(1),
-                battle_map=strip(4, terrain={(1, 0): "wall"}),
+                map_document=strip(4, terrain={(1, 0): "wall"}),
             )
 
     def test_starting_off_the_map_is_refused(self) -> None:
@@ -3072,7 +3143,7 @@ class TestMapPlacement:
             Encounter(
                 [fighter(position=(25, 0)), make_monster("Wolf", position=(15, 0))],
                 Random(1),
-                battle_map=strip(4),
+                map_document=strip(4),
             )
 
     def test_two_combatants_may_not_share_a_square(self) -> None:
@@ -3080,14 +3151,14 @@ class TestMapPlacement:
             Encounter(
                 [fighter(position=(0, 0)), make_monster("Wolf", position=(2, 2))],
                 Random(1),
-                battle_map=strip(4),
+                map_document=strip(4),
             )
 
     def test_positions_snap_to_the_centre_of_their_square(self) -> None:
         encounter = Encounter(
             [fighter(position=(7, 3)), make_monster("Wolf", position=(15, 0))],
             Random(1),
-            battle_map=strip(4),
+            map_document=strip(4),
         )
         assert encounter.creatures["Thora"].position == (5, 0)
 
@@ -3098,15 +3169,15 @@ class TestMapPlacement:
             Encounter(
                 [fighter(), make_monster("Wolf", position=(15, 0))],
                 Random(1),
-                battle_map=strip(4, terrain={(2, 0): "vale-lava"}),
+                map_document=strip(4, terrain={(2, 0): "vale-lava"}),
             )
 
     def test_the_map_block_appears_in_state(self) -> None:
-        door = MapFeature(name="crypt door", square=(1, 0))
+        door = fixture(name="crypt door", square=(1, 0))
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))],
             Random(1),
-            battle_map=strip(4, features=(door,)),
+            map_document=strip(4, features=(door,)),
         )
         block = encounter.state()["map"]
         assert block == {
@@ -3148,6 +3219,90 @@ class TestMapPlacement:
         assert encounter.state()["map"] is None
 
 
+class TestAMalformedDocumentIsRefusedRatherThanRaised:
+    """Two failures the battle-map bridge used to absorb before a fight saw them.
+
+    ``to_grid`` walked every square through the legend and rebuilt the tiles as
+    a sparse mapping, so a glyph with no legend entry and a row that did not
+    reach the grid's width were both spent by the time ``_adopt_map`` ran. There
+    is no bridge now: ``MapLevel.terrain_at`` reads ``legend[tiles[y][x]]`` at
+    the moment a fight asks, and both of those raise ``LookupError`` rather than
+    ``ValueError``.
+
+    That distinction is the whole point of these cases. ``EncounterError`` is a
+    ``ValueError``, which ``web/http_server.py`` answers as problem+json; a
+    ``KeyError`` or an ``IndexError`` escaping ``Encounter.__init__`` is a 500.
+    So a map a person could plausibly hand-build would turn a refusal the caller
+    can act on into a server fault, *and* it would not surface at construction
+    at all — the first creature to look at that square would raise it, several
+    turns into a fight.
+
+    A hand-built document is exactly as unvalidated as a hand-built battle map
+    was: ``parse_document`` lives in ``map_document``, which ``model`` may not
+    import. These build the document directly for that reason — ``MapDocument.flat``
+    allocates a legend that covers its own tiles and writes rows to width, so it
+    cannot express either failure.
+    """
+
+    def broken(self, *, legend: dict[str, str], tiles: tuple[str, ...]) -> MapDocument:
+        return MapDocument(
+            name="broken",
+            grid=MapGrid(width=4, height=2),
+            legend=legend,
+            provenance=MapProvenance(
+                generator="hand", seed=0, params={}, edited=False, source=FIXTURE
+            ),
+            levels=MappingProxyType(
+                {0: MapLevel(index=0, name="ground", tiles=tiles, features=())}
+            ),
+        )
+
+    def roster(self) -> list[Creature]:
+        return [fighter(position=(0, 0)), make_monster("Wolf", position=(15, 0))]
+
+    def test_a_glyph_the_legend_does_not_define_is_refused(self) -> None:
+        document = self.broken(
+            legend={".": "normal"}, tiles=("..?.", "....")
+        )
+        with pytest.raises(
+            EncounterError, match=r"level 0 draws '\?', which this map's legend"
+        ):
+            Encounter(self.roster(), Random(1), map_document=document)
+
+    def test_the_refusal_names_the_glyphs_the_legend_does_define(self) -> None:
+        # A refusal that says only "unknown glyph" leaves the author guessing
+        # which character they meant, exactly as the terrain refusal beside it
+        # lists the loaded kinds.
+        document = self.broken(
+            legend={".": "normal", "#": "wall"}, tiles=("..?.", "....")
+        )
+        with pytest.raises(EncounterError, match=r"the legend has: '#', '\.'"):
+            Encounter(self.roster(), Random(1), map_document=document)
+
+    def test_a_row_short_of_the_grids_width_is_refused(self) -> None:
+        document = self.broken(legend={".": "normal"}, tiles=("....", "..."))
+        with pytest.raises(
+            EncounterError, match=r"level 0 row 1 is 3 squares wide on a 4x2 map"
+        ):
+            Encounter(self.roster(), Random(1), map_document=document)
+
+    def test_a_level_short_of_the_grids_height_is_refused(self) -> None:
+        document = self.broken(legend={".": "normal"}, tiles=("....",))
+        with pytest.raises(
+            EncounterError, match=r"level 0 has 1 row on a 4x2 map"
+        ):
+            Encounter(self.roster(), Random(1), map_document=document)
+
+    def test_a_well_formed_document_of_the_same_shape_still_starts(self) -> None:
+        # The vacuity guard: three refusals over a document shape that never
+        # worked would prove nothing about the two defects being named.
+        document = self.broken(legend={".": "normal"}, tiles=("....", "...."))
+
+        encounter = Encounter(self.roster(), Random(1), map_document=document)
+
+        assert encounter._terrain_at_level(0, (2, 1)) == "normal"
+
+
 class TestCoverChangesTheAttack:
     #: A full wall column with no gap: the only geometry that seals sight, since
     #: the corner rule sees past a lone pillar.
@@ -3159,7 +3314,7 @@ class TestCoverChangesTheAttack:
             [archer(position=(0, 5)),
              make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
             rng,
-            battle_map=strip(5, 3, terrain=terrain),
+            map_document=strip(5, 3, terrain=terrain),
         )
         advance_to(encounter, "Sylvi", rng)
         return encounter
@@ -3212,7 +3367,7 @@ class TestCoverChangesTheAttack:
                 make_monster("Goblin Warrior", label="Goblin", position=(20, 5)),
             ],
             rng,
-            battle_map=strip(5, 3),
+            map_document=strip(5, 3),
         )
         assert encounter.cover_between("Sylvi", "Goblin") is CoverGrade.HALF
 
@@ -3235,7 +3390,7 @@ class TestCoverShieldsSaves:
              make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
             rng,
             spellbook=spellbook(),
-            battle_map=strip(5, 3, terrain=terrain),
+            map_document=strip(5, 3, terrain=terrain),
         )
         advance_to(encounter, "Wren", rng)
         return encounter.act(
@@ -3269,7 +3424,7 @@ class TestCoverShieldsSaves:
                                   position=(20, 5))],
             rng,
             spellbook=spellbook(),
-            battle_map=strip(5, 3, terrain={(3, 1): "half-cover"}),
+            map_document=strip(5, 3, terrain={(3, 1): "half-cover"}),
         )
         advance_to(encounter, "Wren", rng)
         events = encounter.act(
@@ -3293,7 +3448,7 @@ class TestCoverShieldsSaves:
             ],
             rng,
             spellbook=spellbook(),
-            battle_map=strip(
+            map_document=strip(
                 8, 3, terrain={(4, 0): "wall", (4, 1): "wall", (4, 2): "wall"}
             ),
         )
@@ -3338,7 +3493,7 @@ class TestCoverReachesNamedTargetSpells:
             [wren, make_monster("Goblin Warrior", label="Goblin", position=(20, 5))],
             rng,
             spellbook=spellbook() if book is None else book,
-            battle_map=strip(5, 3, terrain=terrain),
+            map_document=strip(5, 3, terrain=terrain),
         )
         advance_to(encounter, "Wren", rng)
         return encounter
@@ -3458,7 +3613,7 @@ class TestCoverReachesNamedTargetSpells:
             [wren, make_monster("Goblin Warrior", label="Goblin", position=(20, 10))],
             rng,
             spellbook=spellbook(),
-            battle_map=strip(5, 3, terrain={(2, 1): "three-quarters-cover"}),
+            map_document=strip(5, 3, terrain={(2, 1): "three-quarters-cover"}),
         )
         advance_to(encounter, "Wren", rng)
         assert encounter.cover_between("Wren", "Goblin") is CoverGrade.THREE_QUARTERS
@@ -3490,7 +3645,7 @@ class TestCoverReachesNamedTargetSpells:
         upstairs = make_monster("Goblin Warrior", label="Upstairs", position=(15, 0))
         upstairs.level = 1
         encounter = Encounter(
-            [wren, upstairs], rng, spellbook=spellbook(), battle_map=tower()
+            [wren, upstairs], rng, spellbook=spellbook(), map_document=tower()
         )
         advance_to(encounter, "Wren", rng)
         with pytest.raises(EncounterError, match="Upstairs.*total cover"):
@@ -3531,7 +3686,7 @@ class TestCoverReachesNamedTargetSpells:
             ],
             rng,
             spellbook={"Twin Bolt": twin},
-            battle_map=strip(5, 3, terrain=self.WALL_COLUMN),
+            map_document=strip(5, 3, terrain=self.WALL_COLUMN),
         )
         advance_to(encounter, "Wren", rng)
         open_goblin = encounter.creatures["Open"]
@@ -3552,12 +3707,12 @@ class TestInteract:
         """A doorway in an otherwise solid wall: walls above and below, door in
         the middle row, archer on one side and goblin on the other."""
         rng = Random(3)
-        door = MapFeature(name="door", square=(1, 1))
+        door = fixture(name="door", square=(1, 1))
         encounter = Encounter(
             [archer(position=(0, 5)),
              make_monster("Goblin Warrior", label="Goblin", position=(15, 5))],
             rng,
-            battle_map=strip(
+            map_document=strip(
                 4, 3, terrain={(1, 0): "wall", (1, 2): "wall"}, features=(door,)
             ),
         )
@@ -3569,7 +3724,7 @@ class TestInteract:
     ) -> tuple[Encounter, Random]:
         """Two adjacent door leaves with one interaction contract and state."""
         check = FeatureCheck(ability=Ability.DEXTERITY, dc=10) if checked else None
-        left = MapFeature(
+        left = fixture(
             name="door-left",
             square=(1, 1),
             orientation="horizontal",
@@ -3577,7 +3732,7 @@ class TestInteract:
             costs_action=checked,
             check=check,
         )
-        right = MapFeature(
+        right = fixture(
             name="door-right",
             square=(2, 1),
             orientation="horizontal",
@@ -3593,7 +3748,7 @@ class TestInteract:
                 make_monster("Goblin Warrior", label="Goblin", position=opponent),
             ],
             rng,
-            battle_map=strip(
+            map_document=strip(
                 5,
                 3,
                 terrain={(1, 0): "wall", (1, 2): "wall", (2, 0): "wall", (2, 2): "wall"},
@@ -3656,38 +3811,41 @@ class TestInteract:
         assert encounter.map_state.open_features == {"door-left", "door-right"}
 
     def test_a_malformed_runtime_link_is_refused_before_combat(self) -> None:
-        left = MapFeature(
+        left = fixture(
             name="door-left",
             square=(1, 0),
             orientation="horizontal",
             linked_to="door-right",
         )
-        right = MapFeature(name="door-right", square=(2, 0), orientation="horizontal")
+        right = fixture(name="door-right", square=(2, 0), orientation="horizontal")
         with pytest.raises(EncounterError, match="must link back to 'door-left'"):
             Encounter(
                 [archer(), make_monster("Goblin Warrior", label="Goblin", position=20)],
                 Random(3),
-                battle_map=strip(5, features=(left, right)),
+                map_document=strip(5, features=(left, right)),
             )
 
     def test_a_runtime_link_must_follow_the_shared_door_orientation(self) -> None:
-        upper = MapFeature(
+        upper = fixture(
             name="door-upper",
             square=(1, 0),
             orientation="horizontal",
             linked_to="door-lower",
         )
-        lower = MapFeature(
+        lower = fixture(
             name="door-lower",
             square=(1, 1),
             orientation="horizontal",
             linked_to="door-upper",
         )
-        with pytest.raises(EncounterError, match="aligned with their horizontal orientation"):
+        with pytest.raises(
+            EncounterError,
+            match="linked doors must be adjacent along their shared orientation",
+        ):
             Encounter(
                 [archer(), make_monster("Goblin Warrior", label="Goblin", position=20)],
                 Random(3),
-                battle_map=strip(5, 3, features=(upper, lower)),
+                map_document=strip(5, 3, features=(upper, lower)),
             )
 
     def test_interacting_is_free_but_only_once_per_turn(self) -> None:
@@ -3709,12 +3867,12 @@ class TestInteract:
 
     def test_a_feature_out_of_reach_is_refused(self) -> None:
         rng = Random(3)
-        door = MapFeature(name="far door", square=(3, 0))
+        door = fixture(name="far door", square=(3, 0))
         encounter = Encounter(
             [archer(), make_monster("Goblin Warrior", label="Goblin",
                                     position=(20, 0))],
             rng,
-            battle_map=strip(5, features=(door,)),
+            map_document=strip(5, features=(door,)),
         )
         advance_to(encounter, "Sylvi", rng)
         with pytest.raises(EncounterError, match="out of reach"):
@@ -3736,36 +3894,23 @@ class TestInteract:
 class TestReachAcrossStoreys:
     """A fixture is reached on its own storey, not merely at its own square.
 
-    ``Encounter.battle_map.features`` merges every plane into one name table,
-    so a reach test that compares squares alone lets a creature on the ground
-    work a hatch directly above its head.
+    ``Encounter._fixtures`` merges every storey into one name table, so a reach
+    test that compares squares alone lets a creature on the ground work a hatch
+    directly above its head.
     """
 
     def two_storeys(self) -> tuple[Encounter, Random]:
         rng = Random(3)
-        hatch = MapFeature(name="hatch", square=(0, 0))
-        battle_map = BattleMap(
-            name="tower",
-            width=4,
-            height=1,
-            levels=MappingProxyType(
-                {
-                    0: MapPlane(default_terrain="floor", connectors={(1, 0): 1}),
-                    1: MapPlane(
-                        default_terrain="floor",
-                        default_elevation=10,
-                        features={"hatch": hatch},
-                        connectors={(1, 0): 0},
-                    ),
-                }
-            ),
-            provenance=FIXTURE,
+        hatch = fixture(name="hatch", square=(0, 0))
+        map_document = storeys(
+            floor(0, features=(stair("stair-up", (1, 0), 1),)),
+            floor(1, feet=10, features=(hatch, stair("stair-down", (1, 0), 0))),
         )
         encounter = Encounter(
             [fighter(position=(0, 0)),
              make_monster("Goblin Warrior", label="Goblin", position=(15, 0))],
             rng,
-            battle_map=battle_map,
+            map_document=map_document,
         )
         advance_to(encounter, "Thora", rng)
         return encounter, rng
@@ -3773,8 +3918,8 @@ class TestReachAcrossStoreys:
     def test_a_fixture_one_storey_up_is_out_of_reach(self) -> None:
         encounter, rng = self.two_storeys()
         assert encounter.creatures["Thora"].level == 0
-        assert encounter.battle_map is not None
-        assert encounter.battle_map.level_of("hatch") == 1
+        assert encounter.map_document is not None
+        assert encounter.map_document.level_of("hatch") == 1
         with pytest.raises(EncounterError, match="cannot reach it from another storey"):
             encounter.act(Action(kind=ActionKind.INTERACT, feature="hatch"), rng)
         assert encounter.state()["map"]["features"]["hatch"]["open"] is False
@@ -3799,7 +3944,7 @@ class TestActionRecordsReplayEverything:
     def test_a_cross_storey_move_records_the_level_it_ended_on(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         encounter.act(
@@ -3812,7 +3957,7 @@ class TestActionRecordsReplayEverything:
     def test_a_move_that_stays_put_records_no_level(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            [fighter(), make_monster("Wolf", position=(15, 0))], rng, battle_map=tower()
+            [fighter(), make_monster("Wolf", position=(15, 0))], rng, map_document=tower()
         )
         advance_to(encounter, "Thora", rng)
         encounter.act(Action(kind=ActionKind.MOVE, to_position=(5, 0)), rng)
@@ -3825,19 +3970,18 @@ class TestActionRecordsReplayEverything:
 SPIKE_CHECK = FeatureCheck(ability=Ability.STRENGTH, dc=15)
 
 
-def spike(name: str, square: Square) -> MapFeature:
+def spike(name: str, square: Square) -> MapFeatureRecord:
     """One of the two spikes pinning the sluice gate.
 
     Its own square reads the same in both states, which is the case a fixture
     that changes nothing where it stands has to get right: pulling it moves
     terrain nowhere, only the gate's prerequisites.
     """
-    return MapFeature(
+    return fixture(
         name=name,
         square=square,
         kind="spike",
-        closed_terrain="floor",
-        open_terrain="floor",
+        terrain=TerrainPair(closed="floor", open="floor"),
         costs_action=True,
         check=SPIKE_CHECK,
     )
@@ -3847,7 +3991,7 @@ def sluice(
     *,
     requires: tuple[str, ...] = ("north spike", "south spike"),
     gate_check: FeatureCheck | None = None,
-) -> BattleMap:
+) -> MapDocument:
     """The driving fixture: a gate that floods a room and starts a wheel turning.
 
     Eight by three of floor. The two spikes flank the gate at ``(2, 1)``; east
@@ -3855,38 +3999,35 @@ def sluice(
     is the mill wheel, difficult ground that turns impassable. One flip, three
     kinds of change.
     """
-    gate = MapFeature(
+    gate = fixture(
         name="sluice gate",
         square=(2, 1),
         requires=requires,
         costs_action=True,
         check=gate_check,
         affects=(
-            FeatureOverlay(
-                squares=((4, 1), (5, 1)),
+            MapOverlayRecord(
+                cells=((4, 1), (5, 1)),
                 terrain=TerrainPair(closed="floor", open="water"),
                 elevation=HeightPair(closed=0, open=-5),
             ),
-            FeatureOverlay(
-                squares=((6, 1),),
+            MapOverlayRecord(
+                cells=((6, 1),),
                 terrain=TerrainPair(closed="difficult", open="mountain"),
             ),
         ),
     )
-    return BattleMap.flat(
+    return MapDocument.flat(
         name="sluice",
         width=8,
         height=3,
         default_terrain="floor",
-        features={
-            feature.name: feature
-            for feature in (
-                spike("north spike", (2, 0)),
-                spike("south spike", (2, 2)),
-                gate,
-            )
-        },
-        provenance=FIXTURE,
+        features=(
+            spike("north spike", (2, 0)),
+            spike("south spike", (2, 2)),
+            gate,
+        ),
+        provenance=fixture_provenance(FIXTURE),
     )
 
 
@@ -3902,7 +4043,7 @@ def trigger_fixture(
     name: str,
     square: Square,
     *,
-    initially_open: bool = False,
+    state: str = "closed",
     trigger: FeatureTrigger | None = None,
     requires: tuple[str, ...] = (),
     costs_action: bool = False,
@@ -3910,16 +4051,15 @@ def trigger_fixture(
     linked_to: str | None = None,
     orientation: str | None = None,
     elevation: HeightPair | None = None,
-    affects: tuple[FeatureOverlay, ...] = (),
-) -> MapFeature:
-    return MapFeature(
+    affects: tuple[MapOverlayRecord, ...] = (),
+) -> MapFeatureRecord:
+    return fixture(
         name=name,
         square=square,
         kind="door" if linked_to is not None else "fixture",
         orientation=orientation,
-        closed_terrain="floor",
-        open_terrain="floor",
-        initially_open=initially_open,
+        terrain=TerrainPair(closed="floor", open="floor"),
+        state=state,
         elevation=elevation,
         affects=affects,
         requires=requires,
@@ -3930,7 +4070,7 @@ def trigger_fixture(
     )
 
 
-def trigger_fight(*features: MapFeature) -> tuple[Encounter, Random]:
+def trigger_fight(*features: MapFeatureRecord) -> tuple[Encounter, Random]:
     rng = Random(37)
     encounter = Encounter(
         [
@@ -3938,7 +4078,7 @@ def trigger_fight(*features: MapFeature) -> tuple[Encounter, Random]:
             fighter("Brute", team="foes", position=square_center((7, 1))),
         ],
         rng,
-        battle_map=strip(8, 3, features=features),
+        map_document=strip(8, 3, features=features),
     )
     advance_to(encounter, "Thora", rng)
     return encounter, rng
@@ -3952,7 +4092,7 @@ def next_turn_for(encounter: Encounter, actor: str, rng: Random) -> None:
 class TestMapFixtures:
     """Operable fixtures that move the ground under a running fight."""
 
-    def fight(self, battle_map: BattleMap | None = None) -> tuple[Encounter, Random]:
+    def fight(self, map_document: MapDocument | None = None) -> tuple[Encounter, Random]:
         """Two at the spikes, two in the room the sluice floods."""
         rng = Random(3)
         encounter = Encounter(
@@ -3963,7 +4103,7 @@ class TestMapFixtures:
                 fighter("Miller", team="foes", position=square_center((6, 1))),
             ],
             rng,
-            battle_map=sluice() if battle_map is None else battle_map,
+            map_document=sluice() if map_document is None else map_document,
         )
         return encounter, rng
 
@@ -4047,15 +4187,15 @@ class TestMapFixtures:
         assert self.route_cost(encounter, "Miller", (6, 1)) is None
 
     def test_two_fights_over_one_map_do_not_share_its_state(self) -> None:
-        """A ``BattleMap`` is frozen but its planes hold plain dicts.
+        """A ``MapDocument`` is frozen but its levels hold plain tuples and dicts.
 
         ``simulate_rounds`` hands one map to every iteration, so a fixture
         that wrote through to the map would leak the first fight's flood into
         the second.
         """
-        battle_map = sluice()
-        first, first_rng = self.fight(battle_map)
-        second, _ = self.fight(battle_map)
+        map_document = sluice()
+        first, first_rng = self.fight(map_document)
+        second, _ = self.fight(map_document)
         self.open_the_sluice(first, first_rng)
 
         assert first.state()["map"]["features"]["sluice gate"]["open"] is True
@@ -4072,14 +4212,13 @@ class TestMapFixtures:
         costs the doubled 10 ft, open it costs the doubled 10 ft plus a 10-foot
         climb charged at the *difficult* rate of 3 ft per foot.
         """
-        riser = MapFeature(
+        riser = fixture(
             name="riser",
             square=(1, 0),
-            closed_terrain="floor",
-            open_terrain="floor",
+            terrain=TerrainPair(closed="floor", open="floor"),
             affects=(
-                FeatureOverlay(
-                    squares=((3, 0),), elevation=HeightPair(closed=0, open=10)
+                MapOverlayRecord(
+                    cells=((3, 0),), elevation=HeightPair(closed=0, open=10)
                 ),
             ),
         )
@@ -4087,7 +4226,7 @@ class TestMapFixtures:
         encounter = Encounter(
             [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))],
             rng,
-            battle_map=strip(6, terrain={(3, 0): "difficult"}, features=(riser,)),
+            map_document=strip(6, terrain={(3, 0): "difficult"}, features=(riser,)),
         )
         assert self.route_cost(encounter, "Thora", (3, 0)) == 5 + 5 + 10
 
@@ -4112,84 +4251,92 @@ class TestMapFixtures:
         return [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))]
 
     def test_an_overlay_naming_unknown_terrain_is_refused(self) -> None:
-        gate = MapFeature(
+        gate = fixture(
             name="gate",
             square=(1, 0),
             affects=(
-                FeatureOverlay(
-                    squares=((3, 0),),
+                MapOverlayRecord(
+                    cells=((3, 0),),
                     terrain=TerrainPair(closed="floor", open="vale-lava"),
                 ),
             ),
         )
         with pytest.raises(EncounterError, match="does not define: vale-lava"):
             Encounter(
-                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+                self.two_fighters(), Random(1), map_document=strip(6, features=(gate,))
             )
 
     def test_an_overlay_cell_off_the_map_is_refused(self) -> None:
-        gate = MapFeature(
+        gate = fixture(
             name="gate",
             square=(1, 0),
             affects=(
-                FeatureOverlay(
-                    squares=((9, 0),),
+                MapOverlayRecord(
+                    cells=((9, 0),),
                     terrain=TerrainPair(closed="floor", open="water"),
                 ),
             ),
         )
         with pytest.raises(
-            EncounterError, match=r"feature 'gate' reaches \(9, 0\), off the 6x1 map"
+            EncounterError,
+            match=r"feature 'gate' reaches \(9, 0\), outside the 6x1 grid",
         ):
             Encounter(
-                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+                self.two_fighters(), Random(1), map_document=strip(6, features=(gate,))
             )
 
     def test_two_plain_features_on_one_square_are_still_refused(self) -> None:
         with pytest.raises(
             EncounterError,
-            match=r"features 'north door' and 'south door' share square \(2, 0\)",
+            match=(
+                r"feature 'south door' claims square \(2, 0\), which feature "
+                r"'north door' already governs"
+            ),
         ):
             Encounter(
                 self.two_fighters(),
                 Random(1),
-                battle_map=strip(
+                map_document=strip(
                     6,
                     features=(
-                        MapFeature(name="north door", square=(2, 0)),
-                        MapFeature(name="south door", square=(2, 0)),
+                        fixture(name="north door", square=(2, 0)),
+                        fixture(name="south door", square=(2, 0)),
                     ),
                 ),
             )
 
     def test_an_overlay_reaching_another_fixtures_square_is_refused(self) -> None:
-        gate = MapFeature(
+        gate = fixture(
             name="gate",
             square=(1, 0),
             affects=(
-                FeatureOverlay(
-                    squares=((3, 0),),
+                MapOverlayRecord(
+                    cells=((3, 0),),
                     terrain=TerrainPair(closed="floor", open="water"),
                 ),
             ),
         )
-        lever = MapFeature(name="lever", square=(3, 0))
+        lever = fixture(name="lever", square=(3, 0))
         with pytest.raises(
-            EncounterError, match=r"features 'gate' and 'lever' share square \(3, 0\)"
+            EncounterError,
+            match=(
+                r"feature 'lever' claims square \(3, 0\), which feature 'gate' "
+                r"already governs"
+            ),
         ):
             Encounter(
                 self.two_fighters(),
                 Random(1),
-                battle_map=strip(6, features=(gate, lever)),
+                map_document=strip(6, features=(gate, lever)),
             )
 
     def test_a_fixture_claiming_its_own_square_twice_is_refused(self) -> None:
-        gate = MapFeature(
+        gate = fixture(
             name="gate",
             square=(1, 0),
             affects=(
-                FeatureOverlay(
-                    squares=((1, 0),),
+                MapOverlayRecord(
+                    cells=((1, 0),),
                     terrain=TerrainPair(closed="floor", open="water"),
                 ),
             ),
@@ -4198,88 +4345,73 @@ class TestMapFixtures:
             EncounterError, match=r"feature 'gate' claims square \(1, 0\) twice"
         ):
             Encounter(
-                self.two_fighters(), Random(1), battle_map=strip(6, features=(gate,))
+                self.two_fighters(), Random(1), map_document=strip(6, features=(gate,))
             )
 
     def test_one_square_may_be_claimed_once_on_each_storey(self) -> None:
         """The rule is one claim per square *per level*, not per footprint."""
-        battle_map = BattleMap(
-            name="tower",
-            width=4,
-            height=1,
-            levels=MappingProxyType(
-                {
-                    0: MapPlane(
-                        default_terrain="floor",
-                        features={"ground door": MapFeature("ground door", (0, 0))},
-                        connectors={(1, 0): 1},
-                    ),
-                    1: MapPlane(
-                        default_terrain="floor",
-                        features={"upper door": MapFeature("upper door", (0, 0))},
-                        connectors={(1, 0): 0},
-                    ),
-                }
+        map_document = storeys(
+            floor(
+                0,
+                features=(
+                    fixture("ground door", (0, 0)), stair("stair-up", (1, 0), 1),
+                ),
             ),
-            provenance=FIXTURE,
+            floor(
+                1,
+                features=(
+                    fixture("upper door", (0, 0)), stair("stair-down", (1, 0), 0),
+                ),
+            ),
         )
         encounter = Encounter(
             [fighter(position=square_center((2, 0))),
              fighter("Brute", team="foes", position=square_center((3, 0)))],
             Random(1),
-            battle_map=battle_map,
+            map_document=map_document,
         )
         assert sorted(encounter.state()["map"]["features"]) == [
             "ground door", "upper door"
         ]
 
     def test_a_prerequisite_the_map_does_not_have_is_refused(self) -> None:
-        gate = MapFeature(name="gate", square=(1, 0), requires=("ghost lever",))
-        lever = MapFeature(name="lever", square=(3, 0))
+        gate = fixture(name="gate", square=(1, 0), requires=("ghost lever",))
+        lever = fixture(name="lever", square=(3, 0))
         with pytest.raises(
             EncounterError,
             match=(
-                r"feature 'gate' requires 'ghost lever', which this map does not "
-                r"have; the map has: gate, lever"
+                r"feature 'gate' requires 'ghost lever', but there is no feature "
+                r"'ghost lever' in this map\. Declared: gate, lever"
             ),
         ):
             Encounter(
                 self.two_fighters(),
                 Random(1),
-                battle_map=strip(6, features=(gate, lever)),
+                map_document=strip(6, features=(gate, lever)),
             )
 
     def test_a_prerequisite_on_another_storey_resolves(self) -> None:
         """``requires`` is a prerequisite, not a reach: it may cross a floor."""
-        battle_map = BattleMap(
-            name="tower",
-            width=4,
-            height=1,
-            levels=MappingProxyType(
-                {
-                    0: MapPlane(
-                        default_terrain="floor",
-                        features={
-                            "gate": MapFeature(
-                                "gate", (0, 0), requires=("upper lever",)
-                            )
-                        },
-                        connectors={(1, 0): 1},
-                    ),
-                    1: MapPlane(
-                        default_terrain="floor",
-                        features={"upper lever": MapFeature("upper lever", (3, 0))},
-                        connectors={(1, 0): 0},
-                    ),
-                }
+        map_document = storeys(
+            floor(
+                0,
+                features=(
+                    fixture("gate", (0, 0), requires=("upper lever",)),
+                    stair("stair-up", (1, 0), 1),
+                ),
             ),
-            provenance=FIXTURE,
+            floor(
+                1,
+                features=(
+                    fixture("upper lever", (3, 0)), stair("stair-down", (1, 0), 0),
+                ),
+            ),
         )
         encounter = Encounter(
             [fighter(position=square_center((2, 0))),
              fighter("Brute", team="foes", position=square_center((3, 0)))],
             Random(1),
-            battle_map=battle_map,
+            map_document=map_document,
         )
         assert encounter.state()["map"]["features"]["gate"]["blocked_by"] == [
             "upper lever"
@@ -4360,24 +4492,23 @@ class TestMapFixtures:
 
     def skill_checked_fight(self) -> tuple[Encounter, Random]:
         """One fixture whose check names a skill, on an otherwise plain map."""
-        feature = MapFeature(
+        feature = fixture(
             name="ledge",
             square=(1, 1),
             kind="fixture",
-            closed_terrain="floor",
-            open_terrain="floor",
+            terrain=TerrainPair(closed="floor", open="floor"),
             costs_action=True,
             check=FeatureCheck(ability=Ability.STRENGTH, dc=15, skill="athletics"),
         )
-        battle_map = BattleMap.flat(
+        document = MapDocument.flat(
             name="ledge-test", width=3, height=3, default_terrain="floor",
-            features={feature.name: feature}, provenance=FIXTURE,
+            features=(feature,), provenance=fixture_provenance(FIXTURE),
         )
         rng = Random(3)
         encounter = Encounter(
             [fighter("Thora", position=square_center((1, 1))),
              fighter("Foe", team="foes", position=square_center((2, 1)))],
-            rng, battle_map=battle_map,
+            rng, map_document=document,
         )
         return encounter, rng
 
@@ -4437,11 +4568,11 @@ class TestMapFixtures:
 
     def corridor_fight(self) -> tuple[Encounter, Random]:
         rng = Random(3)
-        door = MapFeature(name="door", square=(1, 0))
+        door = fixture(name="door", square=(1, 0))
         encounter = Encounter(
             [fighter(), fighter("Brute", team="foes", position=square_center((5, 0)))],
             rng,
-            battle_map=strip(6, features=(door,)),
+            map_document=strip(6, features=(door,)),
         )
         advance_to(encounter, "Thora", rng)
         return encounter, rng
@@ -4562,7 +4693,7 @@ class TestMapFixtures:
 
 class TestFixtureTriggers:
     def test_a_true_edge_predicate_at_creation_does_not_fire(self) -> None:
-        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        lever = trigger_fixture("lever", (1, 1), state="open")
         gate = trigger_fixture(
             "gate",
             (1, 2),
@@ -4617,7 +4748,7 @@ class TestFixtureTriggers:
         gate = trigger_fixture(
             "gate",
             (1, 2),
-            initially_open=True,
+            state="open",
             trigger=fixture_trigger(
                 {"lever": True}, set_open=False, mode=TriggerMode.MAINTAINED
             ),
@@ -4636,11 +4767,11 @@ class TestFixtureTriggers:
     def test_maintained_refuses_a_contrary_interaction_before_spending_or_rolling(
         self,
     ) -> None:
-        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        lever = trigger_fixture("lever", (1, 1), state="open")
         gate = trigger_fixture(
             "gate",
             (1, 2),
-            initially_open=True,
+            state="open",
             trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
             costs_action=True,
             check=SPIKE_CHECK,
@@ -4713,8 +4844,8 @@ class TestFixtureTriggers:
             costs_action=True,
             check=SPIKE_CHECK,
             affects=(
-                FeatureOverlay(
-                    squares=((6, 1),),
+                MapOverlayRecord(
+                    cells=((6, 1),),
                     terrain=TerrainPair(closed="floor", open="water"),
                     elevation=HeightPair(closed=0, open=-5),
                 ),
@@ -4806,11 +4937,11 @@ class TestFixtureTriggers:
 
 
 class TestRuntimeTriggerValidation:
-    def encounter_with(self, *features: MapFeature) -> Encounter:
+    def encounter_with(self, *features: MapFeatureRecord) -> Encounter:
         return Encounter(
             [fighter(), fighter("Brute", team="foes", position=square_center((7, 1)))],
             Random(1),
-            battle_map=strip(8, 3, features=features),
+            map_document=strip(8, 3, features=features),
         )
 
     def test_a_hand_built_trigger_reference_must_exist(self) -> None:
@@ -4846,7 +4977,7 @@ class TestRuntimeTriggerValidation:
             self.encounter_with(lever, latch, gate)
 
     def test_a_hand_built_maintained_initial_state_must_be_consistent(self) -> None:
-        lever = trigger_fixture("lever", (1, 1), initially_open=True)
+        lever = trigger_fixture("lever", (1, 1), state="open")
         gate = trigger_fixture(
             "gate", (2, 1),
             trigger=fixture_trigger({"lever": True}, mode=TriggerMode.MAINTAINED),
@@ -4875,16 +5006,16 @@ class TestMapFixtureTerrainSummaries:
         fourth in both its states, so nothing is left to read the default.
         0 ft, which no square stands at, must stay out of the range.
         """
-        gate = MapFeature(
+        gate = fixture(
             name="floodgate",
             square=(1, 0),
-            initially_open=True,
+            state="open",
             elevation=HeightPair(closed=20, open=15),
         )
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(0, 5))],
             Random(1),
-            battle_map=strip(
+            map_document=strip(
                 2, 2, elevation={(0, 0): 10, (0, 1): 10, (1, 1): 10}, features=(gate,)
             ),
         )
@@ -4898,16 +5029,16 @@ class TestMapFixtureTerrainSummaries:
         to 5, so the map's range is 5 to 10. The default of 0 is still what
         no square falls back to.
         """
-        gate = MapFeature(
+        gate = fixture(
             name="floodgate",
             square=(2, 0),
-            initially_open=True,
+            state="open",
             elevation=HeightPair(closed=10, open=5),
         )
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(5, 0))],
             Random(1),
-            battle_map=strip(
+            map_document=strip(
                 3,
                 elevation={(0, 0): 10, (1, 0): 10, (2, 0): 10},
                 features=(gate,),
@@ -4923,40 +5054,25 @@ class TestMapFixtureTerrainSummaries:
         The gate is on the ground, and the gallery over it is untouched by
         it. A summary that matched on the square alone would drag −5 upstairs.
         """
-        gate = MapFeature(
+        gate = fixture(
             name="floodgate",
             square=(2, 0),
-            initially_open=True,
+            state="open",
             affects=(
-                FeatureOverlay(
-                    squares=((0, 0),), elevation=HeightPair(closed=0, open=-5)
+                MapOverlayRecord(
+                    cells=((0, 0),), elevation=HeightPair(closed=0, open=-5)
                 ),
             ),
         )
-        battle_map = BattleMap(
+        map_document = storeys(
+            floor(0, features=(gate, stair("stair-up", (1, 0), 1))),
+            floor(1, feet=10, features=(stair("stair-down", (1, 0), 0),)),
             name="flooded tower",
-            width=4,
-            height=1,
-            levels=MappingProxyType(
-                {
-                    0: MapPlane(
-                        default_terrain="floor",
-                        features={gate.name: gate},
-                        connectors={(1, 0): 1},
-                    ),
-                    1: MapPlane(
-                        default_terrain="floor",
-                        default_elevation=10,
-                        connectors={(1, 0): 0},
-                    ),
-                }
-            ),
-            provenance=FIXTURE,
         )
         encounter = Encounter(
             [fighter(), make_monster("Wolf", position=(15, 0))],
             Random(1),
-            battle_map=battle_map,
+            map_document=map_document,
         )
         ground, gallery = encounter.state()["map"]["levels"]
         assert (ground["elevation"]["min"], ground["elevation"]["max"]) == (-5, 0)
@@ -5418,7 +5534,7 @@ class TestAoeShapes2D:
                                   position=(20, 5))],
             rng,
             spellbook=spellbook(),
-            battle_map=strip(
+            map_document=strip(
                 5, 3,
                 terrain={(2, 0): "wall", (2, 1): "wall", (2, 2): "wall"},
             ),
@@ -6600,7 +6716,7 @@ class TestExplorationMode:
         encounter = Encounter(
             self._party(), rng,
             mode=EncounterMode.EXPLORATION,
-            battle_map=strip(10),
+            map_document=strip(10),
         )
 
         events = encounter.act(
@@ -6617,7 +6733,7 @@ class TestExplorationMode:
     def test_the_same_one_team_encounter_in_combat_refuses_the_move_as_over(self) -> None:
         """The reason an interlude needed a mode at all."""
         rng = Random(1)
-        encounter = Encounter(self._party(), rng, battle_map=strip(10))
+        encounter = Encounter(self._party(), rng, map_document=strip(10))
 
         assert encounter.over is True
         with pytest.raises(EncounterError, match="the encounter is over"):
@@ -6669,7 +6785,7 @@ class TestExplorationMode:
     def test_an_act_in_an_interlude_must_name_its_actor(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
         )
 
         with pytest.raises(EncounterError, match="no initiative.*must name its actor"):
@@ -6690,7 +6806,7 @@ class TestExplorationMode:
     def test_an_interlude_refuses_an_actor_it_has_no_combatant_for(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
         )
 
         with pytest.raises(EncounterError, match="no combatant named 'Nobody'"):
@@ -6707,7 +6823,7 @@ class TestExplorationMode:
         """
         rng = Random(1)
         encounter = Encounter(
-            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
         )
 
         encounter.act(
@@ -6728,7 +6844,7 @@ class TestExplorationMode:
     def test_the_actor_may_change_from_one_beat_to_the_next(self) -> None:
         rng = Random(1)
         encounter = Encounter(
-            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
         )
 
         encounter.act(
@@ -6747,7 +6863,7 @@ class TestExplorationMode:
         encounter = Encounter(
             self._party(), rng,
             mode=EncounterMode.EXPLORATION,
-            battle_map=strip(10, terrain={(2, 0): "difficult", (3, 0): "difficult"}),
+            map_document=strip(10, terrain={(2, 0): "difficult", (3, 0): "difficult"}),
         )
 
         with pytest.raises(EncounterError, match="needs 35 ft"):
@@ -6760,7 +6876,7 @@ class TestExplorationMode:
         encounter = Encounter(
             self._party(), rng,
             mode=EncounterMode.EXPLORATION,
-            battle_map=strip(10, terrain={(1, 0): "wall"}),
+            map_document=strip(10, terrain={(1, 0): "wall"}),
         )
 
         with pytest.raises(EncounterError, match="no route"):
@@ -6775,7 +6891,7 @@ class TestExplorationMode:
         encounter = Encounter(
             [fighter(), held], rng,
             mode=EncounterMode.EXPLORATION,
-            battle_map=strip(10),
+            map_document=strip(10),
         )
 
         with pytest.raises(EncounterError, match="Kettle is incapacitated"):
@@ -6802,7 +6918,7 @@ class TestExplorationMode:
         encounter = Encounter(
             [fighter(), held], rng,
             mode=EncounterMode.EXPLORATION,
-            battle_map=strip(10),
+            map_document=strip(10),
         )
         encounter.act(
             Action(kind=ActionKind.MOVE, to_position=(30, 0)), rng, actor="Thora"

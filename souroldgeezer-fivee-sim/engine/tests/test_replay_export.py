@@ -24,8 +24,13 @@ from fivee_sim.kernel.actions import AttackKind, RiderExpiry
 from fivee_sim.kernel.dice import Dice
 from fivee_sim.kernel.grid import TERRAIN
 from fivee_sim.kernel.rules import Ability, DamageType, Size
-from fivee_sim.map_document import parse_document
-from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
+from fivee_sim.map_document import (
+    MapDocument,
+    MapFeatureRecord,
+    as_payload,
+    parse_document,
+)
+from fivee_sim.map_types import FeatureTrigger, TerrainPair, TriggerMode
 from fivee_sim.model.creature import AttackOption
 from fivee_sim.model.encounter import EncounterMode
 from fivee_sim.service import map_ops, specs
@@ -167,7 +172,12 @@ class TestBundleV2:
             "rows": ["######", "#....#", "#....#", "#....#", "######"],
             "legend": {"#": "wall", ".": "normal"},
             "features": [
-                {"name": "door-east", "square": [5, 2], "initially_open": True}
+                {
+                    "name": "door-east",
+                    "square": [5, 2],
+                    "orientation": "vertical",
+                    "initially_open": True,
+                }
             ],
         }
         created = api.encounter_create(
@@ -183,31 +193,49 @@ class TestBundleV2:
         assert bundle["map"]["legend"][bundle["map"]["tiles"][0][0]] == "wall"
         assert bundle["map"]["legend"][bundle["map"]["tiles"][1][1]] == "normal"
         assert bundle["initial"]["map_open_features"] == ["door-east"]
+        # The assertion whose absence hid a real defect for as long as it
+        # existed. Everything above reads keys off the payload, and a payload
+        # can carry every one of them and still not be a map: an inline spec
+        # could not say how its door hung, so this bundle was a document the
+        # parser refused — and `replay.validate_replay` checks the map's *shape*
+        # without ever parsing it, so it called the bundle valid. A caller who
+        # exported this could not open it.
+        parse_document(bundle["map"], source="bundle", terrain=TERRAIN)
 
-    def test_runtime_map_capture_keeps_trigger_definitions(self) -> None:
-        battle_map = BattleMap.flat(
+    def test_a_captured_map_keeps_trigger_definitions(self) -> None:
+        """A fixture's predicate survives the capture and reads back as itself.
+
+        This case used to hold ``replay.battle_map_payload``, which re-synthesised
+        a document out of a runtime battle map because a spec could not produce
+        one. That fake is gone: every producer builds a
+        :class:`~fivee_sim.map_document.MapDocument` now, so the capture is
+        ``as_payload`` and the thing under test is the format's own writer. The
+        claim is unchanged and is the one that matters — a trigger written into a
+        bundle parses back to the trigger it was, so a replay of a fight with a
+        pressure plate in it is a replay of that fight.
+        """
+        document = MapDocument.flat(
             name="trigger hall",
             width=3,
             height=1,
             default_terrain="floor",
-            features={
-                "lever": MapFeature(
-                    name="lever", square=(0, 0), kind="lever",
-                    closed_terrain="floor", open_terrain="floor",
+            features=(
+                MapFeatureRecord(
+                    id="lever", kind="lever", at=(0, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
                 ),
-                "gate": MapFeature(
-                    name="gate", square=(2, 0), kind="gate",
-                    closed_terrain="floor", open_terrain="floor",
+                MapFeatureRecord(
+                    id="gate", kind="gate", at=(2, 0), state="closed",
+                    terrain=TerrainPair(closed="floor", open="floor"),
                     trigger=FeatureTrigger(
                         when=(("lever", True),), set_open=True,
                         mode=TriggerMode.MAINTAINED,
                     ),
                 ),
-            },
-            provenance=FIXTURE,
+            ),
         )
 
-        payload = replay_service.battle_map_payload(battle_map)
+        payload = as_payload(document)
 
         gate = next(feature for feature in payload["features"] if feature["id"] == "gate")
         assert gate["trigger"] == {
@@ -217,7 +245,7 @@ class TestBundleV2:
         }
         parsed = parse_document(payload, source="replay", terrain=TERRAIN)
         assert next(feature for feature in parsed.features if feature.id == "gate").trigger == (
-            battle_map.features["gate"].trigger
+            document.fixtures()["gate"].trigger
         )
 
     def test_v2_records_normalized_inputs_actions_checkpoints_and_integrity(self) -> None:
@@ -266,6 +294,48 @@ class TestBundleV2:
         assert all(event["timestamp"] for event in bundle["events"])
         assert bundle["checkpoints"][-1]["state"] == bundle["latest_state"]
         assert replay_service.validate_replay(bundle) == []
+
+    def test_the_live_path_and_a_recovered_one_freeze_the_same_ruling(self) -> None:
+        """The invariant the case above only implies, and the one that was broken.
+
+        Validity is the symptom; *agreement* is the property. ``recover_session``
+        replays a ruling beside ``act`` and ``advance``, so the same fight
+        exported live and exported after a reload must describe one fight — and
+        for a release it did not, because only recovery stamped and
+        checkpointed. A bundle that merely validates would not have caught that:
+        both halves were internally consistent and said different things.
+
+        What is compared is the part the two paths can actually disagree about.
+        The five timestamp-free integrity blocks — the subset
+        ``scripts/check-api-smoke.py`` holds two processes to — are **not**
+        enough on their own: they agreed all along, because ``latest_state`` is
+        derived at export from whichever session is in hand. The divergence was
+        in the two blocks that carry the wall clock, so those are compared with
+        the clock projected out: the checkpoint *states* in order, and whether
+        every event is stamped at all. Written the other way round this case
+        passes against the unfixed engine, which is how it was written first.
+        """
+        encounter_id = mapless_fight(seed=101)
+        api.encounter_condition(encounter_id, "Goblin", "prone")
+        live = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        api.STATE.sessions.clear()
+        api.encounter_resume(encounter_id)
+        recovered = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        determined = ("map", "initial", "actions", "latest_state", "content")
+        assert {key: live["integrity"][key] for key in determined} == {
+            key: recovered["integrity"][key] for key in determined
+        }
+        assert [one["state"] for one in live["checkpoints"]] == [
+            one["state"] for one in recovered["checkpoints"]
+        ]
+        assert [bool(one["timestamp"]) for one in live["events"]] == [
+            bool(one["timestamp"]) for one in recovered["events"]
+        ]
+        # Not vacuous: a fight with no ruling in it would agree here whatever
+        # ``condition`` did, so the attempt has to be in both bundles.
+        assert [one["operation"] for one in live["attempts"]] == ["encounter_condition"]
 
     def test_v2_normalized_inputs_preserve_playtest_mechanics(self) -> None:
         stirge = dict(REPLAY_HERO)

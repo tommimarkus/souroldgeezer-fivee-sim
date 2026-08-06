@@ -32,7 +32,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
 from fivee_sim.kernel.items import ItemEffect
 from fivee_sim.kernel.rules import Ability, DamageType
-from fivee_sim.model.battlemap import BattleMap
+from fivee_sim.map_types import MapDocument
 from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import Action, ActionKind, Encounter
 
@@ -41,6 +41,7 @@ from .conftest import (
     advance_to,
     caster,
     fighter,
+    fixture_provenance,
     shaped_spellbook,
     shaper,
 )
@@ -782,12 +783,12 @@ class TestPolicyPlacesAreaSpells:
 FIXTURE = "synthetic test fixture, not SRD content"
 
 
-def walled_arena() -> BattleMap:
+def walled_arena() -> MapDocument:
     """A 6x3 arena with a wall stub: melee must walk around, sight is partial."""
-    return BattleMap.flat(
+    return MapDocument.flat(
         name="arena", width=6, height=3,
         terrain={(2, 0): "wall", (2, 1): "wall"},
-        provenance=FIXTURE,
+        provenance=fixture_provenance(FIXTURE),
     )
 
 
@@ -805,13 +806,13 @@ class TestMappedAnalytics:
         rng = Random(SEED)
         encounter = Encounter(
             list(mapped_duel()), rng, spellbook=spellbook(),
-            battle_map=walled_arena(),
+            map_document=walled_arena(),
         )
         manual = run_encounter(encounter, rng, max_rounds=20)
 
         batch = simulate_rounds(
             mapped_duel, iterations=1, seed=SEED, max_rounds=20,
-            spellbook=spellbook(), battle_map=walled_arena(),
+            spellbook=spellbook(), map_document=walled_arena(),
         )
 
         expected_winner = manual.winner if manual.winner is not None else "none"
@@ -823,7 +824,7 @@ class TestMappedAnalytics:
             rng = Random(seed)
             encounter = Encounter(
                 list(mapped_duel()), rng, spellbook=spellbook(),
-                battle_map=walled_arena(),
+                map_document=walled_arena(),
             )
             run_encounter(encounter, rng, max_rounds=20)
             return [
@@ -838,7 +839,7 @@ class TestMappedAnalytics:
         # stall to the round cap; a routed closer reaches the goblin and ends it.
         result = simulate_rounds(
             mapped_duel, iterations=5, seed=SEED, max_rounds=20,
-            spellbook=spellbook(), battle_map=walled_arena(),
+            spellbook=spellbook(), map_document=walled_arena(),
         )
         assert result["timed_out"] == 0
         assert sum(result["wins"].values()) == 5
@@ -913,8 +914,9 @@ class TestPolicyPlacesShapes:
         # graze along the edge, which is the sight policy, not the subject here.
         def propose(terrain: dict[tuple[int, int], str]) -> Any:
             rng = Random(SEED)
-            battle_map = BattleMap.flat(
-                name="sealed", width=10, height=5, terrain=terrain, provenance=FIXTURE,
+            battle_map = MapDocument.flat(
+                name="sealed", width=10, height=5, terrain=terrain,
+                provenance=fixture_provenance(FIXTURE),
             )
             combatants = [
                 blaster(position=(0, 10)),
@@ -922,7 +924,7 @@ class TestPolicyPlacesShapes:
                 make_monster("Goblin Warrior", label="Hidden B", position=(40, 15)),
             ]
             encounter = Encounter(
-                combatants, rng, spellbook=spellbook(), battle_map=battle_map
+                combatants, rng, spellbook=spellbook(), map_document=battle_map
             )
             advance_to(encounter, "Ilva", rng)
             return auto_action(encounter)

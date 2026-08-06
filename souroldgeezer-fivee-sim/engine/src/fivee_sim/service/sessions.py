@@ -40,9 +40,8 @@ from ..content import (
     registry_from_snapshot,
 )
 from ..kernel.grid import DiagonalRule, as_point
-from ..map_document import MapDocument, to_grid
+from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
-from ..model.battlemap import BattleMap
 from ..model.creature import Creature
 from ..model.encounter import Encounter, EncounterMode
 from . import encounter_journal as journal_service
@@ -55,6 +54,7 @@ __all__ = [
     "DOCUMENT_MARKER",
     "Content",
     "EngineState",
+    "ResolvedMap",
     "Session",
     "active_content",
     "active_registry",
@@ -235,7 +235,7 @@ def new_encounter(
     registry: ContentRegistry,
     *,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
-    battle_map: BattleMap | None = None,
+    map_document: MapDocument | None = None,
     mode: EncounterMode = EncounterMode.COMBAT,
 ) -> Encounter:
     """Build an encounter bound to ``registry``'s tables, captured by value."""
@@ -246,7 +246,7 @@ def new_encounter(
         items=registry.items,
         condition_effects=registry.condition_effects,
         movement_rule=movement_rule,
-        battle_map=battle_map,
+        map_document=map_document,
         terrain_effects=registry.terrain_effects,
         mode=mode,
     )
@@ -317,65 +317,91 @@ def map_source_of(state: EngineState, session: Session) -> dict[str, Any] | None
 DOCUMENT_MARKER = "format"
 
 
+@dataclass(frozen=True, slots=True)
+class ResolvedMap:
+    """The map a tool call named, and where it came from.
+
+    It was a triple of optionals, then a pair, and it is one map now. A spec
+    used to produce a battle map and nothing else, so a caller holding one had
+    to render a document back out of it to write the fight down; then every
+    producer made a :class:`~fivee_sim.map_document.MapDocument` and a bridge
+    made the grid beside it, and the two had to travel together. A fight is
+    handed the document itself, so there is nothing left for a second field to
+    hold.
+
+    ``source`` is the exception and stays optional: it answers *has the file
+    changed since the fight started?*, and only a **saved** map has a file to
+    have changed.
+    """
+
+    document: MapDocument
+    source: dict[str, Any] | None = None
+
+
 def resolve_battle_map(
     state: EngineState, map_spec: dict[str, Any] | None, map_id: str | None
-) -> tuple[BattleMap | None, dict[str, Any] | None, MapDocument | None]:
-    """The battle map a tool call names — inline map or saved map file.
+) -> ResolvedMap | None:
+    """The map a tool call names — inline map or saved map file — or none.
 
     An inline ``map`` is either a battle-map **spec** — the ``width``/``height``/
     ``rows``/``legend`` form a person or a model writes by hand — or a whole
     ``fivee-sim-map`` **document**, which is what the browser editor's Play
     button posts when its buffer has never been saved and so has no id to name.
-    :data:`DOCUMENT_MARKER` tells them apart, and a document takes the same road
-    a saved one does: parsed and validated by :mod:`~fivee_sim.service.maps`,
-    then bridged by :func:`~fivee_sim.map_document.to_grid`. Inline is not a
-    laxer door onto the same grid — a malformed buffer raises the same
+    :data:`DOCUMENT_MARKER` tells them apart, and both end in the same place a
+    saved map does: a document, which is the map a fight resolves on. A spec
+    takes the shorter road —
+    :func:`~fivee_sim.service.specs.document_from_spec` builds the document
+    rather than parsing one, so a spec's refusals stay the spec's own — but it
+    arrives at the same artifact. Inline is not a laxer door onto the same map:
+    a malformed buffer raises the same
     :class:`~fivee_sim.map_document.MapError`, carrying every diagnostic, that a
     malformed file does.
 
     A saved map also yields the ``map_source`` capture (which map, and the hash
-    of the exact document the fight is on) and the document itself, so a caller
-    that must snapshot it by value does not read the file a second time and
-    risk snapshotting a different version than it resolved. The capture's shape
-    matches :func:`map_source_of`, so a caller reads ``stale`` off either
-    result — at capture time it is ``False`` by construction.
+    of the exact document the fight is on), so a caller that must snapshot it by
+    value does not read the file a second time and risk snapshotting a different
+    version than it resolved. The capture's shape matches :func:`map_source_of`,
+    so a caller reads ``stale`` off either result — at capture time it is
+    ``False`` by construction.
 
-    An inline document deliberately gets **no** ``map_source``. That capture
-    answers one question — *has the file changed since the fight started?* — and
-    an inline document has no file to have changed: the id would resolve to
-    nothing and ``stale`` could never become true, so a capture here would be a
-    fabricated provenance rather than a missing one. What a fight needs instead
-    is the map itself, and it gets it: the document comes back as the third
-    result, so :mod:`~fivee_sim.service.encounters` captures it *whole* in the
-    creation journal and a replay is on the map the table played on.
+    An inline map deliberately gets **no** ``map_source``. That capture answers
+    one question — *has the file changed since the fight started?* — and an
+    inline map has no file to have changed: the id would resolve to nothing and
+    ``stale`` could never become true, so a capture here would be a fabricated
+    provenance rather than a missing one. What a fight needs instead is the map
+    itself, and it gets it: :mod:`~fivee_sim.service.encounters` captures the
+    document *whole* in the creation journal and a replay is on the map the
+    table played on.
     """
     if map_spec is not None and map_id is not None:
         raise RequestError(
             "give 'map' (an inline spec or map document) or 'map_id' (a saved map), "
             "not both"
         )
+    terrain = active_registry(state).terrain_effects
     if map_spec is not None:
         if DOCUMENT_MARKER in map_spec:
             document, _warnings = map_service.parse_payload(
-                map_spec,
-                source="inline map",
-                terrain=active_registry(state).terrain_effects,
+                map_spec, source="inline map", terrain=terrain
             )
-            return to_grid(document), None, document
-        return specs.battle_map_from_spec(map_spec), None, None
+        else:
+            document = specs.document_from_spec(map_spec, terrain)
+        return ResolvedMap(document=document)
     if map_id is not None:
         document, _path = map_service.load_by_id(
-            map_id, maps_dir_of(state), terrain=active_registry(state).terrain_effects
+            map_id, maps_dir_of(state), terrain=terrain
         )
         sha256 = sha256_of(serialize_map(document))
-        source = {
-            "map_id": map_id,
-            "sha256": sha256,
-            "current_sha256": sha256,
-            "stale": False,
-        }
-        return to_grid(document), source, document
-    return None, None, None
+        return ResolvedMap(
+            document=document,
+            source={
+                "map_id": map_id,
+                "sha256": sha256,
+                "current_sha256": sha256,
+                "stale": False,
+            },
+        )
+    return None
 
 
 # --- the durable record ----------------------------------------------------
@@ -522,7 +548,7 @@ def recover_session(
     if not isinstance(normalized, list):
         raise RequestError(f"encounter journal {encounter_id!r} has no combatants")
     captured_map = created.get("map")
-    battle_map: BattleMap | None = None
+    map_document: MapDocument | None = None
     if isinstance(captured_map, Mapping):
         try:
             document, _ = map_service.parse_payload(
@@ -532,7 +558,7 @@ def recover_session(
             )
         except (ValueError, DataError) as error:
             raise RequestError(f"cannot recover {encounter_id!r}'s map: {error}") from error
-        battle_map = to_grid(document)
+        map_document = document
     seed = int(created["seed"])
     rng = Random(seed)
     # Which kind of chapter this was, defaulted for every journal written before
@@ -549,7 +575,7 @@ def recover_session(
         rng,
         registry,
         movement_rule=specs.parse_movement_rule(str(created["movement_rule"])),
-        battle_map=battle_map,
+        map_document=map_document,
         mode=mode,
     )
     session = Session(
