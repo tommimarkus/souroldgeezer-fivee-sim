@@ -31,7 +31,7 @@ from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
-from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind
+from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
@@ -1633,6 +1633,7 @@ class TestDeclaredEnums:
             "encounter.act.movement_mode": (
                 {mode.value for mode in MovementMode} | {None}
             ),
+            "encounter.create.mode": {mode.value for mode in EncounterMode},
             "encounter.create.movement_rule": movement_rules,
             "adventure.encounter.movement_rule": movement_rules,
             "adventure.list.status": set(adventure_service.LIST_STATUSES),
@@ -2290,6 +2291,205 @@ class TestEncountersOverHttp:
         ).json()
         assert resumed["recovered"] is True
         assert resumed["state"]["round"] >= 1
+
+
+#: One party member, standing somewhere. An interlude's whole roster can be
+#: this: nobody is opposing anybody, so the two-sides rule a fight is built on
+#: has nothing to say about it.
+SCOUT: dict[str, Any] = {
+    "name": "Kettle",
+    "team": "party",
+    "ac": 13,
+    "max_hp": 9,
+    "position": [0, 0],
+}
+
+
+class TestInterludesOverHttp:
+    """The chapter with no fight in it, driven the way a caller drives it.
+
+    ``model/encounter.py`` owns what an interlude *is* and pins it in
+    ``tests/test_encounter.py``. What is checked here is the half a caller can
+    reach: that the mode crosses the wire, that the acting seam takes a name,
+    and that each refusal arrives as the sentence naming the mode that refused
+    rather than as a bare status.
+    """
+
+    def interlude(self, editor: Editor, **body: Any) -> Response:
+        return editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={
+                "combatants": [dict(HERO), dict(SCOUT)],
+                "seed": 11,
+                "mode": "exploration",
+                **body,
+            },
+        )
+
+    def test_an_interlude_reports_the_mode_and_holds_nobody_s_turn(
+        self, editor: Editor
+    ) -> None:
+        created = self.interlude(editor)
+        assert created.status == 201
+        state = created.json()["state"]
+        assert state["mode"] == "exploration"
+        # Nobody holds the floor between beats, so there is no turn to name and
+        # no round for one to belong to.
+        assert state["turn"] is None
+
+    def test_a_fight_is_still_the_mode_a_caller_gets_without_asking(
+        self, editor: Editor
+    ) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        assert created.json()["state"]["mode"] == "combat"
+        assert created.json()["state"]["turn"]
+
+    def test_one_combatant_is_a_whole_interlude(self, editor: Editor) -> None:
+        created = self.interlude(editor, combatants=[dict(SCOUT)])
+        assert created.status == 201
+        assert [one["name"] for one in created.json()["state"]["combatants"]] == [
+            "Kettle"
+        ]
+
+    def test_a_fight_still_needs_two_sides_worth_of_combatants(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            editor.request(
+                "POST", "/api/v1/encounters",
+                json_body={"combatants": [dict(SCOUT)], "seed": 11},
+            ),
+            400,
+            "an encounter needs at least two combatants",
+        )
+
+    def test_an_interlude_still_needs_somebody_to_stand_somewhere(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            self.interlude(editor, combatants=[]),
+            400,
+            "an interlude needs at least one combatant",
+        )
+
+    def test_a_reinforcement_is_refused_where_no_round_could_bring_them(
+        self, editor: Editor
+    ) -> None:
+        """``arrival_round`` is inert here, so it is refused rather than ignored.
+
+        Nothing arrives when no round turns over, so a combatant scheduled for
+        round 2 would be refused every act for the life of the chapter with
+        "does not arrive until round 2" — a fight's sentence, in a chapter that
+        has no rounds. The refusal belongs at the spec.
+        """
+        assert_problem(
+            self.interlude(
+                editor,
+                combatants=[dict(SCOUT), {**HERO, "arrival_round": 2}],
+            ),
+            400,
+            "an interlude has no rounds, so combatant 'Thora' cannot arrive",
+        )
+
+    def test_an_act_names_who_takes_it(self, editor: Editor) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        acted = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "move", "to_position": [10, 0], "actor": "Kettle"},
+        )
+        assert acted.status == 200
+        moved = next(
+            one for one in acted.json()["state"]["combatants"] if one["name"] == "Kettle"
+        )
+        assert moved["position"] == [10, 0]
+
+    def test_an_act_that_names_nobody_is_refused_by_the_mode(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge"},
+            ),
+            400,
+            "an interlude has no initiative, so an act must name its actor",
+        )
+
+    def test_a_fight_refuses_an_act_that_names_an_actor(self, editor: Editor) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        encounter_id = created.json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge", "actor": "Thora"},
+            ),
+            400,
+            "initiative decides who acts",
+        )
+
+    def test_an_unknown_actor_is_refused_in_the_surface_s_one_sentence(
+        self, editor: Editor
+    ) -> None:
+        """The seat refusal, from a fifth door and with the same status.
+
+        Word for word what ``encounter.brief`` answers a name this cast does not
+        hold, and a ``404`` for the same reason: an actor is a thing that is or
+        is not in this chapter. It names nobody else, so guessing wrong tells a
+        guesser nothing about who is really here.
+        """
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        problem = assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge", "actor": "Nobody"},
+            ),
+            404,
+            "no combatant named 'Nobody' in this encounter",
+        )
+        assert "Kettle" not in problem["detail"]
+
+    def test_an_interlude_has_no_round_to_advance(self, editor: Editor) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance"),
+            400,
+            "an interlude has no rounds to advance",
+        )
+
+    def test_a_seat_s_brief_names_the_mode_and_nobody_s_turn(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Kettle"
+        ).json()
+        assert brief["mode"] == "exploration"
+        # Null rather than false: "not your turn" is a fact about a fight, and
+        # this chapter has no turns for it to be a fact about.
+        assert brief["turn"] is None
+        assert brief["your_turn"] is None
+
+    def test_a_fight_s_brief_still_answers_whose_turn_it_is(
+        self, editor: Editor
+    ) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        encounter_id = created.json()["encounter_id"]
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        ).json()
+        assert brief["mode"] == "combat"
+        assert brief["your_turn"] in (True, False)
+        assert brief["turn"] is not None
 
 
 #: A fight with something to hide: a foe whose sheet carries unmistakable

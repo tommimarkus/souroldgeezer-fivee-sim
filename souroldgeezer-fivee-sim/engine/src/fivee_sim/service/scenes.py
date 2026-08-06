@@ -72,7 +72,9 @@ __all__ = [
 #: table's own schema rather than restating it, so a key added to
 #: ``encounter.create`` and not to a scene fails there instead of being silently
 #: dropped from every fight a scene starts.
-ENCOUNTER_KEYS: tuple[str, ...] = ("combatants", "seed", "movement_rule", "map", "map_id")
+ENCOUNTER_KEYS: tuple[str, ...] = (
+    "combatants", "seed", "mode", "movement_rule", "map", "map_id",
+)
 
 #: Everything a stored scene may carry: the encounter body, a label to list it
 #: by, and the packs it wants loaded before it runs. ``name`` and

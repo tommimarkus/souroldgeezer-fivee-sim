@@ -128,9 +128,11 @@ def encounter_create(
     map_id: str | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    mode: str = "combat",
 ) -> dict[str, Any]:
     return _encounters.create(
-        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer
+        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer,
+        mode=mode,
     )
 
 
@@ -191,6 +193,7 @@ def encounter_act(
     natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    actor: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
         STATE,
@@ -216,6 +219,7 @@ def encounter_act(
         natural,
         request_id,
         viewer,
+        actor=actor,
     )
 
 

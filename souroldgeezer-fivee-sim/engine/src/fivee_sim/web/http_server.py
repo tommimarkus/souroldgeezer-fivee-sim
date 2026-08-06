@@ -934,6 +934,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             request.query["as"],
+            mode=body["mode"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -1004,6 +1005,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["natural"],
             self._idempotency_key(),
             request.query["as"],
+            actor=body["actor"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 

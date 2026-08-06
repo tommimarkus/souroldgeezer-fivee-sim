@@ -875,7 +875,25 @@ class Encounter:
         terrain_effects: TerrainTable | None = None,
         mode: EncounterMode = EncounterMode.COMBAT,
     ) -> None:
-        if len(combatants) < 2:
+        #: Fixed at construction and never reassigned: a fight is finalized and
+        #: the next chapter linked rather than turned into an interlude in
+        #: place, which is what keeps one chapter meaning one thing at both its
+        #: ends. Normalised through the enum so a caller holding the wire value
+        #: — the string a route validated — is holding a member.
+        #:
+        #: Read before the count below, because the count is one of the things
+        #: it decides.
+        self.mode: EncounterMode = EncounterMode(mode)
+        # Two, because a fight needs two sides; one, because an interlude needs
+        # somebody to stand somewhere. Inheriting the fight's rule here would
+        # refuse a lone scout crossing a room, which is the commonest interlude
+        # there is — and the wording matters as much as the number: "an
+        # encounter needs at least two combatants", answering a chapter that
+        # wanted one, is a sentence its caller cannot act on.
+        if self.mode is EncounterMode.EXPLORATION:
+            if not combatants:
+                raise EncounterError("an interlude needs at least one combatant")
+        elif len(combatants) < 2:
             raise EncounterError("an encounter needs at least two combatants")
         names = [creature.name for creature in combatants]
         duplicates = {name for name in names if names.count(name) > 1}
@@ -883,12 +901,6 @@ class Encounter:
             raise EncounterError(
                 "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
             )
-        #: Fixed at construction and never reassigned: a fight is finalized and
-        #: the next chapter linked rather than turned into an interlude in
-        #: place, which is what keeps one chapter meaning one thing at both its
-        #: ends. Normalised through the enum so a caller holding the wire value
-        #: — the string a route validated — is holding a member.
-        self.mode: EncounterMode = EncounterMode(mode)
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
         for creature in combatants:
             creature.arrived = creature.arrival_round <= 1
@@ -1654,15 +1666,33 @@ class Encounter:
         asker = seats[as_name]
         unseen = self.unseen_by(snapshot, as_name)
         turn = snapshot["turn"]
+        # Defaulted rather than subscripted, and the default is not a guess: a
+        # snapshot without this key was written before the key existed, and
+        # everything written then was a fight. The path that hands one over is
+        # the idempotent retry — the state a *journal* recorded, replayed
+        # verbatim — so a bare subscript would turn a replayed success into a
+        # KeyError on the first retry after an upgrade.
+        mode = EncounterMode(str(snapshot.get("mode", EncounterMode.COMBAT.value)))
+        exploring = mode is EncounterMode.EXPLORATION
         payload: dict[str, Any] = {
             "as": as_name,
+            # Which kind of chapter this seat is sitting in. Visible, and not a
+            # close call: it decides whether "whose turn is it" is a question at
+            # all, and a player who could not tell a fight from an interlude
+            # could not act in either.
+            "mode": mode.value,
             "round": snapshot["round"],
             # Nulled rather than named when an unseen creature is acting:
             # identity is withheld and existence is not, which is what a table
             # learns when the GM rolls behind a screen. Reporting the name would
             # undo every other filter here in one key.
-            "turn": None if turn in unseen else turn,
-            "your_turn": turn == as_name,
+            #
+            # Null in an interlude for a different reason — there is no turn to
+            # name — and ``your_turn`` follows it there rather than reading
+            # False: "not your turn" is a fact about a fight, and this chapter
+            # has no turns for it to be a fact about.
+            "turn": None if exploring or turn in unseen else turn,
+            "your_turn": None if exploring else turn == as_name,
             "over": snapshot["over"],
             "winner": snapshot["winner"],
             "you": dict(asker),
@@ -1816,7 +1846,15 @@ class Encounter:
             # ``over`` never becomes true on its own.
             "mode": self.mode.value,
             "round": self.round,
-            "turn": self.current_name,
+            # Null in an interlude, where nobody holds the floor between beats:
+            # a beat is opened by the act that names its actor and is over when
+            # that act is, so there is no standing answer to "whose turn is it"
+            # to report. Reported as null rather than omitted, because a key
+            # that is sometimes absent is one every reader has to branch on
+            # twice — and because ``turn_index`` still points somewhere, so a
+            # bare ``current_name`` here would name whoever moved last, or the
+            # first name alphabetically before anybody had.
+            "turn": None if self.mode is EncounterMode.EXPLORATION else self.current_name,
             "movement_rule": self.movement_rule.value,
             "over": self.over,
             "winner": self.winner,
