@@ -13,13 +13,20 @@ neither a rules primitive nor creature state, and it is imported by
 ``service/`` and ``editor/`` alike while no rules layer touches it. The old
 names remain importable from the modules that used to define them, so a caller
 that already knows where to ask keeps working.
+
+The launch state file follows the same ownership: its name, location and
+tolerant JSON reader live together here. The client and server launcher
+re-export the reader, preserving their existing surfaces without maintaining
+two copies of the file convention.
 """
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from .content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 
@@ -39,6 +46,7 @@ __all__ = [
     "environment_roots",
     "maps_root",
     "project_root",
+    "read_state",
     "replays_root",
     "scenes_root",
     "source_id",
@@ -202,3 +210,18 @@ def encounters_root(env: Mapping[str, str] | None = None) -> Path:
 def state_file_for(maps_dir: str | Path) -> Path:
     """Where the launch state file for ``maps_dir`` lives: next to the maps dir."""
     return Path(maps_dir).expanduser().parent / STATE_FILENAME
+
+
+def read_state(path: str | Path) -> dict[str, Any] | None:
+    """The parsed state file, or ``None`` when missing, unreadable, or not JSON.
+
+    Tolerant on purpose: a state file is a hint about a process that may have
+    died, and every caller treats an unreadable one exactly like an absent one.
+    """
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload

@@ -27,6 +27,7 @@ from typing import Any
 
 import pytest
 
+from fivee_sim import paths
 from fivee_sim.client import discovery
 from fivee_sim.web.cli import STATE_FILENAME, read_state, state_file_for
 from fivee_sim.web.http_server import API_PREFIX, SOURCE_ID_ENV, TOKEN_HEADER
@@ -133,6 +134,33 @@ def _record_and_ping(
         if process.poll() is None:
             process.kill()
             process.communicate(timeout=10)
+
+
+def test_the_state_file_reader_has_one_canonical_owner() -> None:
+    assert discovery.read_state is paths.read_state
+    assert read_state is paths.read_state
+
+
+def test_the_state_file_reader_keeps_its_tolerant_contract(tmp_path: Path) -> None:
+    directory = tmp_path / "directory"
+    directory.mkdir()
+    invalid_utf8 = tmp_path / "invalid-utf8.json"
+    invalid_utf8.write_bytes(b"\xff")
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{", encoding="utf-8")
+    non_object = tmp_path / "non-object.json"
+    non_object.write_text("[]", encoding="utf-8")
+
+    assert read_state(tmp_path / "missing.json") is None
+    assert read_state(directory) is None
+    assert read_state(invalid_utf8) is None
+    assert read_state(malformed) is None
+    assert read_state(non_object) is None
+
+    valid = tmp_path / "valid.json"
+    expected = {"port": 4312, "token": "still-the-same", "nested": {"ready": True}}
+    valid.write_text(json.dumps(expected), encoding="utf-8")
+    assert read_state(valid) == expected
 
 
 class TestCliLifecycle:

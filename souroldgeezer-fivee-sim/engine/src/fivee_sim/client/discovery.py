@@ -16,15 +16,16 @@ record is the only one anybody can read.
 stable when a config edit changes the maps directory. The legacy no-file path
 keeps its historical record beside the maps directory.
 
-**Three constants are copied here rather than imported**, and that is the
-constraint working as intended: this package may not import
+**Three constants are copied here rather than imported from the server**, and
+that is the constraint working as intended: this package may not import
 :mod:`fivee_sim.web`, because a client that imported the server could do things
 over that import which the REST surface does not expose. :data:`TOKEN_HEADER`
 and :data:`API_PREFIX` are wire protocol — the same kind of shared fact as the
 state file's filename — and a mismatch fails loudly on the first request rather
-than silently. :func:`read_state` is duplicated for the same reason, and stays
-tolerant for the same reason the server's copy is: an unreadable record and an
-absent one mean the same thing to every caller.
+than silently. The state file's name and tolerant :func:`read_state` instead
+come from :mod:`fivee_sim.paths`, their transport-neutral owner; an unreadable
+record and an absent one mean the same thing to every caller without giving the
+client an import path into the server.
 
 :data:`SOURCE_ID_ENV` is the third, and it is the one worth watching, because it
 is the copy whose drift is *quiet*. Misspell the header and the first request is
@@ -56,7 +57,7 @@ from pathlib import Path
 from typing import Any
 
 from ..configuration import Configuration, configuration_identity
-from ..paths import STATE_FILENAME, maps_root, state_file_for
+from ..paths import STATE_FILENAME, maps_root, read_state, state_file_for
 
 __all__ = [
     "API_PREFIX",
@@ -162,17 +163,6 @@ def state_path_for(
         return configuration.path.parent / STATE_FILENAME
     root = Path(maps_dir).expanduser() if maps_dir is not None else maps_root()
     return state_file_for(root)
-
-
-def read_state(path: str | Path) -> dict[str, Any] | None:
-    """The parsed state file, or ``None`` when missing, unreadable, or not JSON."""
-    try:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    return payload
 
 
 def ping(port: int, token: str, timeout: float = PING_TIMEOUT) -> dict[str, Any] | None:

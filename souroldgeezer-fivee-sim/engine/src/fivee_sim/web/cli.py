@@ -7,8 +7,9 @@ through the **state file**, a small JSON record
 configuration_id, started}`` written *after* the socket is bound. A configured
 launch records beside ``config.toml``, so changing a storage root still finds and
 replaces the old process; the legacy no-file launch records beside maps. The
-helpers that name, read, and remove it live here so both sides share one
-convention rather than two almost-identical ones.
+transport-neutral helpers that name and read it live in :mod:`fivee_sim.paths`
+and are re-exported here, so both sides share one convention. This launcher owns
+writing and removing the record around the server process's lifetime.
 
 Content is not loaded here. The server owns an ``EngineState`` and loads
 configured packs on first use, with the same fall-back to the bundled slice
@@ -40,27 +41,12 @@ from ..configuration import (
     apply_to_environment,
     find_and_load_config,
 )
-from ..paths import STATE_FILENAME, state_file_for
+from ..paths import STATE_FILENAME, read_state, state_file_for
 from ..service import maps as map_service
 from ..service import replay as replay_service
 from .http_server import EngineServer
 
 __all__ = ["STATE_FILENAME", "main", "read_state", "state_file_for"]
-
-
-def read_state(path: str | Path) -> dict[str, Any] | None:
-    """The parsed state file, or ``None`` when missing, unreadable, or not JSON.
-
-    Tolerant on purpose: a state file is a hint about a process that may have
-    died, and every caller treats an unreadable one exactly like an absent one.
-    """
-    try:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if not isinstance(payload, dict):
-        return None
-    return payload
 
 
 def main(argv: Sequence[str] | None = None) -> int:
