@@ -38,9 +38,13 @@ edit by voice or by hand in a browser, and save as a file. A finished fight
 exports as a **replay bundle** that plays back in the browser, and a map hands off
 to another virtual tabletop as Universal VTT.
 
-| Plugin | Version | Skills | Claude agent |
+| Plugin | Version | Skills | Claude Code agents |
 |---|---:|---|---|
 | `souroldgeezer-fivee-sim` | `2026.08.69` | [encounter-sim](souroldgeezer-fivee-sim/skills/encounter-sim/SKILL.md), [map-forge](souroldgeezer-fivee-sim/skills/map-forge/SKILL.md), [playtest](souroldgeezer-fivee-sim/skills/playtest/SKILL.md) | [encounter-sim](souroldgeezer-fivee-sim/agents/encounter-sim.md), [game-master](souroldgeezer-fivee-sim/agents/game-master.md), [typical-player](souroldgeezer-fivee-sim/agents/typical-player.md) |
+
+Claude Code discovers the role profiles as named agents; Codex's playtest skill
+injects the same role bodies into fresh child prompts. If a player child reports
+tools, the playtest stops by default rather than claiming structural isolation.
 
 ## Install
 

@@ -20,19 +20,32 @@ from it.
      "voice": "quiet, asks one question too many", "sheet": {...}},
     {"name": "Ilma",   "kind": "human", "sheet": {...}}
   ],
+  "tool_policy": "require-none",
   "tool_check": {"Thora": "none", "Kesh": "none"}
 }
 ```
 
-`tool_check` records what each agent seat answered when asked, on its first
-message, to list any tools it has. It is the only evidence that the declared
-`tools: []` was honoured — an empty list is the honest way to say *no tools*, but
-a host reading it as an absent field would grant all of them, and nothing else
-would ever say so. Anything other than `"none"` goes into the report as a
-downgraded guarantee rather than stopping the run.
+## Player tool policy
 
-Re-ask on resume. A re-spawned agent is a new process and inherits nothing from
-the answer the last one gave.
+`tool_policy` defaults to `require-none`. Every agent player's first response
+must list every tool it has or say `none`; record that response under
+`tool_check`. Under `require-none`, stop the run on any reported tool before the
+first player-facing scene or brief. Do not silently downgrade and continue.
+
+Continue only when the developer explicitly approves the weaker boundary. The
+harness then changes `tool_policy` in `roster.json` to `allow-reported`, appends
+that approval, the seat, and its reported tool list to `findings.jsonl`, and
+calls the run **honour-system mode** in the report. The player still must not use
+its tools or seek the adventure, but that instruction is cooperation rather
+than structural isolation. An unattended run with reported tools stops for this
+approval; having no human seats does not waive the gate.
+
+Re-ask every agent player after a re-spawn or resume, update `tool_check`, and
+apply the gate again before sending new player-facing material. A new child may
+have different tools from the one whose answer is on disk. `allow-reported`
+remains explicit for the run, but every new non-`none` tool list still belongs
+in `findings.jsonl` and the report. A new `none` answer belongs only in
+`tool_check`.
 
 `kind` is `agent` or `human`, and it is the only thing that changes how a seat is
 asked for a decision. `game_master.kind` may be `human`, in which case there is
@@ -50,18 +63,20 @@ position, attacks, and whatever else the character has. The bundled parties in
 
 ### An agent seat
 
-`SendMessage` to the agent spawned for that seat, keeping it alive across the
-whole run so it remembers the session. Batch every agent seat that must act into
-one round of parallel messages; do not walk them one at a time.
+Message the child spawned for that seat through the host's subagent operation,
+keeping it alive across the whole run so it remembers the session. Dispatch
+independent agent seats together; do not walk them one at a time.
 
-A resumed run has no live agents. Re-spawn each one and brief it from
-`seats/<name>.md` **and nothing else**.
+A resumed run has no live children. Re-spawn each one through the host-specific
+dispatch in the main skill and brief it from `seats/<name>.md`, its sheet,
+temperament, and voice **and nothing else**. Re-run the player tool gate before
+sending the next scene or brief.
 
 ### A human seat
 
-`AskUserQuestion`, after printing the narration as ordinary output so the person
-can read the scene first. Up to four humans can be asked in one call — beyond
-that, pause again.
+Use the host's user-input operation after printing the narration as ordinary
+output so the person can read the scene first. Ask up to four humans in one
+pause when the host supports it; beyond that, pause again.
 
 Offer two or three plausible actions as options and let the free-text answer
 carry anything else. The options are a convenience, not the menu: a real player
@@ -122,10 +137,12 @@ in its adventure document. What you are saving is the *table*: who knows what.
 ## Resume
 
 1. Read `roster.json`.
-2. Re-spawn the game master; hand it the adventure path and its run sheet
-   position — it re-reads the module, which is cheap and exact.
-3. Re-spawn each agent seat; hand it **only** `seats/<name>.md`, its sheet, its
-   temperament and its voice.
+2. Re-spawn the game master through the host-specific dispatch; hand it the
+   adventure path and its run sheet position — it re-reads the module, which is
+   cheap and exact.
+3. Re-spawn each agent seat through the host-specific dispatch; hand it **only**
+   `seats/<name>.md`, its sheet, its temperament and its voice. Re-run the tool
+   check and apply `tool_policy` before sending player-facing material.
 4. Read the fight back from `fivee encounter.state` or `fivee adventure.state`.
    Never reconstruct mechanical state from the transcript.
 5. Say where play stands, and continue.

@@ -70,17 +70,49 @@ the roster format, the resume protocol, and how a human seat is prompted.
 
 ## 2. Brief the seats
 
-**The game master** is the `game-master` agent, spawned once and kept alive for
-the whole run. Hand it the adventure path and the party. Its first act is a run
-sheet — the module's scenes, encounters, NPCs, treasure and stated DCs — which
-stays on its side and is what "unused content" is later measured against.
+The packaged [game-master](../../agents/game-master.md) and
+[typical-player](../../agents/typical-player.md) files are the canonical role
+profiles for both hosts. Keep one child alive for the game master and one for
+each agent player throughout the run; on resume, rebuild them by the same host
+dispatch used at first seating.
 
-**Each player** is a `typical-player` agent, spawned once per seat and kept alive.
-Hand it a character sheet, a temperament, and a voice — and nothing else.
+### Claude Code
 
-**Each seat declares its own model and reasoning effort**, and a player's is the
-setting worth understanding rather than tuning by instinct. There are two things
-you might want less of from a player seat, and they pull opposite ways:
+Spawn the named agent `game-master` once and hand it the adventure path and the
+party. Spawn the named agent `typical-player` once per agent seat and hand each
+one only its character sheet, temperament, and voice. Claude Code discovers
+these packaged named agents and applies their existing frontmatter, including
+their tools, model, and effort; do not reproduce or override it in the harness.
+
+The game master's first act is a run sheet — the module's scenes, encounters,
+NPCs, treasure and stated DCs — which stays on its side and is what "unused
+content" is later measured against.
+
+### Codex
+
+Codex's plugin package does not activate the Claude agent files as named agents.
+Read `../../agents/game-master.md` and `../../agents/typical-player.md`, remove or
+ignore each file's leading YAML frontmatter, and inject the remaining role body
+into the corresponding child prompt. Spawn every child with
+`fork_turns="none"`; inherited conversation would disclose the module before a
+player had taken a seat.
+
+The game-master prompt may add the adventure path and the party. A player prompt
+may add only that seat's character sheet, temperament, and voice; on resume it
+may also add that seat's private memory. Never put the adventure's path, name,
+or directory, module text, run sheet, other roster entries, or the full
+transcript in a player prompt.
+
+Fresh context and these allowlisted prompts minimise what Codex hands a player;
+they do not restrict the child's filesystem or tools. Run the player tool gate
+below before sending the first player-facing scene or brief, and never describe
+a Codex run with reported tools as structurally isolated.
+
+Claude Code applies the model and reasoning effort declared by each named-agent
+profile. Codex ignores that frontmatter and uses the child settings supplied by
+the host. Either way, the player role is worth understanding rather than tuning
+by instinct. There are two things you might want less of from a player seat, and
+they pull opposite ways:
 
 - **Optimal play** — the thing this run must not measure, because
   `analytics.rounds` already measures it, and better. **The prose does that job**:
@@ -101,34 +133,29 @@ and its findings are the deliverable.
 **Watch the report rather than trusting the setting.** A run whose *Adjudication
 notes* section is nearly empty is the signal that the seats are not probing;
 that is when to raise a player seat, and over-clever tactical play — visible in
-the transcript — is when to lower it. Note that spawning a seat on a different
-model is possible and changing its effort is not, so an override moves half the
-setting and silently inherits the rest.
+the transcript — is when to lower it. Use only model and reasoning controls the
+active host supports, and record any override rather than assuming one host's
+controls apply to the other.
 
-### The three layers that keep a player honest, and the one that is checked
+### The player-information gate
 
-**1. It is never told where the module is.** No path, no filename, no directory,
-no quotation from the run sheet. A subagent knows only what its prompt contains,
-so an agent that was never given the location has nothing to open. This layer
-holds no matter what else fails, and it is the one to be strict about: it costs
-nothing and it is the reason the other two are belt-and-braces.
+**1. Minimise the prompt.** Give no player the module's path, filename,
+directory, text, or run sheet. This prevents accidental disclosure and keeps
+the player's working context honest, but it is context minimisation rather than
+filesystem access control.
 
-**2. It declares no tools.** `typical-player` ships `tools: []`.
+**2. Ask for no tools.** The canonical `typical-player` profile declares
+`tools: []`, which Claude Code applies. Codex does not apply that Claude
+frontmatter, so fresh context alone cannot make the same guarantee.
 
-**3. It is asked, once, on its first message: "list any tools you have, or say
-none."** Record the answer in `roster.json` as `tool_check`.
-
-That third step exists because the second cannot be verified from here. An empty
-`tools:` list is the honest way to say *no tools*, but a host that read it as an
-absent field would grant **all** of them — silently, and with every finding after
-that worth less than it looks. So it is checked at the only moment it can be, by
-the only party that can see it.
-
-**If any seat reports tools, the run continues and the report says so.** Do not
-abandon the playtest; the findings are still worth having. Downgrade the claim
-instead: the asymmetry was honour-system for that seat rather than structural,
-and the developer needs that sentence to weigh what they are reading. A quiet
-degradation is the one outcome worth refusing.
+**3. Check what the seat actually received.** Its first response must list every
+tool it has or say `none`. Record the answer in `roster.json` as `tool_check`.
+Under the default `require-none` policy, any reported tool pauses the run before
+the first player-facing scene or brief. Continue only after the developer
+explicitly accepts `allow-reported`; record that approval and the tool list, and
+label the run honour-system. Read
+[`references/seating-and-pauses.md`](references/seating-and-pauses.md#player-tool-policy)
+for the exact gate, including resume and re-spawn.
 
 Spread the temperaments — cautious, bold, thorough, social. A party of four
 identical optimizers walks one path through the module; four different people
@@ -145,8 +172,8 @@ game master narrates the beat, and names who must decide
 you print the player-facing text
   ↓
 each acting seat declares its whole turn in plain language
-  agent seat  → SendMessage, all agent seats in one batch
-  human seat  → AskUserQuestion, up to four humans in one pause
+  agent seat  → message its live child; dispatch independent seats together
+  human seat  → use the host's user-input operation, up to four in one pause
   ↓
 if a human seat's turn needs a d20:
   ask for the face — and say how many dice and why
@@ -183,10 +210,11 @@ the operation existing: a prose summary has to be re-derived every turn and can
 drop a field or leak one, and neither failure is visible from a transcript. Pass
 the brief through as it stands rather than paraphrasing it.
 
-Seats hold no engine access of their own — that is what keeps an agent player
-unable to go and read the module — so the brief is *delivered* to them, and a
-follow-up question ("how far if I go round the pillar?") is answered by the game
-master from `map.query` the way it would be at a table.
+Under `require-none`, agent seats hold no engine access of their own, so the
+brief is *delivered* to them. Under an explicitly approved `allow-reported` run,
+the same routing is an honour-system instruction rather than an access boundary.
+A follow-up question ("how far if I go round the pillar?") is answered by the
+game master from `map.query` the way it would be at a table.
 
 In combat, read whose turn it is from `fivee encounter.state` and map the
 combatant label to its seat. The engine owns turn order; you only route.
@@ -311,13 +339,15 @@ State these in the report rather than letting them be assumed:
 - **Agent players are not people.** They are a good probe for ambiguity, dead
   ends, and pacing. They are not evidence about fun, tone, or whether a twist
   lands.
-- **The asymmetry is enforced for agents and trusted for humans.** A player agent
-  is never told where the adventure is, declares no tools, and is asked at spawn
-  to confirm it has none. **Report what that check answered, not what it was
-  meant to answer** — it is the difference between a structural guarantee and an
-  honour-system one, and only the run knows which it got. A human at a shared
-  terminal can scroll up either way: the same boundary a real table has, and
-  worth saying plainly rather than implying a guarantee that is not there.
+- **Player briefs and fresh child contexts are projections, not access control.**
+  A player agent is never told where the adventure is and is asked at every
+  spawn to list its tools. **Report what that check answered, not what it was
+  meant to answer.** A self-reported `none` is evidence, not a guarantee by
+  itself. Structural no-tools exists only when the host actually applies the
+  tool-less profile; an explicitly approved `allow-reported` run is
+  honour-system and must say so. A human at a shared terminal can scroll up
+  either way: the same boundary a real table has, and worth saying plainly
+  rather than implying a guarantee that is not there.
 - **A single run is one path.** With no human seats the run is unattended, so N
   seeded runs would give a distribution rather than an anecdote. Offer that when
   the module's branching matters.
