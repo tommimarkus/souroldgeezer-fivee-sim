@@ -285,3 +285,61 @@ def test_packaged_player_profile_still_declares_no_tools() -> None:
 
     assert frontmatter is not None
     assert re.search(r"^tools:\s*\[\]\s*$", frontmatter.group("body"), flags=re.MULTILINE)
+
+
+def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> None:
+    player = _text("agents/typical-player.md")
+    framework = _markdown_section(player, "## Your rules framework")
+
+    assert "2024" in framework
+    assert "do not need to know rules text" not in player.lower()
+    for decision_input in (
+        "goal",
+        "position",
+        "action economy",
+        "sheet",
+        "resources",
+        "risk",
+        "temperament",
+    ):
+        assert decision_input in framework.lower()
+    assert re.search(
+        r"\bmove\b.{0,100}\bone action\b.{0,200}\bBonus Action\b.{0,200}\bReaction\b",
+        framework,
+        flags=re.DOTALL,
+    )
+    assert re.search(
+        r"\bAttack\b.{0,300}\bDash\b.{0,200}\bDisengage\b.{0,200}\bDodge\b",
+        framework,
+        flags=re.DOTALL,
+    )
+    assert re.search(r"\bengine\b.{0,200}\b(?:arithmetic|outcome)s?\b", framework)
+
+    reference = _markdown_section(player, "## Asking for a rule")
+    assert re.search(
+        r"\bask\b.{0,200}\bharness\b.{0,200}\bexact\b.{0,200}\bplayer-facing\b"
+        r".{0,200}\bSRD\b",
+        reference,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    reference_plain = " ".join(reference.lower().split())
+    for withheld in ("adventure", "hidden state", "monster statistics"):
+        assert withheld in reference_plain
+
+    protocol = _markdown_section(
+        _text("skills/playtest/SKILL.md"), "### Rules questions from a player"
+    )
+    for command in (
+        "fivee catalog.search",
+        "fivee catalog.get",
+        "fivee catalog.table",
+    ):
+        assert command in protocol
+    assert re.search(
+        r"\bplayer-facing\b.{0,400}\bbefore\b.{0,200}\b(?:choose|decide)s?\b",
+        protocol,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    protocol_plain = " ".join(protocol.lower().split())
+    for withheld in ("module", "hidden state", "monster statistics"):
+        assert withheld in protocol_plain

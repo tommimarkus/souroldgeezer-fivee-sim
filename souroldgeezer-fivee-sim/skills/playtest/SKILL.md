@@ -218,6 +218,21 @@ rather than an access boundary. A follow-up question ("how far if I go round the
 pillar?") is answered by the game master from `map.query` the way it would be at
 a table.
 
+### Rules questions from a player
+
+A player already brings the basic 2024 rules framework in its canonical role.
+When it asks for an exact rule or a fact about its own capability, pause the
+choice rather than making it guess. The harness performs a bounded structured
+lookup: use `fivee catalog.search --query …` to discover the relevant stable id,
+then `fivee catalog.get <id>` for one record or `fivee catalog.table <id>` for the
+needed window of one printed table. Do not hand the seat a command or a tool.
+
+Relay only the requested player-facing fact before asking the seat to choose or
+decide for itself. Never include module material, hidden state, monster
+statistics, an unrevealed identity, the search results around the answer, or
+machine paths. If the catalog does not establish the answer, say that plainly
+and let the game master adjudicate; do not fill the gap from model recollection.
+
 In combat, read whose turn it is from `fivee encounter.state` and map the
 combatant label to its seat. The engine owns turn order; you only route.
 
