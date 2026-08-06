@@ -236,11 +236,24 @@ def test_play_skill_dispatches_the_shared_roles_for_each_host() -> None:
     assert "named agent" in claude.lower()
     assert "`game-master`" in claude
     assert "`typical-player`" in claude
+    assert "gpt-5.6-terra" not in claude
 
     codex = _markdown_section(skill, "### Codex")
     assert "../../agents/game-master.md" in codex
     assert "../../agents/typical-player.md" in codex
     assert 'fork_turns="none"' in codex
+    assert re.search(
+        r"game-master.{0,300}fork_turns=\"none\".{0,300}\binherit",
+        codex,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"typical-player.{0,300}fork_turns=\"none\""
+        r".{0,300}model=\"gpt-5\.6-terra\""
+        r".{0,300}reasoning_effort=\"medium\"",
+        codex,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
     assert "role body" in codex.lower()
     assert "prompt" in codex.lower()
     assert re.search(
@@ -349,9 +362,15 @@ def test_packaged_player_profile_has_only_the_inert_read_scope() -> None:
     disallowed = re.search(
         r"^disallowedTools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE
     )
+    model = re.search(r"^model:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
+    effort = re.search(r"^effort:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
 
     assert tools is not None
     assert tools.group("value") == "Read(/${CLAUDE_PLUGIN_ROOT}/player-visible/**)"
+    assert model is not None
+    assert model.group("value") == "sonnet"
+    assert effort is not None
+    assert effort.group("value") == "medium"
     assert (PLUGIN_ROOT / "player-visible").is_dir()
     assert re.search(
         r"Claude Code.{0,300}\bRead\b.{0,300}\bother hosts\b"

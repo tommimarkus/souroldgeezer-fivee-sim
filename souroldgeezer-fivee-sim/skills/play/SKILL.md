@@ -89,9 +89,13 @@ tools, model, and effort; do not reproduce or override it here.
 Codex's plugin package does not activate the Claude agent files as named agents.
 Read `../../agents/game-master.md` and `../../agents/typical-player.md`, remove or
 ignore each file's leading YAML frontmatter, and inject the remaining role body
-into the corresponding child prompt. Spawn every child with
-`fork_turns="none"`; inherited conversation would disclose the module before a
-player had taken a seat.
+into the corresponding child prompt. Spawn the `game-master` child with
+`fork_turns="none"` and let its model and reasoning effort inherit from the
+parent. Spawn each `typical-player` child with `fork_turns="none"`,
+`model="gpt-5.6-terra"`, and `reasoning_effort="medium"`. These arguments are
+Codex-only; Claude Code applies the named player's frontmatter instead. Fresh
+context keeps inherited conversation from disclosing the module before a player
+has taken a seat.
 
 The game-master prompt may add the adventure path, party, and active mode. A
 player prompt may add only that seat's character sheet, temperament, and voice;
