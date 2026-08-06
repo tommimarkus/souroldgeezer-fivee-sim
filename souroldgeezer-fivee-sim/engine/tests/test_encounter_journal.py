@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import dataclasses
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -1789,15 +1790,74 @@ def test_a_crash_tail_and_a_divergence_are_both_reported(
     assert "it is not the fight its journal recorded" in warning["state_drift"]
 
 
+def journalled_operations() -> set[str]:
+    """Every ``operation`` a journal can record, off the source rather than a fixture.
+
+    Read statically, on the same reasoning as ``test_player_brief``'s
+    ``emitted_data_keys``: a fixture that calls seven operations proves the
+    fixture called seven operations, not that seven is all there are. An eighth
+    operation added to ``service/`` and never added here would pass that
+    fixture-literal check green while its classification went unchecked — the
+    silent-data-loss shape the journal format exists to avoid.
+
+    A journal record's ``operation`` originates at exactly two call shapes:
+    ``audited_primitive(..., operation="...", ...)`` and
+    ``attempt_finished(..., operation="...", ...)``, one per module the two
+    kinds are called from. ``audited_primitive`` itself forwards its own
+    ``operation`` parameter into ``attempt_finished`` — a ``Name``, not a
+    string literal — and that forwarded value is deliberately not collected:
+    it names no new operation, only the one its caller already declared.
+    """
+    service_dir = Path(sessions_service.__file__).parent
+    operations: set[str] = set()
+    sites = 0
+    for path in sorted(service_dir.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            called = node.func
+            name = (
+                called.id if isinstance(called, ast.Name)
+                else called.attr if isinstance(called, ast.Attribute)
+                else None
+            )
+            if name not in {"audited_primitive", "attempt_finished"}:
+                continue
+            for keyword in node.keywords:
+                if keyword.arg != "operation":
+                    continue
+                if isinstance(keyword.value, ast.Constant) and isinstance(
+                    keyword.value.value, str
+                ):
+                    operations.add(keyword.value.value)
+                    sites += 1
+                else:
+                    assert isinstance(keyword.value, ast.Name), (
+                        f"operation= at {path.name}:{node.lineno} is neither a "
+                        f"string literal nor a forwarded name; widen the reader"
+                    )
+    assert sites >= 9, (
+        f"only {sites} operation= literal sites were found in service/; the "
+        f"derivation has stopped reading the source rather than the source "
+        f"having stopped declaring operations"
+    )
+    return operations
+
+
 def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """All seven operations in one fight, each checked against the constant.
 
     The cases above name three operations between them. This one exercises the
-    whole set and derives what each record should carry from
-    ``REPLAYED_OPERATIONS`` itself, so an operation added to — or removed from —
-    the replay table is checked here without anybody remembering to add a case.
+    whole set — derived from ``journalled_operations()`` rather than written
+    out, so an operation added to ``service/`` and never exercised here fails
+    this test until somebody adds it to the fixture and thereby decides its
+    classification — and checks what each record should carry against
+    ``REPLAYED_OPERATIONS`` itself, so an operation added to or removed from
+    the replay table is checked here without anybody remembering to add a
+    case.
     """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
@@ -1816,10 +1876,9 @@ def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
         entry for entry in records(journal_path(root, encounter_id))
         if entry["kind"] == "result"
     ]
-    assert {str(entry["operation"]) for entry in saved} == {
-        "roll", "check", "save", "encounter_note",
-        "encounter_condition", "encounter_act", "encounter_advance",
-    }, "the fixture must exercise every operation a journal records"
+    assert {str(entry["operation"]) for entry in saved} == journalled_operations(), (
+        "the fixture must exercise every operation service/ can journal"
+    )
     for entry in saved:
         operation = str(entry["operation"])
         kept = "result" in entry

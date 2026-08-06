@@ -381,6 +381,33 @@ also why a stale writer is refused rather than merged, and why the refusal is
 session the bytes it last saw on disk, so both supply their own precondition and
 a caller has to pass `"*"` to deliberately take a file over.
 
+**A journal records inputs and outcomes, never derived state.** Recovery
+recomputes a fight by replaying its recorded actions through the same stepper
+that first ran them, so a stored snapshot beside that record is a second copy
+of something already derivable — and a second copy can drift while both halves
+stay internally consistent, which is what makes it dangerous rather than
+merely wasteful. `initial_state` used to ride in the creation record and was
+read by nothing; a full `state` block used to ride in every result record at
+roughly 700 bytes per combatant. `state_sha256` is what a snapshot was
+actually good for: a recovered fight can be held against the one that was
+recorded, which is what makes dev reload's documented sharp edge above
+visible instead of silent.
+
+Two clauses keep a result whole regardless, each for its own reason. An
+operation `recover_session` does not replay has no other record of what it
+rolled — a `roll` or a `check` is resolved once and never re-derived, so
+dropping its result would be a deletion, not a saving. And a caller who
+supplied a `request_id` bought idempotency, which `cached_request` has
+nothing else to answer a retry with once the session has come back off disk.
+`REPLAYED_OPERATIONS` is the one declaration both the writer and the reader
+read, so an operation that joins or leaves it is judged correctly without a
+second list to keep in step.
+
+`journal_version` is a clean break, not a migration: there is no reader for
+an older format, a v1 journal is refused by name at recovery, and
+`encounter.list` still lists it anyway, because a hash-valid file that this
+build cannot replay is not a corrupt one.
+
 **Seven modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
 `coverage.py`, and `rulings.py`

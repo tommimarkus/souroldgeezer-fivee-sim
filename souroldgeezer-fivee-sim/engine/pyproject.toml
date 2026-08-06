@@ -106,6 +106,7 @@ pytest_add_cli_args_test_selection = [
   # method is to rewrite it. Worth knowing before reaching for mutmut to check
   # a derived test — it cannot, and this is why.
   "--ignore=tests/test_d20_penalty_sites.py",
+  "--ignore=tests/test_encounter_journal.py",
   "--ignore=tests/test_layering.py",
   "--ignore=tests/test_player_brief.py",
   # A third reason. These spawn their own subprocesses — a server, the client
