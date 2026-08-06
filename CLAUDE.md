@@ -482,6 +482,23 @@ grammar survives the move doing narrower work: `adv-` now refuses `..`, a
 separator and an absolute path, because `adventure.replay` writes wherever the
 caller names it to.
 
+**Both moves are an accepted break, and nothing migrates or refuses.** A
+pre-move `<encounters_root>/enc-7.jsonl` matches neither `enc-*/journal.jsonl`
+nor a `prune` sweep that requires a directory, and an adventure left in the
+encounters root matches no `adv-*.json` under the new one — so `encounter.list`
+never mentions the fight, `encounter.resume` refuses it by name as though it had
+never existed, and `adventure.list` comes back empty. That is not the treatment
+`journal_version` gets, and the difference is worth stating rather than
+rediscovering: a version refusal has the file *in hand* — a reader opened it and
+could not replay it, so there is somewhere to put the sentence. A moved layout
+has no reader at all, and giving it one means scanning a directory the engine
+otherwise has no reason to open, on every launch, for ever, against a hazard
+that stops existing the first time a checkout is current. The fights are working
+state that does not outlive the release ending them. The adventures are the real
+cost, and they are the reason this is written down: they are saved documents,
+they are simply *there* in the old root, and moving one by hand is the whole of
+the recovery.
+
 **`encounter.prune` gives an id back, and it is a dry run unless asked
 otherwise.** `create` claims its id before the durable work, so a failed blob
 write or a dead process spends a name and leaves an empty journal behind, and
