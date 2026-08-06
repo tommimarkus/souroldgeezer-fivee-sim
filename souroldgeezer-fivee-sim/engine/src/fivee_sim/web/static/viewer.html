@@ -1228,28 +1228,156 @@ if (typeof FiveeRenderer === "undefined") {
     validateCombatants(value.combatants, path + ".combatants", errors);
   }
 
+  var MAP_FORMAT = "fivee-sim-map";
+  var MAP_FEET_PER_SQUARE = 5;
+
+  function validateLegend(value, path, errors) {
+    // Structurally bad entries are reported and dropped, exactly as
+    // service/replay.py's ``_validate_legend`` treats one: the tile-glyph
+    // check below uses whatever parsed, best-effort.
+    var legend = {};
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      errors.push(path + " must be an object");
+      return legend;
+    }
+    Object.keys(value).forEach(function (glyph) {
+      var kind = value[glyph];
+      if (typeof glyph !== "string" || Array.from(glyph).length !== 1) {
+        errors.push(path + ": glyph " + JSON.stringify(glyph) + " must be a single character");
+        return;
+      }
+      if (typeof kind !== "string" || !kind.trim()) {
+        errors.push(
+          path + ": glyph " + JSON.stringify(glyph) + " must name a non-empty terrain kind"
+        );
+        return;
+      }
+      legend[glyph] = kind;
+    });
+    return legend;
+  }
+
+  function validateTiles(tiles, path, grid, legend, errors) {
+    // ``legend`` is null when the document's own legend was not a usable
+    // mapping at all, in which case the glyph check is skipped rather than
+    // reporting every character as unknown against a legend nobody wrote.
+    if (!Array.isArray(tiles) || !tiles.every(function (row) { return typeof row === "string"; })) {
+      errors.push(path + " must be an array of strings");
+      return;
+    }
+    var height = grid && Number.isInteger(grid.height) ? grid.height : null;
+    if (height !== null && tiles.length !== height) {
+      errors.push(path + " has " + tiles.length + " rows; the grid is " + height + " squares high");
+    }
+    var width = grid && Number.isInteger(grid.width) ? grid.width : null;
+    if (width !== null) {
+      tiles.forEach(function (row, y) {
+        var length = Array.from(row).length;
+        if (length !== width) {
+          errors.push(
+            path + "." + y + " is " + length + " characters; the grid is " + width
+              + " squares wide"
+          );
+        }
+      });
+    }
+    if (legend !== null) {
+      var unknown = {};
+      tiles.forEach(function (row, y) {
+        Array.from(row).forEach(function (char, x) {
+          if (!(char in legend) && !(char in unknown)) { unknown[char] = [x, y]; }
+        });
+      });
+      Object.keys(unknown).sort().forEach(function (char) {
+        var at = unknown[char];
+        errors.push(
+          path + ": row " + at[1] + " column " + at[0] + " uses " + JSON.stringify(char)
+            + ", which the legend does not define"
+        );
+      });
+    }
+  }
+
+  function validateFeatures(features, path, grid, claimed, errors) {
+    // Ids are unique across the whole document, not one level's features,
+    // which is why ``claimed`` is threaded through every call rather than
+    // reset per level.
+    if (!Array.isArray(features) || !features.every(function (feature) {
+      return feature && typeof feature === "object" && !Array.isArray(feature);
+    })) {
+      errors.push(path + " must be an array of objects");
+      return;
+    }
+    var width = grid && Number.isInteger(grid.width) ? grid.width : null;
+    var height = grid && Number.isInteger(grid.height) ? grid.height : null;
+    var gridKnown = width !== null && height !== null;
+    features.forEach(function (feature, index) {
+      var itemPath = path + "." + index;
+      var featureId = feature.id;
+      if (typeof featureId !== "string" || !featureId.trim()) {
+        errors.push(itemPath + ".id must be a non-empty string");
+      } else if (Object.prototype.hasOwnProperty.call(claimed, featureId)) {
+        errors.push(itemPath + ".id must be unique across the document");
+      } else {
+        claimed[featureId] = true;
+      }
+      var kind = feature.kind;
+      if (typeof kind !== "string" || !kind.trim()) {
+        errors.push(itemPath + ".kind must be a non-empty string");
+      }
+      var at = feature.at;
+      if (!Array.isArray(at) || at.length !== 2 || !at.every(Number.isInteger)) {
+        errors.push(itemPath + ".at must be [x, y] square indices");
+      } else if (gridKnown && !(at[0] >= 0 && at[0] < width && at[1] >= 0 && at[1] < height)) {
+        errors.push(itemPath + ".at must be on the grid");
+      }
+    });
+  }
+
   function validateMap(value, errors) {
     if (value === null || value === undefined) { return; }
     if (typeof value !== "object" || Array.isArray(value)) {
       errors.push("map must be an object or null");
       return;
     }
+    if (value.format !== MAP_FORMAT) {
+      errors.push("map.format must be " + JSON.stringify(MAP_FORMAT));
+    }
+    if (!Number.isInteger(value.format_version)) {
+      errors.push("map.format_version must be an integer");
+    }
+    if (typeof value.name !== "string" || !value.name.trim()) {
+      errors.push("map.name must be a non-empty string");
+    }
     var grid = value.grid;
     if (!grid || typeof grid !== "object" || Array.isArray(grid)) {
       errors.push("map.grid must be an object");
+      grid = null;
     } else {
       ["width", "height", "cell_feet"].forEach(function (key) {
         if (!Number.isInteger(grid[key]) || grid[key] <= 0) {
           errors.push("map.grid." + key + " must be a positive integer");
         }
       });
+      if (
+        Number.isInteger(grid.cell_feet) && grid.cell_feet > 0
+          && grid.cell_feet !== MAP_FEET_PER_SQUARE
+      ) {
+        errors.push(
+          "map.grid.cell_feet must be " + MAP_FEET_PER_SQUARE
+            + "; this format is defined on 5-foot squares"
+        );
+      }
     }
-    if (!Array.isArray(value.tiles) || !value.tiles.every(function (row) {
-      return typeof row === "string";
-    })) { errors.push("map.tiles must be an array of strings"); }
-    if (!Array.isArray(value.features) || !value.features.every(function (feature) {
-      return feature && typeof feature === "object" && !Array.isArray(feature);
-    })) { errors.push("map.features must be an array of objects"); }
+    var legendRaw = value.legend;
+    var legend = validateLegend(legendRaw, "map.legend", errors);
+    var legendForTiles = (legendRaw && typeof legendRaw === "object"
+      && !Array.isArray(legendRaw)) ? legend : null;
+    var claimed = Object.create(null);
+    validateTiles(value.tiles, "map.tiles", grid, legendForTiles, errors);
+    validateFeatures(
+      value.features === undefined ? [] : value.features, "map.features", grid, claimed, errors
+    );
     var levels = value.levels === undefined ? [] : value.levels;
     if (!Array.isArray(levels)) {
       errors.push("map.levels must be an array");
@@ -1262,9 +1390,11 @@ if (typeof FiveeRenderer === "undefined") {
         return;
       }
       if (!Number.isInteger(level.index)) { errors.push(levelPath + ".index must be an integer"); }
-      if (!Array.isArray(level.tiles) || !level.tiles.every(function (row) {
-        return typeof row === "string";
-      })) { errors.push(levelPath + ".tiles must be an array of strings"); }
+      validateTiles(level.tiles, levelPath + ".tiles", grid, legendForTiles, errors);
+      validateFeatures(
+        level.features === undefined ? [] : level.features,
+        levelPath + ".features", grid, claimed, errors
+      );
     });
   }
 

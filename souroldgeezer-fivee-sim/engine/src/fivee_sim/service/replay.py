@@ -58,7 +58,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
-from ..kernel.grid import as_point
+from ..kernel.grid import FEET_PER_SQUARE, as_point
 from ..kernel.rules import Ability
 from ..model.creature import AttackOption, Creature
 from ..model.encounter import EncounterMode
@@ -102,6 +102,11 @@ __all__ = [
 FORMAT = "fivee-sim-replay"
 FORMAT_VERSION = 1
 LATEST_FORMAT_VERSION = 2
+
+#: The embedded map's own discriminator, mirrored from ``map_document.FORMAT``
+#: rather than imported: :func:`_validate_map` deliberately stays terrain-blind
+#: and does not reach ``map_document.py``, so this is a literal, not a re-export.
+MAP_FORMAT = "fivee-sim-map"
 
 #: What an adventure's composed replay says it is. A distinct discriminator
 #: rather than a third ``format_version``, for the reason in the module
@@ -573,28 +578,178 @@ def _validate_state(
     _validate_combatants(value.get("combatants"), f"{path}.combatants", found)
 
 
+def _validate_legend(value: Any, path: str, found: list[dict[str, str]]) -> dict[str, str]:
+    """The legend as glyph -> kind, keeping only the entries that parse.
+
+    A structurally bad legend is one finding, not a flood: an entry that fails
+    is reported and dropped, exactly as :func:`_validate_map`'s callers treat a
+    bad grid key or a bad feature independently of its siblings. The dict
+    returned is used best-effort by the tile-glyph check below.
+    """
+    legend: dict[str, str] = {}
+    if not isinstance(value, Mapping):
+        found.append(_diagnostic(path, "must be an object"))
+        return legend
+    for glyph, kind in value.items():
+        if not isinstance(glyph, str) or len(glyph) != 1:
+            found.append(_diagnostic(path, f"glyph {glyph!r} must be a single character"))
+            continue
+        if not isinstance(kind, str) or not kind.strip():
+            found.append(_diagnostic(path, f"glyph {glyph!r} must name a non-empty terrain kind"))
+            continue
+        legend[glyph] = kind
+    return legend
+
+
+def _validate_tiles(
+    tiles: Any,
+    path: str,
+    grid: Mapping[str, Any] | None,
+    legend: dict[str, str] | None,
+    found: list[dict[str, str]],
+) -> None:
+    """Geometry and legend membership, terrain-blind: rows, width, glyphs.
+
+    ``legend`` is ``None`` when the document's own legend was not a usable
+    mapping at all, in which case the glyph check is skipped rather than
+    reporting every character as unknown against an empty legend nobody wrote.
+    """
+    if not isinstance(tiles, list) or any(not isinstance(row, str) for row in tiles):
+        found.append(_diagnostic(path, "must be an array of strings"))
+        return
+    height = grid.get("height") if isinstance(grid, Mapping) else None
+    if isinstance(height, int) and not isinstance(height, bool) and len(tiles) != height:
+        found.append(
+            _diagnostic(path, f"has {len(tiles)} rows; the grid is {height} squares high")
+        )
+    width = grid.get("width") if isinstance(grid, Mapping) else None
+    if isinstance(width, int) and not isinstance(width, bool):
+        for y, row in enumerate(tiles):
+            if len(row) != width:
+                found.append(
+                    _diagnostic(
+                        f"{path}.{y}",
+                        f"is {len(row)} characters; the grid is {width} squares wide",
+                    )
+                )
+    if legend is not None:
+        unknown: dict[str, tuple[int, int]] = {}
+        for y, row in enumerate(tiles):
+            for x, char in enumerate(row):
+                if char not in legend and char not in unknown:
+                    unknown[char] = (x, y)
+        for char in sorted(unknown):
+            x, y = unknown[char]
+            found.append(
+                _diagnostic(
+                    path, f"row {y} column {x} uses {char!r}, which the legend does not define"
+                )
+            )
+
+
+def _validate_features(
+    features: Any,
+    path: str,
+    grid: Mapping[str, Any] | None,
+    claimed: set[str],
+    found: list[dict[str, str]],
+) -> None:
+    """``id``/``kind``/``at``, terrain-blind. ``claimed`` spans the document.
+
+    Ids are unique across the whole document, not one level's features, which
+    is why ``claimed`` is threaded through every call rather than reset per
+    level: ``map_document.py``'s own ``_parse_features`` makes the same choice
+    and for the same reason.
+    """
+    if not isinstance(features, list) or any(
+        not isinstance(feature, Mapping) for feature in features
+    ):
+        found.append(_diagnostic(path, "must be an array of objects"))
+        return
+    width = grid.get("width") if isinstance(grid, Mapping) else None
+    height = grid.get("height") if isinstance(grid, Mapping) else None
+    grid_known = (
+        isinstance(width, int) and not isinstance(width, bool)
+        and isinstance(height, int) and not isinstance(height, bool)
+    )
+    for index, feature in enumerate(features):
+        item_path = f"{path}.{index}"
+        feature_id = feature.get("id")
+        if not isinstance(feature_id, str) or not feature_id.strip():
+            found.append(_diagnostic(f"{item_path}.id", "must be a non-empty string"))
+        elif feature_id in claimed:
+            found.append(
+                _diagnostic(f"{item_path}.id", "must be unique across the document")
+            )
+        else:
+            claimed.add(feature_id)
+        kind = feature.get("kind")
+        if not isinstance(kind, str) or not kind.strip():
+            found.append(_diagnostic(f"{item_path}.kind", "must be a non-empty string"))
+        at = feature.get("at")
+        if (
+            not isinstance(at, (list, tuple))
+            or len(at) != 2
+            or any(isinstance(coord, bool) or not isinstance(coord, int) for coord in at)
+        ):
+            found.append(_diagnostic(f"{item_path}.at", "must be [x, y] square indices"))
+        elif grid_known and not (0 <= at[0] < width and 0 <= at[1] < height):
+            found.append(_diagnostic(f"{item_path}.at", "must be on the grid"))
+
+
 def _validate_map(value: Any, found: list[dict[str, str]]) -> None:
+    """The terrain-independent half of a map document's rules.
+
+    This mirrors ``map_document.py``'s glyph and geometry checks without
+    calling it: resolving a legend glyph to a terrain kind needs a
+    ``TerrainTable``, which needs the bundle's own content pack rebuilt, and
+    that is deliberately out of scope here — see the module docstring on
+    ``validate_replay``. What is checked is exactly what crashes the renderer
+    without ever asking what a terrain kind means: the format discriminator,
+    the fixed 5-foot grid, legend shape, glyph-legend membership, row/column
+    geometry, and feature identity and placement.
+    """
     if value is None:
         return
     if not isinstance(value, Mapping):
         found.append(_diagnostic("map", "must be an object or null"))
         return
+    if value.get("format") != MAP_FORMAT:
+        found.append(_diagnostic("map.format", f"must be {MAP_FORMAT!r}"))
+    version = value.get("format_version")
+    if not isinstance(version, int) or isinstance(version, bool):
+        found.append(_diagnostic("map.format_version", "must be an integer"))
+    name = value.get("name")
+    if not isinstance(name, str) or not name.strip():
+        found.append(_diagnostic("map.name", "must be a non-empty string"))
     grid = value.get("grid")
     if not isinstance(grid, Mapping):
         found.append(_diagnostic("map.grid", "must be an object"))
+        grid = None
     else:
         for key in ("width", "height", "cell_feet"):
             field = grid.get(key)
             if not isinstance(field, int) or isinstance(field, bool) or field <= 0:
                 found.append(_diagnostic(f"map.grid.{key}", "must be a positive integer"))
-    tiles = value.get("tiles")
-    if not isinstance(tiles, list) or any(not isinstance(row, str) for row in tiles):
-        found.append(_diagnostic("map.tiles", "must be an array of strings"))
-    features = value.get("features")
-    if not isinstance(features, list) or any(
-        not isinstance(feature, Mapping) for feature in features
-    ):
-        found.append(_diagnostic("map.features", "must be an array of objects"))
+        cell_feet = grid.get("cell_feet")
+        if (
+            isinstance(cell_feet, int)
+            and not isinstance(cell_feet, bool)
+            and cell_feet > 0
+            and cell_feet != FEET_PER_SQUARE
+        ):
+            found.append(
+                _diagnostic(
+                    "map.grid.cell_feet",
+                    f"must be {FEET_PER_SQUARE}; this format is defined on 5-foot squares",
+                )
+            )
+    legend_raw = value.get("legend")
+    legend = _validate_legend(legend_raw, "map.legend", found)
+    legend_for_tiles = legend if isinstance(legend_raw, Mapping) else None
+    claimed: set[str] = set()
+    _validate_tiles(value.get("tiles"), "map.tiles", grid, legend_for_tiles, found)
+    _validate_features(value.get("features", []), "map.features", grid, claimed, found)
     levels = value.get("levels", [])
     if not isinstance(levels, list):
         found.append(_diagnostic("map.levels", "must be an array"))
@@ -608,13 +763,12 @@ def _validate_map(value: Any, found: list[dict[str, str]]) -> None:
                 level.get("index"), bool
             ):
                 found.append(_diagnostic(f"{level_path}.index", "must be an integer"))
-            level_tiles = level.get("tiles")
-            if not isinstance(level_tiles, list) or any(
-                not isinstance(row, str) for row in level_tiles
-            ):
-                found.append(
-                    _diagnostic(f"{level_path}.tiles", "must be an array of strings")
-                )
+            _validate_tiles(
+                level.get("tiles"), f"{level_path}.tiles", grid, legend_for_tiles, found
+            )
+            _validate_features(
+                level.get("features", []), f"{level_path}.features", grid, claimed, found
+            )
 
 
 def validate_replay(payload: Any) -> list[dict[str, str]]:

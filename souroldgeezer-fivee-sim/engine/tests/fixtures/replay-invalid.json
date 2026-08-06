@@ -78,5 +78,176 @@
     "path": "encounter.mode",
     "value": "wandering",
     "diagnostic_path": "encounter.mode"
+  },
+  {
+    "name": "a map's format is fixed",
+    "path": "map",
+    "value": {
+      "format": "not-a-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.format"
+  },
+  {
+    "name": "a map's format_version is an integer",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": "one",
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.format_version"
+  },
+  {
+    "name": "a map's name cannot be blank",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "   ",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.name"
+  },
+  {
+    "name": "the format is defined on 5-foot squares",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 10},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.grid.cell_feet"
+  },
+  {
+    "name": "a legend value must name a terrain kind",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": ""},
+      "tiles": ["....", "....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.legend"
+  },
+  {
+    "name": "a glyph outside the legend is refused",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "..X.", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.tiles"
+  },
+  {
+    "name": "tiles must have one row per grid height",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.tiles"
+  },
+  {
+    "name": "a ragged row is not the grid width",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "...", "....", "...."],
+      "features": []
+    },
+    "diagnostic_path": "map.tiles.1"
+  },
+  {
+    "name": "a feature needs a non-empty id",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": [{"id": "", "kind": "door", "at": [1, 1]}]
+    },
+    "diagnostic_path": "map.features.0.id"
+  },
+  {
+    "name": "feature ids are unique across the document",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": [
+        {"id": "door-1", "kind": "door", "at": [1, 1]},
+        {"id": "door-1", "kind": "door", "at": [2, 2]}
+      ]
+    },
+    "diagnostic_path": "map.features.1.id"
+  },
+  {
+    "name": "a feature needs a non-empty kind",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": [{"id": "door-1", "kind": "", "at": [1, 1]}]
+    },
+    "diagnostic_path": "map.features.0.kind"
+  },
+  {
+    "name": "a feature must sit on the grid",
+    "path": "map",
+    "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
+      "grid": {"width": 4, "height": 4, "cell_feet": 5},
+      "legend": {".": "floor"},
+      "tiles": ["....", "....", "....", "...."],
+      "features": [{"id": "door-1", "kind": "door", "at": [9, 9]}]
+    },
+    "diagnostic_path": "map.features.0.at"
   }
 ]
