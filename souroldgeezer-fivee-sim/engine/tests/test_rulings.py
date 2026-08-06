@@ -10,6 +10,7 @@ register makes about the code is derived from the code here, never restated.
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from fivee_sim.rulings import (
     RulingKind,
     render_markdown,
 )
+from fivee_sim.service import rulings as rulings_service
 
 #: The source tree, not the imported package — the register names definition
 #: sites, and ``test_layering.py`` reads the same way for the same reason.
@@ -251,17 +253,57 @@ def test_the_report_carries_every_entry_and_its_trigger() -> None:
         assert ruling.revisit in report, f"{ruling.code}'s revisit trigger is not rendered"
 
 
-def test_the_report_names_no_third_party_source() -> None:
-    """The licence split, asserted on the artifact that actually ships.
+def test_the_report_carries_no_link_of_any_kind() -> None:
+    """The half that needs no survey present, so it can never quietly stop.
 
-    The survey names sources and stays in the repo-root ``docs/``; this file
-    goes to every install and carries our own classification only.
+    A URL is the one shape of external reference that is recognisable without
+    knowing which sources were consulted.
     """
     report = render_markdown().lower()
-    for forbidden in ("http://", "https://", "sage advice", "d&d", "dnd", "wizards"):
-        assert forbidden not in report, (
-            f"the shipped rulings report must not contain {forbidden!r}"
-        )
+    for scheme in ("http://", "https://", "www."):
+        assert scheme not in report, f"the shipped rulings report must not contain {scheme!r}"
+
+
+def _sources_named_in_the_survey() -> set[str]:
+    """Every host and bare source name the survey cites, read out of the survey.
+
+    Derived rather than listed.  A hand-kept denylist of forbidden words only
+    catches the sources somebody thought of; the set that actually matters is
+    the one the survey consulted, and that set is written down already.
+    """
+    text = _research_text()
+    hosts = {
+        host.lower().removeprefix("www.")
+        for host in re.findall(r"https?://([^/\s)]+)", text)
+    }
+    # The registrable label on its own — "enworld", "demiplane" — because a
+    # prose mention carries no scheme and a link check would miss it.
+    #
+    # Second-to-last label rather than the first: the first is the *subdomain*,
+    # so ``app.demiplane.com`` yielded "app", which matches ordinary English and
+    # made this check fail on the register's own wording. A guard that fires on
+    # a common word gets deleted rather than fixed.
+    labels = {host.split(".")[-2] for host in hosts if host.count(".") >= 1}
+    return hosts | labels
+
+
+def test_no_source_the_survey_consulted_appears_in_the_shipped_register() -> None:
+    """The licence split, asserted on the artifact that actually ships.
+
+    The survey names third-party sources and stays in the repo-root ``docs/``;
+    the register goes to every install and carries our own classification only.
+    Both halves of the shipped surface are checked — the generated report and
+    the JSON the API serves — because they are rendered separately.
+    """
+    named = _sources_named_in_the_survey()
+    assert named, "the survey cites no sources; this check would prove nothing"
+    shipped = {
+        "docs/RULINGS.md": render_markdown().lower(),
+        "GET /api/v1/rulings": json.dumps(rulings_service.listing()).lower(),
+    }
+    for surface, text in shipped.items():
+        leaked = sorted(source for source in named if source in text)
+        assert not leaked, f"{surface} names third-party sources: {', '.join(leaked)}"
 
 
 # --- the survey behind the concurrence verdicts ----------------------------
@@ -305,19 +347,31 @@ def test_the_survey_covers_nothing_it_should_not() -> None:
     )
 
 
-def test_the_survey_does_not_ship() -> None:
+def test_the_survey_never_sits_inside_the_packaged_plugin() -> None:
     """The licence split this artifact exists to keep.
 
     The register carries our own classification and no third-party name; the
-    survey carries the sources and stays out of the packaged plugin.
+    survey carries the sources and stays out of the plugin directory, which is
+    what each host packages.
+
+    **Stated as a search rather than a path comparison, and that is the whole
+    point.** The obvious spelling — assert ``RESEARCH`` is outside the plugin
+    root — reads the repo-relative constant, which still points outside it
+    however the file was actually moved. So the one misuse this exists to catch
+    (someone moves the survey into ``souroldgeezer-fivee-sim/docs/``) made the
+    content checks below *skip* on a missing file and the suite stayed green.
+    A control that cannot fail against its own target scenario is not a control.
+
+    Searching the plugin tree fails on the move and needs no file to be present,
+    so unlike the two below it is also meaningful in an installed copy.
     """
-    _research_text()
     plugin_root = Path(__file__).resolve().parents[2]
-    assert RESEARCH.parent != plugin_root / "docs", (
-        "the survey must not sit in the shipped docs directory"
+    strays = sorted(
+        path.relative_to(plugin_root) for path in plugin_root.rglob(RESEARCH.name)
     )
-    assert plugin_root not in RESEARCH.parents, (
-        f"{RESEARCH} is inside the packaged plugin at {plugin_root}"
+    assert not strays, (
+        f"the outside-readings survey names third-party sources and must stay out "
+        f"of the packaged plugin; found: {', '.join(str(p) for p in strays)}"
     )
 
 

@@ -367,6 +367,57 @@ def assert_problem(response: Response, status: int, fragment: str = "") -> dict[
     return result
 
 
+class TestRefusalsAreBounded:
+    """A refusal names what was asked for, and a caller controls what that is.
+
+    Every refusal in ``service/`` echoes the identifier it was given — ``no
+    ruling with code 'x'``, ``no scene 'y'`` — which is a deliberate convention
+    and the reason a refusal is useful. It also means the response grows with
+    the request, so a caller can make the server quote 100 kB back at itself.
+    Bounded once where the problem document is built, rather than at each of the
+    forty sites that would each have to remember.
+    """
+
+    def test_a_refused_identifier_is_quoted_but_not_in_full(self, editor: Editor) -> None:
+        problem = assert_problem(
+            editor.request("GET", f"/api/v1/rulings?code={'a' * 20000}"),
+            404,
+            "no ruling with code",
+        )
+        assert len(problem["detail"]) < 20000, "the whole identifier came back"
+        assert problem["detail"].endswith("…"), "a shortened detail must say it was shortened"
+
+    def test_a_short_identifier_is_still_echoed_whole(self, editor: Editor) -> None:
+        """The convention survives; only the runaway case is trimmed."""
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=no_such_ruling"),
+            404,
+            "no ruling with code 'no_such_ruling'",
+        )
+        assert "…" not in problem["detail"]
+
+    def test_an_unauthenticated_caller_cannot_amplify_through_instance(
+        self, editor: Editor
+    ) -> None:
+        """The sharper half: this path answers before the token is checked.
+
+        ``instance`` is the request target, so it echoes the query string to a
+        caller who has not authenticated at all.
+        """
+        response = editor.request("GET", f"/api/v1/rulings?code={'b' * 20000}", token=False)
+        problem = assert_problem(response, 401, "X-Fivee-Editor-Token")
+        assert len(problem["instance"]) < 20000, "the whole request target came back"
+        assert len(response.body) < 20000, "the 401 body grows with the request"
+
+    def test_an_ordinary_request_target_is_reported_intact(self, editor: Editor) -> None:
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=nope", token=False),
+            401,
+            "X-Fivee-Editor-Token",
+        )
+        assert problem["instance"] == "/api/v1/rulings?code=nope"
+
+
 class TestGuards:
     def test_ping_answers_with_the_token(self, editor: Editor) -> None:
         response = editor.request("GET", "/api/v1/ping")
