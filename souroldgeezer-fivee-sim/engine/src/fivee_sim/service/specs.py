@@ -182,12 +182,13 @@ LOOKUP_SPEC_KEYS = frozenset({
 })
 DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
-    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "fly_speed", "burrow_speed", "terrain_cost_overrides", "darkvision", "blindsight",
+    "tremorsense", "truesight", "death_rule",
     "size", "abilities", "save_bonuses", "skill_bonuses", "attacks", "attacks_per_action",
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
-    "initiative_bonus",
+    "initiative_bonus", "passive_perception",
     "resistances", "immunities", "condition_immunities",
     "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
     "provenance", "facing",
@@ -403,11 +404,14 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             climb_speed=int(spec.get("climb_speed", 0)),
             swim_speed=int(spec.get("swim_speed", 0)),
             fly_speed=int(spec.get("fly_speed", 0)),
+            burrow_speed=int(spec.get("burrow_speed", 0)),
             terrain_cost_overrides=frozenset(
                 str(value) for value in spec.get("terrain_cost_overrides", [])
             ),
             darkvision=int(spec.get("darkvision", 0)),
             blindsight=int(spec.get("blindsight", 0)),
+            tremorsense=int(spec.get("tremorsense", 0)),
+            truesight=int(spec.get("truesight", 0)),
             facing=parse_facing(spec.get("facing")),
             # Read here rather than only accepted above: a key on the allow-list
             # that no constructor consumes is the same silent drop by another
@@ -444,6 +448,11 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             initiative_bonus=(
                 int(spec["initiative_bonus"])
                 if spec.get("initiative_bonus") is not None
+                else None
+            ),
+            passive_perception=(
+                int(spec["passive_perception"])
+                if spec.get("passive_perception") is not None
                 else None
             ),
             resistances=frozenset(

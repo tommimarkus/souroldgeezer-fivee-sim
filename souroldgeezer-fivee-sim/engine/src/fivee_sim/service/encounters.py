@@ -468,7 +468,7 @@ def execute_act(
     ends a move on another storey: walk to a stairway on your own level — the
     square named by ``to_position`` — and it carries you, charging the rise
     between the two floors as a climb. ``movement_mode`` selects walk, climb,
-    swim, or fly; the creature must have that speed, and flight does not need a
+    swim, fly, or burrow; the creature must have that speed, and flight does not need a
     connector. ``facing`` sets where the actor ends up looking, overriding what
     a move would otherwise derive from the leg that ended it; it changes no roll
     and is refused unless it names one of the eight grid directions. Illegal

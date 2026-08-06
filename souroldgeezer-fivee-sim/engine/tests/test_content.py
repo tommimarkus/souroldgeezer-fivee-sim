@@ -2288,3 +2288,56 @@ class TestSkillBonusesSchema:
         )
         assert "skill_bonuses" in fields(diagnostics)
         assert any("must be a whole number" in p for p in problems(diagnostics))
+
+
+class TestPassivePerceptionSchema:
+    """``passive_perception``: transcription-only, following the
+    ``initiative_bonus`` template exactly. A stat block's printed Passive
+    Perception does not always equal ``10 + Wisdom modifier`` — the same
+    reason ``initiative_bonus`` is carried rather than derived — and nothing
+    in this engine reads it: there is no Hide, Search, Stealth, or Perception
+    action here for it to reach. It is carried anyway, declared rather than
+    silently dropped, per the ``hit_dice`` ruling.
+    """
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "watcher.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Watcher", "ac": 13, "max_hp": 20,
+                "abilities": {"wisdom": 12}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_creature_carries_its_printed_passive_perception(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, passive_perception=15)],
+            builtin="exclude", include_environment=False,
+        )
+        watcher = Creature.from_record(
+            registry.creatures["Vale Watcher"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert watcher.passive_perception == 15
+
+    def test_a_creature_without_one_falls_back_to_none(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        watcher = Creature.from_record(
+            registry.creatures["Vale Watcher"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert watcher.passive_perception is None
+
+    def test_a_non_integer_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, passive_perception="fifteen")],
+            builtin="exclude", include_environment=False,
+        )
+        assert "passive_perception" in fields(diagnostics)
+        assert any("must be a whole number" in p for p in problems(diagnostics))

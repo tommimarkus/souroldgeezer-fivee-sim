@@ -301,9 +301,12 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "climb_speed": creature.climb_speed,
         "swim_speed": creature.swim_speed,
         "fly_speed": creature.fly_speed,
+        "burrow_speed": creature.burrow_speed,
         "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
         "darkvision": creature.darkvision,
         "blindsight": creature.blindsight,
+        "tremorsense": creature.tremorsense,
+        "truesight": creature.truesight,
         "death_rule": creature.death_rule.value,
         "size": creature.size.value,
         "abilities": {
@@ -339,6 +342,10 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         # fight without this would fall back to its Dexterity modifier even
         # when its stat block prints a different Initiative bonus.
         "initiative_bonus": creature.initiative_bonus,
+        # Transcription-only, like the field above it, but consumed by
+        # nothing: carried so a recovered combatant's sheet still reads
+        # exactly as authored.
+        "passive_perception": creature.passive_perception,
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),

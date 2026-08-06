@@ -191,6 +191,25 @@ class TestSkillBonusesSpec:
         assert built.skill_bonuses == {}
 
 
+class TestPassivePerceptionSpec:
+    """``passive_perception`` on an inline spec: the same separate
+    construction path as ``TestInitiativeBonusSpec`` above, whose shape it
+    follows exactly.
+    """
+
+    def test_an_inline_spec_carrying_passive_perception_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "passive_perception": 15}, registry)
+
+        assert built.passive_perception == 15
+
+    def test_passive_perception_defaults_to_none(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.passive_perception is None
+
+
 SHORTBOW: dict[str, Any] = {
     "name": "Shortbow", "attack_bonus": 5, "damage": "1d6+3",
     "damage_type": "piercing", "kind": "ranged",

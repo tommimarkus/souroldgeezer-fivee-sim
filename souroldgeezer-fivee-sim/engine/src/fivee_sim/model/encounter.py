@@ -1908,10 +1908,13 @@ class Encounter:
                 "climb": creature.climb_speed,
                 "swim": creature.swim_speed,
                 "fly": creature.fly_speed,
+                "burrow": creature.burrow_speed,
             },
             "senses": {
                 "darkvision": creature.darkvision,
                 "blindsight": creature.blindsight,
+                "tremorsense": creature.tremorsense,
+                "truesight": creature.truesight,
             },
             "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
             "death_rule": creature.death_rule.value,
@@ -1988,6 +1991,7 @@ class Encounter:
             creature.climb_speed,
             creature.swim_speed,
             creature.fly_speed,
+            creature.burrow_speed,
         )
         if any(link.source == creature.name for link in self._attachments):
             maximum_speed = 0
@@ -2709,14 +2713,54 @@ class Encounter:
         )
 
     def _can_see(self, observer: Creature, subject: Creature) -> bool:
-        """Whether ``observer`` can see ``subject`` for a rule that requires sight."""
+        """Whether ``observer`` can see ``subject`` for a rule that requires sight.
+
+        A ladder of four rungs, in order:
+
+        1. **Truesight** — SRD 5.2.1, *Truesight*: within range, vision
+           "pierces through" Darkness (including magical) and Invisibility.
+           Checked first because it is the most literal sight of the three
+           senses below, but it is not a strict superset of Blindsight: the
+           SRD text carries no clause exempting it from the observer's own
+           Blinded condition (unlike Blindsight's explicit "even if you have
+           the Blinded condition"), so a blinded observer gets nothing from it
+           here, and Total Cover still blocks it.
+        2. **Blindsight** — unchanged from before this ladder grew a third and
+           fourth rung: the one sense the SRD says works "even if you have the
+           Blinded condition or are in Darkness"; only Total Cover stops it.
+        3. **Tremorsense** — a narrower Blindsight. SRD 5.2.1, *Tremorsense*:
+           it pinpoints a creature "within a specific range" and "doesn't
+           count as a form of sight", so, like Blindsight, it defeats
+           Invisible and Darkness rather than merely piercing them. But like
+           Truesight and unlike Blindsight, it carries no textual exemption
+           from the observer's own Blinded condition, so that still gates it,
+           as does Total Cover.
+        4. The ordinary path below: an observer that cannot see at all is
+           blind to everything, an Invisible subject is unseen, Total Cover
+           blocks regardless of light, and Darkness needs Darkvision.
+        """
         distance = observer.distance_to(subject, self.movement_rule)
-        if observer.blindsight > 0 and distance <= observer.blindsight:
-            return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
-        if any(
+        observer_blind = any(
             effect_of(condition, self.condition_effects).cannot_see
             for condition in observer.conditions
+        )
+        if (
+            observer.truesight > 0
+            and distance <= observer.truesight
+            and not observer_blind
+            and self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
         ):
+            return True
+        if observer.blindsight > 0 and distance <= observer.blindsight:
+            return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
+        if (
+            observer.tremorsense > 0
+            and distance <= observer.tremorsense
+            and not observer_blind
+            and self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
+        ):
+            return True
+        if observer_blind:
             return False
         if any(
             effect_of(condition, self.condition_effects).unseen
@@ -3796,6 +3840,7 @@ class Encounter:
             MovementMode.CLIMB: actor.climb_speed,
             MovementMode.SWIM: actor.swim_speed,
             MovementMode.FLY: actor.fly_speed,
+            MovementMode.BURROW: actor.burrow_speed,
         }[mode]
         if speed <= 0:
             raise EncounterError(f"{actor.name} has no {mode.value} speed")

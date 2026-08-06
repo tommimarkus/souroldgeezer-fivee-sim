@@ -147,7 +147,8 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     # value is a faithful part of the SRD stat block and re-deriving it later
     # would be wasted work, not because anything reads it.
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
-    "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
+    "fly_speed", "burrow_speed", "terrain_cost_overrides", "darkvision", "blindsight",
+    "tremorsense", "truesight", "death_rule",
     "size", "abilities", "save_bonuses", "skill_bonuses",
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
     "redirect_attack",
@@ -155,6 +156,10 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     "spell_attack_bonus", "items", "conditions", "condition_immunities",
     "immunities", "resistances", "vulnerabilities", "pack_tactics", "undead_fortitude",
     "initiative_bonus",
+    # Accepted and validated, like "hit_dice" above, but consumed by nothing:
+    # this engine has no Hide, Search, Stealth, or Perception action for a
+    # printed Passive Perception to feed.
+    "passive_perception",
 }
 _ATTACK_KEYS = frozenset({
     "name", "attack_bonus", "damage", "damage_type", "kind", "reach", "normal_range",
@@ -792,9 +797,12 @@ def _parse_creature(
     reader.integer("climb_speed", default=0, minimum=0)
     reader.integer("swim_speed", default=0, minimum=0)
     reader.integer("fly_speed", default=0, minimum=0)
+    reader.integer("burrow_speed", default=0, minimum=0)
     reader.string_list("terrain_cost_overrides")
     reader.integer("darkvision", default=0, minimum=0)
     reader.integer("blindsight", default=0, minimum=0)
+    reader.integer("tremorsense", default=0, minimum=0)
+    reader.integer("truesight", default=0, minimum=0)
     reader.enum("death_rule", DeathRule)
     reader.enum("size", Size)
     reader.integer("attacks_per_action", default=1, minimum=1)
@@ -818,6 +826,12 @@ def _parse_creature(
     # fields above: a stat block's printed Initiative bonus and "not printed"
     # are different facts, and a defaulted 0 would erase that distinction.
     reader.optional_integer("initiative_bonus")
+    # Also ``None`` when absent, and also transcription-only: unlike
+    # "hit_dice" above, this one is validated to the same discipline as
+    # "initiative_bonus" — a printed Passive Perception is not always
+    # ``10 + Wisdom modifier`` — but it is consumed by nothing, since this
+    # engine has no Hide, Search, Stealth, or Perception action.
+    reader.optional_integer("passive_perception")
     reader.string("team")
     # Validated as a faithful transcription and then discarded: no field on
     # Creature carries it, and Creature.from_record never reads it. See the

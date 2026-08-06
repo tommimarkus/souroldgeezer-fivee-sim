@@ -90,12 +90,15 @@ Every section is optional, and record shapes match the bundled files.
 ### `creatures`
 
 Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
-`climb_speed`, `swim_speed`, `fly_speed`, `terrain_cost_overrides`, `darkvision`,
-`blindsight`, `death_rule`, `hit_dice`, `abilities`, `save_bonuses`, `attacks`,
+`climb_speed`, `swim_speed`, `fly_speed`, `burrow_speed`,
+`terrain_cost_overrides`, `darkvision`,
+`blindsight`, `tremorsense`, `truesight`, `death_rule`, `hit_dice`, `abilities`,
+`save_bonuses`, `attacks`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
-`condition_immunities`, `initiative_bonus`, `skill_bonuses`,
+`condition_immunities`, `initiative_bonus`, `passive_perception`,
+`skill_bonuses`,
 `unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
@@ -121,6 +124,42 @@ printed bonus and is honoured as such rather than treated as "not stated." The
 tie-break on equal initiative totals always reads the Dexterity modifier,
 never this field: that is the SRD's own tie-break rule, not a stand-in for the
 bonus.
+
+`passive_perception` is a stat block's printed Passive Perception, carried but
+never consumed — there is no Hide, Search, Stealth, or Perception action
+anywhere in this engine for it to reach. It is transcription-only, in the same
+standing `hit_dice` holds: a printed Passive Perception does not always equal
+`10 + Wisdom modifier`, which is why it is a fact to write down rather than a
+number to derive, and it is accepted and validated (a plain integer, `None`
+when omitted rather than defaulted to `0`) so a pack can carry it faithfully
+even though nothing yet reads it. Adding this field does **not** satisfy a
+record's `unsupported_passive_perception` omission code — that code means the
+engine cannot *act on* the fact, and a field nothing consumes has not changed
+that.
+
+`burrow_speed` is wired in exactly like `climb_speed`, `swim_speed`, and
+`fly_speed`: it counts toward the turn's movement budget and is a selectable
+`movement_mode` (`"burrow"`) at ordinary terrain cost. This engine models no
+terrain gating for *any* movement mode — a swim speed already applies on dry
+land, and a fly speed applies regardless of what is underneath — so `burrow`
+does not invent a "digging through solid ground" mechanic either; that
+consistency, not a gap specific to burrowing, is why none exists.
+
+`tremorsense` and `truesight` both add a rung to the sight rule
+(`Encounter._can_see`), which already granted `blindsight`'s. Truesight sits
+above Blindsight: SRD 5.2.1, *Truesight* — within range, vision "pierces
+through" Darkness (including magical) and Invisibility (the only two of its
+five listed effects with any mechanical presence here; visual illusions,
+transformations, and the Ethereal Plane are not modelled). Tremorsense is a
+narrower Blindsight: SRD 5.2.1, *Tremorsense* — it pinpoints a creature within
+range and "doesn't count as a form of sight," so, like Blindsight, it defeats
+Invisible and Darkness. Unlike Blindsight, neither carries the SRD's "even if
+you have the Blinded condition" exemption, so this engine's blinded observer
+gets nothing from either even in range; Total Cover still blocks all three.
+**Unmodelled**: Tremorsense also requires the observer and the subject to be
+"in contact with the same surface... or the same liquid," and excludes
+anything airborne — this engine tracks no such contact state, so neither
+restriction is enforced.
 
 `condition_immunities` is a plain list of condition names, never validated
 against the active condition table: an immunity is a declarative refusal, not

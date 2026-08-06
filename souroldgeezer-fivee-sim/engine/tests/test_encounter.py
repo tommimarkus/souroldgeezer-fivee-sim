@@ -17,7 +17,7 @@ import pytest
 
 from fivee_sim.content import item_effects, make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.conditions import Condition, UnknownCondition
+from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect, UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import (
     CoverGrade,
@@ -731,6 +731,92 @@ class TestInvisibleStopsHelpingAgainstAnObserverThatSees:
         )
         assert event is not None
         assert event.data["advantage"] == Advantage.NONE.value
+
+
+class TestTremorsenseSeesThroughInvisibility:
+    """SRD 5.2.1, Tremorsense: pinpoints a creature within range and "doesn't
+    count as a form of sight" — so, like Blindsight, it defeats the Invisible
+    condition's benefit. A narrower Blindsight: this engine grants it no
+    exemption from the observer's own Blinded condition or from Total Cover,
+    because — unlike Blindsight's explicit "even if you have the Blinded
+    condition" — the SRD text carries no such clause for Tremorsense.
+    """
+
+    def test_within_range_it_denies_the_invisible_target_its_advantage(self) -> None:
+        # The acceptance case: 30 ft of Tremorsense sees an Invisible target
+        # 20 ft away.
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.tremorsense = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert seer.distance_to(ghost, encounter.movement_rule) <= seer.tremorsense
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.NONE
+
+    def test_beyond_its_range_the_invisible_target_keeps_its_advantage(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=40)
+        seer.tremorsense = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert seer.distance_to(ghost, encounter.movement_rule) > seer.tremorsense
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+
+class TestTruesightOutranksBlindsightsLimits:
+    """SRD 5.2.1, Truesight: "your vision pierces through" Darkness and
+    Invisibility within range. It takes the top rung on the ladder — checked
+    before Blindsight — but unlike Blindsight it carries no clause exempting
+    it from the observer's own Blinded condition, so a blinded observer gets
+    nothing from it even in range.
+    """
+
+    def test_it_sees_an_invisible_target_within_range(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.truesight = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.NONE
+
+    def test_beyond_its_range_the_invisible_target_keeps_its_advantage(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=40)
+        seer.truesight = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+    def test_unlike_blindsight_it_grants_nothing_to_an_observer_that_cannot_see(
+        self,
+    ) -> None:
+        # The narrowing that puts it above Blindsight rather than replacing it:
+        # Blindsight's SRD text says "even if you have the Blinded condition";
+        # Truesight's does not, so an observer whose own condition blocks
+        # sight (``cannot_see``) still cannot see through Invisible with
+        # Truesight alone. A condition with only ``cannot_see`` set, rather
+        # than the bundled Blinded, isolates the sight ladder from Blinded's
+        # own blanket attack-roll Disadvantage, which would otherwise
+        # dominate the assertion regardless of what the ladder does.
+        table = dict(EFFECTS) | {"sightless": ConditionEffect(cannot_see=True)}
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.truesight = 30
+        seer.condition_effects = table
+        seer.add_condition("sightless")
+        encounter = Encounter([ghost, seer], Random(3), condition_effects=table)
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
 
 
 class TestAmmunition:

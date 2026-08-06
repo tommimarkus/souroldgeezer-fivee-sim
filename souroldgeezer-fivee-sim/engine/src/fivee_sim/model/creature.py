@@ -320,10 +320,40 @@ class Creature:
     climb_speed: int = 0
     swim_speed: int = 0
     fly_speed: int = 0
+    #: A printed Burrow speed. Wired in exactly like climb, swim, and fly
+    #: above: it counts toward the turn's movement budget and is selectable
+    #: as an explicit movement mode, at ordinary terrain cost. This engine
+    #: models no terrain gating for *any* movement mode — swim speed already
+    #: applies on dry land, fly speed applies regardless of what is
+    #: underneath — so burrow does not invent one either: there is no
+    #: "digging through solid ground" mechanic here, consistent with the
+    #: other three rather than a burrow-specific gap.
+    burrow_speed: int = 0
     #: Terrain names whose extra movement cost this creature ignores.
     terrain_cost_overrides: frozenset[str] = frozenset()
     darkvision: int = 0
     blindsight: int = 0
+    #: SRD 5.2.1, Tremorsense: pinpoints a creature or moving object within
+    #: range, and "doesn't count as a form of sight" — so it defeats
+    #: Invisible and Darkness like Blindsight does, but is a *narrower*
+    #: Blindsight in :meth:`~fivee_sim.model.encounter.Encounter._can_see`:
+    #: unlike Blindsight, the SRD text carries no clause exempting it from
+    #: the observer's own Blinded condition, so that (and Total Cover) still
+    #: gate it there. **Unmodelled**: the SRD also requires the observer and
+    #: the subject to be "in contact with the same surface... or the same
+    #: liquid," and excludes anything in the air — this engine tracks no
+    #: such contact state, so neither restriction is enforced.
+    tremorsense: int = 0
+    #: SRD 5.2.1, Truesight: within range, vision "pierces through" Darkness
+    #: (including magical), Invisibility, visual illusions, transformations,
+    #: and the Ethereal Plane. Only the first two have any mechanical
+    #: presence in this engine, so only those are wired into
+    #: :meth:`~fivee_sim.model.encounter.Encounter._can_see`. It sits above
+    #: Blindsight on that ladder, but is not a strict superset of it: unlike
+    #: Blindsight's "even if you have the Blinded condition," Truesight's SRD
+    #: text carries no exemption from the observer's own Blinded condition,
+    #: so that still gates it, as does Total Cover.
+    truesight: int = 0
     hp: int = -1
     #: Size category. Defaults to Medium, which is what every record written
     #: before the field existed means — and what a character is unless its
@@ -385,6 +415,16 @@ class Creature:
     #: totals stays on the Dexterity modifier regardless: that is the SRD's own
     #: tie-break rule, not a stand-in for this bonus.
     initiative_bonus: int | None = None
+    #: A stat block's printed Passive Perception, carried but never consumed.
+    #: ``None`` rather than a defaulted ``0``, following ``initiative_bonus``
+    #: exactly: a printed Passive Perception does not always equal
+    #: ``10 + Wisdom modifier``, which is why it is a fact to transcribe
+    #: rather than a number to derive. Nothing in this engine reads it —
+    #: there is no Hide, Search, Stealth, or Perception action here for it to
+    #: reach — and per the ``hit_dice`` ruling that is why it is carried and
+    #: declared rather than silently dropped: an accepted key that does
+    #: nothing must say so, not pretend to.
+    passive_perception: int | None = None
     conditions: set[str] = field(default_factory=set)
     concentrating_on: str | None = None
     #: Usable items, name to quantity held. Quantity *is* the charge count.
@@ -485,11 +525,14 @@ class Creature:
             climb_speed=int(record.get("climb_speed", 0)),
             swim_speed=int(record.get("swim_speed", 0)),
             fly_speed=int(record.get("fly_speed", 0)),
+            burrow_speed=int(record.get("burrow_speed", 0)),
             terrain_cost_overrides=frozenset(
                 str(entry) for entry in record.get("terrain_cost_overrides", [])
             ),
             darkvision=int(record.get("darkvision", 0)),
             blindsight=int(record.get("blindsight", 0)),
+            tremorsense=int(record.get("tremorsense", 0)),
+            truesight=int(record.get("truesight", 0)),
             size=Size(record.get("size", Size.MEDIUM)),
             abilities={
                 Ability(key): int(value)
@@ -526,6 +569,11 @@ class Creature:
             initiative_bonus=(
                 int(record["initiative_bonus"])
                 if record.get("initiative_bonus") is not None
+                else None
+            ),
+            passive_perception=(
+                int(record["passive_perception"])
+                if record.get("passive_perception") is not None
                 else None
             ),
             items={str(k): int(v) for k, v in record.get("items", {}).items()},
