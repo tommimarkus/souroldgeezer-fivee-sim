@@ -843,6 +843,30 @@ class TestWhatTheAskerSees:
         assert theirs["your_turn"] is False
         assert "turn_state" not in theirs
 
+    def test_the_seat_is_told_which_kind_of_chapter_it_is_sitting_in(self) -> None:
+        # Visible rather than withheld, and not a close call: which mode you are
+        # in decides whether "whose turn is it" is even a question, and a player
+        # who could not tell a fight from an interlude could not act in either.
+        assert api.encounter_brief(fight(), VIEWER)["mode"] == "combat"
+
+    def test_a_snapshot_older_than_the_mode_key_still_briefs_as_a_fight(self) -> None:
+        """The retry path, which hands the brief a state it did not just build.
+
+        An idempotent retry answers from the result the journal recorded, and a
+        record written before this key existed carries no ``mode`` — so a bare
+        subscript here would turn a replayed success into a ``KeyError``. Every
+        such snapshot is a fight, because interludes did not exist when it was
+        written, and that is what the default says.
+        """
+        encounter_id = fight()
+        stored = api.encounter_state(encounter_id)
+        del stored["mode"]
+
+        brief = api.STATE.sessions[encounter_id].encounter.brief_of(stored, VIEWER)
+
+        assert brief["mode"] == "combat"
+        assert brief["your_turn"] in (True, False)
+
 
 class TestWhatIsWithheld:
     @pytest.mark.parametrize(

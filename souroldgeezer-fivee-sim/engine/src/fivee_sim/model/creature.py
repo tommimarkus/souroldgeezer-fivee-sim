@@ -46,10 +46,12 @@ from ..kernel.conditions import (
     Condition,
     ConditionEffect,
     ConditionTable,
+    d20_test_penalty,
     effect_of,
+    speed_reduction,
 )
 from ..kernel.dice import Dice
-from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
+from ..kernel.grid import DiagonalRule, MovementMode, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, Size, ability_modifier
 
 __all__ = ["AttackKind", "AttackOption", "Creature", "DeathRule", "RiderExpiry"]
@@ -320,11 +322,70 @@ class Creature:
     climb_speed: int = 0
     swim_speed: int = 0
     fly_speed: int = 0
+    #: A printed Burrow speed. Wired in exactly like climb, swim, and fly
+    #: above: it counts toward the turn's movement budget and is selectable
+    #: as an explicit movement mode, at ordinary terrain cost. This engine
+    #: models no terrain gating for *any* movement mode — swim speed already
+    #: applies on dry land, fly speed applies regardless of what is
+    #: underneath — so burrow does not invent one either: there is no
+    #: "digging through solid ground" mechanic here, consistent with the
+    #: other three rather than a burrow-specific gap.
+    burrow_speed: int = 0
     #: Terrain names whose extra movement cost this creature ignores.
     terrain_cost_overrides: frozenset[str] = frozenset()
     darkvision: int = 0
     blindsight: int = 0
+    #: A stat block's printed Tremorsense range, carried but never consumed —
+    #: transcription-only, following ``passive_perception`` exactly. SRD
+    #: 5.2.1, *Tremorsense*: "Tremorsense can't detect creatures or objects in
+    #: the air, and it doesn't count as a form of sight." That last clause is
+    #: the reason it is not a rung in
+    #: :meth:`~fivee_sim.model.encounter.Encounter._can_see` alongside
+    #: Truesight and Blindsight: Tremorsense pinpoints a *location*, not
+    #: sight of the creature there, and this engine has no third state
+    #: between "can see" and "cannot see" to represent that. Wiring it into
+    #: ``_can_see`` would wrongly cancel the unseen-target Disadvantage
+    #: against an Invisible creature the observer has merely pinpointed. Kept
+    #: and reported per the ``hit_dice`` ruling — an accepted key that does
+    #: nothing must say so — until this engine gains a pinpoint-without-sight
+    #: concept to spend it on.
+    tremorsense: int = 0
+    #: SRD 5.2.1, Truesight: within range, vision "pierces through" Darkness
+    #: (including magical), Invisibility, visual illusions, transformations,
+    #: and the Ethereal Plane. Only the first two have any mechanical
+    #: presence in this engine, so only those are wired into
+    #: :meth:`~fivee_sim.model.encounter.Encounter._can_see`. It sits above
+    #: Blindsight on that ladder, but is not a strict superset of it: unlike
+    #: Blindsight's "even if you have the Blinded condition," Truesight's SRD
+    #: text carries no exemption from the observer's own Blinded condition,
+    #: so that still gates it, as does Total Cover.
+    truesight: int = 0
     hp: int = -1
+    #: A buffer spent before hit points. SRD 5.2.1, *Temporary Hit Points*:
+    #: "If you have Temporary Hit Points and take damage, those points are
+    #: lost first, and any leftover damage carries over to your Hit Points" —
+    #: and they "last until they're depleted or you finish a Long Rest." This
+    #: engine models no rest, so nothing here clears them on a timer; a
+    #: caller states "the party took a long rest" through
+    #: ``service/adventures.py``'s ``recovery`` delta, the same channel that
+    #: already carries every other rest-shaped fact across an adventure
+    #: boundary.
+    #:
+    #: They are never Hit Points and never healing: "Temporary Hit Points
+    #: can't be added to your Hit Points, healing can't restore them, and
+    #: receiving Temporary Hit Points doesn't count as healing," and a grant
+    #: to a creature at 0 Hit Points "doesn't restore [it] to consciousness."
+    #: Granted only through :meth:`grant_temp_hp`, never :meth:`heal`, which
+    #: clamps to ``max_hp``, clears both death-save counters and ``stable``,
+    #: and lifts Unconscious — every one of those is wrong for a buffer that
+    #: is not healing.
+    #:
+    #: **They Don't Stack** gives the *recipient* the choice of which set to
+    #: keep on receiving more while some remain — a player decision this
+    #: engine has no channel for at grant time. :meth:`grant_temp_hp` takes
+    #: the higher of the two instead, as a deliberate simplification rather
+    #: than the rule itself.
+    temp_hp: int = 0
     #: Size category. Defaults to Medium, which is what every record written
     #: before the field existed means — and what a character is unless its
     #: species says otherwise. Read by the rules that gate on how big a target
@@ -333,6 +394,15 @@ class Creature:
     size: Size = Size.MEDIUM
     abilities: dict[Ability, int] = field(default_factory=dict)
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
+    #: A stat block's printed skill modifier, keyed by skill name — a plain
+    #: ``str``, never a closed enum: ``service/primitives.check`` already
+    #: accepts a free-form ``skill`` label validated only for non-blankness,
+    #: and this engine keeps a condition an open string for the same reason a
+    #: pack may extend one. The value is the printed *absolute* modifier, not a
+    #: proficiency to add: SRD stat blocks print totals ("Perception +5"), and
+    #: this engine models no character level or proficiency bonus to derive
+    #: one from.
+    skill_bonuses: dict[str, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
     #: Action kinds this stat block may take as a Bonus Action.  The strings use
@@ -376,7 +446,26 @@ class Creature:
     #: totals stays on the Dexterity modifier regardless: that is the SRD's own
     #: tie-break rule, not a stand-in for this bonus.
     initiative_bonus: int | None = None
-    conditions: set[str] = field(default_factory=set)
+    #: A stat block's printed Passive Perception, carried but never consumed.
+    #: ``None`` rather than a defaulted ``0``, following ``initiative_bonus``
+    #: exactly: a printed Passive Perception does not always equal
+    #: ``10 + Wisdom modifier``, which is why it is a fact to transcribe
+    #: rather than a number to derive. Nothing in this engine reads it —
+    #: there is no Hide, Search, Stealth, or Perception action here for it to
+    #: reach — and per the ``hit_dice`` ruling that is why it is carried and
+    #: declared rather than silently dropped: an accepted key that does
+    #: nothing must say so, not pretend to.
+    passive_perception: int | None = None
+    #: Name to level, always ≥ 1 while held. Level 1 is the ordinary case and
+    #: means nothing observable on its own; a level above 1 exists only for a
+    #: condition an effect row marks ``cumulative`` (SRD 5.2.1 p.179, Exhaustion's
+    #: exception to "a recipient either has a condition or doesn't"). A ``dict``
+    #: rather than a richer type because ``Mapping[str, int]`` **is**
+    #: ``Iterable[str]``: every read site (``in``, iteration, ``sorted(...)``)
+    #: keeps working unchanged, while every write site fails at type-check
+    #: because ``dict`` has no ``.add``/``.discard`` — that is deliberate, it is
+    #: the worklist for this change.
+    conditions: dict[str, int] = field(default_factory=dict)
     concentrating_on: str | None = None
     #: Usable items, name to quantity held. Quantity *is* the charge count.
     items: dict[str, int] = field(default_factory=dict)
@@ -476,11 +565,14 @@ class Creature:
             climb_speed=int(record.get("climb_speed", 0)),
             swim_speed=int(record.get("swim_speed", 0)),
             fly_speed=int(record.get("fly_speed", 0)),
+            burrow_speed=int(record.get("burrow_speed", 0)),
             terrain_cost_overrides=frozenset(
                 str(entry) for entry in record.get("terrain_cost_overrides", [])
             ),
             darkvision=int(record.get("darkvision", 0)),
             blindsight=int(record.get("blindsight", 0)),
+            tremorsense=int(record.get("tremorsense", 0)),
+            truesight=int(record.get("truesight", 0)),
             size=Size(record.get("size", Size.MEDIUM)),
             abilities={
                 Ability(key): int(value)
@@ -489,6 +581,10 @@ class Creature:
             save_bonuses={
                 Ability(key): int(value)
                 for key, value in record.get("save_bonuses", {}).items()
+            },
+            skill_bonuses={
+                str(key): int(value)
+                for key, value in record.get("skill_bonuses", {}).items()
             },
             attacks=tuple(
                 AttackOption.from_record(entry) for entry in record.get("attacks", [])
@@ -515,6 +611,11 @@ class Creature:
                 if record.get("initiative_bonus") is not None
                 else None
             ),
+            passive_perception=(
+                int(record["passive_perception"])
+                if record.get("passive_perception") is not None
+                else None
+            ),
             items={str(k): int(v) for k, v in record.get("items", {}).items()},
             immunities=frozenset(
                 DamageType(entry) for entry in record.get("immunities", [])
@@ -528,7 +629,7 @@ class Creature:
             condition_immunities=frozenset(
                 str(entry) for entry in record.get("condition_immunities", [])
             ),
-            conditions={str(entry) for entry in record.get("conditions", [])},
+            conditions={str(entry): 1 for entry in record.get("conditions", [])},
             condition_effects=condition_effects,
             position=position,
             level=level,
@@ -545,10 +646,70 @@ class Creature:
         return ability_modifier(self.ability_score(ability))
 
     def save_modifier(self, ability: Ability) -> int:
-        """Explicit save bonus if the stat block prints one, else the raw modifier."""
-        if ability in self.save_bonuses:
-            return self.save_bonuses[ability]
-        return self.ability_mod(ability)
+        """The number to add to this creature's save d20 — never the stat
+        block's bare bonus on its own.
+
+        SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
+        game: ability checks, attack rolls, and saving throws. If something in
+        the game affects D20 Tests, it affects all three." A held condition's
+        ``d20_test_penalty_per_level`` is one of those somethings, so it is
+        folded in here rather than left for every caller to remember —
+        :func:`~fivee_sim.kernel.conditions.d20_test_penalty` is subtracted
+        from the explicit save bonus if the stat block prints one, else the
+        raw ability modifier.
+        """
+        base = (
+            self.save_bonuses[ability]
+            if ability in self.save_bonuses
+            else self.ability_mod(ability)
+        )
+        return base - self._d20_test_penalty()
+
+    def check_modifier(self, ability: Ability, skill: str | None = None) -> int:
+        """The number to add to this creature's ability-check d20. Mirrors
+        :meth:`save_modifier`'s shape, including the same condition penalty:
+        the explicit skill bonus if the stat block prints one for ``skill``,
+        else the raw ability modifier.
+        """
+        base = (
+            self.skill_bonuses[skill]
+            if skill is not None and skill in self.skill_bonuses
+            else self.ability_mod(ability)
+        )
+        return base - self._d20_test_penalty()
+
+    def attack_modifier(self, base: int) -> int:
+        """``base`` — a stat block's printed attack bonus — after any held
+        condition's D20 Test penalty. The same fold as :meth:`save_modifier`
+        and :meth:`check_modifier`, for an attack roll rather than a save or a
+        check.
+        """
+        return base - self._d20_test_penalty()
+
+    def _d20_test_penalty(self) -> int:
+        return d20_test_penalty(self.conditions, self.condition_effects)
+
+    # ruling: speed_reduction_reaches_every_movement_mode
+    def speed_for(self, mode: MovementMode) -> int:
+        """This creature's movement budget for one mode, after any held
+        condition's Speed reduction — never below zero.
+
+        SRD 5.2.1's Exhaustion and Grappled clauses both read "Your Speed",
+        and Grappled's identical wording already reaches every movement mode
+        this engine has — ``Encounter._do_move`` refuses regardless of
+        ``movement_mode``. A numeric reduction is read the same way: it comes
+        off ``walk``, ``climb``, ``swim``, ``fly``, and ``burrow`` alike, not
+        the walking Speed alone. See ``rulings.py``,
+        ``speed_reduction_reaches_every_movement_mode``.
+        """
+        base = {
+            MovementMode.WALK: self.speed,
+            MovementMode.CLIMB: self.climb_speed,
+            MovementMode.SWIM: self.swim_speed,
+            MovementMode.FLY: self.fly_speed,
+            MovementMode.BURROW: self.burrow_speed,
+        }[mode]
+        return max(0, base - speed_reduction(self.conditions, self.condition_effects))
 
     @property
     def spellcasting_modifier(self) -> int:
@@ -596,7 +757,9 @@ class Creature:
         return effect_of(condition, self.condition_effects)
 
     # --- mutation ---------------------------------------------------------
-    def add_condition(self, condition: str, *, override_immunity: bool = False) -> bool:
+    def add_condition(
+        self, condition: str, *, levels: int = 1, override_immunity: bool = False
+    ) -> bool:
         """Impose ``condition`` and report whether it took hold.
 
         The one chokepoint every condition-imposing path funnels through —
@@ -615,29 +778,113 @@ class Creature:
         effect being *imposed* on the creature — the same standing the SRD
         condition table itself holds inside ``STRUCTURAL_CONDITIONS`` — so it
         is not something an immunity to Unconscious or Prone can refuse.
+
+        ``levels`` only increments the held level when the effect row marks
+        the condition ``cumulative`` (SRD 5.2.1 p.179) — otherwise the level
+        is set to 1, which is exactly today's idempotence: imposing an
+        already-held condition a second time changes nothing observable.
+
+        A row that carries ``death_at_level`` kills the instant the new level
+        reaches it — SRD 5.2.1, Exhaustion: "You die if your Exhaustion level
+        is 6." That is unconditional: no save, and it runs regardless of
+        ``death_rule``, which only governs what happens at 0 hit points and
+        has no bearing on a death this condition alone causes. The same reset
+        :meth:`take_damage` performs on its own death branches applies here —
+        ``dead``, cleared concentration, and Unconscious discarded — rather
+        than a second way to die.
+
+        ``levels`` must be at least 1. That is not a tidiness rule: every
+        numeric effect resolves as ``per_level * level``, so a level below one
+        does not weaken a penalty, it inverts its sign — an Exhaustion level of
+        -100 would grant +200 on every D20 Test and 530 feet of Speed rather
+        than costing anything. ``Creature.conditions`` values are documented as
+        always 1 or more, and this is where that is enforced.
         """
+        if levels < 1:
+            raise ValueError(
+                f"{self.name}: levels must be at least 1 to impose "
+                f"{condition!r}, got {levels}"
+            )
         if not override_immunity and condition in self.condition_immunities:
             return False
         # Look the effect up first: an unknown name must be refused before it is
         # recorded, or the creature carries a condition nothing can resolve.
-        incapacitates = self._effect(condition).incapacitated
-        self.conditions.add(condition)
-        if incapacitates:
+        effect = self._effect(condition)
+        if effect.cumulative:
+            self.conditions[condition] = self.conditions.get(condition, 0) + levels
+        else:
+            self.conditions[condition] = 1
+        if effect.incapacitated:
             self.concentrating_on = None
+        if effect.death_at_level and self.conditions[condition] >= effect.death_at_level:
+            self.dead = True
+            self.concentrating_on = None
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
         return True
 
-    def remove_condition(self, condition: str) -> None:
-        self.conditions.discard(condition)
+    def remove_condition(self, condition: str, *, levels: int | None = None) -> None:
+        """Drop ``condition`` outright, or reduce its level by ``levels``.
+
+        ``levels=None`` (the default) removes the condition entirely — the
+        behaviour every existing caller relies on. An int decrements the held
+        level and drops the entry once it reaches 0 or below, and must itself
+        be at least 1: subtracting a negative would *raise* the level through
+        the one path that exists to lower it.
+        """
+        if levels is not None and levels < 1:
+            raise ValueError(
+                f"{self.name}: levels must be at least 1 to remove "
+                f"{condition!r}, got {levels}"
+            )
+        if levels is None:
+            self.conditions.pop(condition, None)
+            return
+        remaining = self.conditions.get(condition, 0) - levels
+        if remaining <= 0:
+            self.conditions.pop(condition, None)
+        else:
+            self.conditions[condition] = remaining
+
+    def level_of(self, condition: str) -> int:
+        """The level ``condition`` is held at, 0 when not held."""
+        return self.conditions.get(condition, 0)
+
+    def damage_after_temp_hp(self, amount: int) -> int:
+        """How much of ``amount`` would still reach hit points, unspent.
+
+        A read-only preview of the first thing :meth:`take_damage` does,
+        used by :meth:`~fivee_sim.model.encounter.Encounter.
+        _undead_fortitude_save` to decide *whether to roll at all* before
+        any damage is applied: a creature whose buffer would absorb a hit
+        entirely never reaches 0, so a save it can also never be asked to
+        make must not consume randomness, for the same RNG-conservation
+        reason the size and immunity gates beside it already avoid a roll.
+        This does not spend the buffer — only :meth:`take_damage` does that.
+        """
+        return max(0, amount - self.temp_hp)
 
     def take_damage(self, amount: int, *, critical: bool = False) -> None:
         """Apply damage that has already been adjusted for resistance.
+
+        Temporary Hit Points are spent first. SRD 5.2.1, *Temporary Hit
+        Points*, Lose Temporary Hit Points First: "those points are lost
+        first, and any leftover damage carries over to your Hit Points."
+        Only the leftover reaches the two rules below — damage a buffer
+        fully absorbed never happened to hit points at all, so it plays no
+        part in either the drop-to-0 reset or the massive-damage overflow
+        that follows it.
 
         Two different rules meet here and the difference is which side of 0 the
         creature started on.
 
         *Dropping* to 0 knocks the creature out and begins a fresh dying state, so
         its death saves start from nothing. Damage remaining after the drop kills
-        outright if it equals or exceeds the creature's maximum hit points.
+        outright if it equals or exceeds the creature's maximum hit points —
+        and that remainder, ``overflow``, is computed from the post-buffer
+        amount for the same reason: SRD 5.2.1's Instant Death compares "the
+        damage" that carried past 0 against the maximum, and a buffer that
+        absorbed part of the original hit means less of it ever carried past
+        0 in the first place.
 
         Damage taken *while already* at 0 is the other rule: it costs a death
         saving throw failure, two if it came from a critical hit, and the third
@@ -645,6 +892,11 @@ class Creature:
         stable does that — so the drop-to-0 reset must not run a second time.
         """
         if amount <= 0 or self.dead:
+            return
+        absorbed = min(self.temp_hp, amount)
+        self.temp_hp -= absorbed
+        amount -= absorbed
+        if amount <= 0:
             return
         already_down = self.hp == 0
         overflow = amount - self.hp
@@ -654,19 +906,19 @@ class Creature:
         if self.death_rule is DeathRule.INSTANT:
             self.dead = True
             self.concentrating_on = None
-            self.conditions.discard(Condition.UNCONSCIOUS)
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         if overflow >= self.max_hp:
             self.dead = True
             self.concentrating_on = None
-            self.conditions.discard(Condition.UNCONSCIOUS)
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         self.stable = False
         if already_down:
             self.death_save_failures += 2 if critical else 1
             if self.death_save_failures >= DEATH_SAVES_TO_DIE:
                 self.dead = True
-                self.conditions.discard(Condition.UNCONSCIOUS)
+                self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         self.death_save_successes = 0
         self.death_save_failures = 0
@@ -687,3 +939,26 @@ class Creature:
             self.death_save_successes = 0
             self.death_save_failures = 0
             self.remove_condition(Condition.UNCONSCIOUS)
+
+    # ruling: temp_hp_grant_takes_the_higher_value
+    def grant_temp_hp(self, amount: int) -> None:
+        """Grant Temporary Hit Points, never routed through :meth:`heal`.
+
+        SRD 5.2.1, *Temporary Hit Points*, They're Not Hit Points or Healing:
+        "Temporary Hit Points can't be added to your Hit Points, healing
+        can't restore them, and receiving Temporary Hit Points doesn't count
+        as healing... If you have 0 Hit Points, receiving Temporary Hit
+        Points doesn't restore you to consciousness." ``heal`` clamps to
+        ``max_hp``, clears both death-save counters and ``stable``, and
+        lifts Unconscious — every one of those is exactly what this clause
+        forbids, so a grant needs its own method rather than a shared one.
+
+        They Don't Stack: this engine has no player-choice channel at grant
+        time, so it takes the higher of what the creature already carries
+        and what is offered, as a deliberate simplification rather than the
+        SRD's own recipient's-choice rule. See ``rulings.py``,
+        ``temp_hp_grant_takes_the_higher_value``.
+        """
+        if self.dead or amount <= 0:
+            return
+        self.temp_hp = max(self.temp_hp, amount)

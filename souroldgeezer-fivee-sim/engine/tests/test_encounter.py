@@ -17,11 +17,12 @@ import pytest
 
 from fivee_sim.content import item_effects, make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.conditions import Condition, UnknownCondition
+from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect, UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import (
     CoverGrade,
     DiagonalRule,
+    MovementMode,
     Point,
     Square,
     as_point,
@@ -52,6 +53,7 @@ from fivee_sim.model.encounter import (
     ActionKind,
     Encounter,
     EncounterError,
+    EncounterMode,
     Event,
 )
 
@@ -300,6 +302,478 @@ class TestRulingConditions:
         assert applied.data["applied"] is False
         assert applied.data["condition"] == Condition.POISONED
         assert "immune" in applied.detail
+
+
+class TestConditionLevels:
+    """The level machinery: SRD 5.2.1 p.179's Exhaustion exception, generalised
+    onto the effect row as ``cumulative`` rather than keyed on a name.
+
+    Both numeric effects exist now (T10c, T10d); the bundled Exhaustion row
+    does not yet. This pins only that a condition can be *held* at a level,
+    and that the level survives every checkpoint a fight's state passes
+    through.
+    """
+
+    #: A pack-declared cumulative condition, not an SRD one — the acceptance
+    #: check is deliberately not run against a bundled row.
+    TABLE = dict(EFFECTS) | {
+        "marked": ConditionEffect(cumulative=True),
+    }
+
+    @pytest.mark.parametrize("levels", [0, -1, -100])
+    def test_imposing_fewer_than_one_level_is_refused(self, levels: int) -> None:
+        """``Creature.conditions`` values are documented as always 1 or more.
+
+        The invariant is load-bearing rather than tidy: every numeric effect
+        resolves as ``per_level * level``, so a negative level inverts the sign
+        of the thing it scales. An Exhaustion level of -100 does not make a
+        creature slightly less tired — it grants +200 on every D20 Test and
+        530 feet of Speed. ``add_condition`` is the documented chokepoint every
+        imposing path funnels through, so the floor belongs here.
+        """
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+
+        with pytest.raises(ValueError, match="levels must be at least 1"):
+            target.add_condition("marked", levels=levels)
+
+        assert target.conditions == {}
+
+    @pytest.mark.parametrize("levels", [0, -1])
+    def test_removing_fewer_than_one_level_is_refused(self, levels: int) -> None:
+        """The mirror of the floor above, for the same reason.
+
+        ``remove_condition(levels=None)`` still means *drop it outright* — that
+        is the default every existing caller relies on. It is a stated count
+        below one that is refused, because subtracting a negative would raise
+        the level through the path that exists to lower it.
+        """
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked", levels=2)
+
+        with pytest.raises(ValueError, match="levels must be at least 1"):
+            target.remove_condition("marked", levels=levels)
+
+        assert target.conditions == {"marked": 2}
+
+    def test_three_impositions_reach_level_three(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+
+        target.add_condition("marked")
+        target.add_condition("marked")
+        target.add_condition("marked")
+
+        assert target.level_of("marked") == 3
+        assert target.conditions["marked"] == 3
+
+    def test_a_non_cumulative_condition_stays_at_one_on_reimposition(self) -> None:
+        target = fighter("Thora")
+        target.add_condition(Condition.POISONED)
+        target.add_condition(Condition.POISONED)
+
+        assert target.level_of(Condition.POISONED) == 1
+
+    def test_remove_condition_with_no_levels_argument_removes_outright(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked")
+        target.add_condition("marked")
+
+        target.remove_condition("marked")
+
+        assert target.level_of("marked") == 0
+        assert "marked" not in target.conditions
+
+    def test_remove_condition_with_levels_decrements(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked", levels=3)
+
+        target.remove_condition("marked", levels=1)
+
+        assert target.level_of("marked") == 2
+
+    def test_remove_condition_drops_the_entry_once_it_reaches_zero(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked")
+
+        target.remove_condition("marked", levels=1)
+
+        assert "marked" not in target.conditions
+
+    def test_level_of_is_zero_when_not_held(self) -> None:
+        target = fighter("Thora")
+        assert target.level_of("marked") == 0
+
+    def test_condition_levels_is_empty_for_a_fight_with_no_leveled_condition(
+        self,
+    ) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        state = encounter.state()
+        for combatant in state["combatants"]:
+            assert combatant["condition_levels"] == {}
+
+    def test_srd_conditions_serialise_byte_identically(self) -> None:
+        # The invariant this step must not disturb: every one of the 14 SRD
+        # conditions still serialises to exactly the same state shape it did
+        # before condition_levels existed, aside from the new key itself.
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        for name in Condition:
+            encounter.set_condition("Thora", name, applied=True)
+        state = encounter.state()
+        held = next(c for c in state["combatants"] if c["name"] == "Thora")
+        assert held["conditions"] == sorted(str(c) for c in Condition)
+        assert held["condition_levels"] == {}
+
+    def test_a_leveled_condition_reaches_encounter_state(self) -> None:
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf")], Random(7), condition_effects=self.TABLE
+        )
+        thora = encounter.creatures["Thora"]
+        thora.add_condition("marked")
+        thora.add_condition("marked")
+        thora.add_condition("marked")
+
+        state = encounter.state()
+        held = next(c for c in state["combatants"] if c["name"] == "Thora")
+        assert held["condition_levels"] == {"marked": 3}
+        assert "marked" in held["conditions"]
+
+    def test_a_ruling_can_impose_more_than_one_level(self) -> None:
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf")], Random(7), condition_effects=self.TABLE
+        )
+        encounter.set_condition("Thora", "marked", applied=True, levels=3)
+
+        assert encounter.creatures["Thora"].level_of("marked") == 3
+
+
+class TestD20TestPenalty:
+    """SRD 5.2.1 p.180: a condition that "affects D20 Tests" affects ability
+    checks, attack rolls, and saving throws alike, so the penalty is folded
+    into the accessors every one of those roll-assembly sites reads from
+    rather than re-applied at each site.
+    """
+
+    #: A pack-declared, cumulative, leveled condition — not an SRD one, the
+    #: same posture ``TestConditionLevels.TABLE`` takes.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(d20_test_penalty_per_level=2, cumulative=True),
+    }
+
+    def weary(self, levels: int = 2, **kwargs: Any) -> Creature:
+        target = fighter(**kwargs)
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        return target
+
+    def test_save_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.save_modifier(Ability.CONSTITUTION) == (
+            target.ability_mod(Ability.CONSTITUTION) - 4
+        )
+
+    def test_check_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.check_modifier(Ability.WISDOM) == (
+            target.ability_mod(Ability.WISDOM) - 4
+        )
+
+    def test_attack_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.attack_modifier(5) == 1
+
+    def test_an_unafflicted_creature_is_unchanged(self) -> None:
+        target = fighter()
+        assert target.attack_modifier(5) == 5
+        assert target.save_modifier(Ability.CONSTITUTION) == target.ability_mod(
+            Ability.CONSTITUTION
+        )
+        assert target.check_modifier(Ability.WISDOM) == target.ability_mod(
+            Ability.WISDOM
+        )
+
+    def test_a_weary_attackers_attack_roll_carries_the_penalty(self) -> None:
+        # attack_bonus is 5, so a natural 10 lands as 15 unafflicted and 11 weary.
+        attacker = self.weary(name="Thora")
+        target = fighter(name="Target", position=5, team="monsters")
+        rng = Random(3)
+        encounter = Encounter([attacker, target], rng, condition_effects=self.TABLE)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Target"), FixedRandom(10)
+        )
+        attack = next(e for e in events if e.kind == "attack")
+        assert attack.data["natural"] == 10
+        assert attack.data["total"] == 11
+
+    def test_initiative_carries_the_penalty(self) -> None:
+        weary_creature = fighter(name="Thora")
+        weary_creature.condition_effects = self.TABLE
+        weary_creature.add_condition("weary", levels=2)
+        other = fighter(name="Other", team="monsters")
+        # FixedRandom clamps every d20 to the same natural, so both roll the
+        # same face and only the penalty tells them apart.
+        encounter = Encounter(
+            [weary_creature, other], FixedRandom(10), condition_effects=self.TABLE
+        )
+        dex_mod = weary_creature.ability_mod(Ability.DEXTERITY)
+        assert encounter.initiative["Thora"] == 10 + dex_mod - 4
+        assert encounter.initiative["Other"] == 10 + other.ability_mod(Ability.DEXTERITY)
+
+    def test_a_death_save_carries_the_penalty(self) -> None:
+        weary_creature = fighter(name="Thora", hp=0)
+        weary_creature.condition_effects = self.TABLE
+        weary_creature.add_condition("weary", levels=2)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        # A natural 14 would ordinarily succeed (DC 10); the -4 penalty drops
+        # the total to 10, which still succeeds — 13 fails only with the
+        # penalty applied.
+        encounter._death_save(weary_creature, FixedRandom(13))
+        event = next(e for e in encounter.log if e.kind == "death_save")
+        assert event.data["natural"] == 13
+        assert "9 vs DC 10 — failure" in event.detail
+        assert weary_creature.death_save_failures == 1
+
+    def test_a_death_save_detail_is_byte_identical_with_no_penalty(self) -> None:
+        target = fighter(name="Thora", hp=0)
+        encounter = Encounter([target, fighter(name="Other", team="monsters")], Random(9))
+        encounter._death_save(target, FixedRandom(13))
+        event = next(e for e in encounter.log if e.kind == "death_save")
+        assert event.detail == "13 vs DC 10 — success"
+
+
+class TestSpeedReduction:
+    """SRD 5.2.1, Exhaustion: "Your Speed is reduced by a number of feet
+    equal to 5 times your Exhaustion level." Grappled's identical wording
+    ("Your Speed is 0") already reaches every movement mode in this engine —
+    see ``_do_move``'s unconditional refusal — so the ruling this pins is
+    that a numeric reduction reaches every mode too, not the walking Speed
+    alone.
+    """
+
+    #: A pack-declared, cumulative, leveled condition — never an SRD one.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(speed_reduction_feet_per_level=5, cumulative=True),
+    }
+
+    def weary(self, levels: int = 2, **kwargs: Any) -> Creature:
+        target = fighter(**kwargs)
+        target.climb_speed = 20
+        target.swim_speed = 20
+        target.fly_speed = 30
+        target.burrow_speed = 10
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        return target
+
+    def test_speed_for_reduces_every_movement_mode(self) -> None:
+        target = self.weary()  # -10 ft
+        assert target.speed_for(MovementMode.WALK) == 20
+        assert target.speed_for(MovementMode.CLIMB) == 10
+        assert target.speed_for(MovementMode.SWIM) == 10
+        assert target.speed_for(MovementMode.FLY) == 20
+        assert target.speed_for(MovementMode.BURROW) == 0
+
+    def test_speed_for_clamps_at_zero_never_negative(self) -> None:
+        target = self.weary(levels=10)  # -50 ft, dwarfing every printed speed
+        for mode in MovementMode:
+            assert target.speed_for(mode) == 0
+
+    def test_an_unafflicted_creature_is_unchanged(self) -> None:
+        target = fighter()
+        target.climb_speed = 20
+        assert target.speed_for(MovementMode.WALK) == target.speed
+        assert target.speed_for(MovementMode.CLIMB) == target.climb_speed
+
+    def test_begin_turn_grants_the_reduced_movement_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")  # -10 ft; fly 30 -> 20 is the max
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        assert encounter._turn.movement_left == 20
+
+    def test_movement_speed_reads_the_reduced_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        assert encounter._movement_speed(weary_creature, MovementMode.CLIMB) == 10
+
+    def test_movement_speed_refuses_a_mode_reduced_to_zero(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        with pytest.raises(EncounterError, match="no burrow speed"):
+            encounter._movement_speed(weary_creature, MovementMode.BURROW)
+
+    def test_stand_cost_halves_the_reduced_speed(self) -> None:
+        weary_creature = self.weary(name="Thora")  # walk 30 -> 20
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        assert encounter.stand_cost("Thora") == 10
+
+    def test_can_stand_reads_the_reduced_speed(self) -> None:
+        weary_creature = self.weary(name="Thora", levels=10)  # walk reduced to 0
+        weary_creature.add_condition(Condition.PRONE)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        assert not encounter.can_stand("Thora")
+
+    def test_do_stand_refuses_a_creature_reduced_to_speed_zero(self) -> None:
+        weary_creature = self.weary(name="Thora", levels=10)  # walk reduced to 0
+        weary_creature.add_condition(Condition.PRONE)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        with pytest.raises(EncounterError, match="speed of 0 and cannot stand"):
+            encounter._do_stand(weary_creature)
+
+    def test_creature_state_speeds_reports_the_reduced_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        speeds = encounter._creature_state(weary_creature)["speeds"]
+        assert speeds == {"walk": 20, "climb": 10, "swim": 10, "fly": 20, "burrow": 0}
+
+    def test_creature_state_speeds_are_unchanged_for_an_unafflicted_creature(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        speeds = encounter._creature_state(target)["speeds"]
+        assert speeds == {"walk": 30, "climb": 0, "swim": 0, "fly": 0, "burrow": 0}
+
+
+class TestExhaustionRow:
+    """Exhaustion (SRD 5.2.1 p.181) as the bundled fifteenth condition: the
+    D20 Test penalty and Speed reduction channels already reach every
+    consumer (T10c, T10d); this pins that Exhaustion's own row wires them,
+    and that reaching level 6 kills — visibly.
+    """
+
+    def test_level_two_costs_four_on_every_d20_test_and_ten_feet_of_speed(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        target.add_condition(Condition.EXHAUSTION, levels=2)
+        assert target.attack_modifier(5) == 1
+        assert target.save_modifier(Ability.CONSTITUTION) == (
+            target.ability_mod(Ability.CONSTITUTION) - 4
+        )
+        assert target.check_modifier(Ability.WISDOM) == (
+            target.ability_mod(Ability.WISDOM) - 4
+        )
+        assert target.speed_for(MovementMode.WALK) == 20
+
+    def test_a_ruling_imposing_the_sixth_level_kills_and_announces_it(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        encounter.set_condition("Thora", Condition.EXHAUSTION, applied=True, levels=6)
+        assert target.dead
+        deaths = [e for e in encounter.log if e.kind == "death"]
+        assert len(deaths) == 1
+        assert deaths[0].actor == "Thora"
+
+    def test_apply_condition_also_announces_the_sixth_level_death(self) -> None:
+        # ``_apply_condition`` is the second funnel into ``add_condition`` and
+        # must carry the same ``was_dead`` reading as ``set_condition`` — this
+        # pins it directly rather than through a bundled rider that happens
+        # to grant Exhaustion.
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        target.add_condition(Condition.EXHAUSTION, levels=5)
+        encounter._apply_condition(
+            target, target, Condition.EXHAUSTION,
+            effect_name="a sixth exhaustion level", concentration=False,
+        )
+        assert target.dead
+        assert any(e.kind == "death" for e in encounter.log)
+
+    def test_a_fifth_level_by_ruling_does_not_kill_or_announce(self) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        encounter.set_condition("Thora", Condition.EXHAUSTION, applied=True, levels=5)
+        assert not target.dead
+        assert not any(e.kind == "death" for e in encounter.log)
+
+
+class TestDodgeLostAtNumericSpeedZero:
+    """SRD 5.2.1, Dodge: "you don't gain this benefit if your Speed is 0."
+
+    ``_dodge_benefits`` used to consult only the ``speed_zero`` flag, so a
+    creature reduced to Speed 0 purely by ``speed_reduction_feet_per_level`` —
+    Exhaustion's own shape — kept the Dodge benefit the SRD denies it.
+    """
+
+    #: A pack-declared, cumulative condition — never an SRD one — carrying no
+    #: ``speed_zero`` flag at all, so only the numeric reduction can catch it.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(speed_reduction_feet_per_level=10, cumulative=True),
+    }
+
+    def _dodging_weary(self, *, levels: int) -> tuple[Encounter, Creature]:
+        target = fighter(name="Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        encounter.act(Action(kind=ActionKind.DODGE), Random(9))
+        return encounter, target
+
+    def test_numeric_speed_zero_loses_the_dodge_benefit(self) -> None:
+        encounter, target = self._dodging_weary(levels=3)  # walk 30 -> 0
+        assert target.speed_for(MovementMode.WALK) == 0
+        assert encounter._dodge_benefits(target) is False
+
+    def test_a_reduction_that_does_not_reach_zero_keeps_the_benefit(self) -> None:
+        # The no-op guard: a Speed reduced but not to zero must not lose the
+        # benefit, or the fix would be over-broad rather than narrow.
+        encounter, target = self._dodging_weary(levels=1)  # walk 30 -> 20
+        assert target.speed_for(MovementMode.WALK) == 20
+        assert encounter._dodge_benefits(target) is True
 
 
 class TestAttacking:
@@ -735,6 +1209,93 @@ class TestInvisibleStopsHelpingAgainstAnObserverThatSees:
         )
         assert event is not None
         assert event.data["advantage"] == Advantage.NONE.value
+
+
+class TestTremorsenseIsNotASightRung:
+    """SRD 5.2.1, Tremorsense: it pinpoints a creature within range but
+    "doesn't count as a form of sight". Unlike Truesight and Blindsight it
+    is deliberately not one of :meth:`Encounter._can_see`'s rungs — the
+    engine has no "knows the location but cannot see" state, so granting it
+    sight here would wrongly cancel the unseen-target Disadvantage on a
+    creature that, by the SRD's own words, cannot see its target at all.
+    """
+
+    def test_within_range_it_still_gives_no_sight_of_an_invisible_target(self) -> None:
+        # The regression pin: 30 ft of Tremorsense on a target 20 ft away
+        # pinpoints the ghost's square but is not sight, so Disadvantage
+        # stands.
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.tremorsense = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert seer.distance_to(ghost, encounter.movement_rule) <= seer.tremorsense
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+    def test_beyond_its_range_the_invisible_target_keeps_its_advantage(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=40)
+        seer.tremorsense = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert seer.distance_to(ghost, encounter.movement_rule) > seer.tremorsense
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+
+class TestTruesightOutranksBlindsightsLimits:
+    """SRD 5.2.1, Truesight: "your vision pierces through" Darkness and
+    Invisibility within range. It takes the top rung on the ladder — checked
+    before Blindsight — but unlike Blindsight it carries no clause exempting
+    it from the observer's own Blinded condition, so a blinded observer gets
+    nothing from it even in range.
+    """
+
+    def test_it_sees_an_invisible_target_within_range(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.truesight = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.NONE
+
+    def test_beyond_its_range_the_invisible_target_keeps_its_advantage(self) -> None:
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=40)
+        seer.truesight = 30
+        encounter = Encounter([ghost, seer], Random(3))
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
+
+    def test_unlike_blindsight_it_grants_nothing_to_an_observer_that_cannot_see(
+        self,
+    ) -> None:
+        # The narrowing that puts it above Blindsight rather than replacing it:
+        # Blindsight's SRD text says "even if you have the Blinded condition";
+        # Truesight's does not, so an observer whose own condition blocks
+        # sight (``cannot_see``) still cannot see through Invisible with
+        # Truesight alone. A condition with only ``cannot_see`` set, rather
+        # than the bundled Blinded, isolates the sight ladder from Blinded's
+        # own blanket attack-roll Disadvantage, which would otherwise
+        # dominate the assertion regardless of what the ladder does.
+        table = dict(EFFECTS) | {"sightless": ConditionEffect(cannot_see=True)}
+        ghost = fighter("Ghost", position=0)
+        ghost.add_condition(Condition.INVISIBLE)
+        seer = fighter("Seer", team="foes", position=20)
+        seer.truesight = 30
+        seer.condition_effects = table
+        seer.add_condition("sightless")
+        encounter = Encounter([ghost, seer], Random(3), condition_effects=table)
+        assert encounter.attack_advantage(
+            seer, ghost, seer.attacks[0]
+        ) is Advantage.DISADVANTAGE
 
 
 class TestAmmunition:
@@ -3929,6 +4490,51 @@ class TestMapFixtures:
         )
         assert events[0].data == {"feature": "sluice gate", "open": True}
 
+    def skill_checked_fight(self) -> tuple[Encounter, Random]:
+        """One fixture whose check names a skill, on an otherwise plain map."""
+        feature = fixture(
+            name="ledge",
+            square=(1, 1),
+            kind="fixture",
+            terrain=TerrainPair(closed="floor", open="floor"),
+            costs_action=True,
+            check=FeatureCheck(ability=Ability.STRENGTH, dc=15, skill="athletics"),
+        )
+        document = MapDocument.flat(
+            name="ledge-test", width=3, height=3, default_terrain="floor",
+            features=(feature,), provenance=fixture_provenance(FIXTURE),
+        )
+        rng = Random(3)
+        encounter = Encounter(
+            [fighter("Thora", position=square_center((1, 1))),
+             fighter("Foe", team="foes", position=square_center((2, 1)))],
+            rng, map_document=document,
+        )
+        return encounter, rng
+
+    def test_a_check_naming_a_skill_rolls_on_the_printed_skill_bonus(self) -> None:
+        # fighter's Strength modifier is +3 — the skill bonus below (+10)
+        # would clear DC 15 that the modifier alone would not.
+        encounter, rng = self.skill_checked_fight()
+        advance_to(encounter, "Thora", rng)
+        encounter.current.skill_bonuses = {"athletics": 10}
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="ledge"), FixedRandom(3)
+        )
+        assert events[0].data["check"] == "d20 [3] +10 = 13 vs DC 15"
+
+    def test_a_check_naming_a_skill_the_creature_has_no_bonus_for_rolls_the_ability_modifier(
+        self,
+    ) -> None:
+        # Regression pin: no skill bonus for the declared skill still falls back
+        # to the raw ability modifier, unchanged.
+        encounter, rng = self.skill_checked_fight()
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="ledge"), FixedRandom(15)
+        )
+        assert events[0].data["check"] == "d20 [15] +3 = 18 vs DC 15"
+
     # --- saying which way to move it --------------------------------------
     def test_set_open_makes_it_so_rather_than_toggling(self) -> None:
         encounter, rng = self.fight()
@@ -4500,6 +5106,43 @@ class TestSpellcasting:
                 rng,
             )
 
+    def test_a_cantrip_is_at_will_and_costs_no_slots(self) -> None:
+        """Cantrips are level 0 and bypass the slot-availability check.
+
+        The slot-level check at encounter.py:3000 and the decrement at :3068 are both
+        gated by ``if spell.level > 0:``, so level-0 spells skip both and consume no
+        resources. This test pins that behaviour; a cantrip succeeds even with an
+        empty spell_slots dict, and the dict remains empty after casting.
+        """
+        rng = Random(4)
+        cantrip_book: dict[str, Spell] = {
+            "Arcane Missile": Spell(
+                name="Arcane Missile",
+                level=0,
+                school="Evocation",
+                requires_attack_roll=True,
+                damage=Dice(1, 4, 0),
+                damage_type=DamageType.FORCE,
+                range_feet=60,
+                provenance=FIXTURE,
+            )
+        }
+        caster_creature = caster()
+        caster_creature.spells = ("Arcane Missile",)
+        caster_creature.spell_slots = {}  # Empty: no slots of any level
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        encounter = Encounter(
+            [caster_creature, goblin], rng, spellbook=cantrip_book
+        )
+        advance_to(encounter, "Wren", rng)
+        # Cast succeeds with no slots to spend
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Arcane Missile", targets=("Goblin",)),
+            FixedRandom(15),
+        )
+        # spell_slots remains empty after casting
+        assert caster_creature.spell_slots == {}
+
     def test_a_slot_below_the_spells_level_is_refused_before_anything_is_spent(
         self,
     ) -> None:
@@ -4709,6 +5352,88 @@ class TestSpellcasting:
         wizard.concentrating_on = "Hold Person"
         wizard.take_damage(wizard.hp)
         assert wizard.concentrating_on is None
+
+
+class TestConcentrationDurationCap:
+    """SRD 5.2.1: Hold Person is "Concentration, up to 1 minute" — 10 rounds.
+
+    Concentration already ends the effect four other ways (a failed
+    Constitution save, Incapacitated, death, starting another concentration
+    effect); this is the fifth, and the only one that fires with the caster
+    doing nothing at all. Neither route pre-empts the other: whichever
+    arrives first ends the effect.
+    """
+
+    def hold_person(
+        self, rng: Random, extra: list[Creature] | None = None
+    ) -> tuple[Encounter, Creature, Creature]:
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 1
+        encounter = Encounter([wren, victim, *(extra or [])], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions, "the save must fail to set up this test"
+        return encounter, wren, victim
+
+    def test_paralysis_releases_on_the_round_its_cap_expires_and_not_before(
+        self,
+    ) -> None:
+        rng = Random(11)
+        encounter, wren, victim = self.hold_person(rng)
+        cap = encounter.round + spellbook()["Hold Person"].duration_rounds
+        while encounter.round < cap - 1:
+            encounter.advance(rng)
+        assert Condition.PARALYZED in victim.conditions, (
+            f"still holds through round {encounter.round}, one short of the cap"
+        )
+        while encounter.round < cap:
+            events = encounter.advance(rng)
+        assert Condition.PARALYZED not in victim.conditions
+        ended = next(event for event in events if event.kind == "effect_end")
+        assert "paralyzed lifts" in ended.detail
+        assert wren.concentrating_on is None
+
+    def test_a_spell_with_no_duration_set_behaves_exactly_as_it_does_today(
+        self,
+    ) -> None:
+        # Guiding Bolt has no ongoing condition and no duration cap; it must not
+        # gain one as a side effect of this feature.
+        rng = Random(4)
+        priest = caster(position=0)
+        priest.spells = ("Guiding Bolt",)
+        priest.spell_slots = {1: 4}
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=20)
+        encounter = Encounter([priest, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                   targets=("Goblin",)),
+            Random(2),
+        )
+        assert not any(event.kind == "effect_apply" for event in events)
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_a_constitution_save_still_ends_it_before_the_cap_arrives(self) -> None:
+        # Concentration's own release routes are untouched by the cap: a failed
+        # save still ends the effect on whichever round it happens, well before
+        # the ten-round timer would. Same shape as
+        # ``TestConcentrationEffects.test_failing_the_concentration_save_frees_the_target``.
+        brute = fighter("Brute", team="foes", position=5, max_hp=40)
+        rng = Random(11)
+        encounter, wren, victim = self.hold_person(rng, extra=[brute])
+        advance_to(encounter, "Brute", rng)
+        # d20 15 hits AC 13; 1d8 damage; then a natural 1 on the Constitution save.
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+            ScriptedRandom([15, 5, 1]),
+        )
+        assert "loses Hold Person" in detail_of(events, "concentration")
+        assert wren.concentrating_on is None
+        assert Condition.PARALYZED not in victim.conditions
 
 
 class TestAoeShapes2D:
@@ -5965,3 +6690,244 @@ class TestHealingInAFight:
 
         assert thora.hp == 4
         assert ilma.spell_slots[1] == 2
+
+
+class TestExplorationMode:
+    """An interlude: a chapter with no initiative, no rounds and no end condition.
+
+    This is the container an adventure records its non-combat beats in, and it is
+    the fight's own stepper with the fight taken out rather than a second one. So
+    what a move costs, what a wall refuses and what a condition forbids are the
+    same facts here as anywhere else — the cases below pin that as hard as they
+    pin what changed.
+    """
+
+    @staticmethod
+    def _party() -> list[Creature]:
+        """One team, two members. A fight would already be over.
+
+        Thora walks; Kettle stands well clear of her route so that nothing below
+        is measuring a path around an ally rather than the thing it names.
+        """
+        return [fighter(), fighter("Kettle", position=(45, 0))]
+
+    def test_a_one_team_interlude_accepts_a_named_move_and_is_never_over(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            map_document=strip(10),
+        )
+
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Thora"
+        )
+
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 20
+        assert move.data["squares"] == [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
+        state = encounter.state()
+        assert state["over"] is False
+        assert state["winner"] is None
+
+    def test_the_same_one_team_encounter_in_combat_refuses_the_move_as_over(self) -> None:
+        """The reason an interlude needed a mode at all."""
+        rng = Random(1)
+        encounter = Encounter(self._party(), rng, map_document=strip(10))
+
+        assert encounter.over is True
+        with pytest.raises(EncounterError, match="the encounter is over"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
+
+    def test_a_fight_is_the_mode_nobody_had_to_ask_for(self) -> None:
+        assert Encounter([fighter(), make_monster("Wolf")], Random(1)).mode is (
+            EncounterMode.COMBAT
+        )
+
+    def test_the_state_reports_which_kind_of_chapter_this_is(self) -> None:
+        fight = Encounter([fighter(), make_monster("Wolf")], Random(1))
+        interlude = Encounter(
+            self._party(), Random(1), mode=EncounterMode.EXPLORATION
+        )
+
+        assert fight.state()["mode"] == EncounterMode.COMBAT.value
+        assert interlude.state()["mode"] == EncounterMode.EXPLORATION.value
+
+    def test_an_interlude_rolls_no_initiative_and_draws_no_dice_to_start(self) -> None:
+        """A seeded roll nobody reads is a divergence waiting to be found.
+
+        The combat half of the case is what stops this passing vacuously: if
+        construction ever stopped rolling initiative at all, only that assertion
+        would notice.
+        """
+        rng = Random(1)
+        undrawn = rng.getstate()
+
+        interlude = Encounter(self._party(), rng, mode=EncounterMode.EXPLORATION)
+
+        assert interlude.initiative == {}
+        assert rng.getstate() == undrawn
+
+        fought = Random(1)
+        Encounter([fighter(), make_monster("Wolf")], fought)
+        assert fought.getstate() != undrawn
+
+    def test_an_interlude_still_lists_everybody_in_a_settled_order(self) -> None:
+        """``order`` is what the brief walks, so it cannot simply be empty."""
+        interlude = Encounter(
+            [fighter("Kettle"), fighter("Thora"), fighter("Ambrose")],
+            Random(1),
+            mode=EncounterMode.EXPLORATION,
+        )
+
+        assert interlude.order == ["Ambrose", "Kettle", "Thora"]
+
+    def test_an_act_in_an_interlude_must_name_its_actor(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
+        )
+
+        with pytest.raises(EncounterError, match="no initiative.*must name its actor"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
+
+    def test_a_fight_refuses_an_act_that_names_its_actor(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(100, 0))], rng
+        )
+        advance_to(encounter, "Thora", rng)
+
+        with pytest.raises(EncounterError, match="initiative decides who acts"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=20), rng, actor="Thora"
+            )
+
+    def test_an_interlude_refuses_an_actor_it_has_no_combatant_for(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
+        )
+
+        with pytest.raises(EncounterError, match="no combatant named 'Nobody'"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Nobody"
+            )
+
+    def test_each_named_act_opens_a_fresh_beat_for_that_actor(self) -> None:
+        """Movement back to full, action and bonus action unspent.
+
+        The third act is the assertion that matters: walking the whole 30 feet
+        back is only affordable if the beat restored the budget the first act
+        spent, so a beat that failed to open would refuse it outright.
+        """
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
+        )
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(30, 0)), rng, actor="Thora"
+        )
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
+        encounter.act(Action(kind=ActionKind.DODGE), rng, actor="Thora")
+        assert encounter.state()["turn_state"]["action_used"] is True
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(0, 0)), rng, actor="Thora"
+        )
+        budget = encounter.state()["turn_state"]
+        assert budget["movement_left"] == 0
+        assert budget["action_used"] is False
+
+    def test_the_actor_may_change_from_one_beat_to_the_next(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, map_document=strip(10)
+        )
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Thora"
+        )
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(35, 0)), rng, actor="Kettle"
+        )
+
+        assert [record.actor for record in encounter.actions] == ["Thora", "Kettle"]
+        assert all(event.turn == "Kettle" for event in events)
+
+    def test_crossing_the_room_still_pays_for_the_ground(self) -> None:
+        """A real move, not a note about one."""
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            map_document=strip(10, terrain={(2, 0): "difficult", (3, 0): "difficult"}),
+        )
+
+        with pytest.raises(EncounterError, match="needs 35 ft"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(25, 0)), rng, actor="Thora"
+            )
+
+    def test_a_wall_still_stands_in_an_interlude(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            map_document=strip(10, terrain={(1, 0): "wall"}),
+        )
+
+        with pytest.raises(EncounterError, match="no route"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng, actor="Thora"
+            )
+
+    def test_an_interlude_still_refuses_an_actor_who_cannot_act(self) -> None:
+        rng = Random(1)
+        held = fighter("Kettle", position=(45, 0))
+        held.add_condition(Condition.INCAPACITATED)
+        encounter = Encounter(
+            [fighter(), held], rng,
+            mode=EncounterMode.EXPLORATION,
+            map_document=strip(10),
+        )
+
+        with pytest.raises(EncounterError, match="Kettle is incapacitated"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(35, 0)), rng, actor="Kettle"
+            )
+
+    def test_an_interlude_has_no_rounds_to_advance(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(self._party(), rng, mode=EncounterMode.EXPLORATION)
+
+        with pytest.raises(EncounterError, match="an interlude has no rounds"):
+            encounter.advance(rng)
+
+    def test_a_refused_act_opens_no_beat_and_costs_the_last_one_nothing(self) -> None:
+        """The refusal costs nothing, as everywhere else in this file.
+
+        Naming an actor who cannot act must not quietly hand them a fresh
+        budget, nor take the floor away from whoever was standing on it.
+        """
+        rng = Random(1)
+        held = fighter("Kettle", position=(45, 0))
+        held.add_condition(Condition.INCAPACITATED)
+        encounter = Encounter(
+            [fighter(), held], rng,
+            mode=EncounterMode.EXPLORATION,
+            map_document=strip(10),
+        )
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(30, 0)), rng, actor="Thora"
+        )
+        spent = encounter.state()
+
+        with pytest.raises(EncounterError, match="Kettle is incapacitated"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(40, 0)), rng, actor="Kettle"
+            )
+
+        assert encounter.state() == spent

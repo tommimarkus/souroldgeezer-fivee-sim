@@ -35,6 +35,7 @@ from fivee_sim.service import content_ops as _content_ops
 from fivee_sim.service import encounters as _encounters
 from fivee_sim.service import map_ops as _map_ops
 from fivee_sim.service import primitives as _primitives
+from fivee_sim.service import rulings as _rulings
 from fivee_sim.service import scenes as _scenes
 from fivee_sim.service import sessions as _sessions
 
@@ -96,6 +97,10 @@ def save(
     )
 
 
+def rules_rulings(code: str = "", kind: str = "") -> dict[str, Any]:
+    return _rulings.listing(code=code, kind=kind)
+
+
 def lookup_rule(topic: str = "") -> dict[str, Any]:
     return _primitives.lookup_rule(STATE, topic)
 
@@ -128,9 +133,11 @@ def encounter_create(
     map_id: str | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    mode: str = "combat",
 ) -> dict[str, Any]:
     return _encounters.create(
-        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer
+        STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer,
+        mode=mode,
     )
 
 
@@ -143,10 +150,11 @@ def encounter_condition(
     target: str,
     condition: str,
     applied: bool = True,
+    levels: int = 1,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.condition(
-        STATE, encounter_id, target, condition, applied, request_id
+        STATE, encounter_id, target, condition, applied, levels, request_id
     )
 
 
@@ -155,8 +163,9 @@ def encounter_note(
     text: str,
     category: str = "note",
     request_id: str | None = None,
+    speaker: str | None = None,
 ) -> dict[str, Any]:
-    return _encounters.note(STATE, encounter_id, text, category, request_id)
+    return _encounters.note(STATE, encounter_id, text, category, request_id, speaker)
 
 
 def encounter_log(
@@ -191,6 +200,7 @@ def encounter_act(
     natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    actor: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
         STATE,
@@ -216,6 +226,7 @@ def encounter_act(
         natural,
         request_id,
         viewer,
+        actor=actor,
     )
 
 
@@ -270,6 +281,8 @@ def adventure_encounter(
     map_id: str | None = None,
     request_id: str | None = None,
     expected_version: str | None = None,
+    mode: str = "combat",
+    carry_map: bool = False,
 ) -> dict[str, Any]:
     return _adventures.link_encounter(
         STATE,
@@ -283,6 +296,8 @@ def adventure_encounter(
         map_id,
         request_id,
         expected_version,
+        mode=mode,
+        carry_map=carry_map,
     )
 
 

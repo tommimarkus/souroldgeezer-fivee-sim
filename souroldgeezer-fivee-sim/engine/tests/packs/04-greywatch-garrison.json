@@ -195,13 +195,11 @@
       "level": 1,
       "school": "Enchantment",
       "condition": "greywatch-rallied",
+      "temp_hp": "0d1+5",
       "concentration": true,
       "range_feet": 30,
       "max_targets": 3,
-      "provenance": "Original content — Greywatch Garrison",
-      "unmodelled": [
-        "Also grants 5 temporary hit points, which the engine does not model"
-      ]
+      "provenance": "Original content — Greywatch Garrison"
     },
     {
       "name": "Greywatch Bolt-Blessing",

@@ -61,6 +61,7 @@ from typing import Any
 from ..kernel.grid import as_point
 from ..kernel.rules import Ability
 from ..model.creature import AttackOption, Creature
+from ..model.encounter import EncounterMode
 from ..paths import (
     REPLAYS_ENV,
     REPLAYS_SUBDIR,
@@ -295,13 +296,17 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "ac": creature.ac,
         "max_hp": creature.max_hp,
         "hp": creature.hp,
+        "temp_hp": creature.temp_hp,
         "speed": creature.speed,
         "climb_speed": creature.climb_speed,
         "swim_speed": creature.swim_speed,
         "fly_speed": creature.fly_speed,
+        "burrow_speed": creature.burrow_speed,
         "terrain_cost_overrides": sorted(creature.terrain_cost_overrides),
         "darkvision": creature.darkvision,
         "blindsight": creature.blindsight,
+        "tremorsense": creature.tremorsense,
+        "truesight": creature.truesight,
         "death_rule": creature.death_rule.value,
         "size": creature.size.value,
         "abilities": {
@@ -313,6 +318,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
                 creature.save_bonuses.items(), key=lambda item: item[0].value
             )
         },
+        "skill_bonuses": dict(sorted(creature.skill_bonuses.items())),
         "attacks": [_attack_payload(option) for option in creature.attacks],
         "attacks_per_action": creature.attacks_per_action,
         "bonus_actions": sorted(creature.bonus_actions),
@@ -336,12 +342,22 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         # fight without this would fall back to its Dexterity modifier even
         # when its stat block prints a different Initiative bonus.
         "initiative_bonus": creature.initiative_bonus,
+        # Transcription-only, like the field above it, but consumed by
+        # nothing: carried so a recovered combatant's sheet still reads
+        # exactly as authored.
+        "passive_perception": creature.passive_perception,
         "resistances": sorted(kind.value for kind in creature.resistances),
         "immunities": sorted(kind.value for kind in creature.immunities),
         "vulnerabilities": sorted(kind.value for kind in creature.vulnerabilities),
         "condition_immunities": sorted(creature.condition_immunities),
         "items": dict(sorted(creature.items.items())),
         "conditions": sorted(creature.conditions),
+        # Unconditional like ``Encounter._creature_state``'s own emission — see
+        # the ruling there. Only entries above level 1 are named; level 1 is
+        # what every condition without a level already reads as.
+        "condition_levels": dict(sorted(
+            (name, level) for name, level in creature.conditions.items() if level != 1
+        )),
         # How the fight left them. Without these a recovered combatant comes
         # back on their feet: `dying` is derived as `not dead and hp == 0 and
         # not stable`, so dropping `stable` alone turns a stabilised creature
@@ -403,6 +419,7 @@ def replay_bundle_v2(
     encounter_id: str,
     seed: int,
     movement_rule: str,
+    mode: str,
     map_payload: Mapping[str, Any] | None,
     initial_creatures: Sequence[Mapping[str, Any]],
     normalized_combatants: Sequence[Mapping[str, Any]],
@@ -444,6 +461,13 @@ def replay_bundle_v2(
             "id": encounter_id,
             "seed": seed,
             "movement_rule": movement_rule,
+            # Which kind of chapter this was. Required of the caller rather than
+            # defaulted, because it is the one fact in this block a reader
+            # cannot recover from anything else in the bundle: an interlude
+            # rolls no initiative and holds no floor, so its states differ from
+            # a fight's by an *absence*, and absence is exactly what a default
+            # would let a caller record by accident.
+            "mode": mode,
         },
         "actions": [dict(action) for action in actions],
         "latest_state": dict(latest_state),
@@ -505,13 +529,46 @@ def _validate_combatants(
                 found.append(_diagnostic(f"{item_path}.{key}", "must be numeric"))
 
 
-def _validate_state(value: Any, path: str, found: list[dict[str, str]]) -> None:
+def _declared_mode(payload: Mapping[str, Any]) -> EncounterMode | None:
+    """The kind of chapter a v2 bundle says it is, or ``None`` for an unreadable one.
+
+    ``None`` covers two different documents and deliberately reads them the same
+    way. One is a bundle frozen **before** interludes existed: it carries no
+    ``mode``, every such fight was a fight, and refusing the key's absence would
+    make every replay already on a user's disk unplayable at the version that
+    added it. The other is a bundle whose ``mode`` is not a mode at all, which is
+    diagnosed where it stands — and then falls back to a fight's *stricter*
+    reading here, so a document that says nothing credible about itself is never
+    granted the interlude's relaxation on top of the complaint it already earned.
+    """
+    encounter = payload.get("encounter")
+    if not isinstance(encounter, Mapping):
+        return None
+    try:
+        return EncounterMode(encounter["mode"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _validate_state(
+    value: Any, path: str, found: list[dict[str, str]], *, mode: EncounterMode | None
+) -> None:
     if not isinstance(value, Mapping):
         found.append(_diagnostic(path, "must be an object"))
         return
     if not isinstance(value.get("round"), int) or isinstance(value.get("round"), bool):
         found.append(_diagnostic(f"{path}.round", "must be an integer"))
-    if not isinstance(value.get("turn"), str):
+    # Nobody holds the floor between an interlude's beats, so its every state
+    # payload reports ``turn`` as null. The rule is conditioned rather than
+    # relaxed: a *fight* with no turn is still a broken bundle, and an interlude
+    # naming somebody is claiming an initiative order that was never rolled.
+    turn = value.get("turn")
+    if mode is EncounterMode.EXPLORATION:
+        if turn is not None:
+            found.append(
+                _diagnostic(f"{path}.turn", "must be null in an interlude")
+            )
+    elif not isinstance(turn, str):
         found.append(_diagnostic(f"{path}.turn", "must be a string"))
     _validate_combatants(value.get("combatants"), f"{path}.combatants", found)
 
@@ -624,6 +681,18 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
             )
         elif encounter_seed != seed:
             found.append(_diagnostic("encounter.seed", "must equal seed"))
+        # Graded against the model's own declaration rather than a set spelled
+        # out here, for the reason the route table's enum is: this is a closed
+        # set with an owner. Absence is not a finding — see :func:`_declared_mode`.
+        if "mode" in encounter:
+            try:
+                EncounterMode(encounter["mode"])
+            except (TypeError, ValueError):
+                allowed = ", ".join(one.value for one in EncounterMode)
+                found.append(
+                    _diagnostic("encounter.mode", f"must be one of: {allowed}")
+                )
+    mode = _declared_mode(payload)
     for key in ("actions", "checkpoints", "attempts"):
         records = payload.get(key)
         if not isinstance(records, list):
@@ -634,8 +703,8 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
                     found.append(_diagnostic(f"{key}.{index}", "must be an object"))
     if isinstance(initial, Mapping):
         _validate_combatants(initial.get("combatants"), "initial.combatants", found)
-        _validate_state(initial.get("state"), "initial.state", found)
-    _validate_state(payload.get("latest_state"), "latest_state", found)
+        _validate_state(initial.get("state"), "initial.state", found, mode=mode)
+    _validate_state(payload.get("latest_state"), "latest_state", found, mode=mode)
     if not isinstance(payload.get("content"), Mapping):
         found.append(_diagnostic("content", "must be an object"))
     if isinstance(events, list):
@@ -684,7 +753,7 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
                     _diagnostic(f"checkpoints.{index}.state", "must be an object")
                 )
             else:
-                _validate_state(state, f"checkpoints.{index}.state", found)
+                _validate_state(state, f"checkpoints.{index}.state", found, mode=mode)
                 try:
                     state_hash = canonical_sha256(state)
                 except (TypeError, ValueError):
@@ -810,9 +879,48 @@ def _validate_chapters(value: Any, found: list[dict[str, str]]) -> None:
         if not isinstance(nested, Mapping):
             found.append(_diagnostic(f"{at}.replay", "must be an object"))
             continue
+        _validate_chapter_mode(chapter, nested, at, found)
         found.extend(
             _diagnostic(f"{at}.replay.{one['path']}", one["problem"])
             for one in validate_replay(nested)
+        )
+
+
+def _validate_chapter_mode(
+    chapter: Mapping[str, Any],
+    nested: Mapping[str, Any],
+    at: str,
+    found: list[dict[str, str]],
+) -> None:
+    """Which kind of chapter the envelope says this was, held to the artifact.
+
+    Two checks, because the field is a *copy*. Membership grades it against the
+    model's own declaration; agreement grades it against the bundle it sits
+    beside, which is where the copy came from. Without the second, an envelope
+    could summarise a run as three fights while carrying an interlude, and a
+    reader trusting the summary would draw an initiative order for a chapter
+    that never rolled one.
+
+    A chapter that says nothing is not a finding, for the reason
+    :func:`_declared_mode` gives: an envelope composed before chapters carried
+    the field is still a playable record of a run of fights.
+    """
+    if "mode" not in chapter:
+        return
+    declared = chapter["mode"]
+    try:
+        EncounterMode(declared)
+    except (TypeError, ValueError):
+        allowed = ", ".join(one.value for one in EncounterMode)
+        found.append(_diagnostic(f"{at}.mode", f"must be one of: {allowed}"))
+        return
+    frozen = _declared_mode(nested)
+    if frozen is not None and frozen != declared:
+        found.append(
+            _diagnostic(
+                f"{at}.mode",
+                f"says {declared!r} where its own replay says {frozen.value!r}",
+            )
         )
 
 

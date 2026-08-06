@@ -26,7 +26,13 @@ from ..kernel.conditions import UnknownCondition
 from ..kernel.dice import DiceError
 from ..kernel.grid import MovementMode
 from ..map_document import as_payload
-from ..model.encounter import EVENT_LISTS, Action, ActionKind, EncounterError
+from ..model.encounter import (
+    EVENT_LISTS,
+    Action,
+    ActionKind,
+    EncounterError,
+    EncounterMode,
+)
 from . import content_ops, map_ops, primitives, sessions, specs
 from . import encounter_journal as journal_service
 from . import replay as replay_service
@@ -174,26 +180,38 @@ def create(
     map_id: str | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    *,
+    mode: str = EncounterMode.COMBAT.value,
 ) -> dict[str, Any]:
-    """Start a fight, and answer either the GM or one seat in it.
+    """Start a chapter, and answer either the GM or one seat in it.
 
     ``viewer`` names a combatant in ``combatants``, and narrows the ``state``
     this returns to what that chair may hold. Omitted, nothing changes.
+
+    ``mode`` says which kind of chapter it is — a fight by default, so every
+    caller written before interludes existed starts exactly what it always
+    started. Keyword-only because it is the first argument added past the
+    positional chain above, and one more positional slot on a call this long is
+    how the wrong value ends up in the right place.
     """
     if request_id is not None:
         existing = creation_request(state, request_id)
         if existing is not None:
             return _briefed(existing[1], creation_response(state, *existing), viewer)
+    chapter = specs.parse_mode(mode)
     used = specs.checked_seed(seed)
     rng = Random(used)
     content = sessions.active_content(state)
     resolved = sessions.resolve_battle_map(state, map_spec, map_id)
     try:
-        built_combatants = specs.combatants_from_specs(combatants, content.registry)
+        built_combatants = specs.combatants_from_specs(
+            combatants, content.registry, mode=chapter
+        )
         encounter = sessions.new_encounter(
             built_combatants, rng, content.registry,
             movement_rule=specs.parse_movement_rule(movement_rule),
             map_document=resolved.document if resolved is not None else None,
+            mode=chapter,
         )
     except EncounterError as error:
         raise RequestError(str(error)) from error
@@ -249,6 +267,12 @@ def create(
                 "encounter_id": encounter_id,
                 "engine_version": __version__,
                 "seed": used,
+                # Which kind of chapter this is, written once and durably: this
+                # is the only place the mode survives a process, and recovery
+                # reads it back to rebuild the same kind of encounter. Taken
+                # from the encounter rather than from the argument, so what is
+                # recorded is what was built.
+                "mode": encounter.mode.value,
                 "movement_rule": encounter.movement_rule.value,
                 "content_generation": content.generation,
                 "content": session.content_snapshot,
@@ -304,7 +328,24 @@ def note(
     text: str,
     category: str = "note",
     request_id: str | None = None,
+    speaker: str | None = None,
 ) -> dict[str, Any]:
+    """Write a line of the record, optionally in somebody's voice.
+
+    ``speaker`` names a combatant in this encounter, so a line can be drawn at
+    that creature's token rather than floating over the map. It is checked
+    against the roster before anything durable happens, for the reason
+    :func:`act` checks its ``actor`` there: journaling an attempt for a creature
+    this fight does not hold writes a beat nobody took into the record a replay
+    is built from. The refusal is :func:`require_seat`'s one sentence, so an
+    unknown name answers the same ``404`` from a note as from a brief.
+
+    Nothing new is journaled. A note is already an audited attempt, so the
+    speaker rides in that attempt's arguments and reaches the v2 bundle with it.
+    """
+    if speaker is not None:
+        require_seat(sessions.session_for(state, encounter_id).encounter.creatures, speaker)
+
     def execute() -> dict[str, Any]:
         written = text.strip()
         label = category.strip()
@@ -318,6 +359,7 @@ def note(
             "encounter_id": encounter_id,
             "text": written,
             "category": label,
+            "speaker": speaker,
             "timestamp": sessions.utc_now(),
         }
 
@@ -326,7 +368,7 @@ def note(
         encounter_id=encounter_id,
         request_id=request_id,
         operation="encounter_note",
-        arguments={"text": text, "category": category},
+        arguments={"text": text, "category": category, "speaker": speaker},
         execute=execute,
     )
 
@@ -349,6 +391,7 @@ def condition(
     target: str,
     condition_name: str,
     applied: bool = True,
+    levels: int = 1,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Impose or lift a condition on one combatant by the table's ruling.
@@ -356,20 +399,53 @@ def condition(
     Journalled like an action rather than like a note, because it changes the
     fight: a resume that replayed the notes and not this would rebuild a
     different creature.
+
+    And *stamped and checkpointed* like an action, for the same reason and by
+    the same three lines :func:`execute_act` uses. This is the third mutator of
+    an encounter and the only one that ever skipped them, which left every
+    fight where somebody made a ruling exporting a bundle
+    ``replay.validate_replay`` refuses — unstamped events, and a
+    ``latest_state`` one ruling past the final checkpoint. Recovery had it
+    right all along (``sessions.recover_session`` replays this operation with
+    both), so the two paths disagreed about the same fight.
+
+    ``levels`` is forwarded to :meth:`Encounter.set_condition` unchanged — it
+    only accumulates on a condition the effect row marks ``cumulative``, so a
+    GM imposing three levels of an ordinary condition gets the same level-1
+    result a caller who never sends it gets.
     """
+    # Checked here rather than left to ``Creature.add_condition``'s own floor:
+    # that one raises a bare ValueError, which the adapter would answer as a
+    # 500. A level a caller typed is bad input and gets said so.
+    if levels < 1:
+        raise RequestError(
+            f"levels is {levels}, and a condition level must be at least 1 — "
+            f"a numeric condition effect scales by the level, so one below it "
+            f"inverts the effect rather than weakening it"
+        )
     session = sessions.session_for(state, encounter_id)
 
     def execute() -> dict[str, Any]:
+        before = len(session.encounter.log)
         try:
-            session.encounter.set_condition(target, condition_name, applied=applied)
+            session.encounter.set_condition(
+                target, condition_name, applied=applied, levels=levels
+            )
         except (EncounterError, UnknownCondition) as error:
             raise RequestError(str(error)) from error
+        completed_at = sessions.utc_now()
+        session.event_timestamps.extend(
+            [completed_at] * (len(session.encounter.log) - before)
+        )
+        sessions.capture_checkpoint(session, completed_at)
+        target_creature = session.encounter.creatures[target]
         return {
             "encounter_id": encounter_id,
             "target": target,
             "condition": condition_name,
             "applied": applied,
-            "conditions": sorted(session.encounter.creatures[target].conditions),
+            "conditions": sorted(target_creature.conditions),
+            "level": target_creature.level_of(condition_name),
         }
 
     return primitives.audited_primitive(
@@ -381,6 +457,7 @@ def condition(
             "target": target,
             "condition": condition_name,
             "applied": applied,
+            "levels": levels,
         },
         execute=execute,
     )
@@ -437,6 +514,8 @@ def execute_act(
     as_bonus_action: bool = False,
     facing: str | None = None,
     natural: int | list[int] | None = None,
+    *,
+    actor: str | None = None,
 ) -> dict[str, Any]:
     """Take an action for the creature whose turn it is.
 
@@ -465,11 +544,16 @@ def execute_act(
     ends a move on another storey: walk to a stairway on your own level — the
     square named by ``to_position`` — and it carries you, charging the rise
     between the two floors as a climb. ``movement_mode`` selects walk, climb,
-    swim, or fly; the creature must have that speed, and flight does not need a
+    swim, fly, or burrow; the creature must have that speed, and flight does not need a
     connector. ``facing`` sets where the actor ends up looking, overriding what
     a move would otherwise derive from the leg that ended it; it changes no roll
     and is refused unless it names one of the eight grid directions. Illegal
     actions are refused with the reason rather than silently adjusted.
+
+    ``actor`` names who is taking it, and belongs to an **interlude**: nothing
+    there decided an order, so each act opens a fresh beat for the creature it
+    names. A fight refuses it — initiative has already answered that question,
+    and a second answer beside it would be a quieter turn order.
 
     The audited path is :func:`act`; this is the step it wraps, kept separate
     so the attempt and result records can bracket exactly the work that moves
@@ -533,7 +617,7 @@ def execute_act(
         natural=specs.parse_natural(natural),
     )
     try:
-        events = session.encounter.act(action, session.rng)
+        events = session.encounter.act(action, session.rng, actor=actor)
     except (EncounterError, DiceError) as error:
         raise RequestError(str(error)) from error
     completed_at = sessions.utc_now()
@@ -569,17 +653,32 @@ def act(
     natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    *,
+    actor: str | None = None,
 ) -> dict[str, Any]:
     """Take the turn, and answer either the GM or one seat in the fight.
 
     ``viewer`` narrows the returned ``state`` and nothing else. What is
     journaled and what an idempotent retry replays stay whole: this fight's
     audit record is the GM's, whichever chair happened to post the action.
+
+    ``actor`` names who acts in an interlude, and is journaled with the rest of
+    the arguments: it is an input the chapter cannot re-derive, so a recovery
+    that dropped it would replay somebody else's beat.
     """
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
         return _briefed(session, cached, viewer)
+    # Before anything durable happens, and for the reason ``create`` refuses an
+    # unknown ``viewer`` before it starts a fight: a mistyped name is a client's
+    # mistake rather than a table's event, and journaling an attempt and a
+    # refusal for a creature that does not exist writes a beat nobody took into
+    # the record a replay is built from. Only in an interlude, because a fight
+    # has a better answer for a named actor — that it takes none at all — and
+    # ``404 no combatant named`` would send its caller looking for a typo.
+    if actor is not None and session.encounter.mode is EncounterMode.EXPLORATION:
+        require_seat(session.encounter.creatures, actor)
     arguments: dict[str, Any] = {
         "kind": kind,
         "target": target,
@@ -599,6 +698,12 @@ def act(
         "movement_mode": movement_mode,
         "as_bonus_action": as_bonus_action,
         "facing": specs.parse_facing(facing),
+        # Recorded for the same reason ``natural`` below is: it is an input the
+        # engine cannot re-derive. An interlude has no initiative, so an act
+        # replayed without its actor is not the act that was taken — it is
+        # refused, and the caller reading the refusal sees a complaint about
+        # initiative rather than a missing field.
+        "actor": actor,
         # Normalised before it is written, like ``facing`` above: a resume reads
         # this dict back through ``specs.action_from_journal``, so what is
         # recorded has to be what the action actually ran with. A face left out
@@ -634,6 +739,7 @@ def act(
             as_bonus_action,
             facing,
             natural,
+            actor=actor,
         )
     except (RequestError, EncounterError) as error:
         sessions.attempt_finished(

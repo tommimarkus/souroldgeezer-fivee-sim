@@ -20,6 +20,7 @@ stale version is refused rather than merged, and a retried link under one
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -28,6 +29,7 @@ from fivee_sim.service import adventures, specs
 from fivee_sim.service.errors import NotFoundError, RequestError, StaleWriteError
 
 from . import api
+from .conftest import AMBUSHER, LOOKOUT, MILL, SCOUT
 
 #: Two hand-written combatants standing next to each other, each swinging at a
 #: bonus that beats the other's AC on all but a natural 1. The fight only has to
@@ -68,7 +70,6 @@ RUFFIAN: dict[str, Any] = {
         }
     ],
 }
-
 
 #: Keys a spec accepts *and* the state payload reports, that are deliberately
 #: not carried. Written out so shrinking ``CARRIED_STATE_KEYS`` is a decision
@@ -637,3 +638,375 @@ class TestLinkingEncounters:
 
         with pytest.raises(RequestError, match="combatant names must be unique"):
             api.adventure_encounter("adv-1", combatants=[dict(BRAWLER)], seed=74)
+
+
+class TestInterludeChapters:
+    """A run is fights *and* interludes, and the boundary keeps the ground.
+
+    ``mode`` on the link is the whole of "start a chapter with no fight in it",
+    and ``carry_map`` is the whole of "on the same floor as the last one". The
+    party's squares already crossed the boundary — ``position`` has been in
+    :data:`~fivee_sim.service.adventures.CARRIED_STATE_KEYS` since the first
+    link — but the *map* did not, so an ambush at the mill meant restating the
+    map id every chapter and a mistyped one silently put the fight somewhere
+    else.
+    """
+
+    def link_the_mill(self, seed: int = 80) -> str:
+        """An adventure whose first chapter is an interlude on a saved map."""
+        api.map_save("mill", MILL, "*")
+        api.adventure_create("The Drowned Mill")
+        linked = api.adventure_encounter(
+            "adv-1",
+            combatants=[dict(SCOUT), dict(LOOKOUT)],
+            seed=seed,
+            map_id="mill",
+            mode="exploration",
+        )
+        return str(linked["encounter_id"])
+
+    def test_the_party_starts_the_fight_on_the_squares_the_interlude_left_them(
+        self,
+    ) -> None:
+        # The claim the phase exists to make, end to end and against the
+        # interlude's *live* ending state rather than a second copy of the
+        # numbers: a run that carried nobody would leave `ending` and `arrived`
+        # agreeing about an empty set of names, so the case asserts the walk
+        # happened and that every name it produced arrived.
+        interlude = self.link_the_mill()
+        api.encounter_act(interlude, "move", to_position=[25, 25], actor="Kettle")
+        api.encounter_act(interlude, "move", to_position=[25, 15], actor="Bo")
+        ending = {
+            entry["name"]: entry["position"]
+            for entry in api.encounter_state(interlude)["combatants"]
+        }
+        api.encounter_finalize(interlude)
+
+        ambush = api.adventure_encounter(
+            "adv-1",
+            combatants=[dict(AMBUSHER)],
+            seed=81,
+            carry_map=True,
+            mode="combat",
+        )
+        state = api.encounter_state(str(ambush["encounter_id"]))
+        arrived = {entry["name"]: entry["position"] for entry in state["combatants"]}
+
+        assert ending == {"Kettle": [25, 25], "Bo": [25, 15]}
+        assert ending["Kettle"] != SCOUT["position"], (
+            "nobody moved in the interlude, so the carry-over proves nothing"
+        )
+        assert {name: arrived[name] for name in ending} == ending
+        assert arrived["Stalker"] == AMBUSHER["position"]
+        # The ground came with them, and it is the same file rather than a
+        # second copy of it.
+        assert state["map_source"]["map_id"] == "mill"
+        assert state["mode"] == "combat"
+        assert state["turn"] is not None, "the linked chapter is a fight again"
+
+    def test_the_run_records_which_kind_of_chapter_each_member_is(self) -> None:
+        interlude = self.link_the_mill(seed=82)
+        api.encounter_finalize(interlude)
+        api.adventure_encounter(
+            "adv-1", combatants=[dict(AMBUSHER)], seed=83, carry_map=True
+        )
+
+        members = api.adventure_state("adv-1")["members"]
+
+        assert [member["mode"] for member in members] == ["exploration", "combat"]
+
+    def test_the_listing_says_the_shape_of_a_run_without_opening_a_chapter(
+        self,
+    ) -> None:
+        # The point of putting it on the listing at all: an adventure's shape —
+        # walk, fight, walk — is legible from one call that reads no journal and
+        # no replay artifact.
+        interlude = self.link_the_mill(seed=84)
+        api.encounter_finalize(interlude)
+        api.adventure_encounter(
+            "adv-1", combatants=[dict(AMBUSHER)], seed=85, carry_map=True
+        )
+
+        entry = api.adventure_list("all")["adventures"][0]
+
+        assert entry["encounters"] == 2
+        assert entry["modes"] == ["exploration", "combat"]
+
+    def test_a_link_that_says_nothing_about_the_mode_still_starts_a_fight(self) -> None:
+        # Omission keeps meaning exactly what it meant, which is what lets every
+        # caller written before interludes existed stay correct.
+        api.adventure_create("Keep on the Borderlands")
+        linked = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=86)
+
+        assert api.encounter_state(str(linked["encounter_id"]))["mode"] == "combat"
+        assert api.adventure_state("adv-1")["members"][0]["mode"] == "combat"
+
+    def test_a_mode_nobody_declared_is_refused_by_the_one_declaration(self) -> None:
+        api.adventure_create("The Drowned Mill")
+
+        with pytest.raises(RequestError, match="mode must be one of: combat, exploration"):
+            api.adventure_encounter(
+                "adv-1", combatants=[dict(SCOUT)], seed=87, mode="wandering"
+            )
+        assert api.adventure_state("adv-1")["members"] == []
+
+
+    def test_a_member_that_is_not_a_record_at_all_is_a_corrupt_document(self) -> None:
+        # The listing now reads a field off every member rather than counting
+        # them, so a document whose members are not records has to be refused
+        # by name instead of raising out of the middle of a listing.
+        api.adventure_create("The Sunless Citadel")
+        path = adventures.adventure_path("adv-1")
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["members"] = ["enc-1"]
+        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+        with pytest.raises(RequestError, match="member 0 is not a record"):
+            api.adventure_state("adv-1")
+
+        listed = api.adventure_list("all")["adventures"]
+        assert [entry["status"] for entry in listed] == ["corrupt"]
+        assert "member 0 is not a record" in listed[0]["problem"]
+
+
+class TestCarryingTheGround:
+    """``carry_map`` reuses a *saved* map, resolved from the frozen journal."""
+
+    def link_the_mill(self, seed: int = 88) -> str:
+        api.map_save("mill", MILL, "*")
+        api.adventure_create("The Drowned Mill")
+        linked = api.adventure_encounter(
+            "adv-1",
+            combatants=[dict(SCOUT), dict(LOOKOUT)],
+            seed=seed,
+            map_id="mill",
+            mode="exploration",
+        )
+        return str(linked["encounter_id"])
+
+    def test_the_map_is_resolved_from_the_journal_and_not_a_live_session(self) -> None:
+        # The same reason composition reads frozen artifacts: the previous
+        # chapter's session is dropped here, so a resolver that reached for one
+        # would either recover the whole fight to read one id off it or fail
+        # outright. The record on disk is what a chapter *was* started on.
+        interlude = self.link_the_mill()
+        api.STATE.sessions.pop(interlude)
+
+        linked = api.adventure_encounter(
+            "adv-1", carry=[], combatants=[dict(AMBUSHER), dict(SCOUT)], seed=89,
+            carry_map=True,
+        )
+        state = api.encounter_state(str(linked["encounter_id"]))
+
+        assert interlude not in api.STATE.sessions
+        assert state["map_source"]["map_id"] == "mill"
+
+    def test_omitting_it_leaves_the_next_chapter_with_no_map_at_all(self) -> None:
+        # The control for every case above: carrying is explicit because
+        # omitting it means theatre of the mind, and that has to keep meaning
+        # what it always meant.
+        self.link_the_mill(seed=90)
+
+        linked = api.adventure_encounter(
+            "adv-1", combatants=[dict(AMBUSHER)], seed=91
+        )
+
+        assert api.encounter_state(str(linked["encounter_id"]))["map_source"] is None
+
+    def test_carrying_a_map_and_naming_one_is_refused(self) -> None:
+        self.link_the_mill(seed=92)
+
+        with pytest.raises(
+            RequestError, match="carry_map cannot be given with 'map_id'"
+        ):
+            api.adventure_encounter(
+                "adv-1", combatants=[dict(AMBUSHER)], seed=93,
+                carry_map=True, map_id="mill",
+            )
+
+    def test_carrying_a_map_and_sending_one_inline_is_refused(self) -> None:
+        self.link_the_mill(seed=94)
+
+        with pytest.raises(RequestError, match="carry_map cannot be given with 'map'"):
+            api.adventure_encounter(
+                "adv-1", combatants=[dict(AMBUSHER)], seed=95,
+                carry_map=True, map=dict(MILL),
+            )
+
+    def test_carrying_a_map_before_there_is_a_chapter_to_carry_from_is_refused(
+        self,
+    ) -> None:
+        api.adventure_create("The Drowned Mill")
+
+        with pytest.raises(
+            RequestError,
+            match="adventure 'adv-1' has no encounter to carry a map from yet",
+        ):
+            api.adventure_encounter(
+                "adv-1", combatants=[dict(SCOUT), dict(LOOKOUT)], seed=96,
+                carry_map=True,
+            )
+        assert api.adventure_state("adv-1")["members"] == []
+
+    def test_carrying_from_a_chapter_that_was_never_on_a_map_is_refused(self) -> None:
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=97)
+
+        with pytest.raises(
+            RequestError,
+            match="cannot carry the map of encounter 'enc-1': it was not on a map",
+        ):
+            api.adventure_encounter("adv-1", seed=98, carry_map=True)
+
+    def test_carrying_a_map_that_was_sent_inline_is_a_different_refusal(self) -> None:
+        # The distinction the three map keys force. An inline map *is* a map —
+        # ``map_kind`` says ``inline`` — but it was never saved, so there is no
+        # id to reuse and the remedy is to send the document again rather than
+        # to put the chapter on a map at all. One message for both would send
+        # the caller to the wrong fix.
+        api.adventure_create("The Drowned Mill")
+        api.adventure_encounter(
+            "adv-1", combatants=[dict(SCOUT), dict(LOOKOUT)], seed=99,
+            map=dict(MILL), mode="exploration",
+        )
+
+        with pytest.raises(
+            RequestError,
+            match=(
+                "cannot carry the map of encounter 'enc-1': it was given its "
+                "map inline, so it has no id to carry"
+            ),
+        ):
+            api.adventure_encounter(
+                "adv-1", combatants=[dict(AMBUSHER)], seed=100, carry_map=True
+            )
+
+    def test_a_refused_carry_map_starts_no_encounter(self) -> None:
+        # Refused before anything durable happens, the way a stale version is:
+        # a link that created its fight and only then found it had no map to
+        # carry would leave a whole journal belonging to no run at all.
+        api.adventure_create("The Sunless Citadel")
+        api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=101)
+
+        with pytest.raises(RequestError, match="was not on a map"):
+            api.adventure_encounter("adv-1", seed=102, carry_map=True)
+
+        assert len(api.adventure_state("adv-1")["members"]) == 1
+        assert len(api.encounter_list("all")["encounters"]) == 1
+
+class TestTempHpCarryForward:
+    """``temp_hp`` joined ``CARRIED_STATE_KEYS`` in the same wave as
+    ``condition_levels``, and only the latter got a test for it.
+
+    SRD 5.2.1 p.18 is why it carries at all: Temporary Hit Points last "until
+    they're depleted or you finish a Long Rest", and this engine models no
+    rest — so a chapter boundary is not something that ends them, and dropping
+    the buffer there would end something the printed rule says survives.
+
+    The second case is the one worth having. ``carry_forward`` overlays *by
+    presence*, so a field the fight spent to zero must arrive at zero rather
+    than at the value the creation capture still remembers.
+    """
+
+    def test_an_unspent_buffer_survives_the_chapter_boundary(self) -> None:
+        warded = dict(BRAWLER) | {"temp_hp": 5}
+        first = str(api.encounter_create([warded, RUFFIAN], seed=91)["encounter_id"])
+        assert combatant(api.encounter_state(first), "Thora")["temp_hp"] == 5
+
+        normalized, live = shapes(first, "Thora")
+        carried = adventures.carry_forward(normalized, live)
+        second = str(
+            api.encounter_create([carried, dict(RUFFIAN)], seed=92)["encounter_id"]
+        )
+
+        assert combatant(api.encounter_state(second), "Thora")["temp_hp"] == 5
+
+    def test_a_buffer_spent_before_the_boundary_arrives_spent(self) -> None:
+        # Bram's Club is +20 against AC 10 and deals 2d6+3, so one landed hit
+        # always exceeds a 5-point buffer — the spend is deterministic without
+        # scripting the dice.
+        warded = dict(BRAWLER) | {"temp_hp": 5}
+        first = str(api.encounter_create([warded, RUFFIAN], seed=93)["encounter_id"])
+        for _ in range(8):
+            if combatant(api.encounter_state(first), "Thora")["temp_hp"] == 0:
+                break
+            if api.encounter_state(first)["turn"] == "Bram":
+                api.encounter_act(first, "attack", target="Thora")
+            api.encounter_advance(first)
+        else:  # pragma: no cover - a fixture that stopped working, not a branch
+            raise AssertionError("nobody ever spent Thora's temporary hit points")
+
+        normalized, live = shapes(first, "Thora")
+        carried = adventures.carry_forward(normalized, live)
+        second = str(
+            api.encounter_create([carried, dict(RUFFIAN)], seed=94)["encounter_id"]
+        )
+
+        # Not 5: the creation capture still says 5, and only the overlay makes
+        # the arrival honest about what the fight did to it.
+        assert combatant(api.encounter_state(second), "Thora")["temp_hp"] == 0
+
+
+class TestConditionLevelsCarryForward:
+    """The last leg of the T10b acceptance check: a pack-declared cumulative
+    condition's level survives an adventure chapter boundary.
+
+    ``condition_levels`` is emitted unconditionally from ``Encounter.state()``
+    specifically so this overlay is correct — see the ruling on
+    ``adventures.CARRIED_STATE_KEYS``.
+    """
+
+    PACK = str(Path(__file__).parent / "packs" / "01-ashfall-reach.json")
+
+    def test_a_level_reached_by_three_impositions_survives_the_chapter_boundary(
+        self,
+    ) -> None:
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=76)
+        first_id = str(first["encounter_id"])
+        for index in range(3):
+            api.encounter_condition(
+                first_id, "Thora", "ashfall-ember-marked", request_id=f"mark-{index}"
+            )
+        assert combatant(api.encounter_state(first_id), "Thora")["condition_levels"] == {
+            "ashfall-ember-marked": 3
+        }
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=77,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {"ashfall-ember-marked": 3}
+        assert "ashfall-ember-marked" in arrived["conditions"]
+
+    def test_shedding_the_condition_before_the_boundary_carries_no_level(self) -> None:
+        # The defect unconditional emission exists to prevent: a combatant who
+        # lost the condition mid-fight must not arrive at the next chapter
+        # still carrying the level a stale, non-empty capture would leave.
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=78)
+        first_id = str(first["encounter_id"])
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked", request_id="mark-0"
+        )
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked",
+            applied=False, request_id="lift-0",
+        )
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=79,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {}
+        assert "ashfall-ember-marked" not in arrived["conditions"]

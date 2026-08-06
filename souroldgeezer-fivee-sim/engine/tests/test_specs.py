@@ -152,6 +152,61 @@ class TestCombatantSpecsAreDiagnosedBeforeTheyAreCounted:
             api.encounter_create([{**HERO, "hp": 31}, dict(GOBLIN)])
 
 
+class TestTheModeDecidesWhatARosterMustBe:
+    """Two rules the wire edge applies differently for a chapter than for a fight.
+
+    Both exist because a fight's version of them is a statement about *sides* —
+    two of them to fight, and a round for a reinforcement to arrive in. An
+    interlude has neither, so a rule inherited unexamined refuses something
+    legitimate (a lone scout) or accepts something inert (a combatant who can
+    never arrive). Each refusal names the mode that refused, because "an
+    encounter needs at least two combatants" arriving from a chapter that wants
+    one is a sentence a caller cannot act on.
+    """
+
+    def test_one_combatant_is_a_whole_interlude(self) -> None:
+        created = api.encounter_create([dict(HERO)], seed=7, mode="exploration")
+
+        assert [row["name"] for row in created["state"]["combatants"]] == ["Thora"]
+
+    def test_an_interlude_with_nobody_in_it_is_still_refused(self) -> None:
+        with pytest.raises(
+            RequestError, match="an interlude needs at least one combatant"
+        ):
+            api.encounter_create([], mode="exploration")
+
+    def test_a_fight_is_counted_the_way_it_always_was(self) -> None:
+        with pytest.raises(
+            RequestError, match="an encounter needs at least two combatants"
+        ):
+            api.encounter_create([dict(HERO)], mode="combat")
+
+    def test_a_reinforcement_has_no_round_to_arrive_in(self) -> None:
+        with pytest.raises(
+            RequestError,
+            match="an interlude has no rounds, so combatant 'Bram' cannot arrive",
+        ):
+            api.encounter_create(
+                [dict(HERO), {**ALLY, "arrival_round": 3}], mode="exploration"
+            )
+
+    def test_a_fight_still_takes_a_reinforcement(self) -> None:
+        # The floor under the refusal above: nothing a fight could schedule has
+        # become harder to schedule.
+        created = api.encounter_create(
+            [dict(HERO), {**GOBLIN, "arrival_round": 3}], seed=7
+        )
+
+        assert _combatant(created, "Goblin")["present"] is False
+
+    def test_a_mode_outside_the_closed_set_names_what_is_accepted(self) -> None:
+        # The route table refuses this before the body is reached; ``tests/api``
+        # has no adapter in front of it, and neither does the adventure surface
+        # that will pass a mode through. So the service owns its own refusal.
+        with pytest.raises(RequestError, match="mode must be one of: combat, exploration"):
+            api.encounter_create([dict(HERO), dict(GOBLIN)], mode="sneaking")
+
+
 class TestConditionImmunitySpec:
     """``condition_immunities`` on an inline spec — the construction path
     separate from ``Creature.from_record``, ``creature_from_spec`` builds a
@@ -176,6 +231,83 @@ class TestConditionImmunitySpec:
         assert built.condition_immunities == frozenset()
 
 
+class TestConditionLevelsSpec:
+    """``condition_levels`` on an inline spec, overlaid onto ``conditions``."""
+
+    def test_a_level_overlays_onto_a_held_condition(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec(
+            {
+                **HERO,
+                "conditions": ["poisoned"],
+                "condition_levels": {"poisoned": 3},
+            },
+            registry,
+        )
+
+        assert built.conditions == {"poisoned": 3}
+
+    def test_a_condition_with_no_level_stated_defaults_to_one(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "conditions": ["poisoned"]}, registry)
+
+        assert built.conditions == {"poisoned": 1}
+
+    @pytest.mark.parametrize("level", [0, -1, -100])
+    def test_a_level_below_one_is_refused(
+        self, registry: ContentRegistry, level: int
+    ) -> None:
+        """A held condition is held at level 1 or more, and nothing else.
+
+        Not a tidiness rule.  Every numeric condition effect is applied as
+        ``per_level * level``, so a negative level does not weaken a penalty —
+        it *inverts* it.  Before this refusal existed, a combatant spec
+        carrying ``{"exhaustion": -100}`` produced a creature with +200 on
+        every saving throw and 530 feet of walking speed.
+        """
+        with pytest.raises(RequestError, match="condition_levels.*at least 1"):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"poisoned": level},
+                },
+                registry,
+            )
+
+    def test_a_level_naming_a_condition_not_held_is_refused(
+        self, registry: ContentRegistry
+    ) -> None:
+        with pytest.raises(
+            RequestError, match="condition_levels names 'frightened'.*not in"
+        ):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"frightened": 2},
+                },
+                registry,
+            )
+
+    def test_an_explicitly_empty_overlay_is_not_an_error(
+        self, registry: ContentRegistry
+    ) -> None:
+        """Distinct from omitting the key: a round-tripped spec carries ``{}``.
+
+        ``Encounter.state()`` emits ``condition_levels`` unconditionally, so
+        every carried combatant arrives with the key present and usually
+        empty. Sending it back must be as legal as never having sent it.
+        """
+        built = creature_from_spec(
+            {**HERO, "conditions": ["poisoned"], "condition_levels": {}}, registry
+        )
+
+        assert built.conditions == {"poisoned": 1}
+
+
 class TestInitiativeBonusSpec:
     """``initiative_bonus`` on an inline spec: the same separate construction
     path as ``TestConditionImmunitySpec`` above.
@@ -192,6 +324,43 @@ class TestInitiativeBonusSpec:
         built = creature_from_spec(dict(HERO), registry)
 
         assert built.initiative_bonus is None
+
+
+class TestSkillBonusesSpec:
+    """``skill_bonuses`` on an inline spec: the same separate construction
+    path as ``TestConditionImmunitySpec`` above.
+    """
+
+    def test_an_inline_spec_carrying_skill_bonuses_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "skill_bonuses": {"perception": 5}}, registry)
+
+        assert built.skill_bonuses == {"perception": 5}
+
+    def test_skill_bonuses_defaults_to_empty(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.skill_bonuses == {}
+
+
+class TestPassivePerceptionSpec:
+    """``passive_perception`` on an inline spec: the same separate
+    construction path as ``TestInitiativeBonusSpec`` above, whose shape it
+    follows exactly.
+    """
+
+    def test_an_inline_spec_carrying_passive_perception_builds_a_creature_that_has_it(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "passive_perception": 15}, registry)
+
+        assert built.passive_perception == 15
+
+    def test_passive_perception_defaults_to_none(self, registry: ContentRegistry) -> None:
+        built = creature_from_spec(dict(HERO), registry)
+
+        assert built.passive_perception is None
 
 
 SHORTBOW: dict[str, Any] = {

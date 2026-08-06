@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .model.encounter import Event
+from .model.encounter import EncounterMode, Event
 from .service import replay as replay_service
 
 __all__ = ["DEFAULT_OUTPUT", "SEED", "main", "sample_bundle", "write_sample"]
@@ -852,6 +852,9 @@ def sample_bundle() -> dict[str, Any]:
         encounter_id="sample-encounter",
         seed=SEED,
         movement_rule="5-5-5",
+        # The showcase is a gatehouse fight, and every state it authors names
+        # whose turn it is — so it is a fight it must say it is.
+        mode=EncounterMode.COMBAT.value,
         map_payload=_map_payload(),
         initial_creatures=_initial_creatures(),
         normalized_combatants=_normalized_combatants(),

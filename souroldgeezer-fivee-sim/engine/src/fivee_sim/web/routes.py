@@ -69,7 +69,7 @@ from typing import Any
 
 from ..content import BuiltinMode
 from ..kernel.grid import DiagonalRule, MovementMode
-from ..model.encounter import ActionKind
+from ..model.encounter import ActionKind, EncounterMode
 
 __all__ = [
     "API_PREFIX",
@@ -339,6 +339,20 @@ _MOVEMENT_RULE: Mapping[str, Any] = {
     "enum": [rule.value for rule in DiagonalRule],
     "default": DiagonalRule.FIVE_FIVE_FIVE.value,
 }
+#: Which kind of chapter to start. Derived from the model's own declaration
+#: rather than written out, for the reason ``_ACTION_KIND`` is: this is a closed
+#: set with an owner, and a second spelling of it here is a pair of declarations
+#: that must agree with nothing holding them together.
+_ENCOUNTER_MODE: Mapping[str, Any] = {
+    "type": "string",
+    "enum": [mode.value for mode in EncounterMode],
+    "default": EncounterMode.COMBAT.value,
+    "description": (
+        "combat for a fight — initiative, rounds, and an end when one side is "
+        "left standing; exploration for an interlude, where each act names its "
+        "own actor and the chapter ends when it is finalized"
+    ),
+}
 _BUILTIN_MODE: Mapping[str, Any] = {
     "type": ["string", "null"],
     "enum": [*(mode.value for mode in BuiltinMode), None],
@@ -365,6 +379,18 @@ _NATURAL: Mapping[str, Any] = {
     "description": (
         "the d20 face you rolled, or both faces with advantage or disadvantage; "
         "omit to let the engine roll"
+    ),
+}
+#: Who is taking this act, in a chapter where nothing decided an order. Bounded
+#: like every other journalled name, and nullable because a fight refuses it —
+#: initiative has already answered the question this asks.
+_ACTOR: Mapping[str, Any] = {
+    "type": ["string", "null"],
+    "default": None,
+    "maxLength": MAX_NAME_TEXT,
+    "description": (
+        "the combatant taking this act; required in an exploration interlude, "
+        "refused in combat, where initiative decides"
     ),
 }
 #: The third of that kind: ``service/adventures.py``'s ``LIST_STATUSES``, which
@@ -537,6 +563,21 @@ ROUTES: tuple[Route, ...] = (
         handler="rules_lookup",
     ),
     Route(
+        "GET", f"{API_PREFIX}/rulings", "rules.rulings",
+        "Where the SRD does not decide, what this engine decided, and what would change it.",
+        params=(
+            Param(
+                "code", "query", {"type": "string", "default": ""},
+                description="one ruling code; omit for the whole register",
+            ),
+            Param(
+                "kind", "query", {"type": "string", "default": ""},
+                description="srd_silent, approximation, schema_ceiling, out_of_scope, superseded",
+            ),
+        ),
+        handler="rules_rulings",
+    ),
+    Route(
         "GET", f"{API_PREFIX}/catalog/search", "catalog.search",
         "Search catalog identities and loaded custom content, ranked and paged.",
         params=(
@@ -675,6 +716,7 @@ ROUTES: tuple[Route, ...] = (
             "properties": {
                 "combatants": _COMBATANTS,
                 "seed": _SEED,
+                "mode": _ENCOUNTER_MODE,
                 "movement_rule": _MOVEMENT_RULE,
                 "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
@@ -744,6 +786,7 @@ ROUTES: tuple[Route, ...] = (
                 "as_bonus_action": {"type": "boolean", "default": False},
                 "facing": _NAME_OR_NULL,
                 "natural": _NATURAL,
+                "actor": _ACTOR,
             },
             "required": ["kind"],
         },
@@ -771,6 +814,7 @@ ROUTES: tuple[Route, ...] = (
                 "text": {"type": "string", "maxLength": MAX_NOTE_TEXT},
                 "category": {"type": "string", "default": "note",
                              "maxLength": MAX_NAME_TEXT},
+                "speaker": _NAME_OR_NULL,
             },
             "required": ["text"],
         },
@@ -786,6 +830,7 @@ ROUTES: tuple[Route, ...] = (
                 "target": {"type": "string", "maxLength": MAX_NAME_TEXT},
                 "condition": {"type": "string", "maxLength": MAX_NAME_TEXT},
                 "applied": {"type": "boolean", "default": True},
+                "levels": {"type": "integer", "default": 1},
             },
             "required": ["target", "condition"],
         },
@@ -865,8 +910,21 @@ ROUTES: tuple[Route, ...] = (
                 "recovery": {"type": ["object", "null"], "default": None},
                 "seed": _SEED,
                 "movement_rule": _MOVEMENT_RULE,
+                # The same declaration ``encounter.create`` takes, because this
+                # is the same argument: a chapter of a run is an encounter, and
+                # a run is fights and interludes in the order they happened.
+                "mode": _ENCOUNTER_MODE,
                 "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
+                "carry_map": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": (
+                        "put this chapter on the map the previous one was on; "
+                        "refused alongside 'map' or 'map_id', and refused when "
+                        "that chapter had no saved map to name"
+                    ),
+                },
             },
         },
         # The first encounter of a run, which is the one a reader meets first

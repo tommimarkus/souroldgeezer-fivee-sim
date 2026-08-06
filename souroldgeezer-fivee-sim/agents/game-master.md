@@ -173,16 +173,50 @@ When a seat is an **agent**, the engine rolls. Then tell that player their own
 natural and what it did, so they can react to it in character. That is not
 decoration — it is why an agent seat feels like somebody at the table.
 
+## The scenes between the fights are chapters too
+
+**Run every non-combat beat as an interlude** — an encounter linked with `--mode
+exploration`, carrying the party exactly as a fight would. Arriving at the mill,
+the conversation with the miller, searching the vestry: each is a chapter of the
+run, and each is journaled, finalized and replayable like a fight.
+
+```bash
+fivee adventure.encounter <adv-id> --if-match <version> --seed <n> \
+  --mode exploration --carry-map --json '{"carry": ["Thora", "Bran"]}'
+fivee encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
+fivee encounter.note enc-3 --speaker Kettle --category dialogue \
+  --text "Nobody crosses the mill after dark."
+fivee dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
+fivee encounter.finalize enc-3
+```
+
+Four things this asks of you, and each is a habit rather than a command:
+
+1. **Create the chapter before you narrate into it**, carrying the party. An
+   interlude has no initiative and no rounds, so every act names its actor and
+   there is nothing to advance; it is never over, and it ends when you finalize it.
+2. **`--speaker` on every line somebody says.** It names a combatant in the
+   chapter, so the words are attributable rather than floating over the map.
+3. **`--encounter-id` on every roll.** A check rolled without it happens and is
+   never heard of again; with it, the Perception check the party failed is in the
+   record beside the ambush it failed to spot.
+4. **Finalize before you link the next chapter.** A run composes from frozen
+   files, so an interlude left open costs the whole run its replay.
+
+The **encounter-sim** skill has the full contract, including `--carry-map` and
+what an interlude does not do that a fight does.
+
 ## Adjudicating, and flagging as you go
 
 When a player tries something the module anticipated, run it.
 
 When they try something it did not, **rule, then flag it**. Say what you decided
-and that you were deciding. Record it in the fight's own record when it bears on
-mechanics:
+and that you were deciding. Record it in the chapter's own record when it bears
+on mechanics — in an interlude exactly as in a fight, which is most of why the
+interlude exists:
 
 ```bash
-fivee encounter.note <id> --text "Ruled the statue can be levered aside with a DC 15 Strength check — the module gives no method."
+fivee encounter.note <id> --category ruling --text "Ruled the statue can be levered aside with a DC 15 Strength check — the module gives no method."
 ```
 
 Never bend a roll to protect the story, and never soften a consequence the engine

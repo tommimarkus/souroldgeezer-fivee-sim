@@ -31,7 +31,7 @@ from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode
 from fivee_sim.kernel.dice import Advantage
 from fivee_sim.kernel.grid import DiagonalRule, MovementMode
-from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind
+from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
@@ -365,6 +365,57 @@ def assert_problem(response: Response, status: int, fragment: str = "") -> dict[
         assert fragment in problem["detail"]
     result: dict[str, Any] = problem
     return result
+
+
+class TestRefusalsAreBounded:
+    """A refusal names what was asked for, and a caller controls what that is.
+
+    Every refusal in ``service/`` echoes the identifier it was given — ``no
+    ruling with code 'x'``, ``no scene 'y'`` — which is a deliberate convention
+    and the reason a refusal is useful. It also means the response grows with
+    the request, so a caller can make the server quote 100 kB back at itself.
+    Bounded once where the problem document is built, rather than at each of the
+    forty sites that would each have to remember.
+    """
+
+    def test_a_refused_identifier_is_quoted_but_not_in_full(self, editor: Editor) -> None:
+        problem = assert_problem(
+            editor.request("GET", f"/api/v1/rulings?code={'a' * 20000}"),
+            404,
+            "no ruling with code",
+        )
+        assert len(problem["detail"]) < 20000, "the whole identifier came back"
+        assert problem["detail"].endswith("…"), "a shortened detail must say it was shortened"
+
+    def test_a_short_identifier_is_still_echoed_whole(self, editor: Editor) -> None:
+        """The convention survives; only the runaway case is trimmed."""
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=no_such_ruling"),
+            404,
+            "no ruling with code 'no_such_ruling'",
+        )
+        assert "…" not in problem["detail"]
+
+    def test_an_unauthenticated_caller_cannot_amplify_through_instance(
+        self, editor: Editor
+    ) -> None:
+        """The sharper half: this path answers before the token is checked.
+
+        ``instance`` is the request target, so it echoes the query string to a
+        caller who has not authenticated at all.
+        """
+        response = editor.request("GET", f"/api/v1/rulings?code={'b' * 20000}", token=False)
+        problem = assert_problem(response, 401, "X-Fivee-Editor-Token")
+        assert len(problem["instance"]) < 20000, "the whole request target came back"
+        assert len(response.body) < 20000, "the 401 body grows with the request"
+
+    def test_an_ordinary_request_target_is_reported_intact(self, editor: Editor) -> None:
+        problem = assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=nope", token=False),
+            401,
+            "X-Fivee-Editor-Token",
+        )
+        assert problem["instance"] == "/api/v1/rulings?code=nope"
 
 
 class TestGuards:
@@ -1633,7 +1684,9 @@ class TestDeclaredEnums:
             "encounter.act.movement_mode": (
                 {mode.value for mode in MovementMode} | {None}
             ),
+            "encounter.create.mode": {mode.value for mode in EncounterMode},
             "encounter.create.movement_rule": movement_rules,
+            "adventure.encounter.mode": {mode.value for mode in EncounterMode},
             "adventure.encounter.movement_rule": movement_rules,
             "adventure.list.status": set(adventure_service.LIST_STATUSES),
             "analytics.rounds.movement_rule": movement_rules,
@@ -1800,6 +1853,45 @@ class TestDiceAndRules:
             editor.request("GET", "/api/v1/rules?subject=Prone"),
             400,
             "unknown query parameter(s): 'subject'",
+        )
+
+
+class TestRulings:
+    """The register over HTTP, which is the surface the ``fivee`` command reads."""
+
+    def test_the_whole_register_is_served(self, editor: Editor) -> None:
+        answer = editor.request("GET", "/api/v1/rulings").json()
+        assert answer["count"] == len(answer["rulings"]) >= 1
+        codes = {entry["code"] for entry in answer["rulings"]}
+        assert "loading_capped_per_turn" in codes
+
+    def test_an_entry_carries_the_trigger_that_would_overturn_it(
+        self, editor: Editor
+    ) -> None:
+        answer = editor.request("GET", "/api/v1/rulings?code=loading_capped_per_turn").json()
+        entry = answer["rulings"][0]
+        assert entry["kind"] == "approximation"
+        assert "Bonus Action attack" in entry["revisit"]
+
+    def test_a_kind_narrows_the_register(self, editor: Editor) -> None:
+        answer = editor.request("GET", "/api/v1/rulings?kind=srd_silent").json()
+        assert answer["count"] >= 1
+        assert {entry["kind"] for entry in answer["rulings"]} == {"srd_silent"}
+
+    def test_an_unknown_code_is_404_not_400(self, editor: Editor) -> None:
+        # Same distinction the rules lookup draws: a miss is an id that is not
+        # there, not an argument the caller got wrong.
+        assert_problem(
+            editor.request("GET", "/api/v1/rulings?code=no_such_ruling"),
+            404,
+            "no ruling with code 'no_such_ruling'",
+        )
+
+    def test_an_unknown_kind_is_400_and_lists_the_legal_ones(self, editor: Editor) -> None:
+        assert_problem(
+            editor.request("GET", "/api/v1/rulings?kind=probably"),
+            400,
+            "unknown ruling kind 'probably'",
         )
 
 
@@ -2060,6 +2152,25 @@ class TestEncountersOverHttp:
         assert written.json()["category"] == "narration"
         assert written.json()["timestamp"]
 
+    def test_a_note_names_its_speaker_and_an_unknown_one_is_the_surface_404(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor).json()["encounter_id"]
+        spoken = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/notes",
+            json_body={"text": "hold there", "speaker": "Thora"},
+        )
+        assert spoken.status == 201
+        assert spoken.json()["speaker"] == "Thora"
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/notes",
+                json_body={"text": "hold there", "speaker": "Kettle"},
+            ),
+            404,
+            "no combatant named 'Kettle' in this encounter",
+        )
+
     def test_a_blank_note_is_refused_by_the_service(self, editor: Editor) -> None:
         encounter_id = self.create(editor).json()["encounter_id"]
         assert_problem(
@@ -2290,6 +2401,224 @@ class TestEncountersOverHttp:
         ).json()
         assert resumed["recovered"] is True
         assert resumed["state"]["round"] >= 1
+
+
+#: One party member, standing somewhere. An interlude's whole roster can be
+#: this: nobody is opposing anybody, so the two-sides rule a fight is built on
+#: has nothing to say about it.
+SCOUT: dict[str, Any] = {
+    "name": "Kettle",
+    "team": "party",
+    "ac": 13,
+    "max_hp": 9,
+    "position": [0, 0],
+}
+
+#: A saved map for the interlude cases below: open floor, and an id, because
+#: carrying a map is carrying an id.
+MILL_DOCUMENT: dict[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "The Drowned Mill",
+    "grid": {"width": 12, "height": 12, "cell_feet": 5},
+    "legend": {".": "normal"},
+    "tiles": ["." * 12 for _ in range(12)],
+    "features": [],
+    "provenance": {
+        "generator": "hand",
+        "seed": 0,
+        "params": {},
+        "edited": False,
+        "source": "synthetic test fixture, not SRD content",
+    },
+}
+
+
+class TestInterludesOverHttp:
+    """The chapter with no fight in it, driven the way a caller drives it.
+
+    ``model/encounter.py`` owns what an interlude *is* and pins it in
+    ``tests/test_encounter.py``. What is checked here is the half a caller can
+    reach: that the mode crosses the wire, that the acting seam takes a name,
+    and that each refusal arrives as the sentence naming the mode that refused
+    rather than as a bare status.
+    """
+
+    def interlude(self, editor: Editor, **body: Any) -> Response:
+        return editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={
+                "combatants": [dict(HERO), dict(SCOUT)],
+                "seed": 11,
+                "mode": "exploration",
+                **body,
+            },
+        )
+
+    def test_an_interlude_reports_the_mode_and_holds_nobody_s_turn(
+        self, editor: Editor
+    ) -> None:
+        created = self.interlude(editor)
+        assert created.status == 201
+        state = created.json()["state"]
+        assert state["mode"] == "exploration"
+        # Nobody holds the floor between beats, so there is no turn to name and
+        # no round for one to belong to.
+        assert state["turn"] is None
+
+    def test_a_fight_is_still_the_mode_a_caller_gets_without_asking(
+        self, editor: Editor
+    ) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        assert created.json()["state"]["mode"] == "combat"
+        assert created.json()["state"]["turn"]
+
+    def test_one_combatant_is_a_whole_interlude(self, editor: Editor) -> None:
+        created = self.interlude(editor, combatants=[dict(SCOUT)])
+        assert created.status == 201
+        assert [one["name"] for one in created.json()["state"]["combatants"]] == [
+            "Kettle"
+        ]
+
+    def test_a_fight_still_needs_two_sides_worth_of_combatants(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            editor.request(
+                "POST", "/api/v1/encounters",
+                json_body={"combatants": [dict(SCOUT)], "seed": 11},
+            ),
+            400,
+            "an encounter needs at least two combatants",
+        )
+
+    def test_an_interlude_still_needs_somebody_to_stand_somewhere(
+        self, editor: Editor
+    ) -> None:
+        assert_problem(
+            self.interlude(editor, combatants=[]),
+            400,
+            "an interlude needs at least one combatant",
+        )
+
+    def test_a_reinforcement_is_refused_where_no_round_could_bring_them(
+        self, editor: Editor
+    ) -> None:
+        """``arrival_round`` is inert here, so it is refused rather than ignored.
+
+        Nothing arrives when no round turns over, so a combatant scheduled for
+        round 2 would be refused every act for the life of the chapter with
+        "does not arrive until round 2" — a fight's sentence, in a chapter that
+        has no rounds. The refusal belongs at the spec.
+        """
+        assert_problem(
+            self.interlude(
+                editor,
+                combatants=[dict(SCOUT), {**HERO, "arrival_round": 2}],
+            ),
+            400,
+            "an interlude has no rounds, so combatant 'Thora' cannot arrive",
+        )
+
+    def test_an_act_names_who_takes_it(self, editor: Editor) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        acted = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/actions",
+            json_body={"kind": "move", "to_position": [10, 0], "actor": "Kettle"},
+        )
+        assert acted.status == 200
+        moved = next(
+            one for one in acted.json()["state"]["combatants"] if one["name"] == "Kettle"
+        )
+        assert moved["position"] == [10, 0]
+
+    def test_an_act_that_names_nobody_is_refused_by_the_mode(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge"},
+            ),
+            400,
+            "an interlude has no initiative, so an act must name its actor",
+        )
+
+    def test_a_fight_refuses_an_act_that_names_an_actor(self, editor: Editor) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        encounter_id = created.json()["encounter_id"]
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge", "actor": "Thora"},
+            ),
+            400,
+            "initiative decides who acts",
+        )
+
+    def test_an_unknown_actor_is_refused_in_the_surface_s_one_sentence(
+        self, editor: Editor
+    ) -> None:
+        """The seat refusal, from a fifth door and with the same status.
+
+        Word for word what ``encounter.brief`` answers a name this cast does not
+        hold, and a ``404`` for the same reason: an actor is a thing that is or
+        is not in this chapter. It names nobody else, so guessing wrong tells a
+        guesser nothing about who is really here.
+        """
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        problem = assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/actions",
+                json_body={"kind": "dodge", "actor": "Nobody"},
+            ),
+            404,
+            "no combatant named 'Nobody' in this encounter",
+        )
+        assert "Kettle" not in problem["detail"]
+
+    def test_an_interlude_has_no_round_to_advance(self, editor: Editor) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        assert_problem(
+            editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance"),
+            400,
+            "an interlude has no rounds to advance",
+        )
+
+    def test_a_seat_s_brief_names_the_mode_and_nobody_s_turn(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.interlude(editor).json()["encounter_id"]
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Kettle"
+        ).json()
+        assert brief["mode"] == "exploration"
+        # Null rather than false: "not your turn" is a fact about a fight, and
+        # this chapter has no turns for it to be a fact about.
+        assert brief["turn"] is None
+        assert brief["your_turn"] is None
+
+    def test_a_fight_s_brief_still_answers_whose_turn_it_is(
+        self, editor: Editor
+    ) -> None:
+        created = editor.request(
+            "POST", "/api/v1/encounters",
+            json_body={"combatants": combatants(), "seed": 11},
+        )
+        encounter_id = created.json()["encounter_id"]
+        brief = editor.request(
+            "GET", f"/api/v1/encounters/{encounter_id}/brief?as=Thora"
+        ).json()
+        assert brief["mode"] == "combat"
+        assert brief["your_turn"] in (True, False)
+        assert brief["turn"] is not None
 
 
 #: A fight with something to hide: a foe whose sheet carries unmistakable
@@ -3524,6 +3853,126 @@ class TestAdventuresOverHttp:
             editor.request("POST", "/api/v1/adventures/adv-1/replay", json_body={}),
             400,
             "adventure 'adv-1' has no encounters to compose",
+        )
+
+
+class TestLinkingAnInterludeOverHttp:
+    """``mode`` and ``carry_map`` on the link, the way a caller reaches them.
+
+    The two together are what makes a run a sequence of walks and fights rather
+    than a sequence of fights: one says which kind of chapter to start, the
+    other puts it on the ground the last one was on. Every refusal here names
+    what it refused, because a 400 alone would pass against a server with the
+    check deleted.
+    """
+
+    def start(self, editor: Editor) -> None:
+        saved = editor.request(
+            "PUT", "/api/v1/maps/mill",
+            json_body=MILL_DOCUMENT,
+            headers={"If-Match": "*"},
+        )
+        assert saved.status == 201, saved.body
+        editor.request(
+            "POST", "/api/v1/adventures", json_body={"name": "The Drowned Mill"}
+        )
+
+    def link(self, editor: Editor, **body: Any) -> Response:
+        return editor.request(
+            "POST", "/api/v1/adventures/adv-1/encounters",
+            json_body=body,
+            headers={"If-Match": "*"},
+        )
+
+    def test_a_run_can_open_with_an_interlude_on_a_saved_map(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        linked = self.link(
+            editor,
+            combatants=[dict(SCOUT)],
+            seed=5,
+            map_id="mill",
+            mode="exploration",
+        )
+
+        assert linked.status == 201, linked.body
+        assert linked.json()["encounter"]["state"]["mode"] == "exploration"
+        assert linked.json()["encounter"]["state"]["turn"] is None
+
+    def test_the_run_reports_each_chapters_mode_from_both_doors(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        interlude = self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill",
+            mode="exploration",
+        ).json()["encounter_id"]
+        editor.request("POST", f"/api/v1/encounters/{interlude}/finalize")
+        assert self.link(
+            editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True
+        ).status == 201
+
+        document = editor.request("GET", "/api/v1/adventures/adv-1").json()
+        listed = editor.request("GET", "/api/v1/adventures?status=all").json()
+
+        assert [member["mode"] for member in document["members"]] == [
+            "exploration", "combat"
+        ]
+        assert listed["adventures"][0]["modes"] == ["exploration", "combat"]
+
+    def test_a_carried_map_puts_the_next_chapter_on_the_same_ground(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
+        )
+
+        linked = self.link(editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True)
+
+        assert linked.status == 201, linked.body
+        assert linked.json()["encounter"]["map_source"]["map_id"] == "mill"
+
+    def test_carrying_a_map_and_naming_one_is_400_and_says_which(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
+        )
+
+        assert_problem(
+            self.link(
+                editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True,
+                map_id="mill",
+            ),
+            400,
+            "carry_map cannot be given with 'map_id'",
+        )
+
+    def test_carrying_a_map_from_a_chapter_that_had_none_is_400(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(editor, combatants=[dict(HERO), dict(GOBLIN)], seed=5)
+
+        assert_problem(
+            self.link(editor, seed=6, carry_map=True),
+            400,
+            "it was not on a map",
+        )
+
+    def test_a_mode_the_route_does_not_declare_is_refused_by_the_schema(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        assert_problem(
+            self.link(editor, combatants=[dict(SCOUT)], seed=5, mode="wandering"),
+            400,
+            "'mode' must be one of: combat, exploration",
         )
 
 

@@ -43,7 +43,7 @@ from ..kernel.grid import DiagonalRule, as_point
 from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
-from ..model.encounter import Encounter
+from ..model.encounter import Encounter, EncounterMode
 from . import encounter_journal as journal_service
 from . import maps as map_service
 from . import specs
@@ -236,6 +236,7 @@ def new_encounter(
     *,
     movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
     map_document: MapDocument | None = None,
+    mode: EncounterMode = EncounterMode.COMBAT,
 ) -> Encounter:
     """Build an encounter bound to ``registry``'s tables, captured by value."""
     return Encounter(
@@ -247,6 +248,7 @@ def new_encounter(
         movement_rule=movement_rule,
         map_document=map_document,
         terrain_effects=registry.terrain_effects,
+        mode=mode,
     )
 
 
@@ -559,12 +561,22 @@ def recover_session(
         map_document = document
     seed = int(created["seed"])
     rng = Random(seed)
+    # Which kind of chapter this was, defaulted for every journal written before
+    # there was a second kind. It reaches both calls below and neither is
+    # optional: the roster rules differ by mode, so a solo interlude recovers
+    # only if the count knows what it is counting for; and every act replayed
+    # further down names its actor, which a chapter recovered as a fight would
+    # refuse outright.
+    mode = specs.parse_mode(str(created.get("mode", EncounterMode.COMBAT.value)))
     encounter = new_encounter(
-        specs.combatants_from_specs([dict(entry) for entry in normalized], registry),
+        specs.combatants_from_specs(
+            [dict(entry) for entry in normalized], registry, mode=mode
+        ),
         rng,
         registry,
         movement_rule=specs.parse_movement_rule(str(created["movement_rule"])),
         map_document=map_document,
+        mode=mode,
     )
     session = Session(
         encounter=encounter,
@@ -616,7 +628,18 @@ def recover_session(
         status = str(record.get("status"))
         if status == "success" and operation == "encounter_act":
             before = len(encounter.log)
-            encounter.act(specs.action_from_journal(record["arguments"]), rng)
+            # The actor is an *input* to the act, exactly as a supplied d20 face
+            # is: an interlude has no initiative to re-derive it from, so a
+            # replay that dropped it would be refused rather than resolving the
+            # wrong creature. ``None`` for a fight, and for every act recorded
+            # before this key existed — which is the same value they ran with.
+            acted = record["arguments"]
+            actor = acted.get("actor")
+            encounter.act(
+                specs.action_from_journal(acted),
+                rng,
+                actor=str(actor) if actor is not None else None,
+            )
             timestamp = str(record["timestamp"])
             session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))
             capture_checkpoint(session, timestamp)
@@ -630,6 +653,7 @@ def recover_session(
                 str(arguments["target"]),
                 str(arguments["condition"]),
                 applied=bool(arguments.get("applied", True)),
+                levels=int(arguments.get("levels", 1)),
             )
             timestamp = str(record["timestamp"])
             session.event_timestamps.extend([timestamp] * (len(encounter.log) - before))

@@ -147,7 +147,7 @@ nothing, silently:
 | `requires` | Ids of other fixtures that must stand **open** before this one may be opened. |
 | `trigger` | Target-local automation: `{"when": {fixture-id: "open"|"closed", ...}, "set": "open"|"closed", "mode": "edge"|"maintained"}`. |
 | `costs_action` | `true` spends the action; absent is the free object interaction. |
-| `check` | `{"ability", "dc"}` — an ability check the operator must pass to move it. |
+| `check` | `{"ability", "dc"}`, optionally `"skill"` — an ability check the operator must pass to move it. |
 
 Kinds named in a pair are checked against *loaded content*, never against this
 document's `legend`: what a square becomes is not a drawing question, so a
@@ -243,13 +243,15 @@ and `open` in its data; linked leaves also retain `linked`. The usual
 state machinery. `map.query` stays a snapshot resolver: an explicitly supplied
 open-state set is authoritative and it never runs triggers.
 
-**The check is a raw ability check.** Creatures here carry ability modifiers and
-no skill proficiencies anywhere in the model — there is no Athletics, no
-proficiency bonus, no Expertise, and no Help — so **set the DC as if the
-character were untrained**. A DC pitched at a trained Athletics bonus will play
-several points harder than intended. The format has no place to say otherwise on
-purpose: skill proficiency is a rules feature of the creature model, not a map
-one.
+**The check is an ability check, and it may optionally name a skill.** A
+creature's `skill_bonuses` (see [CONTENT-PACKS.md](CONTENT-PACKS.md)) supplies
+the *printed* modifier for the named skill in place of the raw ability
+modifier — but there is still no proficiency bonus, no Expertise, and no Help
+anywhere in the model, so **set the DC as if a skill-less target were
+untrained**: a DC pitched at a trained Athletics bonus will still play several
+points harder than intended for a creature whose sheet prints no Athletics
+bonus at all. Omitting `skill` rolls the raw ability modifier exactly as
+before.
 
 **A creature standing where the ground turns impassable stays there, and may
 walk out.** Entry cost governs entering a square, not remaining in one. Refusing

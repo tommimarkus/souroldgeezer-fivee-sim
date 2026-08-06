@@ -26,6 +26,7 @@ from fivee_sim.kernel.conditions import (
     effect_of,
     is_incapacitated,
     speed_is_zero,
+    speed_reduction,
 )
 from fivee_sim.kernel.dice import (
     Advantage,
@@ -336,6 +337,43 @@ class TestConditionInteractions:
             is Advantage.NONE
         )
 
+    def test_a_condition_effect_is_not_cumulative_by_default(self) -> None:
+        # SRD 5.2.1 p.179: "A condition doesn't stack with itself; a recipient
+        # either has a condition or doesn't." Every SRD condition row is the
+        # default that clause describes.
+        assert condition_rules.ConditionEffect().cumulative is False
+
+    def test_cumulative_is_a_recognised_effect_flag(self) -> None:
+        # A pack that declares "cumulative": true on a condition's effects must
+        # not be told the flag does not exist.
+        assert "cumulative" in condition_rules.EFFECT_FLAGS
+
+    def test_exhaustion_is_the_one_cumulative_bundled_condition(self) -> None:
+        # SRD 5.2.1 p.179 names Exhaustion as the one exception to "a condition
+        # doesn't stack with itself" — every other bundled row keeps the default.
+        cumulative = {
+            name for name, effect in EFFECTS.items() if effect.cumulative
+        }
+        assert cumulative == {Condition.EXHAUSTION}
+
+    def test_death_at_level_is_zero_by_default(self) -> None:
+        # 0 means "never" — the level a held condition cannot reach.
+        assert condition_rules.ConditionEffect().death_at_level == 0
+
+    def test_death_at_level_is_a_recognised_effect_flag(self) -> None:
+        assert "death_at_level" in condition_rules.EFFECT_FLAGS
+
+    def test_exhaustion_row(self) -> None:
+        # SRD 5.2.1 p.181: "This condition is cumulative... You die if your
+        # Exhaustion level is 6... the roll is reduced by 2 times your
+        # Exhaustion level... your Speed is reduced by a number of feet
+        # equal to 5 times your Exhaustion level."
+        effect = EFFECTS[Condition.EXHAUSTION]
+        assert effect.cumulative is True
+        assert effect.d20_test_penalty_per_level == 2
+        assert effect.speed_reduction_feet_per_level == 5
+        assert effect.death_at_level == 6
+
     def test_a_custom_condition_can_grant_ability_check_advantage(self) -> None:
         table = {
             **condition_rules.EFFECTS,
@@ -445,6 +483,17 @@ class TestConditionInteractions:
         # one either. Paralyzed, Petrified, and Unconscious each state Speed 0
         # explicitly, which is what makes its absence here deliberate.
         assert not speed_is_zero((Condition.STUNNED,))
+
+    def test_speed_reduction_sums_per_level_across_held_conditions(self) -> None:
+        # Mirrors d20_test_penalty's own shape: a per-level field, summed over
+        # a name-to-level mapping, uniform whether the condition is cumulative
+        # or an ordinary one permanently at level 1.
+        table = dict(EFFECTS) | {
+            "weary": condition_rules.ConditionEffect(speed_reduction_feet_per_level=5),
+        }
+        assert speed_reduction({"weary": 3}, table) == 15
+        assert speed_reduction({Condition.PRONE: 1}, table) == 0
+        assert speed_reduction({}, table) == 0
 
 
 class TestSavingThrowConditions:

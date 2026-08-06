@@ -212,7 +212,7 @@ class TestSurpriseIsExpressible:
 
         encounter.set_condition("Thora", "surprised", applied=False)
 
-        assert encounter.creatures["Thora"].conditions == set()
+        assert encounter.creatures["Thora"].conditions == {}
 
 
 class TestUnderwaterCombat:
@@ -325,8 +325,11 @@ class TestMovementModes:
         centipede.climb_speed = 30
         centipede.swim_speed = 15
         centipede.fly_speed = 5
+        centipede.burrow_speed = 10
         centipede.darkvision = 60
         centipede.blindsight = 30
+        centipede.tremorsense = 60
+        centipede.truesight = 30
         centipede.terrain_cost_overrides = frozenset({"grain"})
         encounter = Encounter(
             [centipede, fighter("Harrow", position=30)], FixedRandom(10)
@@ -343,8 +346,14 @@ class TestMovementModes:
             "climb": 30,
             "swim": 15,
             "fly": 5,
+            "burrow": 10,
         }
-        assert state["senses"] == {"darkvision": 60, "blindsight": 30}
+        assert state["senses"] == {
+            "darkvision": 60,
+            "blindsight": 30,
+            "tremorsense": 60,
+            "truesight": 30,
+        }
         assert state["terrain_cost_overrides"] == ["grain"]
         assert state["death_rule"] == "death_saves"
 
@@ -370,6 +379,41 @@ class TestMovementModes:
         move = next(event for event in events if event.kind == "move")
         assert move.data["cost"] == 25
         assert move.data["movement_mode"] == "swim"
+
+    def test_a_burrow_speed_is_a_selectable_movement_mode(self) -> None:
+        # Consistent with swim and fly above: burrowing costs ordinary
+        # terrain rates, since this engine models no digging-through-solid-
+        # ground gate for any movement mode.
+        digger = fighter("Ankheg", team="monsters", position=(2, 2))
+        digger.burrow_speed = 30
+        target = fighter("Harrow", position=(32, 7))
+        encounter = _mapped_encounter([digger, target])
+        advance_to(encounter, "Ankheg", FixedRandom(10))
+
+        events = encounter.act(
+            Action(
+                kind=ActionKind.MOVE,
+                to_position=(27, 2),
+                movement_mode=MovementMode.BURROW,
+            ),
+            FixedRandom(10),
+        )
+
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 25
+        assert move.data["movement_mode"] == "burrow"
+
+    def test_a_burrow_speed_sets_the_turn_movement_budget(self) -> None:
+        # ``_begin_turn``'s ``maximum_speed`` — the same standing swim and fly
+        # already have: the largest of every authored speed becomes the
+        # budget, regardless of which mode a move later spends it under.
+        digger = fighter("Ankheg", team="monsters", position=0)
+        digger.speed = 30
+        digger.burrow_speed = 60
+        encounter = Encounter([digger, fighter("Harrow", position=90)], FixedRandom(10))
+        advance_to(encounter, "Ankheg", FixedRandom(10))
+
+        assert encounter.state()["turn_state"]["movement_left"] == 60
 
     def test_a_terrain_override_ignores_the_grain_multiplier(self) -> None:
         centipede = fighter("Centipede", team="monsters", position=(2, 2))

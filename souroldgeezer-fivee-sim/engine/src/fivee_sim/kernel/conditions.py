@@ -48,6 +48,7 @@ class Condition(StrEnum):
     RESTRAINED = "restrained"
     STUNNED = "stunned"
     UNCONSCIOUS = "unconscious"
+    EXHAUSTION = "exhaustion"
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +97,40 @@ class ConditionEffect:
     #: Paralyzed and Unconscious turn melee hits into critical hits.
     melee_hits_are_critical: bool = False
     resists_all_damage: bool = False
+    #: SRD 5.2.1 p.179: "A condition doesn't stack with itself; a recipient
+    #: either has a condition or doesn't. The Exhaustion condition is an
+    #: exception to that rule." An exception to a rule about conditions is a
+    #: fact about a condition, so it lives here rather than as code keyed on
+    #: a name — no flag or check in this module may test a condition's string
+    #: against ``"exhaustion"``.
+    cumulative: bool = False
+    #: SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
+    #: game: ability checks, attack rolls, and saving throws. If something in
+    #: the game affects D20 Tests, it affects all three." A penalty here
+    #: therefore reaches every ability check, attack roll, and saving throw a
+    #: creature makes — never a subset of them. Per level rather than flat: a
+    #: held condition is always at some level (an ordinary one is
+    #: permanently 1), and ``penalty_per_level * level`` is what lets the
+    #: consumption path treat a cumulative and a non-cumulative condition
+    #: identically, with no ``if cumulative`` branch anywhere downstream of
+    #: this field.
+    d20_test_penalty_per_level: int = 0
+    #: SRD 5.2.1, Exhaustion: "Your Speed is reduced by a number of feet equal
+    #: to 5 times your Exhaustion level." Per level for the same reason
+    #: ``d20_test_penalty_per_level`` is: a held condition is always at some
+    #: level, so ``feet_per_level * level`` treats a cumulative and an
+    #: ordinary condition identically. Reaches **every** movement mode a
+    #: creature has — see ``Creature.speed_for`` — rather than the walking
+    #: Speed alone; the register carries the ruling that decides that (SRD
+    #: silence, not an SRD statement).
+    speed_reduction_feet_per_level: int = 0
+    #: SRD 5.2.1, Exhaustion: "You die if your Exhaustion level is 6." 0 means
+    #: never — the level a held condition cannot reach, since a plain SRD
+    #: condition never goes above 1. Consumed by
+    #: :meth:`~fivee_sim.model.creature.Creature.add_condition`, which kills
+    #: the instant the level reaches this — no save, whatever
+    #: ``death_rule`` the creature carries: the SRD names no such rule here.
+    death_at_level: int = 0
 
 
 #: Every flag a condition may set. Content-pack validation reports this list when a
@@ -192,6 +227,16 @@ EFFECTS: dict[str, ConditionEffect] = {
         auto_fail_dexterity_saves=True,
         melee_hits_are_critical=True,
     ),
+    # SRD 5.2.1 p.181: cumulative (p.179's named exception), -2 per level on
+    # every D20 Test, -5 ft per level on Speed, and death outright at level 6.
+    # No ``content_ref``: T10a found no bundled condition carries one, and a
+    # single one here would mean nothing.
+    Condition.EXHAUSTION: ConditionEffect(
+        cumulative=True,
+        d20_test_penalty_per_level=2,
+        speed_reduction_feet_per_level=5,
+        death_at_level=6,
+    ),
 }
 
 ConditionTable = Mapping[str, ConditionEffect]
@@ -224,6 +269,41 @@ def is_incapacitated(conditions: Iterable[str], table: ConditionTable = EFFECTS)
 
 def speed_is_zero(conditions: Iterable[str], table: ConditionTable = EFFECTS) -> bool:
     return any(effect.speed_zero for effect in effects_of(conditions, table))
+
+
+def d20_test_penalty(conditions: Mapping[str, int], table: ConditionTable = EFFECTS) -> int:
+    """The total penalty every D20 Test a creature makes must subtract.
+
+    SRD 5.2.1 p.180: "If something in the game affects D20 Tests, it affects
+    all three [ability checks, attack rolls, and saving throws]" — so this is
+    the one number consulted for all three, never a per-kind variant.
+
+    ``conditions`` is a name-to-level mapping, matching
+    :attr:`~fivee_sim.model.creature.Creature.conditions` exactly, so a caller
+    can pass a creature's own conditions unchanged. Each held condition
+    contributes ``d20_test_penalty_per_level * level`` — uniformly, whether
+    the condition is cumulative or not, since an ordinary condition's level is
+    always 1.
+    """
+    return sum(
+        effect_of(condition, table).d20_test_penalty_per_level * level
+        for condition, level in conditions.items()
+    )
+
+
+def speed_reduction(conditions: Mapping[str, int], table: ConditionTable = EFFECTS) -> int:
+    """The total number of feet every movement mode's Speed is reduced by.
+
+    Same shape as :func:`d20_test_penalty`: ``conditions`` is a name-to-level
+    mapping, and each held condition contributes
+    ``speed_reduction_feet_per_level * level`` — uniformly, whether the
+    condition is cumulative or not. The caller decides which mode(s) this
+    total reaches; this function only totals it.
+    """
+    return sum(
+        effect_of(condition, table).speed_reduction_feet_per_level * level
+        for condition, level in conditions.items()
+    )
 
 
 def _count_ability_check_sources(

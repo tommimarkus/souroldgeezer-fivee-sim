@@ -226,7 +226,7 @@ _FIXTURE_KEYS = (
     "affects", "check", "costs_action", "elevation", "requires", "terrain", "trigger",
 )
 _OVERLAY_KEYS = frozenset({"cells", "terrain", "elevation"})
-_CHECK_KEYS = frozenset({"ability", "dc"})
+_CHECK_KEYS = frozenset({"ability", "dc", "skill"})
 _LIGHT_KEYS = frozenset({"bright", "dim", "color"})
 _TRIGGER_KEYS = frozenset({"when", "set", "mode"})
 #: A fixture's two states, and so the two keys of every pair in the format.
@@ -627,8 +627,12 @@ def _feature_check(
 ) -> FeatureCheck | None:
     """The ability check operating a fixture takes, if it takes one.
 
-    A raw ability check: creatures carry no skill proficiencies, so a DC here is
-    set as if untrained, and the format has no place to say otherwise.
+    An ability check, with an optional ``skill``: a creature's printed skill
+    bonus for that skill replaces the raw ability modifier when it rolls.
+    ``skill`` is optional so every map document written before it existed keeps
+    loading unchanged, and creatures still carry no proficiency bonus,
+    Expertise, or Help — set the DC as if untrained for any target that lacks
+    the named skill.
     """
     if not isinstance(raw, Mapping):
         reader.fail(
@@ -649,9 +653,10 @@ def _feature_check(
     if raw.get("dc") is None:
         sub.fail("dc", "required: the difficulty class the check is made against")
     dc = sub.integer("dc", minimum=1)
+    skill = sub.string("skill") or None
     if not sub.ok or ability is None:
         return None
-    return FeatureCheck(ability=ability, dc=dc)
+    return FeatureCheck(ability=ability, dc=dc, skill=skill)
 
 
 def _feature_trigger(
@@ -1378,7 +1383,12 @@ def feature_payload(feature: MapFeatureRecord) -> dict[str, Any]:
     if feature.costs_action:
         entry["costs_action"] = True
     if feature.check is not None:
-        entry["check"] = {"ability": feature.check.ability.value, "dc": feature.check.dc}
+        check_entry: dict[str, Any] = {
+            "ability": feature.check.ability.value, "dc": feature.check.dc,
+        }
+        if feature.check.skill is not None:
+            check_entry["skill"] = feature.check.skill
+        entry["check"] = check_entry
     return entry
 
 

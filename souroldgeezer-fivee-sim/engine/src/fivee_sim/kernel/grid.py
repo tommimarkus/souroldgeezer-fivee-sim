@@ -67,6 +67,7 @@ class MovementMode(StrEnum):
     CLIMB = "climb"
     SWIM = "swim"
     FLY = "fly"
+    BURROW = "burrow"
 
 
 class Facing(StrEnum):
@@ -195,6 +196,7 @@ SLOPE_DIFFICULT_FEET = 2
 CLIMB_FEET = 5
 
 
+# ruling: climb_cost_boundary — the band boundary below is ours, not the SRD's.
 def step_cost_feet(
     effect: TerrainEffect, rise_feet: int, *, doubled_diagonal: bool = False
 ) -> int | None:
@@ -371,6 +373,7 @@ def _line_blockers(
     return frozenset(found)
 
 
+# ruling: sight_ignores_elevation — squares only; ground height never blocks a line.
 def has_line_of_sight(a: Square, b: Square, *, opaque: Callable[[Square], bool]) -> bool:
     """Whether any corner of ``a`` sees any corner of ``b``.
 

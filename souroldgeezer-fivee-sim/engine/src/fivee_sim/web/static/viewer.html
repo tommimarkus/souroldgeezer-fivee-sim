@@ -191,12 +191,43 @@ if (typeof FiveeRenderer === "undefined") {
      hiding a future kind stays a decision someone writes down. */
   var HIDDEN_FEATURE_KINDS = ["spawn"];
 
+  /* The kinds of chapter a bundle can say it is. A mirror of EncounterMode in
+     model/encounter.py, spelled once here and held against that declaration by
+     tests/test_web_assets.py — a page that invented a third mode would grade a
+     bundle the engine would refuse, and grading is the one thing this page and
+     the server have to agree about per chapter. */
+  var ENCOUNTER_MODES = ["combat", "exploration"];
+
+  /* Mirrors service/replay.py's `_declared_mode`, fallback included. Null
+     covers two different documents and reads them the same deliberate way: a
+     bundle frozen before interludes existed carries no mode, and a bundle whose
+     mode is not a mode is diagnosed where it stands. Both then fall back to a
+     fight's *stricter* reading, so a document that says nothing credible about
+     itself is never granted the interlude's relaxation on top of the complaint
+     it already earned. */
+  function declaredMode(payload) {
+    var encounter = payload && payload.encounter;
+    if (!encounter || typeof encounter !== "object" || Array.isArray(encounter)) {
+      return null;
+    }
+    return ENCOUNTER_MODES.indexOf(encounter.mode) === -1 ? null : encounter.mode;
+  }
+
+  /* Whether the chapter on screen is an interlude — a walk, a conversation, a
+     search — rather than a fight. Read off the loaded bundle every time rather
+     than cached at load, because it is the bundle that decides and there is
+     exactly one of it. */
+  function exploring() {
+    return bundle !== null && declaredMode(bundle) === "exploration";
+  }
+
   var bundle = null;
   var mapDoc = null;      /* what is drawn: the map payload or a synthesized
                              neutral plane, minus the hidden kinds above */
   var offset = [0, 0];    /* cell shift applied on the neutral plane */
   var cellFeet = 5;
   var cursor = 0;         /* how many events are applied: 0..events.length */
+  var noteSpeakers = Object.create(null);  /* cursor position -> [speaker, ...] */
   var state = null;
   var view = null;
   var playing = false;
@@ -364,13 +395,20 @@ if (typeof FiveeRenderer === "undefined") {
       featureStates: featureStates,
       terrainOverrides: overridesFor(featureStates),
       round: bundle.initial.state ? bundle.initial.state.round : 0,
-      turn: bundle.initial.state ? bundle.initial.state.turn : ""
+      turn: bundle.initial.state ? bundle.initial.state.turn : "",
+      /* Who last did something, which is not the same fact as who holds the
+         floor — see fold(). Nobody has yet, so nobody is named. */
+      actor: null
     };
   }
 
   function applyAuthoritative(current, authoritative) {
     if (!authoritative) { return current; }
     current.round = authoritative.round;
+    /* `turn` is the engine's to say and this is where it says it — null through
+       an interlude, a name through a fight. `actor` is deliberately not reset:
+       it is the page's own note of who moved last, and no checkpoint carries
+       that, so clearing it here would blank the highlight at every beat. */
     current.turn = authoritative.turn;
     (authoritative.combatants || []).forEach(function (creature) {
       var token = current.tokens[creature.name];
@@ -419,7 +457,22 @@ if (typeof FiveeRenderer === "undefined") {
 
   function fold(current, event, eventCount) {
     current.round = event.round;
-    current.turn = event.turn;
+    /* Two facts that a fight keeps welded together and an interlude pulls
+       apart. `turn` is who holds the floor; `actor` is who just did the thing.
+       In a fight they are the same creature, so `turn` keeps driving everything
+       it drove before and nothing about a fight changes.
+
+       An interlude has no floor to hold: every state payload the engine froze
+       reports `turn` as null, and the checkpoint that lands at this very event
+       count would overwrite an invented one a line later anyway — which is why
+       taking `turn` from the event here used to produce a highlight that never
+       appeared. So an interlude leaves `turn` exactly as the engine wrote it
+       and reads the acting token off `actor` instead. The event's own `turn`
+       is the better source for it than `actor`: model/encounter.py stamps the
+       creature holding the beat, so a reaction resolved inside somebody's turn
+       still names whose turn it was. */
+    current.actor = event.turn || event.actor || null;
+    if (!exploring()) { current.turn = event.turn; }
     var data = event.data || {};
     var token;
     if (event.kind === "move" && data.destination) {
@@ -555,6 +608,23 @@ if (typeof FiveeRenderer === "undefined") {
     return marks;
   }
 
+  /* A note attributed to somebody is drawn where they stand, which is what
+     turns a conversation from text beside the map into something you watch. It
+     is static rather than pulsed: a note is not an event, it has no duration,
+     and it stays marked for as long as the cursor sits on its moment. A note
+     with no speaker marks no square — most notes are the GM's own voice and
+     belong to the room rather than to anyone in it. */
+  function speakerMarks() {
+    var speakers = noteSpeakers[cursor];
+    if (!speakers) { return []; }
+    var marks = [];
+    speakers.forEach(function (name) {
+      var at = tokenPoint(name);
+      if (at) { marks.push({ at: at, color: pulseColor("note"), alpha: 0.3 }); }
+    });
+    return marks;
+  }
+
   /* --- rendering -------------------------------------------------------- */
   function renderFrame() {
     var box = R.resizeCanvas(canvas, ctx);
@@ -585,7 +655,7 @@ if (typeof FiveeRenderer === "undefined") {
       tokens: tokens,
       featureStates: state.featureStates,
       terrainOverrides: state.terrainOverrides,
-      marks: eventMarks(),
+      marks: eventMarks().concat(speakerMarks()),
       sightCones: byId("sight-cones").checked
     });
   }
@@ -629,9 +699,14 @@ if (typeof FiveeRenderer === "undefined") {
 
   function updateReadout() {
     if (!bundle) { byId("readout").textContent = "—"; return; }
-    var text = "round " + state.round
-      + (state.turn ? " · " + state.turn : "")
-      + " · event " + cursor + "/" + bundle.events.length;
+    var position = "event " + cursor + "/" + bundle.events.length;
+    /* An interlude has no rounds to count — `round` is 1 from its first beat to
+       its last, because nothing in it turns one over — so the counter goes on
+       the *mode* rather than on the number happening to be 1. A fight with one
+       round in it is still a fight and still says so. */
+    var text = exploring()
+      ? (state.actor ? state.actor + " · " : "") + position
+      : "round " + state.round + (state.turn ? " · " + state.turn : "") + " · " + position;
     byId("readout").textContent = text;
   }
 
@@ -641,10 +716,17 @@ if (typeof FiveeRenderer === "undefined") {
     var heading = document.createElement("h2");
     heading.textContent = "Combatants";
     panel.appendChild(heading);
+    /* Whose card is lit. An interlude rolls no initiative — `order` still lists
+       everybody and every combatant's `initiative` is null — so "whose turn"
+       has no answer there and the highlight follows whoever last acted
+       instead. Conditioned on the mode rather than on `turn` being empty: a
+       fight between two rounds legitimately has no current creature, and it
+       should not borrow an interlude's reading of that. */
+    var acting = exploring() ? state.actor : state.turn;
     Object.keys(state.tokens).forEach(function (name) {
       var token = state.tokens[name];
       var card = document.createElement("div");
-      card.className = "combatant-card" + (state.turn === name ? " current" : "");
+      card.className = "combatant-card" + (acting === name ? " current" : "");
       var saves = token.death_saves || { successes: 0, failures: 0 };
       var badges = [];
       if (token.level !== 0) { badges.push("level " + token.level); }
@@ -743,6 +825,9 @@ if (typeof FiveeRenderer === "undefined") {
 
   function advancePlayback() {
     if (!bundle || cursor >= bundle.events.length) {
+      /* The end of a chapter is not the end of the run — see advanceChapter. A
+         lone replay has no next chapter and stops here exactly as it did. */
+      if (playing && advanceChapter()) { return; }
       if (playing) { stopPlaying(); }
       return;
     }
@@ -813,7 +898,13 @@ if (typeof FiveeRenderer === "undefined") {
     var args = attempt.arguments || {};
     var result = attempt.result || {};
     if (attempt.operation === "encounter_note") {
-      return (args.category || "note") + ": " + (args.text || "");
+      /* `speaker` is optional and every note written before it existed has
+         none, so its absence reads exactly as it always did rather than as an
+         anonymous speaker. Present, it goes in front of the line, because who
+         said it is the first thing a reader wants from a conversation. */
+      var speaker = noteSpeaker(attempt);
+      return (speaker ? speaker + " — " : "")
+        + (args.category || "note") + ": " + (args.text || "");
     }
     var label = attempt.operation || "attempt";
     if (attempt.operation === "check") {
@@ -824,8 +915,18 @@ if (typeof FiveeRenderer === "undefined") {
     return label + " · " + attempt.status;
   }
 
+  /* A note's attributed speaker, or null. Read from the attempt's arguments —
+     the one place the journal recorded it — and only for a note, so no other
+     audited operation can accidentally start drawing on the map. */
+  function noteSpeaker(attempt) {
+    if (attempt.operation !== "encounter_note") { return null; }
+    var speaker = (attempt.arguments || {}).speaker;
+    return typeof speaker === "string" && speaker ? speaker : null;
+  }
+
   function buildTicker() {
     ticker.textContent = "";
+    noteSpeakers = Object.create(null);
     var rows = [];
     bundle.events.forEach(function (event, index) {
       rows.push({ timestamp: event.timestamp || "", order: index, event: event, index: index });
@@ -844,26 +945,45 @@ if (typeof FiveeRenderer === "undefined") {
       return left.timestamp === right.timestamp
         ? left.order - right.order : left.timestamp.localeCompare(right.timestamp);
     });
+    /* One timeline, not a log with a side list beside it. Every row — event,
+       note, audited check — carries the cursor position it happened at, so
+       clicking a line of dialogue scrubs the map to the moment it was spoken
+       exactly as clicking an attack does. An attempt sits at however many
+       events preceded it in journal order, which is the same position the
+       event it belongs to occupies: they are one moment, and both light up. */
+    var reached = 0;
     rows.forEach(function (entry) {
       var row = document.createElement("li");
+      var at;
       if (entry.event) {
         var event = entry.event;
         if (event.kind === "round") { row.className = "round-row"; }
         row.textContent = describe(event);
         row.title = event.kind + " · round " + event.round
           + (event.timestamp ? " · " + event.timestamp : "");
-        row.dataset.eventIndex = String(entry.index + 1);
-        row.addEventListener("click", function () {
-          stopPlaying();
-          setCursor(entry.index + 1);
-        });
+        at = entry.index + 1;
+        if (at > reached) { reached = at; }
       } else {
         var attempt = entry.attempt;
         row.className = "audit-row" + (attempt.status === "refused" ? " audit-refused" : "");
         row.textContent = describeAttempt(attempt);
         row.title = (attempt.operation || "attempt")
           + (entry.timestamp ? " · " + entry.timestamp : "");
+        at = reached;
+        /* A refused note stays on the timeline — the journal recorded the
+           attempt and the audit trail is the point — but it marks no square.
+           Nobody said it, so drawing it at the speaker's feet would put a line
+           on the map that the engine turned down. */
+        var speaker = noteSpeaker(attempt);
+        if (speaker && attempt.status !== "refused") {
+          (noteSpeakers[at] = noteSpeakers[at] || []).push(speaker);
+        }
       }
+      row.dataset.eventIndex = String(at);
+      row.addEventListener("click", function () {
+        stopPlaying();
+        setCursor(at);
+      });
       ticker.appendChild(row);
     });
   }
@@ -1085,13 +1205,26 @@ if (typeof FiveeRenderer === "undefined") {
     });
   }
 
-  function validateState(value, path, errors) {
+  function validateState(value, path, errors, mode) {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       errors.push(path + " must be an object");
       return;
     }
     if (!Number.isInteger(value.round)) { errors.push(path + ".round must be an integer"); }
-    if (typeof value.turn !== "string") { errors.push(path + ".turn must be a string"); }
+    /* Nobody holds the floor between an interlude's beats, so its every state
+       payload reports `turn` as null. Conditioned rather than relaxed, exactly
+       as service/replay.py's `_validate_state` conditions it: a *fight* with no
+       turn is still a broken bundle, and an interlude naming somebody is
+       claiming an initiative order that was never rolled. An absent key reads
+       as null, because that is what Python's `.get("turn")` makes of it. */
+    var turn = value.turn;
+    if (mode === "exploration") {
+      if (turn !== null && turn !== undefined) {
+        errors.push(path + ".turn must be null in an interlude");
+      }
+    } else if (typeof turn !== "string") {
+      errors.push(path + ".turn must be a string");
+    }
     validateCombatants(value.combatants, path + ".combatants", errors);
   }
 
@@ -1186,7 +1319,15 @@ if (typeof FiveeRenderer === "undefined") {
         } else if (payload.encounter.seed !== payload.seed) {
           errors.push("encounter.seed must equal seed");
         }
+        /* Absence is not a finding: a bundle frozen before interludes existed
+           carries no mode and every such chapter was a fight. A mode that is
+           not one is named here and then read as a fight by declaredMode. */
+        if ("mode" in payload.encounter
+          && ENCOUNTER_MODES.indexOf(payload.encounter.mode) === -1) {
+          errors.push("encounter.mode must be one of: " + ENCOUNTER_MODES.join(", "));
+        }
       }
+      var mode = declaredMode(payload);
       ["actions", "checkpoints", "attempts"].forEach(function (key) {
         if (!Array.isArray(payload[key])) {
           errors.push(key + " must be an array");
@@ -1200,9 +1341,9 @@ if (typeof FiveeRenderer === "undefined") {
       });
       if (payload.initial && typeof payload.initial === "object") {
         validateCombatants(payload.initial.combatants, "initial.combatants", errors);
-        validateState(payload.initial.state, "initial.state", errors);
+        validateState(payload.initial.state, "initial.state", errors, mode);
       }
-      validateState(payload.latest_state, "latest_state", errors);
+      validateState(payload.latest_state, "latest_state", errors, mode);
       if (!payload.content || typeof payload.content !== "object") {
         errors.push("content must be an object");
       }
@@ -1226,7 +1367,7 @@ if (typeof FiveeRenderer === "undefined") {
           if (!checkpoint || typeof checkpoint !== "object" || Array.isArray(checkpoint)) {
             errors.push("checkpoints." + index + " must be an object");
           } else {
-            validateState(checkpoint.state, "checkpoints." + index + ".state", errors);
+            validateState(checkpoint.state, "checkpoints." + index + ".state", errors, mode);
           }
         });
       }
@@ -1235,12 +1376,17 @@ if (typeof FiveeRenderer === "undefined") {
     return errors;
   }
 
+  /* Answers whether the bundle was taken, so a caller that is *chaining* loads
+     — continuous playback across an adventure's chapters — can stop at a
+     chapter that will not load rather than skipping quietly past it. Every
+     other caller ignores the answer, and the refusal is still spoken here so
+     no caller has to remember to speak it. */
   function loadBundle(payload, sourceName) {
     var diagnostics = validateBundle(payload);
     if (diagnostics.length) {
       window.alert((sourceName || "that") + " is not a valid fivee-sim-replay bundle:\n"
         + diagnostics.join("\n"));
-      return;
+      return false;
     }
     stopPlaying();
     bundle = payload;
@@ -1257,6 +1403,7 @@ if (typeof FiveeRenderer === "undefined") {
     buildTicker();
     state = null;
     setCursor(0);
+    return true;
   }
 
   byId("btn-open-file").addEventListener("click", function () {
@@ -1312,6 +1459,7 @@ if (typeof FiveeRenderer === "undefined") {
      chapter, not a verdict on the file. */
   var ADVENTURE_FORMAT = "fivee-sim-adventure-replay";
   var chapters = [];
+  var chapterIndex = -1;
 
   function isAdventure(payload) {
     return !!payload && typeof payload === "object"
@@ -1322,12 +1470,36 @@ if (typeof FiveeRenderer === "undefined") {
     var chapter = chapters[index];
     if (!chapter || !chapter.replay || typeof chapter.replay !== "object") {
       window.alert("chapter " + (index + 1) + " carries no replay bundle.");
-      return;
+      return false;
     }
     /* The source name is what a refusal will be spoken as, so it says which
        chapter rather than which file: a reader looking at one bad fight in a
        run of six needs the ordinal, and the file name is the same for all. */
-    loadBundle(chapter.replay, "chapter " + (index + 1));
+    if (!loadBundle(chapter.replay, "chapter " + (index + 1))) { return false; }
+    chapterIndex = index;
+    /* The picker follows the chapter rather than deciding it. It is a jump now,
+       not the only way to move, so it has to show where playback has got to. */
+    byId("chapter-select").value = String(index);
+    return true;
+  }
+
+  /* Play runs off the end of a chapter and into the next, which is what makes a
+     run of walks and fights one timeline instead of six files somebody clicks
+     through. Nothing here re-implements loading: the next chapter goes through
+     the same playChapter, so the same one validator grades it and the envelope
+     stays Python's to grade.
+
+     `loadBundle` stops playback — it has to, since the events under the cursor
+     are about to be replaced — so the intent to keep playing is carried across
+     by hand rather than by the flag surviving. A chapter that will not load
+     ends the run where it stands and leaves the refusal on screen. */
+  function advanceChapter() {
+    if (chapterIndex < 0 || chapterIndex + 1 >= chapters.length) { return false; }
+    if (!playChapter(chapterIndex + 1)) { return false; }
+    playing = true;
+    byId("btn-play").textContent = "Pause";
+    advancePlayback();
+    return true;
   }
 
   function loadAdventure(payload, sourceName) {
@@ -1337,14 +1509,19 @@ if (typeof FiveeRenderer === "undefined") {
       return;
     }
     chapters = listed;
+    chapterIndex = -1;
     var select = byId("chapter-select");
     select.textContent = "";
     listed.forEach(function (chapter, index) {
       var option = document.createElement("option");
       option.value = String(index);
       var fight = (chapter.replay && chapter.replay.name) || "";
+      /* The chapter's own record of which kind it is, when it has one. A jump
+         is worth more when it says whether it lands on a fight or a walk, and
+         an envelope composed before chapters carried a mode simply has none. */
+      var kind = ENCOUNTER_MODES.indexOf(chapter.mode) === -1 ? "" : chapter.mode;
       option.textContent = (index + 1) + ". " + (fight ? fight + " · " : "")
-        + (chapter.encounter_id || "");
+        + (chapter.encounter_id || "") + (kind ? " · " + kind : "");
       select.appendChild(option);
     });
     select.value = "0";
@@ -1355,10 +1532,19 @@ if (typeof FiveeRenderer === "undefined") {
   /* Every way a document arrives comes through here, so the dispatch on what
      it is happens once. A page that decided per entry point would be a page
      where a dropped adventure worked and an embedded one did not. */
+  /* Put the run down. Every path that loads a *lone* replay goes through here
+     first, because a leftover chapter list is not merely a stale control since
+     playback learned to cross a boundary — it is a viewer that plays a fight
+     nobody asked for after the one they opened ends. */
+  function forgetAdventure() {
+    chapters = [];
+    chapterIndex = -1;
+    byId("adventure-chapters").hidden = true;
+  }
+
   function openPayload(payload, sourceName) {
     if (isAdventure(payload)) { loadAdventure(payload, sourceName); return; }
-    chapters = [];
-    byId("adventure-chapters").hidden = true;
+    forgetAdventure();
     loadBundle(payload, sourceName);
   }
 
@@ -1407,6 +1593,7 @@ if (typeof FiveeRenderer === "undefined") {
         window.alert("cannot play " + id + ": " + refusal(answer, "refused"));
         return;
       }
+      forgetAdventure();
       loadBundle(answer.json, id);
     });
   }

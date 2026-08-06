@@ -31,6 +31,16 @@ caller says it is. That is the same posture ``analytics/scenario.py`` takes
 toward travel — the engine resolves what it can resolve, and does not invent the
 rest.
 
+**A run is fights and interludes, and a boundary keeps the ground.** A link
+states its ``mode`` — a fight by default — so an adventure can open on a walk
+across the mill floor and close on the ambush at the end of it. The party's
+squares already crossed a boundary, because ``position`` is in
+:data:`CARRIED_STATE_KEYS`; the map never did, so ``carry_map`` is what puts the
+next chapter on the same ground. It resolves the previous chapter's map id from
+that chapter's **frozen creation record**, for the reason :func:`compose_replay`
+reads frozen artifacts — what a chapter was started on is not a question to ask
+a live session.
+
 **A run's replay is composed from frozen files, never re-derived.**
 :func:`compose_replay` reads each member's ``encounter.finalize`` artifact off
 disk and nests it verbatim. It starts no session and replays no action, and that
@@ -52,8 +62,10 @@ from pathlib import Path
 from typing import Any
 
 from .. import __version__
+from ..model.encounter import EncounterMode
 from ..paths import encounters_root
 from . import durable, encounters, sessions
+from . import encounter_journal as journal_service
 from . import replay as replay_service
 from .common import sha256_of, slugify
 from .errors import NotFoundError, ReplayError, RequestError
@@ -124,9 +136,27 @@ _ABSENT = ""
 #: present from the start of this one. And ``attacks`` is the trap: the state
 #: payload emits it as a list of *names*, so overlaying it would replace a
 #: combatant's whole attack list with strings ``attack_from_spec`` cannot read.
+#:
+#: ``temp_hp`` carries for the same reason ``hp`` does. SRD 5.2.1, *Temporary
+#: Hit Points*: they "last until they're depleted or you finish a Long
+#: Rest," and this engine models no rest of its own — dropping the field at
+#: every chapter boundary regardless would end a buffer the rules say
+#: survives one. A caller stating "they took a long rest" already has the
+#: channel to clear it: ``recovery`` (see :func:`link_encounter`) accepts any
+#: key this set does, ``temp_hp`` included.
+#:
+#: ``condition_levels`` carries beside ``conditions`` for the reason it is
+#: emitted unconditionally in the first place: this overlay is by *presence*,
+#: so a combatant who shed every leveled condition mid-fight reports an empty
+#: dict, and that empty dict has to overlay the previous chapter's — otherwise
+#: an absent key would leave the old, non-empty capture standing and the
+#: combatant would arrive at the next chapter still carrying a level for a
+#: condition it no longer holds.
 CARRIED_STATE_KEYS: frozenset[str] = frozenset({
     "hp",
+    "temp_hp",
     "conditions",
+    "condition_levels",
     "death_saves",
     "stable",
     "dead",
@@ -266,6 +296,16 @@ def _parsed(text: str, path: Path) -> dict[str, Any]:
         raise RequestError(f"{path} has no 'members'")
     if not isinstance(payload.get("request_ids"), dict):
         raise RequestError(f"{path} has no 'request_ids'")
+    # Every member records which kind of chapter it is, and one written before
+    # there was a second kind was a fight. Filled in on the way *in* rather than
+    # at each of the four places a member is reported, so nothing downstream has
+    # to ask which engine wrote the document it is holding. Nothing is rewritten
+    # here: the version a write is guarded by is the hash of the file's own
+    # text, so the next ordinary link is what quietly brings the file forward.
+    for index, member in enumerate(payload["members"]):
+        if not isinstance(member, dict):
+            raise RequestError(f"{path} member {index} is not a record")
+        member.setdefault("mode", EncounterMode.COMBAT.value)
     return payload
 
 
@@ -446,6 +486,9 @@ def list_adventures(status: str = "active") -> dict[str, Any]:
                 "status": actual,
                 "created_at": str(document["created_at"]),
                 "encounters": len(document["members"]),
+                # The shape of the run, in order, from a listing that opens no
+                # journal and no replay artifact: walk, fight, walk.
+                "modes": [str(member["mode"]) for member in document["members"]],
                 "path": str(path),
             }
         )
@@ -499,10 +542,7 @@ def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]
             f"adventure {adventure_id!r} has no encounters to compose; "
             f"link one and finalize it first"
         )
-    chapters = [
-        {**member, "replay": _frozen_bundle(adventure_id, member)}
-        for member in members
-    ]
+    chapters = [_chapter(adventure_id, member) for member in members]
     bundle = replay_service.adventure_replay_bundle(
         engine_version=__version__,
         adventure={key: document[key] for key in DOCUMENT_FIELDS},
@@ -535,6 +575,31 @@ def compose_replay(adventure_id: str, path: str | None = None) -> dict[str, Any]
         "path": str(target),
         "bytes": len(serialized.encode("utf-8")),
         "sha256": replay_service.sha256_bytes(serialized.encode("utf-8")),
+    }
+
+
+def _chapter(adventure_id: str, member: Mapping[str, Any]) -> dict[str, Any]:
+    """One chapter: the run's record of a link, wearing the fight it froze.
+
+    ``mode`` is taken from the **bundle** and not from the member record beside
+    it, which is the same rule the whole composer follows applied to one field:
+    the artifact is what happened, and a document is what somebody wrote down
+    about it. A run linked under an engine that did not record the mode still
+    composes into an envelope that says which kind each chapter was, because the
+    artifacts do — and where the artifact is silent too, every fight frozen
+    before there was a second kind was a fight.
+    """
+    bundle = _frozen_bundle(adventure_id, member)
+    encounter = bundle.get("encounter")
+    frozen_mode = encounter.get("mode") if isinstance(encounter, Mapping) else None
+    return {
+        **member,
+        "mode": (
+            str(frozen_mode)
+            if isinstance(frozen_mode, str)
+            else str(member.get("mode", EncounterMode.COMBAT.value))
+        ),
+        "replay": bundle,
     }
 
 
@@ -581,6 +646,9 @@ def link_encounter(
     map_id: str | None = None,
     request_id: str | None = None,
     expected_version: str | None = None,
+    *,
+    mode: str = EncounterMode.COMBAT.value,
+    carry_map: bool = False,
 ) -> dict[str, Any]:
     """Start the adventure's next encounter, carrying the last one's cast into it.
 
@@ -599,6 +667,19 @@ def link_encounter(
     :data:`CARRIED_STATE_KEYS`, applied to their ending state before the
     carry-over composes it. That is where "they took a long rest" lives, and it
     is deliberately the caller's to state.
+
+    ``mode`` says which kind of chapter this one is — a fight by default, so a
+    link written before interludes existed starts what it always started. It is
+    ``encounter.create``'s to validate and not restated here.
+
+    ``carry_map`` puts this chapter on the ground the previous one was on. The
+    party's *squares* have always crossed a boundary — ``position`` is in
+    :data:`CARRIED_STATE_KEYS` — but the map never did, so an ambush on the
+    floor somebody just walked across meant restating the id and a mistyped one
+    silently moved the fight. It is explicit rather than a default because
+    omitting a map means theatre of the mind, and that has to keep meaning what
+    it means; it is refused alongside an explicit ``map`` or ``map_id``, because
+    a link that named two grounds has no correct answer.
 
     The ``request_id`` is honoured on both halves of the operation: it is
     recorded here so a retry answers from the document without linking twice,
@@ -626,16 +707,31 @@ def link_encounter(
     # replayable fight that simply belongs to no adventure, not lost data.
     _refuse_if_stale(adventure_id, expected_version)
     members: list[dict[str, Any]] = list(document["members"])
+    if carry_map:
+        # Resolved before the fight is created, like every other refusal above
+        # it: a link that started its encounter and only then found there was no
+        # map to carry would leave a whole journal belonging to no run at all.
+        map_id = _carried_map_id(adventure_id, members, map_spec, map_id)
     carried = _carried_specs(state, adventure_id, members, carry, recovery)
     roster = [*carried, *(dict(entry) for entry in (combatants or []))]
     created = encounters.create(
-        state, roster, seed, movement_rule, map_spec, map_id, request_id
+        state,
+        roster,
+        seed,
+        movement_rule,
+        map_spec,
+        map_id,
+        request_id,
+        mode=mode,
     )
     member = {
         "index": len(members),
         "encounter_id": str(created["encounter_id"]),
         "linked_at": sessions.utc_now(),
         "carried": [str(spec["name"]) for spec in carried],
+        # What was built rather than what was asked for, the same direction the
+        # creation journal record takes it in.
+        "mode": str(created["state"]["mode"]),
     }
     document["members"] = [*members, member]
     if request_id is not None:
@@ -682,6 +778,77 @@ def _link_response(
             state, encounter_id, sessions.session_for(state, encounter_id)
         ),
     }
+
+
+def _creation_record(encounter_id: str) -> Mapping[str, Any]:
+    """The record an encounter was *started* under, read off its journal.
+
+    Not a live session, and for :func:`compose_replay`'s reason: what a chapter
+    was created on is a frozen fact, and recovering a whole fight to read one
+    field off it would replay every action the journal holds. The previous
+    chapter is usually finalized by the time the next is linked, so its session
+    may not even be in memory.
+    """
+    try:
+        records, _warning = journal_service.read(encounter_id)
+    except journal_service.JournalError as error:
+        raise RequestError(
+            f"cannot read encounter {encounter_id!r}: {error}"
+        ) from error
+    if not records or records[0].get("kind") != "creation":
+        raise RequestError(
+            f"encounter journal {encounter_id!r} does not begin with a creation record"
+        )
+    return records[0]
+
+
+def _carried_map_id(
+    adventure_id: str,
+    members: Sequence[Mapping[str, Any]],
+    map_spec: Mapping[str, Any] | None,
+    map_id: str | None,
+) -> str:
+    """The saved map the previous chapter was on, or a refusal that says which.
+
+    The three map keys a creation record carries are **not** interchangeable and
+    the refusals here are the reason it matters. ``map_kind`` is the
+    discriminator; ``map_source`` is ``None`` for an inline map *and* for no map
+    at all; and ``map_source["map_id"]`` means something only when the kind is
+    ``loaded``. So a chapter given its map inline **has** a map and no id — a
+    different complaint, with a different remedy, from a chapter that was never
+    on one, and one message for both would send the caller to the wrong fix.
+    """
+    if map_spec is not None or map_id is not None:
+        named = "'map'" if map_spec is not None else "'map_id'"
+        raise RequestError(
+            f"carry_map cannot be given with {named}: a link names the ground it "
+            f"is carrying or the ground it is stating, never both"
+        )
+    if not members:
+        raise RequestError(
+            f"adventure {adventure_id!r} has no encounter to carry a map from yet; "
+            f"give 'map_id' or 'map' for the first one"
+        )
+    previous = str(members[-1]["encounter_id"])
+    created = _creation_record(previous)
+    kind = created.get("map_kind")
+    if kind == "inline":
+        raise RequestError(
+            f"cannot carry the map of encounter {previous!r}: it was given its "
+            f"map inline, so it has no id to carry; save that map and name it, "
+            f"or send the document again as 'map'"
+        )
+    source = created.get("map_source")
+    if kind != "loaded" or not isinstance(source, Mapping):
+        raise RequestError(
+            f"cannot carry the map of encounter {previous!r}: it was not on a map"
+        )
+    carried = source.get("map_id")
+    if not isinstance(carried, str) or not carried:
+        raise RequestError(
+            f"cannot carry the map of encounter {previous!r}: its record names no map id"
+        )
+    return carried
 
 
 def _carried_specs(

@@ -180,6 +180,7 @@
       "save_ability": "wisdom",
       "condition": "paralyzed",
       "concentration": true,
+      "duration_rounds": 10,
       "range_feet": 60,
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
@@ -194,10 +195,6 @@
         {
           "code": "unsupported_upcast_targets",
           "feature": "One additional target per slot level"
-        },
-        {
-          "code": "unsupported_concentration_duration",
-          "feature": "Concentration, up to 1 minute"
         }
       ]
     },

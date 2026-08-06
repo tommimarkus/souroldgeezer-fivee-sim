@@ -73,6 +73,7 @@ from ..service import content_ops, map_ops, primitives, sessions
 from ..service import encounters as encounter_service
 from ..service import maps as map_service
 from ..service import replay as replay_service
+from ..service import rulings as rulings_ops
 from ..service import scenes as scene_service
 from ..service.common import slugify
 from ..service.errors import (
@@ -102,6 +103,21 @@ __all__ = [
 #: contract the served pages code against, and the offline guarantee turns on
 #: the config gate it belongs to.
 TOKEN_HEADER = "X-Fivee-Editor-Token"
+#: Caps on the two problem+json fields that quote the caller back to itself.
+#:
+#: A refusal in ``service/`` names what was asked for — ``no ruling with code
+#: 'x'`` — and that convention is why a refusal is useful. It also means the
+#: response grows with the request, and ``instance`` carries the request target
+#: on the **401 path, which answers before the token is checked**. So an
+#: unauthenticated caller could make the server quote an arbitrary string back.
+#:
+#: Bounded here rather than at the ~40 sites that build these messages: this is
+#: the one place the document is assembled, the adapter already owns
+#: serialisation, and a site added later inherits the cap without knowing it
+#: exists. Generous enough that no refusal the suite produces is touched — the
+#: longest is a couple of hundred characters — so this trims runaways only.
+MAX_PROBLEM_DETAIL = 2048
+MAX_PROBLEM_INSTANCE = 1024
 #: Request bodies above this are refused with 413 before being read.
 MAX_BODY_BYTES = 8 * 1024 * 1024
 #: The marker the served pages carry where the launch configuration goes. A
@@ -336,6 +352,17 @@ class EngineServer:
             f"http://127.0.0.1:{self.port}/viewer"
             f"?replay={quote(slugify(written.stem), safe='')}"
         )
+
+
+def _shortened(text: str, limit: int) -> str:
+    """``text``, trimmed to ``limit`` characters with an ellipsis if it was cut.
+
+    The ellipsis is the point: a silently truncated identifier reads as the
+    identifier, and a caller debugging a refusal would chase the wrong name.
+    """
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "\u2026"
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -669,11 +696,11 @@ class _Handler(BaseHTTPRequestHandler):
             "type": routes.error_type(int(problem.status)),
             "title": problem.status.phrase,
             "status": int(problem.status),
-            "detail": problem.detail,
+            "detail": _shortened(problem.detail, MAX_PROBLEM_DETAIL),
             # RFC 9457 §3.1.4: which occurrence this is. The agent driving this
             # server has no trace context to correlate by — one process, no
             # outbound calls — so the request target is the correlation handle.
-            "instance": self.path,
+            "instance": _shortened(self.path, MAX_PROBLEM_INSTANCE),
         }
         if problem.diagnostics is not None:
             payload["diagnostics"] = problem.diagnostics
@@ -827,6 +854,12 @@ class _Handler(BaseHTTPRequestHandler):
             ),
         )
 
+    def _h_rules_rulings(self, request: _Request) -> None:
+        self._send_json(
+            HTTPStatus.OK,
+            rulings_ops.listing(code=request.query["code"], kind=request.query["kind"]),
+        )
+
     # -- content -------------------------------------------------------------
     def _h_content_status(self, request: _Request) -> None:
         self._send_json(HTTPStatus.OK, content_ops.status(self.state))
@@ -934,6 +967,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             request.query["as"],
+            mode=body["mode"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -1004,6 +1038,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["natural"],
             self._idempotency_key(),
             request.query["as"],
+            actor=body["actor"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1022,7 +1057,8 @@ class _Handler(BaseHTTPRequestHandler):
         body = request.body
         self._check_encounter_version(request.id)
         result = encounter_service.note(
-            self.state, request.id, body["text"], body["category"], self._idempotency_key()
+            self.state, request.id, body["text"], body["category"], self._idempotency_key(),
+            body["speaker"],
         )
         self._send_json(HTTPStatus.CREATED, result, headers=self._encounter_etag(request.id))
 
@@ -1031,7 +1067,7 @@ class _Handler(BaseHTTPRequestHandler):
         self._check_encounter_version(request.id)
         result = encounter_service.condition(
             self.state, request.id, body["target"], body["condition"],
-            body["applied"], self._idempotency_key(),
+            body["applied"], body["levels"], self._idempotency_key(),
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1116,6 +1152,8 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             expected,
+            mode=body["mode"],
+            carry_map=body["carry_map"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -1351,6 +1389,7 @@ _HANDLERS: dict[str, _RouteHandler] = {
     "dice_check": _Handler._h_dice_check,
     "dice_save": _Handler._h_dice_save,
     "rules_lookup": _Handler._h_rules_lookup,
+    "rules_rulings": _Handler._h_rules_rulings,
     "catalog_search": _Handler._h_catalog_search,
     "catalog_get": _Handler._h_catalog_get,
     "catalog_table": _Handler._h_catalog_table,
