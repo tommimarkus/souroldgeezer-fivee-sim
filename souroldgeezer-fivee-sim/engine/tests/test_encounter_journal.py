@@ -5,8 +5,10 @@ from __future__ import annotations
 import dataclasses
 import json
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from pathlib import Path
 from threading import Barrier
+from typing import Any
 
 import pytest
 
@@ -135,6 +137,80 @@ def test_an_active_encounter_recovers_after_process_memory_is_lost() -> None:
     assert recovered["recovered"] is True
     assert recovered["state"] == before
     assert api.encounter_state(encounter_id) == before
+
+
+def spec_map() -> dict[str, Any]:
+    """An inline battle-map **spec**, saying as much as a spec can say.
+
+    ``rows``/``legend`` and ``terrain`` are alternatives, so no one spec carries
+    both; every other key in :data:`specs.MAP_KEYS` is here, and the features
+    exercise every key in :data:`specs.FEATURE_KEYS` — including the pair a
+    linked door needs, which is what makes the door hang somewhere rather than
+    nowhere.
+    """
+    return {
+        "name": "gatehouse",
+        "width": 8,
+        "height": 6,
+        "default_terrain": "normal",
+        "rows": [
+            "........",
+            "........",
+            "........",
+            "........",
+            "###..###",
+            "........",
+        ],
+        "legend": {".": "normal", "#": "wall"},
+        "default_elevation": 0,
+        "elevation": [[7, 5, 10]],
+        "features": [
+            {
+                "name": "gate",
+                "square": [6, 1],
+                "kind": "door",
+                "orientation": "vertical",
+                "initially_open": False,
+                "closed_terrain": "door-closed",
+                "open_terrain": "door-open",
+            },
+            {
+                "name": "hall-door-west",
+                "square": [3, 4],
+                "kind": "door",
+                "orientation": "horizontal",
+                "initially_open": False,
+                "linked_to": "hall-door-east",
+            },
+            {
+                "name": "hall-door-east",
+                "square": [4, 4],
+                "kind": "door",
+                "orientation": "horizontal",
+                "initially_open": False,
+                "linked_to": "hall-door-west",
+            },
+        ],
+    }
+
+
+def test_a_fight_created_from_an_inline_map_spec_recovers_from_its_journal() -> None:
+    # The journal captures an inline spec as a map *document*, and recovery
+    # parses that document back. Anything the spec cannot express is therefore
+    # not merely unavailable to the fight — it is missing from the captured
+    # document, and a door with no orientation is a document the parser refuses.
+    # So a spec key the fight never reads can still be the difference between a
+    # fight that survives a dev reload and one that is lost.
+    created = api.encounter_create(
+        [dict(REPLAY_HERO), dict(REPLAY_GOBLIN)], seed=149, map=spec_map()
+    )
+    encounter_id = str(created["encounter_id"])
+    before = deepcopy(api.encounter_state(encounter_id)["map"])
+    assert before["features"]["hall-door-west"]["linked_to"] == "hall-door-east"
+
+    api.STATE.sessions.clear()
+
+    assert api.encounter_state(encounter_id)["map"] == before
 
 
 def test_a_ruling_condition_survives_the_journal_and_replays_on_resume() -> None:
