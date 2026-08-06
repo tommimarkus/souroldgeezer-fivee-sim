@@ -137,6 +137,9 @@ map is written, because no flag grammar should try to spell one.
    server, no install. Report the written path and SHA-256; small plain bundles come
    back inline instead. Use `fivee replay.validate` before accepting a bundle from
    elsewhere; the viewer also checks the nested schema and hashes before rendering.
+   The check is structural — glyphs, rows, and feature placement against the
+   embedded map's own grid — not a full parse: a map's terrain kinds are resolved
+   against loaded content when a fight loads it, not at validation.
    Integrity hashes detect alteration but do not authenticate the file's author.
    Request `--format-version 1` only for a legacy consumer. `fivee replay.list` and
    `fivee replay.get <id>` read what is already written. If the fight is one chapter
