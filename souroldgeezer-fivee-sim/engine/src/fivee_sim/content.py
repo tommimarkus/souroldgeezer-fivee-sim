@@ -53,7 +53,7 @@ from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Literal
 
 from .catalog import (
     CatalogCell,
@@ -336,13 +336,15 @@ class _ParsedPack:
         }[name]
 
 
-def _named_records(
+def _keyed_records(
     payload: Mapping[str, Any],
     section: str,
     diagnostics: list[Diagnostic],
     source: str,
+    *,
+    identity_field: Literal["name", "id"],
 ) -> list[tuple[str, Mapping[str, Any]]]:
-    """Pull ``section`` out of a pack, reporting anything that is not a named record."""
+    """Pull records from ``section``, keyed by their declared identity field."""
     entries = payload.get(section)
     if entries is None:
         return []
@@ -362,80 +364,25 @@ def _named_records(
                 )
             )
             continue
-        name = entry.get("name")
-        if not isinstance(name, str) or not name.strip():
+        identity = entry.get(identity_field)
+        if not isinstance(identity, str) or not identity.strip():
             diagnostics.append(
                 Diagnostic(
                     source=source, section=section, record=f"#{index}",
-                    field="name", problem="required, and must be non-empty text",
+                    field=identity_field, problem="required, and must be non-empty text",
                 )
             )
             continue
-        if name in seen:
+        if identity in seen:
             diagnostics.append(
                 Diagnostic(
-                    source=source, section=section, record=name,
+                    source=source, section=section, record=identity,
                     problem="defined twice in the same pack",
                 )
             )
             continue
-        seen.add(name)
-        out.append((name, entry))
-    return out
-
-
-def _identified_records(
-    payload: Mapping[str, Any],
-    section: str,
-    diagnostics: list[Diagnostic],
-    source: str,
-) -> list[tuple[str, Mapping[str, Any]]]:
-    """Pull an ID-keyed catalog section from a pack with duplicate diagnostics."""
-    entries = payload.get(section)
-    if entries is None:
-        return []
-    if not isinstance(entries, list):
-        diagnostics.append(
-            Diagnostic(source=source, section=section, problem="must be a list of records")
-        )
-        return []
-    out: list[tuple[str, Mapping[str, Any]]] = []
-    seen: set[str] = set()
-    for index, entry in enumerate(entries):
-        if not isinstance(entry, dict):
-            diagnostics.append(
-                Diagnostic(
-                    source=source,
-                    section=section,
-                    record=f"#{index}",
-                    problem=f"must be an object, got {type(entry).__name__}",
-                )
-            )
-            continue
-        identifier = entry.get("id")
-        if not isinstance(identifier, str) or not identifier.strip():
-            diagnostics.append(
-                Diagnostic(
-                    source=source,
-                    section=section,
-                    record=f"#{index}",
-                    field="id",
-                    problem="required, and must be non-empty text",
-                )
-            )
-            continue
-        if identifier in seen:
-            diagnostics.append(
-                Diagnostic(
-                    source=source,
-                    section=section,
-                    record=identifier,
-                    problem="defined twice in the same pack",
-                )
-            )
-            continue
-        seen.add(identifier)
-        out.append((identifier, entry))
+        seen.add(identity)
+        out.append((identity, entry))
     return out
 
 
@@ -1323,38 +1270,50 @@ def _parse_pack(
         catalog_tables={}, catalog_table_records={},
     )
 
-    for name, record in _named_records(payload, "creatures", diagnostics, label):
+    for name, record in _keyed_records(
+        payload, "creatures", diagnostics, label, identity_field="name"
+    ):
         creature = _parse_creature(name, record, diagnostics, label)
         if creature is not None:
             parsed.creatures[name] = creature
-    for name, record in _named_records(payload, "spells", diagnostics, label):
+    for name, record in _keyed_records(
+        payload, "spells", diagnostics, label, identity_field="name"
+    ):
         spell = _parse_spell(name, record, diagnostics, label)
         if spell is not None:
             parsed.spells[name] = spell[0]
             parsed.spell_records[name] = spell[1]
-    for name, record in _named_records(payload, "conditions", diagnostics, label):
+    for name, record in _keyed_records(
+        payload, "conditions", diagnostics, label, identity_field="name"
+    ):
         condition = _parse_condition(name, record, diagnostics, label)
         if condition is not None:
             parsed.condition_effects[name] = condition[0]
             parsed.condition_records[name] = condition[1]
-    for name, record in _named_records(payload, "terrain", diagnostics, label):
+    for name, record in _keyed_records(
+        payload, "terrain", diagnostics, label, identity_field="name"
+    ):
         terrain = _parse_terrain(name, record, diagnostics, label)
         if terrain is not None:
             parsed.terrain_effects[name] = terrain[0]
             parsed.terrain_records[name] = terrain[1]
-    for name, record in _named_records(payload, "items", diagnostics, label):
+    for name, record in _keyed_records(
+        payload, "items", diagnostics, label, identity_field="name"
+    ):
         item = _parse_item(name, record, diagnostics, label)
         if item is not None:
             parsed.items[name] = item[0]
             parsed.item_records[name] = item[1]
 
-    for identifier, record in _identified_records(payload, "catalog", diagnostics, label):
+    for identifier, record in _keyed_records(
+        payload, "catalog", diagnostics, label, identity_field="id"
+    ):
         catalog_record = _parse_catalog_record(identifier, record, diagnostics, label)
         if catalog_record is not None:
             parsed.catalog[identifier] = catalog_record
             parsed.catalog_records[identifier] = dict(record)
-    for identifier, record in _identified_records(
-        payload, "catalog_tables", diagnostics, label
+    for identifier, record in _keyed_records(
+        payload, "catalog_tables", diagnostics, label, identity_field="id"
     ):
         catalog_table = _parse_catalog_table(identifier, record, diagnostics, label)
         if catalog_table is not None:

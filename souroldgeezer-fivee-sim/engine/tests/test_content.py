@@ -21,7 +21,7 @@ import json
 import os
 from pathlib import Path
 from random import Random
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
@@ -139,6 +139,64 @@ def fields(diagnostics: list[Any], severity: Severity = Severity.ERROR) -> list[
     was caught has to look here.
     """
     return [d.field for d in diagnostics if d.severity is severity]
+
+
+@pytest.mark.parametrize("identity_field", ["name", "id"])
+def test_keyed_record_reader_preserves_name_and_id_semantics(
+    identity_field: Literal["name", "id"],
+) -> None:
+    diagnostics: list[Any] = []
+
+    assert content_module._keyed_records(
+        {}, "records", diagnostics, "pack.json", identity_field=identity_field
+    ) == []
+    assert diagnostics == []
+
+    assert content_module._keyed_records(
+        {"records": {}},
+        "records",
+        diagnostics,
+        "pack.json",
+        identity_field=identity_field,
+    ) == []
+    assert [
+        (item.source, item.section, item.record, item.field, item.problem)
+        for item in diagnostics
+    ] == [("pack.json", "records", "", "", "must be a list of records")]
+
+    diagnostics.clear()
+    original_identity = "  first  "
+    first = {identity_field: original_identity, "marker": 1}
+    second = {identity_field: "second", "marker": 2}
+    duplicate = {identity_field: original_identity, "marker": 3}
+
+    assert content_module._keyed_records(
+        {"records": [first, 42, {}, second, duplicate]},
+        "records",
+        diagnostics,
+        "pack.json",
+        identity_field=identity_field,
+    ) == [(original_identity, first), ("second", second)]
+    assert [
+        (item.source, item.section, item.record, item.field, item.problem)
+        for item in diagnostics
+    ] == [
+        ("pack.json", "records", "#1", "", "must be an object, got int"),
+        (
+            "pack.json",
+            "records",
+            "#2",
+            identity_field,
+            "required, and must be non-empty text",
+        ),
+        (
+            "pack.json",
+            "records",
+            original_identity,
+            "",
+            "defined twice in the same pack",
+        ),
+    ]
 
 
 @pytest.fixture
