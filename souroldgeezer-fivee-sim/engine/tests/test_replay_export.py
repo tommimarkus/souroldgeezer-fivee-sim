@@ -241,6 +241,32 @@ class TestBundleV2:
         assert bundle["integrity"]["algorithm"] == "sha256"
         assert replay_service.validate_replay(bundle) == []
 
+    def test_a_ruling_the_table_made_leaves_a_bundle_that_still_plays(self) -> None:
+        """The third mutator, held to what the other two are held to.
+
+        ``encounter.condition`` changes the fight — ``recover_session`` replays
+        it beside ``act`` and ``advance`` for exactly that reason — so the
+        bundle it leaves owes the same two invariants as theirs: every event
+        stamped, and the last checkpoint equal to the state the bundle reports.
+        It owed them and did not pay: the live path stamped nothing and captured
+        nothing, so a fight in which anybody had imposed a condition exported a
+        file ``validate_replay`` refuses, and ``adventure.replay`` refused the
+        whole run with it.
+
+        The asymmetry is the tell and is why this is asserted here rather than
+        left to the composition tests: drop the session between the ruling and
+        the export and the same fight comes back playable, because recovery
+        does what the live call skipped.
+        """
+        encounter_id = mapless_fight(seed=97)
+
+        api.encounter_condition(encounter_id, "Goblin", "prone")
+        bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        assert all(event["timestamp"] for event in bundle["events"])
+        assert bundle["checkpoints"][-1]["state"] == bundle["latest_state"]
+        assert replay_service.validate_replay(bundle) == []
+
     def test_v2_normalized_inputs_preserve_playtest_mechanics(self) -> None:
         stirge = dict(REPLAY_HERO)
         stirge.update(

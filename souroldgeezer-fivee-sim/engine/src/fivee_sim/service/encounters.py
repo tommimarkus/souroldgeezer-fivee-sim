@@ -401,14 +401,29 @@ def condition(
     Journalled like an action rather than like a note, because it changes the
     fight: a resume that replayed the notes and not this would rebuild a
     different creature.
+
+    And *stamped and checkpointed* like an action, for the same reason and by
+    the same three lines :func:`execute_act` uses. This is the third mutator of
+    an encounter and the only one that ever skipped them, which left every
+    fight where somebody made a ruling exporting a bundle
+    ``replay.validate_replay`` refuses — unstamped events, and a
+    ``latest_state`` one ruling past the final checkpoint. Recovery had it
+    right all along (``sessions.recover_session`` replays this operation with
+    both), so the two paths disagreed about the same fight.
     """
     session = sessions.session_for(state, encounter_id)
 
     def execute() -> dict[str, Any]:
+        before = len(session.encounter.log)
         try:
             session.encounter.set_condition(target, condition_name, applied=applied)
         except (EncounterError, UnknownCondition) as error:
             raise RequestError(str(error)) from error
+        completed_at = sessions.utc_now()
+        session.event_timestamps.extend(
+            [completed_at] * (len(session.encounter.log) - before)
+        )
+        sessions.capture_checkpoint(session, completed_at)
         return {
             "encounter_id": encounter_id,
             "target": target,
