@@ -4764,6 +4764,88 @@ class TestSpellcasting:
         assert wizard.concentrating_on is None
 
 
+class TestConcentrationDurationCap:
+    """SRD 5.2.1: Hold Person is "Concentration, up to 1 minute" — 10 rounds.
+
+    Concentration already ends the effect four other ways (a failed
+    Constitution save, Incapacitated, death, starting another concentration
+    effect); this is the fifth, and the only one that fires with the caster
+    doing nothing at all. Neither route pre-empts the other: whichever
+    arrives first ends the effect.
+    """
+
+    def hold_person(
+        self, rng: Random, extra: list[Creature] | None = None
+    ) -> tuple[Encounter, Creature, Creature]:
+        wren = caster(position=0)
+        victim = fighter("Bandit0", team="foes", position=10)
+        victim.abilities[Ability.WISDOM] = 1
+        encounter = Encounter([wren, victim, *(extra or [])], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Hold Person", target="Bandit0"),
+            FixedRandom(1),
+        )
+        assert Condition.PARALYZED in victim.conditions, "the save must fail to set up this test"
+        return encounter, wren, victim
+
+    def test_paralysis_releases_on_the_round_its_cap_expires_and_not_before(
+        self,
+    ) -> None:
+        rng = Random(11)
+        encounter, wren, victim = self.hold_person(rng)
+        cap = encounter.round + spellbook()["Hold Person"].duration_rounds
+        while encounter.round < cap - 1:
+            encounter.advance(rng)
+        assert Condition.PARALYZED in victim.conditions, (
+            f"still holds through round {encounter.round}, one short of the cap"
+        )
+        while encounter.round < cap:
+            events = encounter.advance(rng)
+        assert Condition.PARALYZED not in victim.conditions
+        ended = next(event for event in events if event.kind == "effect_end")
+        assert "paralyzed lifts" in ended.detail
+        assert wren.concentrating_on is None
+
+    def test_a_spell_with_no_duration_set_behaves_exactly_as_it_does_today(
+        self,
+    ) -> None:
+        # Guiding Bolt has no ongoing condition and no duration cap; it must not
+        # gain one as a side effect of this feature.
+        rng = Random(4)
+        priest = caster(position=0)
+        priest.spells = ("Guiding Bolt",)
+        priest.spell_slots = {1: 4}
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=20)
+        encounter = Encounter([priest, goblin], rng, spellbook=spellbook())
+        advance_to(encounter, "Wren", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.CAST, spell="Guiding Bolt", slot_level=1,
+                   targets=("Goblin",)),
+            Random(2),
+        )
+        assert not any(event.kind == "effect_apply" for event in events)
+        assert encounter.state()["ongoing_effects"] == []
+
+    def test_a_constitution_save_still_ends_it_before_the_cap_arrives(self) -> None:
+        # Concentration's own release routes are untouched by the cap: a failed
+        # save still ends the effect on whichever round it happens, well before
+        # the ten-round timer would. Same shape as
+        # ``TestConcentrationEffects.test_failing_the_concentration_save_frees_the_target``.
+        brute = fighter("Brute", team="foes", position=5, max_hp=40)
+        rng = Random(11)
+        encounter, wren, victim = self.hold_person(rng, extra=[brute])
+        advance_to(encounter, "Brute", rng)
+        # d20 15 hits AC 13; 1d8 damage; then a natural 1 on the Constitution save.
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Wren", attack="Longsword"),
+            ScriptedRandom([15, 5, 1]),
+        )
+        assert "loses Hold Person" in detail_of(events, "concentration")
+        assert wren.concentrating_on is None
+        assert Condition.PARALYZED not in victim.conditions
+
+
 class TestAoeShapes2D:
     """Golden shape resolutions through the stepper: who is caught is the test."""
 

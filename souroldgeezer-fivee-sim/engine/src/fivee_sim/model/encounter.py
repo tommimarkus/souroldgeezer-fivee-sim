@@ -606,6 +606,17 @@ class OngoingEffect:
     #: strings mean no timer — the effect lasts until something else releases it.
     expires_phase: str = ""
     expires_anchor: str = ""
+    #: A separate field rather than a third :class:`~fivee_sim.kernel.actions.
+    #: RiderExpiry` member, on purpose: a printed duration cap (SRD 5.2.1's
+    #: "Concentration, up to 1 minute") is a round count, not a turn-boundary
+    #: anchor, and folding it into that enum would need every ``is`` chain
+    #: switching on ``RiderExpiry`` — none of which mypy would flag as
+    #: non-exhaustive — to learn the new member or silently ignore it. The round
+    #: number on which :meth:`Encounter.advance` releases this effect, or
+    #: ``None`` for no cap. Set from :attr:`~fivee_sim.kernel.spells.Spell.
+    #: duration_rounds` at cast time as ``self.round + duration_rounds``, so it
+    #: names an absolute round rather than a remaining count.
+    expires_round: int | None = None
 
 
 @dataclass(slots=True)
@@ -1785,6 +1796,7 @@ class Encounter:
                     "stacked": effect.stacked,
                     "expires_phase": effect.expires_phase,
                     "expires_anchor": effect.expires_anchor,
+                    "expires_round": effect.expires_round,
                 }
                 for effect in self._effects
             ],
@@ -2165,6 +2177,7 @@ class Encounter:
                     self.round += 1
                     self._emit("round", detail=f"round {self.round} begins",
                                round=self.round)
+                    self._expire_duration()
                     self._arrive_for_round()
                 if (
                     not self.creatures[self.current_name].dead
@@ -3273,6 +3286,10 @@ class Encounter:
                 self._apply_condition(
                     actor, target, result.condition_applied,
                     effect_name=spell.name, concentration=spell.concentration,
+                    expires_round=(
+                        self.round + spell.duration_rounds
+                        if spell.duration_rounds else None
+                    ),
                 )
 
     def auto_fails_save(self, creature: Creature, ability: Ability | None) -> bool:
@@ -4319,6 +4336,7 @@ class Encounter:
         concentration: bool,
         expires_phase: str = "",
         expires_anchor: str = "",
+        expires_round: int | None = None,
     ) -> bool:
         """Impose ``condition`` and record what is imposing it.
 
@@ -4358,6 +4376,7 @@ class Encounter:
                 stacked=already_held and not held_by_ledger,
                 expires_phase=expires_phase,
                 expires_anchor=expires_anchor,
+                expires_round=expires_round,
             )
         )
         return True
@@ -4453,6 +4472,43 @@ class Encounter:
             saved=False if save is not None else None,
             expiry=str(option.on_hit_expiry),
         )
+
+    def _expire_duration(self) -> None:
+        """Release every ongoing effect whose printed duration cap has arrived.
+
+        Checked once per round rather than per turn: SRD 5.2.1 durations this
+        engine models are printed in whole minutes or coarser, never inside a
+        single round, so the round counter :meth:`advance` already owns is the
+        boundary that matters, not a turn slot the way :meth:`_expire_timed`'s
+        riders are.
+
+        A Concentration effect still being actively sustained when its cap
+        arrives ends anyway — "Concentration, up to 1 minute" is the cap
+        *and* the Concentration requirement, not a substitute for one another,
+        so whichever release reaches an effect first is the one that ends it.
+        The caster is freed to concentrate on something else only once no
+        other entry of the same name still holds its Concentration, mirroring
+        :meth:`_end_concentration`.
+        """
+        expiring = [
+            effect for effect in self._effects
+            if effect.expires_round is not None and self.round >= effect.expires_round
+        ]
+        for effect in expiring:
+            self._release_effect(effect)
+        for effect in expiring:
+            if not effect.concentration:
+                continue
+            source = self.creatures.get(effect.source)
+            if source is None or source.concentrating_on != effect.name:
+                continue
+            if not any(
+                other.source == effect.source
+                and other.name == effect.name
+                and other.concentration
+                for other in self._effects
+            ):
+                source.concentrating_on = None
 
     def _expire_timed(self, phase: str, anchor: str) -> None:
         """Release every timed effect whose turn boundary has just passed.

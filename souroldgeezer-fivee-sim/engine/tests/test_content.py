@@ -1176,6 +1176,40 @@ class TestSpellActionCostSchema:
         assert registry.spells["Vale Bolt"].action_cost is ActionCost.ACTION
 
 
+class TestSpellDurationRoundsSchema:
+    """A spell's printed duration cap is stored in rounds, and defaults to none.
+
+    SRD 5.2.1 prints durations in minutes or hours; this engine counts rounds,
+    at 10 rounds per SRD minute (1 round = 6 seconds). ``0`` means "no cap" —
+    the same reading ``range_feet`` gives its own default — so a record
+    carrying only ``name``, ``level`` and ``provenance`` keeps loading exactly
+    as it does today.
+    """
+
+    def test_an_omitted_duration_rounds_defaults_to_no_cap(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Bolt", "level": 1, "damage": "1d10",
+                "damage_type": "force", "range_feet": 60, "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Bolt"].duration_rounds == 0
+
+    def test_duration_rounds_is_read_from_the_record(self, tmp_path: Path) -> None:
+        path = write_pack(tmp_path, "vale.json", {
+            "pack": "x", "provenance": "test",
+            "spells": [{
+                "name": "Vale Hold", "level": 2, "condition": "paralyzed",
+                "save_ability": "wisdom", "range_feet": 60, "concentration": True,
+                "duration_rounds": 10, "provenance": "test",
+            }],
+        })
+        registry = load_packs([path], include_environment=False)
+        assert registry.spells["Vale Hold"].duration_rounds == 10
+
+
 class TestCatalogContentRefMustResolve:
     """A catalog row's ``content_ref`` has to name a record that exists.
 

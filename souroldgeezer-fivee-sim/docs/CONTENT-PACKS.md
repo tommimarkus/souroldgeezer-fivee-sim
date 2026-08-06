@@ -291,8 +291,8 @@ Required: `name`, `level`, `provenance`. Optional: `school`,
 `range_feet` — optional, but a named-target spell that omits it is warned about
 (see below) — `max_targets`, `action_cost` (`action` by default or
 `bonus_action`),
-`condition`, `concentration`, `unmodelled_facts`, legacy `unmodelled`,
-`overrides`.
+`condition`, `concentration`, `duration_rounds`, `unmodelled_facts`, legacy
+`unmodelled`, `overrides`.
 
 A spell cannot both require an attack roll and offer a saving throw. `shape` is
 one of `sphere`, `cone`, `line`, `cube`, `emanation`, or `cylinder`, and pairs
@@ -382,6 +382,19 @@ or `bonus_action` for the handful of spells SRD 5.2.1 prints with "Casting Time:
 Bonus Action" — Healing Word and Mass Healing Word among them. It spends the
 matching budget regardless of `as_bonus_action`; that flag only ever refuses an
 ordinary spell cast as a bonus action, the same way an item's does.
+
+`duration_rounds` caps how long an ongoing effect this spell imposes lasts,
+counted in this engine's **rounds** — never in the minutes or hours SRD 5.2.1
+prints. A round is 6 seconds, so an SRD minute is 10 rounds: transcribe by that
+conversion, not by copying the printed number. Hold Person is "Concentration,
+up to 1 minute", so its record carries `"duration_rounds": 10`, not `1`. `0`
+means no cap, the same reading `range_feet`'s `0` gives — a spell with no
+ongoing effect has nothing to cap, and a record written before this field
+existed reads exactly as unbounded as it always did. Concentration and this cap
+are independent constraints on the same effect: whichever release reaches it
+first — a failed Constitution save, the caster's own Incapacitated or death,
+starting a second Concentration effect, or the round counter reaching the cap —
+is the one that ends it.
 
 ### `conditions`
 

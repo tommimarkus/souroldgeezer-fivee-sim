@@ -120,6 +120,16 @@ class Spell:
     #: Word are SRD 5.2.1's "Casting Time: Bonus Action" exceptions. Mirrors
     #: ``ItemEffect.action_cost``, which solved the same problem for items first.
     action_cost: ActionCost = ActionCost.ACTION
+    #: How long an ongoing effect this spell imposes lasts, in **rounds** — never
+    #: minutes or hours, which is how SRD 5.2.1 prints it. This engine's round is
+    #: 6 seconds, so 1 SRD minute is 10 rounds; a record transcribes the printed
+    #: duration by that conversion (Hold Person's "Concentration, up to 1
+    #: minute" is ``duration_rounds=10``), not by copying the printed number.
+    #: ``0`` means no cap, mirroring ``range_feet``'s "0 means no check": a spell
+    #: with no ongoing effect has nothing to cap, and a record predating this
+    #: field reads exactly as unbounded as it always has. Concentration and this
+    #: cap are independent; an effect with both ends at whichever comes first.
+    duration_rounds: int = 0
 
     @property
     def is_area(self) -> bool:

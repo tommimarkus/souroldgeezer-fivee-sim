@@ -177,6 +177,7 @@ _SPELL_KEYS = _COMMON_RECORD_KEYS | {
     "shape", "radius", "length",
     "size", "width", "height",
     "range_feet", "max_targets", "condition", "concentration", "action_cost",
+    "duration_rounds",
 }
 _CONDITION_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
 _TERRAIN_KEYS = _COMMON_RECORD_KEYS | {"effects", "description"}
@@ -1034,6 +1035,7 @@ def _parse_spell(
         concentration=reader.boolean("concentration"),
         provenance=provenance,
         action_cost=reader.enum("action_cost", ActionCost) or ActionCost.ACTION,
+        duration_rounds=reader.integer("duration_rounds", minimum=0),
     )
     if spell.damage is not None and spell.damage_type is None:
         reader.fail("damage_type", "a spell that deals damage must name a damage type")
