@@ -495,6 +495,14 @@ would hand the same name out twice. So this is an operator's decision on a quiet
 engine rather than a reaper on a timer, and the default answer is a list to look
 at.
 
+A refusal part-way through an `apply` **carries the ids it already reclaimed**,
+and carries them in the sentence rather than only in an attribute. Those
+journals are unlinked and nothing else records that they were, so raising past
+them would tell an operator nothing was pruned while several had been — and an
+attribute does not cross the adapter, which renders a `ValueError` into
+problem+json from its message and reads nothing else. The attribute stays for a
+caller that is a program and wants the ids as ids.
+
 **A blob is the fourth storage kind, and it is defined entirely by its name.**
 `service/blobs.py` writes a payload to a file named for the SHA-256 of its own
 canonical bytes, and everything else follows without machinery: publishing is a

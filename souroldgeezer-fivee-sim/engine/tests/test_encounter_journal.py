@@ -2682,3 +2682,92 @@ def test_pruning_an_empty_root_is_not_an_error(
     _journal_root(tmp_path, monkeypatch)
 
     assert api.encounter_prune(apply=True) == {"applied": True, "encounters": []}
+
+
+def test_a_fresh_engine_starts_past_the_ids_already_on_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The seeding is the whole point of ``_seed_from_disk``, so it is what is
+    asserted — not the id that comes out.
+
+    ``claim`` refuses a name that is taken, so a engine seeded at zero walks
+    ``enc-1``, ``enc-2``, … until it clears the directory and *still* returns
+    the right id. Every observable outcome is identical; only the count of
+    attempts differs, which is exactly the cost the function exists to avoid
+    and exactly why a test of the returned id would have stayed green through
+    the layout move that broke it.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    for taken in ("enc-1", "enc-2", "enc-7"):
+        assert encounter_journal.claim(taken) is True
+    assert sorted(path.parent.name for path in encounter_journal.list_journals()) == [
+        "enc-1",
+        "enc-2",
+        "enc-7",
+    ], "the fixture must put ids on disk for this to say anything"
+
+    attempted: list[str] = []
+    real_claim = encounter_journal.claim
+
+    def counted(encounter_id: str) -> bool:
+        attempted.append(encounter_id)
+        return real_claim(encounter_id)
+
+    # `sessions` binds this module under an alias rather than copying the
+    # function out of it, so patching the module here is patching the one the
+    # allocator calls.
+    monkeypatch.setattr(encounter_journal, "claim", counted)
+    api.STATE.next_id = 0
+    api.STATE.sessions.clear()
+
+    allocated = sessions_service.new_encounter_id(api.STATE)
+
+    assert allocated == "enc-8"
+    assert attempted == ["enc-8"], (
+        f"a seeded engine claims once; this one walked {attempted} past ids the "
+        f"directory already held, in {root}"
+    )
+
+
+def test_pruning_reports_what_it_already_reclaimed_when_a_later_one_will_not_go(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failure part-way through must not delete the record of the work done.
+
+    ``prune`` removes a directory outside the lock that guarded its journal, and
+    the docstring is explicit that a creation between its ``claim`` and its
+    first append is not excluded — so a directory can refuse to go. Raising past
+    the ids already removed tells the operator nothing was pruned when several
+    were, and the ids are gone either way: the report is the only record.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    for claimed in ("enc-9001", "enc-9002"):
+        assert encounter_journal.claim(claimed) is True
+
+    real_remove = encounter_journal._remove
+
+    def obstruct(path: Path) -> None:
+        # Stand in for the race the docstring names: something arrives in the
+        # second directory after its journal was unlinked under the lock.
+        if path.name == "enc-9002":
+            (path / "journal.jsonl").write_text("", encoding="utf-8")
+        real_remove(path)
+
+    monkeypatch.setattr(encounter_journal, "_remove", obstruct)
+
+    with pytest.raises(
+        encounter_journal.JournalError, match="cannot prune .*enc-9002"
+    ) as raised:
+        encounter_journal.prune(apply=True)
+
+    assert getattr(raised.value, "reaped", None) == ["enc-9001"], (
+        "the ids already reclaimed have to survive the refusal; they are gone "
+        "from disk and this is the only place they are named"
+    )
+    assert "enc-9001" in str(raised.value), (
+        "an attribute does not cross the adapter — `web/http_server.py` renders a "
+        "ValueError into problem+json from its message and reads nothing else — so "
+        "an operator calling this over HTTP sees the ids only if the sentence "
+        "carries them"
+    )
+    assert not (root / "enc-9001").exists()

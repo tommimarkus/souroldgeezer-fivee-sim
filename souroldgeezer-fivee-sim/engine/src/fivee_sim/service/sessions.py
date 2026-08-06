@@ -225,10 +225,18 @@ def _seed_from_disk(state: EngineState) -> None:
     next id before this one asks for it, which is what ``claim`` is for. Without
     it a new engine in a busy directory would walk from one, losing a claim per
     encounter already there.
+
+    The id is the *directory's* name, which is what ``list_journals`` says in
+    its own docstring: every journal is called ``journal.jsonl`` now, so
+    ``path.stem`` reads ``journal`` for all of them and this walked from one
+    again with nothing to show for the read. It cost no correctness — ``claim``
+    refuses a taken name and the loop moves on — which is exactly why it went
+    unnoticed, and why the test for it counts attempts rather than checking the
+    id that comes out.
     """
     highest = 0
     for path in journal_service.list_journals():
-        suffix = path.stem[len("enc-"):]
+        suffix = path.parent.name[len("enc-"):]
         if suffix.isdigit():
             highest = max(highest, int(suffix))
     state.next_id = highest

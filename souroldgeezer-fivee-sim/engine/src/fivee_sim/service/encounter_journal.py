@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -60,7 +60,18 @@ JOURNAL_FILENAME = "journal.jsonl"
 
 
 class JournalError(ValueError):
-    """A journal cannot be trusted or written."""
+    """A journal cannot be trusted or written.
+
+    ``reaped`` is empty for all but one raiser. :func:`prune` removes several
+    ids in a loop and each removal is a deletion that has already happened, so
+    a refusal part-way through cannot be allowed to take the record of the
+    earlier ones with it — the ids are gone from the disk either way, and the
+    report is the only place they are named.
+    """
+
+    def __init__(self, message: str, *, reaped: Sequence[str] = ()) -> None:
+        super().__init__(message)
+        self.reaped: list[str] = list(reaped)
 
 
 def encounter_dir(encounter_id: str) -> Path:
@@ -399,16 +410,35 @@ def prune(*, apply: bool) -> list[str]:
         if not apply:
             reaped.append(directory.name)
             continue
-        with _JOURNAL_LOCK, durable.file_lock(path):
-            if not _unwritten(path):
-                continue
-            _remove(path)
-        # The lock and the directory go outside the critical section, because
-        # the lock file is the one being removed: unlinking a file whose
-        # descriptor is still open is a POSIX courtesy this module does not need
-        # to depend on, and there is nothing left inside to protect.
-        _remove(durable.lock_path(path))
-        _remove(directory)
+        try:
+            with _JOURNAL_LOCK, durable.file_lock(path):
+                if not _unwritten(path):
+                    continue
+                _remove(path)
+            # The lock and the directory go outside the critical section,
+            # because the lock file is the one being removed: unlinking a file
+            # whose descriptor is still open is a POSIX courtesy this module
+            # does not need to depend on, and there is nothing left inside to
+            # protect.
+            _remove(durable.lock_path(path))
+            _remove(directory)
+        except JournalError as error:
+            # Every id in ``reaped`` is a journal already unlinked. Raising past
+            # them would tell the operator that nothing was pruned while several
+            # ids had been, and there is no second record to recover them from.
+            # The refusal still names the directory that would not go — this
+            # carries what was done alongside it rather than instead of it.
+            #
+            # In the *sentence* as well as the attribute, because an attribute
+            # does not cross the adapter: `web/http_server.py` renders a
+            # ``ValueError`` into problem+json from its message and reads
+            # nothing else, so an operator calling ``encounter.prune`` over HTTP
+            # would otherwise be told only what failed. The attribute stays for
+            # a caller that is a program and wants the ids as ids.
+            said = str(error)
+            if reaped:
+                said += f" (already reclaimed: {', '.join(reaped)})"
+            raise JournalError(said, reaped=reaped) from error
         reaped.append(directory.name)
     return reaped
 
