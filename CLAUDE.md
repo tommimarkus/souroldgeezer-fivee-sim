@@ -278,7 +278,7 @@ a separate layer because they are resolution primitives like the rest.
 
 **`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
-`adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`,
+`adventures.py`, `blobs.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`,
 `replay.py`, `scenes.py`, `uvtt.py`, and `views.py`.
 Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
@@ -440,6 +440,43 @@ second list to keep in step.
 an older format, a v1 journal is refused by name at recovery, and
 `encounter.list` still lists it anyway, because a hash-valid file that this
 build cannot replay is not a corrupt one.
+
+**A blob is the fourth storage kind, and it is defined entirely by its name.**
+`service/blobs.py` writes a payload to a file named for the SHA-256 of its own
+canonical bytes, and everything else follows without machinery: publishing is a
+rename because the winner of a race writes what the loser was about to,
+freshness needs no stamp because a file that exists already holds the only
+content that name can mean, deduplication needs no index because two fights
+capturing identical content compute identical names, and integrity needs no
+chain and no version precondition because a blob cannot legally change — so
+`get` reads one back and hashes it, and that is the whole check. This is the
+`src/<source-id>` idiom the launcher already runs on, pointed at the payloads a
+journal used to carry inline.
+
+That is the same argument the paragraph above makes about derived state, made
+about *duplicated* state instead, and it was worth making because the numbers
+were not close. A creation record was 22,223 bytes for a six-combatant fight, of
+which 14,589 was the captured content snapshot — and that snapshot was
+byte-identical in every journal on the machine. It names one now, at 7,708 bytes
+and one shared file. What is left is almost entirely `combatants`, which is an
+*input* the replay needs, so it stays.
+
+**Blobs are never deleted, and that is a decision rather than an omission.** A
+journal names one for as long as the journal exists, and no process can know
+which other one is mid-recovery on a fight it has not been told about — the same
+reasoning that retains old launcher source copies. Reaping them is
+`encounter.prune`'s question, alongside the journals that would license it.
+
+The cost is paid where it is visible: the blobs are a **sibling** root of the
+journals, not a child, because the point of one is to be shared by every journal
+that names it — so the two move independently, and a journal carried somewhere
+its blobs were not names payloads that are not there. A named payload can be
+missing where an inline one could not be. Recovery says which encounter and what
+is missing rather than raising past it. And the reference goes in the journal
+only: a bundle is an **export** that leaves the machine, where nothing resolves a
+bare digest, so every bundle writer reads the in-memory `Session` — which
+recovery repopulates from the blobs — and ships map and content by value exactly
+as before.
 
 **A replay bundle's `format_version` is not held to that rule, on purpose.** A
 journal is internal state, so breaking it cleanly costs nothing outside the
