@@ -376,3 +376,119 @@ def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> No
     protocol_plain = " ".join(protocol.lower().split())
     for withheld in ("adventure", "hidden state", "monster statistics"):
         assert withheld in protocol_plain
+
+
+def test_game_master_owns_basic_rules_lookup_and_only_flags_material_gaps() -> None:
+    game_master = _text("agents/game-master.md")
+
+    framework = _markdown_section(game_master, "## Your rules framework")
+    framework_plain = " ".join(framework.lower().split())
+    for obligation in (
+        "2024",
+        "general rule",
+        "specific rule",
+        "d20 test",
+        "ability check",
+        "meaningful consequence",
+        "action",
+        "bonus action",
+        "reaction",
+        "attack",
+        "dash",
+        "disengage",
+        "dodge",
+        "influence",
+        "search",
+        "study",
+        "utilize",
+        "movement",
+        "damage",
+        "healing",
+        "rest",
+        "death",
+        "character sheet",
+    ):
+        assert obligation in framework_plain
+
+    lookup = _markdown_section(game_master, "## Looking up an SRD rule")
+    for command in (
+        "fivee catalog.search",
+        "fivee catalog.get",
+        "fivee catalog.table",
+    ):
+        assert command in lookup
+    lookup_plain = " ".join(lookup.lower().split())
+    for evidence_field in ("provenance", "pages", "fact_status"):
+        assert evidence_field in lookup_plain
+    assert "no_structured_facts" in lookup
+    assert re.search(
+        r"one search.{0,300}\b(?:silent|silence)\b",
+        lookup,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"`rules\.lookup`.{0,400}\b(?:executable|engine)\b",
+        lookup,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"model recollection.{0,200}\b(?:never|not|no)\b|"
+        r"\b(?:never|not|no)\b.{0,200}model recollection",
+        lookup,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    protocol = _markdown_section(
+        _text("skills/play/SKILL.md"), "### Rules questions from a player"
+    )
+    assert re.search(
+        r"coordinator.{0,300}\brelay\w*\b.{0,300}\bgame master\b",
+        protocol,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"game master.{0,400}\b(?:owns?|performs?)\b.{0,300}\blookup\b",
+        protocol,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"game master.{0,500}\bplayer-facing\b.{0,200}\banswer\b",
+        protocol,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    adjudication = _markdown_section(game_master, "## Adjudicating")
+    report = _markdown_section(
+        _text("skills/play/references/report-format.md"),
+        "### Adjudication notes",
+    )
+    divergence = _markdown_section(
+        _text("skills/play/references/report-format.md"), "### Divergences"
+    )
+    finding_guidance = " ".join((adjudication + report + divergence).lower().split())
+    assert re.search(
+        r"(?:ordinary|normal) srd-supported action.{0,300}\b(?:not|isn't)\b"
+        r".{0,200}\b(?:finding|adjudication note|divergence)\b",
+        finding_guidance,
+    )
+    for material_gap in (
+        "module-specific fact",
+        "procedure",
+        "dc",
+        "consequence",
+        "material route assumption",
+        "engine limitation",
+        "catalog limitation",
+    ):
+        assert material_gap in finding_guidance
+    assert re.search(
+        r"(?:record|put).{0,160}(?:engine|catalog) limitation.{0,160}adjudication note",
+        adjudication,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert re.search(
+        r"(?:reserve|use).{0,100}divergence.{0,200}materially different"
+        r".{0,100}(?:route|approach)",
+        adjudication,
+        flags=re.IGNORECASE | re.DOTALL,
+    )

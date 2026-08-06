@@ -42,13 +42,17 @@ they tried it, and what eventually moved them — including whether the game mas
 had to invent the way through.
 
 ### Adjudication notes
-**Every point the module did not say and the game master had to decide.** This is
-the highest-value section and it costs nothing to produce: the game master knows
-when it is improvising, and is instructed to flag rather than paper over.
+Record a note when continuing required the game master to invent a
+module-specific fact, procedure, DC, consequence, or material route assumption,
+or when an engine limitation or catalog limitation materially affected play.
+An ordinary SRD-supported action is not an adjudication note or divergence merely
+because the module did not enumerate it.
 
-Give the gap, the ruling made, and what a reader would have to add. Do not
-editorialise about whether the ruling was right — the point is that one was
-needed.
+Preserve genuine module gaps: a missing motive, mandatory clue, transition,
+failure result, or other authored fact does not become complete because a general
+rule can be applied around it. Give the gap, the ruling made, and what a reader
+would have to add. Do not editorialise about whether the ruling was right — the
+point is that the module or available support required one.
 
 ### Unused content
 Run-sheet entries nobody touched: scenes, NPCs, treasure, whole encounters. Not
@@ -79,9 +83,12 @@ Rounds per fight, beats per scene, and where the run slowed. A six-round fight
 against two goblins is a finding.
 
 ### Divergences
-What players tried that the module did not anticipate. Written from the players'
-side — what they thought they were doing and why — because that is the part the
-developer cannot get from their own reading.
+Record a materially different route or approach that challenges the module's
+authored assumptions. Do not classify a normal SRD-supported action as a
+divergence solely because the module omitted it from a menu or did not narrate it
+in advance. Write a genuine divergence from the players' side — what they thought
+they were doing and why — because that is the part the developer cannot get from
+their own reading.
 
 ### Legibility
 Narration that drew a confused in-character reaction. Quote the module's text,

@@ -171,16 +171,20 @@ the transcript.
 
 A player already brings the basic 2024 rules framework in its canonical role.
 When it asks for an exact rule or a fact about its own capability, pause the
-choice rather than making it guess. The coordinator performs a bounded structured
-lookup: use `fivee catalog.search --query …` to discover the relevant stable id,
-then `fivee catalog.get <id>` for one record or `fivee catalog.table <id>` for the
-needed window of one printed table. Do not hand the seat a command or a tool.
+choice rather than making it guess. Have the coordinator relay the exact question
+to the live game-master seat; do not answer it or perform the lookup in the
+coordinator. The game master owns and performs the bounded structured lookup and
+the resulting adjudication: use `fivee catalog.search --query …` to discover the
+relevant stable id, then inspect one record with `fivee catalog.get <id>` or one
+printed-table window with `fivee catalog.table <id>`. Do not hand the player seat
+a command or a tool.
 
-Relay only the requested player-facing fact before asking the seat to choose or
-decide for itself. Never include adventure material, hidden state, monster
-statistics, an unrevealed identity, the search results around the answer, or
-machine paths. If the catalog does not establish the answer, say that plainly
-and let the game master adjudicate; do not fill the gap from model recollection.
+Have the game master return only the requested player-facing answer, then relay
+that answer before asking the seat to choose or decide for itself. Never include
+adventure material, hidden state, monster statistics, an unrevealed identity,
+the search results around the answer, or machine paths. If the catalog does not
+establish the answer, have the game master say that plainly and adjudicate only
+as far as needed; do not fill the gap from coordinator or model recollection.
 
 ### Reactions to dice
 
@@ -284,6 +288,13 @@ Never reconstruct findings from the transcript at the end. Read
 [`references/report-format.md`](references/report-format.md) for the taxonomy
 and report contract: injection, blockers, adjudication notes, unused content,
 difficulty, attrition, pacing, divergences, legibility, and reproducibility.
+
+Do not log a normal SRD-supported action merely because the module did not
+enumerate it. Use an adjudication note when continuing required a material
+module-specific fact, procedure, DC, consequence, or route assumption, or when
+an engine or catalog limitation materially affected play. Reserve a divergence
+for a materially different route or approach that challenges the module's
+authored assumptions.
 
 Be exact about reproducibility: the master seed plus human-reported faces fixes
 what the engine did, not what people or language models chose to try.
