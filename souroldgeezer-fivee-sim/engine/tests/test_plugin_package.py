@@ -13,6 +13,7 @@ present and executable.
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,24 @@ def _json(relative_path: str) -> dict[str, Any]:
     payload = json.loads((PLUGIN_ROOT / relative_path).read_text(encoding="utf-8"))
     assert isinstance(payload, dict)
     return payload
+
+
+def _text(relative_path: str) -> str:
+    return (PLUGIN_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def _markdown_section(markdown: str, heading: str) -> str:
+    """Return one section, stopping at the next heading at the same level."""
+    level = len(heading) - len(heading.lstrip("#"))
+    assert level and heading[level : level + 1] == " ", heading
+    next_heading = rf"(?=^#{{1,{level}}}\s|\Z)"
+    match = re.search(
+        rf"^{re.escape(heading)}\s*$\n(?P<body>.*?){next_heading}",
+        markdown,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    assert match is not None, f"missing stable guidance section {heading!r}"
+    return match.group("body")
 
 
 def test_the_codex_manifest_points_at_the_shared_skills() -> None:
@@ -94,3 +113,54 @@ def test_host_manifests_identify_the_same_plugin() -> None:
 
     for field in ("name", "description", "author", "license"):
         assert codex[field] == claude[field]
+
+
+def test_playtest_skill_points_at_both_packaged_role_profiles() -> None:
+    skill_path = PLUGIN_ROOT / "skills/playtest/SKILL.md"
+    skill = skill_path.read_text(encoding="utf-8")
+    targets = set(re.findall(r"\[[^]]+\]\(([^)]+)\)", skill))
+    expected = {"../../agents/game-master.md", "../../agents/typical-player.md"}
+
+    assert expected <= targets
+    for target in expected:
+        assert (skill_path.parent / target).is_file(), target
+
+
+def test_playtest_skill_dispatches_the_shared_roles_for_each_host() -> None:
+    skill = _text("skills/playtest/SKILL.md")
+
+    claude = _markdown_section(skill, "### Claude Code")
+    assert "named agent" in claude.lower()
+    assert "`game-master`" in claude
+    assert "`typical-player`" in claude
+
+    codex = _markdown_section(skill, "### Codex")
+    assert "../../agents/game-master.md" in codex
+    assert "../../agents/typical-player.md" in codex
+    assert 'fork_turns="none"' in codex
+    assert "role body" in codex.lower()
+    assert "prompt" in codex.lower()
+
+
+def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> None:
+    seating = _text("skills/playtest/references/seating-and-pauses.md")
+    roster_example = re.search(r"```json\s+(?P<body>.*?)```", seating, flags=re.DOTALL)
+    assert roster_example is not None
+    assert '"tool_policy": "require-none"' in roster_example.group("body")
+
+    policy = _markdown_section(seating, "## Player tool policy")
+    assert "`require-none`" in policy
+    assert re.search(r"`require-none`.{0,500}\b(?:pause|stop)\b", policy, flags=re.DOTALL)
+    assert "`allow-reported`" in policy
+    assert "explicit" in policy.lower()
+    assert "record" in policy.lower()
+    assert "roster.json" in policy
+    assert "findings.jsonl" in policy
+
+
+def test_packaged_player_profile_still_declares_no_tools() -> None:
+    player = _text("agents/typical-player.md")
+    frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", player, flags=re.DOTALL)
+
+    assert frontmatter is not None
+    assert re.search(r"^tools:\s*\[\]\s*$", frontmatter.group("body"), flags=re.MULTILINE)
