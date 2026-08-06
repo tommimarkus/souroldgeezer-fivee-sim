@@ -2237,7 +2237,13 @@ class TestLevels:
         broken = storeys(
             floor(0, features=(stair("stair-up", (1, 0), 3),)), name="broken tower"
         )
-        with pytest.raises(EncounterError, match="leads to level 3, which this map does not have"):
+        with pytest.raises(
+            EncounterError,
+            match=(
+                r"feature 'stair-up' leads to level 3, but there is no level 3 in "
+                r"this map\. Declared: 0"
+            ),
+        ):
             Encounter([fighter(), make_monster("Wolf", position=(15, 0))], rng,
                       map_document=broken)
 
@@ -3271,7 +3277,10 @@ class TestInteract:
             orientation="horizontal",
             linked_to="door-upper",
         )
-        with pytest.raises(EncounterError, match="aligned with their horizontal orientation"):
+        with pytest.raises(
+            EncounterError,
+            match="linked doors must be adjacent along their shared orientation",
+        ):
             Encounter(
                 [archer(), make_monster("Goblin Warrior", label="Goblin", position=20)],
                 Random(3),
@@ -3708,7 +3717,8 @@ class TestMapFixtures:
             ),
         )
         with pytest.raises(
-            EncounterError, match=r"feature 'gate' reaches \(9, 0\), off the 6x1 map"
+            EncounterError,
+            match=r"feature 'gate' reaches \(9, 0\), outside the 6x1 grid",
         ):
             Encounter(
                 self.two_fighters(), Random(1), map_document=strip(6, features=(gate,))
@@ -3717,7 +3727,10 @@ class TestMapFixtures:
     def test_two_plain_features_on_one_square_are_still_refused(self) -> None:
         with pytest.raises(
             EncounterError,
-            match=r"features 'north door' and 'south door' share square \(2, 0\)",
+            match=(
+                r"feature 'south door' claims square \(2, 0\), which feature "
+                r"'north door' already governs"
+            ),
         ):
             Encounter(
                 self.two_fighters(),
@@ -3744,7 +3757,11 @@ class TestMapFixtures:
         )
         lever = fixture(name="lever", square=(3, 0))
         with pytest.raises(
-            EncounterError, match=r"features 'gate' and 'lever' share square \(3, 0\)"
+            EncounterError,
+            match=(
+                r"feature 'lever' claims square \(3, 0\), which feature 'gate' "
+                r"already governs"
+            ),
         ):
             Encounter(
                 self.two_fighters(),
@@ -3802,8 +3819,8 @@ class TestMapFixtures:
         with pytest.raises(
             EncounterError,
             match=(
-                r"feature 'gate' requires 'ghost lever', which this map does not "
-                r"have; the map has: gate, lever"
+                r"feature 'gate' requires 'ghost lever', but there is no feature "
+                r"'ghost lever' in this map\. Declared: gate, lever"
             ),
         ):
             Encounter(

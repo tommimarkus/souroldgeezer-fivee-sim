@@ -84,10 +84,14 @@ from ..map_types import (
     LightLevel,
     MapDocument,
     MapFeatureRecord,
+    MapFinding,
     MapLevel,
     MapLight,
     SquareClaim,
     TriggerMode,
+    document_findings,
+    plane_findings,
+    terrain_findings,
 )
 from .creature import AttackOption, Creature, DeathRule
 
@@ -101,11 +105,6 @@ UNDEAD_FORTITUDE_BASE_DC = 5
 #: battle's whole roster in one error line would bury the name that was actually
 #: wrong; a dozen is enough to spot a misspelling against.
 MAX_LISTED_COMBATANTS = 12
-
-#: :class:`~fivee_sim.map_types.LightLevel`'s members as a membership test.
-#: ``_adopt_map`` asks it once per storey, and rebuilding the set there measured
-#: an order of magnitude more than the lookup it was for.
-_LIGHT_LEVELS: frozenset[str] = frozenset(LightLevel)
 
 
 @dataclass(slots=True)
@@ -676,38 +675,6 @@ def _segment_samples(origin: Point, destination: Point) -> list[Point]:
     return samples
 
 
-def _trigger_cycle(edges: Mapping[str, tuple[str, ...]]) -> tuple[str, ...] | None:
-    """One deterministic trigger cycle, rotated to its smallest fixture id."""
-    visited: set[str] = set()
-    active: dict[str, int] = {}
-    path: list[str] = []
-
-    def visit(node: str) -> tuple[str, ...] | None:
-        if node in active:
-            cycle = path[active[node] :]
-            smallest = min(range(len(cycle)), key=lambda index: cycle[index])
-            ordered = cycle[smallest:] + cycle[:smallest]
-            return (*ordered, ordered[0])
-        if node in visited:
-            return None
-        active[node] = len(path)
-        path.append(node)
-        for dependency in sorted(edges.get(node, ())):
-            found = visit(dependency)
-            if found is not None:
-                return found
-        path.pop()
-        active.pop(node)
-        visited.add(node)
-        return None
-
-    for start in sorted(edges):
-        found = visit(start)
-        if found is not None:
-            return found
-    return None
-
-
 def _dependency_order(features: Mapping[str, MapFeatureRecord]) -> tuple[str, ...]:
     """All fixtures dependency-first, with lexical ties."""
     indegree = {name: 0 for name in features}
@@ -732,10 +699,13 @@ def _dependency_order(features: Mapping[str, MapFeatureRecord]) -> tuple[str, ..
             indegree[target] -= 1
             if indegree[target] == 0:
                 heapq.heappush(ready, target)
-    if len(ordered) != len(features):
-        cycle = _trigger_cycle(edges)
-        rendered = " -> ".join(cycle or ())
-        raise EncounterError(f"trigger cycle: {rendered}")
+    if len(ordered) != len(features):  # pragma: no cover - the rules refuse first
+        # Unreachable: ``map_types.trigger_findings`` refuses every trigger
+        # cycle, with the path spelled out, before ``_adopt_map`` gets here.
+        # Kept as a defence rather than an ``assert`` because the consequence of
+        # being wrong is a fight whose triggers resolve in an arbitrary order.
+        stuck = ", ".join(sorted(set(features) - set(ordered)))
+        raise EncounterError(f"trigger cycle among: {stuck}")
     return tuple(ordered)
 
 
@@ -1021,32 +991,31 @@ class Encounter:
 
     # --- the battle map ---------------------------------------------------
     def _adopt_map(self, document: MapDocument, combatants: Sequence[Creature]) -> None:
-        """Validate the map against the terrain table and place the combatants.
-
-        Everything a map can get wrong is refused here, before the first roll:
-        a malformed plane of tiles, a terrain kind the captured table does not
-        define, a feature off the map or doubled up on a square, a prerequisite
-        naming nothing, a combatant off the map, inside a wall, or on another
-        combatant. Positions are snapped to the centre of their square — on a
-        grid, the square is the position.
+        """Refuse a map the fight cannot run on, then place the combatants on it.
 
         A ``MapDocument`` can be hand-built with no file behind it, so these
         refusals are not a second opinion on the parser's — they are the only
-        ones such a map ever meets. **Every square a fixture governs is claimed
-        by exactly one fixture per level**, which is what makes the resolvers
-        below total: there is no precedence question to answer, so a stateless
-        reader of the same map cannot disagree with this fight about what a
-        square is.
+        ones such a map ever meets. What they are *not* any more is a second
+        statement of them. The rules live in :mod:`fivee_sim.map_types` and
+        yield :class:`~fivee_sim.map_types.MapFinding`; this renders the first
+        refusal as an ``EncounterError``, which is a ``ValueError`` and so
+        reaches a caller as problem+json rather than a 500. A finding that is
+        not a refusal — the one advisory about a sealed storey — is dropped:
+        a fight has nowhere to put advice.
 
-        The first pass over each storey is the one that arrived with the
-        document. :meth:`~fivee_sim.map_types.MapLevel.terrain_at` reads
-        ``legend[tiles[y][x]]`` at the moment a fight asks, so an undefined
-        glyph and a row short of the grid's width are both ``LookupError`` —
-        and a ``KeyError`` out of ``__init__`` is a 500 where an
-        ``EncounterError`` is problem+json. They are refused here, and refused
-        *by their distinct glyphs* rather than square by square: the scan is a
-        set per row, which measures faster on a 512x512 map than the sparse
-        terrain mapping this check used to walk.
+        Fail-fast rather than accumulating, deliberately. The parser owes an
+        author every problem in the file at once; a fight owes its caller one
+        reason it will not start.
+
+        Three of the rules are the fight's alone.
+        :func:`~fivee_sim.map_types.plane_findings` and
+        :func:`~fivee_sim.map_types.terrain_findings` are asked here and not by
+        the parser, which puts the same questions to the raw payload where it
+        can name the key that is wrong — see their docstrings. And the last
+        thirty lines below are **combatant placement**, which is an encounter
+        rule and not a map rule: a document is deliberately stateless about
+        creatures, so where a fighter may stand is not something a map file can
+        be right or wrong about. It stays here. Do not finish the job.
 
         Which storey a fixture stands on, where the connectors and sight links
         are, and which squares are lit are all read off the document once here
@@ -1060,212 +1029,31 @@ class Encounter:
                 f"a battle map needs at least one square; "
                 f"got {grid.width}x{grid.height}"
             )
-        named: set[str] = set()
+        self._refuse(plane_findings(document.levels, grid, document.legend))
+        self._refuse(document_findings(document.levels, grid))
+        self._refuse(terrain_findings(document, self.terrain_effects))
+
+        # Past the rules, so every read below is of a map already known good:
+        # a fixture is on the grid, its claims do not collide, and the kind
+        # under it resolves. Each of these tables is O(features) to build and
+        # sits on a per-attack path, so they are materialised once.
         for index in sorted(document.levels):
             level = document.levels[index]
-            if len(level.tiles) != grid.height:
-                rows = "row" if len(level.tiles) == 1 else "rows"
-                raise EncounterError(
-                    f"level {index} has {len(level.tiles)} {rows} on a "
-                    f"{grid.width}x{grid.height} map"
-                )
-            for y, row in enumerate(level.tiles):
-                if len(row) != grid.width:
-                    raise EncounterError(
-                        f"level {index} row {y} is {len(row)} squares wide on a "
-                        f"{grid.width}x{grid.height} map"
-                    )
-            # One join and one set, rather than a set per row: the rows are
-            # equal length by the check above, and both halves of this are one
-            # C-level pass where the per-row form pays Python's loop per row.
-            # Measured on a 512x512 storey: 525 us against 552.
-            glyphs = set("".join(level.tiles))
-            undrawn = sorted(glyph for glyph in glyphs if glyph not in document.legend)
-            if undrawn:
-                spelled = ", ".join(repr(glyph) for glyph in sorted(document.legend))
-                raise EncounterError(
-                    f"level {index} draws "
-                    f"{', '.join(repr(glyph) for glyph in undrawn)}, which this "
-                    f"map's legend does not define; the legend has: "
-                    f"{spelled or 'nothing'}"
-                )
-            named.update(document.legend[glyph] for glyph in glyphs)
-
             fixtures = level.fixtures()
-            for name, feature in fixtures.items():
-                # Before anything reads its square: an off-map fixture with no
-                # terrain of its own falls through to the tile it stands on,
-                # which is not there to be read.
-                if not self._on_map(feature.at):
-                    raise EncounterError(
-                        f"feature {name!r} sits at {feature.at}, off the "
-                        f"{grid.width}x{grid.height} map"
-                    )
+            for feature in fixtures.values():
                 for square, claim in feature.claims(level, document.legend):
-                    if not self._on_map(square):
-                        raise EncounterError(
-                            f"feature {name!r} reaches {square}, off the "
-                            f"{grid.width}x{grid.height} map"
-                        )
-                    other = self._feature_squares.get((index, square))
-                    if other is not None and other.feature == name:
-                        raise EncounterError(
-                            f"feature {name!r} claims square {square} twice"
-                        )
-                    if other is not None:
-                        raise EncounterError(
-                            f"features {other.feature!r} and {name!r} share square {square}"
-                        )
                     self._feature_squares[(index, square)] = claim
-                    if claim.terrain is not None:
-                        named.add(claim.terrain.closed)
-                        named.add(claim.terrain.open)
             self._fixtures.update(fixtures)
             self._fixture_level.update(dict.fromkeys(fixtures, index))
             self._connectors[index] = level.connectors()
             self._sight_links[index] = level.sight_links()
             self._lights[index] = level.lights()
-            # A third refusal of the same kind as the two above: the level holds
-            # a plain ``str``, and the bare ``ValueError`` the enum would raise
-            # is not an ``EncounterError``, so ``service/encounters`` would let
-            # it past into a 500.
-            if level.ambient_light not in _LIGHT_LEVELS:
-                spelled = ", ".join(light.value for light in LightLevel)
-                raise EncounterError(
-                    f"level {index} is lit {level.ambient_light!r}, which is not a "
-                    f"light level; the light levels are: {spelled}"
-                )
             self._ambient[index] = LightLevel(level.ambient_light)
 
-            for square, target in self._connectors[index].items():
-                if target not in document.levels:
-                    raise EncounterError(
-                        f"the connector at {square} on level {index} leads to level "
-                        f"{target}, which this map does not have"
-                    )
-        unknown = sorted(kind for kind in named if kind not in self.terrain_effects)
-        if unknown:
-            defined = ", ".join(sorted(self.terrain_effects)) or "none"
-            raise EncounterError(
-                f"the map names terrain the loaded content does not define: "
-                f"{', '.join(unknown)}. Defined: {defined}"
-            )
-        # A second pass, because a prerequisite may point forward — and across a
-        # floor. ``requires`` is a prerequisite, not a reach: which storey the
-        # thing it names sits on is nobody's business but the fiction's.
         catalogue = self._fixtures
-        for name, feature in sorted(catalogue.items()):
-            missing = [wanted for wanted in feature.requires if wanted not in catalogue]
-            if missing:
-                available = ", ".join(sorted(catalogue)) or "none"
-                raise EncounterError(
-                    f"feature {name!r} requires "
-                    f"{', '.join(repr(wanted) for wanted in missing)}, which this map "
-                    f"does not have; the map has: {available}"
-                )
-            if feature.linked_to is None:
-                continue
-            partner = catalogue.get(feature.linked_to)
-            if partner is None:
-                raise EncounterError(
-                    f"feature {name!r} links to {feature.linked_to!r}, which this map "
-                    "does not have"
-                )
-            if feature.kind != "door" or partner.kind != "door":
-                raise EncounterError("only doors may be linked")
-            if partner.linked_to != name:
-                raise EncounterError(
-                    f"feature {name!r} links to {partner.id!r}; that door must link "
-                    f"back to {name!r}"
-                )
-            if self._fixture_level[name] != self._fixture_level[partner.id]:
-                raise EncounterError("linked doors must stand on the same level")
-            dx = abs(feature.at[0] - partner.at[0])
-            dy = abs(feature.at[1] - partner.at[1])
-            if dx + dy != 1:
-                raise EncounterError("linked doors must stand on adjacent squares")
-            if feature.orientation != partner.orientation or feature.orientation not in {
-                "horizontal", "vertical",
-            }:
-                raise EncounterError(
-                    "linked doors must share a horizontal or vertical orientation"
-                )
-            aligned = (feature.orientation == "horizontal" and dx == 1) or (
-                feature.orientation == "vertical" and dy == 1
-            )
-            if not aligned:
-                raise EncounterError(
-                    f"linked doors must be aligned with their {feature.orientation} orientation"
-                )
-            if feature.state != partner.state:
-                raise EncounterError("linked doors must start in the same state")
-            if feature.trigger != partner.trigger:
-                raise EncounterError("linked doors must have identical triggers")
-            contract = (feature.requires, feature.costs_action, feature.check)
-            partner_contract = (partner.requires, partner.costs_action, partner.check)
-            if contract != partner_contract:
-                raise EncounterError(
-                    "linked doors must have the same requires, costs_action, and check"
-                )
         initially_open = {
             name for name, feature in catalogue.items() if feature.state == "open"
         }
-        for name, feature in sorted(catalogue.items()):
-            trigger = feature.trigger
-            if trigger is None:
-                continue
-            if not trigger.when:
-                raise EncounterError(
-                    f"feature {name!r} trigger must name at least one fixture"
-                )
-            if type(trigger.set_open) is not bool or not isinstance(
-                trigger.mode, TriggerMode
-            ):
-                raise EncounterError(
-                    f"feature {name!r} has a malformed trigger state or mode"
-                )
-            seen_dependencies: set[str] = set()
-            for condition in trigger.when:
-                if not isinstance(condition, tuple) or len(condition) != 2:
-                    raise EncounterError(
-                        f"feature {name!r} has a malformed trigger condition"
-                    )
-                dependency, expected = condition
-                if (
-                    not isinstance(dependency, str)
-                    or not dependency.strip()
-                    or type(expected) is not bool
-                    or dependency in seen_dependencies
-                ):
-                    raise EncounterError(
-                        f"feature {name!r} has a malformed trigger condition"
-                    )
-                seen_dependencies.add(dependency)
-            for dependency, _ in trigger.when:
-                if dependency not in catalogue:
-                    raise EncounterError(
-                        f"feature {name!r} trigger references {dependency!r}, which this "
-                        "map does not have"
-                    )
-            if trigger.set_open:
-                conditions = dict(trigger.when)
-                for required in feature.requires:
-                    if conditions.get(required) is not True:
-                        raise EncounterError(
-                            f"trigger opens feature {name!r} but does not require "
-                            f"{required!r} to be open"
-                        )
-            starts_open = feature.state == "open"
-            if (
-                trigger.mode is TriggerMode.MAINTAINED
-                and trigger.active(initially_open)
-                and starts_open is not trigger.set_open
-            ):
-                raise EncounterError(
-                    f"feature {name!r} maintained trigger is true initially and sets "
-                    f"it {'open' if trigger.set_open else 'closed'}, but it starts "
-                    f"{'open' if starts_open else 'closed'}"
-                )
         ordered = _dependency_order(catalogue)
         self.map_state = MapState(open_features=initially_open)
         self._trigger_sequence = tuple(
@@ -1276,6 +1064,11 @@ class Encounter:
             assert trigger is not None
             self._trigger_active[name] = trigger.active(initially_open)
 
+        # Combatant placement, and the reason it did not move out with the rest:
+        # a map document says nothing about creatures, so "off the map, inside a
+        # wall, or standing on somebody" is a question about *this fight* on that
+        # map and not about whether the map is well-formed. A map rule that
+        # refused it would refuse every saved map with a wall on it.
         placed: dict[tuple[int, Square], str] = {}
         for creature in combatants:
             if creature.level not in document.levels:
@@ -1302,6 +1095,19 @@ class Encounter:
                 )
             placed[(creature.level, square)] = creature.name
             creature.position = square_center(square)
+
+    @staticmethod
+    def _refuse(findings: Iterable[MapFinding]) -> None:
+        """Raise the first refusal among ``findings``, ignoring the advice.
+
+        The whole of the fight's rendering. A generator, so the rules stop being
+        evaluated at the first refusal rather than the whole document being
+        walked for a message nobody will read.
+        """
+        for finding in findings:
+            if finding.refusal:
+                raise EncounterError(finding.message)
+
 
     def _on_map(self, square: Square) -> bool:
         assert self.map_document is not None
