@@ -469,12 +469,17 @@ class TestAMapSpecCanSayHowItsDoorsHang:
     """
 
     @staticmethod
-    def _door(**extra: Any) -> dict[str, Any]:
-        return {
-            "width": 4,
-            "height": 3,
-            "features": [{"name": "gate", "square": [1, 1], **extra}],
+    def _spec(*features: dict[str, Any]) -> dict[str, Any]:
+        return {"width": 4, "height": 3, "features": list(features)}
+
+    @classmethod
+    def _door(cls, **extra: Any) -> dict[str, Any]:
+        """One door, hung vertically unless the case under test says otherwise."""
+        feature: dict[str, Any] = {
+            "name": "gate", "square": [1, 1], "orientation": "vertical",
         }
+        feature.update(extra)
+        return cls._spec(feature)
 
     def test_a_door_may_declare_how_it_hangs(self) -> None:
         built = specs.battle_map_from_spec(self._door(orientation="vertical"))
@@ -498,16 +503,12 @@ class TestAMapSpecCanSayHowItsDoorsHang:
             specs.battle_map_from_spec(self._door(orientation=90))
 
     def test_a_door_may_name_the_leaf_it_swings_with(self) -> None:
-        built = specs.battle_map_from_spec({
-            "width": 4,
-            "height": 3,
-            "features": [
-                {"name": "left", "square": [1, 1], "orientation": "horizontal",
-                 "linked_to": "right"},
-                {"name": "right", "square": [2, 1], "orientation": "horizontal",
-                 "linked_to": "left"},
-            ],
-        })
+        built = specs.battle_map_from_spec(self._spec(
+            {"name": "left", "square": [1, 1], "orientation": "horizontal",
+             "linked_to": "right"},
+            {"name": "right", "square": [2, 1], "orientation": "horizontal",
+             "linked_to": "left"},
+        ))
         assert built.features["left"].linked_to == "right"
         assert built.features["right"].linked_to == "left"
 
@@ -515,11 +516,71 @@ class TestAMapSpecCanSayHowItsDoorsHang:
         with pytest.raises(RequestError, match="linked_to must name a feature"):
             specs.battle_map_from_spec(self._door(linked_to=" "))
 
-    def test_a_spec_that_says_nothing_still_builds_the_map_it_always_did(self) -> None:
-        # The shorthand the encounter-sim skill documents is a door and two
-        # coordinates. Both new keys are optional, so that spec keeps working
-        # and its door keeps carrying no opinion about how it hangs.
-        built = specs.battle_map_from_spec(self._door())
-        assert built.features["gate"].kind == "door"
-        assert built.features["gate"].orientation is None
-        assert built.features["gate"].linked_to is None
+
+class TestADoorMustSayHowItHangs:
+    """A spec door with no orientation is refused, on ``map.edit``'s own words.
+
+    Not because the fight needs it — it does not — but because everything
+    downstream of the fight does. The journal and a v2 replay bundle both write
+    the map out as a *document*, and the format refuses a door that does not say
+    how it hangs, so a spec the engine accepted quietly produced a fight nobody
+    could recover and a bundle nobody could open. Refusing at the point the
+    author writes it turns a silent later failure into an immediate one.
+
+    ``service.maps._feature_entry`` has refused exactly this on the ``map.edit``
+    surface all along, which is what makes this a correction rather than a new
+    rule: two authoring surfaces for one format were disagreeing about whether a
+    door needs to hang somewhere.
+    """
+
+    def test_a_door_with_no_orientation_is_refused_by_name(self) -> None:
+        with pytest.raises(RequestError, match="feature 'gate' is a door, so it needs"):
+            specs.battle_map_from_spec({
+                "width": 4, "height": 3,
+                "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
+            })
+
+    def test_the_refusal_offers_the_two_words_that_would_satisfy_it(self) -> None:
+        with pytest.raises(RequestError, match="horizontal or vertical"):
+            specs.battle_map_from_spec({
+                "width": 4, "height": 3,
+                "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
+            })
+
+    def test_a_feature_naming_no_kind_is_told_that_is_what_made_it_a_door(self) -> None:
+        # ``kind`` defaults to "door", so a caller who wrote a lever and left the
+        # kind out is refused for a door they never mentioned. The refusal has to
+        # say where the door came from, or the only fix it suggests is the wrong
+        # one.
+        with pytest.raises(RequestError, match="a feature that names no 'kind' is a door"):
+            specs.battle_map_from_spec({
+                "width": 4, "height": 3,
+                "features": [{"name": "gate", "square": [1, 1]}],
+            })
+
+    def test_a_feature_that_is_not_a_door_needs_no_orientation(self) -> None:
+        # The requirement is the format's rule about doors and nothing wider: a
+        # lever hangs nowhere, and the document asks it for nothing.
+        built = specs.battle_map_from_spec({
+            "width": 4, "height": 3,
+            "features": [{
+                "name": "lever", "square": [1, 1], "kind": "lever",
+                "closed_terrain": "floor", "open_terrain": "floor",
+            }],
+        })
+        assert built.features["lever"].orientation is None
+
+    def test_the_two_authoring_surfaces_refuse_a_bare_door_in_the_same_words(self) -> None:
+        # The point of the change, asserted rather than described: whatever the
+        # spec says here, ``map.edit`` says about the same mistake. Read off the
+        # sibling's source so the two cannot drift apart silently.
+        source = (
+            Path(specs.__file__).parent / "maps.py"
+        ).read_text(encoding="utf-8")
+        assert "a door needs 'orientation' (horizontal or vertical)" in source
+
+        with pytest.raises(RequestError, match=r"needs 'orientation' \(horizontal or vertical\)"):
+            specs.battle_map_from_spec({
+                "width": 4, "height": 3,
+                "features": [{"name": "gate", "square": [1, 1], "kind": "door"}],
+            })

@@ -248,9 +248,12 @@ replays, for what that bundle is and is not.
 
 `encounter.create` takes an optional `map` of 5-ft squares: `{"width", "height",
 "rows": [".#..", ...], "legend": {".": "normal", "#": "wall"}, "features":
-[{"name": "door", "square": [1, 1]}]}` — rows top-first, one character per square.
-With a map the engine charges terrain for movement, routes moves around walls and
-enemies (pass-through opportunity attacks apply), grades cover (+2/+5 to AC and to
+[{"name": "door", "square": [1, 1], "orientation": "vertical"}]}` — rows
+top-first, one character per square. A door must say how it hangs, `horizontal`
+or `vertical`, or the fight cannot be saved and reopened later; a feature naming
+no `kind` is a door. With a map the engine charges terrain for movement, routes
+moves around walls and enemies (pass-through opportunity attacks apply), grades
+cover (+2/+5 to AC and to
 Dexterity saves, against a weapon swing and a spell alike; total cover refuses an
 attack or a named-target spell outright and shelters a creature from an area
 entirely), and blocks sight. Positions snap to square centres, and `state["map"]`

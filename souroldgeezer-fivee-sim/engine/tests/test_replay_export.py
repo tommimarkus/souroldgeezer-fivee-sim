@@ -161,7 +161,12 @@ class TestBundleV2:
             "rows": ["######", "#....#", "#....#", "#....#", "######"],
             "legend": {"#": "wall", ".": "normal"},
             "features": [
-                {"name": "door-east", "square": [5, 2], "initially_open": True}
+                {
+                    "name": "door-east",
+                    "square": [5, 2],
+                    "orientation": "vertical",
+                    "initially_open": True,
+                }
             ],
         }
         created = api.encounter_create(
@@ -177,6 +182,14 @@ class TestBundleV2:
         assert bundle["map"]["legend"][bundle["map"]["tiles"][0][0]] == "wall"
         assert bundle["map"]["legend"][bundle["map"]["tiles"][1][1]] == "normal"
         assert bundle["initial"]["map_open_features"] == ["door-east"]
+        # The assertion whose absence hid a real defect for as long as it
+        # existed. Everything above reads keys off the payload, and a payload
+        # can carry every one of them and still not be a map: an inline spec
+        # could not say how its door hung, so this bundle was a document the
+        # parser refused — and `replay.validate_replay` checks the map's *shape*
+        # without ever parsing it, so it called the bundle valid. A caller who
+        # exported this could not open it.
+        parse_document(bundle["map"], source="bundle", terrain=TERRAIN)
 
     def test_runtime_map_capture_keeps_trigger_definitions(self) -> None:
         battle_map = BattleMap.flat(

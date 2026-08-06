@@ -674,6 +674,22 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
                 f"feature {name!r} orientation must be one of: "
                 f"{', '.join(DOOR_ORIENTATIONS)}; got {orientation!r}"
             )
+        kind = str(entry.get("kind", "door"))
+        if kind == "door" and orientation is None:
+            # ``service.maps._feature_entry`` refuses this on the ``map.edit``
+            # surface in these words; a second wording for one rule is how a
+            # caller learns two formats. The tail is here and not there because
+            # ``kind`` defaults to "door" only in a spec: a caller who wrote a
+            # lever and left the kind out would otherwise be refused for a door
+            # they never mentioned, and told to fix the wrong thing.
+            defaulted = (
+                "" if "kind" in entry
+                else "; a feature that names no 'kind' is a door"
+            )
+            raise RequestError(
+                f"feature {name!r} is a door, so it needs 'orientation' "
+                f"(horizontal or vertical){defaulted}"
+            )
         linked_to = entry.get("linked_to")
         if linked_to is not None and (
             not isinstance(linked_to, str) or not linked_to.strip()
@@ -685,10 +701,17 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
             name=name,
             square=parse_square(entry.get("square"), f"feature {name!r} square",
                                 width, height),
-            kind=str(entry.get("kind", "door")),
+            kind=kind,
             orientation=orientation,
             closed_terrain=str(entry.get("closed_terrain", "door-closed")),
             open_terrain=str(entry.get("open_terrain", "door-open")),
+            # ``initially_open`` needs no matching requirement. The document
+            # format demands a door's ``state`` for the same reason it demands
+            # its orientation, and ``map.edit`` refuses a door without one — but
+            # a spec that omits it is not silent about the answer the way an
+            # omitted orientation is. ``False`` is a real answer, the one every
+            # door is authored in, and ``replay._feature_payload`` writes it out
+            # as ``"closed"``, so the captured document is complete either way.
             initially_open=initially_open,
             linked_to=linked_to,
         )
