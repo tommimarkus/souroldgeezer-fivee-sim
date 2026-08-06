@@ -22,6 +22,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.content import ContentRegistry, builtin
+from fivee_sim.map_document import DOOR_ORIENTATIONS
 from fivee_sim.service import specs
 from fivee_sim.service.errors import RequestError
 from fivee_sim.service.specs import ATTACK_SPEC_KEYS, creature_from_spec
@@ -450,3 +451,75 @@ class TestAReportedStateStartsTheNextFight:
         second = api.encounter_create([carried, dict(ALLY), dict(GOBLIN)], seed=7)
 
         assert _combatant(second, "Thora") == reported
+
+
+class TestAMapSpecCanSayHowItsDoorsHang:
+    """``orientation`` and ``linked_to``: the two keys the spec could not say.
+
+    They reach no rule the fight resolves — a door blocks a square the same way
+    whichever way it hangs — which is why they went missing for as long as they
+    did. What they reach is the *document*: the journal and a v2 replay bundle
+    both capture an inline spec as a map document, and the format refuses a door
+    that does not say how it hangs, so a spec that cannot express orientation
+    produces a fight that cannot be recovered and a bundle that will not parse.
+
+    The vocabulary is the format's, not a second opinion: these tests read
+    :data:`DOOR_ORIENTATIONS` off ``map_document`` rather than spelling the two
+    words again, so a spec that drifted from the format would fail here.
+    """
+
+    @staticmethod
+    def _door(**extra: Any) -> dict[str, Any]:
+        return {
+            "width": 4,
+            "height": 3,
+            "features": [{"name": "gate", "square": [1, 1], **extra}],
+        }
+
+    def test_a_door_may_declare_how_it_hangs(self) -> None:
+        built = specs.battle_map_from_spec(self._door(orientation="vertical"))
+        assert built.features["gate"].orientation == "vertical"
+
+    def test_every_orientation_the_format_knows_is_accepted(self) -> None:
+        for orientation in DOOR_ORIENTATIONS:
+            built = specs.battle_map_from_spec(self._door(orientation=orientation))
+            assert built.features["gate"].orientation == orientation
+
+    def test_an_orientation_the_format_does_not_know_names_what_was_written(self) -> None:
+        # The refusal has to carry the caller's own word back: "must be one of"
+        # alone reads identically whether the engine saw 'sideways', a typo, or
+        # nothing at all, and the caller is looking for which of their features
+        # is wrong.
+        with pytest.raises(RequestError, match="got 'sideways'"):
+            specs.battle_map_from_spec(self._door(orientation="sideways"))
+
+    def test_an_orientation_that_is_not_even_text_is_refused_the_same_way(self) -> None:
+        with pytest.raises(RequestError, match="got 90"):
+            specs.battle_map_from_spec(self._door(orientation=90))
+
+    def test_a_door_may_name_the_leaf_it_swings_with(self) -> None:
+        built = specs.battle_map_from_spec({
+            "width": 4,
+            "height": 3,
+            "features": [
+                {"name": "left", "square": [1, 1], "orientation": "horizontal",
+                 "linked_to": "right"},
+                {"name": "right", "square": [2, 1], "orientation": "horizontal",
+                 "linked_to": "left"},
+            ],
+        })
+        assert built.features["left"].linked_to == "right"
+        assert built.features["right"].linked_to == "left"
+
+    def test_a_linked_leaf_must_be_named_by_non_empty_text(self) -> None:
+        with pytest.raises(RequestError, match="linked_to must name a feature"):
+            specs.battle_map_from_spec(self._door(linked_to=" "))
+
+    def test_a_spec_that_says_nothing_still_builds_the_map_it_always_did(self) -> None:
+        # The shorthand the encounter-sim skill documents is a door and two
+        # coordinates. Both new keys are optional, so that spec keeps working
+        # and its door keeps carrying no opinion about how it hangs.
+        built = specs.battle_map_from_spec(self._door())
+        assert built.features["gate"].kind == "door"
+        assert built.features["gate"].orientation is None
+        assert built.features["gate"].linked_to is None

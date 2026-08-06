@@ -26,6 +26,7 @@ from ..kernel.actions import AttackKind, RiderExpiry
 from ..kernel.dice import Advantage, Dice
 from ..kernel.grid import DiagonalRule, Facing, MovementMode, Point
 from ..kernel.rules import Ability, DamageType, Size
+from ..map_document import DOOR_ORIENTATIONS
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature, DeathRule
 from ..model.encounter import Action, ActionKind
@@ -507,8 +508,17 @@ MAP_KEYS = frozenset({
     "name", "width", "height", "default_terrain", "rows", "legend", "terrain",
     "default_elevation", "elevation", "features",
 })
+#: What an inline feature may say. ``orientation`` and ``linked_to`` reach no
+#: rule a fight resolves — a door blocks its square the same way whichever way it
+#: hangs — but the journal and a v2 replay bundle both capture an inline spec as
+#: a map *document*, and that format refuses a door that does not say how it
+#: hangs. Without these keys a caller could not write a recoverable spec at all,
+#: and a linked pair was unreachable: ``Encounter._adopt_map`` requires both
+#: leaves to share a horizontal or vertical orientation, which no spec could
+#: give them.
 FEATURE_KEYS = frozenset({
     "name", "square", "kind", "initially_open", "closed_terrain", "open_terrain",
+    "orientation", "linked_to",
 })
 #: An inline map is authored by hand or by a model, not generated; this bound only
 #: exists so a malformed spec fails with a size complaint instead of an allocation.
@@ -658,14 +668,29 @@ def battle_map_from_spec(spec: dict[str, Any]) -> BattleMap:
         initially_open = entry.get("initially_open", False)
         if not isinstance(initially_open, bool):
             raise RequestError(f"feature {name!r} initially_open must be true or false")
+        orientation = entry.get("orientation")
+        if orientation is not None and orientation not in DOOR_ORIENTATIONS:
+            raise RequestError(
+                f"feature {name!r} orientation must be one of: "
+                f"{', '.join(DOOR_ORIENTATIONS)}; got {orientation!r}"
+            )
+        linked_to = entry.get("linked_to")
+        if linked_to is not None and (
+            not isinstance(linked_to, str) or not linked_to.strip()
+        ):
+            raise RequestError(
+                f"feature {name!r} linked_to must name a feature; got {linked_to!r}"
+            )
         features[name] = MapFeature(
             name=name,
             square=parse_square(entry.get("square"), f"feature {name!r} square",
                                 width, height),
             kind=str(entry.get("kind", "door")),
+            orientation=orientation,
             closed_terrain=str(entry.get("closed_terrain", "door-closed")),
             open_terrain=str(entry.get("open_terrain", "door-open")),
             initially_open=initially_open,
+            linked_to=linked_to,
         )
 
     return BattleMap.flat(

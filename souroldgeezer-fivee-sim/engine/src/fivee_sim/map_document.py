@@ -101,6 +101,7 @@ from .validation import Diagnostic, Reader, Severity
 
 __all__ = [
     "DEFAULT_LEGEND",
+    "DOOR_ORIENTATIONS",
     "FORMAT",
     "FORMAT_VERSION",
     "GENERATED_SOURCE",
@@ -205,7 +206,11 @@ _PAIR_ORDER = ("closed", "open")
 #: existed.
 GROUND_LEVEL = 0
 _PROVENANCE_KEYS = frozenset({"generator", "seed", "params", "edited", "source"})
-_DOOR_ORIENTATIONS = ("horizontal", "vertical")
+#: How a door may hang. Public because it is the format's vocabulary and the
+#: authoring surfaces have to refuse the same words: ``service/specs.py`` reads
+#: it so an inline map spec and a saved document cannot disagree about what
+#: ``orientation`` may say.
+DOOR_ORIENTATIONS = ("horizontal", "vertical")
 _DOOR_STATES = ("open", "closed")
 _DOOR_HINGES = {
     "horizontal": ("west", "east"),
@@ -1032,10 +1037,10 @@ def _parse_features(
         parsed_facing = sub.enum("facing", Facing)
         facing = parsed_facing.value if parsed_facing is not None else None
         orientation = sub.string("orientation") or None
-        if orientation is not None and orientation not in _DOOR_ORIENTATIONS:
+        if orientation is not None and orientation not in DOOR_ORIENTATIONS:
             sub.fail(
                 "orientation",
-                f"must be one of: {', '.join(_DOOR_ORIENTATIONS)}; got {orientation!r}",
+                f"must be one of: {', '.join(DOOR_ORIENTATIONS)}; got {orientation!r}",
             )
         hinge = sub.string("hinge") or None
         swing = sub.string("swing") or None
