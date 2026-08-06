@@ -294,6 +294,65 @@ RULINGS: tuple[Ruling, ...] = (
         ),
         sites=("kernel/spells.py:Spell.height",),
     ),
+    _ruling(
+        code="interlude_expires_no_timed_effect",
+        kind=RulingKind.APPROXIMATION,
+        question=(
+            "An ongoing effect ends on a turn boundary: a phase, and the creature "
+            "whose turn it is. An interlude has no turns and no rounds to end."
+        ),
+        decision=(
+            "Nothing anchored to a turn boundary expires inside an interlude. The "
+            "release runs from advancing a turn, which an interlude refuses, so an "
+            "effect applied in one holds until the chapter is finalized."
+        ),
+        because=(
+            "A beat is not a turn boundary, and expiring on one would have to invent "
+            "the parts a boundary is made of — whose turn ended, and how many have "
+            "passed since the effect landed. Both answers would be made up, and one "
+            "of them silently decides how long a rider lasts."
+        ),
+        basis=("SRD 5.2.1, Spells, Duration", "SRD 5.2.1, The Order of Combat"),
+        revisit=(
+            "A condition imposed during an interlude walks into the next chapter, "
+            "because conditions are carried state and the effect ledger holding it "
+            "is not — so the thing that would have lifted it does not cross. Any "
+            "content that lands a timed rider out of combat needs this before it is "
+            "playable; today the coarseness is invisible and permanent."
+        ),
+        sites=("model/encounter.py:Encounter._begin_beat",),
+    ),
+    _ruling(
+        code="interlude_beat_restores_the_budget",
+        kind=RulingKind.APPROXIMATION,
+        question=(
+            "The action economy belongs to a turn: one action, one bonus action, a "
+            "movement budget. Outside combat the printed rules track none of it."
+        ),
+        decision=(
+            "Each named act opens a fresh beat — movement back to the actor's speed, "
+            "action and bonus action unspent, reaction restored — so nothing "
+            "accumulates across an interlude and no budget ever runs out."
+        ),
+        because=(
+            "This stepper knows turns and nothing else, so the choice was which turn "
+            "to give a beat rather than whether to give it one. A budget that ran out "
+            "would strand a party 30 feet into a mill floor with no way to keep "
+            "walking; refreshing puts the only cap inside a single act, where it still "
+            "charges real terrain, and leaves the number of acts to the caller — which "
+            "is where the printed rules leave it."
+        ),
+        basis=("SRD 5.2.1, Exploration", "SRD 5.2.1, Your Turn"),
+        revisit=(
+            "Two consequences pull opposite ways and neither is visible from a green "
+            "run: one act cannot exceed the actor's speed, so a long walk is several "
+            "journal beats rather than one, and nothing bounds the beats, so a "
+            "creature can attack once per act for as long as the caller keeps asking. "
+            "An interlude that has to *cost* something — an exploration turn, a chase, "
+            "ammunition — has to decide what a beat is before it can charge for it."
+        ),
+        sites=("model/encounter.py:Encounter._begin_beat",),
+    ),
     # --- the SRD says it and no field can carry it -------------------------
     _ruling(
         code="no_trait_vocabulary",

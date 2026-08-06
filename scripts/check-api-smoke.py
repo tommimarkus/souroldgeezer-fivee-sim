@@ -6,7 +6,7 @@ handshake check that went with the MCP server, and it makes the same kind of
 claim the handshake made: not "the units pass" but "the thing a host actually
 runs, runs".
 
-Six properties are checked that the in-process suite structurally cannot:
+Seven properties are checked that the in-process suite structurally cannot:
 
 * **The real launcher boots.** Everything here goes through
   ``souroldgeezer-fivee-sim/scripts/fivee.py`` — never ``python -m
@@ -37,6 +37,16 @@ Six properties are checked that the in-process suite structurally cannot:
   other case here begins and ends inside one encounter, so nothing else says
   that what a fight *ended* at is what the next one *starts* from — which is
   the only claim that makes a run of fights an adventure rather than a list.
+* **A run can be more than its fights.** A second adventure is then run whole,
+  and it opens on an **interlude**: the party walks across the mill's squares
+  with no initiative rolled and nobody holding the floor, somebody speaks a line
+  and somebody rolls a check that both land in that chapter's journal, and the
+  ambush that follows starts on the squares the walk ended on, on the map it
+  carried, with the party surprised by a condition the table imposed a chapter
+  earlier. Only ``check-api-smoke`` runs all three chapters against the shipped
+  surface and then composes them into one replay — and only here does the
+  boundary between an interlude and a fight get crossed by a real party rather
+  than by a fixture.
 * **A saved fight starts.** A scene is written under an id, read back, listed,
   and then posted to ``encounter.create`` to start the fight it describes — the
   one thing that makes a scene a scene, since there is deliberately no
@@ -173,6 +183,94 @@ EXPECTED_SECOND_ORDER = ["Skeleton", "Scar", "Fang"]
 EXPECTED_SECOND_ROUND = 2
 EXPECTED_SECOND_HP = {"Skeleton": 0, "Scar": 7, "Fang": 6}
 EXPECTED_SECOND_EVENTS = 23
+
+# --- the run that opens on an interlude --------------------------------------
+#: The second adventure here, and the only scenario anywhere that records a beat
+#: with no fight in it. A run does not have to open on a fight: this one opens on
+#: a walk across the mill floor, is ambushed on the squares that walk ended on,
+#: and closes standing over what is left — walk, fight, walk, in the order they
+#: happened and in one composed replay.
+#:
+#: It is deliberately the *opening* chapter that is an interlude. An adventure
+#: that could only start with initiative would make the arrival at the mill
+#: something a table narrates outside the engine, which is the gap this whole
+#: feature exists to close.
+#:
+#: Golden for these seeds in a scratch root nothing else has touched, which is
+#: what makes ``adv-1`` and ``enc-1``..``enc-3`` the ids this run is allocated
+#: and ``the-mill`` the only map ``carry_map`` could resolve to.
+INTERLUDE_ADVENTURE_NAME = "A Night at the Drowned Mill"
+INTERLUDE_SEEDS = (20260809, 20260820, 20260811)
+MILL_MAP_ID = "the-mill"
+#: Open floor and nothing else: the interlude's claim is about squares, and a
+#: wall or a fixture would put a second reason in the way of a move that failed.
+MILL_MAP: dict[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "the drowned mill",
+    "grid": {"width": 8, "height": 8, "cell_feet": 5},
+    "legend": {".": "normal"},
+    "tiles": ["." * 8 for _ in range(8)],
+    "provenance": {
+        "generator": "hand",
+        "seed": 1,
+        "params": {},
+        "edited": False,
+        "source": "hand-authored for the end-to-end gate; 5E-compatible original content",
+    },
+}
+#: The party, on squares rather than at a scalar distance, because a chapter
+#: that carries the ground has to carry somewhere to stand on it.
+INTERLUDE_PARTY: list[dict[str, Any]] = [
+    {"monster": "Wolf", "label": "Fang", "team": "party", "position": [5, 5]},
+    {"monster": "Wolf", "label": "Scar", "team": "party", "position": [5, 15]},
+]
+#: Where each of them walks, named per creature: these two squares are the whole
+#: claim the opening chapter makes, since they are where the fight then starts.
+INTERLUDE_WALK: dict[str, list[int]] = {"Fang": [25, 25], "Scar": [25, 15]}
+#: Waiting on the square between the two of them, so the ambush is in reach of
+#: both without anybody moving — this gate scripts swings, not tactics.
+AMBUSHERS: list[dict[str, Any]] = [
+    {"monster": "Goblin Boss", "label": "Stalker", "position": [30, 20]}
+]
+#: Surprise is a ruling rather than a mechanism: the condition that costs a
+#: creature its Initiative roll, imposed by the table while the interlude is
+#: still running — so it crosses the boundary the way every other condition
+#: does — and lifted once the roll it cost them has been rolled, because the
+#: roll is all it costs.
+SURPRISE = "incapacitated"
+NOTE_TEXT = "The wheel has stopped, and the water behind it is still."
+NOTE_CATEGORY = "dialogue"
+NOTE_SPEAKER = "Fang"
+#: One audited check, scoped to the interlude. A roll made with no
+#: ``encounter_id`` is a roll the record never hears about, which is exactly the
+#: failure the skills are being taught out of.
+INTERLUDE_CHECK: dict[str, Any] = {
+    "modifier": 3, "dc": 12, "seed": 20260812, "skill": "perception",
+}
+EXPECTED_INTERLUDE_ADVENTURE_ID = "adv-1"
+EXPECTED_INTERLUDE_CHAPTERS = ["enc-1", "enc-2", "enc-3"]
+EXPECTED_INTERLUDE_MODES = ["exploration", "combat", "exploration"]
+#: No initiative was rolled, so the roster is in the only order left: its own
+#: names. ``turn`` is null beside it, and neither is a fight's answer.
+EXPECTED_WALK_ORDER = ["Fang", "Scar"]
+#: The check fails, and that is the run rather than a wrinkle in it: nobody
+#: spots what is waiting, so the party is surprised on the next page.
+EXPECTED_CHECK_DETAIL = "d20 [2] +3 = 5 vs DC 12"
+#: What the ambush's initiative comes to with the party surprised, and the one
+#: golden block here worth reading twice. Both wolves rolled at Disadvantage
+#: because they were Surprised and the ambusher did not, which is the whole of
+#: "surprise" in this engine. Recalibrating it means re-running the control that
+#: chose this seed: at ``20260820`` an *unsurprised* party has Scar acting first
+#: on a 21, and the ambusher last on a 10. A seed where the order comes out the
+#: same either way would leave this case passing without saying anything.
+
+EXPECTED_AMBUSH_ORDER = ["Stalker", "Fang", "Scar"]
+EXPECTED_AMBUSH_INITIATIVE = {"Stalker": 22, "Fang": 18, "Scar": 10}
+EXPECTED_AMBUSH_ROUND = 2
+EXPECTED_AMBUSH_HP = {"Stalker": 0, "Fang": 5, "Scar": 11}
+#: Who walks out of the mill, and therefore who the closing chapter is handed.
+EXPECTED_SURVIVORS = ["Fang", "Scar"]
 
 # --- the scene ---------------------------------------------------------------
 #: The third scenario, and the only durable document here that is *input*. An
@@ -746,6 +844,180 @@ def adventure_over_http(engine: Engine) -> dict[str, Any]:
     )
     run["listed_active"] = engine.json_call("GET", "/adventures")
     run["listed_finalized"] = engine.json_call("GET", "/adventures?status=finalized")
+    return run
+
+
+# --- the run that opens on an interlude --------------------------------------
+def interlude_run(engine: Engine) -> dict[str, Any]:
+    """Walk, fight, walk: three chapters, one map, one party, one composed replay.
+
+    Everything an interlude adds is exercised here in the order a table would
+    reach for it — a chapter created in exploration mode, a beat opened by
+    naming its actor, a line attributed to a speaker, a check audited against
+    the chapter it was rolled in, and a boundary that carries both the ground
+    and the squares the party was standing on when it was crossed.
+
+    Nothing here decides whether a case passed. Every answer is collected and
+    the reports below read them, which is what keeps a refusal in the middle of
+    the run from being reported as the case after it.
+    """
+    run: dict[str, Any] = {}
+    status, stored_map, _ = engine.call(
+        "PUT", f"/maps/{MILL_MAP_ID}", MILL_MAP, headers={"If-Match": "*"}
+    )
+    if status != 201:
+        raise SmokeError(f"map.put answered {status}: {json.dumps(stored_map)[:300]}")
+
+    status, created, headers = engine.call(
+        "POST", "/adventures", {"name": INTERLUDE_ADVENTURE_NAME}
+    )
+    if status != 201:
+        raise SmokeError(f"adventure.create answered {status}: {json.dumps(created)[:300]}")
+    adventure_id = str(created["id"])
+    base = f"/adventures/{adventure_id}"
+    run["adventure_id"] = adventure_id
+
+    # -- chapter one: the walk ---------------------------------------------
+    version = headers.get("ETag", "")
+    status, opening, headers = engine.call(
+        "POST",
+        f"{base}/encounters",
+        {
+            "combatants": INTERLUDE_PARTY,
+            "seed": INTERLUDE_SEEDS[0],
+            "mode": "exploration",
+            "map_id": MILL_MAP_ID,
+        },
+        headers={"If-Match": version},
+    )
+    if status != 201:
+        raise SmokeError(f"the opening interlude answered {status}: {json.dumps(opening)[:300]}")
+    walk_id = str(opening["encounter_id"])
+    run["opening"], run["opening_status"] = opening, status
+    run["opening_state"] = opening["encounter"]["state"]
+    # Read back as well as answered, because ``map_source`` is the read's to
+    # report: it says which saved file this chapter is standing on, and the
+    # whole of ``carry_map`` is that the next chapter answers the same one.
+    run["opening_read"] = engine.json_call("GET", f"/encounters/{walk_id}")
+    run["started_on"] = {
+        str(one["name"]): one["position"]
+        for one in run["opening_state"]["combatants"]
+    }
+
+    # Each act names its own actor, because nothing rolled an order for them to
+    # take turns in. Both moves are real moves across the map's squares: terrain
+    # cost, occupancy and bounds all apply, which is what makes crossing the
+    # mill floor a walk rather than a note about one.
+    run["walked"] = [
+        engine.json_call(
+            "POST",
+            f"/encounters/{walk_id}/actions",
+            {"kind": "move", "actor": name, "to_position": square},
+        )
+        for name, square in INTERLUDE_WALK.items()
+    ]
+    run["note"] = engine.json_call(
+        "POST",
+        f"/encounters/{walk_id}/notes",
+        {"text": NOTE_TEXT, "category": NOTE_CATEGORY, "speaker": NOTE_SPEAKER},
+    )
+    run["check"] = engine.json_call(
+        "POST", "/dice/checks", {**INTERLUDE_CHECK, "encounter_id": walk_id}
+    )
+
+    # The ambush is sprung while the interlude is still the chapter running, so
+    # the condition it imposes is carried across the boundary rather than
+    # declared on the far side of it.
+    run["surprised"] = [
+        engine.json_call(
+            "POST", f"/encounters/{walk_id}/conditions", {"target": name, "condition": SURPRISE}
+        )
+        for name in INTERLUDE_WALK
+    ]
+    run["walk_ending"] = engine.json_call("GET", f"/encounters/{walk_id}")
+    run["walk_frozen"] = engine.json_call("POST", f"/encounters/{walk_id}/finalize", {})
+
+    # -- chapter two: the ambush -------------------------------------------
+    # Who crosses is read from the chapter that just ended, not written here:
+    # the constants stay a claim about the run instead of an instruction to it.
+    walkers = [
+        str(one["name"])
+        for one in run["walk_ending"]["combatants"]
+        if one["team"] == "party" and one["conscious"]
+    ]
+    run["walkers"] = walkers
+    version = headers.get("ETag", "")
+    status, ambush, headers = engine.call(
+        "POST",
+        f"{base}/encounters",
+        {
+            "combatants": AMBUSHERS,
+            "carry": walkers,
+            "seed": INTERLUDE_SEEDS[1],
+            "mode": "combat",
+            "carry_map": True,
+        },
+        headers={"If-Match": version},
+    )
+    if status != 201:
+        raise SmokeError(f"the ambush answered {status}: {json.dumps(ambush)[:300]}")
+    ambush_id = str(ambush["encounter_id"])
+    run["ambush"], run["ambush_status"] = ambush, status
+    # The read rather than the link's own answer, for ``map_source`` again —
+    # and taken before the surprise is lifted, because how the fight *started*
+    # is what the boundary carried.
+    run["arrival"] = engine.json_call("GET", f"/encounters/{ambush_id}")
+
+    # Surprise has now cost them the one roll it costs. Lifted before the fight
+    # is swung so that the party can act in it — and so that what the golden
+    # initiative above records is a Disadvantaged roll rather than a fight two
+    # creatures sat out.
+    run["recovered"] = [
+        engine.json_call(
+            "POST",
+            f"/encounters/{ambush_id}/conditions",
+            {"target": name, "condition": SURPRISE, "applied": False},
+        )
+        for name in walkers
+    ]
+    run["ambush_ending"] = fight_to_a_finish(
+        engine, ambush_id, engine.json_call("GET", f"/encounters/{ambush_id}")
+    )
+    run["ambush_frozen"] = engine.json_call("POST", f"/encounters/{ambush_id}/finalize", {})
+
+    # -- chapter three: the aftermath --------------------------------------
+    survivors = [
+        str(one["name"])
+        for one in run["ambush_ending"]["combatants"]
+        if one["team"] == "party" and one["conscious"]
+    ]
+    run["survivors"] = survivors
+    version = headers.get("ETag", "")
+    status, closing, headers = engine.call(
+        "POST",
+        f"{base}/encounters",
+        {
+            # Nobody new: a chapter can be entirely the party the last one left
+            # behind, which is what an aftermath is.
+            "carry": survivors,
+            "seed": INTERLUDE_SEEDS[2],
+            "mode": "exploration",
+            "carry_map": True,
+        },
+        headers={"If-Match": version},
+    )
+    if status != 201:
+        raise SmokeError(f"the closing interlude answered {status}: {json.dumps(closing)[:300]}")
+    closing_id = str(closing["encounter_id"])
+    run["closing"], run["closing_status"] = closing, status
+    run["aftermath"] = engine.json_call("GET", f"/encounters/{closing_id}")
+    run["closing_frozen"] = engine.json_call("POST", f"/encounters/{closing_id}/finalize", {})
+
+    composed = engine.json_call("POST", f"{base}/replay", {})
+    run["composed"] = composed
+    run["envelope"] = json.loads(Path(str(composed["path"])).read_text(encoding="utf-8"))
+    run["validated"] = engine.json_call("POST", "/replays/validate", {"bundle": run["envelope"]})
+    run["state"] = engine.json_call("GET", base)
     return run
 
 
@@ -1359,6 +1631,168 @@ def main() -> int:
             and [entry["encounters"] for entry in finished] == [len(EXPECTED_CHAPTER_IDS)],
             "adventure.finalize closes the run and the listing moves it across",
             f"active={still_open} finalized={json.dumps(finished)[:200]}",
+        )
+
+        # -- 6b. a run that opens on an interlude: walk, ambush, aftermath ---
+        exploring = Engine("interlude")
+        engines.append(exploring)
+
+        def walked_run() -> dict[str, Any]:
+            exploring.start(timeout=WARM_TIMEOUT)
+            return interlude_run(exploring)
+
+        walk = phase(
+            "a run of interlude, fight and interlude runs end to end over plain HTTP",
+            walked_run,
+        )
+        opening_state = walk["opening_state"]
+        report(
+            walk["opening_status"] == 201
+            and walk["opening"]["index"] == 0
+            and walk["opening"]["encounter_id"] == EXPECTED_INTERLUDE_CHAPTERS[0]
+            and opening_state["mode"] == "exploration"
+            # The three absences that make it an interlude, asserted as
+            # absences: no initiative was rolled, nobody holds the floor, and
+            # the chapter is not over on arrival even though one team is all
+            # there is. A party alone in a fight is a finished fight.
+            and opening_state["turn"] is None
+            and opening_state["order"] == EXPECTED_WALK_ORDER
+            and opening_state["over"] is False
+            and walk["opening_read"]["map_source"]["map_id"] == MILL_MAP_ID,
+            "an adventure opens on a chapter with no initiative, no turn and no end",
+            f"mode={opening_state.get('mode')!r} turn={opening_state.get('turn')!r} "
+            f"order={opening_state.get('order')} over={opening_state.get('over')!r}",
+        )
+
+        walked_to = {
+            str(one["name"]): one["position"]
+            for one in walk["walk_ending"]["combatants"]
+        }
+        report(
+            all(answer["state"]["mode"] == "exploration" for answer in walk["walked"])
+            and walked_to == INTERLUDE_WALK
+            and walk["started_on"] != walked_to
+            and walk["walk_ending"]["over"] is False,
+            "each act names its own actor, and the party crosses the mill's real squares",
+            f"started on {walk['started_on']} walked to {walked_to}",
+        )
+
+        chapters = walk["envelope"].get("chapters", [])
+        frozen_walk = chapters[0].get("replay", {}) if chapters else {}
+        attempts = {
+            str(attempt.get("operation")): attempt
+            for attempt in frozen_walk.get("attempts", [])
+        }
+        spoken = attempts.get("encounter_note", {})
+        rolled = attempts.get("check", {})
+        report(
+            walk["note"]["speaker"] == NOTE_SPEAKER
+            and walk["check"]["encounter_id"] == EXPECTED_INTERLUDE_CHAPTERS[0]
+            and walk["check"]["detail"] == EXPECTED_CHECK_DETAIL
+            # And both of them in the frozen artifact, which is the only place
+            # that says the record survives the chapter: a note the engine
+            # answered and did not journal would read identically above.
+            and spoken.get("arguments", {}).get("speaker") == NOTE_SPEAKER
+            and spoken.get("arguments", {}).get("text") == NOTE_TEXT
+            and rolled.get("arguments", {}).get("dc") == INTERLUDE_CHECK["dc"]
+            and rolled.get("result", {}).get("detail") == EXPECTED_CHECK_DETAIL,
+            "the line somebody spoke and the check somebody rolled freeze with the chapter",
+            f"speaker={walk['note'].get('speaker')!r} check={walk['check'].get('detail')!r} "
+            f"frozen={sorted(attempts)}",
+        )
+
+        arrival = walk["arrival"]
+        arrived_on = {str(one["name"]): one["position"] for one in arrival["combatants"]}
+        carried_conditions = {
+            str(one["name"]): sorted(one["conditions"])
+            for one in arrival["combatants"]
+            if str(one["name"]) in walk["walkers"]
+        }
+        report(
+            walk["ambush_status"] == 201
+            and walk["ambush"]["carried"] == walk["walkers"]
+            # The claim the opening chapter exists to make, held against the
+            # interlude's *live* ending state rather than a second copy of the
+            # squares: the party is ambushed exactly where it stopped walking.
+            and {name: arrived_on[name] for name in walked_to} == walked_to
+            and arrived_on["Stalker"] == AMBUSHERS[0]["position"]
+            and arrival["map_source"]["map_id"] == MILL_MAP_ID
+            and carried_conditions == dict.fromkeys(walk["walkers"], [SURPRISE])
+            and arrival["order"] == EXPECTED_AMBUSH_ORDER
+            and {
+                one["name"]: one["initiative"] for one in arrival["combatants"]
+            } == EXPECTED_AMBUSH_INITIATIVE,
+            "the fight starts on the squares the walk ended on, with the party surprised",
+            f"arrived on {arrived_on} conditions={carried_conditions} "
+            f"order={arrival.get('order')} initiative="
+            + json.dumps({
+                str(one["name"]): one["initiative"] for one in arrival["combatants"]
+            }),
+        )
+
+        ambush_ending = walk["ambush_ending"]
+        ambush_hp = {str(one["name"]): one["hp"] for one in ambush_ending["combatants"]}
+        aftermath = walk["aftermath"]
+        aftermath_hp = {
+            str(one["name"]): one["hp"]
+            for one in aftermath["combatants"]
+            if str(one["name"]) in walk["survivors"]
+        }
+        walked_out_on = {name: ambush_hp[name] for name in walk["survivors"]}
+        report(
+            ambush_ending["over"] is True
+            and ambush_ending["winner"] == "party"
+            and ambush_ending["round"] == EXPECTED_AMBUSH_ROUND
+            and ambush_hp == EXPECTED_AMBUSH_HP
+            and walk["survivors"] == EXPECTED_SURVIVORS
+            # The second boundary, and the one where hit points are what
+            # crosses: the aftermath starts the party at what the fight left
+            # them at, and somebody in it is provably not whole.
+            and aftermath_hp == walked_out_on
+            and min(aftermath_hp.values(), default=WOLF_MAX_HP) < WOLF_MAX_HP
+            and aftermath["mode"] == "exploration"
+            and aftermath["turn"] is None
+            and aftermath["map_source"]["map_id"] == MILL_MAP_ID,
+            "the ambush ends, and the closing interlude starts the party where it left them",
+            f"round={ambush_ending['round']} hp={ambush_hp} "
+            f"aftermath={aftermath_hp} walked out on={walked_out_on}",
+        )
+
+        composed = walk["composed"]
+        report(
+            composed["chapters"] == len(EXPECTED_INTERLUDE_CHAPTERS)
+            and composed["encounters"] == EXPECTED_INTERLUDE_CHAPTERS
+            and [chapter.get("index") for chapter in chapters] == [0, 1, 2]
+            and [chapter.get("mode") for chapter in chapters] == EXPECTED_INTERLUDE_MODES
+            # The chapter record and the frozen bundle inside it must agree
+            # about which kind of chapter it was — the record copies the bundle
+            # rather than re-deriving it, and this is what says so.
+            and [
+                chapter.get("replay", {}).get("encounter", {}).get("mode")
+                for chapter in chapters
+            ] == EXPECTED_INTERLUDE_MODES
+            and [chapter.get("carried") for chapter in chapters]
+            == [[], walk["walkers"], walk["survivors"]]
+            and walk["validated"].get("valid") is True
+            and walk["validated"].get("error_count") == 0,
+            "the composed run is three chapters, and each of them says which kind it is",
+            json.dumps([
+                {key: chapter.get(key) for key in ("index", "encounter_id", "mode")}
+                for chapter in chapters
+            ])[:250] + " " + json.dumps(walk["validated"])[:120],
+        )
+        report(
+            [member["mode"] for member in walk["state"]["members"]]
+            == EXPECTED_INTERLUDE_MODES
+            and [str(member["encounter_id"]) for member in walk["state"]["members"]]
+            == EXPECTED_INTERLUDE_CHAPTERS,
+            "the run's own state reports the shape of it without opening a chapter",
+            json.dumps(
+                [
+                    {key: member.get(key) for key in ("encounter_id", "mode")}
+                    for member in walk["state"]["members"]
+                ]
+            )[:250],
         )
 
         # -- 7. a scene: the fight a table saved, read back and played -------

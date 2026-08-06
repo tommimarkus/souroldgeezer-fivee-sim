@@ -1,6 +1,6 @@
 ---
 name: encounter-sim
-description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, linking several fights into an adventure that carries the party's hit points, conditions, slots and items from one into the next, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
+description: Use when running, narrating, or analysing 5E-compatible combat — starting a fight, resolving attacks, spells, movement, conditions, items, or death saves turn by turn, linking fights and the non-combat scenes between them into an adventure that carries the party's hit points, conditions, slots, items and squares from one chapter into the next, measuring a build's expected damage and a party's win rate over many seeded iterations, or loading a campaign's own creatures, spells, conditions and items as content packs. Drives the souroldgeezer-fivee-sim engine with the bundled `fivee` command, which owns the state; not for rules lookup outside combat or for character creation.
 ---
 
 # Encounter Simulation
@@ -243,6 +243,61 @@ nothing.
 one bundle on disk. Every member must have been through `encounter.finalize`
 first, and nothing is re-derived — see the **map-forge** skill, which owns
 replays, for what that bundle is and is not.
+
+### A chapter with no fight in it
+
+**Every non-combat beat runs as an interlude, and an interlude is an encounter in
+exploration mode.** Walking the mill, talking to Kettle, searching the vestry —
+each is a chapter of the run, journaled and finalized and replayable exactly like
+a fight. Without it those beats leave no engine artifact at all and the only
+record of them is prose.
+
+```bash
+fivee adventure.encounter adv-1 --if-match <version> --seed 20260809 \
+  --mode exploration --carry-map --json '{"carry": ["Thora", "Bran"]}'
+fivee encounter.act enc-3 --kind move --actor Thora --to-position '[25, 25]'
+fivee encounter.note enc-3 --speaker Kettle --category dialogue \
+  --text "Nobody crosses the mill after dark."
+fivee dice.check --modifier 3 --dc 12 --skill perception --encounter-id enc-3
+fivee encounter.finalize enc-3
+```
+
+Five differences from a fight, and each is the absence of something a fight has:
+
+- **No initiative, so every act names its actor.** `--actor <name>` is required in
+  exploration and refused in combat, where the dice already answered the question.
+  Each named act opens that creature a fresh beat — movement back to its speed,
+  action and bonus action unspent — so a walk across a hall is several acts and
+  nothing runs out. Terrain, walls, occupancy, storeys and sight all work exactly
+  as they do in a fight, which is what makes crossing the floor a real move.
+- **No rounds, so `encounter.advance` is refused.** Name the actor of the next
+  beat instead. Nothing anchored to a turn boundary expires either — a condition
+  imposed during an interlude is still there when the chapter is finalized, and
+  it walks into the next one. That is a declared ruling rather than an oversight:
+  `fivee rules.rulings --code interlude_expires_no_timed_effect`.
+- **It is never over.** `state["over"]` stays false and `state["winner"]` null
+  however few sides are standing, because "one side left" describes a fight and
+  not a party crossing a room. An interlude ends when you finalize it.
+- **One combatant is enough.** A lone scout is a legitimate chapter; the
+  two-combatant rule exists because a fight needs two sides.
+- **`--carry-map` keeps the ground.** It reuses the previous chapter's saved map,
+  and since positions are carried anyway the party keeps the squares it was
+  standing on. It is refused alongside `--map`/`--map-id`, and refused when the
+  previous chapter had no saved map — omitting it still means theatre of the mind.
+
+Two habits make the record worth having. **Attribute the lines**: `--speaker`
+names a combatant in the chapter, so Kettle's words can be drawn at Kettle's
+token, and an unknown name is refused rather than journaled. **Scope the rolls**:
+`--encounter-id` on `dice.check`, `dice.roll` and `dice.save` is what puts the
+Perception check for the ambush *in the chapter it belongs to* — the same roll
+without it happens and is never heard of again.
+
+Then **finalize the interlude before linking the next chapter**. A run composes
+from frozen artifacts, so a live chapter in the middle of it refuses the whole
+composition. The mode is fixed for an encounter's life: a scene that turns into a
+fight is a finalize and a new link — `--mode combat --carry-map`, with the
+ambushers as new `combatants` — never a fight that grew out of an interlude in
+place.
 
 ## Fighting on a map
 

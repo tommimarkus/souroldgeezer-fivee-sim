@@ -2135,6 +2135,11 @@ class Encounter:
         is rolled, no timed effect expires, and no round turns over, because an
         interlude has none of those to turn.
 
+        Both halves of that are adjudications rather than mechanics, and both are
+        declared: what a beat *restores* is
+        ``# ruling: interlude_beat_restores_the_budget``, and what it does not
+        *end* is ``# ruling: interlude_expires_no_timed_effect``.
+
         Setting ``turn_index`` rather than threading the actor through is what
         keeps every other mechanism working unchanged: ``self.current``, the
         ``turn`` stamp on every event, and the whole action-resolution path
