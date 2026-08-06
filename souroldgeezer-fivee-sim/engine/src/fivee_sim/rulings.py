@@ -460,7 +460,7 @@ RULINGS: tuple[Ruling, ...] = (
             "engine's one ability-check site only needed to be able to name a skill."
         ),
         basis=("SRD 5.2.1, Proficiency", "SRD 5.2.1, Monsters"),
-        superseded_by="2026.08.68",
+        superseded_by="2026.08.69",
     ),
     _ruling(
         code="skills_are_printed_absolutes",
@@ -632,7 +632,7 @@ RULINGS: tuple[Ruling, ...] = (
             "ends on whichever arrives first, its cap or a broken concentration."
         ),
         basis=("SRD 5.2.1, Spells, Duration", "SRD 5.2.1, Rules Glossary, Concentration"),
-        superseded_by="2026.08.68",
+        superseded_by="2026.08.69",
     ),
     # --- deliberately outside what this engine simulates --------------------
     _ruling(

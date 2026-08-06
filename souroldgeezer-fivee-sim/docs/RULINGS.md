@@ -288,7 +288,7 @@ Kept because earlier reviews still cite them, and because a reopened question sh
 
 **Why.** The ceiling was one field and one consumer wide, not a design question: stat blocks print skill totals rather than proficiencies, so the same printed-absolute shape save_bonuses already used carried them, and the engine's one ability-check site only needed to be able to name a skill.
 
-**Closed in.** 2026.08.68
+**Closed in.** 2026.08.69
 
 Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
 
@@ -300,7 +300,7 @@ Basis: SRD 5.2.1, Proficiency; SRD 5.2.1, Monsters.
 
 **Why.** The round counter the encounter already advanced was the whole missing half: nothing in the effect ledger read it. A concentration spell now ends on whichever arrives first, its cap or a broken concentration.
 
-**Closed in.** 2026.08.68
+**Closed in.** 2026.08.69
 
 Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, Rules Glossary, Concentration.
 
