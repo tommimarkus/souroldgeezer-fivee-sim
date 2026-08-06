@@ -177,6 +177,28 @@ cp "$repo_root/NOTICE" "$I2/souroldgeezer-fivee-sim/NOTICE"
 check "nested root: clean inner passes despite a tampered outer" 0 "$O2" \
   "$I2/souroldgeezer-fivee-sim/engine/src/fivee_sim/data/m.json"
 
+# --- the conf is read, never executed --------------------------------------
+# A conf carrying a shell command must not run it: the file is tracked in
+# git, and $root is resolved from the edited file's own ancestry, so checking
+# out an untrusted branch and editing any file under it must not run
+# attacker-controlled shell on the next Edit.
+sentinel="$tmp/pwned-marker"
+rm -f "$sentinel"
+J="$(make_root injection)"
+printf '\ntouch "%s"\n$(touch "%s")\n`touch "%s"`\n' \
+  "$sentinel" "$sentinel" "$sentinel" >> "$J/.ip-hygiene-local.conf"
+printf '{"name":"x","description":"Dungeons & Dragons."}\n' \
+  > "$J/souroldgeezer-fivee-sim/.claude-plugin/plugin.json"
+check "conf carrying shell commands: hook still finds the real mark" 2 "$J" \
+  "$J/souroldgeezer-fivee-sim/.claude-plugin/plugin.json"
+if [ -e "$sentinel" ]; then
+  fail=$((fail + 1))
+  printf '  FAIL  conf carrying shell commands: a command executed (sentinel exists)\n'
+else
+  pass=$((pass + 1))
+  printf '  PASS  conf carrying shell commands: no command executed\n'
+fi
+
 # --- activation guard -----------------------------------------------------
 N="$tmp/nomarker"
 mkdir -p "$N/souroldgeezer-fivee-sim/.claude-plugin"

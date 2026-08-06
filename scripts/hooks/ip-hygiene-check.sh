@@ -66,8 +66,56 @@ find_artifact_root() {
 root="$(find_artifact_root "$(dirname "$abs")")" || root="$project_root"
 rel="${abs#"$root"/}"
 
-# shellcheck source=/dev/null
-. "$root/.ip-hygiene-local.conf"
+# The conf is tracked in git and $root is resolved from the edited file's own
+# ancestry, so `. "$root/.ip-hygiene-local.conf"` would run whatever shell an
+# untrusted branch's conf carried as the developer editing it. It is read
+# through a grammar-restricted parser instead — see conf-reader.sh.
+hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=conf-reader.sh
+. "$hook_dir/conf-reader.sh"
+
+IP_MARK_PATTERNS=()
+IP_METADATA_GLOBS=()
+IP_ATTRIBUTION_FILES=()
+IP_DATA_GLOBS=()
+IP_NON_SRD_NAMES=()
+IP_ATTRIBUTION_STRING=""
+IP_DISCLAIMER_NOTICE_STRING=""
+IP_PREFILTER_REPO_PATH=""
+
+_conf_is_scalar() {
+  case "$1" in
+    IP_ATTRIBUTION_STRING | IP_DISCLAIMER_NOTICE_STRING | IP_PREFILTER_REPO_PATH) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+_conf_is_array() {
+  case "$1" in
+    IP_MARK_PATTERNS | IP_METADATA_GLOBS | IP_ATTRIBUTION_FILES | IP_DATA_GLOBS | IP_NON_SRD_NAMES)
+      return 0 ;;
+    *) return 1 ;;
+  esac
+}
+_conf_set_scalar() {
+  case "$1" in
+    IP_ATTRIBUTION_STRING) IP_ATTRIBUTION_STRING="$2" ;;
+    IP_DISCLAIMER_NOTICE_STRING) IP_DISCLAIMER_NOTICE_STRING="$2" ;;
+    IP_PREFILTER_REPO_PATH) IP_PREFILTER_REPO_PATH="$2" ;;
+  esac
+}
+_conf_set_array() {
+  local name="$1"
+  shift
+  case "$name" in
+    IP_MARK_PATTERNS) IP_MARK_PATTERNS=("$@") ;;
+    IP_METADATA_GLOBS) IP_METADATA_GLOBS=("$@") ;;
+    IP_ATTRIBUTION_FILES) IP_ATTRIBUTION_FILES=("$@") ;;
+    IP_DATA_GLOBS) IP_DATA_GLOBS=("$@") ;;
+    IP_NON_SRD_NAMES) IP_NON_SRD_NAMES=("$@") ;;
+  esac
+}
+
+read_declarative_conf "$root/.ip-hygiene-local.conf"
 
 findings=()
 

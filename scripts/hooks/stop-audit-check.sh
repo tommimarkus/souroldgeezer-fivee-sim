@@ -95,8 +95,35 @@ done | sort -u)"
 [ -n "$normalized" ] || exit 0
 
 # --- Which touches are audit surfaces? -------------------------------------
-# shellcheck source=/dev/null
-. "$project_root/.stop-audit-local.conf" >/dev/null 2>&1
+# The conf is tracked in git; `. "$project_root/.stop-audit-local.conf"`
+# would run whatever shell an untrusted branch's conf carried as the
+# developer editing a scoped file. It is read through a grammar-restricted
+# parser instead — see conf-reader.sh.
+hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=conf-reader.sh
+. "$hook_dir/conf-reader.sh"
+
+STOP_AUDIT_GLOBS=()
+STOP_AUDIT_SKILLS=()
+
+_conf_is_scalar() { return 1; }
+_conf_is_array() {
+  case "$1" in
+    STOP_AUDIT_GLOBS | STOP_AUDIT_SKILLS) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+_conf_set_scalar() { :; }
+_conf_set_array() {
+  local name="$1"
+  shift
+  case "$name" in
+    STOP_AUDIT_GLOBS) STOP_AUDIT_GLOBS=("$@") ;;
+    STOP_AUDIT_SKILLS) STOP_AUDIT_SKILLS=("$@") ;;
+  esac
+}
+
+read_declarative_conf "$project_root/.stop-audit-local.conf" >/dev/null 2>&1
 declare -p STOP_AUDIT_GLOBS >/dev/null 2>&1 || exit 0
 declare -p STOP_AUDIT_SKILLS >/dev/null 2>&1 || exit 0
 

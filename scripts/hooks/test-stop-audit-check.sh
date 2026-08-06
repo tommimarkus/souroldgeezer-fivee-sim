@@ -250,6 +250,28 @@ tr_empty="$tmp/t-empty.jsonl"
 check_silent "empty transcript: no touches means no fallback" \
   "$GE" "$(mk_payload s-empty "$GE" "$tr_empty" false)"
 
+# --- the conf is read, never executed --------------------------------------
+# A conf carrying a shell command must not run it: the file is tracked in
+# git, so checking out an untrusted branch and editing a scoped file must not
+# run attacker-controlled shell on the next Stop.
+sentinel="$tmp/pwned-marker-stop"
+rm -f "$sentinel"
+J="$(make_root injection)"
+printf '\ntouch "%s"\n$(touch "%s")\n`touch "%s"`\n' \
+  "$sentinel" "$sentinel" "$sentinel" >> "$J/.stop-audit-local.conf"
+tr_inject="$tmp/t-injection.jsonl"
+t_edit "$scoped" > "$tr_inject"
+check_block "conf carrying shell commands: hook still blocks correctly" "$J" \
+  "$(mk_payload s-injection "$J" "$tr_inject" false)" \
+  "souroldgeezer-audit:test-quality-audit"
+if [ -e "$sentinel" ]; then
+  fail=$((fail + 1))
+  printf '  FAIL  conf carrying shell commands: a command executed (sentinel exists)\n'
+else
+  pass=$((pass + 1))
+  printf '  PASS  conf carrying shell commands: no command executed\n'
+fi
+
 # --- degenerate input ------------------------------------------------------
 check_silent "garbage stdin" "$A" "not json"
 check_silent "JSON payload that is not an object" "$A" "[1,2,3]"
