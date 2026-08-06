@@ -2101,6 +2101,25 @@ class TestEncountersOverHttp:
         assert written.json()["category"] == "narration"
         assert written.json()["timestamp"]
 
+    def test_a_note_names_its_speaker_and_an_unknown_one_is_the_surface_404(
+        self, editor: Editor
+    ) -> None:
+        encounter_id = self.create(editor).json()["encounter_id"]
+        spoken = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/notes",
+            json_body={"text": "hold there", "speaker": "Thora"},
+        )
+        assert spoken.status == 201
+        assert spoken.json()["speaker"] == "Thora"
+        assert_problem(
+            editor.request(
+                "POST", f"/api/v1/encounters/{encounter_id}/notes",
+                json_body={"text": "hold there", "speaker": "Kettle"},
+            ),
+            404,
+            "no combatant named 'Kettle' in this encounter",
+        )
+
     def test_a_blank_note_is_refused_by_the_service(self, editor: Editor) -> None:
         encounter_id = self.create(editor).json()["encounter_id"]
         assert_problem(

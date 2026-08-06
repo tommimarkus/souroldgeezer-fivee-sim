@@ -162,8 +162,9 @@ def encounter_note(
     text: str,
     category: str = "note",
     request_id: str | None = None,
+    speaker: str | None = None,
 ) -> dict[str, Any]:
-    return _encounters.note(STATE, encounter_id, text, category, request_id)
+    return _encounters.note(STATE, encounter_id, text, category, request_id, speaker)
 
 
 def encounter_log(

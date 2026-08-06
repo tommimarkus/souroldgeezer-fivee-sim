@@ -814,6 +814,7 @@ ROUTES: tuple[Route, ...] = (
                 "text": {"type": "string", "maxLength": MAX_NOTE_TEXT},
                 "category": {"type": "string", "default": "note",
                              "maxLength": MAX_NAME_TEXT},
+                "speaker": _NAME_OR_NULL,
             },
             "required": ["text"],
         },

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
+from fivee_sim.service.errors import NotFoundError
+
 from . import api
 from .conftest import mapless_fight
 
@@ -70,6 +74,49 @@ def test_notes_are_durable_and_idempotent() -> None:
     ]
     assert len(notes) == 1
     assert notes[0]["arguments"]["text"] == "The sentry agrees to stand down."
+
+
+def test_a_note_attributes_its_line_to_a_speaker_and_carries_it_into_the_bundle() -> None:
+    encounter_id = mapless_fight(seed=149)
+
+    written = api.encounter_note(
+        encounter_id,
+        "Hold there. Nobody crosses the mill after dark.",
+        category="dialogue",
+        speaker="Thora",
+    )
+
+    assert written["speaker"] == "Thora"
+    attempt = api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"][-1]
+    assert attempt["operation"] == "encounter_note"
+    assert attempt["arguments"]["speaker"] == "Thora"
+
+
+def test_a_note_from_nobody_in_this_encounter_is_refused_before_it_is_journalled() -> None:
+    """The surface's one sentence, and no beat written for a creature that is not here.
+
+    Refused ahead of the attempt record for the reason ``act`` refuses an unknown
+    actor there: a mistyped name is a client's mistake rather than a table's
+    event, and a journal that recorded it would replay a line nobody spoke.
+    """
+    encounter_id = mapless_fight(seed=151)
+    before = len(api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"])
+
+    with pytest.raises(NotFoundError, match="no combatant named 'Kettle' in this encounter"):
+        api.encounter_note(encounter_id, "Kettle says nothing.", speaker="Kettle")
+
+    after = api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"]
+    assert len(after) == before
+
+
+def test_a_note_with_no_speaker_attributes_the_line_to_nobody() -> None:
+    encounter_id = mapless_fight(seed=157)
+
+    written = api.encounter_note(encounter_id, "Rain on the mill roof.")
+
+    assert written["speaker"] is None
+    attempt = api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"][-1]
+    assert attempt["arguments"]["speaker"] is None
 
 
 def test_an_unscoped_primitive_keeps_its_legacy_shape() -> None:

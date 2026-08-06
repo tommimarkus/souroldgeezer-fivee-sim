@@ -331,7 +331,24 @@ def note(
     text: str,
     category: str = "note",
     request_id: str | None = None,
+    speaker: str | None = None,
 ) -> dict[str, Any]:
+    """Write a line of the record, optionally in somebody's voice.
+
+    ``speaker`` names a combatant in this encounter, so a line can be drawn at
+    that creature's token rather than floating over the map. It is checked
+    against the roster before anything durable happens, for the reason
+    :func:`act` checks its ``actor`` there: journaling an attempt for a creature
+    this fight does not hold writes a beat nobody took into the record a replay
+    is built from. The refusal is :func:`require_seat`'s one sentence, so an
+    unknown name answers the same ``404`` from a note as from a brief.
+
+    Nothing new is journaled. A note is already an audited attempt, so the
+    speaker rides in that attempt's arguments and reaches the v2 bundle with it.
+    """
+    if speaker is not None:
+        require_seat(sessions.session_for(state, encounter_id).encounter.creatures, speaker)
+
     def execute() -> dict[str, Any]:
         written = text.strip()
         label = category.strip()
@@ -345,6 +362,7 @@ def note(
             "encounter_id": encounter_id,
             "text": written,
             "category": label,
+            "speaker": speaker,
             "timestamp": sessions.utc_now(),
         }
 
@@ -353,7 +371,7 @@ def note(
         encounter_id=encounter_id,
         request_id=request_id,
         operation="encounter_note",
-        arguments={"text": text, "category": category},
+        arguments={"text": text, "category": category, "speaker": speaker},
         execute=execute,
     )
 
