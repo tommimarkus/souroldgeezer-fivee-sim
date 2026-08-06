@@ -189,7 +189,9 @@ class TestDeathSaves:
         # carries the face is the one taken on whoever acts just before her.
         for _ in range(6):
             if api.encounter_state(encounter_id)["turn"] == "Goblin":
-                return dict(api.encounter_advance(encounter_id, natural=20))
+                return dict(
+                    api.encounter_advance(encounter_id, natural=20, view="full")
+                )
             api.encounter_advance(encounter_id)
         raise AssertionError("never reached the turn before Thora's")
 

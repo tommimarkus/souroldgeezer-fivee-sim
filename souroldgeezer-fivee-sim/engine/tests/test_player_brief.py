@@ -325,11 +325,20 @@ def brawl(seed: int = 20260805) -> str:
     return str(created["encounter_id"])
 
 
-def swing(encounter_id: str, viewer: str | None = None) -> dict[str, Any]:
-    """The viewer's own attack on the foe beside them, answered to ``viewer``."""
+def swing(
+    encounter_id: str, viewer: str | None = None, view: str = "full"
+) -> dict[str, Any]:
+    """The viewer's own attack on the foe beside them, answered to ``viewer``.
+
+    ``view="full"`` by default, and deliberately not the service's own default:
+    this file classifies *keys*, so it wants the payload whole every time. What
+    a delta does to that payload is :mod:`tests.test_state_views`'s question,
+    and the answer there is that it can only ever narrow what this file allows.
+    """
     advance_encounter_to(encounter_id, VIEWER)
     return api.encounter_act(
-        encounter_id, "attack", target=DUMMY, attack="Longsword", viewer=viewer
+        encounter_id, "attack", target=DUMMY, attack="Longsword",
+        viewer=viewer, view=view,
     )
 
 
@@ -1190,7 +1199,13 @@ class TestTheEventsAreClassifiedToo:
         assert seen["actor"] == VIEWER, "this is not the viewer's own event"
         assert "check" not in seen["data"], seen
         assert "success" in seen["data"], "the result of their own roll is theirs"
-        assert str(LEVER_DC).encode("utf-8") not in serialised(brief)
+        # Searched over everything but the digest: ``state_sha256`` is 64 hex
+        # characters and this one happens to contain "29", which is the DC. It
+        # is a hash of the brief itself — of exactly what this seat was shown —
+        # so it can disclose nothing the rest of the payload did not.
+        assert str(LEVER_DC).encode("utf-8") not in serialised(
+            {key: value for key, value in brief.items() if key != "state_sha256"}
+        )
 
     def test_what_the_table_watched_land_still_arrives(self) -> None:
         """Redaction that emptied the payload would pass every case above."""
@@ -1288,7 +1303,7 @@ class TestAnEventNamingSomeoneUnseenIsNotReported:
         """Named because it is the one event that looks like it should be dropped."""
         encounter_id = fight()
         for _ in range(40):
-            brief = api.encounter_advance(encounter_id, viewer=VIEWER)
+            brief = api.encounter_advance(encounter_id, viewer=VIEWER, view="full")
             if "arrival" in kinds_in(brief):
                 break
         else:  # pragma: no cover - the fixture arrives in round 9
@@ -1324,11 +1339,19 @@ class TestTheChairCarryingWritesAnswerOneShape:
         assert "combatants" not in state and "ongoing_effects" not in state
 
     def test_naming_no_seat_leaves_every_write_answering_the_fight_whole(self) -> None:
-        # The additive promise, pinned rather than assumed: this is what the CLI
-        # and both skills read, and the reconciliation must not have moved it.
+        """The additive promise, and the one place it is no longer additive.
+
+        ``as=`` still changes nothing for a caller that does not pass it: the
+        payload below is the fight whole, exactly as it always was. What did
+        change is the *default view* on ``act`` and ``advance``, which is now
+        ``delta`` — a deliberate break, and the only one this projection's
+        callers have to know about. ``view="full"`` is that payload byte for
+        byte, which is what this case asserts and what makes the break a
+        default rather than a removal. ``resume`` still defaults to whole.
+        """
         encounter_id = brawl()
         acted = swing(encounter_id)
-        advanced = api.encounter_advance(encounter_id)
+        advanced = api.encounter_advance(encounter_id, view="full")
         resumed = api.encounter_resume(encounter_id)
 
         for whole in (acted, advanced, resumed):

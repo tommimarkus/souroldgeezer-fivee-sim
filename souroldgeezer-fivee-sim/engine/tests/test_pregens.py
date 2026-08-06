@@ -217,7 +217,7 @@ class TestEveryPartyRuns:
                     for event in answer["events"]
                     if event["kind"] == "attack" and "hit" not in event["data"]
                 )
-            state = api.encounter_advance(encounter_id)["state"]
+            state = api.encounter_advance(encounter_id, view="full")["state"]
             if set(rolled) == set(shooters):
                 break
 

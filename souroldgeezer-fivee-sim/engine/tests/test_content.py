@@ -2378,7 +2378,9 @@ class TestReconfigurationAndLiveFights:
             api.encounter_advance(encounter_id)
         else:
             raise AssertionError("Thora never got a turn")
-        result = api.encounter_act(encounter_id, "use_item", item="Vale Draught")
+        result = api.encounter_act(
+            encounter_id, "use_item", item="Vale Draught", view="full"
+        )
         thora = next(
             c for c in result["state"]["combatants"] if c["name"] == "Thora"
         )

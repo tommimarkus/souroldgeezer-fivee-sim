@@ -908,11 +908,18 @@ class TestInvocation:
 
         assert run("encounter.act", encounter_id, "--kind", "dodge") == cli.EXIT_OK
         acted = out(capsys)
-        assert acted["state"]["combatants"]
+        # The shell gets the service's own default: what changed, not the fight.
+        assert acted["view"] == "delta"
+        assert "state" not in acted
+        assert acted["state_delta"]["combatants"]
         assert any(event["kind"] == "dodge" for event in acted["events"]), acted["events"]
 
-        assert run("encounter.advance", encounter_id) == cli.EXIT_OK
-        capsys.readouterr()
+        # ``--view`` is not something the client was taught. It is a parameter on
+        # the route table, and the flag exists because the table declares it —
+        # which is the same reason the client can be pinned to import nothing of
+        # the engine but ``paths``.
+        assert run("encounter.advance", encounter_id, "--view", "full") == cli.EXIT_OK
+        assert out(capsys)["state"]["combatants"]
 
         assert run("encounter.state", encounter_id) == cli.EXIT_OK
         after = out(capsys)

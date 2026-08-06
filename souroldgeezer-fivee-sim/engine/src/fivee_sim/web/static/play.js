@@ -1056,12 +1056,18 @@ var FiveePlay = (function () {
   }
 
   /* The answer to a write, which named this chair in `as=` and so arrives
-     already narrowed to it — its `state` in the brief's own shape, and its
-     events with it, since Encounter.brief_events classifies an event's `data`
-     key by key the way brief_of classifies a creature's fields. Only the events
-     are read from it even so, and the fight re-read: what a seat holds is
-     decided in one place, and the answer to a post is a fight one action old as
-     soon as anybody else acts.
+     already narrowed to it — and, since `view` defaults to `delta` on both of
+     the posts above, narrowed a second time to what has moved since the last
+     payload this seat was served. Its events arrive whole either way: events
+     are not deltable, and Encounter.brief_events has already classified an
+     event's `data` key by key the way brief_of classifies a creature's fields.
+
+     Only the events are read from it, which is why that default cost this file
+     nothing: the fight is re-read rather than patched, because what a seat
+     holds is decided in one place and the answer to a post is a fight one
+     action old as soon as anybody else acts. A panel that applied the delta
+     instead would be a second copy of the fight to keep in step, and it would
+     still have to re-read for everybody else's turn.
 
      `kind` is the field an event calls the thing that happened; this line read
      `each.type` for a release and rendered "2 events · undefined, undefined"

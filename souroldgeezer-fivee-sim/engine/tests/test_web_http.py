@@ -35,6 +35,7 @@ from fivee_sim.model.encounter import HEALTH_BANDS, ActionKind, EncounterMode
 from fivee_sim.service import adventures as adventure_service
 from fivee_sim.service import encounters as encounters_service
 from fivee_sim.service import maps as map_service
+from fivee_sim.service import views as views_service
 from fivee_sim.service.common import sha256_of
 from fivee_sim.web import openapi, routes
 from fivee_sim.web.http_server import (
@@ -1697,6 +1698,10 @@ class TestDeclaredEnums:
             "dice.save.advantage": advantages,
             "map.generate.kind": set(map_service._PARAM_TYPES),
             "map.query.query": set(map_service._QUERIES),
+            "encounter.create.view": set(views_service.VIEWS),
+            "encounter.act.view": set(views_service.VIEWS),
+            "encounter.advance.view": set(views_service.VIEWS),
+            "encounter.resume.view": set(views_service.VIEWS),
         }
 
     def test_every_declared_enum_is_the_set_its_authority_accepts(self) -> None:
@@ -2135,7 +2140,9 @@ class TestEncountersOverHttp:
         created = self.create(editor)
         encounter_id = created.json()["encounter_id"]
         before = created.json()["state"]["turn"]
-        advanced = editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        advanced = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?view=full"
+        )
         assert advanced.status == 200
         assert advanced.json()["state"]["turn"] != before
         assert advanced.headers["ETag"] != created.headers["ETag"]
@@ -2526,7 +2533,7 @@ class TestInterludesOverHttp:
     def test_an_act_names_who_takes_it(self, editor: Editor) -> None:
         encounter_id = self.interlude(editor).json()["encounter_id"]
         acted = editor.request(
-            "POST", f"/api/v1/encounters/{encounter_id}/actions",
+            "POST", f"/api/v1/encounters/{encounter_id}/actions?view=full",
             json_body={"kind": "move", "to_position": [10, 0], "actor": "Kettle"},
         )
         assert acted.status == 200
@@ -2864,12 +2871,22 @@ class TestThePlayerBriefOnTheWrites:
             editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
         raise AssertionError("Thora never got a turn")
 
-    def swing(self, editor: Editor, encounter_id: str, seat: str = "") -> Response:
-        """The write that leaks: a real attack that lands on a real opponent."""
+    def swing(
+        self, editor: Editor, encounter_id: str, seat: str = "", view: str = "full"
+    ) -> Response:
+        """The write that leaks: a real attack that lands on a real opponent.
+
+        ``view="full"`` because this class classifies keys and wants them all.
+        A delta over the same answer can only carry a subset of what the brief
+        let through — that is :mod:`tests.test_state_views`'s claim, and it is
+        made against the projection rather than re-made here.
+        """
+        query = "&".join(
+            part for part in (f"as={seat}" if seat else "", f"view={view}") if part
+        )
         return editor.request(
             "POST",
-            f"/api/v1/encounters/{encounter_id}/actions"
-            + (f"?as={seat}" if seat else ""),
+            f"/api/v1/encounters/{encounter_id}/actions?{query}",
             json_body={
                 "kind": "attack", "target": BRIEFING_DUMMY, "attack": "Longsword"
             },
@@ -3033,7 +3050,11 @@ class TestThePlayerBriefOnTheWrites:
                 break
             editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
         acted = self.swing(editor, encounter_id)
-        advanced = editor.request("POST", f"/api/v1/encounters/{encounter_id}/advance")
+        # ``view=full`` on the two that changed default. The additive promise is
+        # about ``as=``, and it is intact: this payload is the fight whole.
+        advanced = editor.request(
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?view=full"
+        )
         editor.server.state.sessions.clear()
         resumed = editor.request("POST", f"/api/v1/encounters/{encounter_id}/resume")
 
@@ -3129,7 +3150,7 @@ class TestEncounterActions:
 
         struck = editor.request(
             "POST",
-            f"/api/v1/encounters/{encounter_id}/actions",
+            f"/api/v1/encounters/{encounter_id}/actions?view=full",
             json_body={"kind": "attack", "target": "Thora", "attack": "Scimitar"},
         )
 
@@ -3187,7 +3208,7 @@ class TestEncounterActions:
 
         moved = editor.request(
             "POST",
-            f"/api/v1/encounters/{encounter_id}/actions",
+            f"/api/v1/encounters/{encounter_id}/actions?view=full",
             json_body={"kind": "move", "to_position": [10, 0]},
         )
 
@@ -3409,10 +3430,12 @@ class TestEncounterActions:
 
         first = editor.request(
             "POST",
-            f"/api/v1/encounters/{encounter_id}/actions",
+            f"/api/v1/encounters/{encounter_id}/actions?view=full",
             json_body=swing,
             headers={"Idempotency-Key": "swing-1"},
         )
+        # No ``view`` on the retry: a retry is answered whole whatever it asked
+        # for, because a caller retrying is one that did not hear the answer.
         again = editor.request(
             "POST",
             f"/api/v1/encounters/{encounter_id}/actions",
@@ -3561,7 +3584,7 @@ class TestIdempotencyKey:
     def test_a_retried_turn_under_one_key_is_taken_once(self, editor: Editor) -> None:
         encounter_id = self.create(editor).json()["encounter_id"]
         first = editor.request(
-            "POST", f"/api/v1/encounters/{encounter_id}/advance",
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?view=full",
             headers={"Idempotency-Key": "turn-1"},
         )
         again = editor.request(
@@ -3581,11 +3604,11 @@ class TestIdempotencyKey:
     def test_a_different_key_takes_the_next_turn(self, editor: Editor) -> None:
         encounter_id = self.create(editor).json()["encounter_id"]
         first = editor.request(
-            "POST", f"/api/v1/encounters/{encounter_id}/advance",
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?view=full",
             headers={"Idempotency-Key": "turn-1"},
         ).json()
         second = editor.request(
-            "POST", f"/api/v1/encounters/{encounter_id}/advance",
+            "POST", f"/api/v1/encounters/{encounter_id}/advance?view=full",
             headers={"Idempotency-Key": "turn-2"},
         ).json()
         assert second["state"]["turn"] != first["state"]["turn"]

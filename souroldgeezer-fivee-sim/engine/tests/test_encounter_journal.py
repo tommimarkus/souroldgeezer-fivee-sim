@@ -110,7 +110,9 @@ def test_creation_request_ids_are_idempotent_even_after_memory_loss() -> None:
 def test_a_repeated_request_id_returns_the_original_result_without_acting_twice() -> None:
     encounter_id = mapless_fight(seed=103)
 
-    first = api.encounter_advance(encounter_id, request_id="same-turn")
+    # ``view="full"`` on the first call, not on the retry: a retry is answered
+    # whole whatever it asked for, so this is what puts the two in one shape.
+    first = api.encounter_advance(encounter_id, request_id="same-turn", view="full")
     second = api.encounter_advance(encounter_id, request_id="same-turn")
 
     assert second == first
@@ -359,7 +361,11 @@ def test_an_attempt_interrupted_before_its_result_is_audited_and_safe_to_retry()
     interrupted = api.replay_export(encounter_id, format_version=2)["bundle"][
         "attempts"
     ][-1]
-    retried = api.encounter_advance(encounter_id, request_id="interrupted-turn")
+    # The interrupted attempt never recorded a result, so this is a real turn
+    # rather than a replay of one, and it answers ``delta`` like any other.
+    retried = api.encounter_advance(
+        encounter_id, request_id="interrupted-turn", view="full"
+    )
 
     assert interrupted["status"] == "interrupted"
     assert api.encounter_state(encounter_id) != before
@@ -1112,7 +1118,7 @@ def test_a_recovered_interlude_still_takes_its_next_beat() -> None:
     assert recovered["recovered"] is True
     assert recovered["state"] == before
     after = api.encounter_act(
-        encounter_id, "move", to_position=[20, 0], actor="Kettle"
+        encounter_id, "move", to_position=[20, 0], actor="Kettle", view="full"
     )
     kettle = next(
         one for one in after["state"]["combatants"] if one["name"] == "Kettle"
@@ -1457,7 +1463,7 @@ def test_a_request_id_keeps_its_result_across_a_recovery(
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
     encounter_id = mapless_fight(seed=269)
 
-    first = api.encounter_advance(encounter_id, request_id="turn-1")
+    first = api.encounter_advance(encounter_id, request_id="turn-1", view="full")
     api.encounter_act(encounter_id, "dodge")
     api.STATE.sessions.clear()
     api.encounter_resume(encounter_id)
@@ -1468,7 +1474,13 @@ def test_a_request_id_keeps_its_result_across_a_recovery(
         for entry in records(journal_path(root, encounter_id))
         if entry["kind"] == "result"
     }
-    assert kept["encounter_advance"]["result"] == first
+    # ``view`` and ``state_sha256`` are how an answer was rendered for one
+    # caller, not what happened, so the journal keeps neither and a retry
+    # renders them again from the result it did keep.
+    presentation = {"view", "state_sha256"}
+    assert kept["encounter_advance"]["result"] == {
+        key: value for key, value in first.items() if key not in presentation
+    }
     assert "result" not in kept["encounter_act"], (
         "a call that asked for nothing keeps nothing but the hash"
     )

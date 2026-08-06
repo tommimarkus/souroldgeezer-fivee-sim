@@ -611,7 +611,9 @@ def fight_over_http(engine: Engine) -> dict[str, Any]:
     def swing(state: Mapping[str, Any]) -> Any:
         attack, target = attack_plan(state)
         return engine.json_call(
-            "POST", f"{base}/actions", {"kind": "attack", "attack": attack, "target": target}
+            "POST",
+            f"{base}/actions?view=full",
+            {"kind": "attack", "attack": attack, "target": target},
         )
 
     fight: dict[str, Any] = {
@@ -621,9 +623,11 @@ def fight_over_http(engine: Engine) -> dict[str, Any]:
         "encounter_id": encounter_id,
     }
     fight["attack_missed"] = swing(created["state"])
-    fight["advanced"] = engine.json_call("POST", f"{base}/advance", {})
+    fight["advanced"] = engine.json_call("POST", f"{base}/advance?view=full", {})
     fight["attack_hit"] = swing(fight["advanced"]["state"])
-    fight["advanced_again"] = engine.json_call("POST", f"{base}/advance", {})
+    fight["advanced_again"] = engine.json_call(
+        "POST", f"{base}/advance?view=full", {}
+    )
     fight["state"] = engine.json_call("GET", base)
     fight["log"] = engine.json_call("GET", f"{base}/log")
     fight["replay"] = _exported(
@@ -650,13 +654,18 @@ def fight_through_the_command(engine: Engine) -> dict[str, Any]:
         return engine.fivee(
             "encounter.act", encounter_id,
             "--kind", "attack", "--attack", attack, "--target", target,
+            "--view", "full",
         )
 
     fight: dict[str, Any] = {"created": created, "encounter_id": encounter_id}
     fight["attack_missed"] = swing(created["state"])
-    fight["advanced"] = engine.fivee("encounter.advance", encounter_id)
+    fight["advanced"] = engine.fivee(
+        "encounter.advance", encounter_id, "--view", "full"
+    )
     fight["attack_hit"] = swing(fight["advanced"]["state"])
-    fight["advanced_again"] = engine.fivee("encounter.advance", encounter_id)
+    fight["advanced_again"] = engine.fivee(
+        "encounter.advance", encounter_id, "--view", "full"
+    )
     fight["state"] = engine.fivee("encounter.state", encounter_id)
     fight["log"] = engine.fivee("encounter.log", encounter_id)
     fight["replay"] = _exported(
@@ -757,12 +766,50 @@ def fight_to_a_finish(
         if plan is not None:
             attack, target = plan
             state = engine.json_call(
-                "POST", f"{base}/actions", {"kind": "attack", "attack": attack, "target": target}
+                "POST",
+                f"{base}/actions?view=full",
+                {"kind": "attack", "attack": attack, "target": target},
             )["state"]
             if state["over"]:
                 return state
-        state = engine.json_call("POST", f"{base}/advance", {})["state"]
+        state = engine.json_call("POST", f"{base}/advance?view=full", {})["state"]
     raise SmokeError(f"the fight in {encounter_id} had not ended after {limit} turns")
+
+
+def apply_delta(held: Mapping[str, Any], delta: Mapping[str, Any]) -> dict[str, Any]:
+    """The published receiver, written out here against the shipped server.
+
+    This is the rule the skills print, implemented from that prose rather than
+    imported: a round trip through the engine's own function would prove only
+    that it is its own inverse. What has to hold is that an independent reader
+    following the published paragraph rebuilds the fight the server is holding.
+
+    Membership is absolute and values are differential. A roster in a delta is
+    the complete, ordered cast, each entry cut to what moved, so a creature that
+    arrived is present with everything and one that died or went out of sight is
+    simply not in the list. ``dropped`` names keys that went away, which a patch
+    of changed values cannot otherwise say.
+    """
+    rebuilt = dict(held)
+    for key, value in delta.items():
+        if key == "dropped":
+            continue
+        if key == "combatants" and isinstance(value, list):
+            was = {str(one["name"]): one for one in held.get("combatants", [])}
+            rebuilt[key] = [
+                {**was.get(str(one["name"]), {}), **one} for one in value
+            ]
+        else:
+            rebuilt[key] = value
+    for path in delta.get("dropped", []):
+        parts = str(path).split("/")
+        if len(parts) == 1:
+            rebuilt.pop(parts[0], None)
+        elif len(parts) == 3 and parts[0] == "combatants":
+            for one in rebuilt.get("combatants", []):
+                if str(one["name"]) == parts[1]:
+                    one.pop(parts[2], None)
+    return rebuilt
 
 
 def adventure_over_http(engine: Engine) -> dict[str, Any]:
@@ -911,7 +958,7 @@ def interlude_run(engine: Engine) -> dict[str, Any]:
     run["walked"] = [
         engine.json_call(
             "POST",
-            f"/encounters/{walk_id}/actions",
+            f"/encounters/{walk_id}/actions?view=full",
             {"kind": "move", "actor": name, "to_position": square},
         )
         for name, square in INTERLUDE_WALK.items()
@@ -1093,7 +1140,7 @@ def scene_round_trip(engine: Engine) -> dict[str, Any]:
     attack, target = attack_plan(created["state"])
     run["swing"] = engine.json_call(
         "POST",
-        f"/encounters/{encounter_id}/actions",
+        f"/encounters/{encounter_id}/actions?view=full",
         {"kind": "attack", "attack": attack, "target": target},
     )
 
@@ -1392,6 +1439,43 @@ def main() -> int:
             "encounter.brief briefs the seat and withholds the sheet state reports",
             f"opposing={[one['name'] for one in opposing]} leaked={leaked} "
             f"{weapon}_in_brief={weapon in rendered}",
+        )
+
+        # -- the default a write answers with --------------------------------
+        # Nowhere else is this proved against the surface a host actually calls.
+        # Two turns: one asked for whole, which is what a caller holds, and one
+        # asked for nothing, which is where the new default lands. The second is
+        # then applied to the first by the rule the skills publish, and the
+        # result held against what the engine says the fight is.
+        delta_id = str(reference["encounter_id"])
+        whole = primary.json_call("POST", f"/encounters/{delta_id}/advance?view=full", {})
+        patch = primary.json_call("POST", f"/encounters/{delta_id}/advance", {})
+        rebuilt = apply_delta(whole.get("state", {}), patch.get("state_delta", {}))
+        authoritative = {
+            key: value
+            for key, value in primary.json_call("GET", f"/encounters/{delta_id}").items()
+            if key != "map_source"
+        }
+        report(
+            whole.get("view") == "full"
+            and patch.get("view") == "delta"
+            and "state" not in patch
+            and bool(patch.get("state_delta"))
+            and rebuilt == authoritative,
+            "a write answers with what changed, and the published rule rebuilds it",
+            f"views={whole.get('view')!r},{patch.get('view')!r} "
+            f"delta_keys={sorted(patch.get('state_delta', {}))} "
+            f"rebuilt_matches={rebuilt == authoritative}",
+        )
+        # And a value outside the set is refused by name rather than ignored,
+        # which is the difference between a typo and a silently different answer.
+        status, refused, _ = primary.call(
+            "POST", f"/encounters/{delta_id}/advance?view=sketch", {}
+        )
+        report(
+            status == 400 and "delta" in json.dumps(refused) and "full" in json.dumps(refused),
+            "an unknown view is refused with the three that work",
+            f"status={status} body={json.dumps(refused)[:200]}",
         )
 
         log = reference["log"]
