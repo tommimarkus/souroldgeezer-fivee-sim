@@ -1464,6 +1464,30 @@ class TestFixturesCrossToTheBattleMap:
         spike = to_grid(parse_document(sluice(), source="test", terrain=TERRAIN)).features["spike"]
         assert (spike.closed_terrain, spike.open_terrain) == ("wall", "wall")
 
+    def test_an_upper_storeys_fixture_takes_the_upper_storeys_tile(self) -> None:
+        """The same rule, one floor up, where it is possible to get it wrong.
+
+        The case above stands on the ground plane, where "this level's tile" and
+        "the document's tiles" are the same string — so it passes against a
+        bridge that reads ``document.tiles`` whatever storey it was asked about,
+        and every lever, spike and pressure plate upstairs would silently take
+        the terrain of the room below it.
+
+        The gallery is open floor at (2, 2); the chamber beneath it is
+        ``difficult`` there. One square, two answers, and only one of them is
+        this fixture's.
+        """
+        payload = with_storey()
+        payload["levels"][0]["features"].append(
+            {"id": "gallery-lever", "kind": "lever", "at": [2, 2], "state": "closed"}
+        )
+        doc = parse_document(payload, source="test", terrain=TERRAIN)
+        assert doc.levels[0].tiles[2][2] == "%"  # difficult, downstairs
+        assert doc.levels[1].tiles[2][2] == "."  # floor, in the gallery
+
+        lever = to_grid(doc).features["gallery-lever"]
+        assert (lever.closed_terrain, lever.open_terrain) == ("floor", "floor")
+
     def test_a_door_without_terrain_keeps_the_door_pair(self) -> None:
         grid = to_grid(parse_document(document(), source="test", terrain=TERRAIN))
         door = grid.features["door-1"]

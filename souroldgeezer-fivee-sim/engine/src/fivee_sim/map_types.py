@@ -23,7 +23,7 @@ own module remains the one door a reader of the file format needs.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
@@ -342,6 +342,63 @@ class MapFeatureRecord:
     costs_action: bool = False
     check: FeatureCheck | None = None
 
+    def own_terrain(self, level: MapLevel, legend: Mapping[str, str]) -> TerrainPair:
+        """What this fixture's own square is in each state, when it does not say.
+
+        A door is what a door has always been — the hardcoded pair, now merely
+        expressible. Anything else is the tile it stands on, in *both* states, so
+        a lever driven into a wall leaves a wall behind it whichever way it is
+        thrown.
+
+        It takes the **level**, not the document, and that is not a convenience.
+        A signature reaching for ``document.tiles`` reads the ground plane
+        whatever storey it was asked about, so every lever, spike and pressure
+        plate upstairs would quietly take the terrain of the room below it — and
+        on the ground floor, where such a rule is usually written and tested, the
+        two answers are identical.
+        """
+        if self.terrain is not None:
+            return self.terrain
+        if self.kind == "door":
+            return TerrainPair(closed="door-closed", open="door-open")
+        kind = level.terrain_at(self.at, legend)
+        return TerrainPair(closed=kind, open=kind)
+
+    def claims(
+        self, level: MapLevel, legend: Mapping[str, str]
+    ) -> Iterator[tuple[Square, SquareClaim]]:
+        """Every square this fixture decides, and what it decides about it.
+
+        The document-side twin of
+        :meth:`~fivee_sim.model.battlemap.MapFeature.claims`, and deliberately
+        the same yield order: the fixture's own square first, then each overlay's
+        cells in the order the file wrote them. Both real callers build a
+        ``dict`` from this, where the last claim for a square wins, so the order
+        decides which of two conflicting claims survives — and therefore which
+        one the refusal that follows names.
+
+        The own square's pair comes from :meth:`own_terrain` rather than straight
+        off ``terrain``, which is optional: a claim carrying no terrain falls
+        through to the plane, and a door that fell through would stop being a
+        door.
+
+        It reports rather than polices: a square named twice is yielded twice,
+        because the document parser refuses that, and it can only refuse what it
+        can see.
+        """
+        yield self.at, SquareClaim(
+            feature=self.id,
+            terrain=self.own_terrain(level, legend),
+            elevation=self.elevation,
+        )
+        for overlay in self.affects:
+            for square in overlay.cells:
+                yield square, SquareClaim(
+                    feature=self.id,
+                    terrain=overlay.terrain,
+                    elevation=overlay.elevation,
+                )
+
 
 @dataclass(frozen=True, slots=True)
 class MapLevel:
@@ -359,6 +416,73 @@ class MapLevel:
     features: tuple[MapFeatureRecord, ...]
     elevation: MapElevation = dataclasses.field(default_factory=MapElevation)
     ambient_light: str = "bright"
+
+    def terrain_at(self, square: Square, legend: Mapping[str, str]) -> str:
+        """The terrain kind at one square of *this* storey.
+
+        The tiles are dense, so there is nothing to fall back to and no default
+        to compute: the glyph is there, and the legend says what it means.
+
+        A square off the grid raises :class:`KeyError` rather than answering.
+        Python would read ``tiles[-1][-1]`` as the far corner with a straight
+        face, and a reader that asked about a square which is not there has a
+        defect rather than a terrain kind.
+        """
+        x, y = square
+        if not (0 <= y < len(self.tiles) and 0 <= x < len(self.tiles[y])):
+            raise KeyError(square)
+        return legend[self.tiles[y][x]]
+
+    def fixtures(self) -> Mapping[str, MapFeatureRecord]:
+        """This storey's features a fight can operate, keyed by id.
+
+        Carrying a ``state`` is what makes a feature a fixture the fight owns,
+        and not being a door: a spawn hint and a drawn stairway have none and
+        stay document-level, while a spike, a lever and a sluice gate have one.
+        The single statement of that gate — :meth:`MapDocument.fixtures` merges
+        what this returns rather than testing ``state`` a second time.
+        """
+        return MappingProxyType(
+            {feature.id: feature for feature in self.features if feature.state is not None}
+        )
+
+    def connectors(self) -> Mapping[Square, int]:
+        """Where a creature standing here can step to another storey.
+
+        Read off every feature and not only the fixtures: a drawn stairway
+        carries no ``state``, which is exactly why it is a connector rather than
+        something to throw.
+        """
+        return MappingProxyType(
+            {
+                feature.at: feature.to_level
+                for feature in self.features
+                if feature.to_level is not None
+            }
+        )
+
+    def sight_links(self) -> Mapping[Square, frozenset[int]]:
+        """Squares that see onto other storeys. Floors are opaque everywhere else."""
+        return MappingProxyType(
+            {
+                feature.at: frozenset(feature.sight_to_levels)
+                for feature in self.features
+                if feature.sight_to_levels
+            }
+        )
+
+    def lights(self) -> tuple[tuple[Square, MapLight], ...]:
+        """Every authored light on this storey, paired with the square it burns on.
+
+        A tuple of pairs rather than a square-keyed table, in document order: two
+        features may stand on one square, and a mapping would quietly keep one of
+        them.
+        """
+        return tuple(
+            (feature.at, feature.light)
+            for feature in self.features
+            if feature.light is not None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -421,6 +545,36 @@ class MapDocument:
     @property
     def elevation(self) -> MapElevation:
         return self.ground.elevation
+
+    def fixtures(self) -> Mapping[str, MapFeatureRecord]:
+        """Every storey's fixtures under one name table, the ground's first.
+
+        Feature ids are unique across a whole document, so the order is not a
+        precedence rule — it is what makes the merge deterministic, and it is the
+        order :attr:`~fivee_sim.model.battlemap.BattleMap.features` already
+        answers in for the same callers.
+
+        The ``state`` gate itself lives on :meth:`MapLevel.fixtures`; this
+        merges. A second ``state is None`` written here is how a document and a
+        storey would start disagreeing about what a fight owns.
+        """
+        merged: dict[str, MapFeatureRecord] = {}
+        for index in sorted(self.levels):
+            merged.update(self.levels[index].fixtures())
+        return MappingProxyType(merged)
+
+    def level_of(self, feature_name: str) -> int:
+        """Which storey holds a named fixture. Raises :class:`KeyError` if none does.
+
+        Fixtures, not features: a spawn hint never crosses to the fight, so a
+        caller asking where it stands is asking about something that is not
+        there. The same question, and the same answer, as
+        :meth:`~fivee_sim.model.battlemap.BattleMap.level_of`.
+        """
+        for index in sorted(self.levels):
+            if feature_name in self.levels[index].fixtures():
+                return index
+        raise KeyError(feature_name)
 
     @classmethod
     def flat(

@@ -1919,73 +1919,44 @@ def document_from(
 
 
 # --- the bridge to the battle map ------------------------------------------
-def _own_terrain(
-    feature: MapFeatureRecord, level: MapLevel, legend: Mapping[str, str]
-) -> TerrainPair:
-    """What a fixture's own square is in each state, when the file does not say.
-
-    A door is what a door has always been — the hardcoded pair, now merely
-    expressible. Anything else is the tile it stands on, in *both* states, so a
-    lever driven into a wall leaves a wall behind it whichever way it is thrown.
-    """
-    if feature.terrain is not None:
-        return feature.terrain
-    if feature.kind == "door":
-        return TerrainPair(closed="door-closed", open="door-open")
-    x, y = feature.at
-    kind = legend[level.tiles[y][x]]
-    return TerrainPair(closed=kind, open=kind)
-
-
 def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
     """One document level as the encounter-facing plane.
 
-    ``default_terrain`` is the most common kind on *this level's* tiles (ties
-    broken by kind name, so the choice is deterministic); only squares that
-    differ enter the sparse mapping. Each storey chooses its own, because a
-    gallery that is mostly floor should not pay for the ground being mostly
-    wall.
+    Every question this asks of the level is one the level answers for itself —
+    :meth:`~fivee_sim.map_types.MapLevel.terrain_at` for a square,
+    :meth:`~fivee_sim.map_types.MapLevel.fixtures` for what a fight owns, and
+    :meth:`~fivee_sim.map_types.MapLevel.connectors`,
+    :meth:`~fivee_sim.map_types.MapLevel.sight_links` and
+    :meth:`~fivee_sim.map_types.MapLevel.lights` for the three fan-outs. What is
+    left here is translation into the runtime shapes and nothing else, which is
+    the point: this bridge used to be the only place several of those rules were
+    written down, so a reader that wanted one had to re-derive it.
+
+    ``default_terrain`` is the one thing genuinely computed here, because it is a
+    property of the *runtime* plane rather than of the document: the tiles are
+    dense and have no default. It is the most common kind on *this level's* tiles
+    (ties broken by kind name, so the choice is deterministic), and only squares
+    that differ enter the sparse mapping. Each storey chooses its own, because a
+    gallery that is mostly floor should not pay for the ground being mostly wall.
     """
-    counts: Counter[str] = Counter()
-    for row in level.tiles:
-        for char in row:
-            counts[legend[char]] += 1
+    squares = [
+        ((x, y), level.terrain_at((x, y), legend))
+        for y, row in enumerate(level.tiles)
+        for x in range(len(row))
+    ]
+    counts: Counter[str] = Counter(kind for _, kind in squares)
     if counts:
         default = min(counts, key=lambda kind: (-counts[kind], kind))
     else:  # pragma: no cover - dimensions are validated to at least 1x1
         default = "floor"
 
-    terrain: dict[Square, str] = {}
-    for y, row in enumerate(level.tiles):
-        for x, char in enumerate(row):
-            kind = legend[char]
-            if kind != default:
-                terrain[(x, y)] = kind
+    terrain: dict[Square, str] = {
+        square: kind for square, kind in squares if kind != default
+    }
 
     features: dict[str, MapFeature] = {}
-    connectors: dict[Square, int] = {}
-    sight_links: dict[Square, frozenset[int]] = {}
-    lights: list[LightSource] = []
-    for feature in level.features:
-        if feature.to_level is not None:
-            connectors[feature.at] = feature.to_level
-        if feature.sight_to_levels:
-            sight_links[feature.at] = frozenset(feature.sight_to_levels)
-        if feature.light is not None:
-            lights.append(
-                LightSource(
-                    square=feature.at,
-                    bright=feature.light.bright,
-                    dim=feature.light.dim,
-                    color=feature.light.color,
-                )
-            )
-        # Carrying a state is what makes a feature one the fight owns — not
-        # being a door. A spawn hint and a drawn stairway have none and stay
-        # document-level; a spike, a lever and a sluice gate have one.
-        if feature.state is None:
-            continue
-        own = _own_terrain(feature, level, legend)
+    for feature in level.fixtures().values():
+        own = feature.own_terrain(level, legend)
         features[feature.id] = MapFeature(
             name=feature.id,
             square=feature.at,
@@ -2015,10 +1986,13 @@ def _plane_of(level: MapLevel, legend: Mapping[str, str]) -> MapPlane:
         default_elevation=level.elevation.default,
         elevation=dict(level.elevation.squares),
         features=features,
-        connectors=connectors,
-        sight_links=sight_links,
+        connectors=dict(level.connectors()),
+        sight_links=dict(level.sight_links()),
         ambient_light=LightLevel(level.ambient_light),
-        lights=tuple(lights),
+        lights=tuple(
+            LightSource(square=square, bright=light.bright, dim=light.dim, color=light.color)
+            for square, light in level.lights()
+        ),
     )
 
 
