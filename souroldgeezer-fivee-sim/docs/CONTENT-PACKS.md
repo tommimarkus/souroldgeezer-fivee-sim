@@ -145,21 +145,28 @@ land, and a fly speed applies regardless of what is underneath — so `burrow`
 does not invent a "digging through solid ground" mechanic either; that
 consistency, not a gap specific to burrowing, is why none exists.
 
-`tremorsense` and `truesight` both add a rung to the sight rule
-(`Encounter._can_see`), which already granted `blindsight`'s. Truesight sits
-above Blindsight: SRD 5.2.1, *Truesight* — within range, vision "pierces
-through" Darkness (including magical) and Invisibility (the only two of its
-five listed effects with any mechanical presence here; visual illusions,
-transformations, and the Ethereal Plane are not modelled). Tremorsense is a
-narrower Blindsight: SRD 5.2.1, *Tremorsense* — it pinpoints a creature within
-range and "doesn't count as a form of sight," so, like Blindsight, it defeats
-Invisible and Darkness. Unlike Blindsight, neither carries the SRD's "even if
-you have the Blinded condition" exemption, so this engine's blinded observer
-gets nothing from either even in range; Total Cover still blocks all three.
-**Unmodelled**: Tremorsense also requires the observer and the subject to be
-"in contact with the same surface... or the same liquid," and excludes
-anything airborne — this engine tracks no such contact state, so neither
-restriction is enforced.
+`truesight` adds a rung to the sight rule (`Encounter._can_see`), above the
+rung `blindsight` already granted. SRD 5.2.1, *Truesight* — within range,
+vision "pierces through" Darkness (including magical) and Invisibility (the
+only two of its five listed effects with any mechanical presence here; visual
+illusions, transformations, and the Ethereal Plane are not modelled). Unlike
+Blindsight, Truesight carries no SRD "even if you have the Blinded condition"
+exemption, so this engine's blinded observer gets nothing from it even in
+range; Total Cover still blocks both.
+
+`tremorsense` is transcription-only, in the same standing `passive_perception`
+holds — carried and validated, never consumed. It is deliberately **not** a
+rung on the sight ladder: SRD 5.2.1, *Tremorsense* — "Tremorsense can't detect
+creatures or objects in the air, and it doesn't count as a form of sight."
+That pinpoints a location without granting sight of what's there, a third
+state between "can see" and "cannot see" that this engine has no channel for.
+Treating it as a sight rung would cancel the unseen-target Disadvantage
+against an Invisible creature the observer has merely pinpointed but still
+cannot see — a live wrong answer on a core mechanic, not just an unmodelled
+detail. `tremorsense` is kept and reported for the same reason
+`passive_perception` is: an accepted key that does nothing must say so, not
+pretend to, until this engine gains a pinpoint-without-sight concept to spend
+it on.
 
 `condition_immunities` is a plain list of condition names, never validated
 against the active condition table: an immunity is a declarative refusal, not

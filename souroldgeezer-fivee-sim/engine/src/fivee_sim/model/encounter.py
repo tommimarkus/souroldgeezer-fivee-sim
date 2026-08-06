@@ -2715,29 +2715,38 @@ class Encounter:
     def _can_see(self, observer: Creature, subject: Creature) -> bool:
         """Whether ``observer`` can see ``subject`` for a rule that requires sight.
 
-        A ladder of four rungs, in order:
+        A ladder of three rungs, in order:
 
         1. **Truesight** — SRD 5.2.1, *Truesight*: within range, vision
            "pierces through" Darkness (including magical) and Invisibility.
-           Checked first because it is the most literal sight of the three
+           Checked first because it is the most literal sight of the two
            senses below, but it is not a strict superset of Blindsight: the
            SRD text carries no clause exempting it from the observer's own
            Blinded condition (unlike Blindsight's explicit "even if you have
            the Blinded condition"), so a blinded observer gets nothing from it
            here, and Total Cover still blocks it.
-        2. **Blindsight** — unchanged from before this ladder grew a third and
-           fourth rung: the one sense the SRD says works "even if you have the
-           Blinded condition or are in Darkness"; only Total Cover stops it.
-        3. **Tremorsense** — a narrower Blindsight. SRD 5.2.1, *Tremorsense*:
-           it pinpoints a creature "within a specific range" and "doesn't
-           count as a form of sight", so, like Blindsight, it defeats
-           Invisible and Darkness rather than merely piercing them. But like
-           Truesight and unlike Blindsight, it carries no textual exemption
-           from the observer's own Blinded condition, so that still gates it,
-           as does Total Cover.
-        4. The ordinary path below: an observer that cannot see at all is
+        2. **Blindsight** — the one sense the SRD says works "even if you have
+           the Blinded condition or are in Darkness"; only Total Cover stops
+           it.
+        3. The ordinary path below: an observer that cannot see at all is
            blind to everything, an Invisible subject is unseen, Total Cover
            blocks regardless of light, and Darkness needs Darkvision.
+
+        **Tremorsense is deliberately not a rung here.** SRD 5.2.1,
+        *Tremorsense*: it pinpoints a creature or object "within a specific
+        range" but "doesn't count as a form of sight". That is a *location*
+        without *sight* of it — a third state this engine has no channel for,
+        since every consumer of ``_can_see`` (attack gating, the
+        unseen-attacker/unseen-target Disadvantage pair, movement's
+        opportunity-attack check) only has "can see" and "cannot see" to
+        choose between. Answering ``True`` here would silently hand a
+        Tremorsense-only observer the same benefit as Truesight or Blindsight
+        — cancelling the unseen-target Disadvantage against an Invisible
+        creature it has pinpointed but still cannot see — which is wrong on
+        its own terms, not merely narrower than the SRD. So ``Creature.tremorsense``
+        is carried and reported (see its field comment) but unconsumed here,
+        the same declared-but-inert posture as ``passive_perception``, until
+        this engine has a pinpoint-without-sight concept to spend it on.
         """
         distance = observer.distance_to(subject, self.movement_rule)
         observer_blind = any(
@@ -2753,13 +2762,6 @@ class Encounter:
             return True
         if observer.blindsight > 0 and distance <= observer.blindsight:
             return self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
-        if (
-            observer.tremorsense > 0
-            and distance <= observer.tremorsense
-            and not observer_blind
-            and self.cover_between(observer.name, subject.name) is not CoverGrade.TOTAL
-        ):
-            return True
         if observer_blind:
             return False
         if any(

@@ -733,18 +733,19 @@ class TestInvisibleStopsHelpingAgainstAnObserverThatSees:
         assert event.data["advantage"] == Advantage.NONE.value
 
 
-class TestTremorsenseSeesThroughInvisibility:
-    """SRD 5.2.1, Tremorsense: pinpoints a creature within range and "doesn't
-    count as a form of sight" — so, like Blindsight, it defeats the Invisible
-    condition's benefit. A narrower Blindsight: this engine grants it no
-    exemption from the observer's own Blinded condition or from Total Cover,
-    because — unlike Blindsight's explicit "even if you have the Blinded
-    condition" — the SRD text carries no such clause for Tremorsense.
+class TestTremorsenseIsNotASightRung:
+    """SRD 5.2.1, Tremorsense: it pinpoints a creature within range but
+    "doesn't count as a form of sight". Unlike Truesight and Blindsight it
+    is deliberately not one of :meth:`Encounter._can_see`'s rungs — the
+    engine has no "knows the location but cannot see" state, so granting it
+    sight here would wrongly cancel the unseen-target Disadvantage on a
+    creature that, by the SRD's own words, cannot see its target at all.
     """
 
-    def test_within_range_it_denies_the_invisible_target_its_advantage(self) -> None:
-        # The acceptance case: 30 ft of Tremorsense sees an Invisible target
-        # 20 ft away.
+    def test_within_range_it_still_gives_no_sight_of_an_invisible_target(self) -> None:
+        # The regression pin: 30 ft of Tremorsense on a target 20 ft away
+        # pinpoints the ghost's square but is not sight, so Disadvantage
+        # stands.
         ghost = fighter("Ghost", position=0)
         ghost.add_condition(Condition.INVISIBLE)
         seer = fighter("Seer", team="foes", position=20)
@@ -753,7 +754,7 @@ class TestTremorsenseSeesThroughInvisibility:
         assert seer.distance_to(ghost, encounter.movement_rule) <= seer.tremorsense
         assert encounter.attack_advantage(
             seer, ghost, seer.attacks[0]
-        ) is Advantage.NONE
+        ) is Advantage.DISADVANTAGE
 
     def test_beyond_its_range_the_invisible_target_keeps_its_advantage(self) -> None:
         ghost = fighter("Ghost", position=0)

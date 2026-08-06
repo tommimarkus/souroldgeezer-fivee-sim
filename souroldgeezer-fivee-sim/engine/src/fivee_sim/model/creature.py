@@ -333,16 +333,20 @@ class Creature:
     terrain_cost_overrides: frozenset[str] = frozenset()
     darkvision: int = 0
     blindsight: int = 0
-    #: SRD 5.2.1, Tremorsense: pinpoints a creature or moving object within
-    #: range, and "doesn't count as a form of sight" — so it defeats
-    #: Invisible and Darkness like Blindsight does, but is a *narrower*
-    #: Blindsight in :meth:`~fivee_sim.model.encounter.Encounter._can_see`:
-    #: unlike Blindsight, the SRD text carries no clause exempting it from
-    #: the observer's own Blinded condition, so that (and Total Cover) still
-    #: gate it there. **Unmodelled**: the SRD also requires the observer and
-    #: the subject to be "in contact with the same surface... or the same
-    #: liquid," and excludes anything in the air — this engine tracks no
-    #: such contact state, so neither restriction is enforced.
+    #: A stat block's printed Tremorsense range, carried but never consumed —
+    #: transcription-only, following ``passive_perception`` exactly. SRD
+    #: 5.2.1, *Tremorsense*: "Tremorsense can't detect creatures or objects in
+    #: the air, and it doesn't count as a form of sight." That last clause is
+    #: the reason it is not a rung in
+    #: :meth:`~fivee_sim.model.encounter.Encounter._can_see` alongside
+    #: Truesight and Blindsight: Tremorsense pinpoints a *location*, not
+    #: sight of the creature there, and this engine has no third state
+    #: between "can see" and "cannot see" to represent that. Wiring it into
+    #: ``_can_see`` would wrongly cancel the unseen-target Disadvantage
+    #: against an Invisible creature the observer has merely pinpointed. Kept
+    #: and reported per the ``hit_dice`` ruling — an accepted key that does
+    #: nothing must say so — until this engine gains a pinpoint-without-sight
+    #: concept to spend it on.
     tremorsense: int = 0
     #: SRD 5.2.1, Truesight: within range, vision "pierces through" Darkness
     #: (including magical), Invisibility, visual illusions, transformations,
