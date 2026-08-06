@@ -300,12 +300,15 @@ class TestTwoReadersAgree:
         self, case: MapCase
     ) -> None:
         encounter, battle_map = encounter_on(case)
+        document = parse_document(case.payload, source=case.name, terrain=TERRAIN)
         assert encounter.map_state is not None
         open_features = encounter.map_state.open_features
 
         divergent: list[str] = []
         for level in sorted(battle_map.levels):
-            resolved = ResolvedLevel.of(battle_map.levels[level], open_features)
+            resolved = ResolvedLevel.of(
+                document.levels[level], document.legend, open_features
+            )
             for y in range(battle_map.height):
                 for x in range(battle_map.width):
                     square = (x, y)
