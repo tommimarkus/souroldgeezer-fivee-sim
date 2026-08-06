@@ -93,8 +93,22 @@ removed — not by `remove`, not by `prune`, not by hand. `remove` does delete
 `git worktree list` never shows them: it reads `gitdir`. Expected under this
 devcontainer, not a failed closeout. Leave them, and do not try to unmount them.
 
-A worktree's own checkout is clean — no character devices anywhere inside it.
-Only its `.git/worktrees/<name>/` registration is mounted over.
+**A worktree's checkout is usually clean, but do not rely on it.** This section
+used to say the mounts were confined to `.git/worktrees/<name>/`. They are not:
+a worktree removed on 2026-08-06 had 11 character devices *inside its checkout*
+— `.mcp.json` and most of `.claude/` — so `git worktree remove --force` failed
+on the **checkout directory** rather than only on the registration, and left the
+whole tree behind.
+
+Same cause and same remedy: a bind-mounted file cannot be unlinked, so the
+directory holding it cannot be removed. Expect a leftover checkout at
+`.worktrees/<name>` after some closeouts, leave it, and do not try to unmount
+it or `rm -rf` it into a half-deleted husk. It is invisible to `git worktree
+list` and `git branch`, so it misleads no tooling — it is only disk.
+
+The mounts come and go with other sessions, which is why the old flat claim was
+true when written. **Verify closeout by `git worktree list` and `git branch`,
+never by whether the directory is gone.**
 
 ### Staging discipline
 
