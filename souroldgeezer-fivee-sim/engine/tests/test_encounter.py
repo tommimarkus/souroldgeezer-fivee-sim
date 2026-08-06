@@ -3883,6 +3883,45 @@ class TestInteract:
         with pytest.raises(EncounterError, match="the map has: door"):
             encounter.act(Action(kind=ActionKind.INTERACT, feature="portcullis"), rng)
 
+    def test_the_refusal_lists_fixtures_only_and_never_a_spawn_hint(self) -> None:
+        """A mistyped feature name may not be a way to read the map's spawns.
+
+        This refusal is player-visible: it goes back to whoever typed the wrong
+        name, and a map's spawn hints spell out which side arrives where. So the
+        list is ``self._fixtures`` — the features a fight can actually work —
+        and not the document's features, which is the only difference between
+        this message and a free reading of the ambush.
+
+        The hint below carries a ``team`` and no ``state``, which is what makes
+        it a hint rather than a fixture, and an id that gives the whole thing
+        away if it is ever printed.
+        """
+        rng = Random(3)
+        door = fixture(name="door", square=(1, 0))
+        ambush = MapFeatureRecord(
+            id="spawn-monsters-behind-the-altar",
+            kind="spawn",
+            at=(3, 0),
+            team="monsters",
+        )
+        encounter = Encounter(
+            [archer(), make_monster("Goblin Warrior", label="Goblin",
+                                    position=(20, 0))],
+            rng,
+            map_document=strip(5, features=(door, ambush)),
+        )
+        advance_to(encounter, "Sylvi", rng)
+
+        with pytest.raises(EncounterError, match="the map has: door$") as refusal:
+            encounter.act(Action(kind=ActionKind.INTERACT, feature="portcullis"), rng)
+        assert "spawn" not in str(refusal.value)
+        assert "altar" not in str(refusal.value)
+        # The vacuity guard: a hint the document never carried could not leak.
+        assert encounter.map_document is not None
+        assert "spawn-monsters-behind-the-altar" in {
+            one.id for one in encounter.map_document.levels[0].features
+        }
+
     def test_interacting_without_a_map_is_refused(self) -> None:
         rng = Random(1)
         encounter = Encounter([fighter(), make_monster("Wolf", position=5)], rng)
