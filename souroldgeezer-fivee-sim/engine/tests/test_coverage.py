@@ -27,9 +27,17 @@ def test_report_is_compact_totals_not_a_second_catalog() -> None:
     assert len(report.encode()) <= 16 * 1024
     assert "Goblin Warrior" not in report
     assert "Fireball" not in report
-    assert "catalog_search" in report
-    assert "catalog_get" in report
-    assert "catalog_table" in report
+    assert "`fivee rules.lookup`" in report
+    assert "`fivee catalog.search`" in report
+    assert "`fivee catalog.get`" in report
+    assert "`fivee catalog.table`" in report
+    assert "`fivee content.status`" in report
+    assert "(../skills/encounter-sim/SKILL.md)" in report
+    assert "lookup_rule" not in report
+    assert "catalog_search" not in report
+    assert "catalog_get" not in report
+    assert "catalog_table" not in report
+    assert "content_status" not in report
 
 
 def test_catalog_category_and_progress_totals_are_derived() -> None:

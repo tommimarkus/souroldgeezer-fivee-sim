@@ -47,4 +47,4 @@ Generated totals for the bundled SRD 5.2.1 structured catalog and the smaller ex
 
 ## Detailed lookup
 
-Use `catalog_search` for bounded discovery, `catalog_get` for one structured record, and `catalog_table` for a paged printed table. `lookup_rule` remains the exact-name view of loaded executable content; `content_status` reports the active packs and current catalog progress.
+Use `fivee rules.lookup`, `fivee catalog.search`, `fivee catalog.get`, `fivee catalog.table`, and `fivee content.status` for current lookup and loaded-content commands. See the [encounter-sim skill](../skills/encounter-sim/SKILL.md) for the detailed workflow.
