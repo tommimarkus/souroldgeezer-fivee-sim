@@ -34,7 +34,7 @@ from ..model.encounter import (
     EncounterMode,
 )
 from ..paths import source_id
-from . import content_ops, map_ops, primitives, sessions, specs, views
+from . import blobs, content_ops, map_ops, primitives, sessions, specs, views
 from . import encounter_journal as journal_service
 from . import replay as replay_service
 from .errors import NotFoundError, RequestError
@@ -305,6 +305,16 @@ def create(
         session.inline_map_payload = as_payload(resolved.document)
     state.sessions[encounter_id] = session
     captured_map = session.map_payload or session.inline_map_payload
+    # Published before the record that names them, and in that order for the
+    # obvious reason: a journal naming a blob nobody wrote is a fight that
+    # cannot recover, while a blob nobody names is a file, retained like every
+    # other. The failure directions are not symmetric, so neither is the order.
+    try:
+        content_ref = blobs.put(session.content_snapshot)
+        map_ref = blobs.put(captured_map) if captured_map is not None else None
+    except blobs.BlobError as error:
+        state.sessions.pop(encounter_id, None)
+        raise RequestError(f"cannot store {encounter_id!r}'s payloads: {error}") from error
     try:
         sessions.journal_append(
             state,
@@ -342,9 +352,20 @@ def create(
                 "mode": encounter.mode.value,
                 "movement_rule": encounter.movement_rule.value,
                 "content_generation": content.generation,
-                "content": session.content_snapshot,
+                # Named, not carried. Both used to ride here by value, and the
+                # content was the larger of the two by an order of magnitude
+                # *and* byte-identical in every journal on the machine — 244 KB
+                # of disk holding 11 KB of information once. A blob is
+                # addressed by its own digest, so the sharing needs no index
+                # and the reference needs no version: what this name resolves
+                # to cannot change. See ``service/blobs.py``.
+                "content_ref": content_ref,
                 "combatants": session.normalized_combatants,
-                "map": captured_map,
+                "map_ref": map_ref,
+                # Not part of the blob, and deliberately: ``map_kind`` and
+                # ``map_source`` are what ``adventures._creation_record`` reads
+                # to decide whether a chapter's ground carries into the next
+                # one, and neither is the document.
                 "map_kind": (
                     "loaded" if session.map_payload is not None
                     else "inline" if session.inline_map_payload is not None

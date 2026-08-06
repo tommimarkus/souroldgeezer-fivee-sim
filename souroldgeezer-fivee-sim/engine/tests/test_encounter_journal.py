@@ -18,7 +18,7 @@ from fivee_sim.content import BuiltinMode, ContentRegistry
 from fivee_sim.kernel.grid import MovementMode
 from fivee_sim.model.encounter import Action, ActionKind, ActionRecord
 from fivee_sim.paths import SOURCE_ID_ENV
-from fivee_sim.service import encounter_journal, specs
+from fivee_sim.service import blobs, encounter_journal, specs
 from fivee_sim.service import sessions as sessions_service
 from fivee_sim.service.errors import RequestError
 
@@ -1399,8 +1399,9 @@ def test_a_journal_from_before_this_format_is_refused_by_name(
     with pytest.raises(
         RequestError,
         match=(
-            r"cannot recover 'enc-9100''s fight: its journal is written in an "
-            r"unversioned format, and this build reads journal_version 2 only\. "
+            rf"cannot recover 'enc-9100''s fight: its journal is written in an "
+            rf"unversioned format, and this build reads journal_version "
+            rf"{sessions_service.JOURNAL_VERSION} only\. "
             r"The journal is intact and hash-valid; do not edit it .*"
             r"There is no reader for the older format and no migration\. "
             r"Run the build that wrote it \(recorded: engine .*running: engine .*\), "
@@ -1445,7 +1446,11 @@ def test_a_journal_this_build_writes_declares_the_format_it_is_in(
 
     encounter_id = mapless_fight(seed=263)
 
-    assert records(journal_path(root, encounter_id))[0]["journal_version"] == 2
+    stamped = records(journal_path(root, encounter_id))[0]["journal_version"]
+    assert stamped == sessions_service.JOURNAL_VERSION
+    # The vacuity guard: a build that stopped stamping the record would satisfy
+    # the line above with two ``None``s and say nothing at all.
+    assert isinstance(stamped, int)
 
 
 # --- what a caller who asked for idempotency keeps --------------------------
@@ -1904,3 +1909,291 @@ def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
         )
         # Whatever it kept, it says the state moved.
         assert len(str(entry["state_sha256"])) == 64
+
+
+# --- what the creation record names rather than carries ---------------------
+#: What one creation record is allowed to weigh, in bytes, for the six-combatant
+#: roster :func:`_skirmish` builds.
+#:
+#: Measured at **22,223 bytes** while the record carried its content snapshot
+#: inline, of which 14,589 — 66% — was that one payload, byte-identical in every
+#: journal on the machine. It names a blob instead, and the same record measures
+#: **7,708**. The ceiling is that with about 15% of headroom.
+#:
+#: It is a *creation record* ceiling rather than a share of
+#: :data:`SKIRMISH_JOURNAL_CEILING` above for one reason: there the creation
+#: record is one line among eighty-one, so a payload creeping back into it would
+#: be absorbed into a total the acts dominate. Here it fails at full size.
+#:
+#: What is left is worth knowing before anyone tries to move this number,
+#: because it is no longer the content: 7,196 of the 7,708 are ``combatants``,
+#: the normalized creation input recovery replays the fight from. That is an
+#: input rather than a derivation, so it stays — and it means this ceiling now
+#: tracks roster size almost exactly, which is why the fixture is fixed at six.
+CREATION_RECORD_CEILING = 8_900
+
+
+def _creation_bytes(root: Path, encounter_id: str) -> int:
+    """How many bytes of the journal file this fight's creation record is."""
+    first, _, _ = journal_path(root, encounter_id).read_bytes().partition(b"\n")
+    return len(first) + 1
+
+
+def test_the_creation_record_names_its_content_rather_than_carrying_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The captured content moves to a blob, and the record keeps the name.
+
+    Nothing downstream changes shape: ``recover_session`` resolves the reference
+    and repopulates ``Session.content_snapshot`` with exactly the payload that
+    used to ride here, so everything reading the *session* — a replay bundle
+    above all — still sees the content by value.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = mapless_fight(seed=271)
+
+    created = records(journal_path(root, encounter_id))[0]
+    assert "content" not in created, "the payload is a blob's job now"
+    reference = created["content_ref"]
+    assert isinstance(reference, str)
+    assert blobs.get(reference) == api.STATE.sessions[encounter_id].content_snapshot
+
+
+def test_one_content_blob_serves_every_fight_that_captured_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The saving is sharing, not compression, so it is checked as sharing.
+
+    Two fights under the same content compute the same name, so the second
+    writes nothing. A store that merely moved the payload out of the journal
+    into a file per fight would pass every other case in this section and save
+    nothing at all — the measured finding this change answers is that the
+    snapshot was byte-identical in all twenty-two journals on the machine.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    first = mapless_fight(seed=273)
+    second = mapless_fight(seed=277)
+
+    references = {
+        str(records(journal_path(root, encounter_id))[0]["content_ref"])
+        for encounter_id in (first, second)
+    }
+    assert len(references) == 1, "two fights, two names, and so no sharing"
+    assert [path.name for path in sorted(blobs.blobs_root().iterdir())] == [
+        f"{references.pop()}.json"
+    ]
+
+
+def test_the_creation_record_names_its_map_rather_than_carrying_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other by-value capture, and the same treatment.
+
+    ``map_kind`` and ``map_source`` stay in the record and are deliberately not
+    part of the blob: they are what ``adventures._creation_record`` reads to
+    decide whether a chapter's ground can be carried into the next one, and
+    neither is the document.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY],
+            seed=281,
+            mode="exploration",
+            map={
+                "name": "mill floor",
+                "width": 40,
+                "height": 1,
+                "default_terrain": "normal",
+            },
+        )["encounter_id"]
+    )
+
+    created = records(journal_path(root, encounter_id))[0]
+    assert "map" not in created, "the document is a blob's job now"
+    assert created["map_kind"] == "inline"
+    reference = created["map_ref"]
+    assert isinstance(reference, str)
+    assert blobs.get(reference)["name"] == "mill floor"
+
+
+def test_a_fight_on_no_map_names_no_map_blob(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Absent ground is a null reference, not a blob holding ``null``.
+
+    Worth its own case because the two are indistinguishable to every reader
+    downstream and only one of them writes a file: a mapless fight that still
+    published a blob would put one empty payload in the shared store and then
+    name it from every mapless journal ever written.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = mapless_fight(seed=283)
+
+    created = records(journal_path(root, encounter_id))[0]
+    assert created["map_ref"] is None
+    assert created["map_kind"] == "none"
+    stored = [path.name for path in blobs.blobs_root().iterdir()]
+    assert stored == [f"{created['content_ref']}.json"], "the content blob and nothing else"
+
+
+def test_a_creation_record_stays_under_the_size_one_is_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The measurement this change was made for, pinned rather than described."""
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = _skirmish(acts=0)
+
+    written = _creation_bytes(root, encounter_id)
+    assert written < CREATION_RECORD_CEILING, (
+        f"the fixed six-combatant creation record wrote {written} bytes, over the "
+        f"{CREATION_RECORD_CEILING} this format is allowed; see "
+        f"CREATION_RECORD_CEILING for what the number means and what is left in it"
+    )
+
+
+def test_a_fight_recovers_with_its_content_resolved_from_the_blob_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The round trip under the clean break: create, act, restart, resume.
+
+    The content the fight finishes under is the content it started under, and
+    the journal no longer holds a copy of it — so a recovery that could not
+    reach the blob store would rebuild the fight under whatever the process
+    happened to have loaded, which is the drift this whole arrangement exists
+    to make impossible.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=287)
+    advance_encounter_to(encounter_id, "Thora")
+    api.encounter_act(encounter_id, "attack", target="Goblin", attack="Longsword")
+    before = api.encounter_state(encounter_id)
+    snapshot = deepcopy(api.STATE.sessions[encounter_id].content_snapshot)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == before
+    assert api.STATE.sessions[encounter_id].content_snapshot == snapshot
+
+
+def test_a_recovered_fight_still_exports_its_map_and_content_by_value(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bundle leaves the machine, so a reference in one would be a broken file.
+
+    The two are different kinds of artifact and this is where that bites. A
+    journal names a blob because the blob is right there beside it; a replay
+    bundle is handed to somebody else, where nothing resolves a bare digest. So
+    a fight recovered *from* references must still export payloads — which it
+    does because recovery repopulates the session, and the writers read the
+    session rather than the journal. This is the case that would catch a writer
+    reaching past it.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY],
+            seed=291,
+            mode="exploration",
+            map={
+                "name": "mill floor",
+                "width": 40,
+                "height": 1,
+                "default_terrain": "normal",
+            },
+        )["encounter_id"]
+    )
+    api.STATE.sessions.clear()
+    api.encounter_resume(encounter_id)
+
+    bundle = api.replay_export(encounter_id)["bundle"]
+
+    assert bundle["map"]["name"] == "mill floor"
+    assert bundle["content"]["packs"], "a bundle with no content ships nothing to load"
+
+
+def test_a_fight_whose_content_blob_is_gone_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A named payload can be missing where an inline one could not be.
+
+    That is what the trade costs, and it is paid here as a sentence rather than
+    as a stack trace: the journals and the blobs are sibling roots that move
+    independently, so a journal carried somewhere its blobs were not says which
+    encounter and says what is missing.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=293)
+    reference = str(records(journal_path(root, encounter_id))[0]["content_ref"])
+    (blobs.blobs_root() / f"{reference}.json").unlink()
+    api.STATE.sessions.clear()
+
+    with pytest.raises(
+        RequestError,
+        match=f"cannot recover {encounter_id!r}'s content: no blob {reference!r}",
+    ):
+        api.encounter_resume(encounter_id)
+
+
+def _restamped(root: Path, encounter_id: str, version: int) -> str:
+    """This fight's journal again, stamped with a format version it is not in.
+
+    Re-chained rather than edited in place, for :func:`_stripped_of_its_version`'s
+    reason: a hand-edited record fails its own hash and would be refused as
+    corrupt long before the format check saw it.
+    """
+    saved = deepcopy(records(journal_path(root, encounter_id)))
+    recorded = "enc-9101"
+    for entry in saved:
+        if entry["kind"] == "creation":
+            entry["encounter_id"] = recorded
+            entry["journal_version"] = version
+    rechained(recorded, saved)
+    return recorded
+
+
+def test_the_format_before_this_one_is_refused_by_name_like_every_other(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The clean break exercised at the boundary it was written for.
+
+    ``_stripped_of_its_version`` above covers a journal from before the field
+    existed. This is the sharper case and the reason the version moved: a
+    version-2 record carries its content and its map as payloads under keys this
+    reader no longer looks for. Without the check it would not fail at the
+    version — it would fail hunting a ``content_ref`` that was never written,
+    well past the point where the message could say anything a caller can act
+    on.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    previous = sessions_service.JOURNAL_VERSION - 1
+    encounter_id = mapless_fight(seed=297)
+    recorded = _restamped(root, encounter_id, previous)
+    api.STATE.sessions.clear()
+
+    with pytest.raises(
+        RequestError,
+        match=(
+            rf"cannot recover 'enc-9101''s fight: its journal is written in "
+            rf"journal_version {previous}, and this build reads journal_version "
+            rf"{sessions_service.JOURNAL_VERSION} only\. "
+            rf"The journal is intact and hash-valid; do not edit it .*"
+            rf"There is no reader for the older format and no migration\. "
+        ),
+    ):
+        api.encounter_resume(recorded)

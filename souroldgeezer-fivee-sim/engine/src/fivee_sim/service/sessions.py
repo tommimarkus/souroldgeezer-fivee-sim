@@ -46,9 +46,9 @@ from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
 from ..model.encounter import Encounter, EncounterError, EncounterMode
 from ..paths import source_id
+from . import blobs, specs
 from . import encounter_journal as journal_service
 from . import maps as map_service
-from . import specs
 from .common import sha256_of
 from .errors import NotFoundError, RequestError
 from .replay import canonical_sha256
@@ -84,11 +84,14 @@ __all__ = [
 #: Which journal format this build writes and reads. Stamped into the creation
 #: record, checked by :func:`recover_session` before anything else in the file
 #: is believed, and deliberately not a range: version 1 stored the state each
-#: action produced and this build stores the hash, so a v1 journal's result
-#: records have nothing a v2 reader wants. There is no reader for the older
-#: format and no migration operation — a clean break, said in full by
-#: :func:`_unsupported_format` rather than left as a missing key.
-JOURNAL_VERSION = 2
+#: action produced and version 2 stores the hash, so a v1 journal's result
+#: records have nothing a later reader wants; version 3 replaced the creation
+#: record's embedded ``content`` and ``map`` payloads with the blob references
+#: ``content_ref`` and ``map_ref``, so a v2 creation record has neither key this
+#: reader looks for. There is no reader for any older format and no migration
+#: operation — a clean break, said in full by :func:`_unsupported_format` rather
+#: than left as a missing key.
+JOURNAL_VERSION = 3
 
 
 @dataclass(slots=True)
@@ -872,9 +875,20 @@ def recover_session(
     # goes on listing it and the refusal above stays actionable.
     if created.get("journal_version") != JOURNAL_VERSION:
         raise RequestError(_unsupported_format(encounter_id, created))
-    captured_content = created.get("content")
-    if not isinstance(captured_content, Mapping):
+    # Named rather than carried since version 3. The reference resolves to the
+    # payload that used to sit here, and everything below this line — including
+    # the ``Session`` a replay bundle is written from — sees exactly what it saw
+    # before. What is new is that the payload can be *absent*, which an inline
+    # one could not be: the blobs are a sibling root and can be left behind.
+    # ``BlobError`` covers both a missing file and one whose bytes no longer
+    # hash to the name it was fetched under.
+    content_ref = created.get("content_ref")
+    if not isinstance(content_ref, str):
         raise RequestError(f"encounter journal {encounter_id!r} has no content snapshot")
+    try:
+        captured_content: Mapping[str, Any] = blobs.get(content_ref)
+    except blobs.BlobError as error:
+        raise RequestError(f"cannot recover {encounter_id!r}'s content: {error}") from error
     try:
         registry = registry_from_snapshot(captured_content)
     except ContentError as error:
@@ -882,7 +896,13 @@ def recover_session(
     normalized = created.get("combatants")
     if not isinstance(normalized, list):
         raise RequestError(f"encounter journal {encounter_id!r} has no combatants")
-    captured_map = created.get("map")
+    map_ref = created.get("map_ref")
+    captured_map: Mapping[str, Any] | None = None
+    if isinstance(map_ref, str):
+        try:
+            captured_map = blobs.get(map_ref)
+        except blobs.BlobError as error:
+            raise RequestError(f"cannot recover {encounter_id!r}'s map: {error}") from error
     map_document: MapDocument | None = None
     if isinstance(captured_map, Mapping):
         try:
