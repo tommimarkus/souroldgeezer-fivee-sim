@@ -1293,6 +1293,8 @@ class Encounter:
             effect = replace(effect, move_cost_multiplier=1)
         rise = self._elevation_at(level, step_to) - self._elevation_at(level, origin)
         if movement_mode is MovementMode.CLIMB:
+            # ruling: declared_climb_zeroes_the_rise — exempts the slope band too,
+            # not only the climb surcharge the SRD actually waives.
             rise = 0
         return step_cost_feet(
             effect,
@@ -1443,6 +1445,7 @@ class Encounter:
         standing at the same square one level up. That is the whole of what a
         level does to sight; within one, nothing changed.
         """
+        # ruling: cross_storey_sight_needs_a_link
         if self.battle_map is None:
             return CoverGrade.NONE
         target = self.creatures[target_name]
@@ -2420,6 +2423,7 @@ class Encounter:
         oversight: the property restricts the weapon, not the wielder, so a
         crossbow-then-blade turn is exactly what the rule allows.
         """
+        # ruling: loading_capped_per_turn
         target = self._resolve_target(action.target)
         self._require_targetable(target)
         if self._turn.attacks_left <= 0:
