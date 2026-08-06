@@ -103,6 +103,24 @@ UNDEAD_FORTITUDE_BASE_DC = 5
 MAX_LISTED_COMBATANTS = 12
 
 
+class EncounterMode(StrEnum):
+    """What kind of chapter this encounter is, fixed for its whole life.
+
+    A fight has initiative, rounds, and an end condition it reaches on its own.
+    An **interlude** — walking the mill, talking to Kettle — has none of the
+    three: the caller names who acts, there is nothing to advance, and it ends
+    when it is finalized rather than when one side is left standing.
+
+    Declared here, once, because the layers above validate against it rather
+    than restating it: an enum on a route and a graded field in a replay bundle
+    are both this set, and two declarations of a closed set is the defect this
+    corner of the tree produces over and over.
+    """
+
+    COMBAT = "combat"
+    EXPLORATION = "exploration"
+
+
 class ActionKind(StrEnum):
     ATTACK = "attack"
     CAST = "cast"
@@ -855,6 +873,7 @@ class Encounter:
         movement_rule: DiagonalRule = DiagonalRule.FIVE_FIVE_FIVE,
         battle_map: BattleMap | None = None,
         terrain_effects: TerrainTable | None = None,
+        mode: EncounterMode = EncounterMode.COMBAT,
     ) -> None:
         if len(combatants) < 2:
             raise EncounterError("an encounter needs at least two combatants")
@@ -864,6 +883,12 @@ class Encounter:
             raise EncounterError(
                 "combatant names must be unique; duplicated: " + ", ".join(sorted(duplicates))
             )
+        #: Fixed at construction and never reassigned: a fight is finalized and
+        #: the next chapter linked rather than turned into an interlude in
+        #: place, which is what keeps one chapter meaning one thing at both its
+        #: ends. Normalised through the enum so a caller holding the wire value
+        #: — the string a route validated — is holding a member.
+        self.mode: EncounterMode = EncounterMode(mode)
         self.creatures: dict[str, Creature] = {c.name: c for c in combatants}
         for creature in combatants:
             creature.arrived = creature.arrival_round <= 1
@@ -910,48 +935,66 @@ class Encounter:
         self._reaction_available: dict[str, bool] = {name: True for name in names}
         self._turn = TurnState()
 
+        # Initiative belongs to a fight and to nothing else. An interlude that
+        # rolled one anyway would draw from the seed for a number nobody reads,
+        # and that divergence surfaces much later as a mystery recalibration —
+        # so the roll is not made, rather than made and discarded.
         self.initiative: dict[str, int] = {}
-        for creature in combatants:
-            roll = roll_d20(
-                rng,
-                compute_initiative_advantage(
-                    conditions=creature.conditions,
-                    condition_effects=self.condition_effects,
+        #: Everybody, in a settled order. It is what the brief walks and the
+        #: order ``state`` reports the roster in, so an interlude needs one as
+        #: much as a fight does; with no initiative to sort by, it sorts by name.
+        self.order: list[str]
+        if self.mode is EncounterMode.EXPLORATION:
+            self.order = sorted(names)
+        else:
+            for creature in combatants:
+                roll = roll_d20(
+                    rng,
+                    compute_initiative_advantage(
+                        conditions=creature.conditions,
+                        condition_effects=self.condition_effects,
+                    ),
+                )
+                # A printed Initiative bonus, when the stat block carries one,
+                # replaces the Dexterity modifier outright — SRD 5.2.1,
+                # *Initiative*: the printed line is the authority. ``None`` means
+                # no such line, and the modifier is used exactly as before.
+                modifier = (
+                    creature.initiative_bonus
+                    if creature.initiative_bonus is not None
+                    else creature.ability_mod(Ability.DEXTERITY)
+                )
+                self.initiative[creature.name] = roll.natural + modifier
+            self.order = sorted(
+                names,
+                key=lambda name: (
+                    -self.initiative[name],
+                    # The SRD tie-break in its own right, not a stand-in for the
+                    # bonus above: it reads the Dexterity modifier even for a
+                    # creature whose total came from a printed Initiative bonus.
+                    -self.creatures[name].ability_mod(Ability.DEXTERITY),
+                    name,
                 ),
             )
-            # A printed Initiative bonus, when the stat block carries one,
-            # replaces the Dexterity modifier outright — SRD 5.2.1,
-            # *Initiative*: the printed line is the authority. ``None`` means
-            # no such line, and the modifier is used exactly as before.
-            modifier = (
-                creature.initiative_bonus
-                if creature.initiative_bonus is not None
-                else creature.ability_mod(Ability.DEXTERITY)
-            )
-            self.initiative[creature.name] = roll.natural + modifier
-        self.order: list[str] = sorted(
-            names,
-            key=lambda name: (
-                -self.initiative[name],
-                # The SRD tie-break in its own right, not a stand-in for the
-                # bonus above: it reads the Dexterity modifier even for a
-                # creature whose total came from a printed Initiative bonus.
-                -self.creatures[name].ability_mod(Ability.DEXTERITY),
-                name,
-            ),
-        )
         self.turn_index = 0
-        # The fight opens the way every later turn does: round 1 and the first
-        # turn_start are announced before ``_begin_turn`` rolls anything, so a
-        # combatant dying at initiative rolls its death save after its
-        # turn_start, exactly as on any other turn. Emitting consumes no
-        # randomness, and ``order`` and ``turn_index`` exist by now, so the
-        # stamps are correct and the RNG stream is unchanged. These events
-        # precede the first ActionRecord: they belong to construction, and a
-        # replay reproduces them by rebuilding from the same seed.
-        self._emit("round", detail=f"round {self.round} begins", round=self.round)
-        self._emit("turn_start", self.current_name)
-        self._begin_turn(rng)
+        if self.mode is EncounterMode.COMBAT:
+            # The fight opens the way every later turn does: round 1 and the
+            # first turn_start are announced before ``_begin_turn`` rolls
+            # anything, so a combatant dying at initiative rolls its death save
+            # after its turn_start, exactly as on any other turn. Emitting
+            # consumes no randomness, and ``order`` and ``turn_index`` exist by
+            # now, so the stamps are correct and the RNG stream is unchanged.
+            # These events precede the first ActionRecord: they belong to
+            # construction, and a replay reproduces them by rebuilding from the
+            # same seed.
+            #
+            # An interlude opens none of it. There is no round to announce and
+            # nobody holds a turn until an act names them, so a ``turn_start``
+            # here would be furniture for a creature who may never act at all;
+            # :meth:`_begin_beat` is where an interlude's budget comes from.
+            self._emit("round", detail=f"round {self.round} begins", round=self.round)
+            self._emit("turn_start", self.current_name)
+            self._begin_turn(rng)
 
     # --- the battle map ---------------------------------------------------
     def _adopt_map(self, battle_map: BattleMap, combatants: Sequence[Creature]) -> None:
@@ -1489,10 +1532,22 @@ class Encounter:
 
     @property
     def over(self) -> bool:
+        """Whether the fight has reached its own end.
+
+        An interlude never does. "One side left standing" is a fight's ending
+        and describes nothing about a party crossing a room, so an interlude
+        ends where the chapter does — at ``encounter.finalize`` — and not a beat
+        before. Without this the container would be over on arrival, since a
+        party alone is one living team.
+        """
+        if self.mode is EncounterMode.EXPLORATION:
+            return False
         return len(self.living_teams()) <= 1
 
     @property
     def winner(self) -> str | None:
+        if self.mode is EncounterMode.EXPLORATION:
+            return None
         alive = self.living_teams()
         return next(iter(alive)) if len(alive) == 1 else None
 
@@ -1756,6 +1811,10 @@ class Encounter:
 
     def state(self) -> dict[str, Any]:
         return {
+            # Which kind of chapter this is, and so which of the keys beside it
+            # mean anything: an interlude's ``round`` never turns over and its
+            # ``over`` never becomes true on its own.
+            "mode": self.mode.value,
             "round": self.round,
             "turn": self.current_name,
             "movement_rule": self.movement_rule.value,
@@ -1924,7 +1983,11 @@ class Encounter:
             # existing fight's payload byte-identical — and what the replay
             # bundle's state slots inherit, since they are this dictionary.
             **({"facing": creature.facing} if creature.facing is not None else {}),
-            "initiative": self.initiative[creature.name],
+            # Null in an interlude, where nothing was rolled — reported rather
+            # than omitted, because the key belongs to the brief's creature
+            # classification and a conditional key would leave the two halves
+            # arguing about a field that is sometimes there.
+            "initiative": self.initiative.get(creature.name),
             "conditions": sorted(creature.conditions),
             "concentrating_on": creature.concentrating_on,
             "dodging": self._dodging[creature.name],
@@ -1983,6 +2046,18 @@ class Encounter:
         # the rules forfeits its movement for having been down when the turn
         # began. Deriving it first froze ``movement_left`` at 0 for the whole
         # turn while ``attacks_left`` was granted regardless.
+        self._turn = self._fresh_turn_state(creature)
+        # A death save can kill, and :meth:`_death_save` marks the creature dead
+        # without going through ``take_damage``, so nothing else would notice.
+        self._reconcile_concentration()
+
+    def _fresh_turn_state(self, creature: Creature) -> TurnState:
+        """The budget a creature opens a turn — or an interlude's beat — with.
+
+        One writer for both, so that what a beat restores cannot drift from what
+        a turn grants: an interlude that quietly stopped honouring an attachment
+        or a lost consciousness would be a second, weaker copy of this rule.
+        """
         maximum_speed = max(
             creature.speed,
             creature.climb_speed,
@@ -1991,14 +2066,50 @@ class Encounter:
         )
         if any(link.source == creature.name for link in self._attachments):
             maximum_speed = 0
-        self._turn = TurnState(
+        return TurnState(
             movement_left=0 if not creature.conscious else maximum_speed,
             action_used=False,
             attacks_left=creature.attacks_per_action,
         )
-        # A death save can kill, and :meth:`_death_save` marks the creature dead
-        # without going through ``take_damage``, so nothing else would notice.
-        self._reconcile_concentration()
+
+    def _named_actor(self, name: str) -> Creature:
+        """The creature an interlude's caller named, refused by name if unknown.
+
+        Worded exactly like the brief's seat refusal and, like it, deliberately
+        naming no one else: a refusal that answered "who is in this chapter?" to
+        anybody who guessed a wrong name would disclose the roster the
+        projection works hardest to hide.
+        """
+        actor = self.creatures.get(name)
+        if actor is None:
+            raise EncounterError(f"no combatant named {name!r} in this encounter")
+        return actor
+
+    def _begin_beat(self, creature: Creature) -> None:
+        """Open a fresh beat in an interlude for the creature that was named.
+
+        A beat is a turn with the initiative taken out: the named creature holds
+        the floor, its movement is back to its speed and its action and bonus
+        action are unspent. What it is *not* is a turn boundary — no death save
+        is rolled, no timed effect expires, and no round turns over, because an
+        interlude has none of those to turn.
+
+        Setting ``turn_index`` rather than threading the actor through is what
+        keeps every other mechanism working unchanged: ``self.current``, the
+        ``turn`` stamp on every event, and the whole action-resolution path
+        below read the creature holding the floor, and this is what holding the
+        floor means.
+
+        Called only once every refusal that costs nothing is behind it, so a
+        named actor who turns out to be unable to act neither takes the floor
+        from whoever was standing on it nor collects a budget for it.
+        """
+        name = creature.name
+        self.turn_index = self.order.index(name)
+        self._dodging[name] = False
+        self._disengaged[name] = False
+        self._reaction_available[name] = True
+        self._turn = self._fresh_turn_state(creature)
 
     def _attach(
         self, source: Creature, target: Creature, option: AttackOption
@@ -2137,7 +2248,17 @@ class Encounter:
         its own death save, for a player who would rather roll their own. At
         most one death save happens per advance — it is taken at the start of a
         dying creature's turn — so one reported face is never ambiguous.
+
+        An interlude refuses it outright. There is no round to wrap and no death
+        save to roll, and the two things this would still do — end a turn nobody
+        holds and move an order nothing sorted — would be noise in the journal a
+        replay then has to reproduce.
         """
+        if self.mode is EncounterMode.EXPLORATION:
+            raise EncounterError(
+                "an interlude has no rounds to advance; name the actor of the "
+                "next beat instead"
+            )
         before = len(self.log)
         in_round, by = self.round, self.current_name
         self._emit("turn_end", self.current_name)
@@ -2174,20 +2295,42 @@ class Encounter:
         return self.log[before:]
 
     # --- acting -----------------------------------------------------------
-    def act(self, action: Action, rng: Random) -> list[Event]:
+    def act(
+        self, action: Action, rng: Random, *, actor: str | None = None
+    ) -> list[Event]:
+        """Resolve one action for whoever is acting.
+
+        ``actor`` names the creature in an **interlude**, where nothing decided
+        an order, and each act opens that creature a fresh beat. A fight refuses
+        it: initiative has already answered the question, and letting a caller
+        answer it again would be a second, quieter turn order sitting beside the
+        one the dice rolled.
+        """
+        if self.mode is EncounterMode.EXPLORATION:
+            if actor is None:
+                raise EncounterError(
+                    "an interlude has no initiative, so an act must name its actor"
+                )
+            acting = self._named_actor(actor)
+        else:
+            if actor is not None:
+                raise EncounterError(
+                    f"initiative decides who acts, so an act may not name {actor!r}; "
+                    f"it is {self.current_name}'s turn"
+                )
+            acting = self.current
         before = len(self.log)
-        actor = self.current
         if self.over:
             raise EncounterError("the encounter is over")
-        if not actor.arrived:
+        if not acting.arrived:
             raise EncounterError(
-                f"{actor.name} does not arrive until round {actor.arrival_round}"
+                f"{acting.name} does not arrive until round {acting.arrival_round}"
             )
-        if not actor.conscious:
-            raise EncounterError(f"{actor.name} is not conscious and cannot act")
-        if not actor.active:
-            held = ", ".join(sorted(actor.conditions))
-            raise EncounterError(f"{actor.name} is incapacitated ({held}) and cannot act")
+        if not acting.conscious:
+            raise EncounterError(f"{acting.name} is not conscious and cannot act")
+        if not acting.active:
+            held = ", ".join(sorted(acting.conditions))
+            raise EncounterError(f"{acting.name} is incapacitated ({held}) and cannot act")
         if action.natural and action.kind not in _KINDS_THAT_MAY_ROLL:
             # Refused rather than quietly dropped. Somebody rolled a die and
             # said what it read; an engine that ignored it would be telling them
@@ -2195,49 +2338,53 @@ class Encounter:
             raise EncounterError(
                 f"a {action.kind.value} rolls no d20, so there is no face to report"
             )
+        if self.mode is EncounterMode.EXPLORATION:
+            # Last, so that everything above refuses without spending anything:
+            # this is the line that takes the floor and restores the budget.
+            self._begin_beat(acting)
 
         match action.kind:
             case ActionKind.ATTACK:
-                self._do_attack(actor, action, rng)
+                self._do_attack(acting, action, rng)
             case ActionKind.CAST:
-                self._do_cast(actor, action, rng)
+                self._do_cast(acting, action, rng)
             case ActionKind.MOVE:
-                self._do_move(actor, action, rng)
+                self._do_move(acting, action, rng)
             case ActionKind.DASH:
-                self._spend_action_budget(actor, action, "dash")
+                self._spend_action_budget(acting, action, "dash")
                 dash_mode = action.movement_mode or MovementMode.WALK
-                dash_speed = self._movement_speed(actor, dash_mode)
+                dash_speed = self._movement_speed(acting, dash_mode)
                 self._turn.movement_left += dash_speed
-                self._emit("dash", actor.name,
+                self._emit("dash", acting.name,
                            detail=f"movement now {self._turn.movement_left} ft",
                            movement_left=self._turn.movement_left,
                            movement_mode=dash_mode.value,
                            as_bonus_action=action.as_bonus_action)
             case ActionKind.DISENGAGE:
-                self._spend_action_budget(actor, action, "disengage")
-                self._disengaged[actor.name] = True
+                self._spend_action_budget(acting, action, "disengage")
+                self._disengaged[acting.name] = True
                 self._emit(
-                    "disengage", actor.name,
+                    "disengage", acting.name,
                     detail="no opportunity attacks this turn",
                     as_bonus_action=action.as_bonus_action,
                 )
             case ActionKind.USE_ITEM:
-                self._do_use_item(actor, action, rng)
+                self._do_use_item(acting, action, rng)
             case ActionKind.INTERACT:
-                self._do_interact(actor, action, rng)
+                self._do_interact(acting, action, rng)
             case ActionKind.STAND:
-                self._do_stand(actor)
+                self._do_stand(acting)
             case ActionKind.DODGE:
-                self._require_action(actor)
+                self._require_action(acting)
                 self._turn.action_used = True
-                self._dodging[actor.name] = True
-                self._emit("dodge", actor.name,
+                self._dodging[acting.name] = True
+                self._emit("dodge", acting.name,
                            detail="attacks against this creature have disadvantage")
             case ActionKind.SURRENDER:
-                actor.surrendered = True
+                acting.surrendered = True
                 self._emit(
-                    "surrender", actor.name,
-                    detail=f"{actor.name} surrenders and leaves the fight",
+                    "surrender", acting.name,
+                    detail=f"{acting.name} surrenders and leaves the fight",
                 )
         # The fourth route: an action can land an incapacitating condition on a
         # creature that is concentrating, and ``Creature.add_condition`` clears the
@@ -2253,9 +2400,9 @@ class Encounter:
         # creature nobody was tracking: naming a facing on the call *is* the act
         # of tracking it, which is the one way an untracked creature gains one.
         if action.facing is not None:
-            actor.facing = action.facing
+            acting.facing = action.facing
         self.actions.append(ActionRecord(
-            index=len(self.actions), round=self.round, actor=actor.name, action=action,
+            index=len(self.actions), round=self.round, actor=acting.name, action=action,
             first_event=before, event_count=len(self.log) - before,
         ))
         return self.log[before:]

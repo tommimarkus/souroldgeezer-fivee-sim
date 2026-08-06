@@ -49,6 +49,7 @@ from fivee_sim.model.encounter import (
     ActionKind,
     Encounter,
     EncounterError,
+    EncounterMode,
     Event,
 )
 
@@ -5848,3 +5849,244 @@ class TestHealingInAFight:
 
         assert thora.hp == 4
         assert ilma.spell_slots[1] == 2
+
+
+class TestExplorationMode:
+    """An interlude: a chapter with no initiative, no rounds and no end condition.
+
+    This is the container an adventure records its non-combat beats in, and it is
+    the fight's own stepper with the fight taken out rather than a second one. So
+    what a move costs, what a wall refuses and what a condition forbids are the
+    same facts here as anywhere else — the cases below pin that as hard as they
+    pin what changed.
+    """
+
+    @staticmethod
+    def _party() -> list[Creature]:
+        """One team, two members. A fight would already be over.
+
+        Thora walks; Kettle stands well clear of her route so that nothing below
+        is measuring a path around an ally rather than the thing it names.
+        """
+        return [fighter(), fighter("Kettle", position=(45, 0))]
+
+    def test_a_one_team_interlude_accepts_a_named_move_and_is_never_over(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            battle_map=strip(10),
+        )
+
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Thora"
+        )
+
+        move = next(event for event in events if event.kind == "move")
+        assert move.data["cost"] == 20
+        assert move.data["squares"] == [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]
+        state = encounter.state()
+        assert state["over"] is False
+        assert state["winner"] is None
+
+    def test_the_same_one_team_encounter_in_combat_refuses_the_move_as_over(self) -> None:
+        """The reason an interlude needed a mode at all."""
+        rng = Random(1)
+        encounter = Encounter(self._party(), rng, battle_map=strip(10))
+
+        assert encounter.over is True
+        with pytest.raises(EncounterError, match="the encounter is over"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
+
+    def test_a_fight_is_the_mode_nobody_had_to_ask_for(self) -> None:
+        assert Encounter([fighter(), make_monster("Wolf")], Random(1)).mode is (
+            EncounterMode.COMBAT
+        )
+
+    def test_the_state_reports_which_kind_of_chapter_this_is(self) -> None:
+        fight = Encounter([fighter(), make_monster("Wolf")], Random(1))
+        interlude = Encounter(
+            self._party(), Random(1), mode=EncounterMode.EXPLORATION
+        )
+
+        assert fight.state()["mode"] == EncounterMode.COMBAT.value
+        assert interlude.state()["mode"] == EncounterMode.EXPLORATION.value
+
+    def test_an_interlude_rolls_no_initiative_and_draws_no_dice_to_start(self) -> None:
+        """A seeded roll nobody reads is a divergence waiting to be found.
+
+        The combat half of the case is what stops this passing vacuously: if
+        construction ever stopped rolling initiative at all, only that assertion
+        would notice.
+        """
+        rng = Random(1)
+        undrawn = rng.getstate()
+
+        interlude = Encounter(self._party(), rng, mode=EncounterMode.EXPLORATION)
+
+        assert interlude.initiative == {}
+        assert rng.getstate() == undrawn
+
+        fought = Random(1)
+        Encounter([fighter(), make_monster("Wolf")], fought)
+        assert fought.getstate() != undrawn
+
+    def test_an_interlude_still_lists_everybody_in_a_settled_order(self) -> None:
+        """``order`` is what the brief walks, so it cannot simply be empty."""
+        interlude = Encounter(
+            [fighter("Kettle"), fighter("Thora"), fighter("Ambrose")],
+            Random(1),
+            mode=EncounterMode.EXPLORATION,
+        )
+
+        assert interlude.order == ["Ambrose", "Kettle", "Thora"]
+
+    def test_an_act_in_an_interlude_must_name_its_actor(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+        )
+
+        with pytest.raises(EncounterError, match="no initiative.*must name its actor"):
+            encounter.act(Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng)
+
+    def test_a_fight_refuses_an_act_that_names_its_actor(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf", position=(100, 0))], rng
+        )
+        advance_to(encounter, "Thora", rng)
+
+        with pytest.raises(EncounterError, match="initiative decides who acts"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=20), rng, actor="Thora"
+            )
+
+    def test_an_interlude_refuses_an_actor_it_has_no_combatant_for(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+        )
+
+        with pytest.raises(EncounterError, match="no combatant named 'Nobody'"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Nobody"
+            )
+
+    def test_each_named_act_opens_a_fresh_beat_for_that_actor(self) -> None:
+        """Movement back to full, action and bonus action unspent.
+
+        The third act is the assertion that matters: walking the whole 30 feet
+        back is only affordable if the beat restored the budget the first act
+        spent, so a beat that failed to open would refuse it outright.
+        """
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+        )
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(30, 0)), rng, actor="Thora"
+        )
+        assert encounter.state()["turn_state"]["movement_left"] == 0
+
+        encounter.act(Action(kind=ActionKind.DODGE), rng, actor="Thora")
+        assert encounter.state()["turn_state"]["action_used"] is True
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(0, 0)), rng, actor="Thora"
+        )
+        budget = encounter.state()["turn_state"]
+        assert budget["movement_left"] == 0
+        assert budget["action_used"] is False
+
+    def test_the_actor_may_change_from_one_beat_to_the_next(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng, mode=EncounterMode.EXPLORATION, battle_map=strip(10)
+        )
+
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(20, 0)), rng, actor="Thora"
+        )
+        events = encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(35, 0)), rng, actor="Kettle"
+        )
+
+        assert [record.actor for record in encounter.actions] == ["Thora", "Kettle"]
+        assert all(event.turn == "Kettle" for event in events)
+
+    def test_crossing_the_room_still_pays_for_the_ground(self) -> None:
+        """A real move, not a note about one."""
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            battle_map=strip(10, terrain={(2, 0): "difficult", (3, 0): "difficult"}),
+        )
+
+        with pytest.raises(EncounterError, match="needs 35 ft"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(25, 0)), rng, actor="Thora"
+            )
+
+    def test_a_wall_still_stands_in_an_interlude(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(
+            self._party(), rng,
+            mode=EncounterMode.EXPLORATION,
+            battle_map=strip(10, terrain={(1, 0): "wall"}),
+        )
+
+        with pytest.raises(EncounterError, match="no route"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(10, 0)), rng, actor="Thora"
+            )
+
+    def test_an_interlude_still_refuses_an_actor_who_cannot_act(self) -> None:
+        rng = Random(1)
+        held = fighter("Kettle", position=(45, 0))
+        held.add_condition(Condition.INCAPACITATED)
+        encounter = Encounter(
+            [fighter(), held], rng,
+            mode=EncounterMode.EXPLORATION,
+            battle_map=strip(10),
+        )
+
+        with pytest.raises(EncounterError, match="Kettle is incapacitated"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(35, 0)), rng, actor="Kettle"
+            )
+
+    def test_an_interlude_has_no_rounds_to_advance(self) -> None:
+        rng = Random(1)
+        encounter = Encounter(self._party(), rng, mode=EncounterMode.EXPLORATION)
+
+        with pytest.raises(EncounterError, match="an interlude has no rounds"):
+            encounter.advance(rng)
+
+    def test_a_refused_act_opens_no_beat_and_costs_the_last_one_nothing(self) -> None:
+        """The refusal costs nothing, as everywhere else in this file.
+
+        Naming an actor who cannot act must not quietly hand them a fresh
+        budget, nor take the floor away from whoever was standing on it.
+        """
+        rng = Random(1)
+        held = fighter("Kettle", position=(45, 0))
+        held.add_condition(Condition.INCAPACITATED)
+        encounter = Encounter(
+            [fighter(), held], rng,
+            mode=EncounterMode.EXPLORATION,
+            battle_map=strip(10),
+        )
+        encounter.act(
+            Action(kind=ActionKind.MOVE, to_position=(30, 0)), rng, actor="Thora"
+        )
+        spent = encounter.state()
+
+        with pytest.raises(EncounterError, match="Kettle is incapacitated"):
+            encounter.act(
+                Action(kind=ActionKind.MOVE, to_position=(40, 0)), rng, actor="Kettle"
+            )
+
+        assert encounter.state() == spent
