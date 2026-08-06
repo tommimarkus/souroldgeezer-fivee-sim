@@ -1,6 +1,6 @@
 [project]
 name = "fivee-sim"
-version = "2026.8.80"
+version = "2026.8.81"
 description = "5E-compatible rules kernel and HTTP engine: seeded, deterministic combat resolution."
 requires-python = ">=3.11"
 # Deliberately empty, and worth keeping that way. The kernel, the service layer,
