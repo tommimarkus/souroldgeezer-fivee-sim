@@ -32,6 +32,7 @@ so the corpus cannot quietly stop covering the thing it exists to cover.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from random import Random
 from types import MappingProxyType
@@ -54,6 +55,8 @@ from fivee_sim.map_types import (
     TerrainPair,
     TriggerMode,
     document_findings,
+    requirement_findings,
+    trigger_findings,
 )
 from fivee_sim.model.creature import Creature
 from fivee_sim.model.encounter import Encounter, EncounterError
@@ -509,6 +512,176 @@ class TestTheRulesAreOne:
             return
         with pytest.raises(MapError, match="map error"):
             reparse(doc)
+
+
+#: How long a chain the scale cases below build. Sized against the two costs
+#: it has to separate rather than picked round: cycle detection over a chain
+#: this long is a fifth of a second when it is linear in the chain and about
+#: seventeen seconds when it is one graph walk per node, which was the shape
+#: it had. A document of this many features serialises to roughly 1.8 MiB of
+#: compact JSON — well under ``MAX_MAP_BYTES`` — so nothing else in the engine
+#: refuses it on the way in, and the byte cap cannot stand in for this bound.
+CHAIN = 20_000
+
+#: The ceiling all three scale cases are held to, and the two margins it was
+#: chosen to sit between. Measured on the machine this was written on: the
+#: linear form answers the slowest of the three in 0.09s and the quadratic one
+#: took 17.4s (162s for the cycle). So the ceiling is roughly 20x the linear
+#: cost and 9x under the quadratic one — a host twenty times slower than this
+#: still passes, and one nine times faster still fails a quadratic
+#: implementation. Neither margin is a coin toss, which is the whole
+#: justification for putting a clock in a test suite.
+CHAIN_SECONDS = 2.0
+
+
+def chained_levers(count: int, *, closed: bool = False) -> MapDocument:
+    """``count`` levers, each waiting on the one before it.
+
+    A puzzle room's lever chain, only longer: nothing here is malformed, and
+    with ``closed`` the last lever waits on the first, which is the one
+    refusal such a room can earn.
+    """
+    width = 200
+    height = -(-count // width)
+    levers = tuple(
+        MapFeatureRecord(
+            id=f"lever-{index:05d}",
+            kind="lever",
+            at=(index % width, index // width),
+            state="closed",
+            terrain=TerrainPair(closed="floor", open="floor"),
+            requires=(
+                (f"lever-{count - 1:05d}",)
+                if index == 0 and closed
+                else (f"lever-{index - 1:05d}",) if index else ()
+            ),
+        )
+        for index in range(count)
+    )
+    return MapDocument(
+        name="lever room",
+        grid=MapGrid(width=width, height=height),
+        legend=LEGEND,
+        provenance=PROVENANCE,
+        levels=MappingProxyType(
+            {
+                0: MapLevel(
+                    index=0,
+                    name="level-0",
+                    tiles=tuple("." * width for _ in range(height)),
+                    features=levers,
+                )
+            }
+        ),
+    )
+
+
+class TestTheDependencyRulesScaleWithTheDocument:
+    """A long dependency chain costs time in the length of it, not its square.
+
+    ``requirement_findings`` and ``trigger_findings`` both look for cycles, and
+    the search used to ask "what can this node reach?" once per node with an
+    edge — a fresh walk of the whole graph each time. On a chain that is
+    O(N**2), and a chain is not an adversarial document: a puzzle room whose
+    levers each wait on the one before it is exactly this graph.
+
+    The cost is paid twice per ``encounter.create``, once when the parser reads
+    the file and once when ``_adopt_map`` re-asks the same questions of the
+    parsed document, and the byte cap does not bound it — see :data:`CHAIN`.
+
+    **Why a clock and not a counter.** The property is a complexity class, and
+    the only thing a caller ever feels of it is seconds. Counting graph walks
+    would pin the current implementation's shape instead — a second linear
+    algorithm that happened to walk twice would fail a counter and satisfy the
+    claim. The flakiness that usually argues against a clock is a narrow
+    margin; the ceiling here sits about 20x above the measured linear cost and
+    9x below the measured quadratic one (see :data:`CHAIN_SECONDS`), and the
+    case does no I/O and takes no lock.
+    """
+
+    def test_a_long_requirement_chain_is_answered_in_the_length_of_it(self) -> None:
+        document = chained_levers(CHAIN)
+        started = time.perf_counter()
+        found = list(requirement_findings(document.levels, document.grid))
+        elapsed = time.perf_counter() - started
+
+        assert found == [], "a plain chain of prerequisites is a legal document"
+        assert elapsed < CHAIN_SECONDS, (
+            f"{CHAIN} chained requirements took {elapsed:.1f}s, which is the "
+            f"quadratic cost rather than the linear one"
+        )
+
+    def test_a_long_trigger_chain_is_answered_in_the_length_of_it(self) -> None:
+        # The same search, reached by the other rule, so a fix applied to one
+        # caller and not the other cannot pass this class.
+        source = chained_levers(CHAIN)
+        plane = source.levels[0]
+        triggered = tuple(
+            MapFeatureRecord(
+                id=one.id,
+                kind=one.kind,
+                at=one.at,
+                state=one.state,
+                terrain=one.terrain,
+                trigger=(
+                    FeatureTrigger(
+                        when=((one.requires[0], True),),
+                        set_open=False,
+                        mode=TriggerMode.EDGE,
+                    )
+                    if one.requires
+                    else None
+                ),
+            )
+            for one in plane.features
+        )
+        levels = MappingProxyType(
+            {0: MapLevel(index=0, name="level-0", tiles=plane.tiles, features=triggered)}
+        )
+
+        started = time.perf_counter()
+        found = list(trigger_findings(levels, source.grid))
+        elapsed = time.perf_counter() - started
+
+        assert found == [], "a plain chain of triggers is a legal document"
+        assert elapsed < CHAIN_SECONDS, (
+            f"{CHAIN} chained triggers took {elapsed:.1f}s, which is the "
+            f"quadratic cost rather than the linear one"
+        )
+
+    def test_a_cycle_closing_a_long_chain_is_still_reported_whole(self) -> None:
+        """Speed that lost the refusal would be no bargain, and this is the
+        slower half.
+
+        Finding the cycle is one search; *naming* it was a second quadratic —
+        the walk carried a whole candidate path per queued node, so reporting
+        one cycle through N fixtures copied O(N**2) ids. This document measured
+        169 seconds against the 17 the acyclic chain above cost, so the refusal
+        was ten times more expensive to produce than the acceptance.
+
+        The path is the whole cycle, from the lexicographically smallest id in
+        it, exactly as the two-fixture case in ``test_map_document`` pins for a
+        short one.
+        """
+        document = chained_levers(CHAIN, closed=True)
+        started = time.perf_counter()
+        found = list(requirement_findings(document.levels, document.grid))
+        elapsed = time.perf_counter() - started
+
+        assert elapsed < CHAIN_SECONDS, (
+            f"naming one cycle through {CHAIN} fixtures took {elapsed:.1f}s, "
+            f"which is the quadratic cost rather than the linear one"
+        )
+        assert len(found) == 1
+        message = found[0].message
+        assert message.startswith(
+            "feature 'lever-00000' is in a requirement cycle: lever-00000 -> "
+            f"lever-{CHAIN - 1:05d} -> lever-{CHAIN - 2:05d} -> "
+        )
+        assert message.endswith(
+            "lever-00001 -> lever-00000; nothing in it could ever be opened first"
+        )
+        assert message.count(" -> ") == CHAIN
 
 
 class TestAFindingSaysWhereAndWhat:

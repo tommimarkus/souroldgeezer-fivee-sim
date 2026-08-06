@@ -770,33 +770,95 @@ def _declared(catalogue: Mapping[str, Any]) -> str:
     return ", ".join(sorted(catalogue)) or "none"
 
 
-def _reachable(edges: Mapping[str, tuple[str, ...]], start: str) -> set[str]:
-    """Every id reachable from ``start`` by following requirements."""
-    seen: set[str] = set()
-    stack = list(edges.get(start, ()))
-    while stack:
-        node = stack.pop()
-        if node in seen:
+def _strong_components(edges: Mapping[str, tuple[str, ...]]) -> list[list[str]]:
+    """Every strongly connected component of the dependency graph, once each.
+
+    Tarjan's, which answers in one walk what the rule below used to ask node by
+    node: a set of fixtures that can all reach each other is a cycle, and the
+    single-node components are everything else. The walk is **iterative** — a
+    ``requires`` chain is as long as the author made it, and a recursive one
+    would hit the interpreter's stack limit on a document the format allows.
+
+    Rooted from ``sorted(edges)`` rather than whatever order the mapping
+    happens to have, so which component is discovered first is a property of
+    the ids and not of the document's insertion order. It decides nothing else:
+    the caller re-sorts what it reports.
+    """
+    order: dict[str, int] = {}
+    low: dict[str, int] = {}
+    on_stack: set[str] = set()
+    stack: list[str] = []
+    components: list[list[str]] = []
+    counter = 0
+    for root in sorted(edges):
+        if root in order:
             continue
-        seen.add(node)
-        stack.extend(edges.get(node, ()))
-    return seen
+        # (node, how many of its successors have been dealt with) — the frame a
+        # recursive Tarjan would keep on the interpreter's stack.
+        work: list[tuple[str, int]] = [(root, 0)]
+        while work:
+            node, offset = work[-1]
+            if offset == 0:
+                order[node] = low[node] = counter
+                counter += 1
+                stack.append(node)
+                on_stack.add(node)
+            successors = edges.get(node, ())
+            descended = False
+            while offset < len(successors):
+                nxt = successors[offset]
+                offset += 1
+                if nxt not in order:
+                    work[-1] = (node, offset)
+                    work.append((nxt, 0))
+                    descended = True
+                    break
+                if nxt in on_stack:
+                    low[node] = min(low[node], order[nxt])
+            if descended:
+                continue
+            work.pop()
+            if low[node] == order[node]:
+                component: list[str] = []
+                while True:
+                    member = stack.pop()
+                    on_stack.discard(member)
+                    component.append(member)
+                    if member == node:
+                        break
+                components.append(component)
+            if work:
+                parent = work[-1][0]
+                low[parent] = min(low[parent], low[node])
+    return components
 
 
 def _shortest_cycle(
     edges: Mapping[str, tuple[str, ...]], start: str, component: set[str]
 ) -> tuple[str, ...]:
-    """The shortest path from ``start`` back to itself, ties broken by name."""
-    queue: deque[tuple[str, ...]] = deque([(start,)])
+    """The shortest path from ``start`` back to itself, ties broken by name.
+
+    Breadth-first over ``component`` alone, carrying **one predecessor per
+    node** rather than a whole candidate path per queued node. The answer is
+    the same walk in the same order — a node is reached once, by whoever
+    reached it first, which is exactly the path the queue used to hold — but
+    naming a cycle through N fixtures now costs N rather than N squared.
+    """
+    came_from: dict[str, str] = {}
     seen = {start}
+    queue: deque[str] = deque([start])
     while queue:
-        path = queue.popleft()
-        for node in edges.get(path[-1], ()):
-            if node == start:
-                return (*path, start)
-            if node in component and node not in seen:
-                seen.add(node)
-                queue.append((*path, node))
+        node = queue.popleft()
+        for nxt in edges.get(node, ()):
+            if nxt == start:
+                path = [node]
+                while path[-1] != start:
+                    path.append(came_from[path[-1]])
+                return (*reversed(path), start)
+            if nxt in component and nxt not in seen:
+                seen.add(nxt)
+                came_from[nxt] = node
+                queue.append(nxt)
     return (start, start)  # pragma: no cover - only called where a cycle exists
 
 
@@ -807,17 +869,30 @@ def _cycles(edges: Mapping[str, tuple[str, ...]]) -> list[tuple[str, ...]]:
     what makes it deterministic — which fixture the author edited last does not
     change what comes back — and reports a cycle once rather than once per
     fixture caught in it.
+
+    **Linear in the document**, and it used to be quadratic in it: this asked
+    "what can it reach?" of every fixture with a dependency, each a fresh walk
+    of the whole graph. A lever room where each lever waits on the one before
+    it is that graph, and a well-formed one of them half the byte cap's size
+    cost seventeen seconds of it — paid twice, once by the parser and again by
+    ``Encounter._adopt_map``. Components first, then one bounded search inside
+    each, is the same answer in one pass.
+
+    A single-fixture component is a cycle only if it names *itself*, which
+    ``requirement_findings`` refuses earlier with a better sentence and a
+    trigger can still reach.
     """
-    reach = {node: _reachable(edges, node) for node in edges}
-    cycles: list[tuple[str, ...]] = []
-    for node in sorted(edges):
-        if node not in reach[node]:
+    found: list[tuple[str, ...]] = []
+    for component in _strong_components(edges):
+        if len(component) == 1 and component[0] not in edges.get(component[0], ()):
             continue
-        component = {other for other in reach[node] if node in reach.get(other, set())}
-        if node != min(component):
-            continue
-        cycles.append(_shortest_cycle(edges, node, component))
-    return cycles
+        start = min(component)
+        found.append(_shortest_cycle(edges, start, set(component)))
+    # By the id the cycle is reported from, which is the order the caller
+    # iterating ``sorted(edges)`` produced. Components arrive in the walk's
+    # finishing order, which is not that.
+    found.sort(key=lambda path: path[0])
+    return found
 
 
 def _claimed_squares(feature: MapFeatureRecord) -> Iterator[Square]:
