@@ -6,13 +6,35 @@ import json
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from fivee_sim.model.encounter import EncounterMode
 from fivee_sim.service.replay import canonical_sha256, validate_replay
 
 from . import api
-from .conftest import mapless_fight
+from .conftest import REPLAY_HERO, mapless_fight
+
+
+def interlude(seed: int = 90) -> str:
+    """One scout, one chapter, nobody holding the floor.
+
+    A solo roster on purpose: the arity rule an interlude relaxes is the one
+    thing about it a fight cannot imitate, and a scout crossing a room alone is
+    the chapter this whole format change exists to let a run record.
+    """
+    created = api.encounter_create(
+        [{**REPLAY_HERO, "name": "Kettle"}], seed=seed, mode="exploration"
+    )
+    return str(created["encounter_id"])
+
+
+def bundle_of(encounter_id: str, format_version: int = 2) -> dict[str, Any]:
+    exported = api.replay_export(encounter_id, format_version=format_version)
+    bundle = exported["bundle"]
+    assert isinstance(bundle, dict)
+    return bundle
 
 
 def set_path(target: object, dotted: str, value: object) -> None:
@@ -104,6 +126,124 @@ def test_the_validator_reports_non_json_numbers_instead_of_crashing() -> None:
     found = validate_replay(bundle)
 
     assert any(item["path"] == "integrity.content" for item in found)
+
+
+class TestWhichKindOfChapterTheBundleRecords:
+    """``encounter.mode``, and the one state rule that follows from it.
+
+    An interlude has nobody holding the floor, so its every state payload
+    reports ``turn`` as null — and a validator that demanded a string refused
+    four paths of every bundle a chapter with no fight in it produces. The fix
+    is *conditioned on the mode the bundle itself declares*, never a relaxation:
+    a fight whose turn went missing is still a broken bundle, and the control
+    below is what says so.
+    """
+
+    def test_a_v2_bundle_says_which_kind_of_chapter_it_was(self) -> None:
+        assert bundle_of(mapless_fight(seed=91))["encounter"]["mode"] == "combat"
+        assert bundle_of(interlude(seed=92))["encounter"]["mode"] == "exploration"
+
+    def test_an_interlude_bundle_validates_with_nobody_holding_the_floor(self) -> None:
+        # The blocker this phase clears. Every one of these four paths was a
+        # diagnostic before the mode reached the state rule, which is why an
+        # adventure containing an interlude could not compose at all.
+        bundle = bundle_of(interlude(seed=93))
+
+        assert bundle["initial"]["state"]["turn"] is None
+        assert bundle["latest_state"]["turn"] is None
+        assert [checkpoint["state"]["turn"] for checkpoint in bundle["checkpoints"]] == [
+            None for _ in bundle["checkpoints"]
+        ]
+        assert validate_replay(bundle) == []
+
+    def test_a_fight_that_lost_its_turn_is_still_a_broken_bundle(self) -> None:
+        # The control. Without it the case above would also pass against a
+        # validator that had simply stopped checking ``turn`` at all.
+        bundle = bundle_of(mapless_fight(seed=94))
+        for path in ("initial.state.turn", "latest_state.turn", "checkpoints.0.state.turn"):
+            broken = deepcopy(bundle)
+            set_path(broken, path, None)
+
+            found = validate_replay(broken)
+
+            assert any(
+                one["path"] == path and one["problem"] == "must be a string"
+                for one in found
+            ), path
+
+    def test_an_interlude_that_claims_somebody_holds_the_floor_is_named(self) -> None:
+        # The mirror of the control, and the reason the rule is a condition
+        # rather than "null is fine anywhere": an interlude rolls no initiative,
+        # so a turn in one is a fact nothing in the chapter could have produced.
+        broken = deepcopy(bundle_of(interlude(seed=95)))
+        set_path(broken, "latest_state.turn", "Kettle")
+
+        found = validate_replay(broken)
+
+        assert any(
+            one["path"] == "latest_state.turn" and "interlude" in one["problem"]
+            for one in found
+        ), found
+
+    @pytest.mark.parametrize("mode", [mode.value for mode in EncounterMode])
+    def test_every_mode_the_model_declares_is_a_mode_the_format_accepts(
+        self, mode: str
+    ) -> None:
+        # Derived from the model's own enum rather than listed here: a third
+        # kind of chapter added to ``EncounterMode`` and not to the format is a
+        # failure at this line rather than a bundle nobody can validate.
+        bundle = bundle_of(mapless_fight(seed=96))
+        bundle["encounter"]["mode"] = mode
+        if mode != EncounterMode.COMBAT.value:
+            for path in (
+                "initial.state.turn", "latest_state.turn",
+                *(f"checkpoints.{index}.state.turn"
+                  for index in range(len(bundle["checkpoints"]))),
+            ):
+                set_path(bundle, path, None)
+
+        assert not [
+            one for one in validate_replay(bundle) if one["path"] == "encounter.mode"
+        ]
+
+    def test_a_mode_the_model_never_declared_is_named_at_encounter_mode(self) -> None:
+        bundle = bundle_of(mapless_fight(seed=97))
+        bundle["encounter"]["mode"] = "wandering"
+
+        found = validate_replay(bundle)
+
+        assert any(one["path"] == "encounter.mode" for one in found), found
+
+    def test_a_bundle_written_before_there_was_a_second_kind_is_read_as_a_fight(
+        self,
+    ) -> None:
+        # Absence is not a diagnostic: every v2 bundle frozen before interludes
+        # existed was a fight, and reading it as one is both what it is and the
+        # strict half of the turn rule. Refusing the key's absence would make
+        # every replay on a user's disk unplayable at the version that added it.
+        bundle = bundle_of(mapless_fight(seed=98))
+        del bundle["encounter"]["mode"]
+
+        assert validate_replay(bundle) == []
+
+        set_path(bundle, "latest_state.turn", None)
+        assert any(
+            one["path"] == "latest_state.turn" for one in validate_replay(bundle)
+        )
+
+    def test_a_v1_export_is_graded_without_a_mode_it_has_no_place_to_carry(
+        self,
+    ) -> None:
+        # The v1 answer, and it is settled by the format rather than chosen. A
+        # v1 bundle has no ``encounter`` block to declare a mode in *and* no
+        # state block to apply one to — ``initial`` there is creatures and open
+        # features — so an interlude exports and validates as v1 with nothing
+        # about the mode to say either way.
+        bundle = bundle_of(interlude(seed=99), format_version=1)
+
+        assert "encounter" not in bundle
+        assert "state" not in bundle["initial"]
+        assert validate_replay(bundle) == []
 
 
 @pytest.mark.parametrize("case", json.loads(

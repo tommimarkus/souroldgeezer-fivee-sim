@@ -655,6 +655,7 @@ def replay_export(
             encounter_id=encounter_id,
             seed=session.seed,
             movement_rule=session.encounter.movement_rule.value,
+            mode=session.encounter.mode.value,
             map_payload=captured_map,
             initial_creatures=initial_state["combatants"],
             normalized_combatants=session.normalized_combatants,

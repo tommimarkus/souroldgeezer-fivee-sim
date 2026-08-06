@@ -1635,6 +1635,7 @@ class TestDeclaredEnums:
             ),
             "encounter.create.mode": {mode.value for mode in EncounterMode},
             "encounter.create.movement_rule": movement_rules,
+            "adventure.encounter.mode": {mode.value for mode in EncounterMode},
             "adventure.encounter.movement_rule": movement_rules,
             "adventure.list.status": set(adventure_service.LIST_STATUSES),
             "analytics.rounds.movement_rule": movement_rules,
@@ -2341,6 +2342,25 @@ SCOUT: dict[str, Any] = {
     "ac": 13,
     "max_hp": 9,
     "position": [0, 0],
+}
+
+#: A saved map for the interlude cases below: open floor, and an id, because
+#: carrying a map is carrying an id.
+MILL_DOCUMENT: dict[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "The Drowned Mill",
+    "grid": {"width": 12, "height": 12, "cell_feet": 5},
+    "legend": {".": "normal"},
+    "tiles": ["." * 12 for _ in range(12)],
+    "features": [],
+    "provenance": {
+        "generator": "hand",
+        "seed": 0,
+        "params": {},
+        "edited": False,
+        "source": "synthetic test fixture, not SRD content",
+    },
 }
 
 
@@ -3763,6 +3783,126 @@ class TestAdventuresOverHttp:
             editor.request("POST", "/api/v1/adventures/adv-1/replay", json_body={}),
             400,
             "adventure 'adv-1' has no encounters to compose",
+        )
+
+
+class TestLinkingAnInterludeOverHttp:
+    """``mode`` and ``carry_map`` on the link, the way a caller reaches them.
+
+    The two together are what makes a run a sequence of walks and fights rather
+    than a sequence of fights: one says which kind of chapter to start, the
+    other puts it on the ground the last one was on. Every refusal here names
+    what it refused, because a 400 alone would pass against a server with the
+    check deleted.
+    """
+
+    def start(self, editor: Editor) -> None:
+        saved = editor.request(
+            "PUT", "/api/v1/maps/mill",
+            json_body=MILL_DOCUMENT,
+            headers={"If-Match": "*"},
+        )
+        assert saved.status == 201, saved.body
+        editor.request(
+            "POST", "/api/v1/adventures", json_body={"name": "The Drowned Mill"}
+        )
+
+    def link(self, editor: Editor, **body: Any) -> Response:
+        return editor.request(
+            "POST", "/api/v1/adventures/adv-1/encounters",
+            json_body=body,
+            headers={"If-Match": "*"},
+        )
+
+    def test_a_run_can_open_with_an_interlude_on_a_saved_map(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        linked = self.link(
+            editor,
+            combatants=[dict(SCOUT)],
+            seed=5,
+            map_id="mill",
+            mode="exploration",
+        )
+
+        assert linked.status == 201, linked.body
+        assert linked.json()["encounter"]["state"]["mode"] == "exploration"
+        assert linked.json()["encounter"]["state"]["turn"] is None
+
+    def test_the_run_reports_each_chapters_mode_from_both_doors(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        interlude = self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill",
+            mode="exploration",
+        ).json()["encounter_id"]
+        editor.request("POST", f"/api/v1/encounters/{interlude}/finalize")
+        assert self.link(
+            editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True
+        ).status == 201
+
+        document = editor.request("GET", "/api/v1/adventures/adv-1").json()
+        listed = editor.request("GET", "/api/v1/adventures?status=all").json()
+
+        assert [member["mode"] for member in document["members"]] == [
+            "exploration", "combat"
+        ]
+        assert listed["adventures"][0]["modes"] == ["exploration", "combat"]
+
+    def test_a_carried_map_puts_the_next_chapter_on_the_same_ground(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
+        )
+
+        linked = self.link(editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True)
+
+        assert linked.status == 201, linked.body
+        assert linked.json()["encounter"]["map_source"]["map_id"] == "mill"
+
+    def test_carrying_a_map_and_naming_one_is_400_and_says_which(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(
+            editor, combatants=[dict(SCOUT)], seed=5, map_id="mill", mode="exploration"
+        )
+
+        assert_problem(
+            self.link(
+                editor, combatants=[dict(GOBLIN)], seed=6, carry_map=True,
+                map_id="mill",
+            ),
+            400,
+            "carry_map cannot be given with 'map_id'",
+        )
+
+    def test_carrying_a_map_from_a_chapter_that_had_none_is_400(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+        self.link(editor, combatants=[dict(HERO), dict(GOBLIN)], seed=5)
+
+        assert_problem(
+            self.link(editor, seed=6, carry_map=True),
+            400,
+            "it was not on a map",
+        )
+
+    def test_a_mode_the_route_does_not_declare_is_refused_by_the_schema(
+        self, editor: Editor
+    ) -> None:
+        self.start(editor)
+
+        assert_problem(
+            self.link(editor, combatants=[dict(SCOUT)], seed=5, mode="wandering"),
+            400,
+            "'mode' must be one of: combat, exploration",
         )
 
 

@@ -279,6 +279,8 @@ def adventure_encounter(
     map_id: str | None = None,
     request_id: str | None = None,
     expected_version: str | None = None,
+    mode: str = "combat",
+    carry_map: bool = False,
 ) -> dict[str, Any]:
     return _adventures.link_encounter(
         STATE,
@@ -292,6 +294,8 @@ def adventure_encounter(
         map_id,
         request_id,
         expected_version,
+        mode=mode,
+        carry_map=carry_map,
     )
 
 

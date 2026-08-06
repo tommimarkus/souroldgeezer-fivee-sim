@@ -27,6 +27,7 @@ from fivee_sim.kernel.rules import Ability, DamageType, Size
 from fivee_sim.map_document import parse_document
 from fivee_sim.model.battlemap import BattleMap, FeatureTrigger, MapFeature, TriggerMode
 from fivee_sim.model.creature import AttackOption
+from fivee_sim.model.encounter import EncounterMode
 from fivee_sim.service import map_ops, specs
 from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, RequestError
@@ -146,6 +147,11 @@ class TestBundleV2:
             "id": encounter_id,
             "seed": 67,
             "movement_rule": "5-5-5",
+            # Which kind of chapter it was. Written whole rather than as a
+            # membership check so the block stays exhaustive: a field added to
+            # what a bundle says about its encounter is a decision somebody has
+            # to record here.
+            "mode": EncounterMode.COMBAT.value,
         }
         assert bundle["initial"]["state"]["order"] == [
             creature["name"] for creature in bundle["initial"]["creatures"]

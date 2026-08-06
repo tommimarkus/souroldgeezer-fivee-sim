@@ -1125,6 +1125,8 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             expected,
+            mode=body["mode"],
+            carry_map=body["carry_map"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(

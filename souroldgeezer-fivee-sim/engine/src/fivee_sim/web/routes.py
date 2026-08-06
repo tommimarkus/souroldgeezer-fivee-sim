@@ -908,8 +908,21 @@ ROUTES: tuple[Route, ...] = (
                 "recovery": {"type": ["object", "null"], "default": None},
                 "seed": _SEED,
                 "movement_rule": _MOVEMENT_RULE,
+                # The same declaration ``encounter.create`` takes, because this
+                # is the same argument: a chapter of a run is an encounter, and
+                # a run is fights and interludes in the order they happened.
+                "mode": _ENCOUNTER_MODE,
                 "map": _INLINE_MAP,
                 "map_id": {"type": ["string", "null"], "default": None},
+                "carry_map": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": (
+                        "put this chapter on the map the previous one was on; "
+                        "refused alongside 'map' or 'map_id', and refused when "
+                        "that chapter had no saved map to name"
+                    ),
+                },
             },
         },
         # The first encounter of a run, which is the one a reader meets first
