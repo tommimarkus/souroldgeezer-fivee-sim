@@ -1341,6 +1341,9 @@ await suite("renderer.js: the document's compass", "the renderer sandbox", async
 
 function replayMap() {
   return {
+    format: "fivee-sim-map",
+    format_version: 1,
+    name: "sluice fight",
     grid: { width: 8, height: 6, cell_feet: 5 },
     legend: { ".": "floor", "#": "wall" },
     tiles: ["########", "#......#", "#......#", "#......#", "#......#", "########"],

@@ -63,8 +63,12 @@
     "name": "map width must be positive",
     "path": "map",
     "value": {
+      "format": "fivee-sim-map",
+      "format_version": 1,
+      "name": "test map",
       "grid": {"width": 0, "height": 4, "cell_feet": 5},
-      "tiles": ["....", "....", "....", "...."],
+      "legend": {},
+      "tiles": ["", "", "", ""],
       "features": []
     },
     "diagnostic_path": "map.grid.width"
