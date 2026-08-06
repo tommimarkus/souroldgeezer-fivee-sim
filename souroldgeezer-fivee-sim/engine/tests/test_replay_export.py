@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim import __version__
+from fivee_sim import __version__, content
 from fivee_sim.content import builtin_registry
 from fivee_sim.kernel.actions import AttackKind, RiderExpiry
 from fivee_sim.kernel.dice import Dice
@@ -610,6 +610,20 @@ class TestMapCapture:
         assert bundle["map"]["name"] == "replay chamber"
         assert bundle["map"]["tiles"] == chamber()["tiles"]
         assert bundle["map"]["provenance"]["edited"] is False
+
+    def test_the_exported_map_parses_under_the_bundles_own_content(self) -> None:
+        # replay.validate_replay deliberately never calls parse_document — see
+        # its module docstring — so "our own producers emit parseable maps" is
+        # pinned here instead, at the one producer this suite can drive end to
+        # end. replay_sample._map_payload() is the sample's own copy of this
+        # same claim, in tests/test_replay_sample.py.
+        encounter_id, map_id = mapped_fight(seed=67)
+        bundle = api.replay_export(encounter_id, format_version=2)["bundle"]
+        registry = content.registry_from_snapshot(bundle["content"])
+        document = parse_document(
+            bundle["map"], source="exported bundle", terrain=registry.terrain_effects
+        )
+        assert document.name == "replay chamber"
 
     def test_an_inline_map_fight_replays_on_the_neutral_plane(self) -> None:
         created = api.encounter_create(
