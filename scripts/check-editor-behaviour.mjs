@@ -1478,6 +1478,81 @@ function replayV2() {
   return sealReplayV2(bundle);
 }
 
+/* An interlude: a chapter with no fight in it. Shaped off a real composed run
+ * rather than guessed, and every awkward part of that shape is deliberate.
+ *
+ * `encounter.mode` says which kind of chapter it is and `initial.state.mode`
+ * repeats it. Every state payload — initial, each checkpoint, latest — reports
+ * `turn` as **null**, because nobody holds the floor between an interlude's
+ * beats; that is the wire fact that made viewer.html refuse an interlude
+ * outright. `round` is 1 from the first beat to the last, because nothing in an
+ * interlude turns one over. And `order` still lists everybody while no
+ * combatant has an `initiative`, which is why the page has to drop the
+ * initiative furniture on the *mode* and not on either of those being empty.
+ *
+ * The note carries a `speaker`. That key is optional everywhere it appears —
+ * `interludeWithoutASpeaker` below is the same run with it taken out. */
+function interludeV2() {
+  const bundle = replayBundle([]);
+  bundle.format_version = 2;
+  bundle.name = "the drowned mill";
+  bundle.map.features = [];
+  const walker = {
+    name: "Kettle", team: "party", position: [10, 10], hp: 20, max_hp: 20, ac: 12,
+    level: 0, conditions: [], concentrating_on: null, dodging: false,
+    disengaged: false, reaction_available: true, conscious: true, dead: false,
+    stable: false, death_saves: { successes: 0, failures: 0 },
+    spell_slots: {}, items: {}, initiative: null,
+  };
+  const lookout = copy(walker);
+  lookout.name = "Bo";
+  lookout.position = [10, 20];
+  const stateOf = (combatants) => ({
+    mode: "exploration", round: 1, turn: null, order: ["Bo", "Kettle"],
+    combatants,
+  });
+  bundle.initial.creatures = [copy(walker), copy(lookout)];
+  bundle.initial.combatants = [copy(walker), copy(lookout)];
+  bundle.initial.state = stateOf([copy(walker), copy(lookout)]);
+  /* The event names the actor in its `turn`, which is the seam this whole
+   * chapter turns on: the *event* says who held the beat, the *state* says
+   * nobody holds the floor, and both are true at once. */
+  bundle.events = [{
+    seq: 0, kind: "move", round: 1, turn: "Kettle", actor: "Kettle", target: "",
+    timestamp: "2026-01-01T00:00:02Z",
+    data: { origin: [10, 10], destination: [20, 10], completed: true },
+  }];
+  const moved = copy(walker);
+  moved.position = [20, 10];
+  bundle.checkpoints = [{
+    index: 1, event_count: 1, timestamp: "2026-01-01T00:00:02Z",
+    state: stateOf([moved, copy(lookout)]), state_hash: "test",
+  }];
+  bundle.attempts = [{
+    index: 0, operation: "encounter_note", status: "success",
+    timestamp: "2026-01-01T00:00:03Z",
+    arguments: {
+      category: "dialogue", text: "The wheel still turns.", speaker: "Bo",
+    },
+    result: {},
+  }];
+  bundle.actions = [];
+  bundle.latest_state = copy(bundle.checkpoints[0].state);
+  bundle.content = {};
+  bundle.encounter = {
+    id: "enc-mill", seed: 7, movement_rule: "5-5-5", mode: "exploration",
+  };
+  return sealReplayV2(bundle);
+}
+
+/* The same run recorded before `speaker` existed, which is every interlude
+ * anybody has on disk today. Nothing about the page may depend on the key. */
+function interludeWithoutASpeaker() {
+  const bundle = interludeV2();
+  delete bundle.attempts[0].arguments.speaker;
+  return sealReplayV2(bundle);
+}
+
 function setPath(target, dotted, value) {
   const path = dotted.split(".");
   let cursor = target;
@@ -2211,13 +2286,23 @@ function adventureEnvelope(chapters) {
        purpose — there is one below — would otherwise be breaking the caller's
        own bundle, and the next envelope built from it would carry the damage
        into a case that never asked for it. */
-    chapters: chapters.map((replay, index) => ({
-      index,
-      encounter_id: "enc-" + (index + 1),
-      linked_at: "2026-08-05T00:0" + index + ":00Z",
-      carried: index ? ["Hero"] : [],
-      replay: copy(replay),
-    })),
+    chapters: chapters.map((replay, index) => {
+      const chapter = {
+        index,
+        encounter_id: "enc-" + (index + 1),
+        linked_at: "2026-08-05T00:0" + index + ":00Z",
+        carried: index ? ["Hero"] : [],
+        replay: copy(replay),
+      };
+      /* The composer copies a chapter's mode off the frozen artifact rather
+       * than re-deriving it, so this fixture reads it from the same place. A
+       * chapter frozen before interludes existed has no encounter block to
+       * carry one, and the key is then simply absent — which is the shape
+       * every envelope already on disk has. */
+      const mode = replay.encounter && replay.encounter.mode;
+      if (mode) { chapter.mode = mode; }
+      return chapter;
+    }),
   };
   /* Composed the way the service composes it, hashes included — not because
    * the page checks them (it deliberately does not; the envelope is Python's
@@ -2343,6 +2428,260 @@ await suite("viewer.html: an adventure's chapters", "the page sandbox in makePag
         && dropped.element("chapter-select").children.length === 2
         && dropped.requests.length === 0,
       show([dropped.renders.length, dropped.element("chapter-select").children.length]));
+  });
+
+/* An interlude — a walk across the mill, a conversation with the miller — is a
+ * chapter like any fight, and until this suite existed the viewer refused to
+ * open one. Every case here is about a decision the page makes differently
+ * because of the *mode*, never because a number happened to be small: an
+ * interlude's `round` is 1 and its `order` is full, so a page that keyed off
+ * either would pass a one-round fight and fail the run this feature is for. */
+await suite("viewer.html: an interlude chapter", "the page sandbox in makePage()",
+  async () => {
+    const cardsOf = (page) => page.element("combatant-state").children
+      .filter((each) => each.className.indexOf("combatant-card") !== -1);
+    const litIn = (page) => cardsOf(page)
+      .filter((each) => each.className.indexOf("current") !== -1)
+      .map((each) => each.textContent.split(" ·")[0]);
+    const scrubTo = (page, n) => {
+      page.element("scrub").value = String(n);
+      page.element("scrub").dispatch("input");
+    };
+
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+
+    /* 1. The gate. Python's `_validate_state` accepts a null `turn` where the
+     *    mode is exploration; the page's mirror of it did not, so an interlude
+     *    was refused at four paths and never reached the canvas at all. */
+    await page.drop(interludeV2(), "interlude.json");
+    check("an interlude loads instead of being refused for its null turn",
+      page.alerts.length === 0 && page.renders.length > 0
+        && page.element("title").textContent === "the drowned mill",
+      show([page.alerts, page.renders.length, page.element("title").textContent]));
+
+    /* 2. Not a relaxation. A *fight* whose state carries no turn is still a
+     *    broken bundle, and an interlude that names somebody is claiming an
+     *    initiative order that was never rolled — both still refused, by path. */
+    const namedAFloorHolder = interludeV2();
+    namedAFloorHolder.latest_state.turn = "Kettle";
+    sealReplayV2(namedAFloorHolder);
+    let before = page.alerts.length;
+    await page.drop(namedAFloorHolder, "named-a-floor-holder.json");
+    check("an interlude that names somebody as holding the floor is still refused",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("latest_state.turn") !== -1,
+      show(page.alerts.slice(before)));
+
+    const fightWithNoTurn = interludeV2();
+    fightWithNoTurn.encounter.mode = "combat";
+    sealReplayV2(fightWithNoTurn);
+    before = page.alerts.length;
+    await page.drop(fightWithNoTurn, "fight-with-no-turn.json");
+    check("and a fight with no turn at all is refused exactly as it always was",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("latest_state.turn") !== -1,
+      show(page.alerts.slice(before)));
+
+    const inventedMode = interludeV2();
+    inventedMode.encounter.mode = "wandering";
+    sealReplayV2(inventedMode);
+    before = page.alerts.length;
+    await page.drop(inventedMode, "invented-mode.json");
+    check("a mode the engine never declared is named, and read as a fight",
+      page.alerts.length === before + 1
+        && page.alerts[page.alerts.length - 1].indexOf("encounter.mode") !== -1
+        /* Read as a fight is the second half: the stricter reading, so the
+           document does not earn the interlude's relaxation on top of the
+           complaint it already has. */
+        && page.alerts[page.alerts.length - 1].indexOf("latest_state.turn") !== -1,
+      show(page.alerts.slice(before)));
+
+    /* 3. The furniture an interlude has no use for. */
+    await page.drop(interludeV2(), "interlude.json");
+    check("an interlude drops the round counter the engine never advances",
+      page.element("readout").textContent.indexOf("round") === -1
+        && page.element("readout").textContent.indexOf("event 0/1") !== -1,
+      page.element("readout").textContent);
+    check("and no card is lit before anybody has done anything",
+      cardsOf(page).length === 2 && litIn(page).length === 0,
+      show([cardsOf(page).length, litIn(page)]));
+
+    scrubTo(page, 1);
+    check("an interlude lights the token that acted, which no checkpoint clears",
+      show(litIn(page)) === show(["Kettle"]),
+      show([litIn(page), page.element("readout").textContent]));
+    check("and names it in the readout in the round counter's place",
+      page.element("readout").textContent === "Kettle · event 1/1",
+      page.element("readout").textContent);
+
+    /* 4. The fight is untouched. Its state's `turn` still decides, so a page
+     *    that had simply swapped one rule for the other fails here. */
+    const fight = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    fight.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await fight.drop(replayV2(), "fight.json");
+    check("a fight still counts its rounds and lights whose turn it is",
+      fight.element("readout").textContent.indexOf("round 1 · Hero") === 0
+        && show(litIn(fight)) === show(["Hero"]),
+      show([fight.element("readout").textContent, litIn(fight)]));
+  });
+
+/* A conversation is something you watch, which means a line has to be *on* the
+ * timeline rather than in a list beside it, and an attributed one has to be
+ * drawn where the speaker stands. */
+await suite("viewer.html: notes on the timeline", "the page sandbox in makePage()",
+  async () => {
+    const page = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    page.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await page.drop(interludeV2(), "interlude.json");
+
+    /* The note is stamped after the move, so it sits at event 1 — which is
+     * also the claim: rows carry the moment they happened, not their index in
+     * whichever list they came from. */
+    const rows = page.element("ticker").children;
+    check("the note is spoken by its speaker and sits after the move it follows",
+      rows.length === 2
+        && rows[0].textContent.indexOf("move") !== -1
+        && rows[1].textContent === "Bo — dialogue: The wheel still turns.",
+      show(rows.map((each) => each.textContent)));
+
+    check("every timeline row carries the cursor position it happened at",
+      rows[0].dataset.eventIndex === "1" && rows[1].dataset.eventIndex === "1",
+      show(rows.map((each) => each.dataset.eventIndex)));
+
+    page.element("scrub").value = "0";
+    page.element("scrub").dispatch("input");
+    const marksAtRest = page.last().overlays.marks || [];
+    check("a note marks nothing while the cursor is elsewhere",
+      marksAtRest.length === 0 && page.element("readout").textContent.indexOf("0/1") !== -1,
+      show([marksAtRest, page.element("readout").textContent]));
+
+    rows[1].click();
+    check("clicking a line of dialogue scrubs the map to the moment it was said",
+      page.element("readout").textContent.indexOf("event 1/1") !== -1,
+      page.element("readout").textContent);
+    /* Bo's square, not Kettle's. The move under the cursor marks the mover's
+       square on its own account, so the claim is about the *speaker's* square
+       being marked as well — a page that drew the note at the acting token
+       would satisfy a bare count and say nothing. */
+    const atBo = (page) => (page.last().overlays.marks || [])
+      .filter((mark) => show(mark.at) === show([2, 4]));
+    check("and the line is drawn at the speaker's own square",
+      atBo(page).length === 1,
+      show(page.last().overlays.marks));
+
+    /* Absent-tolerant, which is the whole of the contract with a note that
+     * never carried a speaker: same text, no mark, nothing else different. */
+    const quiet = makePage({ canvasIds: ["stage"], seed: { "embedded-data": "null" } });
+    quiet.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await quiet.drop(interludeWithoutASpeaker(), "unattributed.json");
+    const quietRows = quiet.element("ticker").children;
+    quietRows[1].click();
+    check("a note with no speaker reads as it always did and marks no square",
+      quietRows[1].textContent === "dialogue: The wheel still turns."
+        && atBo(quiet).length === 0,
+      show([quietRows[1].textContent, quiet.last().overlays.marks]));
+
+    /* A refused note stays in the audit trail — that is what an audit trail is
+     * for — but nobody said it, so it puts nothing on the map. */
+    const unsaid = interludeV2();
+    unsaid.attempts[0].status = "refused";
+    unsaid.attempts[0].error = "no combatant named 'Bo' in this encounter";
+    sealReplayV2(unsaid);
+    const refusedNote = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": "null" },
+    });
+    refusedNote.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await refusedNote.drop(unsaid, "refused-note.json");
+    const refusedRows = refusedNote.element("ticker").children;
+    refusedRows[1].click();
+    check("a refused note stays on the timeline and marks no square",
+      refusedRows.length === 2 && atBo(refusedNote).length === 0
+        && refusedRows[1].className.indexOf("audit-refused") !== -1,
+      show([refusedRows.map((each) => each.className),
+        refusedNote.last().overlays.marks]));
+  });
+
+/* Cross-chapter scrubbing, which is what makes a run of walks and fights one
+ * timeline. The picker becomes a jump rather than the only way to move. */
+await suite("viewer.html: playback across an adventure's chapters",
+  "the page sandbox in makePage()",
+  async () => {
+    /* An interlude then a fight, in that order, so crossing the boundary also
+     * crosses the mode: the readout has to lose the round counter on one side
+     * of it and get it back on the other. Nothing here touches the picker. */
+    const run = makePage({
+      canvasIds: ["stage"],
+      seed: {
+        "embedded-data": JSON.stringify(adventureEnvelope([interludeV2(), replayV2()])),
+      },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    run.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    check("a run opens on its first chapter, and the picker says which kind each is",
+      run.element("title").textContent === "the drowned mill"
+        && run.element("readout").textContent.indexOf("round") === -1
+        && run.element("chapter-select").children[0].textContent
+          .indexOf("exploration") !== -1
+        && run.element("chapter-select").children[1].textContent
+          .indexOf("exploration") === -1,
+      show([run.element("title").textContent, run.element("readout").textContent,
+        run.element("chapter-select").children.map((each) => each.textContent)]));
+
+    const drawn = run.renders.length;
+    run.element("btn-play").click();
+    await flush();
+    check("play runs off the end of a chapter and into the next one",
+      run.element("title").textContent === "sluice fight"
+        && run.element("seed").textContent === "seed 7"
+        && run.renders.length > drawn,
+      show([run.element("title").textContent, run.element("readout").textContent]));
+    check("and the picker follows playback rather than being what moved it",
+      run.element("chapter-select").value === "1",
+      run.element("chapter-select").value);
+    check("the fight it arrived in counts its rounds again",
+      run.element("readout").textContent.indexOf("round 1 · Hero") === 0
+        && run.element("readout").textContent.indexOf("1/1") !== -1,
+      run.element("readout").textContent);
+    check("and it stops at the end of the last chapter instead of wrapping",
+      run.element("btn-play").textContent === "Play" && run.alerts.length === 0
+        && run.requests.length === 0,
+      show([run.element("btn-play").textContent, run.alerts, run.requests]));
+
+    /* A lone replay has no next chapter and must stop exactly where it did. */
+    const lone = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": JSON.stringify(replayV2()) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    lone.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    lone.element("btn-play").click();
+    await flush();
+    check("a lone replay still stops at its own last event",
+      lone.element("btn-play").textContent === "Play"
+        && lone.element("title").textContent === "sluice fight"
+        && lone.element("adventure-chapters").hidden === true,
+      show([lone.element("btn-play").textContent, lone.element("title").textContent]));
+
+    /* A chapter that will not load ends the run where it stands and says so,
+     * rather than being skipped past into whatever comes after it. */
+    const broken = adventureEnvelope([interludeV2(), replayV2(), replayV2()]);
+    delete broken.chapters[1].replay.events;
+    const stopped = makePage({
+      canvasIds: ["stage"], seed: { "embedded-data": JSON.stringify(broken) },
+      hiddenIds: VIEWER_HIDDEN,
+    });
+    stopped.run(inlineScript(viewerHtml, "viewer.html", "function loadBundle("));
+    await flush();
+    stopped.element("btn-play").click();
+    await flush();
+    check("a chapter that will not load stops the run and names itself",
+      stopped.alerts.length === 1 && stopped.alerts[0].indexOf("chapter 2") !== -1
+        && stopped.element("btn-play").textContent === "Play"
+        && stopped.element("chapter-select").value === "0",
+      show([stopped.alerts, stopped.element("btn-play").textContent,
+        stopped.element("chapter-select").value]));
   });
 
 /* --- editor.html ---------------------------------------------------------- */
