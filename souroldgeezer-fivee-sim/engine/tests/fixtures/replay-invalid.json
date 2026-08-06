@@ -68,5 +68,11 @@
       "features": []
     },
     "diagnostic_path": "map.grid.width"
+  },
+  {
+    "name": "a chapter names a kind of chapter the model never declared",
+    "path": "encounter.mode",
+    "value": "wandering",
+    "diagnostic_path": "encounter.mode"
   }
 ]

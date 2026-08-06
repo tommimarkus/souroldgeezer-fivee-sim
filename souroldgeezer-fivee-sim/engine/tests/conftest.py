@@ -59,6 +59,57 @@ REPLAY_GOBLIN: dict[str, Any] = {
     "position": [15, 15],
 }
 
+#: The interlude fixtures, here rather than in one of the two test modules that
+#: want them, for this file's own reason: ``test_adventure_replay`` composes the
+#: run ``test_adventures`` links, and a test module importing another test
+#: module is a dependency edge nothing declares.
+#:
+#: Ground for an interlude: open floor, wide enough that everybody who walks
+#: across it in one chapter is still somewhere distinct in the next. A *saved*
+#: map, because carrying one is carrying an id.
+MILL: dict[str, Any] = {
+    "format": "fivee-sim-map",
+    "format_version": 1,
+    "name": "The Drowned Mill",
+    "grid": {"width": 12, "height": 12, "cell_feet": 5},
+    "legend": {".": "normal"},
+    "tiles": ["." * 12 for _ in range(12)],
+    "features": [],
+    "provenance": {
+        "generator": "hand",
+        "seed": 0,
+        "params": {},
+        "edited": False,
+        "source": FIXTURE,
+    },
+}
+#: An interlude's cast: two of the party and nobody to fight. Neither carries an
+#: attack, which is the point — this chapter is a walk across a floor.
+SCOUT: dict[str, Any] = {
+    "name": "Kettle", "team": "party", "ac": 12, "max_hp": 20, "position": [5, 5],
+}
+LOOKOUT: dict[str, Any] = {
+    "name": "Bo", "team": "party", "ac": 12, "max_hp": 20, "position": [5, 15],
+}
+#: Who is waiting when the interlude ends, standing well clear of both squares
+#: the party walks to.
+AMBUSHER: dict[str, Any] = {
+    "name": "Stalker",
+    "team": "monsters",
+    "ac": 10,
+    "max_hp": 30,
+    "position": [55, 55],
+    "attacks": [
+        {
+            "name": "Club",
+            "attack_bonus": 20,
+            "damage": "2d6+3",
+            "damage_type": "bludgeoning",
+            "kind": "melee",
+        }
+    ],
+}
+
 
 @pytest.fixture(autouse=True)
 def _isolate_server_state(

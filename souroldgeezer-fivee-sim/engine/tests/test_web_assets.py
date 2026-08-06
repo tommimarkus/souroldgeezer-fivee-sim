@@ -45,7 +45,7 @@ from typing import Any
 
 import pytest
 
-from fivee_sim.model.encounter import ActionKind, TurnState
+from fivee_sim.model.encounter import ActionKind, EncounterMode, TurnState
 from fivee_sim.web.http_server import CONFIG_MARKER
 from fivee_sim.web.routes import API_PREFIX, api_routes, operation_id
 from fivee_sim.web.routes import PAGES as SERVED_PAGES
@@ -305,6 +305,50 @@ class TestViewerAdventureChapters:
         source = read("viewer.html")
         assert "openPayload(payload, file.name);" in source
         assert 'openPayload(embedded, "embedded replay");' in source
+
+
+class TestViewerInterludeChapters:
+    """A chapter can be an interlude, and the page grades one the way Python does.
+
+    Per-chapter parity with ``service/replay.py`` is a standing claim of this
+    page: the *envelope* is Python's to grade, but every nested bundle is graded
+    here, by the one validator the file picker uses. That parity is what makes
+    the mode's closed set a thing this page may not invent — a viewer whose set
+    disagreed with ``EncounterMode`` would refuse a bundle the engine wrote, and
+    the refusal would arrive on a user's disk rather than in a test.
+
+    Whether the conditioned rule actually *works* — that an interlude loads,
+    that a fight with no turn is still refused — is a behaviour claim, and
+    ``scripts/check-editor-behaviour.mjs`` owns it.
+    """
+
+    def test_the_viewer_names_the_modes_the_model_declares(self) -> None:
+        source = read("viewer.html")
+        found = re.search(r"var ENCOUNTER_MODES = \[([^\]]*)\];", source)
+        assert found is not None, "viewer.html no longer declares ENCOUNTER_MODES"
+        named = [one.strip().strip('"') for one in found.group(1).split(",")]
+        # Derived from the model, never listed here: a third mode added to
+        # EncounterMode and not to the page turns this red on the commit that
+        # adds it, which is the only moment anybody can act on it cheaply.
+        assert named == [one.value for one in EncounterMode]
+
+    def test_a_notes_speaker_is_read_from_one_place(self) -> None:
+        # The timeline row and the mark on the map are two readers of one
+        # optional key. Two readings of "does this note have a speaker" is
+        # exactly how a line comes to be attributed in the sidebar and drawn
+        # at nobody, so the page reads it once and both callers take that.
+        assert read("viewer.html").count(".speaker") == 1
+
+    def test_continuous_playback_reuses_the_one_chapter_load_path(self) -> None:
+        # Play running off the end of a chapter into the next must not grow a
+        # second loader. It goes through the same playChapter the picker uses,
+        # which goes through the same loadBundle a dropped file uses, so one
+        # validator grades every chapter however it arrived — and the envelope
+        # stays Python's to grade either way.
+        source = read("viewer.html")
+        assert source.count("loadBundle(chapter.replay,") == 1
+        assert source.count("playChapter(chapterIndex + 1)") == 1
+        assert "if (playing && advanceChapter()) { return; }" in source
 
 
 class TestViewerFeatureVisibility:

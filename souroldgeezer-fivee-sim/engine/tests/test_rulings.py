@@ -129,6 +129,32 @@ def test_every_entry_cites_the_srd_by_section_not_by_quotation() -> None:
             )
 
 
+def test_no_entry_carries_a_quotation_in_its_prose_fields() -> None:
+    """The prose fields ship too, and ``basis`` was never where prose lives.
+
+    The companion above checks ``basis``, which is the one field that is
+    *only* ever a citation — so it was the easy half.  ``question``,
+    ``decision`` and ``because`` are the fields somebody actually writes a
+    sentence into, they are served verbatim at ``GET /api/v1/rulings`` and
+    rendered into the shipped ``docs/RULINGS.md``, and until this test existed
+    nothing looked at them.  One entry had already reproduced a full sentence
+    of SRD 5.2.1 by the time it was written.
+
+    A double quote is the whole rule, deliberately.  A mechanical tripwire
+    cannot tell a quotation of the printed rules from a quotation of our own
+    caller-facing phrasing, and it should not try: paraphrasing costs a
+    sentence and keeps the boundary a thing nobody has to adjudicate.  Single
+    quotes are *not* checked here, because an apostrophe is ordinary prose.
+    """
+    for ruling in RULINGS:
+        for field_name in ("question", "decision", "because"):
+            text = getattr(ruling, field_name)
+            assert '"' not in text, (
+                f"{ruling.code}.{field_name} carries a quotation: {text!r}. "
+                "Rules prose does not ship — paraphrase it."
+            )
+
+
 def test_every_site_names_a_symbol_that_exists() -> None:
     """A rename turns the register red rather than stale."""
     for ruling in RULINGS:

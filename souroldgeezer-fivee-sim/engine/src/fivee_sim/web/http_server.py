@@ -967,6 +967,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             request.query["as"],
+            mode=body["mode"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -1037,6 +1038,7 @@ class _Handler(BaseHTTPRequestHandler):
             body["natural"],
             self._idempotency_key(),
             request.query["as"],
+            actor=body["actor"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1055,7 +1057,8 @@ class _Handler(BaseHTTPRequestHandler):
         body = request.body
         self._check_encounter_version(request.id)
         result = encounter_service.note(
-            self.state, request.id, body["text"], body["category"], self._idempotency_key()
+            self.state, request.id, body["text"], body["category"], self._idempotency_key(),
+            body["speaker"],
         )
         self._send_json(HTTPStatus.CREATED, result, headers=self._encounter_etag(request.id))
 
@@ -1149,6 +1152,8 @@ class _Handler(BaseHTTPRequestHandler):
             body["map_id"],
             self._idempotency_key(),
             expected,
+            mode=body["mode"],
+            carry_map=body["carry_map"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(

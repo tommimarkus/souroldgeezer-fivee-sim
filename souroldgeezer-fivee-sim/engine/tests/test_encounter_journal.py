@@ -406,3 +406,115 @@ def test_hash_chain_tampering_is_refused_instead_of_silently_replayed(
 
     with pytest.raises(RequestError, match="invalid sha256"):
         api.encounter_resume(encounter_id)
+
+
+#: An interlude's roster: two of the party, nobody opposing them. What makes it
+#: a chapter rather than a fight is the mode, and the mode is the thing every
+#: case below is really about — it is written in exactly one place, the creation
+#: record, and everything a recovered interlude can still do depends on it
+#: being read back.
+INTERLUDE_PARTY: list[dict[str, object]] = [
+    {"name": "Kettle", "team": "party", "ac": 13, "max_hp": 9, "position": [0, 0]},
+    {"name": "Thora", "team": "party", "ac": 16, "max_hp": 30, "position": [30, 0]},
+]
+
+
+def test_an_interlude_records_its_mode_in_the_creation_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The one place the mode is durable, and what the rest of this file rests on.
+
+    A journal that did not say which kind of chapter it was would recover as a
+    fight — and a fight refuses every act an interlude records, so the failure
+    would arrive as a refusal about initiative rather than as anything naming
+    the missing field.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY], seed=211, mode="exploration"
+        )["encounter_id"]
+    )
+
+    saved = records(journal_path(root, encounter_id))
+
+    assert saved[0]["kind"] == "creation"
+    assert saved[0]["mode"] == "exploration"
+
+
+def test_a_fight_records_the_mode_it_never_had_to_ask_for() -> None:
+    encounter_id = mapless_fight(seed=213)
+    assert api.encounter_state(encounter_id)["mode"] == "combat"
+
+
+def test_an_act_in_an_interlude_records_the_actor_it_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY], seed=217, mode="exploration"
+        )["encounter_id"]
+    )
+
+    api.encounter_act(encounter_id, "move", to_position=[10, 0], actor="Kettle")
+
+    acted = [
+        entry for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result"
+    ]
+    assert [entry["arguments"]["actor"] for entry in acted] == ["Kettle"]  # type: ignore[index]
+
+
+def test_a_recovered_interlude_still_takes_its_next_beat() -> None:
+    """The sharpest edge in the phase: recovery is how a chapter survives a reload.
+
+    Replay is where an interlude and a fight differ most — every recorded act
+    names its actor, and a recovered chapter that came back as a fight would
+    refuse all of them. The last line is what makes this more than a recovery
+    test: a chapter that recovers and then cannot be *played* is recovered in
+    name only, and the refusal a caller would see says nothing about a journal.
+    """
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY], seed=223, mode="exploration"
+        )["encounter_id"]
+    )
+    api.encounter_act(encounter_id, "move", to_position=[10, 0], actor="Kettle")
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["recovered"] is True
+    assert recovered["state"] == before
+    after = api.encounter_act(
+        encounter_id, "move", to_position=[20, 0], actor="Kettle"
+    )
+    kettle = next(
+        one for one in after["state"]["combatants"] if one["name"] == "Kettle"
+    )
+    assert kettle["position"] == [20, 0]
+
+
+def test_a_solo_interlude_recovers_from_a_journal_holding_one_combatant() -> None:
+    """The arity rule reaches recovery too, and only the mode says which one.
+
+    A journal is read back through the same spec translation that built it, so
+    a solo chapter recovers only if the count rule knows which mode it is
+    counting for. Without it the refusal is "an encounter needs at least two
+    combatants" — a complaint about a roster nobody can now change.
+    """
+    encounter_id = str(
+        api.encounter_create(
+            [dict(INTERLUDE_PARTY[0])], seed=227, mode="exploration"
+        )["encounter_id"]
+    )
+    before = api.encounter_state(encounter_id)
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == before

@@ -260,24 +260,51 @@ belong to *this* skill:
 - **Finalize each encounter as it ends.** `adventure.replay` composes frozen
   files, so a run with a live encounter in it cannot be exported — and that
   bundle is what the report links.
+- **Every scene between the fights is a chapter too** — see section 5. The
+  adventuring day is walks and fights in the order they happened, not fights with
+  gaps between them.
 
 ## 5. Between fights
 
-Not every scene is combat, and most findings are not.
+Not every scene is combat, and most findings are not. **Every one of them runs as
+an interlude**: a chapter of the same run, linked with `--mode exploration`,
+carrying the party the way any other chapter does.
 
-- **`fivee dice.check --modifier N --dc N --ability strength`** for an ability
-  check. There are no skill proficiencies in this engine — a check is a raw
-  ability check, and `--skill` is audit metadata around the modifier the game
-  master supplied, not a proficiency system.
-- **`fivee dice.save`** for a saving throw outside a fight.
-- **`fivee analytics.scenario-timing`** for a chase or a race against a stated
-  response delay.
-- **`fivee encounter.note <id> --text "..."`** to put an adjudication into the
-  fight's own durable record rather than leaving it in prose.
+```bash
+fivee adventure.encounter <adv-id> --if-match <version> --seed <n> \
+  --mode exploration --carry-map --json '{"carry": ["Thora", "Bran"]}'
+```
+
+Four habits, and they are the difference between a run you can replay and a
+transcript you have to be trusted about:
+
+- **Narrate through `fivee encounter.note <id> --speaker <name> --text "…"`.**
+  The speaker names a combatant in the chapter, so a line is attributable and can
+  be drawn at that token. An adjudication goes in the same way, with
+  `--category ruling`.
+- **Roll every check with `--encounter-id <the interlude>`.** `fivee dice.check
+  --modifier N --dc N --ability strength --encounter-id enc-3` lands in that
+  chapter's journal; the same check without it happens and leaves no trace. There
+  are no skill proficiencies in this engine — a check is a raw ability check, and
+  `--skill` is audit metadata around the modifier the game master supplied.
+  `fivee dice.save` and `fivee dice.roll` take the same argument.
+- **Move people rather than describing movement.** `fivee encounter.act <id>
+  --kind move --actor <name> --to-position '[x, y]'` — an interlude has no
+  initiative, so every act names its actor, and there is no `advance` to call.
+- **Finalize the interlude before the next chapter is linked.** An unfinalized
+  chapter refuses the whole composition, so a walk left open at the end of the
+  day costs you the run's replay.
+
+The **encounter-sim** skill has the rest of it: what an interlude is missing that
+a fight has, and why nothing expires inside one.
+
+`fivee analytics.scenario-timing` is still the tool for a chase or a race against
+a stated response delay; it holds no state and belongs to no chapter.
 
 Social and exploration scenes are resolved by the game master's judgement against
 the module. Your job there is to notice **when the module did not say**, and log
-it.
+it — and, now that the beat is a chapter, the note that records the ruling is
+part of the artifact the developer gets rather than only of your transcript.
 
 ## 6. Measure the fights
 

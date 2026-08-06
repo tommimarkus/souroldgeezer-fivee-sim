@@ -28,7 +28,7 @@ from ..kernel.grid import DiagonalRule, Facing, MovementMode, Point
 from ..kernel.rules import Ability, DamageType, Size
 from ..model.battlemap import BattleMap, MapFeature
 from ..model.creature import AttackOption, Creature, DeathRule
-from ..model.encounter import Action, ActionKind
+from ..model.encounter import Action, ActionKind, EncounterMode
 from .common import resolve_seed
 from .errors import RequestError
 
@@ -51,6 +51,7 @@ __all__ = [
     "parse_carried_flag",
     "parse_death_saves",
     "parse_map_dimension",
+    "parse_mode",
     "parse_movement_rule",
     "parse_point",
     "parse_square",
@@ -80,6 +81,22 @@ def parse_movement_rule(value: str) -> DiagonalRule:
     except ValueError as error:
         allowed = ", ".join(rule.value for rule in DiagonalRule)
         raise RequestError(f"movement_rule must be one of: {allowed}") from error
+
+
+def parse_mode(value: str | EncounterMode) -> EncounterMode:
+    """Which kind of chapter the caller asked for, refused by name if unknown.
+
+    The route table refuses an unknown mode before the body is reached, and this
+    is not redundant with it: ``tests/api.py`` calls these operations with no
+    adapter in front, the adventure surface passes a mode through, and
+    ``recover_session`` reads one back off a journal. One refusal for all of
+    them, in the idiom :func:`parse_movement_rule` established.
+    """
+    try:
+        return EncounterMode(value)
+    except ValueError as error:
+        allowed = ", ".join(mode.value for mode in EncounterMode)
+        raise RequestError(f"mode must be one of: {allowed}") from error
 
 
 def parse_point(value: int | list[int], what: str) -> Point | int:
@@ -365,7 +382,14 @@ def _conditions_from_spec(spec: dict[str, Any]) -> dict[str, int]:
                 f"condition_levels names {name!r}, which is not in this "
                 f"combatant's conditions"
             )
-        conditions[name] = int(level)
+        stated = int(level)
+        if stated < 1:
+            raise RequestError(
+                f"condition_levels[{name!r}] is {stated}, and a level must be "
+                f"at least 1 — a numeric condition effect scales by the level, "
+                f"so one below it inverts the effect rather than weakening it"
+            )
+        conditions[name] = stated
     return conditions
 
 
@@ -519,7 +543,10 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
 
 
 def combatants_from_specs(
-    specs: list[dict[str, Any]], registry: ContentRegistry
+    specs: list[dict[str, Any]],
+    registry: ContentRegistry,
+    *,
+    mode: EncounterMode = EncounterMode.COMBAT,
 ) -> list[Creature]:
     """Translate every combatant, *then* check there are enough of them.
 
@@ -531,11 +558,41 @@ def combatants_from_specs(
     field was missing. An empty list is the single case with nothing to
     diagnose, and it still gets the count, because there is no spec to complain
     about.
+
+    ``mode`` decides two of the rules below, and both are rules about *sides*.
+    A fight needs two of them; an interlude needs somebody to stand somewhere.
+    And a fight has rounds for a reinforcement to arrive in, where an interlude
+    has none — see :func:`_refuse_reinforcements`.
     """
     built = [creature_from_spec(spec, registry) for spec in specs]
-    if len(built) < 2:
+    if mode is EncounterMode.EXPLORATION:
+        if not built:
+            raise RequestError("an interlude needs at least one combatant")
+        _refuse_reinforcements(built)
+    elif len(built) < 2:
         raise RequestError("an encounter needs at least two combatants")
     return built
+
+
+def _refuse_reinforcements(built: list[Creature]) -> None:
+    """Refuse a scheduled arrival in a chapter that has no rounds to schedule it.
+
+    ``arrival_round`` is honoured when a round turns over, and in an interlude
+    none ever does — so a combatant scheduled for round 2 is not merely late,
+    they are permanently absent, and every act naming them is refused for the
+    life of the chapter with "does not arrive until round 2": a fight's sentence
+    about rounds, answering a chapter that has none. Refused here, where the
+    caller can still do something about it, and refused rather than silently
+    ignored because a spec key that is read and dropped builds a roster that is
+    not the one described.
+    """
+    scheduled = [one.name for one in built if one.arrival_round > 1]
+    if scheduled:
+        named = ", ".join(repr(name) for name in scheduled)
+        raise RequestError(
+            f"an interlude has no rounds, so combatant {named} cannot arrive later; "
+            "give arrival_round 1, or start them in the fight that follows"
+        )
 
 
 MAP_KEYS = frozenset({

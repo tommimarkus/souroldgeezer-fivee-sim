@@ -43,7 +43,7 @@ from fivee_sim.service import replay as replay_service
 from fivee_sim.service.errors import NotFoundError, ReplayError, RequestError
 
 from . import api
-from .conftest import REPLAY_GOBLIN, REPLAY_HERO
+from .conftest import AMBUSHER, LOOKOUT, MILL, REPLAY_GOBLIN, REPLAY_HERO, SCOUT
 
 #: Envelope keys the integrity block does **not** cover, with the reason each
 #: is exempt. Written out so a new *data* block added to the envelope without a
@@ -74,6 +74,36 @@ def run_of(chapters: int, name: str = "The Sunless Citadel") -> str:
             seed=700 + index,
         )
         api.encounter_finalize(str(linked["encounter_id"]))
+    return adventure_id
+
+
+def run_of_a_walk_then_a_fight(name: str = "The Drowned Mill") -> str:
+    """The two-chapter run this format change exists to let anybody record.
+
+    An interlude on a saved map, the party walking across it, then the ambush on
+    that same ground with ``carry_map`` — which is also the run that could not
+    compose at all until the bundle said which kind of chapter it was.
+    """
+    api.map_save("mill", MILL, "*")
+    adventure_id = str(api.adventure_create(name)["id"])
+    interlude = api.adventure_encounter(
+        adventure_id,
+        combatants=[dict(SCOUT), dict(LOOKOUT)],
+        seed=730,
+        map_id="mill",
+        mode="exploration",
+    )
+    walked = str(interlude["encounter_id"])
+    api.encounter_act(walked, "move", to_position=[25, 25], actor="Kettle")
+    api.encounter_finalize(walked)
+    ambush = api.adventure_encounter(
+        adventure_id,
+        combatants=[dict(AMBUSHER)],
+        seed=731,
+        carry_map=True,
+        mode="combat",
+    )
+    api.encounter_finalize(str(ambush["encounter_id"]))
     return adventure_id
 
 
@@ -517,3 +547,103 @@ class TestTheGlobBesideTheJournals:
             NotFoundError, match="no adventure 'adv-9'; adventures here: adv-1$"
         ):
             api.adventure_state("adv-9")
+
+
+class TestARunOfWalksAndFights:
+    """A chapter says which kind it is, and the envelope's copy is the artifact's.
+
+    Until the bundle carried its mode, an adventure with an interlude in it
+    could not compose at all: ``compose_replay`` validates before it publishes,
+    and every interlude bundle failed at four ``turn`` paths. So the first case
+    here is the one that could not happen, and the rest are about the field that
+    made it possible not becoming a second declaration of the same fact.
+    """
+
+    def test_a_run_of_a_walk_and_a_fight_composes_and_validates(self) -> None:
+        adventure_id = run_of_a_walk_then_a_fight()
+
+        envelope = composed(adventure_id)
+
+        assert replay_service.validate_adventure_replay(envelope) == []
+        assert api.replay_validate(envelope) == {
+            "valid": True, "error_count": 0, "diagnostics": []
+        }
+        # Not vacuous: the interlude's own bundle is the half that used to be
+        # refused, and it is refused for its ``turn`` paths and nothing else.
+        interlude = envelope["chapters"][0]["replay"]
+        assert interlude["encounter"]["mode"] == "exploration"
+        assert interlude["latest_state"]["turn"] is None
+        assert replay_service.validate_replay(interlude) == []
+
+    def test_each_chapter_says_which_kind_it_was_in_the_order_they_were_linked(
+        self,
+    ) -> None:
+        envelope = composed(run_of_a_walk_then_a_fight())
+
+        assert [chapter["mode"] for chapter in envelope["chapters"]] == [
+            "exploration", "combat"
+        ]
+
+    def test_a_chapters_mode_is_the_frozen_bundles_and_not_the_documents(self) -> None:
+        # ``_frozen_bundle`` already reads the artifact, so the chapter's copy
+        # comes from there rather than from the run's own record of the link.
+        # Proved by making the two disagree: the document is edited on disk to
+        # call the interlude a fight, and the composed envelope still says what
+        # the artifact says. Re-deriving is exactly what chapter freezing exists
+        # to prevent, and this is the same rule applied to one field.
+        adventure_id = run_of_a_walk_then_a_fight()
+        path = adventures.adventure_path(adventure_id)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["members"][0]["mode"] = "combat"
+        path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+        envelope = composed(adventure_id)
+
+        assert api.adventure_state(adventure_id)["members"][0]["mode"] == "combat"
+        assert envelope["chapters"][0]["mode"] == "exploration"
+        assert replay_service.validate_adventure_replay(envelope) == []
+
+    def test_a_chapter_mode_the_model_never_declared_is_named_at_that_chapter(
+        self,
+    ) -> None:
+        envelope = composed(run_of_a_walk_then_a_fight())
+        envelope["chapters"][1]["mode"] = "wandering"
+
+        problems = {
+            one["path"]: one["problem"]
+            for one in replay_service.validate_adventure_replay(envelope)
+        }
+
+        assert "chapters.1.mode" in problems
+        assert "combat, exploration" in problems["chapters.1.mode"]
+
+    def test_a_chapter_that_disagrees_with_the_bundle_it_carries_is_named(self) -> None:
+        # The two-declarations defect, closed where it would appear. The
+        # envelope's own summary of a run and the artifact it sits beside are
+        # the same fact written twice, and a reader that trusted the summary
+        # would draw an initiative order for a chapter that never rolled one.
+        envelope = composed(run_of_a_walk_then_a_fight())
+        envelope["chapters"][0]["mode"] = "combat"
+
+        problems = {
+            one["path"]: one["problem"]
+            for one in replay_service.validate_adventure_replay(envelope)
+        }
+
+        assert "chapters.0.mode" in problems
+        assert "its own replay" in problems["chapters.0.mode"]
+
+    def test_a_chapter_older_than_the_field_is_read_rather_than_refused(self) -> None:
+        # An envelope composed before chapters said which kind they were is
+        # still a playable record of a run of fights, and every chapter in one
+        # is a fight. Refusing the key's absence would make every adventure
+        # replay already on a user's disk invalid at the version that added it.
+        envelope = composed(run_of(2))
+        for chapter in envelope["chapters"]:
+            del chapter["mode"]
+            del chapter["replay"]["encounter"]["mode"]
+        envelope["integrity"]["chapters"] = replay_service.canonical_sha256(
+            envelope["chapters"]
+        )
+
+        assert replay_service.validate_adventure_replay(envelope) == []

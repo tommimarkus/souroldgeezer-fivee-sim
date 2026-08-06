@@ -1,6 +1,6 @@
 ---
 name: map-forge
-description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving map files and reading them back, launching the interactive browser editor for hand-tuning, putting a fight on a saved map, exporting a finished fight as a shareable replay, composing a whole adventure's finalized fights into one replay bundle, or handing a map to another virtual tabletop via Universal VTT export. Drives the souroldgeezer-fivee-sim engine's map and replay operations with the bundled `fivee` command; running the fight itself belongs to the encounter-sim skill.
+description: Use when creating, editing, or managing battle maps for 5E-compatible combat — generating dungeon, cave, or overland maps under a seed, rendering and verbally tweaking them, saving map files and reading them back, launching the interactive browser editor for hand-tuning, putting a fight on a saved map, exporting a finished fight as a shareable replay, composing a whole adventure's finalized chapters — fights and interludes alike — into one replay bundle, or handing a map to another virtual tabletop via Universal VTT export. Drives the souroldgeezer-fivee-sim engine's map and replay operations with the bundled `fivee` command; running the fight itself belongs to the encounter-sim skill.
 ---
 
 # Map Forge
@@ -160,12 +160,22 @@ anything — worth a call before a `map.put` you expect to be marginal.
 
 ## A whole adventure as one replay
 
-Several fights can belong to one **adventure** — an ordered run of encounters that
-carries the party between them, which the encounter-sim skill drives. **`fivee
+Several encounters can belong to one **adventure** — an ordered run that carries
+the party between them, which the encounter-sim skill drives. **`fivee
 adventure.replay <adv-id>`** composes that run into a single bundle: the
 adventure's identity, then every member encounter's finalized replay nested
 verbatim, in order. It reports the chapter count, the encounters, the path, and
 the SHA-256.
+
+**A chapter is a fight or an interlude, and the envelope says which.** Each
+chapter record carries its `mode` — `combat` or `exploration` — copied from the
+frozen bundle rather than recomputed, so a composed run reads as the day it was:
+arrival, conversation, ambush, aftermath. An interlude's chapter carries no
+initiative and no rounds, and carries what happened instead — the moves, the
+notes with their speakers, and every check rolled against that chapter's id. A
+run whose non-combat scenes were never linked as chapters composes to its fights
+alone and quietly loses the rest of the day, which is why the encounter-sim and
+playtest skills both say to link them.
 
 ```bash
 fivee adventure.list                                  # the runs on disk

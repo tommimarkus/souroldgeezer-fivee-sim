@@ -116,7 +116,7 @@ Governs: `model/encounter.py:Encounter._step_cost`.
 
 Basis: SRD 5.2.1, Rules Glossary, Speed.
 
-Governs: `model/encounter.py:Encounter._begin_turn`.
+Governs: `model/encounter.py:Encounter._fresh_turn_state`.
 
 ### `cylinder_height_unread`
 
@@ -131,6 +131,34 @@ Governs: `model/encounter.py:Encounter._begin_turn`.
 Basis: SRD 5.2.1, Spells, Areas of Effect.
 
 Governs: `kernel/spells.py:Spell.height`.
+
+### `interlude_expires_no_timed_effect`
+
+**Question.** An ongoing effect ends on a turn boundary: a phase, and the creature whose turn it is. An interlude has no turns and no rounds to end.
+
+**Decision.** Nothing anchored to a turn boundary expires inside an interlude. The release runs from advancing a turn, which an interlude refuses, so an effect applied in one holds until the chapter is finalized.
+
+**Why.** A beat is not a turn boundary, and expiring on one would have to invent the parts a boundary is made of — whose turn ended, and how many have passed since the effect landed. Both answers would be made up, and one of them silently decides how long a rider lasts.
+
+**Revisit when.** A condition imposed during an interlude walks into the next chapter, because conditions are carried state and the effect ledger holding it is not — so the thing that would have lifted it does not cross. Any content that lands a timed rider out of combat needs this before it is playable; today the coarseness is invisible and permanent.
+
+Basis: SRD 5.2.1, Spells, Duration; SRD 5.2.1, The Order of Combat.
+
+Governs: `model/encounter.py:Encounter._begin_beat`.
+
+### `interlude_beat_restores_the_budget`
+
+**Question.** The action economy belongs to a turn: one action, one bonus action, a movement budget. Outside combat the printed rules track none of it.
+
+**Decision.** Each named act opens a fresh beat — movement back to the actor's speed, action and bonus action unspent, reaction restored — so nothing accumulates across an interlude and no budget ever runs out.
+
+**Why.** This stepper knows turns and nothing else, so the choice was which turn to give a beat rather than whether to give it one. A budget that ran out would strand a party 30 feet into a mill floor with no way to keep walking; refreshing puts the only cap inside a single act, where it still charges real terrain, and leaves the number of acts to the caller — which is where the printed rules leave it.
+
+**Revisit when.** Two consequences pull opposite ways and neither is visible from a green run: one act cannot exceed the actor's speed, so a long walk is several journal beats rather than one, and nothing bounds the beats, so a creature can attack once per act for as long as the caller keeps asking. An interlude that has to *cost* something — an exploration turn, a chase, ammunition — has to decide what a beat is before it can charge for it.
+
+Basis: SRD 5.2.1, Exploration; SRD 5.2.1, Your Turn.
+
+Governs: `model/encounter.py:Encounter._begin_beat`.
 
 ### `temp_hp_grant_takes_the_higher_value`
 
@@ -238,9 +266,9 @@ Basis: SRD 5.2.1, Monsters, Recharge.
 
 ### `long_rest_exhaustion_removal_is_unreachable`
 
-**Question.** Exhaustion: "Finishing a Long Rest removes 1 of your Exhaustion levels."
+**Question.** Exhaustion names a Long Rest as the thing that removes a level, and sets no other way to shed one.
 
-**Decision.** This engine models no rest of any length. The only channel that reaches a carried combatant's Exhaustion level is ``adventures.link_encounter``'s caller-supplied ``recovery`` delta, which is where "they took a long rest" already lives for hit points and every other carried field.
+**Decision.** This engine models no rest of any length. The only channel that reaches a carried combatant's Exhaustion level is ``adventures.link_encounter``'s caller-supplied ``recovery`` delta, which is already where a caller says a long rest happened, for hit points and every other carried field.
 
 **Why.** A combat stepper has rounds and turns, not the minutes or hours a rest takes, so there is no clock here for a long rest to finish against. ``recovery`` already exists for exactly this shape of gap and needed no new field to carry Exhaustion's.
 
