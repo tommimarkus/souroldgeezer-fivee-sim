@@ -1473,6 +1473,19 @@ function replayV2() {
       timestamp: "2026-01-01T00:00:01Z",
       arguments: { category: "negotiation", text: "The bridge is unsafe." }, result: {},
     },
+    /* A check that succeeded, and the only one of these three whose line the
+     * page draws out of `result`. That is a property of the *journal* rather
+     * than of the viewer: a result is kept whole exactly when replay will not
+     * reproduce it, and a check is one of the operations recovery never
+     * replays — so this is the only record of what the die read, and the
+     * ticker is reading it. The two above are refused and a note, neither of
+     * which needs one, so without this row the page could stop rendering a
+     * rolled face and every case here would still pass. */
+    {
+      index: 2, operation: "check", status: "success",
+      timestamp: "2026-01-01T00:00:03Z", arguments: { skill: "perception", dc: 12 },
+      result: { detail: "d20 [11] +3 = 14 vs DC 12", success: true },
+    },
   ];
   bundle.actions = [];
   bundle.latest_state = copy(bundle.checkpoints[0].state);
@@ -1691,6 +1704,10 @@ await suite("viewer.html: replay v2 state and validation", "the page sandbox in 
     check("refusals and notes share the audit timeline",
       page.element("ticker").textContent.indexOf("intimidation refused") !== -1
         && page.element("ticker").textContent.indexOf("The bridge is unsafe") !== -1,
+      page.element("ticker").textContent);
+    check("an audited roll's own face is what the timeline reads back",
+      page.element("ticker").textContent.indexOf("perception: d20 [11] +3 = 14 vs DC 12")
+        !== -1,
       page.element("ticker").textContent);
 
     page.element("scrub").value = "1";

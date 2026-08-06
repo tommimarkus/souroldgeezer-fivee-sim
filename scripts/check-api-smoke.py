@@ -1693,19 +1693,16 @@ def main() -> int:
             # that says the record survives the chapter: a note the engine
             # answered and did not journal would read identically above.
             #
-            # What survives is the *call*, not its answer. This line used to
-            # read the check's own ``result.detail`` back out of the frozen
-            # attempt; journal_version 2 keeps a result only for a call that
-            # passed ``request_id`` and bought idempotency, and neither of
-            # these did. A fight's outcomes are re-derived by replaying its
-            # actions, so nothing is lost there — but a *primitive* is not
-            # replayed, so this roll's face is now recorded nowhere and the
-            # narrower claim below is all this artifact can still support.
+            # The check's own ``detail`` is read back out of the frozen attempt,
+            # and that is a claim only a primitive can make. A journal keeps a
+            # result whole exactly when replay will not reproduce it, and
+            # ``check`` is one of the four operations recovery never replays —
+            # so this line is reading the *only* record of what that die read,
+            # out of an artifact that outlived the fight.
             and spoken.get("arguments", {}).get("speaker") == NOTE_SPEAKER
             and spoken.get("arguments", {}).get("text") == NOTE_TEXT
             and rolled.get("arguments", {}).get("dc") == INTERLUDE_CHECK["dc"]
-            and rolled.get("arguments", {}).get("seed") == INTERLUDE_CHECK["seed"]
-            and rolled.get("status") == "success",
+            and rolled.get("result", {}).get("detail") == EXPECTED_CHECK_DETAIL,
             "the line somebody spoke and the check somebody rolled freeze with the chapter",
             f"speaker={walk['note'].get('speaker')!r} check={walk['check'].get('detail')!r} "
             f"frozen={sorted(attempts)}",

@@ -1249,6 +1249,13 @@ def _skirmish(acts: int = 20) -> str:
 #: record — almost all of it the captured content snapshot — and the remaining
 #: 33,360 are the eighty attempt and result records together.
 #:
+#: The fixture measures the two operations recovery replays and no others, so
+#: the number is unchanged by a journal keeping the results of the four it does
+#: not. That cost is real but small and flat: about 135 to 155 bytes per
+#: ``roll``, ``check``, ``save`` or ``encounter_note``, against the 700 bytes
+#: *per combatant* a state block costs — it does not grow with the roster,
+#: which is exactly why it was affordable and a stored state was not.
+#:
 #: Recalibrate it downward on a deliberate saving and upward only with a
 #: reason; a ceiling quietly raised to fit a regression measures nothing.
 SKIRMISH_JOURNAL_CEILING = 64_000
@@ -1266,6 +1273,11 @@ def test_a_result_record_records_that_the_state_moved_rather_than_the_state(
     record. What stays is ``state_sha256``, which says the state moved and lets
     a reader check a recovered fight against the one that was recorded without
     storing it twice.
+
+    Every act and advance in the fixture, and so every record here, is one
+    recovery replays — which is the condition, not the operation. What a
+    journal keeps of the four it does *not* replay is
+    ``test_every_journalled_operation_obeys_the_rule_it_is_classified_by``.
     """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
@@ -1496,3 +1508,328 @@ def test_a_recovered_fight_is_the_fight_it_replaced(
     # session that rebuilt them to a second shape would export a different
     # artifact from the live fight it replaced.
     assert api.STATE.sessions[encounter_id].attempts == live_attempts
+
+
+# --- what a journal keeps, and why -----------------------------------------
+def test_a_roll_nothing_replays_keeps_what_it_rolled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The journal is the only record a primitive will ever have.
+
+    ``recover_session`` re-derives an act, a ruling and an advance by replaying
+    them, so what those produced is stored nowhere. A ``roll`` is resolved once
+    and never replayed, and this one names no seed — so the seed the engine
+    chose lives in the result and in no argument dict. Drop the result and the
+    face that was rolled is recorded nowhere at all, which is not a saving but
+    a deletion.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=277)
+
+    rolled = api.roll("1d20", encounter_id=encounter_id)
+
+    kept = next(
+        entry
+        for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result" and entry["operation"] == "roll"
+    )
+    arguments = kept["arguments"]
+    assert isinstance(arguments, dict)
+    # The arguments are what makes this load-bearing: the caller named no seed,
+    # so ``supplied_arguments`` dropped it and the result is the only place the
+    # resolved one exists.
+    assert "seed" not in arguments
+    assert kept["result"] == rolled
+    result = kept["result"]
+    assert isinstance(result, dict)
+    assert result["seed"] == rolled["seed"]
+    assert result["rolls"] == rolled["rolls"]
+    # And it survives the round trip, because a recovered session reads its
+    # audit trail back off these records.
+    api.STATE.sessions.clear()
+    api.encounter_resume(encounter_id)
+    recovered = next(
+        entry
+        for entry in api.STATE.sessions[encounter_id].attempts
+        if entry["operation"] == "roll"
+    )
+    assert recovered["result"] == rolled
+
+
+def test_a_note_nothing_replays_keeps_what_it_recorded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same rule, on the operation that is not a die.
+
+    ``encounter_note`` is the fourth operation recovery does not replay, and
+    its result carries a timestamp the engine read from the clock — as
+    underivable as a rolled face and recorded in exactly the same one place.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=281)
+
+    written = api.encounter_note(encounter_id, "the door groans open")
+
+    kept = next(
+        entry
+        for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result" and entry["operation"] == "encounter_note"
+    )
+    assert kept["result"] == written
+
+
+def test_an_operation_recovery_replays_keeps_only_the_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other half of the rule, and the half the saving comes from.
+
+    An act is re-derived from its arguments, so its result is a second copy of
+    something already computable — and the expensive one. What stays is the
+    hash, which says the state moved without storing it twice.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=283)
+    advance_encounter_to(encounter_id, "Thora")
+
+    api.encounter_act(encounter_id, "dodge")
+
+    kept = next(
+        entry
+        for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result" and entry["operation"] == "encounter_act"
+    )
+    assert "result" not in kept
+    assert "state" not in kept
+    assert len(str(kept["state_sha256"])) == 64
+
+
+def test_the_replayed_set_is_the_one_recovery_actually_replays() -> None:
+    """One declaration, read by the writer and by the reader.
+
+    ``attempt_finished`` decides whether to keep a result by asking whether
+    recovery will reproduce it, and ``recover_session`` decides what to replay.
+    A hand-maintained second copy of that list would drift the first time an
+    operation joined or left it — so both read the same table, and this is the
+    assertion that the table is the one doing the work rather than a label
+    beside it.
+    """
+    assert sessions_service.REPLAYED_OPERATIONS == frozenset(
+        sessions_service.REPLAY_BY_OPERATION
+    )
+    assert sessions_service.REPLAYED_OPERATIONS == {
+        "encounter_act",
+        "encounter_condition",
+        "encounter_advance",
+    }
+
+
+# --- when the replay does not land where the journal says -------------------
+def _with_a_poisoned_state_hash(root: Path, encounter_id: str, recorded: str) -> str:
+    """This fight's journal again, with the last result record's hash replaced.
+
+    Re-chained rather than edited in place: a hand-edited record fails its own
+    sha256 and would be refused as corrupt long before recovery replayed
+    anything. What arrives is a journal that is internally perfect and simply
+    disagrees with what replaying it produces — which is what a kernel edit
+    under a live fight looks like from here.
+    """
+    saved = deepcopy(records(journal_path(root, encounter_id)))
+    for entry in saved:
+        if entry["kind"] == "creation":
+            entry["encounter_id"] = recorded
+    last = next(
+        entry
+        for entry in reversed(saved)
+        if entry["kind"] == "result" and entry["status"] == "success"
+    )
+    last["state_sha256"] = "0" * 64
+    rechained(recorded, saved)
+    return recorded
+
+
+def test_a_replay_that_lands_somewhere_else_says_so_without_refusing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The detector for the sharp edge of a reload, on the warning channel.
+
+    A recovered fight is re-derived under whatever rules this build now has, so
+    a kernel edit can leave it disagreeing with what the journal recorded. That
+    is the feature working and also its sharp edge, and ``state_sha256`` is the
+    only thing that can see it.
+
+    It warns rather than refuses on purpose. A fight outliving a release is
+    ordinary, and refusing would break cross-version recovery for the sake of a
+    diagnostic — the same reasoning the creation record's ``engine_version``
+    already carries.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=293)
+    advance_encounter_to(encounter_id, "Thora")
+    api.encounter_act(encounter_id, "dodge")
+    poisoned = _with_a_poisoned_state_hash(root, encounter_id, "enc-9200")
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(poisoned)
+
+    # Recovered, not refused: the fight is here and usable.
+    assert recovered["state"]["round"] == 1
+    drift = recovered["recovery_warning"]["state_drift"]
+    assert drift.startswith(
+        "'enc-9200' was recovered, but it is not the fight its journal recorded: "
+        "after record "
+    )
+    assert "encounter_act" in drift
+    assert "the journal has state_sha256 000000000000 and replaying it here produced " in drift
+    assert drift.endswith(
+        "The fight is usable and the journal is intact; the rules that replayed it "
+        f"are not the rules that recorded it (recorded: engine {__version__}, "
+        f"source unrecorded; running: engine {__version__}, source unset)."
+    )
+
+
+def test_an_ordinary_recovery_warns_about_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A warning that fires on a healthy recovery is worse than no warning.
+
+    Every resume of a fight that outlived its process goes through this, so a
+    false positive here would teach a caller to ignore the channel that carries
+    the true one.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = _skirmish(acts=4)
+    api.roll("1d20", encounter_id=encounter_id)
+    api.encounter_note(encounter_id, "a quiet moment")
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert "recovery_warning" not in recovered
+
+
+def test_a_fight_that_replayed_nothing_at_all_warns_about_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No result record carries a hash, so there is nothing to disagree with.
+
+    A fight created and never acted in has only a creation record. Quiet is the
+    right answer: a missing comparison is not a failed one.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=307)
+    api.STATE.sessions.clear()
+
+    assert "recovery_warning" not in api.encounter_resume(encounter_id)
+
+
+def test_an_interrupted_tail_is_not_mistaken_for_a_divergence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An attempt with no result is compared against nothing.
+
+    The replay stops at the last record that has one, and so does the hash it
+    is held against — so a process that died mid-operation recovers as quietly
+    as one that stopped cleanly.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=311)
+    advance_encounter_to(encounter_id, "Thora")
+    api.encounter_act(encounter_id, "dodge")
+    encounter_journal.append(
+        encounter_id,
+        {
+            "kind": "attempt",
+            "timestamp": sessions_service.utc_now(),
+            "index": 99,
+            "operation": "encounter_act",
+            "request_id": None,
+            "arguments": {"kind": "dodge"},
+        },
+    )
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert "recovery_warning" not in recovered
+    assert recovered["state"]["round"] == 1
+
+
+def test_a_crash_tail_and_a_divergence_are_both_reported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One channel, two keys, and neither overwrites the other.
+
+    Both can be true of the same journal — a process that died mid-write can
+    also have been running different rules — and the channel is a single dict.
+    So each takes its own key: a caller reading ``problem`` still sees the tail
+    it always saw, and a divergence arrives beside it rather than instead of
+    it.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=313)
+    advance_encounter_to(encounter_id, "Thora")
+    api.encounter_act(encounter_id, "dodge")
+    poisoned = _with_a_poisoned_state_hash(root, encounter_id, "enc-9300")
+    with journal_path(root, poisoned).open("ab") as handle:
+        handle.write(b'{"partial"')
+    api.STATE.sessions.clear()
+
+    warning = api.encounter_resume(poisoned)["recovery_warning"]
+
+    assert warning["problem"] == "partial final record was removed from the journal"
+    assert warning["preserved_tail"].endswith(".corrupt-tail")
+    assert "it is not the fight its journal recorded" in warning["state_drift"]
+
+
+def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """All seven operations in one fight, each checked against the constant.
+
+    The cases above name three operations between them. This one exercises the
+    whole set and derives what each record should carry from
+    ``REPLAYED_OPERATIONS`` itself, so an operation added to — or removed from —
+    the replay table is checked here without anybody remembering to add a case.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=317)
+    advance_encounter_to(encounter_id, "Thora")
+
+    api.roll("1d20", encounter_id=encounter_id)
+    api.check(3, 12, encounter_id=encounter_id)
+    api.save(2, 11, encounter_id=encounter_id, request_id="the-save")
+    api.encounter_note(encounter_id, "a line somebody spoke")
+    api.encounter_condition(encounter_id, "Goblin", "prone")
+    api.encounter_act(encounter_id, "dodge")
+    api.encounter_advance(encounter_id, request_id="the-turn")
+
+    saved = [
+        entry for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result"
+    ]
+    assert {str(entry["operation"]) for entry in saved} == {
+        "roll", "check", "save", "encounter_note",
+        "encounter_condition", "encounter_act", "encounter_advance",
+    }, "the fixture must exercise every operation a journal records"
+    for entry in saved:
+        operation = str(entry["operation"])
+        kept = "result" in entry
+        expected = (
+            operation not in sessions_service.REPLAYED_OPERATIONS
+            or entry["request_id"] is not None
+        )
+        assert kept is expected, (
+            f"{operation} {'kept' if kept else 'dropped'} its result, and the rule "
+            f"says it should have been {'kept' if expected else 'dropped'}"
+        )
+        # Whatever it kept, it says the state moved.
+        assert len(str(entry["state_sha256"])) == 64

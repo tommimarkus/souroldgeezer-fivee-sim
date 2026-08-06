@@ -22,7 +22,7 @@ rather than a second copy of it.
 from __future__ import annotations
 
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -56,6 +56,8 @@ from .replay import canonical_sha256
 __all__ = [
     "DOCUMENT_MARKER",
     "JOURNAL_VERSION",
+    "REPLAYED_OPERATIONS",
+    "REPLAY_BY_OPERATION",
     "Content",
     "EngineState",
     "ResolvedMap",
@@ -422,6 +424,74 @@ def resolve_battle_map(
     return None
 
 
+# --- the operations a recovery replays --------------------------------------
+# One declaration, read from both ends of the journal. :func:`recover_session`
+# reads it to know what to re-run; :func:`attempt_finished` reads it to know
+# whether a result is derivable and so need not be stored. A hand-maintained
+# second copy of that list would drift the first time an operation joined or
+# left it, and the drift would be silent in exactly one direction — a result
+# dropped for an operation nothing replays is a deletion, not a saving.
+#
+# Each body does only the mutation. The three shared lines around it — the
+# event-timestamp span and the checkpoint — belong to the loop, because they
+# are a property of *having replayed something* rather than of any one
+# operation.
+def _replay_act(encounter: Encounter, rng: Random, arguments: Mapping[str, Any]) -> None:
+    """Take the act again, from the arguments the caller supplied.
+
+    The actor is an *input* to the act, exactly as a supplied d20 face is: an
+    interlude has no initiative to re-derive it from, so a replay that dropped
+    it would be refused rather than resolving the wrong creature. ``None`` for
+    a fight, and for every act recorded before this key existed — which is the
+    same value they ran with.
+    """
+    actor = arguments.get("actor")
+    encounter.act(
+        specs.action_from_journal(arguments),
+        rng,
+        actor=str(actor) if actor is not None else None,
+    )
+
+
+def _replay_condition(
+    encounter: Encounter, rng: Random, arguments: Mapping[str, Any]
+) -> None:
+    """Make the ruling again.
+
+    A ruling changes the fight, so recovery has to replay it like an action. It
+    consumes no randomness, which is why ``rng`` goes unread here and is taken
+    anyway: the table's three entries answer to one signature.
+    """
+    encounter.set_condition(
+        str(arguments["target"]),
+        str(arguments["condition"]),
+        applied=bool(arguments.get("applied", True)),
+        levels=int(arguments.get("levels", 1)),
+    )
+
+
+def _replay_advance(
+    encounter: Encounter, rng: Random, arguments: Mapping[str, Any]
+) -> None:
+    """End the turn again, with whatever death-save faces the caller reported."""
+    encounter.advance(rng, tuple(int(f) for f in arguments.get("natural") or ()))
+
+
+#: Which journalled operations a recovery re-runs, and what re-running each one
+#: means. Everything absent from this table is resolved once and never again:
+#: ``roll``, ``check``, ``save`` and ``encounter_note`` change no state, so a
+#: recovery has nothing to re-derive them from and nothing it needs to.
+REPLAY_BY_OPERATION: Mapping[str, Callable[[Encounter, Random, Mapping[str, Any]], None]] = {
+    "encounter_act": _replay_act,
+    "encounter_condition": _replay_condition,
+    "encounter_advance": _replay_advance,
+}
+
+#: The same fact as a set, for the writer that only needs membership. Derived
+#: rather than written out, so it cannot answer differently from the table.
+REPLAYED_OPERATIONS: frozenset[str] = frozenset(REPLAY_BY_OPERATION)
+
+
 # --- the durable record ----------------------------------------------------
 def capture_checkpoint(session: Session, timestamp: str) -> None:
     session.state_history.append(deepcopy(session.encounter.state()))
@@ -566,11 +636,27 @@ def attempt_finished(
         # recovered fight can be held against the one that was recorded.
         "state_sha256": canonical_sha256(session.encounter.state()),
     }
-    # The one exception, and it is the caller's own doing: a ``request_id``
-    # bought idempotency, and ``cached_request`` has nothing but this to answer
-    # a retry with once the session has been recovered from disk. You pay for
-    # what you ask for — every other call keeps the hash and nothing else.
-    if result is not None and request_id is not None:
+    # A result is kept whole when either clause holds, and the two clauses are
+    # different claims with different reasons.
+    #
+    # *This journal is the only record the operation will ever have.* An
+    # operation absent from ``REPLAYED_OPERATIONS`` is resolved once and never
+    # re-derived, so its result is not a second copy of anything — a ``roll``
+    # called without a seed carries the resolved one and the face it read in
+    # the result and nowhere else, since ``supplied_arguments`` rightly dropped
+    # the ``None`` the caller passed. Dropping that is a deletion, not a
+    # saving, and it costs nothing to keep: none of the four returns a state.
+    #
+    # *The caller bought idempotency.* A ``request_id`` is answered from here
+    # whatever the operation, because ``cached_request`` has nothing else to
+    # answer a retry with once the session has come back off disk. You pay for
+    # what you ask for.
+    #
+    # Only an operation that is both replayed and unasked-for keeps the hash
+    # alone — which is where all of the weight was.
+    if result is not None and (
+        operation not in REPLAYED_OPERATIONS or request_id is not None
+    ):
         audit["result"] = deepcopy(dict(result))
     if error is not None:
         audit["error"] = error
@@ -698,6 +784,59 @@ def _unreplayable(
     )
 
 
+def _state_drift(
+    encounter_id: str,
+    created: Mapping[str, Any],
+    encounter: Encounter,
+    replayed: Mapping[str, Any] | None,
+) -> str | None:
+    """Whether the replay landed where the journal says the fight did.
+
+    This is what ``state_sha256`` is *for*, and until now nothing read one. A
+    recovered fight is re-derived under whatever rules this build has, so a
+    kernel edit under a live fight can leave it disagreeing with what the
+    journal recorded — the sharp edge of dev reload, and invisible from a green
+    run because both halves are internally consistent.
+
+    **It warns rather than refuses**, and that is the whole judgement. A fight
+    outliving a release is ordinary, and refusing would break cross-version
+    recovery for the sake of a diagnostic — the same reasoning the creation
+    record's ``engine_version`` already carries by being recorded and compared
+    against nothing. So the fight comes back usable and the caller is told what
+    it is holding.
+
+    Two quiet cases, both deliberate. A journal with no replayed record — a
+    fight created and never acted in, or one whose tail is an interrupted
+    attempt — has nothing to compare, and a missing comparison is not a failed
+    one. So does a record carrying no hash.
+
+    The record compared is the last one the replay actually *re-ran*, not
+    simply the last one carrying a hash, and the difference is real rather than
+    fastidious: a **refused** act can leave the live state changed before it
+    raises — in an interlude ``Encounter.act`` opens the beat before it
+    dispatches — so its recorded hash describes a state the replay deliberately
+    never visits. Comparing it would report drift on a healthy fight, which is
+    the one failure this diagnostic must not have.
+    """
+    if replayed is None:
+        return None
+    recorded = replayed.get("state_sha256")
+    if not isinstance(recorded, str):
+        return None
+    produced = canonical_sha256(encounter.state())
+    if produced == recorded:
+        return None
+    return (
+        f"{encounter_id!r} was recovered, but it is not the fight its journal "
+        f"recorded: after record {replayed.get('index')} "
+        f"({replayed.get('operation')}, {replayed.get('timestamp', 'no timestamp')}) "
+        f"the journal has state_sha256 {recorded[:12]} and replaying it here "
+        f"produced {produced[:12]}. "
+        f"The fight is usable and the journal is intact; the rules that replayed it "
+        f"are not the rules that recorded it ({_build_identity(created)})."
+    )
+
+
 def recover_session(
     state: EngineState, encounter_id: str
 ) -> tuple[Session, dict[str, str] | None]:
@@ -798,6 +937,11 @@ def recover_session(
     capture_checkpoint(session, created_at)
 
     pending: dict[int, dict[str, Any]] = {}
+    # The last record the loop below actually re-ran, which is the only one
+    # whose ``state_sha256`` describes the state this replay ends in. See
+    # :func:`_state_drift` for why it is that one and not simply the last
+    # record carrying a hash.
+    replayed: Mapping[str, Any] | None = None
     for record in records[1:]:
         kind = record.get("kind")
         if kind == "attempt":
@@ -833,56 +977,17 @@ def recover_session(
         # in ``state.sessions``, no append, no ``journal_head`` — so the
         # refusal is repeatable and a caller that fixes its build gets the
         # whole fight rather than what an earlier attempt left behind.
+        replay = REPLAY_BY_OPERATION.get(operation) if status == "success" else None
         try:
-            if status == "success" and operation == "encounter_act":
+            if replay is not None:
                 before = len(encounter.log)
-                # The actor is an *input* to the act, exactly as a supplied d20
-                # face is: an interlude has no initiative to re-derive it from,
-                # so a replay that dropped it would be refused rather than
-                # resolving the wrong creature. ``None`` for a fight, and for
-                # every act recorded before this key existed — which is the
-                # same value they ran with.
-                acted = record["arguments"]
-                actor = acted.get("actor")
-                encounter.act(
-                    specs.action_from_journal(acted),
-                    rng,
-                    actor=str(actor) if actor is not None else None,
-                )
+                replay(encounter, rng, record.get("arguments", {}))
                 timestamp = str(record["timestamp"])
                 session.event_timestamps.extend(
                     [timestamp] * (len(encounter.log) - before)
                 )
                 capture_checkpoint(session, timestamp)
-            elif status == "success" and operation == "encounter_condition":
-                # A ruling changes the fight, so recovery has to replay it like
-                # an action. It consumes no randomness and emits into the log,
-                # so the timestamps and checkpoint follow the same shape as the
-                # two below.
-                before = len(encounter.log)
-                arguments = record.get("arguments", {})
-                encounter.set_condition(
-                    str(arguments["target"]),
-                    str(arguments["condition"]),
-                    applied=bool(arguments.get("applied", True)),
-                    levels=int(arguments.get("levels", 1)),
-                )
-                timestamp = str(record["timestamp"])
-                session.event_timestamps.extend(
-                    [timestamp] * (len(encounter.log) - before)
-                )
-                capture_checkpoint(session, timestamp)
-            elif status == "success" and operation == "encounter_advance":
-                before = len(encounter.log)
-                encounter.advance(
-                    rng,
-                    tuple(int(f) for f in record.get("arguments", {}).get("natural") or ()),
-                )
-                timestamp = str(record["timestamp"])
-                session.event_timestamps.extend(
-                    [timestamp] * (len(encounter.log) - before)
-                )
-                capture_checkpoint(session, timestamp)
+                replayed = record
         except RequestError:
             # First, and load-bearing. ``RequestError`` is a ``ValueError``, so
             # the clause below would take one raised *inside* the replay and
@@ -928,4 +1033,13 @@ def recover_session(
     state.sessions[encounter_id] = session
     if encounter_id.startswith("enc-") and encounter_id[4:].isdigit():
         state.next_id = max(state.next_id, int(encounter_id[4:]))
+    drift = _state_drift(encounter_id, created, encounter, replayed)
+    if drift is not None:
+        # Both warnings can be live at once — a process that died mid-write can
+        # equally have been running different rules — and this channel is one
+        # dict. So each takes its own key rather than the two competing for
+        # ``problem``: a caller reading the crash tail still finds exactly what
+        # it always found, and a divergence arrives beside it rather than
+        # instead of it.
+        warning = {**(warning or {}), "state_drift": drift}
     return session, warning
