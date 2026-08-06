@@ -449,7 +449,21 @@ def prune(*, apply: bool) -> list[str]:
         return []
     reaped: list[str] = []
     for directory in sorted(root.glob("enc-*")):
-        if not directory.is_dir() or not _SAFE_ID.fullmatch(directory.name):
+        # ``is_symlink`` first, and it is the load-bearing one. The two tests
+        # below follow links: a symlink named ``enc-7`` reports ``is_dir`` from
+        # its target and ``iterdir`` lists the target's contents, so the
+        # "nothing here but what a claim leaves" filter would grade somebody
+        # else's directory and pass — and ``_remove`` would then unlink two
+        # files inside it before ``rmdir`` finally refused the link itself.
+        # ``durable.file_lock`` opens its guard ``O_NOFOLLOW`` for this reason;
+        # the operation that *deletes* has more to lose by following a link.
+        # Skipped rather than refused, like a non-directory or a name outside
+        # the grammar: a link here was not left by ``claim``.
+        if (
+            directory.is_symlink()
+            or not directory.is_dir()
+            or not _SAFE_ID.fullmatch(directory.name)
+        ):
             continue
         if {path.name for path in directory.iterdir()} - _RECLAIMABLE_NAMES:
             continue

@@ -2804,6 +2804,45 @@ def test_pruning_leaves_a_directory_holding_anything_it_did_not_expect(
     assert (root / "enc-9001" / "notes.txt").is_file()
 
 
+def test_pruning_will_not_follow_a_symlink_wearing_a_fights_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The walk decides what to delete, so the walk may not follow a link.
+
+    ``is_dir()`` and ``iterdir()`` both follow, so a symlink named ``enc-7``
+    used to be graded on *the victim's* contents: a directory holding an empty
+    ``journal.jsonl`` and its lock satisfies :data:`_RECLAIMABLE_NAMES`, and
+    both files were unlinked before ``rmdir`` finally hit ``ENOTDIR`` on the
+    link itself. Two files deleted outside the encounters root, and the refusal
+    named neither — ``reaped`` is appended after the directory goes, so the
+    report said nothing had happened.
+
+    ``durable.file_lock`` already opens its guard with ``O_NOFOLLOW`` for
+    exactly this reason and says so. The operation that *deletes* has more to
+    lose by following a link than the one that locks, not less.
+
+    Skipped rather than refused, like a non-directory and a name outside the
+    grammar: a link here is not this build's artifact, and prune's whole rule is
+    that it removes only what a claim leaves.
+    """
+    root = _journal_root(tmp_path, monkeypatch)
+    root.mkdir(parents=True, exist_ok=True)
+    victim = tmp_path / "somebody-elses-directory"
+    victim.mkdir()
+    (victim / encounter_journal.JOURNAL_FILENAME).write_text("", encoding="utf-8")
+    (victim / f"{encounter_journal.JOURNAL_FILENAME}.lock").write_text("", encoding="utf-8")
+    (root / "enc-7").symlink_to(victim, target_is_directory=True)
+
+    assert encounter_journal.prune(apply=False) == []
+    assert encounter_journal.prune(apply=True) == []
+
+    assert sorted(path.name for path in victim.iterdir()) == [
+        encounter_journal.JOURNAL_FILENAME,
+        f"{encounter_journal.JOURNAL_FILENAME}.lock",
+    ], "prune followed a symlink and deleted inside somebody else's directory"
+    assert (root / "enc-7").is_symlink(), "the link itself is not this build's to remove"
+
+
 def test_pruning_an_empty_root_is_not_an_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
