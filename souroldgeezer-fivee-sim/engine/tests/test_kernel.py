@@ -26,6 +26,7 @@ from fivee_sim.kernel.conditions import (
     effect_of,
     is_incapacitated,
     speed_is_zero,
+    speed_reduction,
 )
 from fivee_sim.kernel.dice import (
     Advantage,
@@ -462,6 +463,17 @@ class TestConditionInteractions:
         # one either. Paralyzed, Petrified, and Unconscious each state Speed 0
         # explicitly, which is what makes its absence here deliberate.
         assert not speed_is_zero((Condition.STUNNED,))
+
+    def test_speed_reduction_sums_per_level_across_held_conditions(self) -> None:
+        # Mirrors d20_test_penalty's own shape: a per-level field, summed over
+        # a name-to-level mapping, uniform whether the condition is cumulative
+        # or an ordinary one permanently at level 1.
+        table = dict(EFFECTS) | {
+            "weary": condition_rules.ConditionEffect(speed_reduction_feet_per_level=5),
+        }
+        assert speed_reduction({"weary": 3}, table) == 15
+        assert speed_reduction({Condition.PRONE: 1}, table) == 0
+        assert speed_reduction({}, table) == 0
 
 
 class TestSavingThrowConditions:

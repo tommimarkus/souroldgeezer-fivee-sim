@@ -420,21 +420,34 @@ consequences the rules engine already knows how to apply:
 `auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
 `advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
 `melee_hits_are_critical`, `resists_all_damage`, `cumulative`,
-`d20_test_penalty_per_level`.
+`d20_test_penalty_per_level`, `speed_reduction_feet_per_level`.
 
-Every flag above `cumulative` is `true`/`false`; `d20_test_penalty_per_level` is
-the one numeric flag, a whole number of `0` or more (a negative value is refused
-— a bonus wearing a penalty's name, and this engine has no D20 bonus channel to
-apply it through). SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls
-of the game: ability checks, attack rolls, and saving throws. If something in
-the game affects D20 Tests, it affects all three" — so the flag reaches every
-one of them, never a subset. It is **per level**, not flat: a held condition is
-always at some level (an ordinary one is permanently 1, see `cumulative` below),
-and the total penalty is `d20_test_penalty_per_level × level`. A weary condition
-declaring `2` held at level 3 subtracts 6 from every ability check, attack roll,
-and saving throw its bearer makes — including Initiative and a death saving
-throw, both of which are D20 Tests even though neither routes through an
-ordinary ability-check or save modifier.
+Every flag above `cumulative` is `true`/`false`; `d20_test_penalty_per_level` and
+`speed_reduction_feet_per_level` are the two numeric flags, each a whole number of
+`0` or more (a negative value is refused — a bonus wearing a penalty's name, and
+this engine has no channel to apply one through). Both are **per level**, not
+flat: a held condition is always at some level (an ordinary one is permanently 1,
+see `cumulative` below), and each total is the flag times the level.
+
+SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the game: ability
+checks, attack rolls, and saving throws. If something in the game affects D20
+Tests, it affects all three" — so `d20_test_penalty_per_level` reaches every one
+of them, never a subset. A weary condition declaring `2` held at level 3
+subtracts 6 from every ability check, attack roll, and saving throw its bearer
+makes — including Initiative and a death saving throw, both of which are D20
+Tests even though neither routes through an ordinary ability-check or save
+modifier.
+
+`speed_reduction_feet_per_level` comes off **every movement mode** a creature
+has — walk, climb, swim, fly, and burrow alike, clamped at 0 and never negative —
+not the walking Speed alone. SRD 5.2.1 does not settle this directly, but the
+identical wording on Grappled ("Your Speed is 0") already reaches every mode in
+this engine, and the Speed glossary entry says a creature with more than one
+Speed chooses which to use for a given move; both point at the same reading. See
+`Creature.speed_for` and the `speed_reduction_reaches_every_movement_mode` entry
+in the rulings register (`fivee rules.rulings`) for the full argument and its
+`revisit` trigger. A weary condition declaring `5` held at level 2 takes 10 ft
+off every Speed its bearer prints.
 
 Ability-check flags apply to initiative and to checks made while interacting with
 a map fixture. The standalone `check` tool takes only a caller-supplied modifier,
@@ -493,11 +506,12 @@ doesn't. The Exhaustion condition is an exception to that rule." `cumulative`
 is that exception, generalised: a `true` value means a second imposition
 *increments* the level instead of leaving it at 1, which is what every
 non-cumulative condition still does — reimposing one changes nothing
-observable. `cumulative` and `d20_test_penalty_per_level` are independent
-flags — a condition can decline to stack while still carrying a numeric
-penalty at its permanent level of 1, or stack without carrying one at all —
-but the two combine naturally: a cumulative condition with a nonzero
-`d20_test_penalty_per_level` is what makes each fresh imposition bite harder.
+observable. `cumulative` and the two numeric flags are independent —
+a condition can decline to stack while still carrying a numeric effect at
+its permanent level of 1, or stack without carrying one at all — but they
+combine naturally: a cumulative condition with a nonzero
+`d20_test_penalty_per_level` or `speed_reduction_feet_per_level` is what makes
+each fresh imposition bite harder.
 `Encounter.state()` reports each
 combatant's `condition_levels`, a name-to-level mapping that always answers —
 `{}` on a fight with nothing leveled — restricted to the entries above level 1.

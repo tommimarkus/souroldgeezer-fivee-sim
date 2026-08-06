@@ -22,6 +22,7 @@ from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import (
     CoverGrade,
     DiagonalRule,
+    MovementMode,
     Point,
     Square,
     as_point,
@@ -302,9 +303,10 @@ class TestConditionLevels:
     """The level machinery: SRD 5.2.1 p.179's Exhaustion exception, generalised
     onto the effect row as ``cumulative`` rather than keyed on a name.
 
-    No numeric effect and no Exhaustion row exist yet — that is T10c and T10d.
-    This pins only that a condition can be *held* at a level, and that the
-    level survives every checkpoint a fight's state passes through.
+    Both numeric effects exist now (T10c, T10d); the bundled Exhaustion row
+    does not yet. This pins only that a condition can be *held* at a level,
+    and that the level survives every checkpoint a fight's state passes
+    through.
     """
 
     #: A pack-declared cumulative condition, not an SRD one — the acceptance
@@ -504,6 +506,131 @@ class TestD20TestPenalty:
         encounter._death_save(target, FixedRandom(13))
         event = next(e for e in encounter.log if e.kind == "death_save")
         assert event.detail == "13 vs DC 10 — success"
+
+
+class TestSpeedReduction:
+    """SRD 5.2.1, Exhaustion: "Your Speed is reduced by a number of feet
+    equal to 5 times your Exhaustion level." Grappled's identical wording
+    ("Your Speed is 0") already reaches every movement mode in this engine —
+    see ``_do_move``'s unconditional refusal — so the ruling this pins is
+    that a numeric reduction reaches every mode too, not the walking Speed
+    alone.
+    """
+
+    #: A pack-declared, cumulative, leveled condition — never an SRD one.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(speed_reduction_feet_per_level=5, cumulative=True),
+    }
+
+    def weary(self, levels: int = 2, **kwargs: Any) -> Creature:
+        target = fighter(**kwargs)
+        target.climb_speed = 20
+        target.swim_speed = 20
+        target.fly_speed = 30
+        target.burrow_speed = 10
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        return target
+
+    def test_speed_for_reduces_every_movement_mode(self) -> None:
+        target = self.weary()  # -10 ft
+        assert target.speed_for(MovementMode.WALK) == 20
+        assert target.speed_for(MovementMode.CLIMB) == 10
+        assert target.speed_for(MovementMode.SWIM) == 10
+        assert target.speed_for(MovementMode.FLY) == 20
+        assert target.speed_for(MovementMode.BURROW) == 0
+
+    def test_speed_for_clamps_at_zero_never_negative(self) -> None:
+        target = self.weary(levels=10)  # -50 ft, dwarfing every printed speed
+        for mode in MovementMode:
+            assert target.speed_for(mode) == 0
+
+    def test_an_unafflicted_creature_is_unchanged(self) -> None:
+        target = fighter()
+        target.climb_speed = 20
+        assert target.speed_for(MovementMode.WALK) == target.speed
+        assert target.speed_for(MovementMode.CLIMB) == target.climb_speed
+
+    def test_begin_turn_grants_the_reduced_movement_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")  # -10 ft; fly 30 -> 20 is the max
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        assert encounter._turn.movement_left == 20
+
+    def test_movement_speed_reads_the_reduced_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        assert encounter._movement_speed(weary_creature, MovementMode.CLIMB) == 10
+
+    def test_movement_speed_refuses_a_mode_reduced_to_zero(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        with pytest.raises(EncounterError, match="no burrow speed"):
+            encounter._movement_speed(weary_creature, MovementMode.BURROW)
+
+    def test_stand_cost_halves_the_reduced_speed(self) -> None:
+        weary_creature = self.weary(name="Thora")  # walk 30 -> 20
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        assert encounter.stand_cost("Thora") == 10
+
+    def test_can_stand_reads_the_reduced_speed(self) -> None:
+        weary_creature = self.weary(name="Thora", levels=10)  # walk reduced to 0
+        weary_creature.add_condition(Condition.PRONE)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        assert not encounter.can_stand("Thora")
+
+    def test_do_stand_refuses_a_creature_reduced_to_speed_zero(self) -> None:
+        weary_creature = self.weary(name="Thora", levels=10)  # walk reduced to 0
+        weary_creature.add_condition(Condition.PRONE)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        with pytest.raises(EncounterError, match="speed of 0 and cannot stand"):
+            encounter._do_stand(weary_creature)
+
+    def test_creature_state_speeds_reports_the_reduced_budget(self) -> None:
+        weary_creature = self.weary(name="Thora")
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        speeds = encounter._creature_state(weary_creature)["speeds"]
+        assert speeds == {"walk": 20, "climb": 10, "swim": 10, "fly": 20, "burrow": 0}
+
+    def test_creature_state_speeds_are_unchanged_for_an_unafflicted_creature(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        speeds = encounter._creature_state(target)["speeds"]
+        assert speeds == {"walk": 30, "climb": 0, "swim": 0, "fly": 0, "burrow": 0}
 
 
 class TestAttacking:

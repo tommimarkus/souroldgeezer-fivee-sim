@@ -1514,6 +1514,28 @@ class TestConditionEffectNumericFields:
             for p in problems(diagnostics)
         )
 
+    def test_a_second_numeric_field_needs_no_validator_change(
+        self, tmp_path: Path
+    ) -> None:
+        # speed_reduction_feet_per_level is the second numeric ConditionEffect
+        # field (T10d), added after d20_test_penalty_per_level (T10c). The
+        # validator derives its expected type from the dataclass default
+        # exactly as it does for the first one, so accepting this one needed
+        # no branch of its own.
+        registry = load_packs(
+            [self.condition_pack(tmp_path, {"speed_reduction_feet_per_level": 5})],
+            builtin="exclude", include_environment=False,
+        )
+        assert registry.condition_effects["weary"].speed_reduction_feet_per_level == 5
+
+    def test_a_negative_speed_reduction_is_refused_too(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"speed_reduction_feet_per_level": -1})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("speed_reduction_feet_per_level" in p for p in found)
+
     def test_the_builtin_condition_payload_stays_byte_identical(self) -> None:
         # T10a verified every current ConditionEffect field defaults to False, so
         # every bundled SRD condition emits the same effects dict the old

@@ -1944,12 +1944,17 @@ class Encounter:
             "max_hp": creature.max_hp,
             "temp_hp": creature.temp_hp,
             "ac": creature.ac,
+            # A held condition's Speed reduction is folded in here — the
+            # movement budget spends the reduced value, so reporting the
+            # printed one would be a lie to every reader of the brief.
+            # ``service/replay.py``'s creation-input payload keeps the
+            # printed speeds; this one is fight state, not creation input.
             "speeds": {
-                "walk": creature.speed,
-                "climb": creature.climb_speed,
-                "swim": creature.swim_speed,
-                "fly": creature.fly_speed,
-                "burrow": creature.burrow_speed,
+                "walk": creature.speed_for(MovementMode.WALK),
+                "climb": creature.speed_for(MovementMode.CLIMB),
+                "swim": creature.speed_for(MovementMode.SWIM),
+                "fly": creature.speed_for(MovementMode.FLY),
+                "burrow": creature.speed_for(MovementMode.BURROW),
             },
             "senses": {
                 "darkvision": creature.darkvision,
@@ -2035,13 +2040,7 @@ class Encounter:
         # the rules forfeits its movement for having been down when the turn
         # began. Deriving it first froze ``movement_left`` at 0 for the whole
         # turn while ``attacks_left`` was granted regardless.
-        maximum_speed = max(
-            creature.speed,
-            creature.climb_speed,
-            creature.swim_speed,
-            creature.fly_speed,
-            creature.burrow_speed,
-        )
+        maximum_speed = max(creature.speed_for(mode) for mode in MovementMode)
         if any(link.source == creature.name for link in self._attachments):
             maximum_speed = 0
         self._turn = TurnState(
@@ -3928,15 +3927,8 @@ class Encounter:
         if to_level != level:
             actor.level = to_level
 
-    @staticmethod
-    def _movement_speed(actor: Creature, mode: MovementMode) -> int:
-        speed = {
-            MovementMode.WALK: actor.speed,
-            MovementMode.CLIMB: actor.climb_speed,
-            MovementMode.SWIM: actor.swim_speed,
-            MovementMode.FLY: actor.fly_speed,
-            MovementMode.BURROW: actor.burrow_speed,
-        }[mode]
+    def _movement_speed(self, actor: Creature, mode: MovementMode) -> int:
+        speed = actor.speed_for(mode)
         if speed <= 0:
             raise EncounterError(f"{actor.name} has no {mode.value} speed")
         return speed
@@ -4197,9 +4189,11 @@ class Encounter:
         SRD 5.2.1, Rules Glossary, "Prone": the condition ends when the creature
         stands, "which costs an amount of movement equal to half your Speed."
         Movement is tracked in whole feet, so an odd Speed rounds the cost down.
-        Public because the auto-play policy prices the act before taking it.
+        Public because the auto-play policy prices the act before taking it. A
+        held condition's Speed reduction is applied first — a reduced Speed
+        *is* your Speed.
         """
-        return self.creatures[actor_name].speed // 2
+        return self.creatures[actor_name].speed_for(MovementMode.WALK) // 2
 
     def can_stand(self, actor_name: str) -> bool:
         """Whether the named creature could legally take the stand act right now.
@@ -4213,7 +4207,7 @@ class Encounter:
         return (
             Condition.PRONE in creature.conditions
             and creature.conscious
-            and creature.speed > 0
+            and creature.speed_for(MovementMode.WALK) > 0
             and not speed_is_zero(creature.conditions, self.condition_effects)
             and self._turn.movement_left >= self.stand_cost(actor_name)
         )
@@ -4231,7 +4225,7 @@ class Encounter:
         """
         if Condition.PRONE not in actor.conditions:
             raise EncounterError(f"{actor.name} is not prone")
-        if actor.speed == 0:
+        if actor.speed_for(MovementMode.WALK) == 0:
             raise EncounterError(f"{actor.name} has a speed of 0 and cannot stand")
         if speed_is_zero(actor.conditions, self.condition_effects):
             held = ", ".join(sorted(actor.conditions))

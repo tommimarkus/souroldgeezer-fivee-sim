@@ -56,6 +56,22 @@ Basis: SRD 5.2.1, Cover; SRD 5.2.1, Vision and Light.
 
 Governs: `kernel/grid.py:has_line_of_sight`.
 
+### `speed_reduction_reaches_every_movement_mode`
+
+**Question.** Exhaustion reduces 'your Speed' by feet per level. A creature with more than one Speed has to choose which one applies to a numeric reduction stated once, in the singular.
+
+**Decision.** The reduction comes off every movement mode a creature has — walk, climb, swim, fly, and burrow alike — clamped at 0, never negative.
+
+**Why.** Grappled's Speed clause reads identically ('Your Speed is 0') and this engine already reads it as covering every mode: _do_move refuses regardless of movement_mode. Reading Exhaustion's numeric clause the other way would make the same three words mean two different things in one condition table. The Speed glossary entry reinforces it: a creature with more than one Speed chooses which to use for a given move, so the modes are alternatives drawing on one budget rather than independent totals — a reduction a creature could dodge by choosing to fly would be no reduction at all.
+
+**Revisit when.** No survey of outside readings backs this yet — it is argued from the table's own Grappled precedent and the Speed glossary alone. Revisit if a printed clause ever states a Speed reduction that is meant to apply to one named mode only, which would mean the modes are not always drawing on one shared budget.
+
+**Outside readings.** no outside ruling exists.
+
+Basis: SRD 5.2.1, Conditions, Exhaustion; SRD 5.2.1, Rules Glossary, Speed.
+
+Governs: `model/creature.py:Creature.speed_for`.
+
 ## Modelled coarser than printed
 
 The rule is clear and the engine deliberately models it at a different granularity. Each entry names the case where the two part company.

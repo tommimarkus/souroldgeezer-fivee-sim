@@ -48,9 +48,10 @@ from ..kernel.conditions import (
     ConditionTable,
     d20_test_penalty,
     effect_of,
+    speed_reduction,
 )
 from ..kernel.dice import Dice
-from ..kernel.grid import DiagonalRule, Point, as_point, distance_feet
+from ..kernel.grid import DiagonalRule, MovementMode, Point, as_point, distance_feet
 from ..kernel.rules import Ability, DamageType, Size, ability_modifier
 
 __all__ = ["AttackKind", "AttackOption", "Creature", "DeathRule", "RiderExpiry"]
@@ -687,6 +688,28 @@ class Creature:
 
     def _d20_test_penalty(self) -> int:
         return d20_test_penalty(self.conditions, self.condition_effects)
+
+    # ruling: speed_reduction_reaches_every_movement_mode
+    def speed_for(self, mode: MovementMode) -> int:
+        """This creature's movement budget for one mode, after any held
+        condition's Speed reduction — never below zero.
+
+        SRD 5.2.1's Exhaustion and Grappled clauses both read "Your Speed",
+        and Grappled's identical wording already reaches every movement mode
+        this engine has — ``Encounter._do_move`` refuses regardless of
+        ``movement_mode``. A numeric reduction is read the same way: it comes
+        off ``walk``, ``climb``, ``swim``, ``fly``, and ``burrow`` alike, not
+        the walking Speed alone. See ``rulings.py``,
+        ``speed_reduction_reaches_every_movement_mode``.
+        """
+        base = {
+            MovementMode.WALK: self.speed,
+            MovementMode.CLIMB: self.climb_speed,
+            MovementMode.SWIM: self.swim_speed,
+            MovementMode.FLY: self.fly_speed,
+            MovementMode.BURROW: self.burrow_speed,
+        }[mode]
+        return max(0, base - speed_reduction(self.conditions, self.condition_effects))
 
     @property
     def spellcasting_modifier(self) -> int:

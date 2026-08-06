@@ -114,6 +114,15 @@ class ConditionEffect:
     #: identically, with no ``if cumulative`` branch anywhere downstream of
     #: this field.
     d20_test_penalty_per_level: int = 0
+    #: SRD 5.2.1, Exhaustion: "Your Speed is reduced by a number of feet equal
+    #: to 5 times your Exhaustion level." Per level for the same reason
+    #: ``d20_test_penalty_per_level`` is: a held condition is always at some
+    #: level, so ``feet_per_level * level`` treats a cumulative and an
+    #: ordinary condition identically. Reaches **every** movement mode a
+    #: creature has — see ``Creature.speed_for`` — rather than the walking
+    #: Speed alone; the register carries the ruling that decides that (SRD
+    #: silence, not an SRD statement).
+    speed_reduction_feet_per_level: int = 0
 
 
 #: Every flag a condition may set. Content-pack validation reports this list when a
@@ -260,6 +269,21 @@ def d20_test_penalty(conditions: Mapping[str, int], table: ConditionTable = EFFE
     """
     return sum(
         effect_of(condition, table).d20_test_penalty_per_level * level
+        for condition, level in conditions.items()
+    )
+
+
+def speed_reduction(conditions: Mapping[str, int], table: ConditionTable = EFFECTS) -> int:
+    """The total number of feet every movement mode's Speed is reduced by.
+
+    Same shape as :func:`d20_test_penalty`: ``conditions`` is a name-to-level
+    mapping, and each held condition contributes
+    ``speed_reduction_feet_per_level * level`` — uniformly, whether the
+    condition is cumulative or not. The caller decides which mode(s) this
+    total reaches; this function only totals it.
+    """
+    return sum(
+        effect_of(condition, table).speed_reduction_feet_per_level * level
         for condition, level in conditions.items()
     )
 
