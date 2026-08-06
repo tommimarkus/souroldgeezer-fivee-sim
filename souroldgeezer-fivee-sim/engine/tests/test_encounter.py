@@ -3220,31 +3220,48 @@ class TestMapPlacement:
 
 
 class TestAMalformedDocumentIsRefusedRatherThanRaised:
-    """Two failures the battle-map bridge used to absorb before a fight saw them.
+    """Three failures the battle-map bridge used to absorb before a fight saw them.
 
     ``to_grid`` walked every square through the legend and rebuilt the tiles as
     a sparse mapping, so a glyph with no legend entry and a row that did not
     reach the grid's width were both spent by the time ``_adopt_map`` ran. There
     is no bridge now: ``MapLevel.terrain_at`` reads ``legend[tiles[y][x]]`` at
     the moment a fight asks, and both of those raise ``LookupError`` rather than
-    ``ValueError``.
+    ``ValueError``. The third is ``ambient_light``, which
+    ``_adopt_map`` reads through ``LightLevel(level.ambient_light)`` — a bare
+    ``ValueError``, which is not an ``EncounterError`` and so is caught by
+    nothing between here and the adapter.
 
     That distinction is the whole point of these cases. ``EncounterError`` is a
     ``ValueError``, which ``web/http_server.py`` answers as problem+json; a
-    ``KeyError`` or an ``IndexError`` escaping ``Encounter.__init__`` is a 500.
+    ``KeyError``, an ``IndexError`` or a bare ``ValueError`` escaping
+    ``Encounter.__init__`` is a 500 —
+    ``service/encounters.py`` catches ``EncounterError`` by type.
     So a map a person could plausibly hand-build would turn a refusal the caller
-    can act on into a server fault, *and* it would not surface at construction
-    at all — the first creature to look at that square would raise it, several
-    turns into a fight.
+    can act on into a server fault, *and* the first two would not surface at
+    construction at all — the first creature to look at that square would raise
+    it, several turns into a fight.
 
     A hand-built document is exactly as unvalidated as a hand-built battle map
     was: ``parse_document`` lives in ``map_document``, which ``model`` may not
     import. These build the document directly for that reason — ``MapDocument.flat``
     allocates a legend that covers its own tiles and writes rows to width, so it
-    cannot express either failure.
+    cannot express any of the three.
+
+    That is also the honest bound on all three: a document arriving over
+    ``/api/v1`` is parsed first, and the parser refuses each of them by the same
+    rule. What these cover is the library caller who builds a ``MapDocument``
+    and hands it to ``Encounter`` — a supported use, and the one ``_adopt_map``
+    asks the plane rules for.
     """
 
-    def broken(self, *, legend: dict[str, str], tiles: tuple[str, ...]) -> MapDocument:
+    def broken(
+        self,
+        *,
+        legend: dict[str, str],
+        tiles: tuple[str, ...],
+        ambient_light: str = "bright",
+    ) -> MapDocument:
         return MapDocument(
             name="broken",
             grid=MapGrid(width=4, height=2),
@@ -3253,7 +3270,15 @@ class TestAMalformedDocumentIsRefusedRatherThanRaised:
                 generator="hand", seed=0, params={}, edited=False, source=FIXTURE
             ),
             levels=MappingProxyType(
-                {0: MapLevel(index=0, name="ground", tiles=tiles, features=())}
+                {
+                    0: MapLevel(
+                        index=0,
+                        name="ground",
+                        tiles=tiles,
+                        features=(),
+                        ambient_light=ambient_light,
+                    )
+                }
             ),
         )
 
@@ -3290,6 +3315,21 @@ class TestAMalformedDocumentIsRefusedRatherThanRaised:
         document = self.broken(legend={".": "normal"}, tiles=("....",))
         with pytest.raises(
             EncounterError, match=r"level 0 has 1 row on a 4x2 map"
+        ):
+            Encounter(self.roster(), Random(1), map_document=document)
+
+    def test_an_ambient_light_outside_the_vocabulary_is_refused(self) -> None:
+        # Not a ``LookupError`` like the two above: ``LightLevel('dusk')`` is a
+        # bare ``ValueError``, so without ``plane_findings``' guard it travels
+        # all the way out as one and the caller is told 'ValueError: ...' with a
+        # 500 rather than which levels are lit and how.
+        document = self.broken(
+            legend={".": "normal"}, tiles=("....", "...."), ambient_light="dusk"
+        )
+        with pytest.raises(
+            EncounterError,
+            match=r"level 0 is lit 'dusk', which is not a light level; "
+            r"the light levels are: bright, dim, darkness",
         ):
             Encounter(self.roster(), Random(1), map_document=document)
 
