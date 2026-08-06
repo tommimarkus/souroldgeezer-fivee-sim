@@ -279,7 +279,7 @@ a separate layer because they are resolution primitives like the rest.
 **`service/` holds the operation bodies, and the adapter goes through it.** This
 includes catalog search and lookup in `catalog.py` alongside `common.py`,
 `adventures.py`, `durable.py`, `encounter_journal.py`, `errors.py`, `maps.py`,
-`replay.py`, `scenes.py`, and `uvtt.py`.
+`replay.py`, `scenes.py`, `uvtt.py`, and `views.py`.
 Nothing in it may import HTTP or any transport's error type: a function
 takes plain values — a document, a terrain table, a seed — and raises plain
 `ValueError`-family errors. That rule outlived the second adapter it was written
@@ -348,6 +348,39 @@ this encounter` — from the read and from all four writes, and it deliberately
 **does not list the cast**: a refusal that answers "who is in this fight?" to
 anyone who guesses a wrong name discloses the ambusher the projection works
 hardest to hide.
+
+**A write composes two projections, seat then view, in that order and in one
+place.** `service/views.py` narrows a write's answer to `delta` (what changed
+since this seat's last payload), `live` (every combatant, sheets replaced by a
+digest), or `full` — and it runs strictly after `as=`'s brief projection, inside
+`encounters.py`'s `_answered`, so there is no per-operation order to keep in
+step. Reversing it would be the more obvious shape — diff the whole fight, then
+redact the diff — and it is wrong: a delta *names* every creature it mentions,
+so a delta computed before the brief could name a creature this seat cannot
+see, and that a hidden creature changed is itself the disclosure, independent
+of whatever fields rode along with it. Composing the other way makes it
+structural rather than a convention to remember, because the diff is then
+computed generically over two briefs with no knowledge of seats or cover — and
+because the two payloads' rosters actually disagree when a hidden creature
+enters or leaves, get the order backwards and the diff fails loudly instead of
+leaking a name.
+
+`create` and `resume` default `view` to `full` and `act`/`advance` default it
+to `delta`, because a delta needs a baseline and `create`/`resume` are what
+establish one. Two properties make that default safe rather than merely
+convenient. A server holding no baseline for a seat — a second server, one
+restarted, or a session just recovered from its journal — answers `full`
+regardless of what was asked, and says so in the response's own `view` field,
+so a caller can never be served a delta silently computed against the wrong
+history. And a cached, idempotent retry is always answered whole: a retry
+means the caller never received the first answer, so a delta against it would
+assume a baseline that was never actually held.
+
+`state_sha256` is a real integrity check for a program — apply the delta,
+hash the result, compare — and not one the skills can perform: an agent cannot
+compute a SHA-256 digest. So for the skills the rule stays "the engine is the
+authority, re-read"; the digest exists for `static/play.js`, the smoke gate's
+`apply_delta`, and any client that actually is a program.
 
 **It is a projection, not an access control, and nothing may cite it as one.**
 `as=` is caller-asserted; the engine has one per-launch token and no per-seat
