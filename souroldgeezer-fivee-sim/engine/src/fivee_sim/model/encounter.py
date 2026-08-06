@@ -587,6 +587,140 @@ def live_of(entry: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in entry.items() if key not in SHEET_KEYS}
 
 
+#: Which top-level keys of :meth:`Encounter.state` hold a list of creatures.
+#:
+#: A roster is the one thing a diff cannot treat as an opaque value: its entries
+#: have identity, so "the same creature with two fewer hit points" and "a
+#: different creature" are answers a positional comparison cannot tell apart.
+#: Naming the rosters is what lets :func:`state_delta` key them by ``name``.
+STATE_ROSTERS: tuple[str, ...] = ("combatants",)
+
+#: Which top-level keys of :meth:`Encounter.state` hold **one** creature's entry.
+#:
+#: Empty, and deliberately so rather than by omission: a snapshot's creatures all
+#: live in ``combatants``. Its other nested values — ``turn_state``, ``map``,
+#: ``ongoing_effects`` — are small and have no stable identity to key on
+#: (``ongoing_effects`` is a list whose entries are not creatures), so they are
+#: compared and replaced whole. A delta that descended into them would trade a
+#: few bytes for a receiver rule with three more cases in it.
+STATE_ENTRIES: tuple[str, ...] = ()
+
+#: The same two questions for :meth:`Encounter.brief_of`'s payload.
+#:
+#: The brief splits the cast by side, so it has two rosters where the snapshot
+#: has one, and puts the asker in a key of its own.
+BRIEF_ROSTERS: tuple[str, ...] = ("allies", "enemies")
+
+#: The brief's one single-creature key. ``you`` is the asker's own entry, whole.
+BRIEF_ENTRIES: tuple[str, ...] = ("you",)
+
+_ABSENT = object()
+
+
+def state_delta(
+    baseline: Mapping[str, Any],
+    current: Mapping[str, Any],
+    *,
+    rosters: Sequence[str] = (),
+    entries: Sequence[str] = (),
+) -> dict[str, Any]:
+    """What changed between two payloads of the same shape.
+
+    **Generic and shape-agnostic on purpose.** It is handed two payloads and told
+    which of their keys hold rosters and which hold a single creature; it knows
+    nothing about hit points, seats, or what a brief withholds. That is what
+    makes the composition rule in :mod:`fivee_sim.service.views` a structural
+    guarantee rather than an argued one — run this over two *briefs* and every
+    name and key it can possibly emit came out of a brief, because a brief is the
+    only thing it saw.
+
+    **Membership is absolute; values are differential.** A roster in the result is
+    the complete, ordered cast, each entry thinned to ``name`` plus whatever
+    moved. A creature that arrived is there whole, and a creature that died is
+    there with ``dead`` set — but a creature that *left* the payload is expressed
+    by its absence from a list that claims to be total. A per-creature patch map
+    could say "changed" and never "no longer yours to see", and for a payload
+    that is a seat's brief those are the two answers that matter most.
+
+    **Deletion is said out loud.** Omission already means "unchanged", so it
+    cannot also mean "gone": ``dropped`` carries the paths — ``"turn_state"``,
+    ``"combatants/Grelk/level"``, ``"you/facing"`` — that the baseline had and
+    this payload does not. Nothing in today's payloads drops a creature key
+    mid-fight, since ``level`` and ``elevation`` follow the map's presence and
+    the map does not come and go; the brief's ``turn_state`` and ``map``, on the
+    other hand, are conditional at the top level and do. It is built rather than
+    assumed either way, because the alternative is that the first payload to drop
+    a key does so silently.
+
+    The key is omitted entirely when nothing was dropped, so an unremarkable turn
+    does not carry an empty list.
+    """
+    delta: dict[str, Any] = {}
+    dropped: list[str] = [key for key in baseline if key not in current]
+    for key, value in current.items():
+        before = baseline.get(key, _ABSENT)
+        if key in rosters and isinstance(before, list):
+            thinned = _thinned_roster(key, before, value, dropped)
+            if thinned is not None:
+                delta[key] = thinned
+        elif key in entries and isinstance(before, Mapping):
+            changed = _thinned_entry(key, before, value, dropped)
+            if changed:
+                delta[key] = changed
+        elif before is _ABSENT or before != value:
+            delta[key] = value
+    if dropped:
+        delta["dropped"] = sorted(dropped)
+    return delta
+
+
+def _thinned_roster(
+    key: str,
+    before: Sequence[Mapping[str, Any]],
+    current: Sequence[Mapping[str, Any]],
+    dropped: list[str],
+) -> list[dict[str, Any]] | None:
+    """The cast in full, each entry cut to what moved — or ``None`` if none did.
+
+    ``None`` rather than an empty list, because "the roster is unchanged" and
+    "the roster is now empty" are different answers and the receiver reads the
+    list as complete.
+    """
+    held = {str(one["name"]): one for one in before}
+    thinned: list[dict[str, Any]] = []
+    moved = [str(one["name"]) for one in current] != [str(one["name"]) for one in before]
+    for entry in current:
+        name = str(entry["name"])
+        was = held.get(name)
+        if was is None:
+            thinned.append(dict(entry))
+            moved = True
+            continue
+        diff = {
+            field: value
+            for field, value in entry.items()
+            if was.get(field, _ABSENT) != value
+        }
+        dropped.extend(f"{key}/{name}/{gone}" for gone in was if gone not in entry)
+        moved = moved or bool(diff) or any(gone not in entry for gone in was)
+        thinned.append({"name": name} | diff)
+    return thinned if moved else None
+
+
+def _thinned_entry(
+    key: str,
+    before: Mapping[str, Any],
+    current: Mapping[str, Any],
+    dropped: list[str],
+) -> dict[str, Any]:
+    dropped.extend(f"{key}/{gone}" for gone in before if gone not in current)
+    return {
+        field: value
+        for field, value in current.items()
+        if before.get(field, _ABSENT) != value
+    }
+
+
 #: The action kinds that can put the *actor's* own d20 on the table, and so the
 #: only ones a reported face means anything for. Two of the three are
 #: conditional — a cast rolls one only when the spell attacks rather than

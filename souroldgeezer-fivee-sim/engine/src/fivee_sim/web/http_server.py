@@ -982,6 +982,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._idempotency_key(),
             request.query["as"],
             mode=body["mode"],
+            view=request.query["view"],
         )
         encounter_id = str(result["encounter_id"])
         self._send_json(
@@ -1053,6 +1054,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._idempotency_key(),
             request.query["as"],
             actor=body["actor"],
+            view=request.query["view"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1064,6 +1066,7 @@ class _Handler(BaseHTTPRequestHandler):
             request.body["natural"],
             self._idempotency_key(),
             request.query["as"],
+            view=request.query["view"],
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
@@ -1086,7 +1089,9 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_resume(self, request: _Request) -> None:
-        result = encounter_service.resume(self.state, request.id, request.query["as"])
+        result = encounter_service.resume(
+            self.state, request.id, request.query["as"], view=request.query["view"]
+        )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 
     def _h_encounter_finalize(self, request: _Request) -> None:

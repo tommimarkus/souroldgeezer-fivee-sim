@@ -34,7 +34,7 @@ from ..model.encounter import (
     EncounterMode,
 )
 from ..paths import source_id
-from . import content_ops, map_ops, primitives, sessions, specs
+from . import content_ops, map_ops, primitives, sessions, specs, views
 from . import encounter_journal as journal_service
 from . import replay as replay_service
 from .errors import NotFoundError, RequestError
@@ -127,6 +127,42 @@ def _briefed(
     return briefed
 
 
+def _answered(
+    session: Session,
+    result: dict[str, Any],
+    viewer: str | None,
+    view: str,
+) -> dict[str, Any]:
+    """Every write's answer, and the only place the two projections compose.
+
+    Seat first, view second — one spelling of it, so there is no per-operation
+    order to keep in step and no fifth leak of the kind CLAUDE.md lists. The
+    argument for that order is in :mod:`fivee_sim.service.views`; what matters
+    here is that no caller can get it the other way round without editing this
+    line.
+    """
+    return views.viewed(session, _briefed(session, result, viewer), viewer, view)
+
+
+def _rebaselined(
+    session: Session, payload: dict[str, Any], viewer: str | None
+) -> dict[str, Any]:
+    """Record a *read* as this seat's baseline, and return it untouched.
+
+    A read is a payload the caller now holds, so it is a baseline by the same
+    definition a write's answer is. Without this, a caller that refetched after
+    a digest mismatch would be repaired while the server went on diffing against
+    the payload it sent before the refetch — and a value that moved away and back
+    would then be missing from every later delta, permanently, because the two
+    ends agreed on it and neither was right.
+
+    Reads never *serve* a delta: ``encounter.state`` is the full authority this
+    phase leaves alone, and ``encounter.brief`` is the seat's whole picture.
+    """
+    session.last_payload[viewer] = deepcopy(payload)
+    return payload
+
+
 def replay_path(encounter_id: str) -> Path:
     """Where :func:`finalize` freezes this fight's replay bundle.
 
@@ -183,6 +219,7 @@ def create(
     viewer: str | None = None,
     *,
     mode: str = EncounterMode.COMBAT.value,
+    view: str | None = None,
 ) -> dict[str, Any]:
     """Start a chapter, and answer either the GM or one seat in it.
 
@@ -194,11 +231,22 @@ def create(
     started. Keyword-only because it is the first argument added past the
     positional chain above, and one more positional slot on a call this long is
     how the wrong value ends up in the right place.
+
+    ``view`` defaults to ``full`` here, and there is no choice about it: this is
+    the operation that *establishes* what a later delta is against. A caller may
+    still ask for ``live`` and get the sheets as digests, which is only useful
+    when it already holds them from an earlier fight.
+
+    It is parsed before anything else runs, so a mistyped view is refused instead
+    of starting a fight and then failing to describe it.
     """
+    chosen = views.parse_view(view, views.FULL)
     if request_id is not None:
         existing = creation_request(state, request_id)
         if existing is not None:
-            return _briefed(existing[1], creation_response(state, *existing), viewer)
+            return _answered(
+                existing[1], creation_response(state, *existing), viewer, views.FULL
+            )
     chapter = specs.parse_mode(mode)
     used = specs.checked_seed(seed)
     rng = Random(used)
@@ -323,7 +371,7 @@ def create(
             "configured content failed to load; this fight uses the bundled slice "
             "only. See content_status."
         )
-    return _briefed(session, result, viewer)
+    return _answered(session, result, viewer, chosen)
 
 
 def brief_for(state: EngineState, encounter_id: str, as_name: str) -> dict[str, Any]:
@@ -335,16 +383,21 @@ def brief_for(state: EngineState, encounter_id: str, as_name: str) -> dict[str, 
     """
     session = sessions.session_for(state, encounter_id)
     try:
-        return session.encounter.brief(as_name)
+        brief = session.encounter.brief(as_name)
     except EncounterError as error:
         raise NotFoundError(str(error)) from error
+    return _rebaselined(session, brief, as_name)
+
+
+def _snapshot_of(state: EngineState, session: Session) -> dict[str, Any]:
+    snapshot = session.encounter.state()
+    snapshot["map_source"] = sessions.map_source_of(state, session)
+    return snapshot
 
 
 def state_of(state: EngineState, encounter_id: str) -> dict[str, Any]:
     session = sessions.session_for(state, encounter_id)
-    snapshot = session.encounter.state()
-    snapshot["map_source"] = sessions.map_source_of(state, session)
-    return snapshot
+    return _rebaselined(session, _snapshot_of(state, session), None)
 
 
 def note(
@@ -680,8 +733,18 @@ def act(
     viewer: str | None = None,
     *,
     actor: str | None = None,
+    view: str | None = None,
 ) -> dict[str, Any]:
     """Take the turn, and answer either the GM or one seat in the fight.
+
+    ``view`` defaults to ``delta`` here and on :func:`advance`, and that is the
+    user-visible break this phase exists to make: the two operations a fight
+    calls hundreds of times stop re-sending the fight. A caller that wants the
+    old answer asks for ``view=full`` and gets it byte for byte.
+
+    An idempotent **retry** is always answered ``full``, whatever was asked for.
+    A retry means the caller did not hear the first answer, so the one thing it
+    certainly does not hold is the payload a delta would be against.
 
     ``viewer`` narrows the returned ``state`` and nothing else. What is
     journaled and what an idempotent retry replays stay whole: this fight's
@@ -691,10 +754,11 @@ def act(
     the arguments: it is an input the chapter cannot re-derive, so a recovery
     that dropped it would replay somebody else's beat.
     """
+    chosen = views.parse_view(view, views.DELTA)
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return _briefed(session, cached, viewer)
+        return _answered(session, cached, viewer, views.FULL)
     # Before anything durable happens, and for the reason ``create`` refuses an
     # unknown ``viewer`` before it starts a fight: a mistyped name is a client's
     # mistake rather than a table's event, and journaling an attempt and a
@@ -792,7 +856,7 @@ def act(
         status="success",
         result=result,
     )
-    return _briefed(session, result, viewer)
+    return _answered(session, result, viewer, chosen)
 
 
 def execute_advance(
@@ -816,15 +880,20 @@ def advance(
     natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    *,
+    view: str | None = None,
 ) -> dict[str, Any]:
     """End this turn and begin the next, answering the GM or one seat.
 
-    ``viewer`` narrows the returned ``state``, on the same terms as :func:`act`.
+    ``viewer`` narrows the returned ``state``, and ``view`` decides how much of
+    it to repeat — both on the same terms as :func:`act`, including the default
+    of ``delta`` and the ``full`` answer to a retry.
     """
+    chosen = views.parse_view(view, views.DELTA)
     session = sessions.session_for(state, encounter_id)
     cached = sessions.cached_request(session, request_id)
     if cached is not None:
-        return _briefed(session, cached, viewer)
+        return _answered(session, cached, viewer, views.FULL)
     # Recorded for the reason ``act`` records its own: a death save the caller
     # rolled is an input, and a resume that re-rolled it would recover a fight
     # where somebody died who did not.
@@ -862,11 +931,15 @@ def advance(
         status="success",
         result=result,
     )
-    return _briefed(session, result, viewer)
+    return _answered(session, result, viewer, chosen)
 
 
 def resume(
-    state: EngineState, encounter_id: str, viewer: str | None = None
+    state: EngineState,
+    encounter_id: str,
+    viewer: str | None = None,
+    *,
+    view: str | None = None,
 ) -> dict[str, Any]:
     """Read a fight back from its journal, answering the GM or one seat.
 
@@ -874,7 +947,13 @@ def resume(
     :func:`act`: this is the one of the four whose state comes from
     :func:`state_of` and so carries ``map_source``, which the projection
     classifies ``NEVER`` and drops with everything else.
+
+    ``view`` defaults to ``full`` for :func:`create`'s reason: this is what a
+    caller reaches for when it has *lost* the thread — after a restart, or a
+    reload, or a second process — which is exactly when a delta has nothing to
+    be against.
     """
+    chosen = views.parse_view(view, views.FULL)
     existing = state.sessions.get(encounter_id)
     warning: dict[str, str] | None = None
     recovered = existing is None
@@ -885,11 +964,11 @@ def resume(
         "encounter_id": encounter_id,
         "recovered": recovered,
         "finalized": session.finalized,
-        "state": state_of(state, encounter_id),
+        "state": _snapshot_of(state, session),
     }
     if warning is not None:
         result["recovery_warning"] = warning
-    return _briefed(session, result, viewer)
+    return _answered(session, result, viewer, chosen)
 
 
 def list_encounters(state: EngineState, status: str = "active") -> dict[str, Any]:

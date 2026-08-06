@@ -131,6 +131,20 @@ class Session:
     #: the fight is current" from "someone else has advanced it" — without it a
     #: second process would append its own divergent turns to the same journal.
     journal_head: str = ""
+    #: The last payload served to each seat, which is what ``view=delta`` is a
+    #: delta *against*. Keyed by the ``as=`` value, with ``None`` for the flat
+    #: unprojected snapshot; see :mod:`fivee_sim.service.views` for why it is
+    #: what was sent rather than something recomputed later.
+    #:
+    #: **In memory only, and losing it is never an error.** Nothing writes it to
+    #: a journal and nothing recovers it, because it is a fact about a
+    #: conversation rather than about a fight: a recovered session, a second
+    #: server on the same directory, or a restart simply has no baseline, and
+    #: the answer is then ``full`` and says so. That is also why it is exempt
+    #: from the rule against storing derived state — this is not a second copy
+    #: of the fight, it is a copy of an answer already given, and it can only
+    #: ever cost a re-send.
+    last_payload: dict[str | None, dict[str, Any]] = field(default_factory=dict)
     finalized: bool = False
     finalization_result: dict[str, Any] | None = None
 

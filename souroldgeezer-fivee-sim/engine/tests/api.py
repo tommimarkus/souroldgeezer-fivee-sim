@@ -134,10 +134,11 @@ def encounter_create(
     request_id: str | None = None,
     viewer: str | None = None,
     mode: str = "combat",
+    view: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.create(
         STATE, combatants, seed, movement_rule, map, map_id, request_id, viewer,
-        mode=mode,
+        mode=mode, view=view,
     )
 
 
@@ -201,6 +202,7 @@ def encounter_act(
     request_id: str | None = None,
     viewer: str | None = None,
     actor: str | None = None,
+    view: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.act(
         STATE,
@@ -227,6 +229,7 @@ def encounter_act(
         request_id,
         viewer,
         actor=actor,
+        view=view,
     )
 
 
@@ -235,8 +238,11 @@ def encounter_advance(
     natural: int | list[int] | None = None,
     request_id: str | None = None,
     viewer: str | None = None,
+    view: str | None = None,
 ) -> dict[str, Any]:
-    return _encounters.advance(STATE, encounter_id, natural, request_id, viewer)
+    return _encounters.advance(
+        STATE, encounter_id, natural, request_id, viewer, view=view
+    )
 
 
 def encounter_brief(encounter_id: str, as_name: str) -> dict[str, Any]:
@@ -244,9 +250,9 @@ def encounter_brief(encounter_id: str, as_name: str) -> dict[str, Any]:
 
 
 def encounter_resume(
-    encounter_id: str, viewer: str | None = None
+    encounter_id: str, viewer: str | None = None, view: str | None = None
 ) -> dict[str, Any]:
-    return _encounters.resume(STATE, encounter_id, viewer)
+    return _encounters.resume(STATE, encounter_id, viewer, view=view)
 
 
 def encounter_list(status: str = "active") -> dict[str, Any]:

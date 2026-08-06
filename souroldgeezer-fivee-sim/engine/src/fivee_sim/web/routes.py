@@ -266,6 +266,36 @@ _AS_SEAT = Param(
 )
 
 
+#: How much of the fight a write answers with. The fourth enum written out here
+#: rather than imported, for the same reason as the three above:
+#: ``service/views.py``'s ``VIEWS`` is the authority and ``TestDeclaredEnums``
+#: holds this against it, but ``web/`` may not reach into ``service/``.
+_VIEWS: tuple[str, ...] = ("delta", "live", "full")
+
+
+def _view(default: str) -> Param:
+    """The ``view`` parameter, whose *default* differs by operation.
+
+    A function rather than a constant because that difference is the whole
+    design: ``encounter.act`` and ``.advance`` default to ``delta``, while
+    ``encounter.create`` and ``.resume`` default to ``full`` because they are
+    what a delta would have to be against. Declared here as well as in
+    ``service/views.py`` so the OpenAPI document, ``GET /operations`` and the
+    CLI's ``--view`` flag all show the right default per operation without
+    anybody consulting the service layer to find out.
+    """
+    return Param(
+        "view",
+        "query",
+        {"type": "string", "enum": list(_VIEWS), "default": default},
+        description=(
+            "how much of the fight to answer with: delta (what changed since "
+            "this seat's last payload), live (every combatant, sheets replaced "
+            "by a digest), or full (the whole state)"
+        ),
+    )
+
+
 def _limit(default: int) -> Param:
     return Param(
         "limit", "query", {"type": "integer", "default": default}, description="page size"
@@ -710,7 +740,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters", "encounter.create",
         "Start an encounter and roll initiative, optionally on a battle map.",
-        params=(_IDEMPOTENCY, _AS_SEAT),
+        params=(_IDEMPOTENCY, _AS_SEAT, _view("full")),
         body_schema={
             "type": "object",
             "properties": {
@@ -760,7 +790,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/actions", "encounter.act",
         "Take the current creature's action and durably audit it.",
-        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT),
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT, _view("delta")),
         body_schema={
             "type": "object",
             "properties": {
@@ -800,7 +830,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/advance", "encounter.advance",
         "End this turn, begin the next, and record the transition.",
-        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT),
+        params=(_ID, _IF_MATCH, _IDEMPOTENCY, _AS_SEAT, _view("delta")),
         body_schema={"type": "object", "properties": {"natural": _NATURAL}},
         handler="encounter_advance", errors=(409,),
     ),
@@ -839,7 +869,7 @@ ROUTES: tuple[Route, ...] = (
     Route(
         "POST", f"{API_PREFIX}/encounters/{{id}}/resume", "encounter.resume",
         "Load an encounter from its verified journal, repairing a partial tail.",
-        params=(_ID, _AS_SEAT),
+        params=(_ID, _AS_SEAT, _view("full")),
         body_schema={"type": "object", "properties": {}},
         handler="encounter_resume",
     ),
