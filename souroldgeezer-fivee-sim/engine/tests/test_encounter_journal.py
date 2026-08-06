@@ -2660,6 +2660,36 @@ def test_an_append_whose_lock_cannot_be_taken_is_refused_by_name(
         encounter_journal.append(encounter_id, {"kind": "note"})
 
 
+def test_a_lock_that_will_not_let_go_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The escape one line below the one above, and the reason a flag was wrong.
+
+    ``file_lock``'s own ``finally`` releases and then closes, and
+    ``TestLockLifecycle`` pins that a failing release propagates an ``OSError``
+    rather than being swallowed — correct there, because that failure is real
+    and the descriptor still has to close. It arrives here *after* the body has
+    finished, so a wrapper that asks only "did we acquire?" attributes it to the
+    body, declines to translate, and leaks the very thing it was added to catch.
+
+    Acquiring and releasing get different sentences rather than one, because an
+    operator can do something about a guard that will not open and nothing at
+    all about one that will not let go: the write already happened.
+    """
+    _journal_root(tmp_path, monkeypatch)
+    encounter_id = mapless_fight(seed=251)
+
+    def refuse(descriptor: int) -> None:
+        raise OSError("release failed")
+
+    monkeypatch.setattr(durable, "_release", refuse)
+
+    with pytest.raises(
+        encounter_journal.JournalError, match="cannot release the lock on .*journal.jsonl"
+    ):
+        encounter_journal.append(encounter_id, {"kind": "note"})
+
+
 def test_a_prune_whose_lock_cannot_be_taken_is_refused_by_name(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

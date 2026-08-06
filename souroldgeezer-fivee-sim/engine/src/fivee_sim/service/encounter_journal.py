@@ -141,21 +141,31 @@ def _locked(path: Path) -> Iterator[None]:
     missed, so a booby-trapped or unopenable guard reached the adapter's
     catch-all and answered a bare 500 rather than naming the file.
 
-    ``acquired`` is what keeps the relabelling honest. Only a failure to *take*
-    the lock is a locking failure; an ``OSError`` out of the body is somebody
-    else's, and calling it "cannot lock" would put a wrong sentence on a right
-    refusal. The bodies here convert their own, so this is a guard against a
-    future one rather than a case that exists today.
+    ``stage`` is what keeps the relabelling honest, and it has to be three
+    states rather than a taken/not-taken flag. ``file_lock`` releases and closes
+    in its own ``finally``, and a failing release propagates — correct there,
+    and it means an ``OSError`` can arrive *after* the body has finished. A flag
+    asking only "did we acquire?" reads that as the body's, declines to
+    translate, and leaks the very thing this exists to catch, one line further
+    down than the hole it closed.
+
+    So: a failure to **take** the lock and a failure to **let go** of it each
+    get their own sentence, because an operator can do something about a guard
+    that will not open and nothing at all about one that will not release — by
+    then the write has already landed. An ``OSError`` out of the **body** is
+    somebody else's and passes through untouched; the bodies here convert their
+    own, so that arm guards a future one rather than a case that exists today.
     """
-    acquired = False
+    stage = "cannot lock"
     try:
         with durable.file_lock(path):
-            acquired = True
+            stage = ""  # inside the body: its failures are its own to name
             yield
+            stage = "cannot release the lock on"
     except OSError as error:
-        if acquired:
+        if not stage:
             raise
-        raise JournalError(f"cannot lock {path}: {error}") from error
+        raise JournalError(f"{stage} {path}: {error}") from error
 
 
 def _canonical_bytes(value: Any) -> bytes:
