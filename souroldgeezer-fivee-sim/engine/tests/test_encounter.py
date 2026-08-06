@@ -4383,6 +4383,43 @@ class TestSpellcasting:
                 rng,
             )
 
+    def test_a_cantrip_is_at_will_and_costs_no_slots(self) -> None:
+        """Cantrips are level 0 and bypass the slot-availability check.
+
+        The slot-level check at encounter.py:3000 and the decrement at :3068 are both
+        gated by ``if spell.level > 0:``, so level-0 spells skip both and consume no
+        resources. This test pins that behaviour; a cantrip succeeds even with an
+        empty spell_slots dict, and the dict remains empty after casting.
+        """
+        rng = Random(4)
+        cantrip_book: dict[str, Spell] = {
+            "Arcane Missile": Spell(
+                name="Arcane Missile",
+                level=0,
+                school="Evocation",
+                requires_attack_roll=True,
+                damage=Dice(1, 4, 0),
+                damage_type=DamageType.FORCE,
+                range_feet=60,
+                provenance=FIXTURE,
+            )
+        }
+        caster_creature = caster()
+        caster_creature.spells = ("Arcane Missile",)
+        caster_creature.spell_slots = {}  # Empty: no slots of any level
+        goblin = make_monster("Goblin Warrior", label="Goblin", position=30)
+        encounter = Encounter(
+            [caster_creature, goblin], rng, spellbook=cantrip_book
+        )
+        advance_to(encounter, "Wren", rng)
+        # Cast succeeds with no slots to spend
+        encounter.act(
+            Action(kind=ActionKind.CAST, spell="Arcane Missile", targets=("Goblin",)),
+            FixedRandom(15),
+        )
+        # spell_slots remains empty after casting
+        assert caster_creature.spell_slots == {}
+
     def test_a_slot_below_the_spells_level_is_refused_before_anything_is_spent(
         self,
     ) -> None:
