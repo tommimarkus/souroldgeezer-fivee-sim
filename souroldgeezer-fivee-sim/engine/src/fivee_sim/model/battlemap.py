@@ -21,17 +21,35 @@ square picks the spot on it. The level is deliberately not folded into the
 square — every geometry primitive in :mod:`fivee_sim.kernel.grid` is correct on
 one plane, and pushing a third coordinate through them would buy nothing a fight
 can use, because a floor blocks what is above and below it anyway.
+
+The vocabulary a fixture is *described* in — :class:`~fivee_sim.map_types.TerrainPair`,
+:class:`~fivee_sim.map_types.HeightPair`, :class:`~fivee_sim.map_types.FeatureCheck`,
+:class:`~fivee_sim.map_types.FeatureTrigger`, :class:`~fivee_sim.map_types.TriggerMode`,
+:class:`~fivee_sim.map_types.LightLevel`, :class:`~fivee_sim.map_types.SquareClaim`
+and :data:`~fivee_sim.map_types.GROUND_LEVEL` — lives in
+:mod:`fivee_sim.map_types` and is re-exported here. A file and a fight describe a
+door with the same words, so those words belong to neither side; ``GROUND_LEVEL``
+in particular was written out twice, here and in the document format, two
+constants agreeing by convention.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from enum import StrEnum
 from types import MappingProxyType
 
 from ..kernel.grid import Square
-from ..kernel.rules import Ability
+from ..map_types import (
+    GROUND_LEVEL,
+    FeatureCheck,
+    FeatureTrigger,
+    HeightPair,
+    LightLevel,
+    SquareClaim,
+    TerrainPair,
+    TriggerMode,
+)
 
 __all__ = [
     "GROUND_LEVEL",
@@ -50,15 +68,6 @@ __all__ = [
     "TriggerMode",
 ]
 
-#: The level every fight starts on, and the only one a map without storeys has.
-GROUND_LEVEL = 0
-
-
-class LightLevel(StrEnum):
-    BRIGHT = "bright"
-    DIM = "dim"
-    DARKNESS = "darkness"
-
 
 @dataclass(frozen=True, slots=True)
 class LightSource:
@@ -71,28 +80,6 @@ class LightSource:
 
 
 @dataclass(frozen=True, slots=True)
-class TerrainPair:
-    """What one square is in each of a fixture's two states."""
-
-    closed: str
-    open: str
-
-
-@dataclass(frozen=True, slots=True)
-class HeightPair:
-    """Ground height in feet in each of a fixture's two states.
-
-    Optional everywhere a :class:`TerrainPair` is required, because most
-    fixtures change what a square *is* without moving what it *sits at*. A
-    sluice does both: the room becomes water, and the water is lower than the
-    floor was.
-    """
-
-    closed: int
-    open: int
-
-
-@dataclass(frozen=True, slots=True)
 class FeatureOverlay:
     """Squares a fixture governs beyond the one it stands on.
 
@@ -102,50 +89,6 @@ class FeatureOverlay:
     """
 
     squares: tuple[Square, ...] = ()
-    terrain: TerrainPair | None = None
-    elevation: HeightPair | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class FeatureCheck:
-    """The roll operating a fixture takes, if it takes one.
-
-    A raw ability check: creatures carry ability modifiers and no skill
-    proficiencies, so a DC here is set as if untrained.
-    """
-
-    ability: Ability
-    dc: int
-
-
-class TriggerMode(StrEnum):
-    """When an active fixture predicate applies its configured state."""
-
-    EDGE = "edge"
-    MAINTAINED = "maintained"
-
-
-@dataclass(frozen=True, slots=True)
-class FeatureTrigger:
-    """A target-local AND predicate over fixture states.
-
-    ``when`` is sorted by fixture name at the document boundary. A tuple keeps
-    the runtime definition immutable and makes linked-door equality structural.
-    """
-
-    when: tuple[tuple[str, bool], ...]
-    set_open: bool
-    mode: TriggerMode
-
-    def active(self, open_features: Collection[str]) -> bool:
-        return all((name in open_features) is expected for name, expected in self.when)
-
-
-@dataclass(frozen=True, slots=True)
-class SquareClaim:
-    """What one square is, in either state, and which fixture decides it."""
-
-    feature: str
     terrain: TerrainPair | None = None
     elevation: HeightPair | None = None
 
