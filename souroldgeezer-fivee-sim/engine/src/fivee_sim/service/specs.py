@@ -365,7 +365,14 @@ def _conditions_from_spec(spec: dict[str, Any]) -> dict[str, int]:
                 f"condition_levels names {name!r}, which is not in this "
                 f"combatant's conditions"
             )
-        conditions[name] = int(level)
+        stated = int(level)
+        if stated < 1:
+            raise RequestError(
+                f"condition_levels[{name!r}] is {stated}, and a level must be "
+                f"at least 1 — a numeric condition effect scales by the level, "
+                f"so one below it inverts the effect rather than weakening it"
+            )
+        conditions[name] = stated
     return conditions
 
 

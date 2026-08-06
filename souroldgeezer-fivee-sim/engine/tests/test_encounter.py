@@ -315,6 +315,43 @@ class TestConditionLevels:
         "marked": ConditionEffect(cumulative=True),
     }
 
+    @pytest.mark.parametrize("levels", [0, -1, -100])
+    def test_imposing_fewer_than_one_level_is_refused(self, levels: int) -> None:
+        """``Creature.conditions`` values are documented as always 1 or more.
+
+        The invariant is load-bearing rather than tidy: every numeric effect
+        resolves as ``per_level * level``, so a negative level inverts the sign
+        of the thing it scales. An Exhaustion level of -100 does not make a
+        creature slightly less tired — it grants +200 on every D20 Test and
+        530 feet of Speed. ``add_condition`` is the documented chokepoint every
+        imposing path funnels through, so the floor belongs here.
+        """
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+
+        with pytest.raises(ValueError, match="levels must be at least 1"):
+            target.add_condition("marked", levels=levels)
+
+        assert target.conditions == {}
+
+    @pytest.mark.parametrize("levels", [0, -1])
+    def test_removing_fewer_than_one_level_is_refused(self, levels: int) -> None:
+        """The mirror of the floor above, for the same reason.
+
+        ``remove_condition(levels=None)`` still means *drop it outright* — that
+        is the default every existing caller relies on. It is a stated count
+        below one that is refused, because subtracting a negative would raise
+        the level through the path that exists to lower it.
+        """
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked", levels=2)
+
+        with pytest.raises(ValueError, match="levels must be at least 1"):
+            target.remove_condition("marked", levels=levels)
+
+        assert target.conditions == {"marked": 2}
+
     def test_three_impositions_reach_level_three(self) -> None:
         target = fighter("Thora")
         target.condition_effects = self.TABLE

@@ -179,6 +179,28 @@ class TestConditionLevelsSpec:
 
         assert built.conditions == {"poisoned": 1}
 
+    @pytest.mark.parametrize("level", [0, -1, -100])
+    def test_a_level_below_one_is_refused(
+        self, registry: ContentRegistry, level: int
+    ) -> None:
+        """A held condition is held at level 1 or more, and nothing else.
+
+        Not a tidiness rule.  Every numeric condition effect is applied as
+        ``per_level * level``, so a negative level does not weaken a penalty —
+        it *inverts* it.  Before this refusal existed, a combatant spec
+        carrying ``{"exhaustion": -100}`` produced a creature with +200 on
+        every saving throw and 530 feet of walking speed.
+        """
+        with pytest.raises(RequestError, match="condition_levels.*at least 1"):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"poisoned": level},
+                },
+                registry,
+            )
+
     def test_a_level_naming_a_condition_not_held_is_refused(
         self, registry: ContentRegistry
     ) -> None:
@@ -194,10 +216,18 @@ class TestConditionLevelsSpec:
                 registry,
             )
 
-    def test_condition_levels_defaults_to_no_overlay(
+    def test_an_explicitly_empty_overlay_is_not_an_error(
         self, registry: ContentRegistry
     ) -> None:
-        built = creature_from_spec({**HERO, "conditions": ["poisoned"]}, registry)
+        """Distinct from omitting the key: a round-tripped spec carries ``{}``.
+
+        ``Encounter.state()`` emits ``condition_levels`` unconditionally, so
+        every carried combatant arrives with the key present and usually
+        empty. Sending it back must be as legal as never having sent it.
+        """
+        built = creature_from_spec(
+            {**HERO, "conditions": ["poisoned"], "condition_levels": {}}, registry
+        )
 
         assert built.conditions == {"poisoned": 1}
 

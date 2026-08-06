@@ -792,7 +792,19 @@ class Creature:
         :meth:`take_damage` performs on its own death branches applies here —
         ``dead``, cleared concentration, and Unconscious discarded — rather
         than a second way to die.
+
+        ``levels`` must be at least 1. That is not a tidiness rule: every
+        numeric effect resolves as ``per_level * level``, so a level below one
+        does not weaken a penalty, it inverts its sign — an Exhaustion level of
+        -100 would grant +200 on every D20 Test and 530 feet of Speed rather
+        than costing anything. ``Creature.conditions`` values are documented as
+        always 1 or more, and this is where that is enforced.
         """
+        if levels < 1:
+            raise ValueError(
+                f"{self.name}: levels must be at least 1 to impose "
+                f"{condition!r}, got {levels}"
+            )
         if not override_immunity and condition in self.condition_immunities:
             return False
         # Look the effect up first: an unknown name must be refused before it is
@@ -815,8 +827,15 @@ class Creature:
 
         ``levels=None`` (the default) removes the condition entirely — the
         behaviour every existing caller relies on. An int decrements the held
-        level and drops the entry once it reaches 0 or below.
+        level and drops the entry once it reaches 0 or below, and must itself
+        be at least 1: subtracting a negative would *raise* the level through
+        the one path that exists to lower it.
         """
+        if levels is not None and levels < 1:
+            raise ValueError(
+                f"{self.name}: levels must be at least 1 to remove "
+                f"{condition!r}, got {levels}"
+            )
         if levels is None:
             self.conditions.pop(condition, None)
             return

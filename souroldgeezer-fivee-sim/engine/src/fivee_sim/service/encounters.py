@@ -366,6 +366,15 @@ def condition(
     GM imposing three levels of an ordinary condition gets the same level-1
     result a caller who never sends it gets.
     """
+    # Checked here rather than left to ``Creature.add_condition``'s own floor:
+    # that one raises a bare ValueError, which the adapter would answer as a
+    # 500. A level a caller typed is bad input and gets said so.
+    if levels < 1:
+        raise RequestError(
+            f"levels is {levels}, and a condition level must be at least 1 — "
+            f"a numeric condition effect scales by the level, so one below it "
+            f"inverts the effect rather than weakening it"
+        )
     session = sessions.session_for(state, encounter_id)
 
     def execute() -> dict[str, Any]:
