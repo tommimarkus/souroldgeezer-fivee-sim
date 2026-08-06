@@ -1031,7 +1031,7 @@ class _Handler(BaseHTTPRequestHandler):
         self._check_encounter_version(request.id)
         result = encounter_service.condition(
             self.state, request.id, body["target"], body["condition"],
-            body["applied"], self._idempotency_key(),
+            body["applied"], body["levels"], self._idempotency_key(),
         )
         self._send_json(HTTPStatus.OK, result, headers=self._encounter_etag(request.id))
 

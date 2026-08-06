@@ -298,6 +298,115 @@ class TestRulingConditions:
         assert "immune" in applied.detail
 
 
+class TestConditionLevels:
+    """The level machinery: SRD 5.2.1 p.179's Exhaustion exception, generalised
+    onto the effect row as ``cumulative`` rather than keyed on a name.
+
+    No numeric effect and no Exhaustion row exist yet — that is T10c and T10d.
+    This pins only that a condition can be *held* at a level, and that the
+    level survives every checkpoint a fight's state passes through.
+    """
+
+    #: A pack-declared cumulative condition, not an SRD one — the acceptance
+    #: check is deliberately not run against a bundled row.
+    TABLE = dict(EFFECTS) | {
+        "marked": ConditionEffect(cumulative=True),
+    }
+
+    def test_three_impositions_reach_level_three(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+
+        target.add_condition("marked")
+        target.add_condition("marked")
+        target.add_condition("marked")
+
+        assert target.level_of("marked") == 3
+        assert target.conditions["marked"] == 3
+
+    def test_a_non_cumulative_condition_stays_at_one_on_reimposition(self) -> None:
+        target = fighter("Thora")
+        target.add_condition(Condition.POISONED)
+        target.add_condition(Condition.POISONED)
+
+        assert target.level_of(Condition.POISONED) == 1
+
+    def test_remove_condition_with_no_levels_argument_removes_outright(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked")
+        target.add_condition("marked")
+
+        target.remove_condition("marked")
+
+        assert target.level_of("marked") == 0
+        assert "marked" not in target.conditions
+
+    def test_remove_condition_with_levels_decrements(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked", levels=3)
+
+        target.remove_condition("marked", levels=1)
+
+        assert target.level_of("marked") == 2
+
+    def test_remove_condition_drops_the_entry_once_it_reaches_zero(self) -> None:
+        target = fighter("Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("marked")
+
+        target.remove_condition("marked", levels=1)
+
+        assert "marked" not in target.conditions
+
+    def test_level_of_is_zero_when_not_held(self) -> None:
+        target = fighter("Thora")
+        assert target.level_of("marked") == 0
+
+    def test_condition_levels_is_empty_for_a_fight_with_no_leveled_condition(
+        self,
+    ) -> None:
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        state = encounter.state()
+        for combatant in state["combatants"]:
+            assert combatant["condition_levels"] == {}
+
+    def test_srd_conditions_serialise_byte_identically(self) -> None:
+        # The invariant this step must not disturb: every one of the 14 SRD
+        # conditions still serialises to exactly the same state shape it did
+        # before condition_levels existed, aside from the new key itself.
+        encounter = Encounter([fighter(), make_monster("Wolf")], Random(7))
+        for name in Condition:
+            encounter.set_condition("Thora", name, applied=True)
+        state = encounter.state()
+        held = next(c for c in state["combatants"] if c["name"] == "Thora")
+        assert held["conditions"] == sorted(str(c) for c in Condition)
+        assert held["condition_levels"] == {}
+
+    def test_a_leveled_condition_reaches_encounter_state(self) -> None:
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf")], Random(7), condition_effects=self.TABLE
+        )
+        thora = encounter.creatures["Thora"]
+        thora.add_condition("marked")
+        thora.add_condition("marked")
+        thora.add_condition("marked")
+
+        state = encounter.state()
+        held = next(c for c in state["combatants"] if c["name"] == "Thora")
+        assert held["condition_levels"] == {"marked": 3}
+        assert "marked" in held["conditions"]
+
+    def test_a_ruling_can_impose_more_than_one_level(self) -> None:
+        encounter = Encounter(
+            [fighter(), make_monster("Wolf")], Random(7), condition_effects=self.TABLE
+        )
+        encounter.set_condition("Thora", "marked", applied=True, levels=3)
+
+        assert encounter.creatures["Thora"].level_of("marked") == 3
+
+
 class TestAttacking:
     def test_a_hit_reduces_hit_points(self) -> None:
         rng = Random(3)

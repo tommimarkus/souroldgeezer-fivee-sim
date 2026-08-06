@@ -353,6 +353,12 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
         "condition_immunities": sorted(creature.condition_immunities),
         "items": dict(sorted(creature.items.items())),
         "conditions": sorted(creature.conditions),
+        # Unconditional like ``Encounter._creature_state``'s own emission — see
+        # the ruling there. Only entries above level 1 are named; level 1 is
+        # what every condition without a level already reads as.
+        "condition_levels": dict(sorted(
+            (name, level) for name, level in creature.conditions.items() if level != 1
+        )),
         # How the fight left them. Without these a recovered combatant comes
         # back on their feet: `dying` is derived as `not dead and hp == 0 and
         # not stable`, so dropping `stable` alone turns a stabilised creature

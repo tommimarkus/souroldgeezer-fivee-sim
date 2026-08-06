@@ -175,6 +175,38 @@ def test_a_lifted_ruling_condition_replays_as_lifted() -> None:
     assert _conditions_of(recovered["state"], "Thora") == []
 
 
+def test_a_leveled_pack_condition_reaches_level_three_and_survives_the_journal(
+) -> None:
+    # Acceptance check for the level machinery (srd-parity T10b): a
+    # pack-declared cumulative condition — never an SRD one — reaches level 3
+    # through three separate impositions, and that level survives
+    # encounter.state and a resume-from-journal round trip.
+    pack = Path(__file__).parent / "packs" / "01-ashfall-reach.json"
+    api.content_configure([str(pack)], add=True)
+    encounter_id = mapless_fight(seed=151)
+
+    for index in range(3):
+        api.encounter_condition(
+            encounter_id, "Thora", "ashfall-ember-marked",
+            request_id=f"mark-{index}",
+        )
+
+    before = api.encounter_state(encounter_id)
+    thora = next(c for c in before["combatants"] if c["name"] == "Thora")
+    assert thora["condition_levels"] == {"ashfall-ember-marked": 3}
+    assert "ashfall-ember-marked" in thora["conditions"]
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["recovered"] is True
+    assert recovered["state"] == before
+    recovered_thora = next(
+        c for c in recovered["state"]["combatants"] if c["name"] == "Thora"
+    )
+    assert recovered_thora["condition_levels"] == {"ashfall-ember-marked": 3}
+
+
 def test_a_bonus_action_survives_the_journal_and_replays_on_resume() -> None:
     # The read side of the Action round-trip. encounters.act records
     # movement_mode and as_bonus_action in the journal, but action_from_journal

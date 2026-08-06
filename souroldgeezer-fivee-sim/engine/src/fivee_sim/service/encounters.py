@@ -352,6 +352,7 @@ def condition(
     target: str,
     condition_name: str,
     applied: bool = True,
+    levels: int = 1,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     """Impose or lift a condition on one combatant by the table's ruling.
@@ -359,20 +360,29 @@ def condition(
     Journalled like an action rather than like a note, because it changes the
     fight: a resume that replayed the notes and not this would rebuild a
     different creature.
+
+    ``levels`` is forwarded to :meth:`Encounter.set_condition` unchanged — it
+    only accumulates on a condition the effect row marks ``cumulative``, so a
+    GM imposing three levels of an ordinary condition gets the same level-1
+    result a caller who never sends it gets.
     """
     session = sessions.session_for(state, encounter_id)
 
     def execute() -> dict[str, Any]:
         try:
-            session.encounter.set_condition(target, condition_name, applied=applied)
+            session.encounter.set_condition(
+                target, condition_name, applied=applied, levels=levels
+            )
         except (EncounterError, UnknownCondition) as error:
             raise RequestError(str(error)) from error
+        target_creature = session.encounter.creatures[target]
         return {
             "encounter_id": encounter_id,
             "target": target,
             "condition": condition_name,
             "applied": applied,
-            "conditions": sorted(session.encounter.creatures[target].conditions),
+            "conditions": sorted(target_creature.conditions),
+            "level": target_creature.level_of(condition_name),
         }
 
     return primitives.audited_primitive(
@@ -384,6 +394,7 @@ def condition(
             "target": target,
             "condition": condition_name,
             "applied": applied,
+            "levels": levels,
         },
         execute=execute,
     )

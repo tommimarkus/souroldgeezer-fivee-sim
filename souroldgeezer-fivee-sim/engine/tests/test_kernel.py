@@ -336,6 +336,23 @@ class TestConditionInteractions:
             is Advantage.NONE
         )
 
+    def test_a_condition_effect_is_not_cumulative_by_default(self) -> None:
+        # SRD 5.2.1 p.179: "A condition doesn't stack with itself; a recipient
+        # either has a condition or doesn't." Every SRD condition row is the
+        # default that clause describes.
+        assert condition_rules.ConditionEffect().cumulative is False
+
+    def test_cumulative_is_a_recognised_effect_flag(self) -> None:
+        # A pack that declares "cumulative": true on a condition's effects must
+        # not be told the flag does not exist.
+        assert "cumulative" in condition_rules.EFFECT_FLAGS
+
+    def test_no_bundled_srd_condition_is_cumulative(self) -> None:
+        # SRD 5.2.1 p.179 names Exhaustion as the one exception to "a condition
+        # doesn't stack with itself", and this engine ships no Exhaustion row
+        # yet — so every bundled row keeps the default.
+        assert not any(effect.cumulative for effect in EFFECTS.values())
+
     def test_a_custom_condition_can_grant_ability_check_advantage(self) -> None:
         table = {
             **condition_rules.EFFECTS,

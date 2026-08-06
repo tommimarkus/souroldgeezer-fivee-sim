@@ -91,7 +91,7 @@ def creature(
         undead_fortitude=undead_fortitude,
         save_bonuses=save_bonuses or {},
         resistances=resistances,
-        conditions=conditions or set(),
+        conditions={c: 1 for c in conditions or ()},
         items=items or {},
         position=position,
         provenance=FIXTURE,

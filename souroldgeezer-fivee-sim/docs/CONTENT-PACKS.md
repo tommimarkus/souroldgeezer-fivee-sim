@@ -419,7 +419,7 @@ consequences the rules engine already knows how to apply:
 `initiative_disadvantage`, `cannot_see`, `unseen`,
 `auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
 `advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
-`melee_hits_are_critical`, `resists_all_damage`.
+`melee_hits_are_critical`, `resists_all_damage`, `cumulative`.
 
 Ability-check flags apply to initiative and to checks made while interacting with
 a map fixture. The standalone `check` tool takes only a caller-supplied modifier,
@@ -471,6 +471,18 @@ as well as weapon ones, because the rules treat both as the same D20 Test.
 
 A condition with no flags is legal, and is tracked without combat consequences —
 useful for something narration cares about and dice do not.
+
+A held condition carries a **level**, always at least 1. SRD 5.2.1 p.179: "A
+condition doesn't stack with itself; a recipient either has a condition or
+doesn't. The Exhaustion condition is an exception to that rule." `cumulative`
+is that exception, generalised: a `true` value means a second imposition
+*increments* the level instead of leaving it at 1, which is what every
+non-cumulative condition still does — reimposing one changes nothing
+observable. Nothing in this release attaches a numeric effect to a level; a
+pack that declares `cumulative` is stating a fact the engine can now track, not
+asking for a rule the engine applies. `Encounter.state()` reports each
+combatant's `condition_levels`, a name-to-level mapping that always answers —
+`{}` on a fight with nothing leveled — restricted to the entries above level 1.
 
 ### `terrain`
 

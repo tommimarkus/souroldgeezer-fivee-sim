@@ -96,6 +96,13 @@ class ConditionEffect:
     #: Paralyzed and Unconscious turn melee hits into critical hits.
     melee_hits_are_critical: bool = False
     resists_all_damage: bool = False
+    #: SRD 5.2.1 p.179: "A condition doesn't stack with itself; a recipient
+    #: either has a condition or doesn't. The Exhaustion condition is an
+    #: exception to that rule." An exception to a rule about conditions is a
+    #: fact about a condition, so it lives here rather than as code keyed on
+    #: a name — no flag or check in this module may test a condition's string
+    #: against ``"exhaustion"``.
+    cumulative: bool = False
 
 
 #: Every flag a condition may set. Content-pack validation reports this list when a

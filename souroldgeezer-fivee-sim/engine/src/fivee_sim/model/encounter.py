@@ -190,9 +190,12 @@ ENEMY_VISIBLE_KEYS: frozenset[str] = frozenset({
     # names has already happened.
     "name", "team", "position", "level", "elevation", "facing", "present",
     "arrival_round",
-    # What anybody at the table can see about its state.
-    "conditions", "conscious", "dying", "dead", "stable", "surrendered",
-    "dodging", "disengaged",
+    # What anybody at the table can see about its state. ``condition_levels``
+    # is the same public fact ``conditions`` already is — a level is not a
+    # number a stat block hides, it is how far along a condition anyone can
+    # already see has progressed.
+    "conditions", "condition_levels", "conscious", "dying", "dead", "stable",
+    "surrendered", "dodging", "disengaged",
     # Where it sits in the order. Initiative is called out loud.
     "initiative",
     # Visible while it holds, and the reason a caster is worth interrupting.
@@ -1718,7 +1721,9 @@ class Encounter:
             raise EncounterError(f"no combatant named {as_name!r} in this encounter")
         return seats
 
-    def set_condition(self, target_name: str, condition: str, *, applied: bool) -> None:
+    def set_condition(
+        self, target_name: str, condition: str, *, applied: bool, levels: int = 1
+    ) -> None:
         """Impose or lift a condition by the table's ruling rather than by a rule.
 
         Every other condition here arrives from something that models its own
@@ -1738,6 +1743,10 @@ class Encounter:
         Lifting also clears any ongoing effect sustaining the same condition on
         the same creature, so a ruling ends a spell's grip rather than being
         quietly reimposed by the ledger the next time it is consulted.
+
+        ``levels`` is forwarded to :meth:`Creature.add_condition` unchanged: it
+        only accumulates when the effect row marks the condition ``cumulative``,
+        so a ruling on an ordinary condition needs no opinion about it.
         """
         if target_name not in self.creatures:
             known = ", ".join(sorted(self.creatures)[:MAX_LISTED_COMBATANTS])
@@ -1751,7 +1760,7 @@ class Encounter:
             # also the immunity gate: a ruling is a fourth path into it, and
             # gets no exemption from what an attack, a spell or an item
             # already cannot do to this target.
-            if not target.add_condition(condition):
+            if not target.add_condition(condition, levels=levels):
                 self._emit(
                     "effect_apply", "", target_name,
                     f"{condition} not imposed by ruling — {target_name} is immune",
@@ -1952,6 +1961,14 @@ class Encounter:
             **({"facing": creature.facing} if creature.facing is not None else {}),
             "initiative": self.initiative[creature.name],
             "conditions": sorted(creature.conditions),
+            # Unconditional, never omitted when empty: ``adventures.carry_forward``
+            # overlays by key presence, and a combatant that shed every leveled
+            # condition mid-fight must still supply an empty dict to clear
+            # whatever the previous chapter captured — an absent key would leave
+            # the old, non-empty value standing.
+            "condition_levels": {
+                name: level for name, level in creature.conditions.items() if level != 1
+            },
             "concentrating_on": creature.concentrating_on,
             "dodging": self._dodging[creature.name],
             "disengaged": self._disengaged[creature.name],
@@ -2127,7 +2144,7 @@ class Encounter:
 
         if creature.death_save_failures >= DEATH_SAVES_TO_DIE:
             creature.dead = True
-            creature.conditions.discard(Condition.UNCONSCIOUS)
+            creature.conditions.pop(Condition.UNCONSCIOUS, None)
             self._emit("death", creature.name, detail="three failed death saves")
         elif creature.death_save_successes >= DEATH_SAVES_TO_STABILISE:
             creature.stable = True

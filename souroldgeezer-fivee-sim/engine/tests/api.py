@@ -143,10 +143,11 @@ def encounter_condition(
     target: str,
     condition: str,
     applied: bool = True,
+    levels: int = 1,
     request_id: str | None = None,
 ) -> dict[str, Any]:
     return _encounters.condition(
-        STATE, encounter_id, target, condition, applied, request_id
+        STATE, encounter_id, target, condition, applied, levels, request_id
     )
 
 

@@ -155,6 +155,53 @@ class TestConditionImmunitySpec:
         assert built.condition_immunities == frozenset()
 
 
+class TestConditionLevelsSpec:
+    """``condition_levels`` on an inline spec, overlaid onto ``conditions``."""
+
+    def test_a_level_overlays_onto_a_held_condition(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec(
+            {
+                **HERO,
+                "conditions": ["poisoned"],
+                "condition_levels": {"poisoned": 3},
+            },
+            registry,
+        )
+
+        assert built.conditions == {"poisoned": 3}
+
+    def test_a_condition_with_no_level_stated_defaults_to_one(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "conditions": ["poisoned"]}, registry)
+
+        assert built.conditions == {"poisoned": 1}
+
+    def test_a_level_naming_a_condition_not_held_is_refused(
+        self, registry: ContentRegistry
+    ) -> None:
+        with pytest.raises(
+            RequestError, match="condition_levels names 'frightened'.*not in"
+        ):
+            creature_from_spec(
+                {
+                    **HERO,
+                    "conditions": ["poisoned"],
+                    "condition_levels": {"frightened": 2},
+                },
+                registry,
+            )
+
+    def test_condition_levels_defaults_to_no_overlay(
+        self, registry: ContentRegistry
+    ) -> None:
+        built = creature_from_spec({**HERO, "conditions": ["poisoned"]}, registry)
+
+        assert built.conditions == {"poisoned": 1}
+
+
 class TestInitiativeBonusSpec:
     """``initiative_bonus`` on an inline spec: the same separate construction
     path as ``TestConditionImmunitySpec`` above.

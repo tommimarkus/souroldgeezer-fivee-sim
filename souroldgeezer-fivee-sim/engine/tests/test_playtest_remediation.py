@@ -163,7 +163,7 @@ class TestSurpriseIsExpressible:
 
         encounter.set_condition("Thora", "surprised", applied=False)
 
-        assert encounter.creatures["Thora"].conditions == set()
+        assert encounter.creatures["Thora"].conditions == {}
 
 
 class TestUnderwaterCombat:

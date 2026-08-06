@@ -47,7 +47,7 @@ KNOCKDOWN_SEED = 20260734
 
 def prone_fighter(name: str = "Thora", *, position: int = 0) -> Creature:
     downed = fighter(name, position=position)
-    downed.conditions.add(Condition.PRONE)
+    downed.conditions[Condition.PRONE] = 1
     return downed
 
 
@@ -85,7 +85,7 @@ class TestStandAct:
             ac=14,
             max_hp=20,
             speed=45,
-            conditions={Condition.PRONE},
+            conditions={Condition.PRONE: 1},
             position=0,
             provenance=FIXTURE,
         )
@@ -142,7 +142,7 @@ class TestStandRefusals:
             ac=10,
             max_hp=10,
             speed=0,
-            conditions={Condition.PRONE},
+            conditions={Condition.PRONE: 1},
             position=0,
             provenance=FIXTURE,
         )
@@ -153,7 +153,7 @@ class TestStandRefusals:
 
     def test_a_condition_that_zeroes_speed_refuses_the_stand(self) -> None:
         thora = prone_fighter()
-        thora.conditions.add(Condition.GRAPPLED)
+        thora.conditions[Condition.GRAPPLED] = 1
         encounter, rng = build_encounter([thora, self.goblin()], seed=5)
         advance_to(encounter, "Thora", rng)
         with pytest.raises(

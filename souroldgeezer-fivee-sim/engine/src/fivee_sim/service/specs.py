@@ -190,8 +190,8 @@ DESCRIBED_SPEC_KEYS = frozenset({
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
     "initiative_bonus", "passive_perception",
     "resistances", "immunities", "condition_immunities",
-    "vulnerabilities", "items", "conditions", "position", "level", "arrival_round",
-    "provenance", "facing",
+    "vulnerabilities", "items", "conditions", "condition_levels", "position", "level",
+    "arrival_round", "provenance", "facing",
     # Carried-over state: the condition a combatant walked out of the *previous*
     # fight in. Every one of these is reported by ``Encounter.state()`` and was,
     # until adventures spanned more than one encounter, reportable and not
@@ -348,6 +348,27 @@ def _closed(kind: type[_EnumT], value: Any, key: str) -> _EnumT:
         ) from error
 
 
+def _conditions_from_spec(spec: dict[str, Any]) -> dict[str, int]:
+    """Build ``Creature.conditions`` from a spec's ``conditions`` and
+    ``condition_levels`` keys.
+
+    ``conditions`` stays a flat list of names, each defaulting to level 1;
+    ``condition_levels`` overlays a level onto a name already in that list — it
+    may not introduce one, because a level naming a condition the creature does
+    not hold has nothing to be a level *of*.
+    """
+    conditions = {str(entry): 1 for entry in spec.get("conditions", [])}
+    for name, level in spec.get("condition_levels", {}).items():
+        name = str(name)
+        if name not in conditions:
+            raise RequestError(
+                f"condition_levels names {name!r}, which is not in this "
+                f"combatant's conditions"
+            )
+        conditions[name] = int(level)
+    return conditions
+
+
 def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creature:
     """Build a combatant from a loaded stat block or an explicit description.
 
@@ -472,7 +493,7 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
                 str(entry) for entry in spec.get("condition_immunities", [])
             ),
             items={str(k): int(v) for k, v in spec.get("items", {}).items()},
-            conditions={str(entry) for entry in spec.get("conditions", [])},
+            conditions=_conditions_from_spec(spec),
             condition_effects=registry.condition_effects,
             position=parse_point(spec.get("position", 0), "position"),
             level=int(spec.get("level", 0)),

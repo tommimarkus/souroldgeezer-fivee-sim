@@ -20,6 +20,7 @@ stale version is refused rather than merged, and a retried link under one
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -637,3 +638,68 @@ class TestLinkingEncounters:
 
         with pytest.raises(RequestError, match="combatant names must be unique"):
             api.adventure_encounter("adv-1", combatants=[dict(BRAWLER)], seed=74)
+
+
+class TestConditionLevelsCarryForward:
+    """The last leg of the T10b acceptance check: a pack-declared cumulative
+    condition's level survives an adventure chapter boundary.
+
+    ``condition_levels`` is emitted unconditionally from ``Encounter.state()``
+    specifically so this overlay is correct — see the ruling on
+    ``adventures.CARRIED_STATE_KEYS``.
+    """
+
+    PACK = str(Path(__file__).parent / "packs" / "01-ashfall-reach.json")
+
+    def test_a_level_reached_by_three_impositions_survives_the_chapter_boundary(
+        self,
+    ) -> None:
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=76)
+        first_id = str(first["encounter_id"])
+        for index in range(3):
+            api.encounter_condition(
+                first_id, "Thora", "ashfall-ember-marked", request_id=f"mark-{index}"
+            )
+        assert combatant(api.encounter_state(first_id), "Thora")["condition_levels"] == {
+            "ashfall-ember-marked": 3
+        }
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=77,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {"ashfall-ember-marked": 3}
+        assert "ashfall-ember-marked" in arrived["conditions"]
+
+    def test_shedding_the_condition_before_the_boundary_carries_no_level(self) -> None:
+        # The defect unconditional emission exists to prevent: a combatant who
+        # lost the condition mid-fight must not arrive at the next chapter
+        # still carrying the level a stale, non-empty capture would leave.
+        api.content_configure([self.PACK], add=True)
+        api.adventure_create("The Sunless Citadel")
+        first = api.adventure_encounter("adv-1", combatants=[BRAWLER, RUFFIAN], seed=78)
+        first_id = str(first["encounter_id"])
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked", request_id="mark-0"
+        )
+        api.encounter_condition(
+            first_id, "Thora", "ashfall-ember-marked",
+            applied=False, request_id="lift-0",
+        )
+
+        second = api.adventure_encounter(
+            "adv-1",
+            carry=["Thora"],
+            combatants=[dict(RUFFIAN) | {"name": "Skeleton", "position": [10, 0]}],
+            seed=79,
+        )
+        arrived = combatant(api.encounter_state(str(second["encounter_id"])), "Thora")
+
+        assert arrived["condition_levels"] == {}
+        assert "ashfall-ember-marked" not in arrived["conditions"]

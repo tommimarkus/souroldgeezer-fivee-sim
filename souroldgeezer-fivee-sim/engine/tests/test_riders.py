@@ -82,7 +82,7 @@ def creature(
         max_hp=max_hp,
         speed=30,
         attacks=attacks,
-        conditions=conditions or set(),
+        conditions={c: 1 for c in conditions or ()},
         position=position,
         size=size,
         condition_immunities=condition_immunities,

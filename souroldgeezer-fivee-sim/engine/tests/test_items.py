@@ -191,7 +191,7 @@ class TestUseItemAction:
         # consciousness" and "doesn't count as healing" — so the drinker stays
         # Unconscious and no "heal" event fires, only "grant_temp_hp".
         hero = fighter(hp=0)
-        hero.conditions.add(Condition.UNCONSCIOUS)
+        hero.conditions[Condition.UNCONSCIOUS] = 1
         ally = fighter(name="Ally", items={"Ward Tonic": 1})
         encounter, rng = self.build(ally, hero, dummy(position=50))
         self.turn_of(encounter, rng, "Ally")

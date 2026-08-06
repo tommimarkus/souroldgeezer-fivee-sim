@@ -786,6 +786,7 @@ ROUTES: tuple[Route, ...] = (
                 "target": {"type": "string", "maxLength": MAX_NAME_TEXT},
                 "condition": {"type": "string", "maxLength": MAX_NAME_TEXT},
                 "applied": {"type": "boolean", "default": True},
+                "levels": {"type": "integer", "default": 1},
             },
             "required": ["target", "condition"],
         },

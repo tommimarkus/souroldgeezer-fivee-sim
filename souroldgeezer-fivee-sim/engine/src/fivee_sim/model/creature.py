@@ -454,7 +454,16 @@ class Creature:
     #: declared rather than silently dropped: an accepted key that does
     #: nothing must say so, not pretend to.
     passive_perception: int | None = None
-    conditions: set[str] = field(default_factory=set)
+    #: Name to level, always ≥ 1 while held. Level 1 is the ordinary case and
+    #: means nothing observable on its own; a level above 1 exists only for a
+    #: condition an effect row marks ``cumulative`` (SRD 5.2.1 p.179, Exhaustion's
+    #: exception to "a recipient either has a condition or doesn't"). A ``dict``
+    #: rather than a richer type because ``Mapping[str, int]`` **is**
+    #: ``Iterable[str]``: every read site (``in``, iteration, ``sorted(...)``)
+    #: keeps working unchanged, while every write site fails at type-check
+    #: because ``dict`` has no ``.add``/``.discard`` — that is deliberate, it is
+    #: the worklist for this change.
+    conditions: dict[str, int] = field(default_factory=dict)
     concentrating_on: str | None = None
     #: Usable items, name to quantity held. Quantity *is* the charge count.
     items: dict[str, int] = field(default_factory=dict)
@@ -618,7 +627,7 @@ class Creature:
             condition_immunities=frozenset(
                 str(entry) for entry in record.get("condition_immunities", [])
             ),
-            conditions={str(entry) for entry in record.get("conditions", [])},
+            conditions={str(entry): 1 for entry in record.get("conditions", [])},
             condition_effects=condition_effects,
             position=position,
             level=level,
@@ -694,7 +703,9 @@ class Creature:
         return effect_of(condition, self.condition_effects)
 
     # --- mutation ---------------------------------------------------------
-    def add_condition(self, condition: str, *, override_immunity: bool = False) -> bool:
+    def add_condition(
+        self, condition: str, *, levels: int = 1, override_immunity: bool = False
+    ) -> bool:
         """Impose ``condition`` and report whether it took hold.
 
         The one chokepoint every condition-imposing path funnels through —
@@ -713,19 +724,44 @@ class Creature:
         effect being *imposed* on the creature — the same standing the SRD
         condition table itself holds inside ``STRUCTURAL_CONDITIONS`` — so it
         is not something an immunity to Unconscious or Prone can refuse.
+
+        ``levels`` only increments the held level when the effect row marks
+        the condition ``cumulative`` (SRD 5.2.1 p.179) — otherwise the level
+        is set to 1, which is exactly today's idempotence: imposing an
+        already-held condition a second time changes nothing observable.
         """
         if not override_immunity and condition in self.condition_immunities:
             return False
         # Look the effect up first: an unknown name must be refused before it is
         # recorded, or the creature carries a condition nothing can resolve.
-        incapacitates = self._effect(condition).incapacitated
-        self.conditions.add(condition)
-        if incapacitates:
+        effect = self._effect(condition)
+        if effect.cumulative:
+            self.conditions[condition] = self.conditions.get(condition, 0) + levels
+        else:
+            self.conditions[condition] = 1
+        if effect.incapacitated:
             self.concentrating_on = None
         return True
 
-    def remove_condition(self, condition: str) -> None:
-        self.conditions.discard(condition)
+    def remove_condition(self, condition: str, *, levels: int | None = None) -> None:
+        """Drop ``condition`` outright, or reduce its level by ``levels``.
+
+        ``levels=None`` (the default) removes the condition entirely — the
+        behaviour every existing caller relies on. An int decrements the held
+        level and drops the entry once it reaches 0 or below.
+        """
+        if levels is None:
+            self.conditions.pop(condition, None)
+            return
+        remaining = self.conditions.get(condition, 0) - levels
+        if remaining <= 0:
+            self.conditions.pop(condition, None)
+        else:
+            self.conditions[condition] = remaining
+
+    def level_of(self, condition: str) -> int:
+        """The level ``condition`` is held at, 0 when not held."""
+        return self.conditions.get(condition, 0)
 
     def damage_after_temp_hp(self, amount: int) -> int:
         """How much of ``amount`` would still reach hit points, unspent.
@@ -784,19 +820,19 @@ class Creature:
         if self.death_rule is DeathRule.INSTANT:
             self.dead = True
             self.concentrating_on = None
-            self.conditions.discard(Condition.UNCONSCIOUS)
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         if overflow >= self.max_hp:
             self.dead = True
             self.concentrating_on = None
-            self.conditions.discard(Condition.UNCONSCIOUS)
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         self.stable = False
         if already_down:
             self.death_save_failures += 2 if critical else 1
             if self.death_save_failures >= DEATH_SAVES_TO_DIE:
                 self.dead = True
-                self.conditions.discard(Condition.UNCONSCIOUS)
+                self.conditions.pop(Condition.UNCONSCIOUS, None)
             return
         self.death_save_successes = 0
         self.death_save_failures = 0

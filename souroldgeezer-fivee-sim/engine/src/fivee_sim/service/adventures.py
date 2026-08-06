@@ -132,10 +132,19 @@ _ABSENT = ""
 #: survives one. A caller stating "they took a long rest" already has the
 #: channel to clear it: ``recovery`` (see :func:`link_encounter`) accepts any
 #: key this set does, ``temp_hp`` included.
+#:
+#: ``condition_levels`` carries beside ``conditions`` for the reason it is
+#: emitted unconditionally in the first place: this overlay is by *presence*,
+#: so a combatant who shed every leveled condition mid-fight reports an empty
+#: dict, and that empty dict has to overlay the previous chapter's — otherwise
+#: an absent key would leave the old, non-empty capture standing and the
+#: combatant would arrive at the next chapter still carrying a level for a
+#: condition it no longer holds.
 CARRIED_STATE_KEYS: frozenset[str] = frozenset({
     "hp",
     "temp_hp",
     "conditions",
+    "condition_levels",
     "death_saves",
     "stable",
     "dead",

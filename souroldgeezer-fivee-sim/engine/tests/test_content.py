@@ -1046,7 +1046,7 @@ class TestConstructionSeam:
             condition_effects=table,
             source="test",
         )
-        assert creature.conditions == {"vale-cursed"}
+        assert creature.conditions == {"vale-cursed": 1}
         assert not creature.active
 
     def test_label_and_team_rename_the_instance(self) -> None:
