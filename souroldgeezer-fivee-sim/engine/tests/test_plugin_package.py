@@ -427,6 +427,102 @@ def test_packaged_player_profile_has_only_the_inert_read_scope() -> None:
     }
 
 
+# The shared disallowed-tools universe pinned by `typical-player`'s own test,
+# minus `Read` (which every profile here grants) and `Skill` and `Bash` (which
+# `game-master` and `encounter-sim` grant, scoped to the launcher).
+_LAUNCHER_BASH_PATTERN = "Bash(python3 /${CLAUDE_PLUGIN_ROOT}/scripts/fivee.py:*)"
+
+_LAUNCHER_PROFILE_DISALLOWED_TOOLS = {
+    "Agent",
+    "Artifact",
+    "AskUserQuestion",
+    "CronCreate",
+    "CronDelete",
+    "CronList",
+    "Edit",
+    "EndConversation",
+    "EnterPlanMode",
+    "EnterWorktree",
+    "ExitPlanMode",
+    "ExitWorktree",
+    "Glob",
+    "Grep",
+    "ListMcpResourcesTool",
+    "LSP",
+    "Monitor",
+    "NotebookEdit",
+    "PowerShell",
+    "PushNotification",
+    "ReadMcpResourceTool",
+    "RemoteTrigger",
+    "ReportFindings",
+    "ScheduleWakeup",
+    "SendMessage",
+    "SendUserFile",
+    "ShareOnboardingGuide",
+    "TaskCreate",
+    "TaskGet",
+    "TaskList",
+    "TaskOutput",
+    "TaskStop",
+    "TaskUpdate",
+    "TodoWrite",
+    "ToolSearch",
+    "WaitForMcpServers",
+    "WebFetch",
+    "WebSearch",
+    "Workflow",
+    "Write",
+    "mcp__*",
+}
+
+
+@pytest.mark.parametrize("agent_path", ["agents/game-master.md", "agents/encounter-sim.md"])
+def test_gm_and_encounter_sim_profiles_hold_only_the_launcher_bash_scope(
+    agent_path: str,
+) -> None:
+    agent = _text(agent_path)
+    frontmatter = re.match(r"---\s*\n(?P<body>.*?)\n---", agent, flags=re.DOTALL)
+
+    assert frontmatter is not None
+    metadata = frontmatter.group("body")
+    tools = re.search(r"^tools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE)
+    disallowed = re.search(
+        r"^disallowedTools:\s*(?P<value>.+)$", metadata, flags=re.MULTILINE
+    )
+
+    assert tools is not None
+    assert tools.group("value") == f"{_LAUNCHER_BASH_PATTERN}, Read, Skill"
+
+    assert disallowed is not None
+    assert {
+        tool.strip() for tool in disallowed.group("value").split(",")
+    } == _LAUNCHER_PROFILE_DISALLOWED_TOOLS
+
+    assert re.search(
+        r"Claude Code.{0,300}\bBash\b.{0,300}\bother hosts\b.{0,300}\bfrontmatter\b",
+        agent[frontmatter.end() :],
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+@pytest.mark.parametrize(
+    "doc_path",
+    [
+        "agents/game-master.md",
+        "agents/encounter-sim.md",
+        "skills/encounter-sim/SKILL.md",
+        "skills/map-forge/SKILL.md",
+    ],
+)
+def test_command_guidance_names_only_the_absolute_launcher(doc_path: str) -> None:
+    doc = _text(doc_path)
+    assert "fivee.py" in doc
+    assert "if it is on `PATH`" not in doc
+    assert "already on `PATH`" not in doc
+    assert "command -v fivee" not in doc
+
+
 def test_player_role_has_rules_literacy_and_a_bounded_reference_protocol() -> None:
     player = _text("agents/typical-player.md")
     framework = _markdown_section(player, "## Your rules framework")

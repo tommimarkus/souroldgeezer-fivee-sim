@@ -13,19 +13,20 @@ campaign may load its own content as well — see "What is actually loaded" belo
 
 ## Running the command
 
-Everything below is a Bash call. Use `fivee` if it is already on `PATH`;
-otherwise run `scripts/fivee.py` in this plugin with `python3`, which is
-`../../scripts/fivee.py` from this skill's own directory — the one the harness
-named when it loaded this skill. Resolve that against the announced directory and
-use the absolute path; nothing expands a `${...}` placeholder in this prose. Check
-once, then keep using whichever answered:
+Everything below is a Bash call to the absolute launcher: `python3
+<skill dir>/../../scripts/fivee.py`, where `<skill dir>` is the directory the
+harness named when it loaded this skill. Resolve that once, against the
+announced directory, into an absolute path and reuse it for every call —
+nothing expands a `${...}` placeholder in this prose. Use this form always: a
+bare `fivee` on `PATH` or a path relative to the working directory will not
+match the Bash grant an `encounter-sim` or `game-master` agent profile holds.
 
 ```bash
-command -v fivee || echo "python3 <skill dir>/../../scripts/fivee.py"
+echo "python3 <skill dir>/../../scripts/fivee.py"
 ```
 
-Either way there is nothing to start first. Every command finds the engine's
-local server or starts one, so ordering cannot be got wrong.
+There is nothing to start first. Every command finds the engine's local server
+or starts one, so ordering cannot be got wrong.
 
 Two commands make the rest self-describing, and they read the *running* server,
 so they cannot go stale:

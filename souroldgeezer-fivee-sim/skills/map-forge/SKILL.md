@@ -16,14 +16,16 @@ are holding, which is what the guarded write below is about.
 
 ## Running the command
 
-Everything below is a Bash call. Use `fivee` if it is already on `PATH`; otherwise
-run `scripts/fivee.py` in this plugin with `python3`, which is
-`../../scripts/fivee.py` from this skill's own directory — the one the harness
-named when it loaded this skill. Resolve that against the announced directory and
-use the absolute path; nothing expands a `${...}` placeholder in this prose.
+Everything below is a Bash call to the absolute launcher: `python3
+<skill dir>/../../scripts/fivee.py`, where `<skill dir>` is the directory the
+harness named when it loaded this skill. Resolve that once, against the
+announced directory, into an absolute path and reuse it for every call —
+nothing expands a `${...}` placeholder in this prose. Use this form always: a
+bare `fivee` on `PATH` or a path relative to the working directory will not
+match the Bash grant an `encounter-sim` or `game-master` agent profile holds.
 
 ```bash
-command -v fivee || echo "python3 <skill dir>/../../scripts/fivee.py"
+echo "python3 <skill dir>/../../scripts/fivee.py"
 ```
 
 Nothing has to be started: every command finds the engine's local server or starts
