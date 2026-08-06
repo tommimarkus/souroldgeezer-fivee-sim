@@ -82,6 +82,23 @@ def claim(encounter_id: str) -> bool:
 
 
 def _canonical_bytes(value: Any) -> bytes:
+    """The hash chain's own rendering, and deliberately not
+    :func:`~fivee_sim.service.common.canonical_json`.
+
+    The two agree on objects, arrays, strings, ``null``, booleans and integers,
+    and disagree on **every** float: this one spells ``1.0`` and ``-0.0``,
+    that one ``1`` and ``0``. The difference is not an oversight — a bundle's
+    hashes are recomputed in a browser, so that one has to match
+    ``JSON.stringify``, a constraint a chain link checked only against itself by
+    this module does not carry.
+
+    So unifying them is not the tidying it looks like. Every journal already on
+    a disk was chained under *this* function, and a rendering that spells one
+    number differently rewrites every hash after the record holding it — turning
+    a hash-valid file into a corrupt-looking one, which is precisely the reading
+    ``verify`` gives an edited journal. If a later phase does unify them, the
+    honest move is a `journal_version` bump, not a quiet swap.
+    """
     return json.dumps(
         value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
