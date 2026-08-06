@@ -36,6 +36,7 @@ from typing import Any
 import pytest
 
 from fivee_sim.client import cli, discovery
+from fivee_sim.configuration import load_config
 from fivee_sim.model.encounter import ActionKind
 from fivee_sim.web.http_server import SOURCE_ID_ENV
 
@@ -239,6 +240,57 @@ def out(capsys: pytest.CaptureFixture[str]) -> Any:
 class TestLifecycle:
     """Find a server, or start one. The part a caller must never think about."""
 
+    def test_config_is_a_global_flag_loaded_before_command_dispatch(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        config = tmp_path / "config.toml"
+        config.write_text(
+            "format_version = 1\n[storage]\nmaps = 'maps'\n",
+            encoding="utf-8",
+        )
+        dispatched: dict[str, Any] = {}
+
+        def capture(tokens: list[str], options: cli.Options) -> int:
+            dispatched["tokens"] = tokens
+            dispatched["configuration"] = options.configuration
+            return cli.EXIT_OK
+
+        monkeypatch.setattr(cli, "_run", capture)
+
+        assert run("server.ping", "--config", str(config)) == cli.EXIT_OK
+        assert dispatched["tokens"] == ["server.ping"]
+        selected = dispatched["configuration"]
+        assert selected is not None
+        assert selected.path == config
+
+    def test_a_launcher_resolved_absence_is_not_rediscovered_after_its_chdir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        config_dir = tmp_path / ".fivee-sim"
+        config_dir.mkdir()
+        (config_dir / "config.toml").write_text(
+            "format_version = 1\n",
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+        dispatched: dict[str, Any] = {}
+
+        def capture(tokens: list[str], options: cli.Options) -> int:
+            dispatched["configuration"] = options.configuration
+            return cli.EXIT_OK
+
+        monkeypatch.setattr(cli, "_run", capture)
+
+        assert (
+            cli.main(
+                ["server.ping"],
+                configuration=None,
+                configuration_resolved=True,
+            )
+            == cli.EXIT_OK
+        )
+        assert dispatched["configuration"] is None
+
     def test_a_command_starts_a_server_and_the_next_one_finds_it(
         self, workspace: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -376,6 +428,46 @@ class TestLifecycle:
         assert finished.returncode == cli.EXIT_OK, finished.stderr
         assert json.loads(finished.stdout)["total"] == 2
         assert finished.stdout.count("\n") == 1, "--compact is one line of JSON"
+
+
+class TestConfigurationLifecycle:
+    def test_a_changed_config_restarts_the_server_registered_beside_that_file(
+        self, tmp_path: Path
+    ) -> None:
+        config_dir = tmp_path / ".fivee-sim"
+        config_dir.mkdir()
+        config_path = config_dir / "config.toml"
+        config_path.write_text(
+            "format_version = 1\n[storage]\nmaps = 'first-maps'\n",
+            encoding="utf-8",
+        )
+        first_config = load_config(config_path)
+        state_path = discovery.state_path_for(configuration=first_config)
+        first = discovery.ensure_server(configuration=first_config)
+        try:
+            assert state_path == config_dir / "fivee-sim-server.json"
+            assert first.maps_dir == str(config_dir / "first-maps")
+
+            unchanged = discovery.ensure_server(configuration=first_config)
+            assert unchanged.pid == first.pid
+            assert unchanged.spawned is False
+            assert unchanged.reconfigured is False
+
+            config_path.write_text(
+                "format_version = 1\n[storage]\nmaps = 'second-maps'\n",
+                encoding="utf-8",
+            )
+            second_config = load_config(config_path)
+            second = discovery.ensure_server(configuration=second_config)
+
+            assert second.reconfigured is True
+            assert second.pid != first.pid
+            assert second.maps_dir == str(config_dir / "second-maps")
+            assert _unreachable(first.port, first.token), (
+                "the server holding the old configuration was left alive"
+            )
+        finally:
+            discovery.stop(state_path)
 
 
 class TestSourceReload:

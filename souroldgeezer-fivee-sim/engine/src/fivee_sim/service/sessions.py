@@ -153,6 +153,10 @@ class EngineState:
     content: Content | None = None
     next_id: int = 0
     maps_dir: Path | None = None
+    #: The project file selected at process start. ``None`` means legacy
+    #: environment/default configuration; runtime content.configure remains an
+    #: in-memory overlay and never changes this launch fact.
+    configuration_path: Path | None = None
 
 
 def utc_now() -> str:

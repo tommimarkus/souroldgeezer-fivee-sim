@@ -12,6 +12,10 @@ after the port it names answers ``GET /api/v1/ping`` with this launch's token.
 A record nobody answers for is removed before spawning, so the fresh server's
 record is the only one anybody can read.
 
+**The rendezvous is beside the selected project config.** That keeps discovery
+stable when a config edit changes the maps directory. The legacy no-file path
+keeps its historical record beside the maps directory.
+
 **Three constants are copied here rather than imported**, and that is the
 constraint working as intended: this package may not import
 :mod:`fivee_sim.web`, because a client that imported the server could do things
@@ -51,7 +55,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from ..paths import maps_root, state_file_for
+from ..configuration import Configuration, configuration_identity
+from ..paths import STATE_FILENAME, maps_root, state_file_for
 
 __all__ = [
     "API_PREFIX",
@@ -118,12 +123,20 @@ class Server:
     #: ``""`` when it was started without one being named. Never read off the
     #: state file — see :func:`find_running`.
     source_id: str = ""
+    #: The selected project configuration, if any, and its semantic identity.
+    #: The path tells a caller what owns the process; the identity tells it
+    #: whether that file still means what the running process loaded.
+    configuration_path: str = ""
+    configuration_id: str = ""
     #: True when this call stopped a server running other source and started
     #: this one in its place. Always implies :attr:`spawned`: the sibling says a
     #: process began here, this one says a process also ended here, and a caller
     #: telling a user "started the engine" when it replaced theirs is reporting
     #: half of what happened.
     reloaded: bool = False
+    #: True when this call replaced a process whose project configuration no
+    #: longer matches the selected file (including file versus legacy mode).
+    reconfigured: bool = False
 
     @property
     def url(self) -> str:
@@ -134,10 +147,19 @@ class Server:
         return f"http://127.0.0.1:{self.port}{API_PREFIX}"
 
 
-def state_path_for(maps_dir: str | Path | None = None) -> Path:
-    """Where the server for ``maps_dir`` records itself; the default root's if
-    none is given. The same resolution the server makes, from the same module,
-    so the two cannot look in different places."""
+def state_path_for(
+    maps_dir: str | Path | None = None,
+    *,
+    configuration: Configuration | None = None,
+) -> Path:
+    """Where this project records its server.
+
+    A selected configuration is the stable project identity, even when one of
+    its storage paths changes. Without one, retain the historical maps-adjacent
+    location. The server makes the same choice from the same inputs.
+    """
+    if configuration is not None:
+        return configuration.path.parent / STATE_FILENAME
     root = Path(maps_dir).expanduser() if maps_dir is not None else maps_root()
     return state_file_for(root)
 
@@ -194,6 +216,8 @@ def find_running(state_path: str | Path) -> Server | None:
         # record naming an id the ping does not is a file making a claim, and it
         # reads here as no id — the answer that gets a server replaced.
         source_id=str(answer.get("source_id", "")),
+        configuration_path=str(answer.get("configuration_path", "")),
+        configuration_id=str(answer.get("configuration_id", "")),
         pid=pid if isinstance(pid, int) else None,
         spawned=False,
     )
@@ -203,6 +227,7 @@ def spawn(
     state_path: str | Path,
     *,
     maps_dir: str | Path | None = None,
+    configuration: Configuration | None = None,
     port: int | None = None,
     timeout: float = SPAWN_TIMEOUT,
 ) -> Server:
@@ -219,6 +244,8 @@ def spawn(
     arguments = [sys.executable, "-m", "fivee_sim.web", "--state-file", str(path)]
     if maps_dir is not None:
         arguments += ["--maps-dir", str(maps_dir)]
+    if configuration is not None:
+        arguments += ["--config", str(configuration.path)]
     if port is not None:
         arguments += ["--port", str(port)]
     # 0600 from the first byte, for the reason the state file beside it is:
@@ -277,28 +304,55 @@ def _runs_other_source(found: Server) -> bool:
 def ensure_server(
     *,
     maps_dir: str | Path | None = None,
+    configuration: Configuration | None = None,
     state_path: str | Path | None = None,
     port: int | None = None,
     timeout: float = SPAWN_TIMEOUT,
 ) -> Server:
     """A live server: the one already running, or one started for this call.
 
-    A running server whose source this run does not recognise is stopped and
-    replaced, and comes back marked :attr:`~Server.reloaded` so the caller can
-    say so — see :func:`_runs_other_source` for when that judgement is made and
-    why it defaults to never. The replacement inherits this process's
-    environment, so it reports the id that was expected of the one before it,
-    and the command after this one finds it and leaves it alone.
+    A running server whose source or semantic project configuration differs is
+    stopped and replaced. Source tracking remains opt-in; configuration matching
+    is always exact because selecting a file is itself the user's instruction.
+    The replacement inherits the process environment and is also handed the
+    config path, so its ping reports the identities the next command compares.
     """
-    path = Path(state_path) if state_path is not None else state_path_for(maps_dir)
+    path = (
+        Path(state_path)
+        if state_path is not None
+        else state_path_for(maps_dir, configuration=configuration)
+    )
     found = find_running(path)
     if found is not None:
-        if not _runs_other_source(found):
+        expected_configuration = (
+            configuration_identity(configuration) if configuration is not None else ""
+        )
+        source_changed = _runs_other_source(found)
+        configuration_changed = found.configuration_id != expected_configuration
+        if not source_changed and not configuration_changed:
             return found
         stop(path)
-    root = Path(maps_dir).expanduser() if maps_dir is not None else maps_root()
-    fresh = spawn(path, maps_dir=root, port=port, timeout=timeout)
-    return replace(fresh, reloaded=True) if found is not None else fresh
+    root = (
+        Path(maps_dir).expanduser()
+        if maps_dir is not None
+        else configuration.map_paths[0]
+        if configuration is not None
+        else maps_root()
+    )
+    fresh = spawn(
+        path,
+        maps_dir=root,
+        configuration=configuration,
+        port=port,
+        timeout=timeout,
+    )
+    if found is None:
+        return fresh
+    return replace(
+        fresh,
+        reloaded=source_changed,
+        reconfigured=configuration_changed,
+    )
 
 
 def stop(state_path: str | Path, timeout: float = STOP_TIMEOUT) -> dict[str, Any]:

@@ -264,7 +264,7 @@ directories.
 The first maps root receives map writes and the first replays root receives
 exports. `fivee content.status` names the configuration source and path;
 `fivee serve` and `fivee server.ping` report the resolved roots — read them rather
-than assuming. A selected file owns these settings. Legacy `FIVEE_SIM_PROJECT_DIR`,
+than assuming. A selected file owns these settings. Deprecated legacy `FIVEE_SIM_PROJECT_DIR`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, and
 `FIVEE_SIM_ENCOUNTERS` remain compatibility fallbacks only when no configuration
 file is selected.

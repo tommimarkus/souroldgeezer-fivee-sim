@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import tomllib
 from collections.abc import Mapping, MutableMapping, Sequence
@@ -24,7 +26,7 @@ _REPLAYS_ENV = "FIVEE_SIM_REPLAYS"
 _SCENES_ENV = "FIVEE_SIM_SCENES"
 _ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
 _RELOAD_ENV = "FIVEE_SIM_RELOAD"
-_LEGACY_USER_ENV = (
+LEGACY_PROJECT_ENVIRONMENT = (
     _PROJECT_ENV,
     _CONTENT_ENV,
     _BUILTIN_ENV,
@@ -205,12 +207,15 @@ def extract_config_argument(tokens: Sequence[str]) -> tuple[Path | None, list[st
 def apply_to_environment(config: Configuration, env: MutableMapping[str, str]) -> None:
     """Make *config* authoritative for legacy environment-based process consumers."""
 
-    for name in _LEGACY_USER_ENV:
+    for name in LEGACY_PROJECT_ENVIRONMENT:
         env.pop(name, None)
 
     env[_PROJECT_ENV] = str(config.project_dir.resolve())
-    if config.content_paths:
-        env[_CONTENT_ENV] = os.pathsep.join(str(path.resolve()) for path in config.content_paths)
+    env[_CONTENT_ENV] = (
+        os.pathsep.join(str(path.resolve()) for path in config.content_paths)
+        if config.content_paths
+        else os.pathsep
+    )
     env[_BUILTIN_ENV] = config.builtin
     env[_MAPS_ENV] = os.pathsep.join(str(path.resolve()) for path in config.map_paths)
     env[_REPLAYS_ENV] = os.pathsep.join(str(path.resolve()) for path in config.replay_paths)
@@ -218,6 +223,29 @@ def apply_to_environment(config: Configuration, env: MutableMapping[str, str]) -
     env[_ENCOUNTERS_ENV] = str(config.encounters_dir.resolve())
     if config.reload:
         env[_RELOAD_ENV] = "1"
+
+
+def configuration_identity(config: Configuration) -> str:
+    """A stable digest of the configuration's resolved meaning.
+
+    Comments and TOML formatting do not restart a server. A changed path, mode,
+    or development setting does, including when a relative path resolves
+    differently because the same document moved to another project.
+    """
+
+    payload = {
+        "format_version": 1,
+        "project_dir": str(config.project_dir),
+        "content_paths": [str(path) for path in config.content_paths],
+        "builtin": config.builtin,
+        "map_paths": [str(path) for path in config.map_paths],
+        "replay_paths": [str(path) for path in config.replay_paths],
+        "scenes_dir": str(config.scenes_dir),
+        "encounters_dir": str(config.encounters_dir),
+        "reload": config.reload,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _table(
@@ -251,7 +279,10 @@ def _path_list(path: Path, base: Path, value: object, key: str) -> tuple[Path, .
 def _one_or_many_paths(path: Path, base: Path, value: object, key: str) -> tuple[Path, ...]:
     if isinstance(value, str):
         return (_resolve_path(path, base, value, key),)
-    return _path_list(path, base, value, key)
+    resolved = _path_list(path, base, value, key)
+    if not resolved:
+        raise _value_error(path, key, "must contain at least one path")
+    return resolved
 
 
 def _single_path(path: Path, base: Path, value: object, key: str) -> Path:

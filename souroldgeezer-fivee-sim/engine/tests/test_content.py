@@ -2071,6 +2071,33 @@ class TestContentTools:
         assert status["counts"]["creatures"] == BUNDLED_CREATURES
         assert status["counts"]["conditions"] == BUNDLED_CONDITIONS
 
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "FIVEE_SIM_PROJECT_DIR",
+            "FIVEE_SIM_CONTENT",
+            "FIVEE_SIM_BUILTIN",
+            "FIVEE_SIM_MAPS",
+            "FIVEE_SIM_REPLAYS",
+            "FIVEE_SIM_SCENES",
+            "FIVEE_SIM_ENCOUNTERS",
+            "FIVEE_SIM_RELOAD",
+        ],
+    )
+    def test_status_marks_every_legacy_environment_configuration_as_deprecated(
+        self, monkeypatch: pytest.MonkeyPatch, name: str
+    ) -> None:
+        monkeypatch.setenv(name, "legacy-setting")
+
+        status = api.content_status()
+
+        assert status["configuration"] == {
+            "source": "environment",
+            "path": None,
+            "deprecated": True,
+            "message": "move project settings to .fivee-sim/config.toml",
+        }
+
     def test_validate_reports_problems_without_loading_them(self, tmp_path: Path) -> None:
         path = write_pack(tmp_path, "bad.json", {"pack": "x", "creatures": []})
         result = api.content_validate([str(path)])

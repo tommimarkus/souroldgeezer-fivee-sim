@@ -93,6 +93,15 @@ def _ping(port: int, token: str) -> dict[str, Any]:
     )
     with urllib.request.urlopen(request, timeout=5) as response:
         answer: dict[str, Any] = json.loads(response.read())
+        return answer
+
+
+def _get(port: int, token: str, path: str) -> dict[str, Any]:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}{API_PREFIX}{path}", headers={TOKEN_HEADER: token}
+    )
+    with urllib.request.urlopen(request, timeout=5) as response:
+        answer: dict[str, Any] = json.loads(response.read())
     return answer
 
 
@@ -127,6 +136,54 @@ def _record_and_ping(
 
 
 class TestCliLifecycle:
+    def test_a_config_file_owns_launch_roots_and_content_mode(
+        self, tmp_path: Path
+    ) -> None:
+        config_dir = tmp_path / "campaign" / ".fivee-sim"
+        config_dir.mkdir(parents=True)
+        config = config_dir / "config.toml"
+        config.write_text(
+            """\
+format_version = 1
+
+[content]
+builtin = "exclude"
+
+[storage]
+maps = "battle-maps"
+replays = "frozen-replays"
+""",
+            encoding="utf-8",
+        )
+        state_path = config_dir / "fivee-sim-server.json"
+        process = _spawn_cli(
+            ["--config", str(config), "--port", "0"],
+            {
+                "FIVEE_SIM_MAPS": str(tmp_path / "wrong-maps"),
+                "FIVEE_SIM_REPLAYS": str(tmp_path / "wrong-replays"),
+                "FIVEE_SIM_BUILTIN": "include",
+            },
+        )
+        try:
+            assert _wait_for(lambda: read_state(state_path) is not None), (
+                "the state file never appeared"
+            )
+            state = read_state(state_path)
+            assert state is not None
+            assert state["maps_dir"] == str(config_dir / "battle-maps")
+            assert state["replays_dir"] == str(config_dir / "frozen-replays")
+
+            status = _get(state["port"], state["token"], "/content")
+            assert status["builtin"] == "exclude"
+            assert status["configuration"] == {
+                "source": "file",
+                "path": str(config),
+            }
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.communicate(timeout=10)
+
     def test_the_cli_binds_reports_answers_and_dies_cleanly_on_sigterm(
         self, tmp_path: Path
     ) -> None:

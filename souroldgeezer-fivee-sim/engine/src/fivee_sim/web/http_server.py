@@ -65,6 +65,7 @@ from typing import Any, TextIO
 from urllib.parse import parse_qsl, quote, unquote
 
 from .. import __version__
+from ..configuration import Configuration, configuration_identity
 from ..map_document import validate_document
 from ..paths import SOURCE_ID_ENV as SOURCE_ID_ENV
 from ..service import adventures as adventure_service
@@ -264,6 +265,7 @@ class EngineServer:
         *,
         maps_dir: str | Path | None = None,
         replays_dir: str | Path | None = None,
+        configuration: Configuration | None = None,
         port: int = 0,
         token: str | None = None,
         log: TextIO | None = None,
@@ -288,8 +290,15 @@ class EngineServer:
         # source without either having to trust the other's environment. Unset
         # and exported-empty land on "" together, so neither is a special case.
         self.source_id = os.environ.get(SOURCE_ID_ENV, "")
+        self.configuration_path = str(configuration.path) if configuration is not None else ""
+        self.configuration_id = (
+            configuration_identity(configuration) if configuration is not None else ""
+        )
         self.log = log if log is not None else sys.stderr
-        self.state = EngineState(maps_dir=self.maps_dir)
+        self.state = EngineState(
+            maps_dir=self.maps_dir,
+            configuration_path=configuration.path if configuration is not None else None,
+        )
         self._httpd = _EngineHTTPServer(("127.0.0.1", port), _Handler)
         self._httpd.engine = self
 
@@ -751,6 +760,8 @@ class _Handler(BaseHTTPRequestHandler):
                 "maps_dir": str(self.engine.maps_dir),
                 "replays_dir": str(self.engine.replays_dir),
                 "source_id": self.engine.source_id,
+                "configuration_path": self.engine.configuration_path,
+                "configuration_id": self.engine.configuration_id,
             },
         )
 

@@ -28,6 +28,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -54,6 +55,10 @@ def _plant_engine(root: Path, marker: str = "original") -> Path:
     (engine / "pyproject.toml").write_text('[project]\nname = "fivee-sim"\n', encoding="utf-8")
     (engine / "src" / "fivee_sim" / "__init__.py").write_text(
         f'__version__ = "{marker}"\n', encoding="utf-8"
+    )
+    shutil.copy2(
+        PLUGIN_ROOT / "engine" / "src" / "fivee_sim" / "configuration.py",
+        engine / "src" / "fivee_sim" / "configuration.py",
     )
     return engine
 
@@ -610,8 +615,20 @@ class _StubClient(ModuleType):
 
     def __init__(self) -> None:
         super().__init__("fivee_sim.client.cli")
+        self.argv: list[str] | None = None
+        self.configuration: Any | None = None
+        self.configuration_resolved = False
 
-    def main(self, argv: list[str]) -> int:
+    def main(
+        self,
+        argv: list[str],
+        *,
+        configuration: Any | None = None,
+        configuration_resolved: bool = False,
+    ) -> int:
+        self.argv = argv
+        self.configuration = configuration
+        self.configuration_resolved = configuration_resolved
         return 0
 
 
@@ -637,7 +654,11 @@ def _plant_plugin(root: Path, marker: str = "original") -> tuple[ModuleType, Pat
 
 
 def _drive_main(
-    module: ModuleType, monkeypatch: pytest.MonkeyPatch, environment: dict[str, str]
+    module: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    environment: dict[str, str],
+    argv: list[str] | None = None,
+    client: _StubClient | None = None,
 ) -> dict[str, str]:
     """Run ``main`` in this process and hand back the environment it exported into.
 
@@ -653,11 +674,11 @@ def _drive_main(
     exported = dict(environment)
     monkeypatch.setattr(os, "environ", exported)
     monkeypatch.setattr(sys, "path", list(sys.path))
-    monkeypatch.setitem(sys.modules, "fivee_sim.client.cli", _StubClient())
+    monkeypatch.setitem(sys.modules, "fivee_sim.client.cli", client or _StubClient())
 
     working_directory = Path.cwd()
     try:
-        assert module.main([], environment) == 0
+        assert module.main(list(argv or []), environment) == 0
     finally:
         os.chdir(working_directory)
     return exported
@@ -671,6 +692,91 @@ def test_the_reload_flag_exports_the_identity_of_the_source(
     exported = _drive_main(module, monkeypatch, {"FIVEE_SIM_RELOAD": "1"})
 
     assert exported["FIVEE_SIM_SOURCE_ID"] == module.source_identity(engine)
+
+
+def test_a_discovered_config_owns_settings_before_the_durable_chdir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module, engine = _plant_plugin(tmp_path / "plugin")
+    workspace = tmp_path / "workspace"
+    config_dir = workspace / ".fivee-sim"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        """\
+format_version = 1
+
+[content]
+builtin = "exclude"
+
+[storage]
+maps = "battle-maps"
+
+[development]
+reload = true
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(workspace)
+
+    exported = _drive_main(
+        module,
+        monkeypatch,
+        {
+            "PLUGIN_DATA": str(tmp_path / "durable"),
+            "FIVEE_SIM_MAPS": str(tmp_path / "wrong"),
+            "FIVEE_SIM_BUILTIN": "include",
+        },
+    )
+
+    assert exported["FIVEE_SIM_MAPS"] == str(config_dir / "battle-maps")
+    assert exported["FIVEE_SIM_BUILTIN"] == "exclude"
+    assert exported["FIVEE_SIM_SOURCE_ID"] == module.source_identity(engine)
+
+
+def test_an_explicit_config_path_wins_outside_the_workspace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module, _ = _plant_plugin(tmp_path / "plugin")
+    config_dir = tmp_path / "chosen"
+    config_dir.mkdir()
+    config = config_dir / "settings.toml"
+    config.write_text(
+        "format_version = 1\n[storage]\nreplays = 'frozen'\n",
+        encoding="utf-8",
+    )
+
+    client = _StubClient()
+    exported = _drive_main(
+        module,
+        monkeypatch,
+        {"FIVEE_SIM_REPLAYS": str(tmp_path / "wrong")},
+        ["server.ping", "--config", str(config)],
+        client,
+    )
+
+    assert exported["FIVEE_SIM_REPLAYS"] == str(config_dir / "frozen")
+    assert client.argv == ["server.ping"]
+    assert client.configuration is not None
+    assert client.configuration.path == config.resolve()
+    assert client.configuration_resolved is True
+
+
+def test_a_selected_config_can_turn_off_a_legacy_reload_variable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module, _ = _plant_plugin(tmp_path / "plugin")
+    workspace = tmp_path / "workspace"
+    config_dir = workspace / ".fivee-sim"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        "format_version = 1\n[development]\nreload = false\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(workspace)
+
+    exported = _drive_main(module, monkeypatch, {"FIVEE_SIM_RELOAD": "1"})
+
+    assert "FIVEE_SIM_SOURCE_ID" not in exported, exported
 
 
 def test_nothing_is_exported_without_the_reload_flag(
@@ -775,7 +881,7 @@ import subprocess
 import sys
 
 
-def main(argv):
+def main(argv, *, configuration=None, configuration_resolved=False):
     child = subprocess.run(
         [sys.executable, "-c", "import os; print(os.environ.get('FIVEE_SIM_SOURCE_ID', ''))"],
         capture_output=True,

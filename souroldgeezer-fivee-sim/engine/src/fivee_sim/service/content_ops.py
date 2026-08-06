@@ -11,11 +11,14 @@ encounter still resolving on an older generation.
 
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from typing import Any
 
+from ..configuration import LEGACY_PROJECT_ENVIRONMENT
 from ..content import (
     BUILTIN_ENV,
+    CLAUDE_PROJECT_ENV,
     CONTENT_ENV,
     BuiltinMode,
     ContentError,
@@ -73,9 +76,26 @@ def status(state: sessions.EngineState) -> dict[str, Any]:
         for name, session in sorted(state.sessions.items())
         if session.content_generation != content.generation
     ]
+    configuration: dict[str, Any]
+    if state.configuration_path is not None:
+        configuration = {"source": "file", "path": str(state.configuration_path)}
+    elif any(
+        os.environ.get(name, "").strip()
+        for name in (*LEGACY_PROJECT_ENVIRONMENT, CLAUDE_PROJECT_ENV)
+    ):
+        configuration = {
+            "source": "environment",
+            "path": None,
+            "deprecated": True,
+            "message": "move project settings to .fivee-sim/config.toml",
+        }
+    else:
+        configuration = {"source": "defaults", "path": None}
+
     reported: dict[str, Any] = {
         "generation": content.generation,
         "configured_paths": list(content.configured),
+        "configuration": configuration,
         "environment": {
             CONTENT_ENV: environment_paths() or None,
             BUILTIN_ENV: content.registry.builtin.value,

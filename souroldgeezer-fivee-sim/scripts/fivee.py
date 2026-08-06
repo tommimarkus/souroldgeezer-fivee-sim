@@ -40,6 +40,7 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 #: The floor `engine/pyproject.toml` declares as `requires-python`.
@@ -96,7 +97,7 @@ def resolve_plugin_data(env: dict[str, str]) -> Path | None:
     return None
 
 
-def reload_requested(env: dict[str, str]) -> bool:
+def reload_requested(env: Mapping[str, str]) -> bool:
     """Whether this launch was asked to notice its source changing under it.
 
     Opt-in, and read the way `resolve_plugin_data` reads the host variables: a
@@ -230,6 +231,7 @@ def main(argv: list[str], env: dict[str, str]) -> int:
         note(refusal)
         return 1
 
+    invocation_dir = Path.cwd()
     engine_dir = Path(__file__).resolve().parent.parent / "engine"
     if not (engine_dir / "pyproject.toml").is_file():
         note("engine not found at " + str(engine_dir) + "; nothing to run.")
@@ -246,11 +248,6 @@ def main(argv: list[str], env: dict[str, str]) -> int:
 
     try:
         source_root = resolve_source_root(engine_dir, plugin_data)
-        identity = (
-            source_identity_for(engine_dir, plugin_data, source_root)
-            if reload_requested(env)
-            else None
-        )
     except OSError as error:
         note("could not prepare the engine source (" + str(error) + "); nothing run.")
         return 1
@@ -264,6 +261,32 @@ def main(argv: list[str], env: dict[str, str]) -> int:
     # with ModuleNotFoundError. Exporting the root is what makes "run from
     # source" hold for the whole process tree rather than just this process.
     os.environ["PYTHONPATH"] = python_path_for(source_root, env.get("PYTHONPATH", ""))
+
+    from fivee_sim.configuration import (
+        ConfigurationError,
+        apply_to_environment,
+        extract_config_argument,
+        find_and_load_config,
+    )
+
+    try:
+        explicit_config, client_argv = extract_config_argument(argv)
+        configuration = find_and_load_config(invocation_dir, explicit_config)
+        if configuration is not None:
+            apply_to_environment(configuration, os.environ)
+    except ConfigurationError as error:
+        note(str(error))
+        return 2
+
+    try:
+        identity = (
+            source_identity_for(engine_dir, plugin_data, source_root)
+            if reload_requested(os.environ)
+            else None
+        )
+    except OSError as error:
+        note("could not identify the engine source (" + str(error) + "); nothing run.")
+        return 1
 
     # The same boundary as the line above, and exported for the same reason: the
     # server the client spawns is a fresh interpreter that inherits this
@@ -281,7 +304,11 @@ def main(argv: list[str], env: dict[str, str]) -> int:
 
     from fivee_sim.client.cli import main as client_main
 
-    return client_main(argv)
+    return client_main(
+        client_argv,
+        configuration=configuration,
+        configuration_resolved=True,
+    )
 
 
 if __name__ == "__main__":

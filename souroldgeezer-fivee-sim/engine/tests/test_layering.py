@@ -258,11 +258,12 @@ def test_the_client_reaches_the_engine_only_over_http() -> None:
     MCP adapter is gone; this is what stops the second route growing back.
 
     ``fivee_sim.client`` may import ``fivee_sim.paths`` (where the state file
-    lives, which is not an operation) and nothing else from this engine. So it
-    has no way to roll a die, resolve an attack, load a pack, or read a map
-    except by asking the server over HTTP. Every feature the CLI demonstrably
-    has is therefore a feature ``/api/v1`` demonstrably serves, and "all the
-    features moved" stops being a claim and becomes this test.
+    lives) and ``fivee_sim.configuration`` (the project launch description),
+    neither of which is an engine operation. It has no way to roll a die,
+    resolve an attack, load a pack, or read a map except by asking the server
+    over HTTP. Every feature the CLI demonstrably has is therefore a feature
+    ``/api/v1`` demonstrably serves, and "all the features moved" stops being a
+    claim and becomes this test.
 
     Starting the server is a ``subprocess`` running ``sys.executable -m
     fivee_sim.web``, which is deliberately not an import: the client spawns a
@@ -273,7 +274,8 @@ def test_the_client_reaches_the_engine_only_over_http() -> None:
     express is an operation missing from the contract, not a gap in the client.
     """
     offenders = _offenders(
-        "fivee_sim.client", allowed=("fivee_sim.client", "fivee_sim.paths")
+        "fivee_sim.client",
+        allowed=("fivee_sim.client", "fivee_sim.configuration", "fivee_sim.paths"),
     )
     assert not offenders, (
         "fivee_sim.client speaks to the engine over HTTP and nowhere else. An "

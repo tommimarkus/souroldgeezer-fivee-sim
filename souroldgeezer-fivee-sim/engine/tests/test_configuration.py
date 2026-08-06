@@ -10,6 +10,7 @@ from fivee_sim.configuration import (
     CONFIG_SUBPATH,
     ConfigurationError,
     apply_to_environment,
+    configuration_identity,
     extract_config_argument,
     find_and_load_config,
     find_config,
@@ -94,6 +95,32 @@ def test_load_config_uses_defaults_beside_the_config_file(tmp_path: Path) -> Non
     assert with_content.content_paths == (config_dir / "content",)
 
 
+def test_configuration_identity_tracks_meaning_not_toml_formatting(tmp_path: Path) -> None:
+    first = _write_config(
+        tmp_path,
+        "format_version=1\n[storage]\nmaps='maps'\n",
+    )
+    before = configuration_identity(load_config(first))
+
+    first.write_text(
+        """\
+# The same configuration with ordinary human formatting.
+format_version = 1
+
+[storage]
+maps = "maps"
+""",
+        encoding="utf-8",
+    )
+    assert configuration_identity(load_config(first)) == before
+
+    first.write_text(
+        "format_version = 1\n[storage]\nmaps = 'other-maps'\n",
+        encoding="utf-8",
+    )
+    assert configuration_identity(load_config(first)) != before
+
+
 @pytest.mark.parametrize(
     ("document", "key"),
     [
@@ -107,7 +134,9 @@ def test_load_config_uses_defaults_beside_the_config_file(tmp_path: Path) -> Non
         ("format_version = 1\n[content]\npaths = [\"\"]\n", "content.paths"),
         ("format_version = 1\n[content]\nbuiltin = \"sometimes\"\n", "content.builtin"),
         ("format_version = 1\n[storage]\nmaps = 1\n", "storage.maps"),
+        ("format_version = 1\n[storage]\nmaps = []\n", "storage.maps"),
         ("format_version = 1\n[storage]\nreplays = [\"ok\", 1]\n", "storage.replays"),
+        ("format_version = 1\n[storage]\nreplays = []\n", "storage.replays"),
         ("format_version = 1\n[storage]\nscenes = []\n", "storage.scenes"),
         ("format_version = 1\n[storage]\nencounters = false\n", "storage.encounters"),
         ("format_version = 1\n[development]\nreload = 1\n", "development.reload"),
@@ -226,6 +255,10 @@ reload = true
     assert environment == {
         "KEEP_ME": "yes",
         "FIVEE_SIM_PROJECT_DIR": str(tmp_path.resolve()),
+        # A non-blank separator with no entries is the legacy adapter's explicit
+        # empty search path. Omitting the variable would re-enable the project's
+        # sibling content directory and make paths = [] a lie.
+        "FIVEE_SIM_CONTENT": os.pathsep,
         "FIVEE_SIM_BUILTIN": "exclude",
         "FIVEE_SIM_MAPS": os.pathsep.join(str(path) for path in config.map_paths),
         "FIVEE_SIM_REPLAYS": os.pathsep.join(str(path) for path in config.replay_paths),

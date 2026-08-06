@@ -3,10 +3,12 @@
 Two callers start this server: a developer at a shell, and an agent spawning
 ``python -m fivee_sim.web`` detached. Both find a running one the same way —
 through the **state file**, a small JSON record
-``{pid, port, token, maps_dir, replays_dir, source_id, started}`` written
-*after* the socket is bound, next to the maps directory. The helpers that name,
-read, and remove it live here so both sides share one convention rather than two
-almost-identical ones.
+``{pid, port, token, maps_dir, replays_dir, source_id, configuration_path,
+configuration_id, started}`` written *after* the socket is bound. A configured
+launch records beside ``config.toml``, so changing a storage root still finds and
+replaces the old process; the legacy no-file launch records beside maps. The
+helpers that name, read, and remove it live here so both sides share one
+convention rather than two almost-identical ones.
 
 Content is not loaded here. The server owns an ``EngineState`` and loads
 configured packs on first use, with the same fall-back to the bundled slice
@@ -33,6 +35,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ..configuration import (
+    ConfigurationError,
+    apply_to_environment,
+    find_and_load_config,
+)
 from ..paths import STATE_FILENAME, state_file_for
 from ..service import maps as map_service
 from ..service import replay as replay_service
@@ -63,6 +70,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         description="Serve the 5E-compatible simulation engine on localhost.",
     )
     parser.add_argument(
+        "--config",
+        default=None,
+        help="project configuration file (default: nearest .fivee-sim/config.toml)",
+    )
+    parser.add_argument(
         "--maps-dir",
         default=None,
         help="directory this server reads and writes maps in "
@@ -86,22 +98,40 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    try:
+        configuration = find_and_load_config(Path.cwd(), args.config)
+    except ConfigurationError as error:
+        parser.error(str(error))
+    if configuration is not None:
+        apply_to_environment(configuration, os.environ)
+
     maps_dir = (
-        Path(args.maps_dir).expanduser() if args.maps_dir else map_service.maps_root()
+        Path(args.maps_dir).expanduser()
+        if args.maps_dir
+        else configuration.map_paths[0]
+        if configuration is not None
+        else map_service.maps_root()
     )
     maps_dir.mkdir(parents=True, exist_ok=True)
     replays_dir = (
         Path(args.replays_dir).expanduser()
         if args.replays_dir
+        else configuration.replay_paths[0]
+        if configuration is not None
         else replay_service.replays_root()
     )
     state_path = (
-        Path(args.state_file).expanduser() if args.state_file else state_file_for(maps_dir)
+        Path(args.state_file).expanduser()
+        if args.state_file
+        else configuration.path.parent / STATE_FILENAME
+        if configuration is not None
+        else state_file_for(maps_dir)
     )
 
     server = EngineServer(
         maps_dir=maps_dir,
         replays_dir=replays_dir,
+        configuration=configuration,
         port=args.port,
     )
 
@@ -125,6 +155,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 # ping answer the same source, instead of two answers that agree
                 # only as long as nobody edits one of them.
                 "source_id": server.source_id,
+                "configuration_path": server.configuration_path,
+                "configuration_id": server.configuration_id,
                 "started": datetime.now(UTC).isoformat(timespec="seconds"),
             },
             handle,

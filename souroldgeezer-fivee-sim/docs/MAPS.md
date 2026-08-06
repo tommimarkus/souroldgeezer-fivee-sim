@@ -74,7 +74,7 @@ roots. Replay writes use the first configured replays root, independently of the
 maps roots.
 
 A selected file owns these project-facing settings. For compatibility, and only
-when no file is selected, `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_MAPS`,
+when no file is selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_MAPS`,
 `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`, and `FIVEE_SIM_ENCOUNTERS` retain their
 previous meanings. `fivee content.status` names the configuration source and
 path; `fivee serve` and `fivee server.ping` report the resolved storage roots.

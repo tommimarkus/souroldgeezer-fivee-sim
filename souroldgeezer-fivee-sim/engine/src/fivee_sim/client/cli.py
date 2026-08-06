@@ -51,12 +51,21 @@ from __future__ import annotations
 
 import difflib
 import json
+import os
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+from ..configuration import (
+    Configuration,
+    ConfigurationError,
+    apply_to_environment,
+    extract_config_argument,
+    find_and_load_config,
+)
 from . import http
 from .discovery import (
     API_PREFIX,
@@ -630,6 +639,7 @@ def render_index(contract: Contract) -> str:
         "  --json '{...}' | --json -     the request body; --flags override its keys",
         "  --compact                     one-line JSON on stdout",
         "  --json-errors                 the raw problem object on stderr, not a line",
+        "  --config PATH                 select a project config; otherwise discover it",
         "",
         "Results are JSON on stdout; everything else is stderr. Exit codes: "
         f"{EXIT_USAGE} bad command, {EXIT_REFUSED} refused, {EXIT_FAULT} server fault, "
@@ -748,6 +758,7 @@ class Options:
 
     compact: bool = False
     json_errors: bool = False
+    configuration: Configuration | None = None
 
 
 def _print_json(value: Any, options: Options) -> None:
@@ -773,6 +784,13 @@ def _lifecycle_note(server: Server) -> str | None:
     One sentence, written once, because ``serve`` needs the same three cases and
     a second copy of them is how ``serve`` came to call a replacement a start.
     """
+    if server.reloaded and server.reconfigured:
+        return (
+            f"restarted the engine server at {server.url}; its source and "
+            "configuration changed"
+        )
+    if server.reconfigured:
+        return f"restarted the engine server at {server.url}; its configuration changed"
     if server.reloaded:
         return f"restarted the engine server at {server.url}; it was running older source"
     if server.spawned:
@@ -785,6 +803,10 @@ def _announce(server: Server) -> Server:
     if message is not None:
         _note(message)
     return server
+
+
+def _ensure(options: Options, **kwargs: Any) -> Server:
+    return ensure_server(configuration=options.configuration, **kwargs)
 
 
 def _serve(tokens: Sequence[str], options: Options) -> int:
@@ -800,7 +822,7 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
             raise UsageError(f"--port must be a whole number, not {given!r}") from None
     if parsed.flags or parsed.positional:
         raise UsageError("serve takes only --port")
-    server = ensure_server(port=port)
+    server = _ensure(options, port=port)
     _note(_lifecycle_note(server) or f"already serving at {server.url}")
     _print_json(
         {
@@ -816,6 +838,7 @@ def _serve(tokens: Sequence[str], options: Options) -> int:
             # replacement, and only one of those cost the caller a process and
             # whatever it was holding.
             "reloaded": server.reloaded,
+            "reconfigured": server.reconfigured,
         },
         options,
     )
@@ -826,14 +849,14 @@ def _stop(tokens: Sequence[str], options: Options) -> int:
     parsed = _parse_tokens(tokens)
     if parsed.flags or parsed.positional:
         raise UsageError("stop takes no arguments")
-    result = stop_server(state_path_for())
+    result = stop_server(state_path_for(configuration=options.configuration))
     _note("stopped the engine server" if result["stopped"] else "no engine server was running")
     _print_json(result, options)
     return EXIT_OK
 
 
 def _help(tokens: Sequence[str], options: Options) -> int:
-    contract = Contract(_announce(ensure_server()))
+    contract = Contract(_announce(_ensure(options)))
     if not tokens:
         sys.stdout.write(render_index(contract) + "\n")
         return EXIT_OK
@@ -878,7 +901,7 @@ def _no_such_operation(asked: str, head: str, names: Iterable[str]) -> str:
 
 
 def _operation(tokens: Sequence[str], options: Options) -> int:
-    contract = Contract(_announce(ensure_server()))
+    contract = Contract(_announce(_ensure(options)))
     name, rest = _resolve(contract, tokens)
     operation = contract.operation(name)
     call = build_call(operation, rest)
@@ -912,21 +935,40 @@ def _run(tokens: Sequence[str], options: Options) -> int:
     return _operation(tokens, options)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    configuration: Configuration | None = None,
+    configuration_resolved: bool = False,
+) -> int:
     """Run one command. Returns the exit code rather than raising SystemExit."""
-    tokens = list(sys.argv[1:] if argv is None else argv)
-    options = Options(
-        compact="--compact" in tokens, json_errors="--json-errors" in tokens
-    )
-    tokens = [token for token in tokens if token not in ("--compact", "--json-errors")]
-    if not tokens:
-        _note(
-            "no command. `fivee help` lists every operation; `fivee serve` starts "
-            "the engine."
-        )
-        return EXIT_USAGE
     try:
+        tokens = list(sys.argv[1:] if argv is None else argv)
+        explicit, tokens = extract_config_argument(tokens)
+        if explicit is not None:
+            configuration = find_and_load_config(Path.cwd(), explicit)
+        elif configuration is None and not configuration_resolved:
+            configuration = find_and_load_config(Path.cwd())
+        if configuration is not None:
+            apply_to_environment(configuration, os.environ)
+        options = Options(
+            compact="--compact" in tokens,
+            json_errors="--json-errors" in tokens,
+            configuration=configuration,
+        )
+        tokens = [
+            token for token in tokens if token not in ("--compact", "--json-errors")
+        ]
+        if not tokens:
+            _note(
+                "no command. `fivee help` lists every operation; `fivee serve` starts "
+                "the engine."
+            )
+            return EXIT_USAGE
         return _run(tokens, options)
+    except ConfigurationError as error:
+        _note(str(error))
+        return EXIT_USAGE
     except UsageError as error:
         _note(str(error))
         return EXIT_USAGE

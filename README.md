@@ -299,12 +299,13 @@ The resulting project layout is:
 
 A selected configuration file owns all project-facing settings; environment
 variables are not merged over it. For compatibility, and only when no file is
-selected, `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, `FIVEE_SIM_BUILTIN`,
+selected, the deprecated `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, `FIVEE_SIM_BUILTIN`,
 `FIVEE_SIM_MAPS`, `FIVEE_SIM_REPLAYS`, `FIVEE_SIM_SCENES`,
 `FIVEE_SIM_ENCOUNTERS`, and `FIVEE_SIM_RELOAD` retain their previous meanings.
 Variables supplied by a plugin host for its own bootstrap are process plumbing,
 not project configuration. `fivee content.status` reports the selected
-configuration source and path; `fivee serve` and `fivee server.ping` report the
+configuration source and path (and marks the environment fallback deprecated);
+`fivee serve` and `fivee server.ping` report the
 directories in use. Read those rather than assuming.
 
 ## What is covered

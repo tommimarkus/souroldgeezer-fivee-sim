@@ -92,7 +92,7 @@ Within that configuration, content is layered in this order, lowest first:
 `exclude`. Every relative path is resolved against the `.fivee-sim/` directory
 that contains the selected file.
 
-For compatibility, and only when no configuration file is selected, the legacy
+For compatibility, and only when no configuration file is selected, the deprecated legacy
 `FIVEE_SIM_PROJECT_DIR`, `FIVEE_SIM_CONTENT`, and `FIVEE_SIM_BUILTIN` variables
 retain their previous meanings. Host bootstrap variables are not user
 configuration. Prefer the file for a durable project setup.

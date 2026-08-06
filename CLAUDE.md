@@ -810,8 +810,18 @@ written by hand:
 The launcher also changes into the durable plugin-data directory before running.
 That is load-bearing: maps and encounter journals may resolve a default from
 `Path.cwd()` when an operation runs, and a process left inside a retired plugin
-cache would otherwise turn its next journal append into raw `ENOENT`. Explicit
-project-root, content, map, and encounter environment variables continue to win.
+cache would otherwise turn its next journal append into raw `ENOENT`. Before that
+change of directory, the launcher discovers the nearest `.fivee-sim/config.toml`
+from the invocation directory (or loads global `--config PATH`) and resolves every
+relative path against the file's directory. A selected file owns all
+project-facing settings; the old `FIVEE_SIM_*` user variables are deprecated
+compatibility fallbacks only when no file is selected. Host plugin-data variables
+remain process plumbing rather than project configuration.
+
+That pre-`chdir` result includes **no file found**. The launcher hands the result
+to the client as already resolved even when it is `None`; the client must not
+repeat discovery from the durable plugin-data directory and accidentally adopt a
+config belonging to the runtime cache rather than the invoking project.
 
 `engine/tests/test_launcher.py` pins all of it. Two cases there are load-bearing
 in a way that is easy to undo by accident: they drive the launcher with the
@@ -826,10 +836,12 @@ source root has to be exported, not merely inserted.
 **Dev reload is opt-in, and it is the same content hash doing the work.** The
 launcher builds nothing, but a running server still holds the engine it imported
 at startup — so editing `engine/src/` and re-running `fivee` silently tests the
-old build. Export `FIVEE_SIM_RELOAD=1` and the launcher hashes the source it is
-about to run and exports the digest as `FIVEE_SIM_SOURCE_ID`; the server reads it
-once at construction and answers for it on `GET /api/v1/ping`; `ensure_server`
-holds the two against each other and replaces a server that no longer matches.
+old build. Set `[development] reload = true` in `.fivee-sim/config.toml` and the
+launcher hashes the source it is about to run and exports the private digest as
+`FIVEE_SIM_SOURCE_ID`; the server reads it once at construction and answers for
+it on `GET /api/v1/ping`; `ensure_server` holds the two against each other and
+replaces a server that no longer matches. `FIVEE_SIM_RELOAD=1` keeps its old
+meaning only on the no-file compatibility path.
 Unset is *no opinion* rather than no id, and no answer from a server can override
 it — which is what stops a plain command restarting an engine somebody is
 mid-fight in. The id comes from the ping and never the state file: a record
@@ -845,12 +857,12 @@ it will never re-verify, so a supplied name is the one way its content
 addressing could be made to lie. Everything else reads the digest back off the
 path, because the name *is* the digest.
 
-Two checkouts must not share a maps root while both have reload enabled. The
-state file lives beside the maps directory, so they would rendezvous on one
-server, disagree about what its source should be, and replace each other's on
-every command. Default resolution is per project directory and does not collide;
-an explicit `FIVEE_SIM_MAPS` pointing two differing trees at one root is what
-does.
+With a project file, the state record lives beside `config.toml`, not beside the
+first maps root. That makes discovery stable when an edit changes a storage path:
+the next command finds the old process, compares the semantic configuration
+digest reported by its ping, and replaces it instead of orphaning it. Comments
+and TOML formatting do not change that digest. The legacy no-file path retains
+the maps-adjacent state record for compatibility.
 
 **Three things about a reload are invisible from a green run.** *Fights survive
 it* — `sessions.session_for` recovers a missing session from its journal,
@@ -859,8 +871,8 @@ transparent to the caller. *But the fight is re-derived under the new code*, so 
 kernel edit can leave the recovered state disagreeing with what the journal's
 result records said happened; that is the feature working, and also its sharp
 edge. *A runtime `content.configure` is lost*, because `EngineState.content` is
-in-memory — content named by `FIVEE_SIM_CONTENT` reloads with the process, a pack
-configured by an API call has to be re-issued.
+in-memory — content named by the project file reloads with the process, while a
+pack configured by an API call has to be re-issued.
 
 Static assets never needed any of this. `web/http_server.py` reads them per
 request, so an edit to `editor.html` or `renderer.js` is live on the next browser
