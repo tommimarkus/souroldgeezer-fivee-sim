@@ -7,20 +7,30 @@ them. See [README.md](README.md) for the project overview.
 
 ## Environment hazards — read before any `git add`
 
-This workspace mounts a number of paths as **character devices** (`/dev/null`,
-major/minor `1,3`), not regular files. They are not writable and not
-committable.
+This environment can bind-mount selected workspace paths as **character
+devices** (`/dev/null`, major/minor `1,3`) instead of regular files. Which
+paths are mounted is session- and worktree-dependent: a path that is a regular
+file or absent in one checkout may be a device in another.
 
-**In the repo root:** `.bashrc`, `.bash_profile`, `.profile`, `.zshrc`,
-`.zprofile`, `.gitconfig`, `.gitmodules`, `.mcp.json`, `.ripgreprc`, `.idea`,
-`.vscode`. All are listed in `.gitignore`.
+Before writing or staging any configuration path, inspect the **exact target**
+rather than inferring its type from the directory or a sibling:
 
-**Everything under `.claude/`** — including `settings.json`,
-`settings.local.json`, `hooks/`, `skills/`, `agents/`, and `commands/`. This has
-a real consequence: **this repo cannot host project-level Claude settings or
-hooks.** Do not try to write them; the content silently goes to `/dev/null`.
-Local development hooks live in `scripts/hooks/` and are wired from the user's
-own `~/.claude/settings.json` — see "Local development hooks" below.
+```bash
+stat --format='%F %t:%T %n' -- <exact-path>
+```
+
+Paths observed as mounts include, in the repo root, `.bashrc`, `.bash_profile`,
+`.profile`, `.zshrc`, `.zprofile`, `.gitconfig`, `.gitmodules`, `.mcp.json`,
+`.ripgreprc`, `.idea`, and `.vscode`; and under `.claude/`, `settings.json`,
+`settings.local.json`, `hooks/`, `skills/`, `agents/`, and `commands/`. The
+root paths are listed in `.gitignore`.
+
+When an exact path is mounted as a character device, it is not usable as a
+regular project file or committable and **cannot host project configuration
+while mounted**. Do not try to write it; the content may silently go to
+`/dev/null`. Local development hooks live in `scripts/hooks/` and are wired
+from the user's own `~/.claude/settings.json` — see "Local development hooks"
+below.
 
 ### Worktrees: only `add` is special
 
