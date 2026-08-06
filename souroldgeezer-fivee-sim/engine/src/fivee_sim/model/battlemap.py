@@ -110,12 +110,16 @@ class FeatureOverlay:
 class FeatureCheck:
     """The roll operating a fixture takes, if it takes one.
 
-    A raw ability check: creatures carry ability modifiers and no skill
-    proficiencies, so a DC here is set as if untrained.
+    An ability check, optionally naming a skill: a creature's skill bonus, when
+    its stat block prints one for the named skill, replaces the raw ability
+    modifier — see ``Creature.check_modifier``. Creatures still carry no
+    proficiency bonus, Expertise, or Help, so set the DC as if untrained for
+    any skill a target might lack.
     """
 
     ability: Ability
     dc: int
+    skill: str | None = None
 
 
 class TriggerMode(StrEnum):

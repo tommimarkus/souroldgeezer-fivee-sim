@@ -3956,11 +3956,14 @@ class Encounter:
         verb = "open" if wants_open else "close"
         extras: dict[str, Any] = {"linked": linked} if linked else {}
         if feature.check is not None:
-            # A raw ability check: creatures carry no skill proficiencies, so a
-            # DC here was set as if untrained.
+            # An ability check; the actor's printed skill bonus replaces the
+            # ability modifier when the check names a skill it has one for —
+            # creatures still carry no proficiency bonus, Expertise, or Help,
+            # so an untrained DC is still the right default for a target that
+            # lacks the named skill.
             test = make_d20_test(
                 rng,
-                modifier=actor.ability_mod(feature.check.ability),
+                modifier=actor.check_modifier(feature.check.ability, feature.check.skill),
                 dc=feature.check.dc,
                 advantage=check_advantage,
                 supplied=action.natural or None,

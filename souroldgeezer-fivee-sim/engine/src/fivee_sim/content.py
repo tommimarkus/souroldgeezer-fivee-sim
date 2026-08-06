@@ -148,7 +148,7 @@ _CREATURE_KEYS = _COMMON_RECORD_KEYS | {
     # would be wasted work, not because anything reads it.
     "team", "ac", "max_hp", "hit_dice", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
-    "size", "abilities", "save_bonuses",
+    "size", "abilities", "save_bonuses", "skill_bonuses",
     "attacks", "attacks_per_action", "bonus_actions", "surrender_when_last",
     "redirect_attack",
     "spells", "spell_slots", "spell_save_dc", "spellcasting_ability",
@@ -826,6 +826,12 @@ def _parse_creature(
     reader.string("hit_dice")
     reader.enum_keyed_ints("abilities", Ability)
     reader.enum_keyed_ints("save_bonuses", Ability)
+    # A plain string-keyed mapping, never validated against a closed skill
+    # set: the engine already treats a skill name as an open string wherever
+    # it appears (``service/primitives.check``'s ``skill`` parameter, for
+    # one), so a stat block can print a bonus for a skill this engine has no
+    # table row for.
+    reader.string_keyed_ints("skill_bonuses")
     for key in ("immunities", "resistances", "vulnerabilities"):
         reader.enum_list(key, DamageType)
     reader.string_list("spells")

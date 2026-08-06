@@ -2232,3 +2232,59 @@ class TestInitiativeBonusSchema:
         )
         assert "initiative_bonus" in fields(diagnostics)
         assert any("must be a whole number" in p for p in problems(diagnostics))
+
+
+class TestSkillBonusesSchema:
+    """``skill_bonuses``: a printed absolute modifier, not a proficiency to add.
+
+    SRD stat blocks print totals ("Perception +5"), and the engine has no
+    character level or proficiency bonus to derive one from — the value here
+    *is* the printed total. Keys are plain strings, never a closed enum: the
+    engine already treats a ``primitives.check`` skill label and a pack
+    condition name the same way, and a skill this engine has never heard of is
+    still a fact a stat block prints.
+    """
+
+    def creature_pack(self, tmp_path: Path, **fields: Any) -> Path:
+        return write_pack(tmp_path, "sentry.json", {
+            "pack": "x", "provenance": "test",
+            "creatures": [{
+                "name": "Vale Sentry", "ac": 13, "max_hp": 20,
+                "abilities": {"wisdom": 12}, "provenance": "test", **fields,
+            }],
+        })
+
+    def test_a_creature_carries_its_printed_skill_bonuses(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path, skill_bonuses={"perception": 5, "stealth": 4})],
+            builtin="exclude", include_environment=False,
+        )
+        sentry = Creature.from_record(
+            registry.creatures["Vale Sentry"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert sentry.skill_bonuses == {"perception": 5, "stealth": 4}
+
+    def test_a_creature_without_any_falls_back_to_an_empty_mapping(
+        self, tmp_path: Path
+    ) -> None:
+        registry = load_packs(
+            [self.creature_pack(tmp_path)], builtin="exclude", include_environment=False
+        )
+        sentry = Creature.from_record(
+            registry.creatures["Vale Sentry"],
+            condition_effects=registry.condition_effects,
+            source="test",
+        )
+
+        assert sentry.skill_bonuses == {}
+
+    def test_a_non_integer_value_names_the_field(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.creature_pack(tmp_path, skill_bonuses={"perception": "five"})],
+            builtin="exclude", include_environment=False,
+        )
+        assert "skill_bonuses" in fields(diagnostics)
+        assert any("must be a whole number" in p for p in problems(diagnostics))

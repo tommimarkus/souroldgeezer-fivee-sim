@@ -183,7 +183,7 @@ LOOKUP_SPEC_KEYS = frozenset({
 DESCRIBED_SPEC_KEYS = frozenset({
     "name", "team", "ac", "max_hp", "hp", "speed", "climb_speed", "swim_speed",
     "fly_speed", "terrain_cost_overrides", "darkvision", "blindsight", "death_rule",
-    "size", "abilities", "save_bonuses", "attacks", "attacks_per_action",
+    "size", "abilities", "save_bonuses", "skill_bonuses", "attacks", "attacks_per_action",
     "bonus_actions", "surrender_when_last", "redirect_attack", "pack_tactics",
     "undead_fortitude", "spells",
     "spell_slots", "spell_save_dc", "spell_attack_bonus", "spellcasting_ability",
@@ -420,6 +420,10 @@ def creature_from_spec(spec: dict[str, Any], registry: ContentRegistry) -> Creat
             save_bonuses={
                 _closed(Ability, key, "save_bonuses"): int(value)
                 for key, value in spec.get("save_bonuses", {}).items()
+            },
+            skill_bonuses={
+                str(key): int(value)
+                for key, value in spec.get("skill_bonuses", {}).items()
             },
             attacks=tuple(attack_from_spec(entry) for entry in spec.get("attacks", [])),
             attacks_per_action=int(spec.get("attacks_per_action", 1)),

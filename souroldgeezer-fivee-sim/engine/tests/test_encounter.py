@@ -3797,6 +3797,52 @@ class TestMapFixtures:
         )
         assert events[0].data == {"feature": "sluice gate", "open": True}
 
+    def skill_checked_fight(self) -> tuple[Encounter, Random]:
+        """One fixture whose check names a skill, on an otherwise plain map."""
+        feature = MapFeature(
+            name="ledge",
+            square=(1, 1),
+            kind="fixture",
+            closed_terrain="floor",
+            open_terrain="floor",
+            costs_action=True,
+            check=FeatureCheck(ability=Ability.STRENGTH, dc=15, skill="athletics"),
+        )
+        battle_map = BattleMap.flat(
+            name="ledge-test", width=3, height=3, default_terrain="floor",
+            features={feature.name: feature}, provenance=FIXTURE,
+        )
+        rng = Random(3)
+        encounter = Encounter(
+            [fighter("Thora", position=square_center((1, 1))),
+             fighter("Foe", team="foes", position=square_center((2, 1)))],
+            rng, battle_map=battle_map,
+        )
+        return encounter, rng
+
+    def test_a_check_naming_a_skill_rolls_on_the_printed_skill_bonus(self) -> None:
+        # fighter's Strength modifier is +3 — the skill bonus below (+10)
+        # would clear DC 15 that the modifier alone would not.
+        encounter, rng = self.skill_checked_fight()
+        advance_to(encounter, "Thora", rng)
+        encounter.current.skill_bonuses = {"athletics": 10}
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="ledge"), FixedRandom(3)
+        )
+        assert events[0].data["check"] == "d20 [3] +10 = 13 vs DC 15"
+
+    def test_a_check_naming_a_skill_the_creature_has_no_bonus_for_rolls_the_ability_modifier(
+        self,
+    ) -> None:
+        # Regression pin: no skill bonus for the declared skill still falls back
+        # to the raw ability modifier, unchanged.
+        encounter, rng = self.skill_checked_fight()
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.INTERACT, feature="ledge"), FixedRandom(15)
+        )
+        assert events[0].data["check"] == "d20 [15] +3 = 18 vs DC 15"
+
     # --- saying which way to move it --------------------------------------
     def test_set_open_makes_it_so_rather_than_toggling(self) -> None:
         encounter, rng = self.fight()

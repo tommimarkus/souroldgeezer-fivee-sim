@@ -251,6 +251,18 @@ class Reader:
             if isinstance(value, bool) or not isinstance(value, int):
                 self.fail(key, f"{name} must be a whole number, got {value!r}")
 
+    def string_keyed_ints(self, key: str) -> None:
+        """Validate a plain string-keyed integer mapping without rebuilding it.
+
+        Unlike :meth:`enum_keyed_ints`, a key here is not checked against a
+        closed set — used for a field like ``skill_bonuses``, where the key
+        names a skill and this engine treats a skill as an open string, the
+        same as a condition.
+        """
+        for name, value in self.mapping(key).items():
+            if isinstance(value, bool) or not isinstance(value, int):
+                self.fail(key, f"{name} must be a whole number, got {value!r}")
+
     def enum_list(self, key: str, enum_class: type[_E]) -> None:
         allowed = ", ".join(member.value for member in enum_class)
         for value in self.sequence(key):

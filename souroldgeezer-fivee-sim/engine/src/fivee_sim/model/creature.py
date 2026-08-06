@@ -333,6 +333,15 @@ class Creature:
     size: Size = Size.MEDIUM
     abilities: dict[Ability, int] = field(default_factory=dict)
     save_bonuses: dict[Ability, int] = field(default_factory=dict)
+    #: A stat block's printed skill modifier, keyed by skill name — a plain
+    #: ``str``, never a closed enum: ``service/primitives.check`` already
+    #: accepts a free-form ``skill`` label validated only for non-blankness,
+    #: and this engine keeps a condition an open string for the same reason a
+    #: pack may extend one. The value is the printed *absolute* modifier, not a
+    #: proficiency to add: SRD stat blocks print totals ("Perception +5"), and
+    #: this engine models no character level or proficiency bonus to derive
+    #: one from.
+    skill_bonuses: dict[str, int] = field(default_factory=dict)
     attacks: tuple[AttackOption, ...] = ()
     attacks_per_action: int = 1
     #: Action kinds this stat block may take as a Bonus Action.  The strings use
@@ -490,6 +499,10 @@ class Creature:
                 Ability(key): int(value)
                 for key, value in record.get("save_bonuses", {}).items()
             },
+            skill_bonuses={
+                str(key): int(value)
+                for key, value in record.get("skill_bonuses", {}).items()
+            },
             attacks=tuple(
                 AttackOption.from_record(entry) for entry in record.get("attacks", [])
             ),
@@ -548,6 +561,14 @@ class Creature:
         """Explicit save bonus if the stat block prints one, else the raw modifier."""
         if ability in self.save_bonuses:
             return self.save_bonuses[ability]
+        return self.ability_mod(ability)
+
+    def check_modifier(self, ability: Ability, skill: str | None = None) -> int:
+        """Explicit skill bonus if the stat block prints one for ``skill``, else
+        the raw ability modifier. Mirrors :meth:`save_modifier`'s shape.
+        """
+        if skill is not None and skill in self.skill_bonuses:
+            return self.skill_bonuses[skill]
         return self.ability_mod(ability)
 
     @property

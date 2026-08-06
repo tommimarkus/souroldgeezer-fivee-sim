@@ -628,9 +628,9 @@ class TestBundledGoblinRider:
         assert record["bonus_actions"] == ["disengage"]
         assert record["unmodelled_facts"] == [
             {"code": "unsupported_bonus_action", "feature": "Nimble Escape: Hide"},
-            {"code": "unsupported_creature_skills", "feature": "Stealth +6"},
             {"code": "unsupported_passive_perception", "feature": "Passive Perception 9"}
         ]
+        assert record["skill_bonuses"] == {"stealth": 6}
 
 
 class TestAttackOptionGuards:

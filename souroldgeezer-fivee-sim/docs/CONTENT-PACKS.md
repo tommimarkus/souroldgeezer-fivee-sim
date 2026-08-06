@@ -95,10 +95,20 @@ Required: `name`, `ac`, `max_hp`, `provenance`. Optional: `team`, `speed`,
 `attacks_per_action`, `bonus_actions`, `surrender_when_last`, `redirect_attack`,
 `pack_tactics`, `undead_fortitude`, `spells`, `spell_slots`, `spell_save_dc`,
 `spell_attack_bonus`, `spellcasting_ability`, `items`, `conditions`,
-`condition_immunities`, `initiative_bonus`,
+`condition_immunities`, `initiative_bonus`, `skill_bonuses`,
 `unmodelled_facts`, legacy
 `unmodelled`, `immunities`,
 `resistances`, `vulnerabilities`, `overrides`.
+
+`skill_bonuses` maps a skill name to the stat block's printed *absolute*
+modifier — SRD stat blocks print totals such as "Perception +5", and this
+engine models no character level or proficiency bonus to derive one from, so
+the printed total is what ships. Keys are plain strings, never a closed enum:
+`service/primitives.check` already accepts a free-form `skill` label validated
+only for non-blankness, and a pack's skill stays as open a name as a pack's
+condition. Consumed by a map fixture's `check`, whose optional `skill` field
+is documented in [MAPS.md](MAPS.md); a creature with no printed bonus for the
+named skill rolls its raw ability modifier, unchanged.
 
 `initiative_bonus` is a stat block's printed Initiative score, used in place of
 the Dexterity modifier when present — SRD 5.2.1, *Initiative*: "Your

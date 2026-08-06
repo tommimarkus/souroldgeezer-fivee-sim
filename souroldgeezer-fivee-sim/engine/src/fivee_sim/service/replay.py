@@ -315,6 +315,7 @@ def normalized_combatant_payload(creature: Creature) -> dict[str, Any]:
                 creature.save_bonuses.items(), key=lambda item: item[0].value
             )
         },
+        "skill_bonuses": dict(sorted(creature.skill_bonuses.items())),
         "attacks": [_attack_payload(option) for option in creature.attacks],
         "attacks_per_action": creature.attacks_per_action,
         "bonus_actions": sorted(creature.bonus_actions),
