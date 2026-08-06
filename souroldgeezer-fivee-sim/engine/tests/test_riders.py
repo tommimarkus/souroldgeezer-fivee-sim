@@ -33,6 +33,8 @@ from fivee_sim.model.encounter import (
     Action,
     ActionKind,
     Encounter,
+    EncounterError,
+    EncounterMode,
     Event,
     build_encounter,
 )
@@ -650,6 +652,54 @@ class TestPackDefinedRiderConditions:
             event.kind == "effect_end" and "vale-toxin lifts" in event.detail
             for event in events
         )
+
+    def test_the_same_rider_never_lifts_inside_an_interlude(
+        self, tmp_path: Path
+    ) -> None:
+        """The executed half of ``interlude_expires_no_timed_effect``.
+
+        The register declares that nothing anchored to a turn boundary expires
+        inside an interlude, and the case above is its control: the identical
+        rider on the identical pack *does* lift, in two advances, in a fight.
+        Here there is no boundary to lift it on — ``advance`` is refused — so
+        the condition is still held after as many beats as the caller cares to
+        take, and the only way out of it is finalizing the chapter.
+
+        Asserted rather than reasoned about, because the ruling was established
+        from call-site analysis and ``tests/test_rulings.py`` pins only that the
+        entry and its marker agree, never that the entry is true.
+        """
+        path = tmp_path / "rider-vale.json"
+        path.write_text(json.dumps(self.PACK), encoding="utf-8")
+        registry = load_packs([path], include_environment=False)
+        attacker = make_creature(
+            "Vale Biter", registry=registry, label="Biter", team="monsters"
+        )
+        target = make_creature(
+            "Vale Biter", registry=registry, label="Victim", team="party", position=5
+        )
+        rng = Random(3)
+        encounter = Encounter(
+            [attacker, target], rng,
+            mode=EncounterMode.EXPLORATION,
+            condition_effects=registry.condition_effects,
+        )
+
+        encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Victim", attack="Bite"),
+            rng, actor="Biter",
+        )
+        assert "vale-toxin" in target.conditions
+
+        # Two beats each, which in a fight would be two full rounds — more than
+        # the two advances the case above needs to lift it.
+        for actor in ("Biter", "Victim", "Biter", "Victim"):
+            encounter.act(Action(kind=ActionKind.DODGE), rng, actor=actor)
+
+        assert "vale-toxin" in target.conditions
+        assert not any(event.kind == "effect_end" for event in encounter.log)
+        with pytest.raises(EncounterError, match="an interlude has no rounds"):
+            encounter.advance(rng)
 
 
 class TestBundledGoblinRider:

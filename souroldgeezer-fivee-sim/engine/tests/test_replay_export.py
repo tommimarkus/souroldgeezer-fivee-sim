@@ -295,6 +295,48 @@ class TestBundleV2:
         assert bundle["checkpoints"][-1]["state"] == bundle["latest_state"]
         assert replay_service.validate_replay(bundle) == []
 
+    def test_the_live_path_and_a_recovered_one_freeze_the_same_ruling(self) -> None:
+        """The invariant the case above only implies, and the one that was broken.
+
+        Validity is the symptom; *agreement* is the property. ``recover_session``
+        replays a ruling beside ``act`` and ``advance``, so the same fight
+        exported live and exported after a reload must describe one fight — and
+        for a release it did not, because only recovery stamped and
+        checkpointed. A bundle that merely validates would not have caught that:
+        both halves were internally consistent and said different things.
+
+        What is compared is the part the two paths can actually disagree about.
+        The five timestamp-free integrity blocks — the subset
+        ``scripts/check-api-smoke.py`` holds two processes to — are **not**
+        enough on their own: they agreed all along, because ``latest_state`` is
+        derived at export from whichever session is in hand. The divergence was
+        in the two blocks that carry the wall clock, so those are compared with
+        the clock projected out: the checkpoint *states* in order, and whether
+        every event is stamped at all. Written the other way round this case
+        passes against the unfixed engine, which is how it was written first.
+        """
+        encounter_id = mapless_fight(seed=101)
+        api.encounter_condition(encounter_id, "Goblin", "prone")
+        live = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        api.STATE.sessions.clear()
+        api.encounter_resume(encounter_id)
+        recovered = api.replay_export(encounter_id, format_version=2)["bundle"]
+
+        determined = ("map", "initial", "actions", "latest_state", "content")
+        assert {key: live["integrity"][key] for key in determined} == {
+            key: recovered["integrity"][key] for key in determined
+        }
+        assert [one["state"] for one in live["checkpoints"]] == [
+            one["state"] for one in recovered["checkpoints"]
+        ]
+        assert [bool(one["timestamp"]) for one in live["events"]] == [
+            bool(one["timestamp"]) for one in recovered["events"]
+        ]
+        # Not vacuous: a fight with no ruling in it would agree here whatever
+        # ``condition`` did, so the attempt has to be in both bundles.
+        assert [one["operation"] for one in live["attempts"]] == ["encounter_condition"]
+
     def test_v2_normalized_inputs_preserve_playtest_mechanics(self) -> None:
         stirge = dict(REPLAY_HERO)
         stirge.update(
