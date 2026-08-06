@@ -79,6 +79,7 @@ __all__ = [
     "FORMAT",
     "FORMAT_VERSION",
     "LATEST_FORMAT_VERSION",
+    "READABLE_FORMAT_VERSIONS",
     "RENDERER_TAG",
     "REPLAYS_ENV",
     "REPLAYS_SUBDIR",
@@ -103,6 +104,22 @@ __all__ = [
 FORMAT = "fivee-sim-replay"
 FORMAT_VERSION = 1
 LATEST_FORMAT_VERSION = 2
+
+#: Every ``format_version`` :func:`validate_replay` accepts, read by the
+#: validator instead of a bare literal so the two version constants above and
+#: the reader cannot drift apart.
+#:
+#: A replay bundle is the one artifact in this codebase that leaves the
+#: machine. A journal is internal state and gets a clean break —
+#: ``journal_version`` bumps refuse the previous format outright, because
+#: nothing outside the engine ever holds one. A bundle a user already
+#: exported keeps sitting on their disk after the writer moves on, so the
+#: engine writes exactly one version, :data:`LATEST_FORMAT_VERSION`, but
+#: reads every version it has ever written. ``LATEST_FORMAT_VERSION`` is
+#: always a member of this set: that is the property that turns "the writer
+#: moved and the reader forgot" into a failing test rather than a bundle the
+#: engine writes and then refuses.
+READABLE_FORMAT_VERSIONS: frozenset[int] = frozenset({1, 2})
 
 #: The embedded map's own discriminator, mirrored from ``map_document.FORMAT``
 #: rather than imported: :func:`_validate_map` deliberately stays terrain-blind
@@ -810,8 +827,13 @@ def validate_replay(payload: Any) -> list[dict[str, str]]:
     if payload.get("format") != FORMAT:
         found.append(_diagnostic("format", f"must be {FORMAT!r}"))
     version = payload.get("format_version")
-    if not isinstance(version, int) or isinstance(version, bool) or version not in (1, 2):
-        found.append(_diagnostic("format_version", "must be 1 or 2"))
+    if (
+        not isinstance(version, int)
+        or isinstance(version, bool)
+        or version not in READABLE_FORMAT_VERSIONS
+    ):
+        allowed = " or ".join(str(item) for item in sorted(READABLE_FORMAT_VERSIONS))
+        found.append(_diagnostic("format_version", f"must be {allowed}"))
     seed = payload.get("seed")
     if not isinstance(seed, int) or isinstance(seed, bool):
         found.append(_diagnostic("seed", "must be an integer"))

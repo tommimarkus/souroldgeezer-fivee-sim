@@ -11,7 +11,13 @@ from typing import Any
 import pytest
 
 from fivee_sim.model.encounter import EncounterMode
-from fivee_sim.service.replay import canonical_sha256, validate_replay
+from fivee_sim.service.replay import (
+    FORMAT_VERSION,
+    LATEST_FORMAT_VERSION,
+    READABLE_FORMAT_VERSIONS,
+    canonical_sha256,
+    validate_replay,
+)
 
 from . import api
 from .conftest import REPLAY_HERO, mapless_fight
@@ -56,15 +62,35 @@ def set_path(target: object, dotted: str, value: object) -> None:
         raise AssertionError(f"{dotted!r} has no replaceable target")
 
 
-def test_the_canonical_validator_accepts_v1_and_v2_exports() -> None:
+def test_the_canonical_validator_accepts_every_readable_version() -> None:
+    """Derived from ``READABLE_FORMAT_VERSIONS`` rather than named twice.
+
+    A real bundle is exported and validated for each declared version, not
+    merely counted — a derivation that stopped actually exporting one would
+    be weaker than the two hardcoded assertions it replaced. The vacuity
+    guard sits alongside it: a readable set that shrank to nothing, or to
+    one trivial member, would let the loop below pass by covering nothing.
+    """
+    assert len(READABLE_FORMAT_VERSIONS) >= 2, (
+        f"only {len(READABLE_FORMAT_VERSIONS)} readable version(s) declared; "
+        "this guard needs a real spread to prove anything"
+    )
     encounter_id = mapless_fight(seed=79)
 
-    assert validate_replay(
-        api.replay_export(encounter_id, format_version=1)["bundle"]
-    ) == []
-    assert validate_replay(
-        api.replay_export(encounter_id, format_version=2)["bundle"]
-    ) == []
+    for version in sorted(READABLE_FORMAT_VERSIONS):
+        assert (
+            validate_replay(api.replay_export(encounter_id, format_version=version)["bundle"])
+            == []
+        )
+
+
+def test_every_version_this_build_writes_is_a_version_it_can_read() -> None:
+    """The property that makes the writer-moves-without-the-reader defect
+    impossible rather than merely unlikely: a phase that bumps
+    ``LATEST_FORMAT_VERSION`` and forgets ``READABLE_FORMAT_VERSIONS`` fails
+    this before it fails a user's disk.
+    """
+    assert {FORMAT_VERSION, LATEST_FORMAT_VERSION} <= READABLE_FORMAT_VERSIONS
 
 
 def test_replay_validate_reports_all_diagnostics_without_loading_a_session() -> None:

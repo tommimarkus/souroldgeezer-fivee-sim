@@ -441,6 +441,16 @@ an older format, a v1 journal is refused by name at recovery, and
 `encounter.list` still lists it anyway, because a hash-valid file that this
 build cannot replay is not a corrupt one.
 
+**A replay bundle's `format_version` is not held to that rule, on purpose.** A
+journal is internal state, so breaking it cleanly costs nothing outside the
+process. A bundle is an export that leaves the machine, so the engine writes
+the latest version and reads every version it has ever written — refusing an
+older one would make every replay already on a user's disk unplayable at the
+version that added the refusal. `service/replay.py`'s `READABLE_FORMAT_VERSIONS`
+is the declaration `validate_replay` reads instead of a literal, and it always
+contains `LATEST_FORMAT_VERSION`; a phase that bumps the writer and forgets the
+reader is what would falsify that invariant, and a test pins it.
+
 **Seven concern modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
 `coverage.py`, and `rulings.py`
