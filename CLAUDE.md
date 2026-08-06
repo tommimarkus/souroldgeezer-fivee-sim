@@ -408,7 +408,7 @@ an older format, a v1 journal is refused by name at recovery, and
 `encounter.list` still lists it anyway, because a hash-valid file that this
 build cannot replay is not a corrupt one.
 
-**Seven modules sit beside the packages, and that tier is deliberate.**
+**Seven concern modules sit beside the packages, and that tier is deliberate.**
 `catalog.py`, `content.py`, `map_document.py`, `map_types.py`, `validation.py`,
 `coverage.py`, and `rulings.py`
 live directly in `src/fivee_sim/`. What belongs there
@@ -421,6 +421,10 @@ is the property to keep — a module only the rules layers need is not a root
 module, it is a `kernel/` or `model/` one. `rulings.py` is the sharpest case: the
 rules layers are exactly what it describes, and they reference it through a
 `# ruling:` **comment** so the dependency never becomes an import.
+
+One private helper, `_generated_document.py`, sits beside them only to own the
+shared path, write, and diagnostic mechanics for the two generated reports. It
+is plumbing, not an eighth concern or a public API.
 
 `map_types.py` is the one exception, and it is an exception the other way —
 `model/` imports it directly, not by comment — because a fight has to hold a

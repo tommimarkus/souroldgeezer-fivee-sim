@@ -35,10 +35,10 @@ third-party rules text or names a third-party source; the survey behind the
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+
+from ._generated_document import write_generated_document
 
 
 class RulingKind(StrEnum):
@@ -973,18 +973,13 @@ def render_markdown() -> str:
     return "\n".join(lines) + "\n"
 
 
-def default_output_path() -> Path:
-    """Return ``<plugin root>/docs/RULINGS.md`` from the installed source path."""
-    return Path(__file__).resolve().parents[3] / "docs" / "RULINGS.md"
-
-
 def main(argv: list[str] | None = None) -> int:
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    target = Path(arguments[0]) if arguments else default_output_path()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_markdown(), encoding="utf-8")
-    print(f"wrote {target}", file=sys.stderr)
-    return 0
+    return write_generated_document(
+        argv,
+        source_file=__file__,
+        default_filename="RULINGS.md",
+        render=render_markdown,
+    )
 
 
 if __name__ == "__main__":

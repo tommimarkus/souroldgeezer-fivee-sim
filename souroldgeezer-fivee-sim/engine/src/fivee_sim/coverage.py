@@ -7,11 +7,10 @@ hand-browsed catalog that can drift from the data.
 
 from __future__ import annotations
 
-import sys
 from collections import Counter
-from pathlib import Path
 from typing import Any
 
+from ._generated_document import write_generated_document
 from .catalog import simulation_support
 from .content import ContentRegistry, builtin_registry
 
@@ -102,18 +101,13 @@ def render_markdown() -> str:
     return "\n".join(lines) + "\n"
 
 
-def default_output_path() -> Path:
-    """Return ``<plugin root>/docs/COVERAGE.md`` from the installed source path."""
-    return Path(__file__).resolve().parents[3] / "docs" / "COVERAGE.md"
-
-
 def main(argv: list[str] | None = None) -> int:
-    arguments = list(sys.argv[1:] if argv is None else argv)
-    target = Path(arguments[0]) if arguments else default_output_path()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_markdown(), encoding="utf-8")
-    print(f"wrote {target}", file=sys.stderr)
-    return 0
+    return write_generated_document(
+        argv,
+        source_file=__file__,
+        default_filename="COVERAGE.md",
+        render=render_markdown,
+    )
 
 
 if __name__ == "__main__":
