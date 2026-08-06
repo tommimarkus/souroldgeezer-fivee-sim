@@ -1418,6 +1418,15 @@ class TestTheFightsOwnRecordIsNotRewritten:
         Read off disk rather than out of memory: the journal is what a resume
         replays and what a replay bundle is composed from, so a projection that
         reached it would be invisible to every in-memory assertion.
+
+        Asserted in two halves, because the journal keeps its facts two ways.
+        The roster is *recorded*, so the foe's own numbers are read straight out
+        of the file. The swing is *derived* — a result record keeps the hash of
+        the state it produced rather than the state, and the events with it — so
+        the recovered fight is where the roll has to arrive whole. Recovering is
+        the stronger check of the same claim anyway: a brief that had reached
+        the record would come back out of it, and this replays the journal with
+        nothing else in memory to be reading from.
         """
         from fivee_sim.service import encounter_journal
 
@@ -1432,7 +1441,13 @@ class TestTheFightsOwnRecordIsNotRewritten:
             "the journal lost the fight's own numbers, so briefing rewrote the "
             "audit record rather than rebuilding an answer beside it"
         )
-        assert '"detail"' in written and "vs AC" in written
+        api.STATE.sessions.clear()
+        assert api.encounter_resume(encounter_id)["recovered"] is True
+        replayed = api.encounter_log(encounter_id)
+        assert "vs AC" in event_named(replayed, "attack")["detail"], (
+            "the journal replayed the brief rather than the fight"
+        )
+        assert str(DUMMY_MAX_HP).encode("utf-8") in serialised(replayed)
 
 
 class TestASeatTheFightDoesNotHold:

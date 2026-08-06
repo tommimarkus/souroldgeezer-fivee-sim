@@ -263,6 +263,10 @@ def create(
             encounter_id,
             {
                 "kind": "creation",
+                # Which format the whole journal is written in, stamped once
+                # and read back by ``recover_session`` before anything else in
+                # the file is believed. See ``sessions.JOURNAL_VERSION``.
+                "journal_version": sessions.JOURNAL_VERSION,
                 "timestamp": created_at,
                 "request_id": request_id,
                 "encounter_id": encounter_id,
@@ -299,8 +303,14 @@ def create(
                     else "none"
                 ),
                 "map_source": resolved.source if resolved is not None else None,
+                # Not the initial state. It used to ride here and nothing ever
+                # read it back: ``recover_session`` recomputes it from the
+                # encounter it has just rebuilt out of ``combatants``, ``seed``
+                # and ``map``, which are the inputs it is derived from. The
+                # in-memory ``Session.initial_state`` stays — ``map_ops`` reads
+                # it for a v2 replay bundle — but it is a derivation, not a
+                # record, and only one of those belongs in a journal.
                 "map_open_features": session.initial_open_features,
-                "initial_state": session.initial_state,
             },
             session,
         )

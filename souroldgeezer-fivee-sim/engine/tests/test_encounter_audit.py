@@ -116,7 +116,12 @@ def test_a_note_with_no_speaker_attributes_the_line_to_nobody() -> None:
 
     assert written["speaker"] is None
     attempt = api.replay_export(encounter_id, format_version=2)["bundle"]["attempts"][-1]
-    assert attempt["arguments"]["speaker"] is None
+    # Nobody spoke it, and the record says so by not naming anybody. A journal
+    # records the keys the caller supplied, so an unattributed line has no
+    # ``speaker`` key rather than a null one — the same value to every reader of
+    # these dicts, all of which reach for optional keys through ``.get``.
+    assert "speaker" not in attempt["arguments"]
+    assert attempt["arguments"]["text"] == "Rain on the mill roof."
 
 
 def test_an_unscoped_primitive_keeps_its_legacy_shape() -> None:

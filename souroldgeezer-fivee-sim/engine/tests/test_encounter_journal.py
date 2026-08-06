@@ -1181,3 +1181,318 @@ def test_a_solo_interlude_recovers_from_a_journal_holding_one_combatant() -> Non
     recovered = api.encounter_resume(encounter_id)
 
     assert recovered["state"] == before
+
+
+# --- what a journal is allowed to weigh ------------------------------------
+#: A fight big enough that a per-combatant cost shows up in the total: six
+#: combatants is where a single ``state`` snapshot stops being a rounding error.
+SKIRMISH_SEED = 20260806
+
+
+def _skirmisher(index: int, team: str) -> dict[str, Any]:
+    return {
+        "name": f"{team}-{index}",
+        "team": team,
+        "ac": 14,
+        "max_hp": 40,
+        "position": [5 if team == "party" else 10, 5 + index * 5],
+        "attacks": [
+            {
+                "name": "Blade",
+                "attack_bonus": 5,
+                "damage": "1d8+3",
+                "damage_type": "slashing",
+                "kind": "melee",
+            }
+        ],
+    }
+
+
+def _skirmish(acts: int = 20) -> str:
+    """Six combatants trading ``acts`` blows, each act followed by an advance.
+
+    Fixed rather than random so the byte ceiling below measures the format and
+    not the seed: the same roster, the same seed and the same number of turns
+    write the same records every run.
+    """
+    roster = [_skirmisher(index, "party") for index in range(3)]
+    roster += [_skirmisher(index, "monsters") for index in range(3)]
+    encounter_id = str(
+        api.encounter_create(roster, seed=SKIRMISH_SEED)["encounter_id"]
+    )
+    for _ in range(acts):
+        state = api.encounter_state(encounter_id)
+        assert not state["over"], "the fixture must not end before it is written"
+        turn = str(state["turn"])
+        enemy = "monsters" if turn.startswith("party") else "party"
+        target = next(
+            str(one["name"])
+            for one in state["combatants"]
+            if str(one["name"]).startswith(enemy) and one["conscious"]
+        )
+        api.encounter_act(encounter_id, "attack", target=target, attack="Blade")
+        api.encounter_advance(encounter_id)
+    return encounter_id
+
+
+#: What the fixture above is allowed to write, in bytes.
+#:
+#: Measured at 55,663 on the change that stopped result records carrying the
+#: state each action produced; the ceiling is that with about 15% of headroom
+#: for a field or two, and deliberately far below the 256,072 bytes the same
+#: fixture wrote before. The number is here to fail when derived state creeps
+#: back: a ``state`` block is roughly 700 bytes per combatant per record, so
+#: one reinstated snapshot per result puts this fixture four times over.
+#:
+#: What is left is not evenly spread, and the split is worth knowing before
+#: anyone tries to move this number: 22,222 bytes are the single creation
+#: record — almost all of it the captured content snapshot — and the remaining
+#: 33,360 are the eighty attempt and result records together.
+#:
+#: Recalibrate it downward on a deliberate saving and upward only with a
+#: reason; a ceiling quietly raised to fit a regression measures nothing.
+SKIRMISH_JOURNAL_CEILING = 64_000
+
+
+def test_a_result_record_records_that_the_state_moved_rather_than_the_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A journal replays actions; it does not need what each action produced.
+
+    ``recover_session`` recomputes every state it needs by replaying the
+    recorded actions through the same stepper that first ran them, so a
+    ``state`` in a result record is a second copy of something already
+    derivable — and the expensive one, at roughly 700 bytes per combatant per
+    record. What stays is ``state_sha256``, which says the state moved and lets
+    a reader check a recovered fight against the one that was recorded without
+    storing it twice.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = _skirmish()
+
+    saved = records(journal_path(root, encounter_id))
+    results = [entry for entry in saved if entry["kind"] == "result"]
+    assert len(results) == 40
+    for entry in results:
+        assert "state" not in entry, f"record {entry['index']} carries a state"
+        assert "result" not in entry, f"record {entry['index']} carries a result"
+        assert len(str(entry["state_sha256"])) == 64
+
+
+def test_a_journal_stays_under_the_size_a_fixed_fight_is_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ceiling that stops derived state creeping back in a shape nobody named.
+
+    The test above names the two keys that were removed. This one measures the
+    whole file, so a *third* copy of the state arriving under some other key
+    fails here even though every named assertion still passes.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = _skirmish()
+
+    written = journal_path(root, encounter_id).stat().st_size
+    assert written < SKIRMISH_JOURNAL_CEILING, (
+        f"the fixed 6-combatant 20-act fight wrote {written} bytes, over the "
+        f"{SKIRMISH_JOURNAL_CEILING} this format is allowed; see "
+        f"SKIRMISH_JOURNAL_CEILING for what the number means"
+    )
+
+
+def test_the_arguments_recorded_are_the_ones_the_caller_supplied(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A key the caller never named is not a fact about the call.
+
+    ``encounters.act`` builds a twenty-key dict with every parameter present,
+    so an unadorned attack used to record seventeen nulls. Every reader of
+    these dicts uses ``.get``, for which an absent key and a null are the same
+    value — so the nulls were bytes and nothing else.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=241)
+    advance_encounter_to(encounter_id, "Thora")
+
+    api.encounter_act(encounter_id, "attack", target="Goblin", attack="Longsword")
+
+    acted = [
+        entry
+        for entry in records(journal_path(root, encounter_id))
+        if entry.get("operation") == "encounter_act"
+    ]
+    assert len(acted) == 2, "one attempt and one result, both carrying arguments"
+    for entry in acted:
+        arguments = entry["arguments"]
+        assert isinstance(arguments, dict)
+        assert arguments == {
+            "kind": "attack",
+            "target": "Goblin",
+            "attack": "Longsword",
+            # Supplied by ``act`` itself rather than by the caller, and neither
+            # is null: a false flag and an empty sequence are values.
+            "as_bonus_action": False,
+            "natural": [],
+        }
+
+
+# --- the format this build reads -------------------------------------------
+def _stripped_of_its_version(root: Path, encounter_id: str) -> str:
+    """This fight's journal again, with the creation record's version removed.
+
+    Re-chained rather than edited in place, for ``replayed``'s reason: a
+    hand-edited record fails its own hash and would be refused as corrupt long
+    before the format check saw it. What arrives is a journal that is
+    internally perfect and simply predates the format this build reads.
+    """
+    saved = deepcopy(records(journal_path(root, encounter_id)))
+    recorded = "enc-9100"
+    for entry in saved:
+        if entry["kind"] == "creation":
+            entry["encounter_id"] = recorded
+            entry.pop("journal_version", None)
+    rechained(recorded, saved)
+    return recorded
+
+
+def test_a_journal_from_before_this_format_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A clean break, said in full rather than as a missing key.
+
+    There is no reader for the older format and no migration operation, so the
+    refusal has to carry everything a caller can act on: which encounter, that
+    the file is *fine* and must not be edited, and which build wrote it. Told
+    only "no journal_version", a caller reaches for the file — and a hand-edited
+    record breaks every hash after it, dropping the fight to ``corrupt`` with
+    nothing preserved.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=251)
+    recorded = _stripped_of_its_version(root, encounter_id)
+    api.STATE.sessions.clear()
+
+    with pytest.raises(
+        RequestError,
+        match=(
+            r"cannot recover 'enc-9100''s fight: its journal is written in an "
+            r"unversioned format, and this build reads journal_version 2 only\. "
+            r"The journal is intact and hash-valid; do not edit it .*"
+            r"There is no reader for the older format and no migration\. "
+            r"Run the build that wrote it \(recorded: engine .*running: engine .*\), "
+            r"or read the record with the journal_path that encounter\.list reports\."
+        ),
+    ):
+        api.encounter_resume(recorded)
+
+
+def test_a_journal_this_build_cannot_read_is_still_listed_rather_than_hidden(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only recovery refuses. The file is hash-valid, so ``list`` says so.
+
+    ``encounter.list`` reports ``corrupt`` on a broken chain and nothing else,
+    and an unreadable *format* is not a broken chain — a listing that hid the
+    fight would leave a caller with no way to find the journal the refusal
+    above tells them to read.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=257)
+    recorded = _stripped_of_its_version(root, encounter_id)
+
+    listed = {
+        str(entry["encounter_id"]): entry
+        for entry in api.encounter_list(status="all")["encounters"]
+    }
+
+    assert recorded in listed
+    assert listed[recorded]["status"] == "active"
+    # And the field the refusal tells the caller to use, which a ``corrupt``
+    # entry would still carry but an omitted one would not.
+    assert listed[recorded]["journal_path"].endswith(f"{recorded}.jsonl")
+
+
+def test_a_journal_this_build_writes_declares_the_format_it_is_in(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+
+    encounter_id = mapless_fight(seed=263)
+
+    assert records(journal_path(root, encounter_id))[0]["journal_version"] == 2
+
+
+# --- what a caller who asked for idempotency keeps --------------------------
+def test_a_request_id_keeps_its_result_across_a_recovery(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """You pay for what you ask for, and a retry gets the first answer back.
+
+    A caller that passed ``request_id`` bought idempotency, so that call's
+    result is kept whole in the journal — it is the only copy, and a retry
+    after a restart has nothing else to answer from. Every other call keeps
+    only the hash.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = mapless_fight(seed=269)
+
+    first = api.encounter_advance(encounter_id, request_id="turn-1")
+    api.encounter_act(encounter_id, "dodge")
+    api.STATE.sessions.clear()
+    api.encounter_resume(encounter_id)
+
+    assert api.encounter_advance(encounter_id, request_id="turn-1") == first
+    kept = {
+        str(entry["operation"]): entry
+        for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result"
+    }
+    assert kept["encounter_advance"]["result"] == first
+    assert "result" not in kept["encounter_act"], (
+        "a call that asked for nothing keeps nothing but the hash"
+    )
+
+
+def test_a_recovered_fight_is_the_fight_it_replaced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The claim the dropped state used to be evidence for, made directly.
+
+    Nothing reads a recorded state back, so the only thing that could make
+    dropping it wrong is a replay that does not reproduce it. This is that
+    check, over a fight long enough for a divergence to show.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = _skirmish(acts=8)
+    live = api.encounter_state(encounter_id)
+    live_attempts = deepcopy(api.STATE.sessions[encounter_id].attempts)
+    recorded = [
+        str(entry["state_sha256"])
+        for entry in records(journal_path(root, encounter_id))
+        if entry["kind"] == "result"
+    ]
+    api.STATE.sessions.clear()
+
+    recovered = api.encounter_resume(encounter_id)
+
+    assert recovered["state"] == live
+    # And the hashes the journal kept instead of the states agree with the
+    # replay that produced them, which is what makes them worth keeping.
+    assert [
+        str(entry["state_sha256"])
+        for entry in api.STATE.sessions[encounter_id].attempts
+    ] == recorded
+    # The audit trail comes back whole, not merely equivalent. It has to: a
+    # replay bundle carries ``Session.attempts`` verbatim, so a recovered
+    # session that rebuilt them to a second shape would export a different
+    # artifact from the live fight it replaced.
+    assert api.STATE.sessions[encounter_id].attempts == live_attempts

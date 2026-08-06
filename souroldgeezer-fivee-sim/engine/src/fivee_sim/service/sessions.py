@@ -51,9 +51,11 @@ from . import maps as map_service
 from . import specs
 from .common import sha256_of
 from .errors import NotFoundError, RequestError
+from .replay import canonical_sha256
 
 __all__ = [
     "DOCUMENT_MARKER",
+    "JOURNAL_VERSION",
     "Content",
     "EngineState",
     "ResolvedMap",
@@ -73,8 +75,18 @@ __all__ = [
     "recover_session",
     "resolve_battle_map",
     "session_for",
+    "supplied_arguments",
     "utc_now",
 ]
+
+#: Which journal format this build writes and reads. Stamped into the creation
+#: record, checked by :func:`recover_session` before anything else in the file
+#: is believed, and deliberately not a range: version 1 stored the state each
+#: action produced and this build stores the hash, so a v1 journal's result
+#: records have nothing a v2 reader wants. There is no reader for the older
+#: format and no migration operation — a clean break, said in full by
+#: :func:`_unsupported_format` rather than left as a missing key.
+JOURNAL_VERSION = 2
 
 
 @dataclass(slots=True)
@@ -460,6 +472,34 @@ def cached_request(session: Session, request_id: str | None) -> dict[str, Any] |
     return deepcopy(dict(result))
 
 
+def supplied_arguments(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    """The keys the caller actually named, without the nulls that pad the rest.
+
+    Every operation body builds its argument dict with one entry per parameter,
+    so an unadorned attack used to record seventeen ``null``s — a fixed cost on
+    both the attempt record and the result record beside it. A ``None`` is not a
+    fact about the call; it is the absence of one.
+
+    Dropping *only* nulls is what makes this safe rather than clever. Every
+    reader of these dicts — :func:`specs.action_from_journal` and the three
+    replay branches in :func:`recover_session` — reaches for optional keys
+    through ``.get``, for which an absent key and a ``None`` are the same value.
+    A key whose value is ``False`` or an empty sequence is kept, because those
+    are values a caller could have meant: ``as_bonus_action`` decides which
+    action economy an act spends, and a replay that lost it resolves a
+    different action.
+
+    One writer for both records, so the live audit dict, the journal's result
+    record, and the audit a recovery reads back off it are the same shape. They
+    have to be: a replay bundle is built from ``Session.attempts`` either way,
+    and two shapes would make a recovered fight export differently from the
+    live one it replaced.
+    """
+    return {
+        key: deepcopy(value) for key, value in arguments.items() if value is not None
+    }
+
+
 def attempt_started(
     state: EngineState,
     encounter_id: str,
@@ -479,7 +519,7 @@ def attempt_started(
             "index": index,
             "operation": operation,
             "request_id": request_id,
-            "arguments": deepcopy(dict(arguments)),
+            "arguments": supplied_arguments(arguments),
         },
         session,
     )
@@ -507,10 +547,30 @@ def attempt_finished(
         "started_at": started_at,
         "operation": operation,
         "request_id": request_id,
-        "arguments": deepcopy(dict(arguments)),
+        # Kept on both records rather than only on the attempt, deliberately.
+        # The two are redundant on disk — same ``index``, same values — but
+        # ``Session.attempts`` is built from the *result* records alone, both
+        # live and on recovery, and it is what a replay bundle carries as its
+        # audit trail. Reading them back off the matching attempt record would
+        # buy a few hundred bytes and make the bundle's arguments depend on a
+        # second lookup that the interrupted-attempt path already handles
+        # differently. Correctness over the saving; the state block below is
+        # where the weight actually was.
+        "arguments": supplied_arguments(arguments),
         "status": status,
+        # What the state *became*, rather than the state. Recovery replays the
+        # recorded actions through the same stepper that first ran them, so a
+        # stored snapshot is a second copy of something already derivable —
+        # and the expensive copy, at roughly 700 bytes per combatant per
+        # record. The hash keeps what the snapshot was actually good for: a
+        # recovered fight can be held against the one that was recorded.
+        "state_sha256": canonical_sha256(session.encounter.state()),
     }
-    if result is not None:
+    # The one exception, and it is the caller's own doing: a ``request_id``
+    # bought idempotency, and ``cached_request`` has nothing but this to answer
+    # a retry with once the session has been recovered from disk. You pay for
+    # what you ask for — every other call keeps the hash and nothing else.
+    if result is not None and request_id is not None:
         audit["result"] = deepcopy(dict(result))
     if error is not None:
         audit["error"] = error
@@ -551,6 +611,47 @@ def _build_identity(created: Mapping[str, Any]) -> str:
         f"recorded: engine {created.get('engine_version', 'unrecorded')}, "
         f"source {digest(str(created.get('source_id', '')), 'unrecorded')}; "
         f"running: engine {__version__}, source {digest(source_id(), 'unset')}"
+    )
+
+
+def _unsupported_format(encounter_id: str, created: Mapping[str, Any]) -> str:
+    """Why a journal this build cannot read is refused, and what to do instead.
+
+    A sibling of :func:`_unreplayable` rather than a branch of it, because the
+    failures are different in kind. That one is about a *record* that will not
+    replay under these rules — a rules change, a dropped condition, an argument
+    dict written to a shape this reader no longer takes — and it names the
+    record it stopped at. This one is about the *file*: nothing was attempted,
+    because the format the whole journal is written in is not the format this
+    build reads.
+
+    The middle of the sentence is shared word for word, and on purpose. A
+    caller told only "unsupported format" reaches for the file, and a
+    hand-edited record breaks every hash after it — dropping the fight to
+    ``list_encounters``' ``corrupt`` with nothing preserved, which is strictly
+    worse than what was reported. So this says the journal is intact, says not
+    to edit it, and names the remedies that work.
+
+    The remedies differ from ``_unreplayable``'s by one clause: there is no
+    reader for the older format and no migration operation, so running the
+    build that wrote it is the only way to open the fight rather than one of
+    two. ``encounter.list`` still lists it — a hash-valid file is not corrupt —
+    which is what makes "read the record" an instruction a caller can follow.
+    """
+    recorded = created.get("journal_version")
+    written_in = (
+        "an unversioned format"
+        if recorded is None
+        else f"journal_version {recorded!r}"
+    )
+    return (
+        f"cannot recover {encounter_id!r}'s fight: its journal is written in "
+        f"{written_in}, and this build reads journal_version {JOURNAL_VERSION} only. "
+        f"The journal is intact and hash-valid; do not edit it — a changed record "
+        f"invalidates every hash after it, and the fight is then refused as corrupt "
+        f"with nothing preserved. There is no reader for the older format and no "
+        f"migration. Run the build that wrote it ({_build_identity(created)}), "
+        f"or read the record with the journal_path that encounter.list reports."
     )
 
 
@@ -612,6 +713,12 @@ def recover_session(
     if not records or records[0].get("kind") != "creation":
         raise RequestError(f"encounter journal {encounter_id!r} has no creation record")
     created = records[0]
+    # Before the content, the combatants or the map are read, because none of
+    # them means what this reader thinks it means unless the format matches.
+    # Only recovery refuses: the file is hash-valid, so ``list_encounters``
+    # goes on listing it and the refusal above stays actionable.
+    if created.get("journal_version") != JOURNAL_VERSION:
+        raise RequestError(_unsupported_format(encounter_id, created))
     captured_content = created.get("content")
     if not isinstance(captured_content, Mapping):
         raise RequestError(f"encounter journal {encounter_id!r} has no content snapshot")
