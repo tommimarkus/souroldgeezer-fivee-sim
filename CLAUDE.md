@@ -857,7 +857,7 @@ function, or a plain class's method — that a test should have caught** is the
 first case where mutmut would have had a chance and did not get one. Until then,
 running it is a judgement call, not an obligation.
 
-**Two traps if you do run it.** Fifteen test files are excluded in
+**Two traps if you do run it.** Sixteen test files are excluded in
 `[tool.mutmut]` for three distinct reasons, each named there — they read the
 repository around the engine, they parse the engine's source with `ast` (mutmut
 rewrites every function into mutant copies, so a source walker sees hundreds of

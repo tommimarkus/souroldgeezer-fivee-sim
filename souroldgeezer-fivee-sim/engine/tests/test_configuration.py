@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import FrozenInstanceError
 from pathlib import Path
@@ -295,8 +296,14 @@ def test_apply_to_environment_leaves_reload_unset_when_disabled(tmp_path: Path) 
 # four keys that already worked. So both tests below *derive* the keys from
 # ``_STORAGE_KEYS`` — the one declaration the parser, the adapter and the
 # identity digest are all held against — rather than listing them, and each
-# ends by asserting it visited every key it was given, so a walk that matched
-# nothing cannot pass by finding nothing to check.
+# opens by asserting the declaration is non-empty, so a walk that had nothing
+# to check cannot pass by finding nothing wrong.
+#
+# That opening assertion is the whole of the vacuity guard. Each of these used
+# to also close with ``assert visited == set(keys)`` over a set the loop filled
+# unconditionally on every iteration, which is a restatement of the loop rather
+# than a check on it: no reachable change to the code under test could make it
+# fail, and it read as a second guarantee while being none.
 
 
 def _storage_config(project: Path, values: Mapping[str, str]) -> Path:
@@ -319,7 +326,6 @@ def test_every_storage_key_reaches_the_root_the_engine_resolves(tmp_path: Path) 
     environment: dict[str, str] = {}
     apply_to_environment(config, environment)
 
-    visited: set[str] = set()
     for key in keys:
         variable = f"FIVEE_SIM_{key.upper()}"
         assert variable in environment, (
@@ -331,8 +337,6 @@ def test_every_storage_key_reaches_the_root_the_engine_resolves(tmp_path: Path) 
         assert root({variable: environment[variable]}) == (
             tmp_path / ".fivee-sim" / f"{key}-dir"
         ).resolve(), f"{key}_root does not read {variable}"
-        visited.add(key)
-    assert visited == set(keys)
 
 
 def test_moving_any_storage_key_moves_the_configuration_identity(tmp_path: Path) -> None:
@@ -348,7 +352,6 @@ def test_moving_any_storage_key_moves_the_configuration_identity(tmp_path: Path)
     settled = {key: f"{key}-dir" for key in keys}
     base = configuration_identity(load_config(_storage_config(tmp_path, settled)))
 
-    visited: set[str] = set()
     for key in keys:
         moved = configuration_identity(
             load_config(_storage_config(tmp_path, {**settled, key: f"{key}-elsewhere"}))
@@ -357,8 +360,6 @@ def test_moving_any_storage_key_moves_the_configuration_identity(tmp_path: Path)
             f"moving storage.{key} left configuration_identity unchanged; "
             f"the digest's payload is the site"
         )
-        visited.add(key)
-    assert visited == set(keys)
 
 
 #: The three documents that spell the ``[storage]`` table out for a reader, and
@@ -381,6 +382,14 @@ def test_every_storage_key_is_written_down_where_a_reader_would_look() -> None:
     published table cannot even discover the setting by guessing at it. This is
     the checkpoint enforced by nothing until now; it was found by grep, and grep
     is not something the next person will think to run.
+
+    The key has to appear *as a setting*, not as a word. A bare ``key in text``
+    was satisfied by any prose containing "maps" or "scenes" — which all three
+    of these documents contain for unrelated reasons — so it would have gone on
+    passing for a key nobody had documented at all. What counts is a TOML
+    assignment in the ``[storage]`` block these documents each print, or the key
+    as a code span, optionally qualified: the three forms the documents actually
+    use between them.
     """
     keys = sorted(_STORAGE_KEYS)
     assert keys, "there is nothing to check; _STORAGE_KEYS is the declaration"
@@ -388,7 +397,13 @@ def test_every_storage_key_is_written_down_where_a_reader_would_look() -> None:
         assert document.is_file(), f"{document} is not where this test looks for it"
         text = document.read_text(encoding="utf-8")
         for key in keys:
-            assert key in text, f"{document.name} never mentions storage.{key}"
+            spelled = re.compile(
+                rf"(?m)`(?:\[storage\]\.|storage\.)?{re.escape(key)}`|^{re.escape(key)} = "
+            )
+            assert spelled.search(text), (
+                f"{document.name} never spells storage.{key} as a setting; "
+                f"a reader cannot configure a root that is only mentioned in prose"
+            )
         # And the legacy variable, which every one of these three also lists —
         # the compatibility fallback a caller reaches for when no file is
         # selected, and the half most easily forgotten.

@@ -76,12 +76,13 @@ pythonpath = ["src"]
 # its parent — a nested path fails outright with FileNotFoundError, which is at
 # least loud, but the directory form has nothing to keep in step either.
 #
-# Fifteen test files are excluded, for three distinct reasons, grouped below.
+# Sixteen test files are excluded, for three distinct reasons, grouped below.
 # The first group reads the repository *around* the engine — the two plugin
 # manifests, the generated COVERAGE.md and RULINGS.md, the launcher at
-# ../scripts/fivee.py, the SRD catalog batch script — and none of that exists
-# beside a copied tree. Excluding them costs nothing: not one asserts engine
-# behaviour a mutant could change. A sixteenth such test announces itself as a
+# ../scripts/fivee.py, the SRD catalog batch script, the README and the shipped
+# skills that document a storage root — and none of that exists beside a copied
+# tree. Excluding them costs nothing: not one asserts engine
+# behaviour a mutant could change. A seventeenth such test announces itself as a
 # collection error rather than a silent pass, which is the failure mode worth
 # having.
 [tool.mutmut]
@@ -90,6 +91,7 @@ also_copy = ["tests/"]
 pytest_add_cli_args_test_selection = [
   "tests/",
   "--ignore=tests/test_catalog_batch.py",
+  "--ignore=tests/test_configuration.py",
   "--ignore=tests/test_content.py",
   "--ignore=tests/test_coverage.py",
   "--ignore=tests/test_launcher.py",

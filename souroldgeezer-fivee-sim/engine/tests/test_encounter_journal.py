@@ -1215,6 +1215,15 @@ def _skirmisher(index: int, team: str) -> dict[str, Any]:
     }
 
 
+#: The roster size both byte ceilings below are calibrated against. Declared
+#: rather than described, because ``CREATION_RECORD_CEILING`` tracks it almost
+#: exactly — the record is mostly ``combatants`` — so a fixture that quietly
+#: grew a seventh would push a real regression under a ceiling that was sized
+#: for six and no test would say why. The ceiling test reads it back off the
+#: journal and holds it here.
+SKIRMISH_COMBATANTS = 6
+
+
 def _skirmish(acts: int = 20) -> str:
     """Six combatants trading ``acts`` blows, each act followed by an advance.
 
@@ -1446,11 +1455,16 @@ def test_a_journal_this_build_writes_declares_the_format_it_is_in(
 
     encounter_id = mapless_fight(seed=263)
 
-    stamped = records(journal_path(root, encounter_id))[0]["journal_version"]
-    assert stamped == sessions_service.JOURNAL_VERSION
-    # The vacuity guard: a build that stopped stamping the record would satisfy
-    # the line above with two ``None``s and say nothing at all.
-    assert isinstance(stamped, int)
+    created = records(journal_path(root, encounter_id))[0]
+    assert "journal_version" in created, "a build that stopped stamping records at all"
+    assert created["journal_version"] == sessions_service.JOURNAL_VERSION
+    # Not a vacuity guard, and it used to claim to be one: ``records`` returns
+    # dicts and this subscripts them, so a build that stopped stamping raises
+    # ``KeyError`` on the line above rather than comparing two ``None``s. What
+    # this does check is that the constant is a version and not a sentinel — the
+    # comparison alone would hold if ``JOURNAL_VERSION`` became a string or a
+    # ``None`` and the writer matched it.
+    assert isinstance(sessions_service.JOURNAL_VERSION, int)
 
 
 # --- what a caller who asked for idempotency keeps --------------------------
@@ -1929,7 +1943,8 @@ def test_every_journalled_operation_obeys_the_rule_it_is_classified_by(
 #: because it is no longer the content: 7,196 of the 7,708 are ``combatants``,
 #: the normalized creation input recovery replays the fight from. That is an
 #: input rather than a derivation, so it stays — and it means this ceiling now
-#: tracks roster size almost exactly, which is why the fixture is fixed at six.
+#: tracks roster size almost exactly, which is why the fixture is fixed at
+#: :data:`SKIRMISH_COMBATANTS` and why the test asserts that before the bytes.
 CREATION_RECORD_CEILING = 8_900
 
 
@@ -2048,11 +2063,25 @@ def test_a_fight_on_no_map_names_no_map_blob(
 def test_a_creation_record_stays_under_the_size_one_is_allowed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The measurement this change was made for, pinned rather than described."""
+    """The measurement this change was made for, pinned rather than described.
+
+    The roster is asserted before the bytes are, because the ceiling is a
+    function of it: what is left in a creation record is almost entirely
+    ``combatants``, so a fixture grown to seven would carry a real regression in
+    under a number sized for six. The premise was stated in
+    ``CREATION_RECORD_CEILING``'s own comment and observed nowhere.
+    """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
 
     encounter_id = _skirmish(acts=0)
+
+    recorded = records(journal_path(root, encounter_id))[0]["combatants"]
+    assert isinstance(recorded, list)
+    assert len(recorded) == SKIRMISH_COMBATANTS, (
+        f"this ceiling is calibrated against {SKIRMISH_COMBATANTS} combatants and the "
+        f"record holds {len(recorded)}; recalibrate the number, do not widen it"
+    )
 
     written = _creation_bytes(root, encounter_id)
     assert written < CREATION_RECORD_CEILING, (
@@ -2100,6 +2129,13 @@ def test_a_recovered_fight_still_exports_its_map_and_content_by_value(
     does because recovery repopulates the session, and the writers read the
     session rather than the journal. This is the case that would catch a writer
     reaching past it.
+
+    Held against the bundle the *live* session wrote, not against a shape. The
+    assertion used to be that ``content["packs"]`` was truthy, and a writer
+    mutated to ship a different non-empty registry — a recovery that resolved
+    the wrong blob, or fell back to whatever the process had loaded — satisfied
+    it exactly. What the claim actually is, is that the two agree, so that is
+    what is compared: same payload, by value, on both sides of the restart.
     """
     root = tmp_path / "journal"
     monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
@@ -2116,13 +2152,17 @@ def test_a_recovered_fight_still_exports_its_map_and_content_by_value(
             },
         )["encounter_id"]
     )
+    live = api.replay_export(encounter_id)["bundle"]
+    assert live["content"]["packs"], "the fixture must load content for this to say anything"
+
     api.STATE.sessions.clear()
     api.encounter_resume(encounter_id)
 
-    bundle = api.replay_export(encounter_id)["bundle"]
+    recovered = api.replay_export(encounter_id)["bundle"]
 
-    assert bundle["map"]["name"] == "mill floor"
-    assert bundle["content"]["packs"], "a bundle with no content ships nothing to load"
+    assert recovered["content"] == live["content"]
+    assert recovered["map"] == live["map"]
+    assert recovered["map"]["name"] == "mill floor"
 
 
 def test_a_fight_whose_content_blob_is_gone_is_refused_by_name(
@@ -2145,6 +2185,44 @@ def test_a_fight_whose_content_blob_is_gone_is_refused_by_name(
     with pytest.raises(
         RequestError,
         match=f"cannot recover {encounter_id!r}'s content: no blob {reference!r}",
+    ):
+        api.encounter_resume(encounter_id)
+
+
+def test_a_fight_whose_map_blob_is_gone_is_refused_by_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The content refusal's twin, and not a copy of it.
+
+    ``recover_session`` resolves two references and translates each in its own
+    ``except``, with its own noun in the sentence. Testing one of them proves
+    the *pattern* exists and says nothing about whether the other was written,
+    reached, or worded — a map branch that raised past its translation would
+    have shipped a bare ``BlobError`` out of a fight the caller asked to
+    resume, and the content case would still have been green.
+
+    The map is also the branch a fight can skip: ``map_ref`` is absent when
+    there is no map, so this is the only case that both takes it and fails it.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    encounter_id = str(
+        api.encounter_create(
+            [dict(one) for one in INTERLUDE_PARTY],
+            seed=295,
+            mode="exploration",
+            map={"name": "mill floor", "width": 40, "height": 1, "default_terrain": "normal"},
+        )["encounter_id"]
+    )
+    created = records(journal_path(root, encounter_id))[0]
+    reference = str(created["map_ref"])
+    assert reference != created["content_ref"], "the two must be separate blobs to tell apart"
+    (blobs.blobs_root() / f"{reference}.json").unlink()
+    api.STATE.sessions.clear()
+
+    with pytest.raises(
+        RequestError,
+        match=f"cannot recover {encounter_id!r}'s map: no blob {reference!r}",
     ):
         api.encounter_resume(encounter_id)
 
