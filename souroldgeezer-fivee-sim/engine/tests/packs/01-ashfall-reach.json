@@ -157,10 +157,11 @@
   "conditions": [
     {
       "name": "ashfall-ember-marked",
-      "description": "A glowing brand sits on the creature's skin; attackers can see exactly where to strike. A second brand from the same caster leaves the mark burning brighter rather than replacing it.",
+      "description": "A glowing brand sits on the creature's skin; attackers can see exactly where to strike. A second brand from the same caster leaves the mark burning brighter rather than replacing it. Each brand stings more than the last, making everything harder while it burns.",
       "effects": {
         "attacked_with_advantage": true,
-        "cumulative": true
+        "cumulative": true,
+        "d20_test_penalty_per_level": 1
       },
       "provenance": "Original content — Ashfall Reach"
     },

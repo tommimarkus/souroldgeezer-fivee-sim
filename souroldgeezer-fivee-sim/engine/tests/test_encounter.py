@@ -407,6 +407,105 @@ class TestConditionLevels:
         assert encounter.creatures["Thora"].level_of("marked") == 3
 
 
+class TestD20TestPenalty:
+    """SRD 5.2.1 p.180: a condition that "affects D20 Tests" affects ability
+    checks, attack rolls, and saving throws alike, so the penalty is folded
+    into the accessors every one of those roll-assembly sites reads from
+    rather than re-applied at each site.
+    """
+
+    #: A pack-declared, cumulative, leveled condition — not an SRD one, the
+    #: same posture ``TestConditionLevels.TABLE`` takes.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(d20_test_penalty_per_level=2, cumulative=True),
+    }
+
+    def weary(self, levels: int = 2, **kwargs: Any) -> Creature:
+        target = fighter(**kwargs)
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        return target
+
+    def test_save_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.save_modifier(Ability.CONSTITUTION) == (
+            target.ability_mod(Ability.CONSTITUTION) - 4
+        )
+
+    def test_check_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.check_modifier(Ability.WISDOM) == (
+            target.ability_mod(Ability.WISDOM) - 4
+        )
+
+    def test_attack_modifier_subtracts_the_penalty(self) -> None:
+        target = self.weary()
+        assert target.attack_modifier(5) == 1
+
+    def test_an_unafflicted_creature_is_unchanged(self) -> None:
+        target = fighter()
+        assert target.attack_modifier(5) == 5
+        assert target.save_modifier(Ability.CONSTITUTION) == target.ability_mod(
+            Ability.CONSTITUTION
+        )
+        assert target.check_modifier(Ability.WISDOM) == target.ability_mod(
+            Ability.WISDOM
+        )
+
+    def test_a_weary_attackers_attack_roll_carries_the_penalty(self) -> None:
+        # attack_bonus is 5, so a natural 10 lands as 15 unafflicted and 11 weary.
+        attacker = self.weary(name="Thora")
+        target = fighter(name="Target", position=5, team="monsters")
+        rng = Random(3)
+        encounter = Encounter([attacker, target], rng, condition_effects=self.TABLE)
+        advance_to(encounter, "Thora", rng)
+        events = encounter.act(
+            Action(kind=ActionKind.ATTACK, target="Target"), FixedRandom(10)
+        )
+        attack = next(e for e in events if e.kind == "attack")
+        assert attack.data["natural"] == 10
+        assert attack.data["total"] == 11
+
+    def test_initiative_carries_the_penalty(self) -> None:
+        weary_creature = fighter(name="Thora")
+        weary_creature.condition_effects = self.TABLE
+        weary_creature.add_condition("weary", levels=2)
+        other = fighter(name="Other", team="monsters")
+        # FixedRandom clamps every d20 to the same natural, so both roll the
+        # same face and only the penalty tells them apart.
+        encounter = Encounter(
+            [weary_creature, other], FixedRandom(10), condition_effects=self.TABLE
+        )
+        dex_mod = weary_creature.ability_mod(Ability.DEXTERITY)
+        assert encounter.initiative["Thora"] == 10 + dex_mod - 4
+        assert encounter.initiative["Other"] == 10 + other.ability_mod(Ability.DEXTERITY)
+
+    def test_a_death_save_carries_the_penalty(self) -> None:
+        weary_creature = fighter(name="Thora", hp=0)
+        weary_creature.condition_effects = self.TABLE
+        weary_creature.add_condition("weary", levels=2)
+        encounter = Encounter(
+            [weary_creature, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        # A natural 14 would ordinarily succeed (DC 10); the -4 penalty drops
+        # the total to 10, which still succeeds — 13 fails only with the
+        # penalty applied.
+        encounter._death_save(weary_creature, FixedRandom(13))
+        event = next(e for e in encounter.log if e.kind == "death_save")
+        assert event.data["natural"] == 13
+        assert "9 vs DC 10 — failure" in event.detail
+        assert weary_creature.death_save_failures == 1
+
+    def test_a_death_save_detail_is_byte_identical_with_no_penalty(self) -> None:
+        target = fighter(name="Thora", hp=0)
+        encounter = Encounter([target, fighter(name="Other", team="monsters")], Random(9))
+        encounter._death_save(target, FixedRandom(13))
+        event = next(e for e in encounter.log if e.kind == "death_save")
+        assert event.detail == "13 vs DC 10 — success"
+
+
 class TestAttacking:
     def test_a_hit_reduces_hit_points(self) -> None:
         rng = Random(3)

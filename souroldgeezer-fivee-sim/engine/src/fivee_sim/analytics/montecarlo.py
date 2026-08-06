@@ -241,7 +241,7 @@ def _attack_options(
             if grade is CoverGrade.TOTAL:
                 continue
             expected = attack_damage_expectation(
-                attack_bonus=option.attack_bonus,
+                attack_bonus=actor.attack_modifier(option.attack_bonus),
                 target_ac=target.ac + cover_ac_bonus(grade),
                 damage=option.damage,
                 advantage=encounter.attack_advantage(actor, target, option),
@@ -411,7 +411,7 @@ def _spell_options(
                     # that guessed them would value a Guiding Bolt at a helpless
                     # target as a flat d20 and pass over the best action it had.
                     expected = attack_damage_expectation(
-                        attack_bonus=actor.spell_attack_bonus,
+                        attack_bonus=actor.attack_modifier(actor.spell_attack_bonus),
                         target_ac=target.ac,
                         damage=dice,
                         advantage=encounter.spell_attack_advantage(actor, target, spell),

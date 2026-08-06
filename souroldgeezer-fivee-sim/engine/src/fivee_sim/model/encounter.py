@@ -36,6 +36,7 @@ from ..kernel.conditions import (
     compute_ability_check_advantage,
     compute_initiative_advantage,
     compute_save_advantage,
+    d20_test_penalty,
     effect_of,
     is_incapacitated,
     speed_is_zero,
@@ -952,6 +953,11 @@ class Encounter:
                 if creature.initiative_bonus is not None
                 else creature.ability_mod(Ability.DEXTERITY)
             )
+            # Initiative is a Dexterity ability check (SRD 5.2.1, *Initiative*)
+            # and so a D20 Test (p.180); it does not route through
+            # ``Creature.check_modifier`` because it never consults a skill, so
+            # the penalty is applied explicitly here rather than folded away.
+            modifier -= d20_test_penalty(creature.conditions, self.condition_effects)
             self.initiative[creature.name] = roll.natural + modifier
         self.order: list[str] = sorted(
             names,
@@ -2112,7 +2118,20 @@ class Encounter:
     def _death_save(
         self, creature: Creature, rng: Random, natural: tuple[int, ...] = ()
     ) -> None:
+        # SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
+        # game: ability checks, attack rolls, and saving throws. If something
+        # in the game affects D20 Tests, it affects all three." p.17, *Death
+        # Saving Throws*: "Unlike other saving throws, this one isn't tied to
+        # an ability score" — which presupposes it is one, so it takes the
+        # same penalty. But it is not tied to an ability score, so it does not
+        # route through ``Creature.save_modifier``; the penalty is applied
+        # explicitly, as a plain total, here.
         roll = roll_d20(rng, supplied=natural or None)
+        total = roll.natural - d20_test_penalty(creature.conditions, self.condition_effects)
+        # The natural 20 and natural 1 rulings read the die's face, not the
+        # total — SRD 5.2.1 p.17 states both as consequences of the face
+        # rolled ("you roll a 20" / "you roll a 1 on the d20"), not of a
+        # modified result.
         if roll.natural == 20:
             creature.heal(1)
             self._emit("death_save", creature.name,
@@ -2127,17 +2146,17 @@ class Encounter:
                        natural=1,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
-        elif roll.natural >= DEATH_SAVE_DC:
+        elif total >= DEATH_SAVE_DC:
             creature.death_save_successes += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — success",
+                       detail=f"{total} vs DC {DEATH_SAVE_DC} — success",
                        natural=roll.natural,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
         else:
             creature.death_save_failures += 1
             self._emit("death_save", creature.name,
-                       detail=f"{roll.natural} vs DC {DEATH_SAVE_DC} — failure",
+                       detail=f"{total} vs DC {DEATH_SAVE_DC} — failure",
                        natural=roll.natural,
                        successes=creature.death_save_successes,
                        failures=creature.death_save_failures)
@@ -2545,7 +2564,7 @@ class Encounter:
         cover_bonus = cover_ac_bonus(grade)
         resolution = resolve_attack(
             rng,
-            attack_bonus=option.attack_bonus,
+            attack_bonus=actor.attack_modifier(option.attack_bonus),
             target_ac=target.ac + cover_bonus,
             damage=option.damage,
             advantage=advantage,
@@ -3182,7 +3201,7 @@ class Encounter:
             spell,
             slot_level=slot_level,
             save_dc=actor.spell_save_dc,
-            spell_attack_bonus=actor.spell_attack_bonus,
+            spell_attack_bonus=actor.attack_modifier(actor.spell_attack_bonus),
             spellcasting_modifier=actor.spellcasting_modifier,
             targets=tuple(
                 SpellTarget(
@@ -4303,7 +4322,7 @@ class Encounter:
         )
         resolution = resolve_attack(
             rng,
-            attack_bonus=melee.attack_bonus,
+            attack_bonus=attacker.attack_modifier(melee.attack_bonus),
             target_ac=mover.ac,
             damage=melee.damage,
             advantage=advantage,

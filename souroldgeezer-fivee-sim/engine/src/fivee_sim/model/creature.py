@@ -46,6 +46,7 @@ from ..kernel.conditions import (
     Condition,
     ConditionEffect,
     ConditionTable,
+    d20_test_penalty,
     effect_of,
 )
 from ..kernel.dice import Dice
@@ -644,18 +645,48 @@ class Creature:
         return ability_modifier(self.ability_score(ability))
 
     def save_modifier(self, ability: Ability) -> int:
-        """Explicit save bonus if the stat block prints one, else the raw modifier."""
-        if ability in self.save_bonuses:
-            return self.save_bonuses[ability]
-        return self.ability_mod(ability)
+        """The number to add to this creature's save d20 — never the stat
+        block's bare bonus on its own.
+
+        SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls of the
+        game: ability checks, attack rolls, and saving throws. If something in
+        the game affects D20 Tests, it affects all three." A held condition's
+        ``d20_test_penalty_per_level`` is one of those somethings, so it is
+        folded in here rather than left for every caller to remember —
+        :func:`~fivee_sim.kernel.conditions.d20_test_penalty` is subtracted
+        from the explicit save bonus if the stat block prints one, else the
+        raw ability modifier.
+        """
+        base = (
+            self.save_bonuses[ability]
+            if ability in self.save_bonuses
+            else self.ability_mod(ability)
+        )
+        return base - self._d20_test_penalty()
 
     def check_modifier(self, ability: Ability, skill: str | None = None) -> int:
-        """Explicit skill bonus if the stat block prints one for ``skill``, else
-        the raw ability modifier. Mirrors :meth:`save_modifier`'s shape.
+        """The number to add to this creature's ability-check d20. Mirrors
+        :meth:`save_modifier`'s shape, including the same condition penalty:
+        the explicit skill bonus if the stat block prints one for ``skill``,
+        else the raw ability modifier.
         """
-        if skill is not None and skill in self.skill_bonuses:
-            return self.skill_bonuses[skill]
-        return self.ability_mod(ability)
+        base = (
+            self.skill_bonuses[skill]
+            if skill is not None and skill in self.skill_bonuses
+            else self.ability_mod(ability)
+        )
+        return base - self._d20_test_penalty()
+
+    def attack_modifier(self, base: int) -> int:
+        """``base`` — a stat block's printed attack bonus — after any held
+        condition's D20 Test penalty. The same fold as :meth:`save_modifier`
+        and :meth:`check_modifier`, for an attack roll rather than a save or a
+        check.
+        """
+        return base - self._d20_test_penalty()
+
+    def _d20_test_penalty(self) -> int:
+        return d20_test_penalty(self.conditions, self.condition_effects)
 
     @property
     def spellcasting_modifier(self) -> int:

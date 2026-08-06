@@ -419,7 +419,22 @@ consequences the rules engine already knows how to apply:
 `initiative_disadvantage`, `cannot_see`, `unseen`,
 `auto_fail_strength_saves`, `auto_fail_dexterity_saves`,
 `advantage_on_dexterity_saves`, `disadvantage_on_dexterity_saves`,
-`melee_hits_are_critical`, `resists_all_damage`, `cumulative`.
+`melee_hits_are_critical`, `resists_all_damage`, `cumulative`,
+`d20_test_penalty_per_level`.
+
+Every flag above `cumulative` is `true`/`false`; `d20_test_penalty_per_level` is
+the one numeric flag, a whole number of `0` or more (a negative value is refused
+— a bonus wearing a penalty's name, and this engine has no D20 bonus channel to
+apply it through). SRD 5.2.1 p.180: "D20 Tests encompass the four main d20 rolls
+of the game: ability checks, attack rolls, and saving throws. If something in
+the game affects D20 Tests, it affects all three" — so the flag reaches every
+one of them, never a subset. It is **per level**, not flat: a held condition is
+always at some level (an ordinary one is permanently 1, see `cumulative` below),
+and the total penalty is `d20_test_penalty_per_level × level`. A weary condition
+declaring `2` held at level 3 subtracts 6 from every ability check, attack roll,
+and saving throw its bearer makes — including Initiative and a death saving
+throw, both of which are D20 Tests even though neither routes through an
+ordinary ability-check or save modifier.
 
 Ability-check flags apply to initiative and to checks made while interacting with
 a map fixture. The standalone `check` tool takes only a caller-supplied modifier,
@@ -478,9 +493,12 @@ doesn't. The Exhaustion condition is an exception to that rule." `cumulative`
 is that exception, generalised: a `true` value means a second imposition
 *increments* the level instead of leaving it at 1, which is what every
 non-cumulative condition still does — reimposing one changes nothing
-observable. Nothing in this release attaches a numeric effect to a level; a
-pack that declares `cumulative` is stating a fact the engine can now track, not
-asking for a rule the engine applies. `Encounter.state()` reports each
+observable. `cumulative` and `d20_test_penalty_per_level` are independent
+flags — a condition can decline to stack while still carrying a numeric
+penalty at its permanent level of 1, or stack without carrying one at all —
+but the two combine naturally: a cumulative condition with a nonzero
+`d20_test_penalty_per_level` is what makes each fresh imposition bite harder.
+`Encounter.state()` reports each
 combatant's `condition_levels`, a name-to-level mapping that always answers —
 `{}` on a fight with nothing leveled — restricted to the entries above level 1.
 

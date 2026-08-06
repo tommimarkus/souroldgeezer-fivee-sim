@@ -27,7 +27,7 @@ from fivee_sim.analytics.montecarlo import (
 )
 from fivee_sim.content import make_monster, spellbook
 from fivee_sim.kernel.actions import AttackKind
-from fivee_sim.kernel.conditions import Condition
+from fivee_sim.kernel.conditions import EFFECTS, Condition, ConditionEffect
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.grid import as_point, distance_feet
 from fivee_sim.kernel.items import ItemEffect
@@ -650,6 +650,79 @@ class TestPolicyValuesSpellAttacks:
             attack_bonus=5, target_ac=15, damage=Dice(4, 6)
         )
         assert self.valued(conditions=(), distance=30) == pytest.approx(expected)
+
+
+class TestPolicyValuesAttacksUnderAConditionPenalty:
+    """The auto-play policy's expectations are what the stepper will actually
+    roll under (CLAUDE.md, ``montecarlo.py:407-410``): a weary attacker's own
+    D20 Test penalty must reach ``_attack_options`` and ``_spell_options``
+    exactly as it reaches the live stepper's ``attack_bonus``/
+    ``spell_attack_bonus``, or the policy would value an attack it holds by a
+    number the roll it actually makes cannot produce.
+    """
+
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(d20_test_penalty_per_level=2, cumulative=True),
+    }
+
+    def test_a_weary_attackers_weapon_option_is_valued_under_the_penalty(
+        self,
+    ) -> None:
+        robin = fighter("Robin")
+        robin.condition_effects = self.TABLE
+        robin.add_condition("weary", levels=2)
+        target = fighter("Target", team="monsters", position=5)
+        encounter = Encounter([robin, target], Random(SEED), condition_effects=self.TABLE)
+
+        options = _attack_options(
+            encounter, robin, [target], encounter.state()["turn_state"]
+        )
+        option = next(o for o in options if o.action.attack == "Longsword")
+
+        # ``fighter()``'s one attack: attack_bonus 5, Dice(1, 8, 3) damage.
+        expected = attack_damage_expectation(
+            attack_bonus=robin.attack_modifier(5),
+            target_ac=target.ac,
+            damage=Dice(1, 8, 3),
+        )
+        assert option.value == pytest.approx(expected)
+        # Without the penalty this would value higher — the check that the
+        # penalty was actually applied, not merely that some value exists.
+        unmodified = attack_damage_expectation(
+            attack_bonus=5, target_ac=target.ac, damage=Dice(1, 8, 3)
+        )
+        assert option.value < unmodified
+
+    def test_a_weary_casters_attack_spell_option_is_valued_under_the_penalty(
+        self,
+    ) -> None:
+        wren = caster(position=0)
+        wren.spells = ("Guiding Bolt",)
+        wren.spell_slots = {1: 4}
+        wren.spell_attack_bonus = 5
+        wren.condition_effects = self.TABLE
+        wren.add_condition("weary", levels=2)
+        mark = Creature(
+            name="Mark", team="foes", ac=15, max_hp=200, speed=30, position=30,
+            provenance="synthetic test fixture, not SRD content",
+        )
+        encounter = Encounter(
+            [wren, mark], Random(SEED), spellbook=spellbook(), condition_effects=self.TABLE
+        )
+
+        options = _spell_options(encounter, wren, [mark])
+        value = next(
+            option.value
+            for option in options
+            if option.tiebreak == "cast:Guiding Bolt:1:Mark"
+        )
+
+        expected = attack_damage_expectation(
+            attack_bonus=1,  # spell_attack_bonus 5 - 4 penalty
+            target_ac=15,
+            damage=Dice(4, 6),
+        )
+        assert value == pytest.approx(expected)
 
 
 class TestPolicyPlacesAreaSpells:

@@ -37,6 +37,7 @@ from fivee_sim.content import (
 )
 from fivee_sim.kernel.actions import AttackKind, compute_attack_advantage
 from fivee_sim.kernel.conditions import (
+    EFFECT_FLAGS,
     EFFECTS,
     Condition,
     ConditionEffect,
@@ -1444,6 +1445,88 @@ class TestEnvironment:
         })
         assert "Rope" in registry.items
         assert "Vale Stalker" not in registry.creatures
+
+
+class TestConditionEffectNumericFields:
+    """``d20_test_penalty_per_level`` is the numeric effect field: the validator
+    must derive its expected type from :class:`ConditionEffect` rather than
+    hardcoding which flags are boolean, and the builtin condition payload must
+    keep emitting only the flags that differ from the defaults.
+    """
+
+    def condition_pack(self, tmp_path: Path, effects: dict[str, Any]) -> Path:
+        return write_pack(tmp_path, "numeric.json", {
+            "pack": "x", "provenance": "test",
+            "conditions": [{
+                "name": "weary", "provenance": "test", "effects": effects,
+            }],
+        })
+
+    def test_a_non_negative_int_is_accepted(self, tmp_path: Path) -> None:
+        registry = load_packs(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": 2})],
+            builtin="exclude", include_environment=False,
+        )
+        assert (
+            registry.condition_effects["weary"].d20_test_penalty_per_level == 2
+        )
+
+    def test_zero_is_accepted(self, tmp_path: Path) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": 0})],
+            builtin="exclude", include_environment=False,
+        )
+        assert not problems(diagnostics)
+
+    def test_a_negative_penalty_is_refused_as_a_bonus_wearing_a_penalty_name(
+        self, tmp_path: Path
+    ) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": -1})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("d20_test_penalty_per_level" in p for p in found)
+        assert any("bonus" in p for p in found)
+
+    def test_a_bool_is_refused_for_a_numeric_field_even_though_it_is_an_int(
+        self, tmp_path: Path
+    ) -> None:
+        # ``isinstance(True, int)`` is ``True`` in Python, so an int-first check
+        # would silently accept ``true`` as the number 1. The bool check must run
+        # first.
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"d20_test_penalty_per_level": True})],
+            builtin="exclude", include_environment=False,
+        )
+        found = problems(diagnostics)
+        assert any("d20_test_penalty_per_level" in p for p in found)
+
+    def test_a_non_bool_is_still_refused_for_a_boolean_field(
+        self, tmp_path: Path
+    ) -> None:
+        diagnostics = validate(
+            [self.condition_pack(tmp_path, {"own_attacks_have_disadvantage": 1})],
+            builtin="exclude", include_environment=False,
+        )
+        assert any(
+            "own_attacks_have_disadvantage must be true or false" in p
+            for p in problems(diagnostics)
+        )
+
+    def test_the_builtin_condition_payload_stays_byte_identical(self) -> None:
+        # T10a verified every current ConditionEffect field defaults to False, so
+        # every bundled SRD condition emits the same effects dict the old
+        # ``{flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)}``
+        # formula produced — this pins that the defaults-diff replacement did
+        # not change a single bundled row.
+        from fivee_sim.content import _builtin_condition_payload
+
+        payload = _builtin_condition_payload()
+        by_name = {row["name"]: row for row in payload["conditions"]}
+        for name, effect in EFFECTS.items():
+            expected = {flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)}
+            assert by_name[str(name)]["effects"] == expected
 
 
 class TestCustomConditions:

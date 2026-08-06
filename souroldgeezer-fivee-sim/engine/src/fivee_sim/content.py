@@ -1132,7 +1132,13 @@ def _parse_condition(
     reader.unknown_keys(_CONDITION_KEYS)
     _common_fields(reader)
     reader.string("description")
-    flags: dict[str, bool] = {}
+    defaults = ConditionEffect()
+    # ``Any`` rather than ``bool | int``: ``ConditionEffect``'s fields are of
+    # mixed type, and mypy cannot match a splatted mixed-value dict against a
+    # dataclass whose ``__init__`` takes each field at its own type. The
+    # branches above already enforce the real per-field type before a value
+    # ever lands here.
+    flags: dict[str, Any] = {}
     for flag, value in reader.mapping("effects").items():
         if flag not in EFFECT_FLAGS:
             reader.fail(
@@ -1142,9 +1148,28 @@ def _parse_condition(
                 f"{', '.join(EFFECT_FLAGS)}",
             )
             continue
-        if not isinstance(value, bool):
-            reader.fail("effects", f"{flag} must be true or false, got {value!r}")
-            continue
+        # ``isinstance(True, int)`` is ``True`` in Python, so the bool check must
+        # come first: an int-first check would silently accept ``true`` as the
+        # number 1 on a numeric field. The expected type is derived from the
+        # dataclass default rather than a hardcoded list, for the reason
+        # ``_parse_terrain``'s hardcoded ``("passable", "opaque", "underwater")``
+        # tuple does not: a new boolean field added there would fall through to
+        # its numeric branch unnoticed. That defect is not fixed here — it is
+        # out of scope for this change — but it is not repeated here either.
+        expected_bool = isinstance(getattr(defaults, flag), bool)
+        if expected_bool:
+            if not isinstance(value, bool):
+                reader.fail("effects", f"{flag} must be true or false, got {value!r}")
+                continue
+        else:
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                reader.fail(
+                    "effects",
+                    f"{flag} must be a whole number of 0 or more, got {value!r}. A "
+                    f"negative number would be a bonus wearing a penalty's name, and "
+                    f"this engine has no D20 bonus channel to apply it through.",
+                )
+                continue
         flags[flag] = value
     if not reader.ok:
         return None
@@ -1462,7 +1487,15 @@ def _builtin_condition_payload() -> dict[str, Any]:
     perform I/O. Rendering it as a pack here keeps a single parse path — the
     built-in conditions go through exactly the validation a campaign's do, which
     also means a malformed row could never ship unnoticed.
+
+    Rendered as a defaults-diff, the same shape :func:`_builtin_terrain_payload`
+    already uses, rather than ``{flag: True for flag in EFFECT_FLAGS if
+    getattr(effect, flag)}``: that formula would coerce a numeric
+    ``d20_test_penalty_per_level`` of, say, ``2`` down to ``True``. Every
+    bundled ``ConditionEffect`` field defaults to ``False``, so for every row
+    below this emits a byte-identical payload to the formula it replaced.
     """
+    defaults = ConditionEffect()
     return {
         "pack": "srd-5.2.1-conditions",
         "version": "1.0",
@@ -1476,7 +1509,9 @@ def _builtin_condition_payload() -> dict[str, Any]:
                 "name": str(name),
                 "provenance": "SRD 5.2.1",
                 "effects": {
-                    flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)
+                    flag: getattr(effect, flag)
+                    for flag in EFFECT_FLAGS
+                    if getattr(effect, flag) != getattr(defaults, flag)
                 },
             }
             for name, effect in EFFECTS.items()
