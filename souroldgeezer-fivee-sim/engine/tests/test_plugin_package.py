@@ -140,6 +140,20 @@ def test_playtest_skill_dispatches_the_shared_roles_for_each_host() -> None:
     assert 'fork_turns="none"' in codex
     assert "role body" in codex.lower()
     assert "prompt" in codex.lower()
+    assert re.search(
+        r"player prompt.{0,400}\bonly\b.{0,300}\bcharacter sheet\b"
+        r".{0,200}\btemperament\b.{0,200}\bvoice\b",
+        codex,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    for withheld in ("adventure's path", "module text", "run sheet"):
+        assert withheld in codex
+    assert re.search(r"\bfull\s+transcript\b", codex)
+    assert re.search(
+        r"tool gate.{0,300}\bbefore\b.{0,200}\b(?:scene|brief)\b",
+        codex,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
 
 
 def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> None:
@@ -156,6 +170,24 @@ def test_player_tool_policy_is_fail_closed_unless_explicitly_overridden() -> Non
     assert "record" in policy.lower()
     assert "roster.json" in policy
     assert "findings.jsonl" in policy
+    assert re.search(
+        r"re-ask.{0,200}\bre-spawn\b.{0,100}\bresume\b"
+        r".{0,300}\bapply the gate again\b.{0,200}\bbefore\b",
+        policy,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_require_none_is_a_gate_not_a_capability_claim() -> None:
+    skill = _text("skills/playtest/SKILL.md")
+
+    assert re.search(
+        r"`require-none`.{0,100}\bdoes not\b.{0,100}\b(?:remove|disable)\b"
+        r".{0,100}\btools\b",
+        skill,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert "Under `require-none`, agent seats hold no engine access" not in skill
 
 
 def test_packaged_player_profile_still_declares_no_tools() -> None:

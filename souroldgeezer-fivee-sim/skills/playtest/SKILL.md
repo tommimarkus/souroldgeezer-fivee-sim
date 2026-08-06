@@ -210,11 +210,13 @@ the operation existing: a prose summary has to be re-derived every turn and can
 drop a field or leak one, and neither failure is visible from a transcript. Pass
 the brief through as it stands rather than paraphrasing it.
 
-Under `require-none`, agent seats hold no engine access of their own, so the
-brief is *delivered* to them. Under an explicitly approved `allow-reported` run,
-the same routing is an honour-system instruction rather than an access boundary.
-A follow-up question ("how far if I go round the pillar?") is answered by the
-game master from `map.query` the way it would be at a table.
+When the host actually applies a tool-less profile, agent seats hold no engine
+access of their own, so the brief is *delivered* to them. `require-none` does not
+remove tools; it pauses before play when a seat reports any. Under an explicitly
+approved `allow-reported` run, the same routing is an honour-system instruction
+rather than an access boundary. A follow-up question ("how far if I go round the
+pillar?") is answered by the game master from `map.query` the way it would be at
+a table.
 
 In combat, read whose turn it is from `fivee encounter.state` and map the
 combatant label to its seat. The engine owns turn order; you only route.
