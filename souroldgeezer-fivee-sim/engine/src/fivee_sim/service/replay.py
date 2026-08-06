@@ -68,7 +68,7 @@ from ..paths import (
     environment_replay_roots,
     replays_root,
 )
-from .common import discover_json_files
+from .common import canonical_json, discover_json_files, sha256_of
 from .errors import ReplayError
 
 __all__ = [
@@ -147,85 +147,9 @@ EMBED_SLOT = '<script type="application/json" id="embedded-data">null</script>'
 RENDERER_TAG = '<script src="/assets/renderer.js"></script>'
 
 
-def _expand_exponent(value: str) -> str:
-    mantissa, raw_exponent = value.lower().split("e", 1)
-    exponent = int(raw_exponent)
-    sign = ""
-    if mantissa.startswith("-"):
-        sign, mantissa = "-", mantissa[1:]
-    whole, _, fraction = mantissa.partition(".")
-    digits = whole + fraction
-    decimal_at = len(whole) + exponent
-    if decimal_at <= 0:
-        return sign + "0." + ("0" * -decimal_at) + digits
-    if decimal_at >= len(digits):
-        return sign + digits + ("0" * (decimal_at - len(digits)))
-    return sign + digits[:decimal_at] + "." + digits[decimal_at:]
-
-
-def _javascript_number(value: int | float) -> str:
-    """Spell a finite JSON number the way ``JSON.stringify`` does."""
-    if isinstance(value, int):
-        return str(value)
-    if not math.isfinite(value):
-        raise ValueError("canonical JSON does not support non-finite numbers")
-    if value == 0:
-        return "0"
-    rendered = repr(value).lower()
-    magnitude = abs(value)
-    if 1e-6 <= magnitude < 1e21:
-        if "e" in rendered:
-            return _expand_exponent(rendered)
-        if value.is_integer():
-            return str(int(value))
-        return rendered
-    mantissa, raw_exponent = rendered.split("e", 1)
-    exponent = int(raw_exponent)
-    return f"{mantissa}e{'+' if exponent >= 0 else ''}{exponent}"
-
-
-def _json_key(value: Any) -> str:
-    if isinstance(value, str):
-        return value
-    if value is None:
-        return "null"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (int, float)):
-        return _javascript_number(value)
-    raise TypeError(f"canonical JSON object key must be scalar, got {type(value)!r}")
-
-
-def _canonical_json(value: Any) -> str:
-    if value is None:
-        return "null"
-    if value is True:
-        return "true"
-    if value is False:
-        return "false"
-    if isinstance(value, (int, float)):
-        return _javascript_number(value)
-    if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False, allow_nan=False)
-    if isinstance(value, Mapping):
-        items = [(_json_key(key), item) for key, item in value.items()]
-        items.sort(key=lambda pair: pair[0])
-        return "{" + ",".join(
-            f"{json.dumps(key, ensure_ascii=False)}:{_canonical_json(item)}"
-            for key, item in items
-        ) + "}"
-    if isinstance(value, (list, tuple)):
-        return "[" + ",".join(_canonical_json(item) for item in value) + "]"
-    raise TypeError(f"value is not JSON serializable: {type(value)!r}")
-
-
-def _canonical_bytes(value: Any) -> bytes:
-    return _canonical_json(value).encode("utf-8")
-
-
 def canonical_sha256(value: Any) -> str:
     """Stable SHA-256 of a JSON value, independent of mapping insertion order."""
-    return sha256(_canonical_bytes(value)).hexdigest()
+    return sha256_of(canonical_json(value))
 
 
 def sheet_sha256(entry: Mapping[str, Any]) -> str:

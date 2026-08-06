@@ -1,9 +1,9 @@
 """Where the engine reads and writes, resolved in one place.
 
-Maps, replays, scenes and encounter journals each answer the same question —
-*which directory* — with the same three-step rule: the surface's own environment
-variable wins outright, then the project directory, then the current one. That
-rule was written out four times, in :mod:`fivee_sim.service.maps`,
+Maps, replays, scenes, encounter journals and blobs each answer the same
+question — *which directory* — with the same three-step rule: the surface's own
+environment variable wins outright, then the project directory, then the current
+one. That rule was written out four times, in :mod:`fivee_sim.service.maps`,
 :mod:`fivee_sim.service.replay`, :mod:`fivee_sim.service.encounter_journal` and
 :mod:`fivee_sim.web.cli`, which is three chances for one of them to drift
 from the others.
@@ -31,6 +31,8 @@ from typing import Any
 from .content import CLAUDE_PROJECT_ENV, PROJECT_ENV
 
 __all__ = [
+    "BLOBS_ENV",
+    "BLOBS_SUBDIR",
     "ENCOUNTERS_ENV",
     "ENCOUNTERS_SUBDIR",
     "MAPS_ENV",
@@ -41,6 +43,7 @@ __all__ = [
     "SCENES_SUBDIR",
     "SOURCE_ID_ENV",
     "STATE_FILENAME",
+    "blobs_root",
     "encounters_root",
     "environment_replay_roots",
     "environment_roots",
@@ -77,6 +80,17 @@ SCENES_SUBDIR = Path(".fivee-sim") / "scenes"
 ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
 #: Where encounter journals live inside a project when nothing else is configured.
 ENCOUNTERS_SUBDIR = Path(".fivee-sim") / "encounters"
+
+#: Environment variable naming the directory content-addressed blobs are kept
+#: in. One directory, like the two above: a blob is addressed by its own digest,
+#: so a search path would be answering a question the name has already settled.
+BLOBS_ENV = "FIVEE_SIM_BLOBS"
+#: Where blobs live inside a project when nothing else is configured. A sibling
+#: of the journals rather than a child, because the point of a blob is to be
+#: shared by every journal that names one — but the two roots move
+#: independently, so a journal carried to another project without its blobs
+#: names payloads that are not there, and recovery says so.
+BLOBS_SUBDIR = Path(".fivee-sim") / "blobs"
 
 #: The editor's launch state file; it lives next to the maps directory (for the
 #: default ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
@@ -205,6 +219,13 @@ def encounters_root(env: Mapping[str, str] | None = None) -> Path:
     project's ``.fivee-sim/encounters``, else the same under the current
     directory. Unlike maps and replays this names one directory, not a list."""
     return _single_root(ENCOUNTERS_ENV, ENCOUNTERS_SUBDIR, env)
+
+
+def blobs_root(env: Mapping[str, str] | None = None) -> Path:
+    """Where blobs live: ``FIVEE_SIM_BLOBS``, else the project's
+    ``.fivee-sim/blobs``, else the same under the current directory. One
+    directory, not a list, for the reason :data:`BLOBS_ENV` gives."""
+    return _single_root(BLOBS_ENV, BLOBS_SUBDIR, env)
 
 
 def state_file_for(maps_dir: str | Path) -> Path:

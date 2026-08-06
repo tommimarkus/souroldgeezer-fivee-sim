@@ -15,7 +15,7 @@ CONFIG_SUBPATH = Path(".fivee-sim/config.toml")
 
 _TOP_LEVEL_KEYS = frozenset({"format_version", "content", "storage", "development"})
 _CONTENT_KEYS = frozenset({"paths", "builtin"})
-_STORAGE_KEYS = frozenset({"maps", "replays", "scenes", "encounters"})
+_STORAGE_KEYS = frozenset({"maps", "replays", "scenes", "encounters", "blobs"})
 _DEVELOPMENT_KEYS = frozenset({"reload"})
 
 _PROJECT_ENV = "FIVEE_SIM_PROJECT_DIR"
@@ -25,6 +25,7 @@ _MAPS_ENV = "FIVEE_SIM_MAPS"
 _REPLAYS_ENV = "FIVEE_SIM_REPLAYS"
 _SCENES_ENV = "FIVEE_SIM_SCENES"
 _ENCOUNTERS_ENV = "FIVEE_SIM_ENCOUNTERS"
+_BLOBS_ENV = "FIVEE_SIM_BLOBS"
 _RELOAD_ENV = "FIVEE_SIM_RELOAD"
 LEGACY_PROJECT_ENVIRONMENT = (
     _PROJECT_ENV,
@@ -34,6 +35,7 @@ LEGACY_PROJECT_ENVIRONMENT = (
     _REPLAYS_ENV,
     _SCENES_ENV,
     _ENCOUNTERS_ENV,
+    _BLOBS_ENV,
     _RELOAD_ENV,
 )
 
@@ -61,6 +63,7 @@ class Configuration:
     replay_paths: tuple[Path, ...]
     scenes_dir: Path
     encounters_dir: Path
+    blobs_dir: Path
     reload: bool
 
 
@@ -142,6 +145,12 @@ def load_config(path: str | os.PathLike[str]) -> Configuration:
         storage.get("encounters", "encounters"),
         "storage.encounters",
     )
+    blobs_dir = _single_path(
+        config_path,
+        config_dir,
+        storage.get("blobs", "blobs"),
+        "storage.blobs",
+    )
 
     reload_value = development.get("reload", False)
     if type(reload_value) is not bool:
@@ -156,6 +165,7 @@ def load_config(path: str | os.PathLike[str]) -> Configuration:
         replay_paths=replay_paths,
         scenes_dir=scenes_dir,
         encounters_dir=encounters_dir,
+        blobs_dir=blobs_dir,
         reload=reload_value,
     )
 
@@ -221,6 +231,7 @@ def apply_to_environment(config: Configuration, env: MutableMapping[str, str]) -
     env[_REPLAYS_ENV] = os.pathsep.join(str(path.resolve()) for path in config.replay_paths)
     env[_SCENES_ENV] = str(config.scenes_dir.resolve())
     env[_ENCOUNTERS_ENV] = str(config.encounters_dir.resolve())
+    env[_BLOBS_ENV] = str(config.blobs_dir.resolve())
     if config.reload:
         env[_RELOAD_ENV] = "1"
 
@@ -242,6 +253,7 @@ def configuration_identity(config: Configuration) -> str:
         "replay_paths": [str(path) for path in config.replay_paths],
         "scenes_dir": str(config.scenes_dir),
         "encounters_dir": str(config.encounters_dir),
+        "blobs_dir": str(config.blobs_dir),
         "reload": config.reload,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()

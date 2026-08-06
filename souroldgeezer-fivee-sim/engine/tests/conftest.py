@@ -124,13 +124,20 @@ def _isolate_server_state(
     ``test_content`` used to arrange by hand for the content and the sessions;
     doing it here covers the id counter as well, which they missed.
 
-    The four directory variables matter more than they used to. A map is a
+    The five directory variables matter more than they used to. A map is a
     *file* now rather than an entry in a process dictionary, and a scene always
     was one, so a test that saves either writes to whatever ``maps_root()`` or
     ``scenes_root()`` resolves — the current directory's ``.fivee-sim/`` when
-    nothing says otherwise, which is the repository. Pointing all four at
+    nothing says otherwise, which is the repository. Pointing all five at
     ``tmp_path`` keeps the suite's writes inside the test and keeps one test's
     files invisible to the next.
+
+    ``FIVEE_SIM_BLOBS`` is the newest and the least obvious, because no test
+    asks for a blob by name: every ``encounter.create`` writes one, so leaving
+    it unset would have the suite quietly accreting content snapshots in the
+    checkout's own ``.fivee-sim/blobs``. It is also why a test that repoints
+    only ``FIVEE_SIM_ENCOUNTERS`` still recovers — the journal and the blobs it
+    names are separate roots, and only the journal moved.
     """
     sessions = dict(api.STATE.sessions)
     content = api.STATE.content
@@ -139,6 +146,7 @@ def _isolate_server_state(
     monkeypatch.setenv("FIVEE_SIM_MAPS", str(tmp_path / "maps"))
     monkeypatch.setenv("FIVEE_SIM_REPLAYS", str(tmp_path / "replays"))
     monkeypatch.setenv("FIVEE_SIM_SCENES", str(tmp_path / "scenes"))
+    monkeypatch.setenv("FIVEE_SIM_BLOBS", str(tmp_path / "blobs"))
     try:
         yield
     finally:
