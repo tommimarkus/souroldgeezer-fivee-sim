@@ -66,6 +66,7 @@ from urllib.parse import parse_qsl, quote, unquote
 
 from .. import __version__
 from ..map_document import validate_document
+from ..paths import SOURCE_ID_ENV as SOURCE_ID_ENV
 from ..service import adventures as adventure_service
 from ..service import analytics as analytics_service
 from ..service import catalog as catalog_service
@@ -124,11 +125,13 @@ MAX_BODY_BYTES = 8 * 1024 * 1024
 #: page is served with this replaced by ``window.__FIVEE_EDITOR__ = {...};``;
 #: a page without the marker is served untouched.
 CONFIG_MARKER = "/*__EDITOR_CONFIG__*/"
-#: Environment variable naming the engine source this launch was started from,
-#: as a sha256 hex digest. The launcher exports it only when it is watching the
-#: source for changes; an ordinary launch leaves it unset, which is no id at all
-#: rather than an error.
-SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
+
+# ``SOURCE_ID_ENV`` — the variable naming this launch's engine source, unset on
+# an ordinary run — is imported from ``fivee_sim.paths`` and re-exported here,
+# because this module is no longer the only engine-side reader: a creation
+# journal records the same id so a fight that will not replay can name the build
+# that wrote it. Two spellings of it would fail silently, which is the argument
+# ``paths`` makes for every other root it owns.
 
 #: JSON type names to the phrase a refusal uses for them.
 _TYPE_WORDS: Mapping[str, str] = {

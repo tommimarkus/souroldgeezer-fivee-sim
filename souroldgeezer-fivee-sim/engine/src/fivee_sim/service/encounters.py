@@ -33,6 +33,7 @@ from ..model.encounter import (
     EncounterError,
     EncounterMode,
 )
+from ..paths import source_id
 from . import content_ops, map_ops, primitives, sessions, specs
 from . import encounter_journal as journal_service
 from . import replay as replay_service
@@ -266,6 +267,20 @@ def create(
                 "request_id": request_id,
                 "encounter_id": encounter_id,
                 "engine_version": __version__,
+                # Which *build* wrote this journal, beside which release. The
+                # release number cannot tell two checkouts of one release
+                # apart, and that is exactly the case a journal outlives: the
+                # documented ``FIVEE_SIM_RELOAD`` workflow replaces the engine
+                # under a live fight, and a fight that then will not replay has
+                # to be able to say so. Written once, in the creation record,
+                # because this names the build the whole journal was recorded
+                # under; ``""`` when the launcher was watching nothing, which
+                # is an ordinary run and not an error.
+                #
+                # Nothing compares it. A fight outliving a release is normal,
+                # so refusing on a mismatch would break cross-version recovery
+                # for the sake of a diagnostic string.
+                "source_id": source_id(),
                 "seed": used,
                 # Which kind of chapter this is, written once and durably: this
                 # is the only place the mode survives a process, and recovery

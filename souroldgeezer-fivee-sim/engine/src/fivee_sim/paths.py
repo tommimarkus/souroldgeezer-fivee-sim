@@ -32,6 +32,7 @@ __all__ = [
     "REPLAYS_SUBDIR",
     "SCENES_ENV",
     "SCENES_SUBDIR",
+    "SOURCE_ID_ENV",
     "STATE_FILENAME",
     "encounters_root",
     "environment_replay_roots",
@@ -40,6 +41,7 @@ __all__ = [
     "project_root",
     "replays_root",
     "scenes_root",
+    "source_id",
     "state_file_for",
 ]
 
@@ -71,6 +73,30 @@ ENCOUNTERS_SUBDIR = Path(".fivee-sim") / "encounters"
 #: The editor's launch state file; it lives next to the maps directory (for the
 #: default ``<project>/.fivee-sim/maps`` that means ``<project>/.fivee-sim/``).
 STATE_FILENAME = "fivee-sim-server.json"
+
+#: Environment variable naming the engine source this launch was started from,
+#: as a sha256 hex digest. The launcher exports it only when it was asked to
+#: watch the source for changes; an ordinary launch leaves it unset.
+#:
+#: It lives here for the reason the roots above do: ``web/http_server.py``
+#: answers for it on ``ping`` and ``service/encounters.py`` writes it into a
+#: creation record, and one misspelling between two copies would be *quiet* —
+#: nothing raises, the id simply reads as absent for ever.
+#: ``client/discovery.py`` keeps a copy on purpose and is the documented
+#: exception: the client imports nothing of the engine but this module's
+#: functions, and that boundary is worth more than the third copy costs.
+SOURCE_ID_ENV = "FIVEE_SIM_SOURCE_ID"
+
+
+def source_id(env: Mapping[str, str] | None = None) -> str:
+    """The engine source this launch was started from, or ``""``.
+
+    Blank is *unset*, exactly as in :func:`project_root`: an exported-empty
+    variable means the launcher had no opinion, not that the build has an id
+    which happens to be nothing.
+    """
+    environ = os.environ if env is None else env
+    return environ.get(SOURCE_ID_ENV, "").strip()
 
 
 def project_root(env: Mapping[str, str] | None = None) -> str:

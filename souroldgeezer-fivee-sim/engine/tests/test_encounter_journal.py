@@ -12,9 +12,11 @@ from typing import Any
 
 import pytest
 
+from fivee_sim import __version__
 from fivee_sim.content import BuiltinMode, ContentRegistry
 from fivee_sim.kernel.grid import MovementMode
 from fivee_sim.model.encounter import Action, ActionKind, ActionRecord
+from fivee_sim.paths import SOURCE_ID_ENV
 from fivee_sim.service import encounter_journal, specs
 from fivee_sim.service import sessions as sessions_service
 from fivee_sim.service.errors import RequestError
@@ -484,6 +486,81 @@ def test_hash_chain_tampering_is_refused_instead_of_silently_replayed(
         api.encounter_resume(encounter_id)
 
 
+def test_the_creation_record_names_the_source_this_launch_was_started_from(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Beside ``engine_version``, and in the creation record alone.
+
+    The release number cannot tell two checkouts of one release apart, and that
+    is precisely the ``FIVEE_SIM_RELOAD`` case a journal outlives. Whole rather
+    than truncated, because the journal is the archive; the refusal that quotes
+    it is the thing that shortens it.
+
+    One record, not every record: this says which build *started* the fight,
+    which is the only build whose rules the whole journal was written under. A
+    per-record copy would be a second thing to keep in step for a value that
+    cannot change without the process changing.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    monkeypatch.setenv(SOURCE_ID_ENV, "d" * 64)
+
+    encounter_id = mapless_fight(seed=229)
+
+    creation = records(journal_path(root, encounter_id))[0]
+    assert creation["kind"] == "creation"
+    assert creation["engine_version"] == __version__
+    assert creation["source_id"] == "d" * 64
+
+
+def test_a_launch_that_names_no_source_records_an_empty_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unset is recorded as unset, not omitted and not guessed at.
+
+    The launcher exports the digest only when it was asked to watch the source,
+    so an ordinary run has none. The key is still written, because a reader
+    telling "this build had no id" from "this journal predates the field" is
+    the difference between a fact and an absence.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    monkeypatch.delenv(SOURCE_ID_ENV, raising=False)
+
+    encounter_id = mapless_fight(seed=233)
+
+    assert records(journal_path(root, encounter_id))[0]["source_id"] == ""
+
+
+def test_a_journal_written_before_the_source_id_existed_recovers_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every journal on disk today lacks the key, and none of them may break.
+
+    ``recover_session`` reads it with ``.get``, so an older creation record
+    recovers to exactly the state it would have before the field existed. This
+    is the case that would fail if the identity were ever promoted from a
+    diagnostic into a precondition.
+    """
+    root = tmp_path / "journal"
+    monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+    monkeypatch.setenv(SOURCE_ID_ENV, "e" * 64)
+    source = mapless_fight(seed=239)
+    advance_encounter_to(source, "Thora")
+    api.encounter_act(source, "attack", target="Goblin", attack="Longsword")
+    expected = api.encounter_state(source)
+    saved = deepcopy(records(journal_path(root, source)))
+    assert saved[0].pop("source_id") == "e" * 64
+    saved[0]["encounter_id"] = "enc-9001"
+    rechained("enc-9001", saved)
+    api.STATE.sessions.clear()
+
+    resumed = api.encounter_resume("enc-9001")
+
+    assert resumed["state"]["combatants"] == expected["combatants"]
+    assert resumed["state"]["round"] == expected["round"]
+
+
 class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
     """Recovery re-runs the whole of ``Encounter.__init__``, refusals included.
 
@@ -805,6 +882,96 @@ class TestAJournalThatWillNotRebuildIsRefusedRatherThanRaised:
             rf"under this build: EncounterError: this action needs a target",
         ):
             api.adventure_encounter(adventure_id, seed=199)
+
+    def test_the_refusal_names_the_build_that_wrote_it_and_the_one_running(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Without this the refusal cannot be acted on, only read.
+
+        "This build will not replay it" raises the question it does not answer:
+        *which* build, and is this a second engine on the shared encounters
+        root, a checkout the reload flag swapped underneath a live fight, or a
+        record that was already wrong. ``engine_version`` was written and
+        compared nowhere, and the source digest — the one thing that tells two
+        checkouts of one release apart, which is exactly the ``FIVEE_SIM_RELOAD``
+        case — was journaled nowhere at all.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        monkeypatch.setenv(SOURCE_ID_ENV, "a" * 64)
+        saved = self.a_recorded_fight(root, seed=193)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+        recorded = self.replayed(root, saved)
+        monkeypatch.setenv(SOURCE_ID_ENV, "b" * 64)
+
+        with pytest.raises(
+            RequestError, match="will not replay under this build"
+        ) as refused:
+            api.encounter_resume(recorded)
+
+        refusal = str(refused.value)
+        assert f"recorded: engine {__version__}, source {'a' * 12}" in refusal
+        assert f"running: engine {__version__}, source {'b' * 12}" in refusal
+
+    def test_a_launch_watching_no_source_says_so_rather_than_inventing_one(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An ordinary launch exports no digest, and that is not an error.
+
+        ``FIVEE_SIM_RELOAD`` is opt-in, so most journals carry no source at all
+        and most refusals are raised by a process that has none either. Both
+        halves have to name the absence rather than print an empty field, or
+        the diagnostic reads as though the two builds matched.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        monkeypatch.delenv(SOURCE_ID_ENV, raising=False)
+        saved = self.a_recorded_fight(root, seed=211)
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError, match="will not replay under this build"
+        ) as refused:
+            api.encounter_resume(recorded)
+
+        refusal = str(refused.value)
+        assert f"recorded: engine {__version__}, source unrecorded" in refusal
+        assert f"running: engine {__version__}, source unset" in refusal
+
+    def test_a_journal_written_before_the_source_was_recorded_still_refuses(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The key is read with ``.get``, so an older journal is not a new failure.
+
+        Every journal on disk today predates the field. Recovery must read it
+        as absent rather than as a mismatch — the identity is a diagnostic and
+        nothing anywhere refuses on it, because a fight that outlives a release
+        is the ordinary case and refusing would break cross-version recovery.
+        """
+        root = tmp_path / "journal"
+        monkeypatch.setenv("FIVEE_SIM_ENCOUNTERS", str(root))
+        monkeypatch.setenv(SOURCE_ID_ENV, "c" * 64)
+        saved = self.a_recorded_fight(root, seed=223)
+        assert saved[0].pop("source_id") == "c" * 64
+        position = result_position(saved, "encounter_act")
+        arguments = saved[position]["arguments"]
+        assert isinstance(arguments, dict)
+        del arguments["target"]
+        recorded = self.replayed(root, saved)
+
+        with pytest.raises(
+            RequestError, match="will not replay under this build"
+        ) as refused:
+            api.encounter_resume(recorded)
+
+        assert "source unrecorded" in str(refused.value)
 
     # -- fixtures -----------------------------------------------------------
 

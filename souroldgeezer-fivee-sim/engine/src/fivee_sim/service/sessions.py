@@ -30,6 +30,7 @@ from pathlib import Path
 from random import Random
 from typing import Any
 
+from .. import __version__
 from ..content import (
     ContentError,
     ContentRegistry,
@@ -44,6 +45,7 @@ from ..map_document import MapDocument
 from ..map_document import serialize as serialize_map
 from ..model.creature import Creature
 from ..model.encounter import Encounter, EncounterError, EncounterMode
+from ..paths import source_id
 from . import encounter_journal as journal_service
 from . import maps as map_service
 from . import specs
@@ -522,12 +524,39 @@ def attempt_finished(
 
 
 # --- recovery --------------------------------------------------------------
+def _build_identity(created: Mapping[str, Any]) -> str:
+    """Which build wrote the journal and which one is refusing it.
+
+    Without this the refusal cannot be acted on, only read: "this build will not
+    replay it" leaves open whether a second engine shares the encounters root, a
+    reload swapped the checkout under a live fight, or the record was always
+    wrong. ``engine_version`` was written and compared nowhere; the source
+    digest is the half that separates two checkouts of one release, which is
+    precisely the reload case.
+
+    Truncated here and whole in the journal, because a reader compares digests
+    by eye and the record is the archive. ``unrecorded`` is a journal that
+    predates the field or ran without one, ``unset`` a process running without
+    one now — both ordinary, since watching the source is opt-in.
+    """
+
+    def digest(value: str, absent: str) -> str:
+        return f"{value[:12]}" if value else absent
+
+    return (
+        f"recorded: engine {created.get('engine_version', 'unrecorded')}, "
+        f"source {digest(str(created.get('source_id', '')), 'unrecorded')}; "
+        f"running: engine {__version__}, source {digest(source_id(), 'unset')}"
+    )
+
+
 def _unreplayable(
     encounter_id: str,
     index: int,
     operation: str,
     record: Mapping[str, Any],
     error: BaseException,
+    created: Mapping[str, Any],
 ) -> str:
     """Why the whole fight is refused, and what to do instead of editing it.
 
@@ -559,8 +588,8 @@ def _unreplayable(
         f"{type(error).__name__}: {reason}. "
         f"The journal is intact and hash-valid; do not edit it — a changed record "
         f"invalidates every hash after it, and the fight is then refused as corrupt "
-        f"with nothing preserved. Run the build that wrote it, or read the record "
-        f"with the journal_path that encounter.list reports."
+        f"with nothing preserved. Run the build that wrote it ({_build_identity(created)}), "
+        f"or read the record with the journal_path that encounter.list reports."
     )
 
 
@@ -762,7 +791,7 @@ def recover_session(
             # ``ActionKind``, a value of the wrong type or a short sequence all
             # arrive from a journal whose writer disagrees with this reader.
             raise RequestError(
-                _unreplayable(encounter_id, index, operation, record, error)
+                _unreplayable(encounter_id, index, operation, record, error, created)
             ) from error
         session.attempts.append(audit)
         request_id = record.get("request_id")
