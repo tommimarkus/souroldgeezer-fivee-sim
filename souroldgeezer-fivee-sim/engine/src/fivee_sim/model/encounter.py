@@ -1764,6 +1764,7 @@ class Encounter:
             )
         target = self.creatures[target_name]
         if applied:
+            was_dead = target.dead
             # ``add_condition`` looks the name up before recording it, so an
             # unknown condition is refused here rather than carried. It is
             # also the immunity gate: a ruling is a fourth path into it, and
@@ -1781,6 +1782,14 @@ class Encounter:
                 f"{condition} imposed by ruling",
                 condition=condition, applied=True, ruling=True,
             )
+            # See ``_apply_condition``'s matching reading: a condition can
+            # kill outright, and the state going right with the log staying
+            # silent is the one event a narrator cannot do without.
+            if target.dead and not was_dead:
+                self._emit(
+                    "death", target_name,
+                    detail=f"{condition} reaches a lethal level by ruling",
+                )
             return
         self._effects[:] = [
             effect for effect in self._effects
@@ -3518,12 +3527,21 @@ class Encounter:
         reachable — a Restrained creature may still Dodge, and gains nothing by it,
         so its Dexterity save stays at Disadvantage instead of cancelling to a
         straight roll.
+
+        Speed 0 has two routes here, and both are checked: the ``speed_zero``
+        flag Restrained, Grappled, Paralyzed and their kin declare outright,
+        and a numeric reduction — Exhaustion's own shape — that lands a
+        creature's walking Speed at 0 without any row ever setting the flag.
+        Consulting the flag alone left a numerically-reduced creature holding
+        a benefit the SRD denies it the moment the number, not the name,
+        reaches zero.
         """
         if not self._dodging[creature.name]:
             return False
         return not (
             is_incapacitated(creature.conditions, self.condition_effects)
             or speed_is_zero(creature.conditions, self.condition_effects)
+            or creature.speed_for(MovementMode.WALK) == 0
         )
 
     def _spell_targets(
@@ -4391,6 +4409,7 @@ class Encounter:
         """
         held_by_ledger = self._holders(target.name, condition)
         already_held = condition in target.conditions
+        was_dead = target.dead
         if not target.add_condition(condition):
             self._emit(
                 "effect_apply", source.name, target.name,
@@ -4413,6 +4432,14 @@ class Encounter:
                 expires_round=expires_round,
             )
         )
+        # A condition can kill outright — Exhaustion's ``death_at_level`` — and
+        # the state going right with the log staying silent is exactly the
+        # defect ``_apply_damage``'s own ``was_dead`` reading exists to avoid.
+        if target.dead and not was_dead:
+            self._emit(
+                "death", target.name,
+                detail=f"{effect_name} reaches a lethal level of {condition}",
+            )
         return True
 
     def _apply_attack_rider(

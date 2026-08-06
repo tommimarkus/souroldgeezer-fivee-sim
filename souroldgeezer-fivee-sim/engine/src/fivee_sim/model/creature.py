@@ -783,6 +783,15 @@ class Creature:
         the condition ``cumulative`` (SRD 5.2.1 p.179) — otherwise the level
         is set to 1, which is exactly today's idempotence: imposing an
         already-held condition a second time changes nothing observable.
+
+        A row that carries ``death_at_level`` kills the instant the new level
+        reaches it — SRD 5.2.1, Exhaustion: "You die if your Exhaustion level
+        is 6." That is unconditional: no save, and it runs regardless of
+        ``death_rule``, which only governs what happens at 0 hit points and
+        has no bearing on a death this condition alone causes. The same reset
+        :meth:`take_damage` performs on its own death branches applies here —
+        ``dead``, cleared concentration, and Unconscious discarded — rather
+        than a second way to die.
         """
         if not override_immunity and condition in self.condition_immunities:
             return False
@@ -795,6 +804,10 @@ class Creature:
             self.conditions[condition] = 1
         if effect.incapacitated:
             self.concentrating_on = None
+        if effect.death_at_level and self.conditions[condition] >= effect.death_at_level:
+            self.dead = True
+            self.concentrating_on = None
+            self.conditions.pop(Condition.UNCONSCIOUS, None)
         return True
 
     def remove_condition(self, condition: str, *, levels: int | None = None) -> None:

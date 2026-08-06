@@ -142,7 +142,8 @@
         "poison"
       ],
       "condition_immunities": [
-        "poisoned"
+        "poisoned",
+        "exhaustion"
       ],
       "undead_fortitude": true,
       "attacks": [
@@ -155,13 +156,7 @@
           "reach": 5
         }
       ],
-      "provenance": "SRD 5.2.1",
-      "unmodelled_facts": [
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Exhaustion"
-        }
-      ]
+      "provenance": "SRD 5.2.1"
     },
     {
       "name": "Skeleton",
@@ -184,7 +179,8 @@
         "poison"
       ],
       "condition_immunities": [
-        "poisoned"
+        "poisoned",
+        "exhaustion"
       ],
       "vulnerabilities": [
         "bludgeoning"
@@ -210,10 +206,6 @@
       ],
       "provenance": "SRD 5.2.1",
       "unmodelled_facts": [
-        {
-          "code": "unsupported_condition_immunity",
-          "feature": "Exhaustion"
-        },
         {
           "code": "unsupported_passive_perception",
           "feature": "Passive Perception 8"

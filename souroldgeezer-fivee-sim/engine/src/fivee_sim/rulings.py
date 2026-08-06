@@ -469,6 +469,34 @@ RULINGS: tuple[Ruling, ...] = (
         ),
     ),
     _ruling(
+        code="long_rest_exhaustion_removal_is_unreachable",
+        kind=RulingKind.SCHEMA_CEILING,
+        question=(
+            "Exhaustion: \"Finishing a Long Rest removes 1 of your Exhaustion "
+            "levels.\""
+        ),
+        decision=(
+            "This engine models no rest of any length. The only channel that "
+            "reaches a carried combatant's Exhaustion level is "
+            "``adventures.link_encounter``'s caller-supplied ``recovery`` delta, "
+            "which is where \"they took a long rest\" already lives for hit points "
+            "and every other carried field."
+        ),
+        because=(
+            "A combat stepper has rounds and turns, not the minutes or hours a rest "
+            "takes, so there is no clock here for a long rest to finish against. "
+            "``recovery`` already exists for exactly this shape of gap and needed no "
+            "new field to carry Exhaustion's."
+        ),
+        basis=("SRD 5.2.1, Conditions, Exhaustion", "SRD 5.2.1, Resting"),
+        revisit=(
+            "Simulating rest at all — even a bare 'a long rest happened' operation "
+            "between encounters — would give this a real site to point at instead "
+            "of a caller-supplied number, and this entry should close in favour of "
+            "one that names it."
+        ),
+    ),
+    _ruling(
         code="no_round_clock_for_durations",
         kind=RulingKind.SUPERSEDED,
         question=(

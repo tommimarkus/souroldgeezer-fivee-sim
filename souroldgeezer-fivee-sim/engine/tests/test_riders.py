@@ -24,10 +24,10 @@ import pytest
 
 from fivee_sim.content import load_packs, make_creature
 from fivee_sim.kernel.actions import AttackKind, RiderExpiry, resolve_attack
-from fivee_sim.kernel.conditions import UnknownCondition
+from fivee_sim.kernel.conditions import Condition, UnknownCondition
 from fivee_sim.kernel.dice import Advantage, Dice
 from fivee_sim.kernel.rules import Ability, DamageType, Size
-from fivee_sim.model.creature import AttackOption, Creature
+from fivee_sim.model.creature import AttackOption, Creature, DeathRule
 from fivee_sim.model.encounter import (
     EVENT_KINDS,
     Action,
@@ -314,21 +314,62 @@ class TestConditionImmunity:
         assert encounter.state()["ongoing_effects"] == []
 
     def test_immunity_to_an_undefined_condition_is_legal(self) -> None:
-        # SRD 5.2.1's Zombie and Skeleton print immunity to Exhaustion, a
-        # condition this engine has no table row for. Immunity is a
-        # declarative refusal, never a table lookup, so it must not need one.
+        # Immunity is a declarative refusal, never a table lookup, so a
+        # creature can be immune to a condition no loaded table defines —
+        # the general property SRD 5.2.1's Zombie and Skeleton exercised
+        # while Exhaustion still had no row here.
         golem = creature(
-            "Golem", team="monsters", condition_immunities=frozenset({"exhaustion"})
+            "Golem", team="monsters",
+            condition_immunities=frozenset({"petrifying_gaze"}),
         )
-        assert golem.add_condition("exhaustion") is False
-        assert "exhaustion" not in golem.conditions
+        assert golem.add_condition("petrifying_gaze") is False
+        assert "petrifying_gaze" not in golem.conditions
 
     def test_a_condition_the_table_does_not_define_still_raises_when_not_immune(
         self,
     ) -> None:
         golem = creature("Golem", team="monsters")
-        with pytest.raises(UnknownCondition, match="exhaustion"):
-            golem.add_condition("exhaustion")
+        with pytest.raises(UnknownCondition, match="petrifying_gaze"):
+            golem.add_condition("petrifying_gaze")
+
+
+class TestExhaustionDeath:
+    """SRD 5.2.1 p.181, Exhaustion: "You die if your Exhaustion level is 6."
+
+    No save, no roll — the level reaching 6 kills outright, so this lives at
+    ``Creature.add_condition`` rather than anywhere ``take_damage`` looks, and
+    runs regardless of ``death_rule``: the SRD names no death-save rule here.
+    """
+
+    def test_reaching_level_six_kills(self) -> None:
+        target = creature("Thora", team="party")
+        for _ in range(6):
+            target.add_condition("exhaustion")
+        assert target.dead
+
+    def test_five_levels_does_not_kill(self) -> None:
+        target = creature("Thora", team="party")
+        for _ in range(5):
+            target.add_condition("exhaustion")
+        assert not target.dead
+        assert target.level_of("exhaustion") == 5
+
+    def test_death_ignores_the_configured_death_rule(self) -> None:
+        target = creature("Thora", team="party")
+        target.death_rule = DeathRule.DEATH_SAVES
+        for _ in range(6):
+            target.add_condition("exhaustion")
+        assert target.dead
+
+    def test_death_clears_concentration_and_unconscious(self) -> None:
+        target = creature("Thora", team="party")
+        target.concentrating_on = "Bless"
+        target.conditions[Condition.UNCONSCIOUS] = 1
+        for _ in range(6):
+            target.add_condition("exhaustion")
+        assert target.dead
+        assert target.concentrating_on is None
+        assert Condition.UNCONSCIOUS not in target.conditions
 
 
 class TestSizeGatedRiders:

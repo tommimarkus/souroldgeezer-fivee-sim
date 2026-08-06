@@ -1536,18 +1536,24 @@ class TestConditionEffectNumericFields:
         found = problems(diagnostics)
         assert any("speed_reduction_feet_per_level" in p for p in found)
 
-    def test_the_builtin_condition_payload_stays_byte_identical(self) -> None:
-        # T10a verified every current ConditionEffect field defaults to False, so
-        # every bundled SRD condition emits the same effects dict the old
-        # ``{flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)}``
-        # formula produced — this pins that the defaults-diff replacement did
-        # not change a single bundled row.
+    def test_the_builtin_condition_payload_is_a_defaults_diff(self) -> None:
+        # ``_builtin_condition_payload`` renders each row as a diff against
+        # ``ConditionEffect()``'s defaults, not as ``{flag: True for flag in
+        # EFFECT_FLAGS if getattr(effect, flag)}`` — that formula coerces a
+        # numeric field (Exhaustion's ``d20_test_penalty_per_level``,
+        # ``speed_reduction_feet_per_level``, and ``death_at_level``) down to
+        # ``True``, which T10a's all-boolean table could never have caught.
         from fivee_sim.content import _builtin_condition_payload
 
         payload = _builtin_condition_payload()
         by_name = {row["name"]: row for row in payload["conditions"]}
+        defaults = ConditionEffect()
         for name, effect in EFFECTS.items():
-            expected = {flag: True for flag in EFFECT_FLAGS if getattr(effect, flag)}
+            expected = {
+                flag: getattr(effect, flag)
+                for flag in EFFECT_FLAGS
+                if getattr(effect, flag) != getattr(defaults, flag)
+            }
             assert by_name[str(name)]["effects"] == expected
 
 

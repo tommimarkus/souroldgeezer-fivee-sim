@@ -348,11 +348,31 @@ class TestConditionInteractions:
         # not be told the flag does not exist.
         assert "cumulative" in condition_rules.EFFECT_FLAGS
 
-    def test_no_bundled_srd_condition_is_cumulative(self) -> None:
+    def test_exhaustion_is_the_one_cumulative_bundled_condition(self) -> None:
         # SRD 5.2.1 p.179 names Exhaustion as the one exception to "a condition
-        # doesn't stack with itself", and this engine ships no Exhaustion row
-        # yet — so every bundled row keeps the default.
-        assert not any(effect.cumulative for effect in EFFECTS.values())
+        # doesn't stack with itself" — every other bundled row keeps the default.
+        cumulative = {
+            name for name, effect in EFFECTS.items() if effect.cumulative
+        }
+        assert cumulative == {Condition.EXHAUSTION}
+
+    def test_death_at_level_is_zero_by_default(self) -> None:
+        # 0 means "never" — the level a held condition cannot reach.
+        assert condition_rules.ConditionEffect().death_at_level == 0
+
+    def test_death_at_level_is_a_recognised_effect_flag(self) -> None:
+        assert "death_at_level" in condition_rules.EFFECT_FLAGS
+
+    def test_exhaustion_row(self) -> None:
+        # SRD 5.2.1 p.181: "This condition is cumulative... You die if your
+        # Exhaustion level is 6... the roll is reduced by 2 times your
+        # Exhaustion level... your Speed is reduced by a number of feet
+        # equal to 5 times your Exhaustion level."
+        effect = EFFECTS[Condition.EXHAUSTION]
+        assert effect.cumulative is True
+        assert effect.d20_test_penalty_per_level == 2
+        assert effect.speed_reduction_feet_per_level == 5
+        assert effect.death_at_level == 6
 
     def test_a_custom_condition_can_grant_ability_check_advantage(self) -> None:
         table = {

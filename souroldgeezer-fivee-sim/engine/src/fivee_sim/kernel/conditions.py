@@ -48,6 +48,7 @@ class Condition(StrEnum):
     RESTRAINED = "restrained"
     STUNNED = "stunned"
     UNCONSCIOUS = "unconscious"
+    EXHAUSTION = "exhaustion"
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +124,13 @@ class ConditionEffect:
     #: Speed alone; the register carries the ruling that decides that (SRD
     #: silence, not an SRD statement).
     speed_reduction_feet_per_level: int = 0
+    #: SRD 5.2.1, Exhaustion: "You die if your Exhaustion level is 6." 0 means
+    #: never — the level a held condition cannot reach, since a plain SRD
+    #: condition never goes above 1. Consumed by
+    #: :meth:`~fivee_sim.model.creature.Creature.add_condition`, which kills
+    #: the instant the level reaches this — no save, whatever
+    #: ``death_rule`` the creature carries: the SRD names no such rule here.
+    death_at_level: int = 0
 
 
 #: Every flag a condition may set. Content-pack validation reports this list when a
@@ -218,6 +226,16 @@ EFFECTS: dict[str, ConditionEffect] = {
         auto_fail_strength_saves=True,
         auto_fail_dexterity_saves=True,
         melee_hits_are_critical=True,
+    ),
+    # SRD 5.2.1 p.181: cumulative (p.179's named exception), -2 per level on
+    # every D20 Test, -5 ft per level on Speed, and death outright at level 6.
+    # No ``content_ref``: T10a found no bundled condition carries one, and a
+    # single one here would mean nothing.
+    Condition.EXHAUSTION: ConditionEffect(
+        cumulative=True,
+        d20_test_penalty_per_level=2,
+        speed_reduction_feet_per_level=5,
+        death_at_level=6,
     ),
 }
 

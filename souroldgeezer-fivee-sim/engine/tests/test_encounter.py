@@ -633,6 +633,107 @@ class TestSpeedReduction:
         assert speeds == {"walk": 30, "climb": 0, "swim": 0, "fly": 0, "burrow": 0}
 
 
+class TestExhaustionRow:
+    """Exhaustion (SRD 5.2.1 p.181) as the bundled fifteenth condition: the
+    D20 Test penalty and Speed reduction channels already reach every
+    consumer (T10c, T10d); this pins that Exhaustion's own row wires them,
+    and that reaching level 6 kills — visibly.
+    """
+
+    def test_level_two_costs_four_on_every_d20_test_and_ten_feet_of_speed(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        target.add_condition(Condition.EXHAUSTION, levels=2)
+        assert target.attack_modifier(5) == 1
+        assert target.save_modifier(Ability.CONSTITUTION) == (
+            target.ability_mod(Ability.CONSTITUTION) - 4
+        )
+        assert target.check_modifier(Ability.WISDOM) == (
+            target.ability_mod(Ability.WISDOM) - 4
+        )
+        assert target.speed_for(MovementMode.WALK) == 20
+
+    def test_a_ruling_imposing_the_sixth_level_kills_and_announces_it(
+        self,
+    ) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        encounter.set_condition("Thora", Condition.EXHAUSTION, applied=True, levels=6)
+        assert target.dead
+        deaths = [e for e in encounter.log if e.kind == "death"]
+        assert len(deaths) == 1
+        assert deaths[0].actor == "Thora"
+
+    def test_apply_condition_also_announces_the_sixth_level_death(self) -> None:
+        # ``_apply_condition`` is the second funnel into ``add_condition`` and
+        # must carry the same ``was_dead`` reading as ``set_condition`` — this
+        # pins it directly rather than through a bundled rider that happens
+        # to grant Exhaustion.
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        target.add_condition(Condition.EXHAUSTION, levels=5)
+        encounter._apply_condition(
+            target, target, Condition.EXHAUSTION,
+            effect_name="a sixth exhaustion level", concentration=False,
+        )
+        assert target.dead
+        assert any(e.kind == "death" for e in encounter.log)
+
+    def test_a_fifth_level_by_ruling_does_not_kill_or_announce(self) -> None:
+        target = fighter(name="Thora")
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")], Random(9)
+        )
+        encounter.set_condition("Thora", Condition.EXHAUSTION, applied=True, levels=5)
+        assert not target.dead
+        assert not any(e.kind == "death" for e in encounter.log)
+
+
+class TestDodgeLostAtNumericSpeedZero:
+    """SRD 5.2.1, Dodge: "you don't gain this benefit if your Speed is 0."
+
+    ``_dodge_benefits`` used to consult only the ``speed_zero`` flag, so a
+    creature reduced to Speed 0 purely by ``speed_reduction_feet_per_level`` —
+    Exhaustion's own shape — kept the Dodge benefit the SRD denies it.
+    """
+
+    #: A pack-declared, cumulative condition — never an SRD one — carrying no
+    #: ``speed_zero`` flag at all, so only the numeric reduction can catch it.
+    TABLE = dict(EFFECTS) | {
+        "weary": ConditionEffect(speed_reduction_feet_per_level=10, cumulative=True),
+    }
+
+    def _dodging_weary(self, *, levels: int) -> tuple[Encounter, Creature]:
+        target = fighter(name="Thora")
+        target.condition_effects = self.TABLE
+        target.add_condition("weary", levels=levels)
+        encounter = Encounter(
+            [target, fighter(name="Other", team="monsters")],
+            Random(9),
+            condition_effects=self.TABLE,
+        )
+        advance_to(encounter, "Thora", Random(9))
+        encounter.act(Action(kind=ActionKind.DODGE), Random(9))
+        return encounter, target
+
+    def test_numeric_speed_zero_loses_the_dodge_benefit(self) -> None:
+        encounter, target = self._dodging_weary(levels=3)  # walk 30 -> 0
+        assert target.speed_for(MovementMode.WALK) == 0
+        assert encounter._dodge_benefits(target) is False
+
+    def test_a_reduction_that_does_not_reach_zero_keeps_the_benefit(self) -> None:
+        # The no-op guard: a Speed reduced but not to zero must not lose the
+        # benefit, or the fix would be over-broad rather than narrow.
+        encounter, target = self._dodging_weary(levels=1)  # walk 30 -> 20
+        assert target.speed_for(MovementMode.WALK) == 20
+        assert encounter._dodge_benefits(target) is True
+
+
 class TestAttacking:
     def test_a_hit_reduces_hit_points(self) -> None:
         rng = Random(3)
